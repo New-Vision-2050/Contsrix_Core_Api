@@ -2,18 +2,12 @@
 
 namespace Modules\Auth\Services;
 
-use BasePackage\Shared\Facade\Json;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\Handlers\LogoutHandler;
-use Modules\Auth\Handlers\MakeOtpHandler;
-use Modules\Auth\Repositories\AuthRepository;
-use Modules\User\Presenters\UserPresenter;
 use Modules\User\Repositories\UserRepository;
-use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\JWT;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
 {
@@ -33,7 +27,7 @@ class AuthService
 
     {
 
-        $this->token = \Tymon\JWTAuth\Facades\JWTAuth::attempt(["email"=>"amrsaleh1001@gmail.com","password"=>"Test1234"]);
+        $this->token = JWTAuth::attempt(["email"=>"amrsaleh1001@gmail.com","password"=>"Test1234"]);
         return $this;
     }
 

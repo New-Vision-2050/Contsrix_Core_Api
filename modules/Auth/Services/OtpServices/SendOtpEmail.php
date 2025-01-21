@@ -4,31 +4,25 @@ namespace Modules\Auth\Services\OtpServices;
 
 use App\Mail\ResetPasswordMail;
 use Illuminate\Support\Facades\Mail;
-use Modules\Auth\Services\Interfaces\SendOtp;
-use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
+use Ramsey\Uuid\UuidInterface;
 
-class SendOtpEmail extends OtpService implements SendOtp
+class SendOtpEmail extends OtpService
 {
-
-    public function __construct($email)
+    public function __construct(UserRepository $userRepository)
     {
-        Parent::__construct((new UserRepository(new User()))->getUserByEmail($email));
-
-
+        $this->userRepository = $userRepository;
     }
 
-
-    public function send()
+    public function send(UuidInterface $userId)
     {
+        $user = $this->userRepository->find($userId);
         $data = array();
-        $data['email'] = $this->user->email;
-        $data['otp'] = $this->user->otp;
-        $data['name'] = $this->user->name;
+        $data['email'] = $user->email;
+        $data['otp'] = $this->makeOtp(5);
+        $data['name'] = $user->name;
         $data['minutes'] = 20;
         $data['url'] = "";
         Mail::to($data['email'])->send(new ResetPasswordMail($data));
-
-
     }
 }
