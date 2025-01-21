@@ -4,9 +4,10 @@ use Illuminate\Support\Facades\Route;
 use Modules\Auth\Controllers\AuthController;
 
 Route::group(['middleware' => ['auth:api']], function () {
-    Route::get('/', [AuthController::class, 'index']);
-    Route::post('/', [AuthController::class, 'store']);
-    Route::get('/{id}', [AuthController::class, 'show']);
-    Route::put('/{id}', [AuthController::class, 'update']);
-    Route::delete('/{id}', [AuthController::class, 'delete']);
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+
 });
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
