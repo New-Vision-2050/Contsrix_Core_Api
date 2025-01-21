@@ -17,6 +17,7 @@ use Modules\Auth\Requests\DeleteAuthRequest;
 use Modules\Auth\Requests\GetAuthListRequest;
 use Modules\Auth\Requests\GetAuthRequest;
 use Modules\Auth\Requests\LogoutRequest;
+use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Requests\UpdateAuthRequest;
 use Modules\Auth\Services\AuthCRUDService;
 use Modules\Auth\Services\AuthService;
@@ -56,8 +57,12 @@ class AuthController extends Controller
 
     }
 
-    public function resetPassword()
+    public function resetPassword(ResetPasswordRequest $request)
     {
+       if( $this->authService->ResetPassword($request->createResetPasswordCommand()))
+           return Json::buildItems('message', "success");
+       else
+           return response(["message"=>"Invalid otp",401]);
 
     }
 
