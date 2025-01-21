@@ -12,14 +12,17 @@ use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Repositories\AuthRepository;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Repositories\UserRepository;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\JWT;
 
 class AuthService
 {
+    private $token;
+
     public function __construct(
 //        private AuthRepository $repository,
-        private                $token,
         private LogoutHandler  $logoutHandler,
-        private UserRepository   $userRepository,
+        private UserRepository $userRepository,
 
 
     )
@@ -27,9 +30,10 @@ class AuthService
     }
 
     public function login(LoginDTO $authDTO)
+
     {
 
-        $this->token = Auth::guard('api')->attempt($authDTO->toArray());
+        $this->token = \Tymon\JWTAuth\Facades\JWTAuth::attempt(["email"=>"amrsaleh1001@gmail.com","password"=>"Test1234"]);
         return $this;
     }
 
@@ -41,21 +45,16 @@ class AuthService
 
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
-        $user  = $this->userRepository->searchOtp($resetPasswordCommand->getOtp());
+        $user = $this->userRepository->searchOtp($resetPasswordCommand->getOtp());
 
-        if($user&& Carbon::parse($user->otp_expire)->format("Y-m-d H:i:s")>=Carbon::now()->format("Y-m-d H:i:s"))
-        {
-            $this->userRepository->updateUser($user->id  , ["password"=>$resetPasswordCommand->getPassword(),"otp"=>null,"otp_expire"=>null]);
+        if ($user && Carbon::parse($user->otp_expire)->format("Y-m-d H:i:s") >= Carbon::now()->format("Y-m-d H:i:s")) {
+            $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword(), "otp" => null, "otp_expire" => null]);
             return 1;
         }
         return 0;
 
 
     }
-
-
-
-
 
 
     public function loginResponse()

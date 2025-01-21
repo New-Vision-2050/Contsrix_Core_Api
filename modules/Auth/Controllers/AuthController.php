@@ -27,10 +27,11 @@ use Ramsey\Uuid\Uuid;
 
 class AuthController extends Controller
 {
+    private SendOtp $sendOtp;
+
     public function __construct(
 
         private AuthService $authService,
-        private SendOtp  $sendOtp
     )
     {
 
@@ -43,7 +44,7 @@ class AuthController extends Controller
 
     public function logout(LogoutRequest $request)
     {
-         $this->authService->logout();
+        $this->authService->logout();
         return Json::buildItems('message', "success");
 
 
@@ -59,10 +60,10 @@ class AuthController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request)
     {
-       if( $this->authService->ResetPassword($request->createResetPasswordCommand()))
-           return Json::buildItems('message', "success");
-       else
-           return response(["message"=>"Invalid otp",401]);
+        if ($this->authService->ResetPassword($request->createResetPasswordCommand()))
+            return Json::buildItems('message', "success");
+        else
+            return response(["message" => "Invalid otp", 401]);
 
     }
 
