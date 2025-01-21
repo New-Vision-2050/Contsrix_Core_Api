@@ -5,22 +5,23 @@ declare(strict_types=1);
 namespace Modules\Auth\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Auth\DTO\LoginDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\Auth\DTO\CreateAuthDTO;
 
-class CreateAuthRequest extends FormRequest
+class LogoutRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+
         ];
     }
 
-    public function createCreateAuthDTO(): CreateAuthDTO
-    {
-        return new CreateAuthDTO(
-            name: $this->get('name'),
-        );
-    }
+//    public function cre()
+//    {
+//
+//    }
+
+
 }
