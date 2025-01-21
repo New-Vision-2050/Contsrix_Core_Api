@@ -1,0 +1,12 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Controllers\$STUDLY_NAME$Controller;
+
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::get('/', [$STUDLY_NAME$Controller::class, 'index']);
+    Route::post('/', [$STUDLY_NAME$Controller::class, 'store']);
+    Route::get('/{id}', [$STUDLY_NAME$Controller::class, 'show']);
+    Route::put('/{id}', [$STUDLY_NAME$Controller::class, 'update']);
+    Route::delete('/{id}', [$STUDLY_NAME$Controller::class, 'delete']);
+});

@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Controllers;
+
+use BasePackage\Shared\Facade\Json;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Handlers\Delete$STUDLY_NAME$Handler;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Handlers\Update$STUDLY_NAME$Handler;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Presenters\$STUDLY_NAME$Presenter;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Create$STUDLY_NAME$Request;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Delete$STUDLY_NAME$Request;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Get$STUDLY_NAME$ListRequest;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Get$STUDLY_NAME$Request;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Update$STUDLY_NAME$Request;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Services\$STUDLY_NAME$CRUDService;
+use Ramsey\Uuid\Uuid;
+
+class $STUDLY_NAME$Controller extends Controller
+{
+    public function __construct(
+        private $STUDLY_NAME$CRUDService $$CAMEL_MODULE_NAME$Service,
+        private Update$STUDLY_NAME$Handler $update$STUDLY_NAME$Handler,
+        private Delete$STUDLY_NAME$Handler $delete$STUDLY_NAME$Handler,
+    ) {
+    }
+
+    public function index(Get$STUDLY_NAME$ListRequest $request): JsonResponse
+    {
+        $list = $this->$CAMEL_MODULE_NAME$Service->list(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::buildItems(null,['$SNAKE_PLURAL_MODULE_NAME$' => $STUDLY_NAME$Presenter::collection($list['data']),'pagination' => $list['pagination']]);
+    }
+
+    public function show(Get$STUDLY_NAME$Request $request): JsonResponse
+    {
+        $item = $this->$CAMEL_MODULE_NAME$Service->get(Uuid::fromString($request->route('id')));
+
+        $presenter = new $STUDLY_NAME$Presenter($item);
+
+        return Json::buildItems('$SNAKE_MODULE_NAME$', $presenter->getData());
+    }
+
+    public function store(Create$STUDLY_NAME$Request $request): JsonResponse
+    {
+        $createdItem = $this->$CAMEL_MODULE_NAME$Service->create($request->createCreate$STUDLY_NAME$DTO());
+
+        $presenter = new $STUDLY_NAME$Presenter($createdItem);
+
+        return Json::buildItems('$SNAKE_MODULE_NAME$', $presenter->getData());
+    }
+
+    public function update(Update$STUDLY_NAME$Request $request): JsonResponse
+    {
+        $command = $request->createUpdate$STUDLY_NAME$Command();
+        $this->update$STUDLY_NAME$Handler->handle($command);
+
+        $item = $this->$CAMEL_MODULE_NAME$Service->get($command->getId());
+
+        $presenter = new $STUDLY_NAME$Presenter($item);
+
+        return Json::buildItems('$SNAKE_MODULE_NAME$', $presenter->getData());
+    }
+
+    public function delete(Delete$STUDLY_NAME$Request $request): JsonResponse
+    {
+        $this->delete$STUDLY_NAME$Handler->handle(Uuid::fromString($request->route('id')));
+
+        return Json::deleted();
+    }
+}

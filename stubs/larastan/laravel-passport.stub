@@ -1,0 +1,38 @@
+<?php
+
+namespace Laravel\Passport;
+
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property int|null $app_id
+ * @property string $name
+ * @property string|null $secret
+ * @property string|null $provider
+ * @property string|null $redirect
+ * @property bool $personal_access_client
+ * @property bool $password_client
+ * @property bool $revoked
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ */
+class Client
+{
+
+}
+
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property int $client_id
+ * @property string|null $name
+ * @property string|null $scopes
+ * @property bool $revoked
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property \Carbon\Carbon|null $expires_at
+ */
+class Token
+{
+
+}

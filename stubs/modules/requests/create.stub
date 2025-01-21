@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Ramsey\Uuid\Uuid;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\DTO\Create$STUDLY_NAME$DTO;
+
+class Create$STUDLY_NAME$Request extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'name' => 'required|string',
+        ];
+    }
+
+    public function createCreate$STUDLY_NAME$DTO(): Create$STUDLY_NAME$DTO
+    {
+        return new Create$STUDLY_NAME$DTO(
+            name: $this->get('name'),
+        );
+    }
+}

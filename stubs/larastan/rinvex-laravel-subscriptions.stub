@@ -1,0 +1,85 @@
+<?php
+
+namespace Rinvex\Subscriptions\Models;
+
+/**
+ * @property int $id
+ * @property int $app_id
+ * @property string $purchasable_id
+ * @property string $slug
+ * @property array $name
+ * @property array $description
+ * @property bool $is_active
+ * @property float $price
+ * @property float $signup_fee
+ * @property string $currency
+ * @property int $trial_period
+ * @property string $trial_interval
+ * @property int $invoice_period
+ * @property string $invoice_interval
+ * @property int $grace_period
+ * @property string $grace_interval
+ * @property int $prorate_day
+ * @property int $prorate_period
+ * @property int $prorate_extend_due
+ * @property int $active_subscribers_limit
+ * @property int $sort_order
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property \Carbon\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|\Rinvex\Subscriptions\Models\AppMarketPlanFeature[] $features
+ * @property-read \Illuminate\Database\Eloquent\Collection|\Rinvex\Subscriptions\Models\AppMarketPlanSubscription[] $subscriptions
+ */
+class AppMarketPlan
+{
+
+}
+
+/**
+ * @property int $id
+ * @property int $plan_id
+ * @property string $slug
+ * @property array $name
+ * @property array $description
+ * @property string $value
+ * @property int $resettable_period
+ * @property string $resettable_interval
+ * @property int $sort_order
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property \Carbon\Carbon|null $deleted_at
+ * @property-read AppMarketPlan $plan
+ * @property-read \Illuminate\Database\Eloquent\Collection|AppMarketPlanSubscriptionUsage[] $usage
+ */
+class AppMarketPlanFeature
+{
+
+}
+
+/**
+ * @property int $id
+ * @property int $subscriber_id
+ * @property string $subscriber_type
+ * @property int $plan_id
+ * @property string $slug
+ * @property array $name
+ * @property array $description
+ * @property string $status
+ * @property int $amount_left
+ * @property int $amount_left_without_tax
+ * @property \Carbon\Carbon|null $trial_ends_at
+ * @property \Carbon\Carbon|null $starts_at
+ * @property \Carbon\Carbon|null $ends_at
+ * @property \Carbon\Carbon|null $cancels_at
+ * @property \Carbon\Carbon|null $canceled_at
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property \Carbon\Carbon|null $deleted_at
+ * @property-read AppMarketPlan $plan
+ * @property-read \Illuminate\Database\Eloquent\Collection|AppMarketPlanSubscriptionUsage[] $usage
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $subscriber
+ */
+class AppMarketPlanSubscription
+{
+
+}

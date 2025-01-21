@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Handlers;
+
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Commands\Update$STUDLY_NAME$Command;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Repositories\$STUDLY_NAME$Repository;
+
+class Update$STUDLY_NAME$Handler
+{
+    public function __construct(
+        private $STUDLY_NAME$Repository $repository,
+    ) {
+    }
+
+    public function handle(Update$STUDLY_NAME$Command $update$STUDLY_NAME$Command)
+    {
+        $this->repository->update$STUDLY_NAME$($update$STUDLY_NAME$Command->getId(), $update$STUDLY_NAME$Command->toArray());
+    }
+}

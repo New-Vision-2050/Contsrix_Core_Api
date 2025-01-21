@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Ramsey\Uuid\Uuid;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Commands\Update$STUDLY_NAME$Command;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Handlers\Update$STUDLY_NAME$Handler;
+
+class Update$STUDLY_NAME$Request extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'name' => 'required|string',
+        ];
+    }
+
+    public function createUpdate$STUDLY_NAME$Command(): Update$STUDLY_NAME$Command
+    {
+        return new Update$STUDLY_NAME$Command(
+            id: Uuid::fromString($this->route('id')),
+            name: $this->get('name'),
+        );
+    }
+}

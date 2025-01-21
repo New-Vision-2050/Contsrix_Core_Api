@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Repositories;
+
+use BasePackage\Shared\Repositories\BaseRepository;
+use Illuminate\Database\Eloquent\Collection;
+use Ramsey\Uuid\UuidInterface;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Models\$STUDLY_NAME$;
+
+/**
+ * @property $STUDLY_NAME$ $model
+ * @method $STUDLY_NAME$ findOneOrFail($id)
+ * @method $STUDLY_NAME$ findOneByOrFail(array $data)
+ */
+class $STUDLY_NAME$Repository extends BaseRepository
+{
+    public function __construct($STUDLY_NAME$ $model)
+    {
+        parent::__construct($model);
+    }
+
+    public function get$STUDLY_NAME$List(?int $page, ?int $perPage = 10): Collection
+    {
+        return $this->paginatedList([], $page, $perPage);
+    }
+
+    public function get$STUDLY_NAME$(UuidInterface $id): $STUDLY_NAME$
+    {
+        return $this->findOneByOrFail([
+            'id' => $id->toString(),
+        ]);
+    }
+
+    public function create$STUDLY_NAME$(array $data): $STUDLY_NAME$
+    {
+        return $this->create($data);
+    }
+
+    public function update$STUDLY_NAME$(UuidInterface $id, array $data): bool
+    {
+        return $this->update($id, $data);
+    }
+
+    public function delete$STUDLY_NAME$(UuidInterface $id): bool
+    {
+        return $this->delete($id);
+    }
+}

@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Ramsey\Uuid\Uuid;
+
+class Get$STUDLY_NAME$ListRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'per_page' => 'integer',
+            'page' => 'integer',
+        ];
+    }
+}

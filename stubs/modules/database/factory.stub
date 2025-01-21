@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Database\factories;
+
+use Illuminate\Database\Eloquent\Factories\Factory;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Models\$STUDLY_NAME$;
+
+/** @extends Factory<$STUDLY_NAME$> */
+class $STUDLY_NAME$Factory extends Factory
+{
+    protected $model = $STUDLY_NAME$::class;
+
+    public function definition(): array
+    {
+        return [
+            'name' => $this->faker->name(),
+        ];
+    }
+}

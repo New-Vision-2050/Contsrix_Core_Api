@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Handlers;
+
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Repositories\$STUDLY_NAME$Repository;
+use Ramsey\Uuid\UuidInterface;
+
+class Delete$STUDLY_NAME$Handler
+{
+    public function __construct(
+        private $STUDLY_NAME$Repository $repository,
+    ) {
+    }
+
+    public function handle(UuidInterface $id)
+    {
+        $this->repository->delete$STUDLY_NAME$($id);
+    }
+}

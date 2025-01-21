@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Presenters;
+
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Models\$STUDLY_NAME$;
+use BasePackage\Shared\Presenters\AbstractPresenter;
+
+class $STUDLY_NAME$Presenter extends AbstractPresenter
+{
+    private $STUDLY_NAME$ $$CAMEL_MODULE_NAME$;
+
+    public function __construct($STUDLY_NAME$ $$CAMEL_MODULE_NAME$)
+    {
+        $this->$CAMEL_MODULE_NAME$ = $$CAMEL_MODULE_NAME$;
+    }
+
+    protected function present(bool $isListing = false): array
+    {
+        return [
+            'id' => $this->$CAMEL_MODULE_NAME$->id,
+            'name' => $this->$CAMEL_MODULE_NAME$->name,
+        ];
+    }
+}
