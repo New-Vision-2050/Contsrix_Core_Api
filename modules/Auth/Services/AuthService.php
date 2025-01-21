@@ -3,18 +3,22 @@
 namespace Modules\Auth\Services;
 
 use BasePackage\Shared\Facade\Json;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\Handlers\LogoutHandler;
+use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Repositories\AuthRepository;
 use Modules\User\Presenters\UserPresenter;
+use Modules\User\Repositories\UserRepository;
 
 class AuthService
 {
     public function __construct(
 //        private AuthRepository $repository,
-        private $token,
-        private LogoutHandler $logoutHandler
+        private                $token,
+        private LogoutHandler  $logoutHandler,
+
     )
     {
     }
@@ -25,16 +29,21 @@ class AuthService
         $this->token = Auth::guard('api')->attempt($authDTO->toArray());
         return $this;
     }
-    public function logout(){
+
+    public function logout()
+    {
         $this->logoutHandler->handle();
         return $this;
     }
 
+
+
+
     public function response($message)
     {
         return response([
-            'status'=>true,
-            "message"=>$message
+            'status' => true,
+            "message" => $message
         ]);
     }
 
