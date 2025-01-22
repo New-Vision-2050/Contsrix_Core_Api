@@ -3,19 +3,19 @@
 namespace Modules\Auth\Services\OtpServices;
 
 use Carbon\Carbon;
+use Faker\Core\Uuid;
+use Modules\User\Repositories\UserRepository;
 
 class OtpService
 {
-    public function makeOtp($length = 5)
+    public function makeOtp($user,$length = 5)
     {
-        $max = 9;
-        for ($i = 1 ; $i <= $length ; $i++) {
-            $max += 9 * (10 ^ $i);
-        }
-        $code = rand(10 ^ ($length - 1), $max);
-        $minutes = 15;
 
-        return ["otp", $code, "otp_expire" => Carbon::now()->addMinutes($minutes)];
+        $code = rand(10000,99999);
+        $minutes = 15;
+        (new UserRepository($user))->updateUser(\Ramsey\Uuid\Uuid::fromString($user->id),["otp"=> $code, "otp_expire" => Carbon::now()->addMinutes($minutes)]);
+
+        return 1;
 
     }
 }

@@ -19,7 +19,7 @@ class SendOtpEmail extends OtpService
         $user = $this->userRepository->find($userId);
         $data = array();
         $data['email'] = $user->email;
-        $data['otp'] = $this->makeOtp(5);
+        $data['otp'] = $this->makeOtp($user);
         $data['name'] = $user->name;
         $data['minutes'] = 20;
         $data['url'] = "";

@@ -13,7 +13,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
 {
-    private $token;
+//    private $token;
 
     public function __construct(
 //        private AuthRepository $repository,

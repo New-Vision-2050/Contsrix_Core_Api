@@ -50,7 +50,8 @@ class AuthController extends Controller
         $sendOtpEmail = app()->make(SendOtpEmail::class);
         $sendOtpEmail->send(Uuid::fromString($request->user()->id));
 
-        return Json::buildItems(key: 'message', data: "success", httpStatus: 200);
+        return Json::buildItems(null,["message"=>"success"],"",200);
+
     }
 
     public function resetPassword(ResetPasswordRequest $request)
