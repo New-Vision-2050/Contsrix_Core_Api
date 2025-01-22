@@ -4,68 +4,64 @@ declare(strict_types=1);
 
 namespace Modules\Auth\Controllers;
 
-use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
-use Modules\Auth\Commands\ForgetPasswordCommand;
-use Modules\Auth\Handlers\DeleteAuthHandler;
-use Modules\Auth\Handlers\UpdateAuthHandler;
-use Modules\Auth\Presenters\AuthPresenter;
+use BasePackage\Shared\Facade\Json;
+use Illuminate\Support\Facades\Auth;
 use Modules\Auth\Requests\ForgetPasswordRequest;
 use Modules\Auth\Requests\LoginRequest;
-use Modules\Auth\Requests\DeleteAuthRequest;
-use Modules\Auth\Requests\GetAuthListRequest;
-use Modules\Auth\Requests\GetAuthRequest;
 use Modules\Auth\Requests\LogoutRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
-use Modules\Auth\Requests\UpdateAuthRequest;
-use Modules\Auth\Services\AuthCRUDService;
 use Modules\Auth\Services\AuthService;
 use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
+use Modules\User\Models\User;
+use Modules\User\Presenters\UserPresenter;
 use Ramsey\Uuid\Uuid;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    private SendOtp $sendOtp;
-
     public function __construct(
-
         private AuthService $authService,
-    )
-    {
-
+    ) {
     }
 
     public function login(LoginRequest $request)
     {
-        return $this->authService->login($request->createLoginDTO())->loginResponse();
+        [$token , $user] = $this->authService->login($request->createLoginDTO());
+        if (!$token) {
+            return Json::buildItems("message","unauthenticated","",401);
+        }
+
+        return Json::buildItems(null,["message"=>"success","token"=>$token,"user"=>(new UserPresenter($user))->getData()],"",200);
+
     }
 
     public function logout(LogoutRequest $request)
     {
+        $user = auth()->user();
         $this->authService->logout();
-        return Json::buildItems('message', "success");
-
-
+        return Json::buildItems(null, ["message"=>"success","user"=>(new UserPresenter($user))->getData()],"",200);
     }
 
     public function forgetPassword(ForgetPasswordRequest $request)
     {
-        $this->sendOtp = new SendOtpEmail($request->createForgetPasswordCommand()->getEmail());
-        $this->sendOtp->send();
-        return Json::buildItems('message', "success");
+        /** @var SendOtpEmail $sendOtpEmail */
+        $sendOtpEmail = app()->make(SendOtpEmail::class);
+        $sendOtpEmail->send(Uuid::fromString($request->user()->id));
+
+        return Json::buildItems(null,["message"=>"success"],"",200);
 
     }
 
     public function resetPassword(ResetPasswordRequest $request)
     {
-        if ($this->authService->ResetPassword($request->createResetPasswordCommand()))
-            return Json::buildItems('message', "success");
-        else
-            return response(["message" => "Invalid otp", 401]);
+        if ($this->authService->ResetPassword($request->createResetPasswordCommand())) {
+            return Json::buildItems('message', "success","",200);
+        } else {
+            return Json::buildItems('message', "success","",401);
 
+        }
     }
-
 
 }
