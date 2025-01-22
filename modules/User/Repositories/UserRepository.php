@@ -39,7 +39,7 @@ class UserRepository extends BaseRepository
             'email' => $email,
         ]);
     }
-    public function searchOtp($otp): User
+    public function searchOtp($otp)
     {
         return $this->findOneBy([
             'otp' => $otp,

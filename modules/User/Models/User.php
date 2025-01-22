@@ -33,6 +33,7 @@ protected $primaryKey="id";
         'name',
         'email',
         'password',
+        "otp","otp_expire"
     ];
 
     protected $casts = [

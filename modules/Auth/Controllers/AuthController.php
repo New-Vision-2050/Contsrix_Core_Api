@@ -56,7 +56,7 @@ class AuthController extends Controller
     public function resetPassword(ResetPasswordRequest $request)
     {
         if ($this->authService->ResetPassword($request->createResetPasswordCommand())) {
-            return Json::buildItems('message', "success");
+            return Json::buildItems('message', "success","",200);
         } else {
             return Json::buildItems('message', "success","",401);
 

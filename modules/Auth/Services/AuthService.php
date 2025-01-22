@@ -7,6 +7,8 @@ use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\Handlers\LogoutHandler;
 use Modules\User\Repositories\UserRepository;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
@@ -40,7 +42,7 @@ class AuthService
         $user = $this->userRepository->searchOtp($resetPasswordCommand->getOtp());
 
         if ($user && Carbon::parse($user->otp_expire)->format("Y-m-d H:i:s") >= Carbon::now()->format("Y-m-d H:i:s")) {
-            $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword(), "otp" => null, "otp_expire" => null]);
+            $this->userRepository->updateUser(Uuid::fromString($user->id), ["password" => $resetPasswordCommand->getPassword(), "otp" => null, "otp_expire" => null]);
             return 1;
         }
         return 0;
