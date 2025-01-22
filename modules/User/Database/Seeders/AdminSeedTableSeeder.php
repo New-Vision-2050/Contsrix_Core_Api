@@ -22,6 +22,5 @@ class AdminSeedTableSeeder extends Seeder
             'password' => "Test1234",
         ]);
 
-        // $this->call("OthersTableSeeder");
     }
 }

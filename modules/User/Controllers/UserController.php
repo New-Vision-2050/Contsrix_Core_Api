@@ -48,7 +48,9 @@ class UserController extends Controller
 
     public function me()
     {
-        return Json::buildItems('user', (new UserPresenter(auth()->user()))->getData(),"",200);
+        $user = auth()->user();
+        $userPresenter = new UserPresenter($user);
+        return Json::buildItems('user', $userPresenter->getData(),"",200);
     }
 
     public function store(CreateUserRequest $request): JsonResponse

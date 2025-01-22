@@ -17,6 +17,7 @@ class ResetPasswordRequest extends FormRequest
     {
         return [
             'otp' => 'required',
+            'email' => 'required',
             "password"=> ['required',
             'min:8',
             'regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%;]).*$/',
@@ -29,6 +30,7 @@ class ResetPasswordRequest extends FormRequest
         return new ResetPasswordCommand(
             otp: $this->get('otp'),
             password: $this->get('password'),
+            email: $this->get('email'),
         );
     }
 }

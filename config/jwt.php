@@ -132,6 +132,8 @@ return [
     */
 
     'algo' => env('JWT_ALGO', Tymon\JWTAuth\Providers\JWT\Provider::ALGO_HS256),
+    'cookie_key_name' => 'token',
+
 
     /*
     |--------------------------------------------------------------------------
@@ -233,6 +235,8 @@ return [
     */
 
     'blacklist_grace_period' => env('JWT_BLACKLIST_GRACE_PERIOD', 0),
+    'show_black_list_exception' => env('JWT_SHOW_BLACKLIST_EXCEPTION', true),
+
 
     /*
     |--------------------------------------------------------------------------

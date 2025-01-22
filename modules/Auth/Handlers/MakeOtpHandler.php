@@ -4,7 +4,10 @@ namespace Modules\Auth\Handlers;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Modules\Auth\Commands\ForgetPasswordCommand;
+use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\User\Repositories\UserRepository;
+use Ramsey\Uuid\Uuid;
 
 class MakeOtpHandler
 {
@@ -14,18 +17,13 @@ class MakeOtpHandler
     ) {
     }
 
-    public function handle( $email ,$length =5 )
+    public function handle( ForgetPasswordCommand $command )
     {
-        $max=9;
-        for ($i=1; $i<=$length; $i++)
-        {
-            $max+=9*(10^$i);
-        }
-        $code = rand(10^($length-1), $max) ;
-        $minutes = 15;
-        $user= $this->userRepository->getUserByEmail($this->email);
-        $user->otp = $code;
-        $user->otp_expire = Carbon::now()->addMinutes($minutes);
-        $user->save();
+        $user = $this->userRepository->getUserByEmail($command->getEmail());
+
+        /** @var SendOtpEmail $sendOtpEmail */
+
+        $sendOtpEmail = app()->make(SendOtpEmail::class);
+        $sendOtpEmail->send(Uuid::fromString($user->id));
     }
 }
