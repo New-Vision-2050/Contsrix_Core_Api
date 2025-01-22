@@ -28,9 +28,7 @@ class SendOtpEmail implements SendOtp
         $data['name'] = $user->name;
         $data['minutes'] = 20;
         $data['url'] = "";
-        app()->setLocale("ar");
         $user->notify(new ResetPassword($data));
 
-//        Mail::to($data['email'])->send(new ResetPasswordMail($data));
     }
 }
