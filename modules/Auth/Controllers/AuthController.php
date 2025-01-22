@@ -33,7 +33,7 @@ class AuthController extends Controller
             return Json::buildItems("message","unauthenticated","",401);
         }
 
-        return Json::buildItems(null,["message"=>"success","token"=>$token,"user"=>(new UserPresenter($user))->getData()],"",401);
+        return Json::buildItems(null,["message"=>"success","token"=>$token,"user"=>(new UserPresenter($user))->getData()],"",200);
 
     }
 
