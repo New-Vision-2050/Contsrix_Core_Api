@@ -18,10 +18,5 @@ class ForgetPasswordCommand
         return $this->email;
     }
 
-    public function toArray(): array
-    {
-        return array_filter([
-            'email' => $this->email,
-        ]);
-    }
+
 }

@@ -10,6 +10,7 @@ class ResetPasswordCommand
 
         private string $otp,
         private string $password,
+        private string $email,
     ) {
     }
 
@@ -25,11 +26,11 @@ class ResetPasswordCommand
         return $this->otp;
     }
 
-    public function toArray(): array
+    public function getEmail(): ?string
+
     {
-        return array_filter([
-            'otp' => $this->otp,
-            'password' => $this->password,
-        ]);
+        return $this->email;
     }
+
+
 }

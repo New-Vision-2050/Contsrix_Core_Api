@@ -7,6 +7,7 @@ namespace Modules\Auth\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Facade\Json;
 use Illuminate\Support\Facades\Auth;
+use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ForgetPasswordRequest;
 use Modules\Auth\Requests\LoginRequest;
 use Modules\Auth\Requests\LogoutRequest;
@@ -23,6 +24,7 @@ class AuthController extends Controller
 {
     public function __construct(
         private AuthService $authService,
+        private MakeOtpHandler $makeOtpHandler,
     ) {
     }
 
@@ -30,25 +32,24 @@ class AuthController extends Controller
     {
         [$token , $user] = $this->authService->login($request->createLoginDTO());
         if (!$token) {
-            return Json::buildItems("message","unauthenticated","",401);
+            return Json::buildItems(null,["message"=>"unauthenticated"],"",401);
         }
-
-        return Json::buildItems(null,["message"=>"success","token"=>$token,"user"=>(new UserPresenter($user))->getData()],"",200);
+        $userPresenter = (new UserPresenter($user))->getData();
+        return Json::buildItems(null,["message"=>"success","token"=>$token,"user"=>$userPresenter],"",200);
 
     }
 
     public function logout(LogoutRequest $request)
     {
-        $user = auth()->user();
+
         $this->authService->logout();
-        return Json::buildItems(null, ["message"=>"success","user"=>(new UserPresenter($user))->getData()],"",200);
+        return Json::buildItems(null, ["message"=>"success"],"",200);
     }
 
     public function forgetPassword(ForgetPasswordRequest $request)
     {
-        /** @var SendOtpEmail $sendOtpEmail */
-        $sendOtpEmail = app()->make(SendOtpEmail::class);
-        $sendOtpEmail->send(Uuid::fromString($request->user()->id));
+        $command  = $request->createForgetPasswordCommand();
+        $this->makeOtpHandler->handle($command);
 
         return Json::buildItems(null,["message"=>"success"],"",200);
 
@@ -56,12 +57,18 @@ class AuthController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request)
     {
-        if ($this->authService->ResetPassword($request->createResetPasswordCommand())) {
-            return Json::buildItems('message', "success","",200);
-        } else {
-            return Json::buildItems('message', "success","",401);
+        try {
+            $this->authService->ResetPassword($request->createResetPasswordCommand());
+        }
+        catch (\Exception $e){
+            return Json::buildItems(null,["message"=>"otp not fount or expired"],"",401);
 
         }
+
+        return Json::buildItems(null,["message"=>"success"],"",200);
+
+
+
     }
 
 }

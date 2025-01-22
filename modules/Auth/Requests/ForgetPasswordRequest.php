@@ -21,8 +21,8 @@ class ForgetPasswordRequest extends FormRequest
 
     public function createForgetPasswordCommand()
     {
-        return new ForgetPasswordCommand(
-            email: $this->get('email'),
-        );
+        return new ForgetPasswordCommand(email:$this->get('email'));
     }
+
+
 }

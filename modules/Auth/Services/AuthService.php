@@ -3,9 +3,11 @@
 namespace Modules\Auth\Services;
 
 use Carbon\Carbon;
+use Ichtrojan\Otp\Otp;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\Handlers\LogoutHandler;
+use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -19,8 +21,6 @@ class AuthService
 //        private AuthRepository $repository,
         private LogoutHandler  $logoutHandler,
         private UserRepository $userRepository,
-
-
     )
     {
     }
@@ -28,7 +28,7 @@ class AuthService
     public function login(LoginDTO $authDTO)
 
     {
-        return [ JWTAuth::attempt($authDTO->toArray()) , auth()->user()];
+        return [JWTAuth::attempt($authDTO->toArray()), auth()->user()];
     }
 
     public function logout()
@@ -37,33 +37,25 @@ class AuthService
         return $this;
     }
 
+    public function forgetPassword()
+    {
+
+    }
+
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
-        $user = $this->userRepository->searchOtp($resetPasswordCommand->getOtp());
 
-        if ($user && Carbon::parse($user->otp_expire)->format("Y-m-d H:i:s") >= Carbon::now()->format("Y-m-d H:i:s")) {
-            $this->userRepository->updateUser(Uuid::fromString($user->id), ["password" => $resetPasswordCommand->getPassword(), "otp" => null, "otp_expire" => null]);
-            return 1;
+
+        if ((new Otp)->validate($resetPasswordCommand->getEmail(), $resetPasswordCommand->getOtp())->status == true) {
+            $user = $this->userRepository->getUserByEmail($resetPasswordCommand->getEmail());
+
+            $this->userRepository->updateUser(Uuid::fromString($user->id), ["password" => $resetPasswordCommand->getPassword()]);
+
+            return $this;
         }
-        return 0;
-
+        throw new \ErrorException('oto not valid or expired', 401);
 
     }
 
 
-    public function loginResponse()
-    {
-        if (!$this->token) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-
-        return response()->json([
-            'status' => true,
-            'token' => $this->token,
-
-        ]);
-    }
 }
