@@ -26,9 +26,7 @@ class AuthService
     public function login(LoginDTO $authDTO)
 
     {
-
-        $this->token = JWTAuth::attempt(["email"=>"amrsaleh1001@gmail.com","password"=>"Test1234"]);
-        return $this;
+        return [ JWTAuth::attempt($authDTO->toArray()) , auth()->user()];
     }
 
     public function logout()
