@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -24,7 +24,7 @@ class User  extends Authenticatable implements JWTSubject
     //use SoftDeletes;
 
     //public array $translatable = [];
-
+protected $primaryKey="id";
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -61,11 +61,11 @@ class User  extends Authenticatable implements JWTSubject
 
     public function getJWTIdentifier()
     {
-        // TODO: Implement getJWTIdentifier() method.
+        return $this->getKey();
     }
 
     public function getJWTCustomClaims()
     {
-        // TODO: Implement getJWTCustomClaims() method.
+        return [];
     }
 }

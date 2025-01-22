@@ -9,8 +9,8 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string("otp");
-            $table->dateTime("otp_expire");
+            $table->string("otp")->index()->nullable();
+            $table->dateTime("otp_expire")->nullable();
 
         });
     }
