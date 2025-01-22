@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\User\Models;
 
+use App\Casts\Uuid;
+use App\Casts\UuidCast;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,7 +40,7 @@ protected $primaryKey="id";
     ];
 
     protected $casts = [
-        'id' => 'string',
+        'id' => UuidCast::class,
         'email',
         'password',
     ];

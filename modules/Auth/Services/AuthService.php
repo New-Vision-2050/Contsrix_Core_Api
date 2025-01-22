@@ -46,7 +46,7 @@ class AuthService
         if ((new Otp)->validate($resetPasswordCommand->getEmail(), $resetPasswordCommand->getOtp())->status == true) {
             $user = $this->userRepository->getUserByEmail($resetPasswordCommand->getEmail());
 
-            $this->userRepository->updateUser(Uuid::fromString($user->id), ["password" => $resetPasswordCommand->getPassword()]);
+            $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword()]);
 
             return $this;
         }

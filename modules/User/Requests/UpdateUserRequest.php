@@ -15,7 +15,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'email' => 'required|email|unique:users,email,'.Uuid::fromString($this->route('id')),
+            'email' => 'required|email|unique:users,email,'. $this->route('id'),
         ];
     }
 
