@@ -6,6 +6,7 @@ namespace Modules\Auth\Controllers;
 
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Facade\Json;
+use Illuminate\Support\Facades\Auth;
 use Modules\Auth\Requests\ForgetPasswordRequest;
 use Modules\Auth\Requests\LoginRequest;
 use Modules\Auth\Requests\LogoutRequest;
@@ -13,8 +14,10 @@ use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Services\AuthService;
 use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
+use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
 use Ramsey\Uuid\Uuid;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -36,9 +39,9 @@ class AuthController extends Controller
 
     public function logout(LogoutRequest $request)
     {
+        $user = auth()->user();
         $this->authService->logout();
-
-        return Json::buildItems('message', "success");
+        return Json::buildItems(null, ["message"=>"success","user"=>(new UserPresenter($user))->getData()],"",200);
     }
 
     public function forgetPassword(ForgetPasswordRequest $request)
@@ -59,4 +62,5 @@ class AuthController extends Controller
 
         }
     }
+
 }
