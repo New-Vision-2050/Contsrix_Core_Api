@@ -5,6 +5,7 @@ namespace Modules\Auth\Services\OtpServices;
 use App\Mail\ResetPasswordMail;
 use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Mail;
+use Modules\Auth\Notifications\ResetPassword;
 use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
@@ -27,6 +28,8 @@ class SendOtpEmail implements SendOtp
         $data['name'] = $user->name;
         $data['minutes'] = 20;
         $data['url'] = "";
-        Mail::to($data['email'])->send(new ResetPasswordMail($data));
+        $user->notify(new ResetPassword($data));
+
+//        Mail::to($data['email'])->send(new ResetPasswordMail($data));
     }
 }

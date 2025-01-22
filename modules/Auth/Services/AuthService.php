@@ -37,10 +37,7 @@ class AuthService
         return $this;
     }
 
-    public function forgetPassword()
-    {
 
-    }
 
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {

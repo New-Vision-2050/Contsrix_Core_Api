@@ -8,6 +8,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -20,6 +21,7 @@ class User  extends Authenticatable implements JWTSubject
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use Notifiable;
     //use HasTranslations;
     //use SoftDeletes;
 
