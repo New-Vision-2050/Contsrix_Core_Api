@@ -17,7 +17,7 @@ class SendOtpEmail implements SendOtp
         $this->userRepository = $userRepository;
     }
 
-    public function send(UuidInterface $userId)
+    public function send(UuidInterface $userId  )
     {
         $user = $this->userRepository->find($userId);
 
