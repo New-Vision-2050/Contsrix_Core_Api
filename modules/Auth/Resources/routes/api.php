@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Auth\Controllers\AuthController;
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login-otp', [AuthController::class, 'loginWithOtp']);
 
 Route::group(['middleware' => ['auth:api']], function () {
 

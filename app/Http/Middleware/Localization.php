@@ -19,7 +19,7 @@ class Localization
         $localization = $request->header('Lang')!=null?$request->header('Lang'):session()->get('Lang');
 
 
-        $localization = in_array($localization, config('app.available_locales'), true) ? $localization : 'en';
+        $localization = in_array($localization, config('app.available_locales'), true) ? $localization : config('app.locale');
         app()->setLocale($localization);
         Session::put('Lang', $localization);
 

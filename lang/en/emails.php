@@ -9,5 +9,7 @@ return [
     'regards' => 'Regards',
     'new-vision' => 'New Vision',
     'enter-otp' => 'enter otp',
+    'rights' => '© 2025 New Vision . All rights reserved.',
+
 
 ];
