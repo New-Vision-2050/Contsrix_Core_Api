@@ -6,6 +6,7 @@ namespace Modules\User\Models;
 
 use App\Casts\Uuid;
 use App\Casts\UuidCast;
+use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
