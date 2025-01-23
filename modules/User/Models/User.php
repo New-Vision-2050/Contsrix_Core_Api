@@ -25,10 +25,10 @@ class User  extends Authenticatable implements JWTSubject
     use UuidTrait;
     use BaseFilterable;
     use Notifiable;
-    //use HasTranslations;
+    use HasTranslations;
     //use SoftDeletes;
 
-    //public array $translatable = [];
+//    public array $translatable = [];
 protected $primaryKey="id";
     public $incrementing = false;
 
