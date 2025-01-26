@@ -23,6 +23,6 @@ class MakeOtpHandler
     {
         $user = $this->userRepository->getUserByEmail($command->getEmail());
 
-        $this->sendOtpEmail->send($user->id)->resetPassword();
+        $this->sendOtpEmail->resetPassword($user->id);
     }
 }
