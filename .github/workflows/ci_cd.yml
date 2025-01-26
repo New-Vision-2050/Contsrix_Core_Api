@@ -118,21 +118,21 @@ jobs:
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v0.1.10
+        env:
+          APP_ENV: ${{ env.APP_ENV }}
+          APP_DEBUG: ${{ env.APP_DEBUG }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          APP_KEY: ${{ secrets.APP_KEY }}
+          JWT_SECRET: ${{ secrets.APP_KEY }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          env:
-            APP_ENV: ${{ env.APP_ENV }}
-            APP_DEBUG: ${{ env.APP_DEBUG }}
-            DB_HOST: ${{ secrets.DB_HOST }}
-            DB_PORT: ${{ secrets.DB_PORT }}
-            DB_USER: ${{ secrets.DB_USER }}
-            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-            DB_NAME: ${{ secrets.DB_NAME }}
-            APP_KEY: ${{ secrets.APP_KEY }}
-            JWT_SECRET: ${{ secrets.APP_KEY }}
           script: |
             #!/bin/bash
             set -e
