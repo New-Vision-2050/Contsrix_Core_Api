@@ -3,8 +3,11 @@
 
 return [
     'reset-password' => 'تغيير كلمه المرور',
+    'login-with-otp' => 'الدخول عبر كلمه المرور المؤقته',
+
     'welcome' => 'اهلا',
-    'you-tried-to-login-with' => 'لقد حاولت تغيير كلمه المرور عن طريق',
+    'you-tried-to-change-password-with' => 'لقد حاولت تغيير كلمه المرور عن طريق',
+    'you-tried-to-login-with' => 'لقد حاولت الدخول عن طريق',
     'your-verification-code-is' => 'كلمه المرور المؤقته',
     'will-expire' => 'ستكون غير صالحة بعد',
     'regards' => 'تحياتي',

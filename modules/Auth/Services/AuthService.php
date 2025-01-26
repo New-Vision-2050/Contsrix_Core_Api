@@ -40,7 +40,7 @@ class AuthService
         $user = auth()->user();
         if ($authDTO->getContinueWithOtp() == 1) {
             $user = $this->userRepository->getUserByEmail($authDTO->getEmail());
-            $this->sendOtpEmail->send($user->id);
+            $this->sendOtpEmail->send($user->id)->loginWithOtp();
             $token = null;//will make token null after login by otp
         }
 
