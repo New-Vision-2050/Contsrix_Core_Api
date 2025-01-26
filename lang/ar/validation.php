@@ -147,6 +147,11 @@ return [
     'url' => 'يجب أن يكون حقل :attribute عنوان URL صالح.',
     'ulid' => 'يجب أن يكون حقل :attribute ULID صالح.',
     'uuid' => 'يجب أن يكون حقل :attribute UUID صالح.',
+    "invalid-password" => 'كلمه السر ضعيفة ',
+    'invalid-otp' => 'كلمه المرور الموقته غير صحيحية ',
+    'invalid-credential' => 'معلومات الدخول غير صحيحية',
+
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

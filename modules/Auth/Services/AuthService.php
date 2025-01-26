@@ -2,12 +2,16 @@
 
 namespace Modules\Auth\Services;
 
+use BasePackage\Shared\Facade\Json;
 use Carbon\Carbon;
 use Ichtrojan\Otp\Otp;
+use Illuminate\Support\Facades\Auth;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
+use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\Handlers\LogoutHandler;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
+use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -21,6 +25,7 @@ class AuthService
 //        private AuthRepository $repository,
         private LogoutHandler  $logoutHandler,
         private UserRepository $userRepository,
+        private SendOtpEmail   $sendOtpEmail,
     )
     {
     }
@@ -28,7 +33,36 @@ class AuthService
     public function login(LoginDTO $authDTO)
 
     {
-        return [JWTAuth::attempt($authDTO->toArray()), auth()->user()];
+        $token = JWTAuth::attempt($authDTO->toArray());
+        if (!$token) {
+            throw new \ErrorException(__("validation.invalid-credential"), 403);
+        }
+        $user = auth()->user();
+        if ($authDTO->getContinueWithOtp() == 1) {
+            $user = $this->userRepository->getUserByEmail($authDTO->getEmail());
+            $this->sendOtpEmail->send($user->id)->loginWithOtp();
+            $token = null;//will make token null after login by otp
+        }
+
+        return [$token, $user];
+    }
+
+
+    public function loginWithOtp(LoginWithOtpDTO $loginWithOtpDTO)
+    {
+
+        if ((new Otp)->validate($loginWithOtpDTO->getEmail(), $loginWithOtpDTO->getOtp())->status == false)
+
+            throw new \ErrorException(__("validation.invalid-otp"), 401);
+
+
+        $user = $this->userRepository->getUserByEmail($loginWithOtpDTO->getEmail());
+
+        $token = JWTAuth::fromUser($user);
+
+
+        return [$token , $user];
+
     }
 
     public function logout()
@@ -36,7 +70,6 @@ class AuthService
         $this->logoutHandler->handle();
         return $this;
     }
-
 
 
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
@@ -50,7 +83,7 @@ class AuthService
 
             return $this;
         }
-        throw new \ErrorException('oto not valid or expired', 401);
+        throw new \ErrorException(__("validation.invalid-otp"), 401);
 
     }
 

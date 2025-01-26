@@ -6,25 +6,25 @@ namespace Modules\Auth\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\DTO\LoginDTO;
+use Modules\Auth\DTO\LoginWithOtpDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\Auth\DTO\CreateAuthDTO;
 
-class LoginRequest extends FormRequest
+class LoginWithOtpRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
             'email' => 'required|email',
-            'password' => 'required',
+            'otp' => 'required',
         ];
     }
 
-    public function createLoginDTO(): LoginDTO
+    public function createLoginDTO(): LoginWithOtpDTO
     {
-        return new LoginDTO(
+        return new LoginWithOtpDTO(
             email: $this->get('email'),
-            password: $this->get('password'),
-            continue_with_otp: $this->get('continue_with_otp')!=null ? (int)$this->get('continue_with_otp'):0,
+            otp: $this->get('otp'),
         );
     }
 }

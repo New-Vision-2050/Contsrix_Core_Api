@@ -6,12 +6,15 @@ use App\Mail\ResetPasswordMail;
 use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Mail;
 use Modules\Auth\Notifications\ResetPassword;
+use Modules\Auth\Notifications\SendOtpForLogin;
 use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 
 class SendOtpEmail implements SendOtp
 {
+    private  $user;
+    private  $data;
     public function __construct(UserRepository $userRepository)
     {
         $this->userRepository = $userRepository;
@@ -28,7 +31,21 @@ class SendOtpEmail implements SendOtp
         $data['name'] = $user->name;
         $data['minutes'] = 20;
         $data['url'] = "";
-        $user->notify(new ResetPassword($data));
+        $this->data = $data;
+
+
+        $this->user = $user;
+        return $this;
 
     }
+    public function resetPassword(){
+        $this->user->notify(new ResetPassword($this->data));
+
+    }
+
+    public function loginWithOtp()
+    {
+        $this->user->notify(new SendOtpForLogin($this->data));
+    }
+
 }

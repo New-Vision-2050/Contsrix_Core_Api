@@ -160,6 +160,10 @@ return [
     'url' => 'The :attribute field must be a valid URL.',
     'ulid' => 'The :attribute field must be a valid ULID.',
     'uuid' => 'The :attribute field must be a valid UUID.',
+    'invalid-password' => 'invalid password.',
+    'invalid-otp' => 'invalid Otp.',
+    'invalid-credential' => 'invalid credential.',
+
 
     /*
     |--------------------------------------------------------------------------

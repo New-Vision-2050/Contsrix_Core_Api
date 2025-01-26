@@ -16,7 +16,7 @@ class PasswordValidation implements ValidationRule
     {
         $pattern='/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%;]).*$/';
 
-        if (!preg_match($pattern, $value) || $value == null || str($value)->length()<8) $fail("Invalid password");
+        if (!preg_match($pattern, $value) || $value == null || str($value)->length()<8) $fail(__("validation.invalid-password"));
 
     }
 }
