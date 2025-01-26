@@ -78,7 +78,7 @@ jobs:
           echo "DEPLOYMENT_ID=${DEPLOYMENT_ID}" >> $GITHUB_ENV
 
       - name: Echo Deployment ID
-        run:
+        run: |
           echo "Deployment ID: $DEPLOYMENT_ID"
 
       - name: Transfer Docker Image to Server
