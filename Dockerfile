@@ -27,7 +27,7 @@ COPY . .
 RUN composer dump-autoload --optimize
 
 # Stage 2: Production
-FROM php:8.2-fpm-alpine
+FROM php:8.2-fpm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
