@@ -220,57 +220,57 @@ jobs:
             
             🔗 [Backend Preview](https://backend-${{ env.DEPLOYMENT_ID }}.constrix-nv.com)
 
-    cleanup:
-      runs-on: ubuntu-latest
-      if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == false
-      needs: deploy
-      steps:
-        - name: Set Deployment ID for Cleanup
-          id: set_cleanup_deployment_id
-          run: |
-            echo "DEPLOYMENT_ID=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == false
+    needs: deploy
+    steps:
+      - name: Set Deployment ID for Cleanup
+        id: set_cleanup_deployment_id
+        run: |
+          echo "DEPLOYMENT_ID=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
 
-        - name: Echo Deployment ID for Cleanup
-          run: |
-            echo "Cleanup Deployment ID: $DEPLOYMENT_ID"
+      - name: Echo Deployment ID for Cleanup
+        run: |
+          echo "Cleanup Deployment ID: $DEPLOYMENT_ID"
 
-        - name: Cleanup Deployment on Server via SSH
-          uses: appleboy/ssh-action@v0.1.10
-          with:
-            host: ${{ secrets.DEPLOY_HOST }}
-            username: ${{ secrets.DEPLOY_USER }}
-            port: ${{ secrets.DEPLOY_PORT }}
-            key: ${{ secrets.DEPLOY_SSH_KEY }}
-            script: |
-              set -e
-              set -x
+      - name: Cleanup Deployment on Server via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            set -x
 
-              # Assign variables
-              DEPLOYMENT_ID=${DEPLOYMENT_ID}
-              CONTAINER_NAME=backend-${DEPLOYMENT_ID}
-              DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID
+            # Assign variables
+            DEPLOYMENT_ID=${DEPLOYMENT_ID}
+            CONTAINER_NAME=backend-${DEPLOYMENT_ID}
+            DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID
 
-              echo "Starting cleanup for Deployment ID: $DEPLOYMENT_ID"
+            echo "Starting cleanup for Deployment ID: $DEPLOYMENT_ID"
 
-              # Navigate to deployment directory
-              cd $DEPLOY_DIR
+            # Navigate to deployment directory
+            cd $DEPLOY_DIR
 
-              # Stop and remove the container if it exists
-              if [ "$(docker ps -a --filter name=^/${CONTAINER_NAME}$ --format '{{.Names}}')" == "$CONTAINER_NAME" ]; then
-                echo "Stopping and removing container: $CONTAINER_NAME"
-                docker stop $CONTAINER_NAME
-                docker rm $CONTAINER_NAME
-              else
-                echo "No container named $CONTAINER_NAME found."
-              fi
+            # Stop and remove the container if it exists
+            if [ "$(docker ps -a --filter name=^/${CONTAINER_NAME}$ --format '{{.Names}}')" == "$CONTAINER_NAME" ]; then
+              echo "Stopping and removing container: $CONTAINER_NAME"
+              docker stop $CONTAINER_NAME
+              docker rm $CONTAINER_NAME
+            else
+              echo "No container named $CONTAINER_NAME found."
+            fi
 
-              # Remove the Docker image
-              IMAGE_TAG=${DEPLOYMENT_ID}
-              echo "Removing Docker image: backend:${IMAGE_TAG}"
-              docker rmi backend:${IMAGE_TAG} || echo "Image backend:${IMAGE_TAG} not found."
+            # Remove the Docker image
+            IMAGE_TAG=${DEPLOYMENT_ID}
+            echo "Removing Docker image: backend:${IMAGE_TAG}"
+            docker rmi backend:${IMAGE_TAG} || echo "Image backend:${IMAGE_TAG} not found."
 
-              # Remove the deployment directory
-              echo "Removing deployment directory: $DEPLOY_DIR"
-              rm -rf $DEPLOY_DIR
+            # Remove the deployment directory
+            echo "Removing deployment directory: $DEPLOY_DIR"
+            rm -rf $DEPLOY_DIR
 
-              echo "Cleanup for $CONTAINER_NAME completed successfully."
+            echo "Cleanup for $CONTAINER_NAME completed successfully."
