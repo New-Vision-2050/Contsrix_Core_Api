@@ -146,13 +146,13 @@ jobs:
               --name $CONTAINER_NAME \
               --network traefik_network \
               --env-file .env \
-              -p 127.0.0.1:9000:9000 \
               --restart unless-stopped \
               --label "traefik.enable=true" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.rule=Host(\`core-be-${DEPLOYMENT_ID}.constrix-nv.com\`)" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.entrypoints=https" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.tls=true" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.tls.certresolver=letsencrypt" \
+              --label "traefik.http.services.nextjs-${DEPLOYMENT_ID}.loadbalancer.server.port=9000"
               backend:${DEPLOYMENT_ID}
             
             echo "Deployment of $CONTAINER_NAME completed successfully."
