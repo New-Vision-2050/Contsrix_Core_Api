@@ -55,5 +55,8 @@ EXPOSE 80
 RUN chown -R www-data:www-data /var/www \
     && chmod +x /usr/bin/supervisord
 
+RUN chmod +x devops/entrypoint.sh
+
+ENTRYPOINT ["devops/entrypoint.sh"]
 # Start Supervisor to manage NGINX and PHP-FPM
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf","php artisan storage:link && yes |  php artisan migrate --force | php artisan db:seed"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
