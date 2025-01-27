@@ -203,7 +203,7 @@ jobs:
               -p 4000:4000 \
               --restart unless-stopped \
               --label "traefik.enable=true" \
-              --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.rule=Host(`core-be-${DEPLOYMENT_ID}.constrix-nv.com`)" \
+              --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.rule=Host('core-be-${DEPLOYMENT_ID}.constrix-nv.com')" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.entrypoints=https" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.tls=true" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.tls.certresolver=letsencrypt" \
