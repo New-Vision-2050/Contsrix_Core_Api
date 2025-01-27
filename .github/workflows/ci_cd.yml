@@ -82,7 +82,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           APP_KEY: ${{ secrets.APP_KEY }}
-          JWT_SECRET: ${{ secrets.APP_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -102,9 +102,9 @@ jobs:
             echo "Deployment ID: $DEPLOYMENT_ID"
             echo "Container Name: $CONTAINER_NAME"
             echo "Deployment Directory: $DEPLOY_DIR"
-            echo "APP_ENV: $APP_ENV"
-            echo "APP_ENV: ${APP_ENV}"
-            echo "APP_ENV: ${{env.APP_ENV}}"
+            echo "DB_HOST: $DB_HOST"
+            echo "DB_HOST: ${DB_HOST}"
+            echo "DB_HOST: ${{env.DB_HOST}}"
             
             # Navigate to deployment directory
             mkdir -p $DEPLOY_DIR
