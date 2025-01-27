@@ -72,14 +72,14 @@ jobs:
           path: ./artifacts
 
       - name: Set Deployment ID
-          id: set_deployment_id
-          run: |
-            if [ "${{ github.event_name }}" == "pull_request" ]; then
-              echo "DEPLOYMENT_ID=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-            else
-              BRANCH_NAME="${{ github.ref_name }}"
-              echo "DEPLOYMENT_ID=${BRANCH_NAME}" >> $GITHUB_ENV
-            fi
+        id: set_deployment_id
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "DEPLOYMENT_ID=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          else
+            BRANCH_NAME="${{ github.ref_name }}"
+            echo "DEPLOYMENT_ID=${BRANCH_NAME}" >> $GITHUB_ENV
+          fi
 
       - name: Echo Deployment ID
         run: |
