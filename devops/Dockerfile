@@ -1,27 +1,6 @@
 # Use an official PHP image with necessary extensions
 FROM  mabou7agar/custom-php8-2
 
-## Install system dependencies
-#RUN apt-get update && apt-get install -y \
-#    git \
-#    unzip \
-#    curl \
-#    libpng-dev \
-#    libonig-dev \
-#    libxml2-dev \
-#    zip \
-#    && docker-php-ext-install \
-#    opcache \
-#    intl \
-#    pdo_mysql \
-#    mbstring \
-#    exif \
-#    pcntl \
-#    bcmath \
-#    gd \
-#    && pecl install redis \
-#    && docker-php-ext-enable redis
-
 ## Install Composer
 COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 #
