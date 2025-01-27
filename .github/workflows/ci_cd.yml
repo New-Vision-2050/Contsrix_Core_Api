@@ -78,7 +78,7 @@ jobs:
           APP_DEBUG: ${{ env.APP_DEBUG }}
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USER: ${{ secrets.DB_USER }}
+          DB_USERNAME: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           APP_KEY: ${{ secrets.APP_KEY }}
@@ -117,7 +117,7 @@ jobs:
             DB_CONNECTION=mysql
             DB_HOST=${{env.DB_HOST}}
             DB_PORT=${{env.DB_PORT}}
-            DB_USERNAME=${{env.DB_USER}}
+            DB_USERNAME=${{env.DB_USERNAME}}
             DB_PASSWORD=${{env.DB_PASSWORD}}
             DB_DATABASE=${{env.DB_NAME}}-${DEPLOYMENT_ID}
             QUEUE_CONNECTION=redis
@@ -171,7 +171,7 @@ jobs:
             
             Your backend has been deployed to the following URL:
             
-            🔗 [Backend Preview](https://backend-${{ env.DEPLOYMENT_ID }}.constrix-nv.com)
+            🔗 [Backend Preview](https://core-be-${{ env.DEPLOYMENT_ID }}.constrix-nv.com)
 
   cleanup:
     runs-on: ubuntu-latest
@@ -181,7 +181,7 @@ jobs:
       - name: Set Deployment ID for Cleanup
         id: set_cleanup_deployment_id
         run: |
-          echo "DEPLOYMENT_ID=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          echo "DEPLOYMENT_ID=pr${{ github.event.pull_request.number }}" >> $GITHUB_ENV
 
       - name: Echo Deployment ID for Cleanup
         run: |
@@ -219,8 +219,8 @@ jobs:
 
             # Remove the Docker image
             IMAGE_TAG=${DEPLOYMENT_ID}
-            echo "Removing Docker image: backend:${IMAGE_TAG}"
-            docker rmi backend:${IMAGE_TAG} || echo "Image backend:${IMAGE_TAG} not found."
+            echo "Removing Docker image: backend-${IMAGE_TAG}"
+            docker rmi backend-${IMAGE_TAG} || echo "Image backend-${IMAGE_TAG} not found."
 
             # Remove the deployment directory
             echo "Removing deployment directory: $DEPLOY_DIR"
