@@ -21,7 +21,7 @@ set -e
 echo "Running Laravel commands..."
 php artisan storage:link
 yes | php artisan migrate --force
-php artisan db:seed
+php artisan db:seed --force
 
 # Start Supervisor
 exec "$@"
