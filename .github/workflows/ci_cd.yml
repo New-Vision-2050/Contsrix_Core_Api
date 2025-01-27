@@ -112,18 +112,18 @@ jobs:
                       
             # Create .env file
             cat <<EOF > .env
-            APP_ENV=${APP_ENV}
-            APP_DEBUG=${APP_DEBUG}
+            APP_ENV=${{env.APP_ENV}}
+            APP_DEBUG=${{env.APP_DEBUG}}
             
-            DB_HOST=${DB_HOST}
-            DB_PORT=${DB_PORT}
-            DB_USER=${DB_USER}
-            DB_PASSWORD=${DB_PASSWORD}
-            DB_NAME=${DB_NAME}-${DEPLOYMENT_ID}
+            DB_HOST=${{env.DB_HOST}}
+            DB_PORT=${{env.DB_PORT}}
+            DB_USER=${{env.DB_USER}}
+            DB_PASSWORD=${{env.DB_PASSWORD}}
+            DB_NAME=${{env.DB_NAME}}-${DEPLOYMENT_ID}
             REDIS_HOST=redis
             
-            APP_KEY=${APP_KEY}
-            JWT_SECRET=${JWT_SECRET}
+            APP_KEY=${{env.APP_KEY}}
+            JWT_SECRET=${{env.JWT_SECRET}}
             EOF
             
             # Secure the .env file
