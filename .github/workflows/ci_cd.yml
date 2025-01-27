@@ -102,6 +102,9 @@ jobs:
             echo "Deployment ID: $DEPLOYMENT_ID"
             echo "Container Name: $CONTAINER_NAME"
             echo "Deployment Directory: $DEPLOY_DIR"
+            echo "APP_ENV: $APP_ENV"
+            echo "APP_ENV: ${APP_ENV}"
+            echo "APP_ENV: ${{env.APP_ENV}}"
             
             # Navigate to deployment directory
             mkdir -p $DEPLOY_DIR
@@ -146,7 +149,7 @@ jobs:
               -p 4000:4000 \
               --restart unless-stopped \
               --label "traefik.enable=true" \
-              --label 'traefik.http.routers.backend-${DEPLOYMENT_ID}.rule=Host(`core-be-${DEPLOYMENT_ID}.constrix-nv.com`)' \
+              --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.rule=Host(\`core-be-${DEPLOYMENT_ID}.constrix-nv.com\`)" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.entrypoints=https" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.tls=true" \
               --label "traefik.http.routers.backend-${DEPLOYMENT_ID}.tls.certresolver=letsencrypt" \
