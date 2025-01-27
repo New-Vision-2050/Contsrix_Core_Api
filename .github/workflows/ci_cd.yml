@@ -78,7 +78,7 @@ jobs:
           APP_DEBUG: ${{ env.APP_DEBUG }}
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_USERNAME: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           APP_KEY: ${{ secrets.APP_KEY }}
@@ -171,7 +171,7 @@ jobs:
             
             Your backend has been deployed to the following URL:
             
-            🔗 [Backend Preview](https://backend-${{ env.DEPLOYMENT_ID }}.constrix-nv.com)
+            🔗 [Backend Preview](https://core-be-${{ env.DEPLOYMENT_ID }}.constrix-nv.com)
 
   cleanup:
     runs-on: ubuntu-latest
@@ -219,8 +219,8 @@ jobs:
 
             # Remove the Docker image
             IMAGE_TAG=${DEPLOYMENT_ID}
-            echo "Removing Docker image: backend:${IMAGE_TAG}"
-            docker rmi backend:${IMAGE_TAG} || echo "Image backend:${IMAGE_TAG} not found."
+            echo "Removing Docker image: backend-${IMAGE_TAG}"
+            docker rmi backend-${IMAGE_TAG} || echo "Image backend-${IMAGE_TAG} not found."
 
             # Remove the deployment directory
             echo "Removing deployment directory: $DEPLOY_DIR"
