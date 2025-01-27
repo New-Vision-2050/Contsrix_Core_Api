@@ -143,7 +143,7 @@ jobs:
             set -x
             
             # Assign variables
-            DEPLOYMENT_ID=${DEPLOYMENT_ID}
+            DEPLOYMENT_ID=${{ env.DEPLOYMENT_ID }}
             IMAGE_TAR=backend-${DEPLOYMENT_ID}.tar
             CONTAINER_NAME=backend-${DEPLOYMENT_ID}
             DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID
