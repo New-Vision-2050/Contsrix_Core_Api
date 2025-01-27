@@ -6,7 +6,7 @@ on:
       - main
       - master
       - dev
-      - staging
+      - stage
   pull_request:
     types:
       - opened
