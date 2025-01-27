@@ -74,8 +74,6 @@ class AuthService
 
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
-
-
         if ((new Otp)->validate($resetPasswordCommand->getEmail(), $resetPasswordCommand->getOtp())->status == true) {
             $user = $this->userRepository->getUserByEmail($resetPasswordCommand->getEmail());
 
