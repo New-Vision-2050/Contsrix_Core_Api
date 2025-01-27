@@ -56,4 +56,4 @@ RUN chown -R www-data:www-data /var/www \
     && chmod +x /usr/bin/supervisord
 
 # Start Supervisor to manage NGINX and PHP-FPM
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf","php artisan storage:link && yes |  php artisan migrate --force | php artisan db:seed"]
