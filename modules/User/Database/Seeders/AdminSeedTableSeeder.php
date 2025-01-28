@@ -4,6 +4,7 @@ namespace Modules\User\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Modules\User\Models\User;
 
@@ -16,18 +17,15 @@ class AdminSeedTableSeeder extends Seeder
      */
     public function run()
     {
-        User::create([
-            'name' => 'Amr',
-            'email' => 'amrsaleh1001@gmail.com',
-            'password' => "Test1234",
-        ]);
 
-        User::create([
-            'name' => 'Admin',
-            'email' => 'test@admin.com',
-            'password' => "Test1234",
-        ]);
-
-
+        if (App::environment('production') == false) {
+            User::firstOrCreate(
+                [
+                    'name' => 'Admin',
+                    'email' => 'admin@constrix-nv.com',
+                    'password' => "Test1234",
+                ]
+            );
+        }
     }
 }

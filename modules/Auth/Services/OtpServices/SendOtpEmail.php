@@ -5,28 +5,45 @@ namespace Modules\Auth\Services\OtpServices;
 use App\Mail\ResetPasswordMail;
 use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Mail;
+use Modules\Auth\DataClasses\AuthMailData;
+use Modules\Auth\Notifications\ResetPassword;
+use Modules\Auth\Notifications\SendOtpForLogin;
 use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class SendOtpEmail implements SendOtp
+class SendOtpEmail
 {
+    private  $user;
     public function __construct(UserRepository $userRepository)
     {
         $this->userRepository = $userRepository;
     }
 
-    public function send(UuidInterface $userId)
+
+    private function  createAuthMailData(UuidInterface $userId)
     {
         $user = $this->userRepository->find($userId);
+        $this->user = $user;
 
-
-        $data = array();
-        $data['email'] = $user->email;
-        $data['otp'] = (new Otp)->generate($user->email, 'numeric', 5, 15)->token;
-        $data['name'] = $user->name;
-        $data['minutes'] = 20;
-        $data['url'] = "";
-        Mail::to($data['email'])->send(new ResetPasswordMail($data));
+        return new AuthMailData(
+            $user->email,
+            (new Otp)->generate($user->email, 'numeric', 5, 15)->token,
+            $user->name,20,
+            ""
+        );
     }
+
+    public function resetPassword(UuidInterface $userId){
+
+        $this->user->notify(new ResetPassword($this->createAuthMailData($userId)->toArray()));
+
+    }
+
+    public function loginWithOtp(UuidInterface $userId)
+    {
+        $data =$this->createAuthMailData($userId)->toArray();
+        $this->user->notify(new SendOtpForLogin($data));
+    }
+
 }

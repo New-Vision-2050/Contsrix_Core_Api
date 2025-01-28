@@ -12,7 +12,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyType\Models\CompanyType;
-use Modules\Company\RegistrationType\Models\RegistrationType;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 
@@ -72,9 +72,9 @@ class Company extends Model
         return $this->belongsTo(CompanyField::class);
     }
 
-    public function RegistrationType()
+    public function companyRegistrationType()
     {
-        return $this->belongsTo(RegistrationType::class);
+        return $this->belongsTo(CompanyRegistrationType::class);
     }
     public function companyRegistrationForm()
     {

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\User\Models;
 
+use App\Casts\Uuid;
+use App\Casts\UuidCast;
+use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -20,10 +24,11 @@ class User  extends Authenticatable implements JWTSubject
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    //use HasTranslations;
+    use Notifiable;
+    use HasTranslations;
     //use SoftDeletes;
 
-    //public array $translatable = [];
+//    public array $translatable = [];
 protected $primaryKey="id";
     public $incrementing = false;
 
@@ -36,7 +41,7 @@ protected $primaryKey="id";
     ];
 
     protected $casts = [
-        'id' => 'string',
+        'id' => UuidCast::class,
         'email',
         'password',
     ];

@@ -4,7 +4,7 @@ namespace Modules\Company\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
 use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
-use Modules\Company\RegistrationType\Database\Seeders\RegistrationTypeSeederTableSeeder;
+use Modules\Company\CompanyRegistrationType\Database\Seeders\CompanyRegistrationTypeSeederTableSeeder;
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {
@@ -17,7 +17,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
     {
         $this->call(CompanyFieldSeederTableSeeder::class);
         $this->call(CompanyTypeSeederTableSeeder::class);
-        $this->call(RegistrationTypeSeederTableSeeder::class);
+        $this->call(CompanyRegistrationTypeSeederTableSeeder::class);
 
 
     }

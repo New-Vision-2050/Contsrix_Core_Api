@@ -50,7 +50,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $userPresenter = new UserPresenter($user);
-        return Json::buildItems('user', $userPresenter->getData(),"",200);
+        return Json::buildItems('user', $userPresenter->getData());
     }
 
     public function store(CreateUserRequest $request): JsonResponse

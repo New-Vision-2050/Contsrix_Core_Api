@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Auth\Requests;
 
+use App\Rules\PasswordValidation;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\Commands\ForgetPasswordCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Ramsey\Uuid\Uuid;
-use Modules\Auth\DTO\CreateAuthDTO;
 
 class ResetPasswordRequest extends FormRequest
 {
@@ -18,9 +18,8 @@ class ResetPasswordRequest extends FormRequest
         return [
             'otp' => 'required',
             'email' => 'required',
-            "password"=> ['required',
-            'min:8',
-            'regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%;]).*$/',
+            "password"=> [
+                new PasswordValidation(),
             'confirmed']
         ];
     }
