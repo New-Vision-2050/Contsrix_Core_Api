@@ -102,6 +102,7 @@ jobs:
             DEPLOY_DIR=/home/deployer/laravel/deployments/${DEPLOYMENT_ID}/code
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
+            echo $DEPLOY_DIR
             chmod +x ./devops/deploy.sh
             ./devops/deploy.sh
             rm -rf $DEPLOY_DIR
