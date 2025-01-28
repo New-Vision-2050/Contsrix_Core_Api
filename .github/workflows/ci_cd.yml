@@ -99,15 +99,12 @@ jobs:
             CONTAINER_NAME=backend-${DEPLOYMENT_ID}
             DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID/code
             
-            echo "Deployment ID: $DEPLOYMENT_ID"
-            echo "Container Name: $CONTAINER_NAME"
-            echo "Deployment Directory: $DEPLOY_DIR"
-            echo "DB_HOST: $DB_HOST"
-            echo "DB_HOST: ${DB_HOST}"
+            echo "Deployment ID: ${DEPLOYMENT_ID}"
+            echo "Container Name: ${CONTAINER_NAME}"
+            echo "Deployment Directory: ${DEPLOY_DIR}"
             echo "DB_HOST: ${{env.DB_HOST}}"
             
             # Navigate to deployment directory
-            rm -rf $DEPLOY_DIR
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
                       
@@ -159,6 +156,7 @@ jobs:
               --label "traefik.http.services.backend-${DEPLOYMENT_ID}.loadbalancer.server.port=80" \
               backend-${DEPLOYMENT_ID}
             
+            rm -rf $DEPLOY_DIR
             echo "Deployment of $CONTAINER_NAME completed successfully."
 
       - name: Post Deployment Comment
