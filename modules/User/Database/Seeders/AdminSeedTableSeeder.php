@@ -19,7 +19,7 @@ class AdminSeedTableSeeder extends Seeder
     {
 
         if (App::environment('production') == false) {
-            User::firstOrCreate(
+            User::firstOrCreate(['email' =>'admin@constrix-nv.com'],
                 [
                     'name' => 'Admin',
                     'email' => 'admin@constrix-nv.com',

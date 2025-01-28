@@ -163,6 +163,8 @@ return [
     'invalid-password' => 'invalid password.',
     'invalid-otp' => 'invalid Otp.',
     'invalid-credential' => 'invalid credential.',
+    'invalid-to-login-with-otp' => 'invalid-to-login-with-otp',
+
 
 
     /*

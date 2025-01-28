@@ -51,6 +51,7 @@ class AuthController extends Controller
 
     public function loginWithOtp(LoginWithOtpRequest $request)
     {
+
         try {
             [$token, $user] = $this->authService->loginWithOtp($request->createLoginDTO());
 

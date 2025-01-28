@@ -28,7 +28,7 @@ class SendOtpEmail
 
         return new AuthMailData(
             $user->email,
-            (new Otp)->generate($user->email, 'numeric', 5, 15)->token,
+            (new Otp)->generate($user->email, 'numeric', 5, 20)->token,
             $user->name,20,
             ""
         );

@@ -7,10 +7,10 @@ namespace Modules\Auth\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\DTO\LoginDTO;
 use Ramsey\Uuid\Uuid;
-use Modules\Auth\DTO\CreateAuthDTO;
 
 class LoginRequest extends FormRequest
 {
+
     public function rules(): array
     {
         return [
@@ -24,7 +24,7 @@ class LoginRequest extends FormRequest
         return new LoginDTO(
             email: $this->get('email'),
             password: $this->get('password'),
-            continue_with_otp: $this->get('continue_with_otp')!=null ? (int)$this->get('continue_with_otp'):0,
+            continue_with_otp: (int)config("app.continue_with_otp") ,
         );
     }
 }
