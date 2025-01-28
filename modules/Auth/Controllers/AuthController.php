@@ -77,6 +77,8 @@ class AuthController extends Controller
         $command = $request->createForgetPasswordCommand();
         $this->makeOtpHandler->handle($command);
 
+
+
         return Json::buildItems(null, ["message" => "success"], "", 200);
 
     }
