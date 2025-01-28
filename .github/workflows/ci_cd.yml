@@ -89,10 +89,19 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            export APP_ENV=${{env.APP_ENV}}
+            export APP_DEBUG=${{env.APP_DEBUG}}
+            export DB_HOST=${{env.DB_HOST}}
+            export DB_PORT=${{env.DB_PORT}}
+            export DB_USERNAME=${{env.DB_USERNAME}}
+            export DB_PASSWORD=${{env.DB_PASSWORD}}
+            export DB_NAME=${{env.DB_NAME}}
+            export APP_KEY=${{env.APP_KEY}}
+            export JWT_SECRET=${{env.JWT_SECRET}}
             DEPLOY_DIR=/home/deployer/laravel/deployments/${{ env.DEPLOYMENT_ID }}/code
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
-            chmod +x devops/script.sh
+            chmod +x devops/deploy.sh
             devops/deploy.sh
             rm -rf $DEPLOY_DIR
             echo "Deployment of $CONTAINER_NAME completed successfully."
