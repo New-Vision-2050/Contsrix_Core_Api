@@ -37,6 +37,11 @@ APP_KEY=$APP_KEY
 JWT_SECRET=$JWT_SECRET
 EOF
 
+echo "APP_ENV: $APP_ENV"
+
+- name: Display .env file
+  run: cat .env
+
 # Secure the .env file
 chmod 600 .env
 
