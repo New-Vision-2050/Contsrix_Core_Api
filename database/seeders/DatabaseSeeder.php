@@ -2,8 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 use Modules\Company\Database\Seeders\CompanyModulesSeederTableSeeder;
@@ -16,7 +14,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-
         $this->call(AdminSeedTableSeeder::class);
         $this->call(CountrySeederTableSeeder::class);
         $this->call(CompanyModulesSeederTableSeeder::class);
