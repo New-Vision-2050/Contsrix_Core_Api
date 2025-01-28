@@ -99,6 +99,7 @@ jobs:
             export DB_NAME=${{env.DB_NAME}}
             export APP_KEY=${{env.APP_KEY}}
             export JWT_SECRET=${{env.JWT_SECRET}}
+            export DEPLOYMENT_ID=${{env.DEPLOYMENT_ID}}
             DEPLOY_DIR=/home/deployer/laravel/deployments/${{env.DEPLOYMENT_ID}}/code
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
