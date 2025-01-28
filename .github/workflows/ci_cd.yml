@@ -83,6 +83,7 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           APP_KEY: ${{ secrets.APP_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          DEPLOYMENT_ID: $DEPLOYMENT_ID
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -98,7 +99,7 @@ jobs:
             export DB_NAME=${{env.DB_NAME}}
             export APP_KEY=${{env.APP_KEY}}
             export JWT_SECRET=${{env.JWT_SECRET}}
-            DEPLOY_DIR=/home/deployer/laravel/deployments/${{ env.DEPLOYMENT_ID }}/code
+            DEPLOY_DIR=/home/deployer/laravel/deployments/${$DEPLOYMENT_ID}/code
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
             chmod +x devops/deploy.sh
