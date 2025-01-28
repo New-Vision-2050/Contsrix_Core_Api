@@ -12,9 +12,7 @@ set -x
 DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID/code
 
 echo "Deployment ID: $DEPLOYMENT_ID"
-echo "Container Name: $CONTAINER_NAME"
 echo "Deployment Directory: $DEPLOY_DIR"
-echo "DB_HOST: $DB_HOST"
 
 # Navigate to deployment directory
 mkdir -p DEPLOY_DIR
@@ -41,6 +39,8 @@ EOF
 
 # Secure the .env file
 chmod 600 .env
+
+cd "$DEPLOY_DIR/devops"
 
 # Build the Docker images without using the cache
 docker compose build --no-cache
