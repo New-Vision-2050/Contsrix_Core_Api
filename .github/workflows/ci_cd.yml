@@ -89,8 +89,13 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            chmod +x ./devops/script.sh
-            ./devops/deploy.sh
+            DEPLOY_DIR=/home/deployer/laravel/deployments/${{ env.DEPLOYMENT_ID }}/code
+            mkdir -p $DEPLOY_DIR
+            cd $DEPLOY_DIR
+            chmod +x devops/script.sh
+            devops/deploy.sh
+            rm -rf $DEPLOY_DIR
+            echo "Deployment of $CONTAINER_NAME completed successfully."
 
       - name: Post Deployment Comment
         if: github.event_name == 'pull_request'

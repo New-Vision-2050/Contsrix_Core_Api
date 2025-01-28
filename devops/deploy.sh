@@ -9,8 +9,6 @@ export CACHEBUST
 set -e
 set -x
 
-# Assign variables
-DEPLOYMENT_ID="test"
 DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID/code
 
 echo "Deployment ID: $DEPLOYMENT_ID"
@@ -25,7 +23,7 @@ cd DEPLOY_DIR
 # Create .env file
 cat <<EOF > .env
 APP_ENV=$APP_ENV
-APP_DEBUG=$APP_DEBUG}}
+APP_DEBUG=$APP_DEBUG
 DB_CONNECTION=mysql
 DB_HOST=$DB_HOST
 DB_PORT=$DB_PORT
