@@ -102,8 +102,8 @@ jobs:
             DEPLOY_DIR=/home/deployer/laravel/deployments/${DEPLOYMENT_ID}/code
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
-            chmod +x devops/deploy.sh
-            devops/deploy.sh
+            chmod +x ./devops/deploy.sh
+            ./devops/deploy.sh
             rm -rf $DEPLOY_DIR
             echo "Deployment of $CONTAINER_NAME completed successfully."
 
