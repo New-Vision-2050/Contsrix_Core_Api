@@ -150,6 +150,7 @@ return [
     "invalid-password" => 'كلمه السر ضعيفة ',
     'invalid-otp' => 'كلمه المرور الموقته غير صحيحية ',
     'invalid-credential' => 'معلومات الدخول غير صحيحية',
+    'invalid-to-login-with-otp' => 'غير مصرح لك بالدخول عن طريق كلمه المرور المؤقتة',
 
 
     'custom' => [
