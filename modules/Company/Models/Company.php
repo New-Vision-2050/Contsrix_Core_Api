@@ -9,6 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\Database\factories\CompanyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Company\CompanyField\Models\CompanyField;
+use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\RegistrationType\Models\RegistrationType;
+use Modules\Country\Models\Country;
+use Modules\User\Models\User;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class Company extends Model
@@ -28,7 +35,12 @@ class Company extends Model
     protected $fillable = [
         'name',
         'email',
-        'phone'
+        'phone',
+        'country_id',
+        'company_type_id',
+        'company_field_id',
+        'registration_type_id',
+        'general_manager_id',
     ];
 
     protected $casts = [
@@ -38,5 +50,34 @@ class Company extends Model
     protected static function newFactory(): CompanyFactory
     {
         return CompanyFactory::new();
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function generalManager()
+    {
+        return $this->belongsTo(User::class, 'general_manager_id', 'id');
+    }
+
+    public function companyType()
+    {
+        return $this->belongsTo(CompanyType::class);
+    }
+
+    public function companyField()
+    {
+        return $this->belongsTo(CompanyField::class);
+    }
+
+    public function RegistrationType()
+    {
+        return $this->belongsTo(RegistrationType::class);
+    }
+    public function companyRegistrationForm()
+    {
+        return $this->hasOne(CompanyRegistrationForm::class);
     }
 }

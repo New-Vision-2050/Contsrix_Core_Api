@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Company\Services;
 
 use Illuminate\Support\Collection;
+use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\DTO\CreateCompanyDTO;
 use Modules\Company\Models\Company;
 use Modules\Company\Repositories\CompanyRepository;
@@ -19,7 +20,16 @@ class CompanyCRUDService
 
     public function create(CreateCompanyDTO $createCompanyDTO): Company
     {
-         return $this->repository->createCompany($createCompanyDTO->toArray());
+        $requestCompanyDTO = $createCompanyDTO->toArray();
+
+        $company = $this->repository->createCompany($requestCompanyDTO);
+
+        $companyRegistrationForm = CompanyRegistrationForm::create([
+            'company_id' => $company->id,
+            'registration_no' => $requestCompanyDTO['registration_no'],
+        ]);
+
+        return $company;
     }
 
     public function list(int $page = 1, int $perPage = 10): array

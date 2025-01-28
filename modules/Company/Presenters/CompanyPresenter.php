@@ -23,6 +23,13 @@ class CompanyPresenter extends AbstractPresenter
             'name' => $this->company->name,
             'email' => $this->company->email,
             'phone' => $this->company->email,
+            'country_id' => $this->company->country_id,
+            'company_type_id' => $this->company->company_type_id,
+            'company_field_id' => $this->company->company_field_id,
+            'registration_type_id' => $this->company->registration_type_id,
+            'company_registration_form_id' => $this->company->company_registration_form_id,
+            'general_manager_id' => $this->company->general_manager_id
+
         ];
     }
 }

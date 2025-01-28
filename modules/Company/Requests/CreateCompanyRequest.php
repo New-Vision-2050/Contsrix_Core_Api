@@ -16,6 +16,12 @@ class CreateCompanyRequest extends FormRequest
             'name' => 'required|string',
             'email' => 'required|email|unique:companies,email',
             'phone' => 'required|unique:companies,phone',
+            'country_id' => 'required|exists:countries,id',
+            'company_type_id' => 'required|exists:company_types,id',
+            'company_field_id' => 'required|exists:company_fields,id',
+            'registration_type_id' => 'required|exists:registration_types,id',
+            'general_manager_id' => 'required|exists:users,id',
+            'registration_no' => 'nullable',
         ];
     }
 
@@ -25,6 +31,12 @@ class CreateCompanyRequest extends FormRequest
             name: $this->get('name'),
             email: $this->get('email'),
             phone: $this->get('phone'),
+            country_id:  $this->get('country_id'),
+            company_type_id:  $this->get('company_type_id'),
+            company_field_id:  $this->get('company_field_id'),
+            registration_type_id:  $this->get('registration_type_id'),
+            registration_no:  $this->get('registration_no') ?? '',
+            general_manager_id:  $this->get('general_manager_id')
         );
     }
 }

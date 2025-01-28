@@ -22,5 +22,12 @@ class AdminSeedTableSeeder extends Seeder
             'password' => "Test1234",
         ]);
 
+        User::create([
+            'name' => 'Admin',
+            'email' => 'test@admin.com',
+            'password' => "Test1234",
+        ]);
+
+
     }
 }

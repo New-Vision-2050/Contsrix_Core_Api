@@ -1,0 +1,14 @@
+{
+    "name": "RegistrationType",
+    "alias": "registration_type",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Company\\RegistrationType\\Providers\\RegistrationTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Company"
+}
