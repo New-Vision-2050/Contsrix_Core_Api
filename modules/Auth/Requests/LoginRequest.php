@@ -24,7 +24,7 @@ class LoginRequest extends FormRequest
         return new LoginDTO(
             email: $this->get('email'),
             password: $this->get('password'),
-            continue_with_otp: config("app.continue_with_otp") ,
+            continue_with_otp: (int)config("app.continue_with_otp") ,
         );
     }
 }
