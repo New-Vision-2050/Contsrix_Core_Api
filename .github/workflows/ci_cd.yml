@@ -107,6 +107,7 @@ jobs:
             echo "DB_HOST: ${{env.DB_HOST}}"
             
             # Navigate to deployment directory
+            rm -rf $DEPLOY_DIR
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
                       
