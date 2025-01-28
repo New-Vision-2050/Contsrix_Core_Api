@@ -25,7 +25,8 @@ class AuthMailData
             'email' => $this->email,
             'otp' => $this->otp,
             'name' => $this->name,
-           'minutes' => $this->minutes
+           'minutes' => $this->minutes,
+            "url" => $this->url
         ];
     }
     }

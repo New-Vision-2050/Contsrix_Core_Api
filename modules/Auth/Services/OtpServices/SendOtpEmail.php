@@ -42,7 +42,8 @@ class SendOtpEmail
 
     public function loginWithOtp(UuidInterface $userId)
     {
-        $this->user->notify(new SendOtpForLogin($this->createAuthMailData($userId)->toArray()));
+        $data =$this->createAuthMailData($userId)->toArray();
+        $this->user->notify(new SendOtpForLogin($data));
     }
 
 }
