@@ -8,7 +8,7 @@ return [
     'you-tried-to-login-with' => 'you tried to login with',
 
     'your-verification-code-is' => 'Your verification code is',
-    'will-expire' => 'will expire in 20 minute',
+    'will-expire' => 'will expire in :time minutes',
     'regards' => 'Regards',
     'new-vision' => 'New Vision',
     'enter-otp' => 'enter otp',

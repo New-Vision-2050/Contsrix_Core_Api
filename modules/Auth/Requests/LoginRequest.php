@@ -7,10 +7,10 @@ namespace Modules\Auth\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\DTO\LoginDTO;
 use Ramsey\Uuid\Uuid;
-use Modules\Auth\DTO\CreateAuthDTO;
 
 class LoginRequest extends FormRequest
 {
+
     public function rules(): array
     {
         return [
