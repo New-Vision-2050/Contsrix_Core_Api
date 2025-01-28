@@ -17,8 +17,8 @@ echo "Deployment ID: $DEPLOYMENT_ID"
 echo "Deployment Directory: $DEPLOY_DIR"
 
 # Navigate to deployment directory
-mkdir -p DEPLOY_DIR
-cd DEPLOY_DIR
+mkdir -p $DEPLOY_DIR
+cd $DEPLOY_DIR
 
 # Create .env file
 cat <<EOF > .env
