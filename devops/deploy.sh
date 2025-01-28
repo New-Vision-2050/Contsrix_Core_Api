@@ -1,13 +1,15 @@
 #!/bin/bash
 
+set -e
+set -x
+
 # Generate a unique cache bust value using the current timestamp
 CACHEBUST=$(date +%s)
 
 # Export CACHEBUST as an environment variable so Docker Compose can use it
 export CACHEBUST
 
-set -e
-set -x
+
 
 DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID/code
 
@@ -39,8 +41,7 @@ EOF
 
 echo "APP_ENV: $APP_ENV"
 
-- name: Display .env file
-  run: cat .env
+cat .env
 
 # Secure the .env file
 chmod 600 .env
