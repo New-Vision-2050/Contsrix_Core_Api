@@ -17,7 +17,7 @@ class CompanyRegistrationTypeSeederTableSeeder extends Seeder
     {
         Model::unguard();
 
-        CompanyRegistrationType::create([
+        CompanyRegistrationType::firstOrCreate([
             'name'=>'سجل تجاري',
         ]);
 

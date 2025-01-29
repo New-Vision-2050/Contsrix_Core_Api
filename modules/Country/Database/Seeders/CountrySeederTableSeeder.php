@@ -16,7 +16,7 @@ class CountrySeederTableSeeder extends Seeder
     {
         Model::unguard();
 
-        \DB::table('countries')->insert(array (
+        \DB::table('countries')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 1,
