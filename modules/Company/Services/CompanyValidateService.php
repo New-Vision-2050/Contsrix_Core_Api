@@ -24,14 +24,14 @@ class CompanyValidateService
             if (!str_starts_with((string) $data['registration_no'], '700')) {
                 $errors[] = [
                     'sentence' => 'رقم السجل التجاري صحيح',
-                    'sub_title' => 'registration_no',
+                    'sub_title' => '',
                     'status' => 0,
                     'validate' => 'required'
                 ];
             } else {
                 $errors[] = [
                     'sentence' => 'رقم السجل التجاري صحيح',
-                    'sub_title' => 'registration_no',
+                    'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
                 ];
@@ -50,7 +50,7 @@ class CompanyValidateService
             } else {
                 $errors[] = [
                     'sentence' => "تم التحقق من رقم الهاتف بنجاح",
-                    'sub_title' => 'phone',
+                    'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
                 ];
@@ -70,7 +70,7 @@ class CompanyValidateService
             } else {
                 $errors[] = [
                     'sentence' => "تم التحقق من البريد الإلكتروني بنجاح",
-                    'sub_title' => 'email',
+                    'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
                 ];
@@ -88,7 +88,7 @@ class CompanyValidateService
             } else {
                 $errors[] = [
                     'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
-                    'sub_title' => 'registration_no',
+                    'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
                 ];
