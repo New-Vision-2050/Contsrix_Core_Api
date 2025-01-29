@@ -33,12 +33,13 @@ class CompanyTypeSeederTableSeeder extends Seeder
         $countries = Country::active()->get();
 
         $companyTypes = CompanyType::get();
-
+        $namespace = Uuid::NAMESPACE_DNS;
         foreach ($countries as $country) {
             foreach ($companyTypes as $companyType) {
+                $name = $country['name'].$companyType['name'];
                 \DB::table('company_type_countries')->insertOrIgnore(
                     [
-                        'id' => Uuid::fromBytes($companyType['name'])->toString(),
+                        'id' => Uuid::uuid5($namespace, $name)->toString(),
                         'company_type_id' => $companyType->id,
                         'country_id' => $country->id,
                     ]

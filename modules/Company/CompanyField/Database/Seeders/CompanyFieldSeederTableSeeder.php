@@ -120,8 +120,10 @@ class CompanyFieldSeederTableSeeder extends Seeder
             ],
         ];
 
+        $namespace = Uuid::NAMESPACE_DNS;
         foreach ($companyFields as $companyField) {
-            CompanyField::firstOrCreate(['id'=>Uuid::fromBytes($companyField['name'])], $companyField);
+            $id = Uuid::uuid5($namespace, $companyField['name'])->toString();
+            CompanyField::insertOrIgnore(array_merge(['id'=>$id], $companyField));
         }
     }
 }
