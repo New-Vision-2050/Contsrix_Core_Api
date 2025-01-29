@@ -2,7 +2,7 @@
 
 namespace Modules\Auth\Services;
 
-use BasePackage\Shared\Facade\Json;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Support\Facades\Auth;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\Handlers\LogoutHandler;
