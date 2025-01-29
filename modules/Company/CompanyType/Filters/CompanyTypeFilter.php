@@ -14,4 +14,10 @@ class CompanyTypeFilter extends SearchModelFilter
         {
             return $this->where('name', $name);
         }
+        public function countryId($countryId)
+        {
+            return $this->whereHas('countries', function ($q)use($countryId) {
+                        $q->where('country_id', $countryId);
+                    });
+        }
 }

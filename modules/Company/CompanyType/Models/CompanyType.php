@@ -42,6 +42,7 @@ class CompanyType extends Model
     public function countries()
     {
         return $this->belongsToMany(Country::class, 'company_type_countries', 'company_type_id', 'country_id')
-                    ->withPivot('status');
+                    ->withPivot('status')
+                    ->wherePivot('status', 1);
     }
 }
