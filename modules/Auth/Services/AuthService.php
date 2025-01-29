@@ -13,10 +13,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
 {
-//    private $token;
-
     public function __construct(
-//        private AuthRepository $repository,
         private LogoutHandler  $logoutHandler,
         private UserRepository $userRepository,
         private SendOtpEmail   $sendOtpEmail,
@@ -25,7 +22,6 @@ class AuthService
     }
 
     public function login(LoginDTO $authDTO)
-
     {
         $token = JWTAuth::attempt($authDTO->toArray());
         if (!$token) {

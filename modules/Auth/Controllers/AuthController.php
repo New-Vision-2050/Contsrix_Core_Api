@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Auth\Controllers;
 
-use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use App\Http\Controllers\Controller;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ForgetPasswordRequest;
 use Modules\Auth\Requests\LoginRequest;
