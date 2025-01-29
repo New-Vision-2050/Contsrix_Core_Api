@@ -35,8 +35,8 @@ class SendOtpEmail
     }
 
     public function resetPassword(UuidInterface $userId){
-
-        $this->user->notify(new ResetPassword($this->createAuthMailData($userId)->toArray()));
+        $user = $this->userRepository->find($userId);
+        $user->notify(new ResetPassword($this->createAuthMailData($userId)->toArray()));
 
     }
 
