@@ -14,6 +14,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 
@@ -26,6 +27,7 @@ class User  extends Authenticatable implements JWTSubject
     use BaseFilterable;
     use Notifiable;
     use HasTranslations;
+    use HasRoles;
     //use SoftDeletes;
 
 //    public array $translatable = [];
