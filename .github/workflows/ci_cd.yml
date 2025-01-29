@@ -36,7 +36,18 @@ jobs:
         run: |
           echo "Deployment ID: $DEPLOYMENT_ID"
 
-      - name: Transfer Docker Image to Server
+      - name: Clean Old Data
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            - DEPLOY_DIR=/home/deployer/laravel/deployments/${{env.DEPLOYMENT_ID}}/code
+              rm -rf $DEPLOY_DIR
+
+      - name: Transfer Repo Files to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
