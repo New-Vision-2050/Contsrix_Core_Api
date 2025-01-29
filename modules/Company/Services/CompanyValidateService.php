@@ -23,35 +23,17 @@ class CompanyValidateService
         if (isset($data['registration_no'])) {
             if (!str_starts_with((string) $data['registration_no'], '700')) {
                 $errors[] = [
-                    'sentence' => 'رقم التسجيل يجب أن يبدأ بـ 700 ويتبعه تسلسل رقمي',
+                    'sentence' => 'رقم السجل التجاري صحيح',
                     'sub_title' => 'registration_no',
                     'status' => 0,
                     'validate' => 'required'
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => 'رقم التسجيل يجب أن يبدأ بـ 700 ويتبعه تسلسل رقمي',
+                    'sentence' => 'رقم السجل التجاري صحيح',
                     'sub_title' => 'registration_no',
                     'status' => 1,
                     'validate' => 'required'
-                ];
-            }
-        }
-
-        if (isset($data['registration_no'])) {
-            if ($this->repository->isRegistrationExists($data['registration_no'])) {
-                $errors[] = [
-                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
-                    'sub_title' => 'registration_no',
-                    'status' => 0,
-                    'validate' => 'optional'
-                ];
-            } else {
-                $errors[] = [
-                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
-                    'sub_title' => 'registration_no',
-                    'status' => 1,
-                    'validate' => 'optional'
                 ];
             }
         }
@@ -70,7 +52,7 @@ class CompanyValidateService
                     'sentence' => "تم التحقق من رقم الهاتف بنجاح",
                     'sub_title' => 'phone',
                     'status' => 1,
-                    'validate' => 'optional'
+                    'validate' => 'required'
                 ];
             }
         }
@@ -90,7 +72,25 @@ class CompanyValidateService
                     'sentence' => "تم التحقق من البريد الإلكتروني بنجاح",
                     'sub_title' => 'email',
                     'status' => 1,
+                    'validate' => 'required'
+                ];
+            }
+        }
+
+        if (isset($data['registration_no'])) {
+            if ($this->repository->isRegistrationExists($data['registration_no'])) {
+                $errors[] = [
+                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
+                    'sub_title' => 'registration_no',
+                    'status' => 0,
                     'validate' => 'optional'
+                ];
+            } else {
+                $errors[] = [
+                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
+                    'sub_title' => 'registration_no',
+                    'status' => 1,
+                    'validate' => 'required'
                 ];
             }
         }
