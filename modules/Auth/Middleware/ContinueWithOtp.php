@@ -2,7 +2,7 @@
 
 namespace Modules\Auth\Middleware;
 
-use BasePackage\Shared\Facade\Json;
+use BasePackage\Shared\Presenters\Json;
 use Closure;
 use Illuminate\Http\Request;
 
