@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Modules\RoleAndPermission\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\RoleAndPermission\DTO\CreatePermissionDTO;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\RoleAndPermission\DTO\CreateRoleAndPermissionDTO;
 
-class CreateRoleAndPermissionRequest extends FormRequest
+class CreatePermissionRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -18,9 +19,9 @@ class CreateRoleAndPermissionRequest extends FormRequest
         ];
     }
 
-    public function createCreateRoleDTO(): CreateRoleDTO
+    public function createCreatePermissionDTO(): CreatePermissionDTO
     {
-        return new CreateRoleDTO(
+        return new CreatePermissionDTO(
             name: $this->get('name'),
         );
     }

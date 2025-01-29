@@ -4,26 +4,18 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Controllers;
 
-use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
-use Modules\RoleAndPermission\Handlers\DeleteRoleAndPermissionHandler;
 use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
-use Modules\RoleAndPermission\Handlers\UpdateRoleAndPermissionHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\RoleAndPermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
-use Modules\RoleAndPermission\Requests\CreateRoleAndPermissionRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
-use Modules\RoleAndPermission\Requests\DeleteRoleAndPermissionRequest;
 use Modules\RoleAndPermission\Requests\DeleteRoleRequest;
-use Modules\RoleAndPermission\Requests\GetRoleAndPermissionListRequest;
-use Modules\RoleAndPermission\Requests\GetRoleAndPermissionRequest;
 use Modules\RoleAndPermission\Requests\GetRoleListRequest;
 use Modules\RoleAndPermission\Requests\GetRoleRequest;
-use Modules\RoleAndPermission\Requests\UpdateRoleAndPermissionRequest;
 use Modules\RoleAndPermission\Requests\UpdateRoleRequest;
-use Modules\RoleAndPermission\Services\RoleAndPermissionCRUDService;
 use Modules\RoleAndPermission\Services\RoleCRUDService;
 use Ramsey\Uuid\Uuid;
 
@@ -43,7 +35,7 @@ class RoleController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['role_and_permissions' => RoleAndPermissionPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::buildItems(null,['role' => RolePresenter::collection($list['data']),'pagination' => $list['pagination']]);
     }
 
     public function show(GetRoleRequest $request): JsonResponse
@@ -52,7 +44,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($item);
 
-        return Json::buildItems('role_and_permission', $presenter->getData());
+        return Json::buildItems('role', $presenter->getData());
     }
 
     public function store(CreateRoleRequest $request): JsonResponse
@@ -61,7 +53,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($createdItem);
 
-        return Json::buildItems('role_and_permission', $presenter->getData());
+        return Json::buildItems('role', $presenter->getData());
     }
 
     public function update(UpdateRoleRequest $request): JsonResponse
@@ -73,7 +65,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($item);
 
-        return Json::buildItems('role_and_permission', $presenter->getData());
+        return Json::buildItems('role', $presenter->getData());
     }
 
     public function delete(DeleteRoleRequest $request): JsonResponse

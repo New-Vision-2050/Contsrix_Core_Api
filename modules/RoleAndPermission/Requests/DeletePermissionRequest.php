@@ -7,13 +7,10 @@ namespace Modules\RoleAndPermission\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
 
-class GetRoleAndPermissionListRequest extends FormRequest
+class DeletePermissionRequest extends FormRequest
 {
     public function rules(): array
     {
-        return [
-            'per_page' => 'integer',
-            'page' => 'integer',
-        ];
+        return [];
     }
 }

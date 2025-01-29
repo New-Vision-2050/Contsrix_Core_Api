@@ -4,22 +4,21 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Services;
 
-use Illuminate\Support\Collection;
-use Modules\RoleAndPermission\DTO\CreateRoleAndPermissionDTO;
-use Modules\RoleAndPermission\Models\RoleAndPermission;
-use Modules\RoleAndPermission\Repositories\RoleAndPermissionRepository;
+use Modules\RoleAndPermission\DTO\CreatePermissionDTO;
+use Modules\RoleAndPermission\Models\Permission;
+use Modules\RoleAndPermission\Repositories\PermissionRepository;
 use Ramsey\Uuid\UuidInterface;
 
 class PermissionCRUDService
 {
     public function __construct(
-        private RoleAndPermissionRepository $repository,
+        private PermissionRepository $repository,
     ) {
     }
 
-    public function create(CreateRoleAndPermissionDTO $createRoleAndPermissionDTO): RoleAndPermission
+    public function create(CreatePermissionDTO $createPermissionDTO): Permission
     {
-         return $this->repository->createRoleAndPermission($createRoleAndPermissionDTO->toArray());
+         return $this->repository->createPermission($createPermissionDTO->toArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -30,9 +29,9 @@ class PermissionCRUDService
         );
     }
 
-    public function get(UuidInterface $id): RoleAndPermission
+    public function get(UuidInterface $id): Permission
     {
-        return $this->repository->getRoleAndPermission(
+        return $this->repository->getPermission(
             id: $id,
         );
     }

@@ -4,23 +4,24 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Presenters;
 
+use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Models\RoleAndPermission;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
 class PermissionPresenter extends AbstractPresenter
 {
-    private RoleAndPermission $roleAndPermission;
+    private Permission $permission;
 
-    public function __construct(RoleAndPermission $roleAndPermission)
+    public function __construct(Permission $permission)
     {
-        $this->roleAndPermission = $roleAndPermission;
+        $this->permission = $permission;
     }
 
     protected function present(bool $isListing = false): array
     {
         return [
-            'id' => $this->roleAndPermission->id,
-            'name' => $this->roleAndPermission->name,
+            'id' => $this->permission->id,
+            'name' => $this->permission->name,
         ];
     }
 }

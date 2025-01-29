@@ -7,29 +7,30 @@ namespace Modules\RoleAndPermission\Controllers;
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Modules\RoleAndPermission\Handlers\DeleteRoleAndPermissionHandler;
-use Modules\RoleAndPermission\Handlers\UpdateRoleAndPermissionHandler;
+use Modules\RoleAndPermission\Handlers\DeletePermissionHandler;
+use Modules\RoleAndPermission\Handlers\UpdatePermissionHandler;
+use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RoleAndPermissionPresenter;
-use Modules\RoleAndPermission\Requests\CreateRoleAndPermissionRequest;
-use Modules\RoleAndPermission\Requests\DeleteRoleAndPermissionRequest;
-use Modules\RoleAndPermission\Requests\GetRoleAndPermissionListRequest;
-use Modules\RoleAndPermission\Requests\GetRoleAndPermissionRequest;
-use Modules\RoleAndPermission\Requests\UpdateRoleAndPermissionRequest;
-use Modules\RoleAndPermission\Services\RoleAndPermissionCRUDService;
+use Modules\RoleAndPermission\Requests\CreatePermissionRequest;
+use Modules\RoleAndPermission\Requests\DeletePermissionRequest;
+use Modules\RoleAndPermission\Requests\GetPermissionListRequest;
+use Modules\RoleAndPermission\Requests\GetPermissionRequest;
+use Modules\RoleAndPermission\Requests\UpdatePermissionRequest;
+use Modules\RoleAndPermission\Services\PermissionCRUDService;
 use Ramsey\Uuid\Uuid;
 
 class PermissionController extends Controller
 {
     public function __construct(
-        private RoleAndPermissionCRUDService $roleAndPermissionService,
-        private UpdateRoleAndPermissionHandler $updateRoleAndPermissionHandler,
-        private DeleteRoleAndPermissionHandler $deleteRoleAndPermissionHandler,
+        private PermissionCRUDService $permissionService,
+        private UpdatePermissionHandler $updatePermissionHandler,
+        private DeletePermissionHandler $deletePermissionHandler,
     ) {
     }
 
-    public function index(GetRoleAndPermissionListRequest $request): JsonResponse
+    public function index(GetPermissionListRequest $request): JsonResponse
     {
-        $list = $this->roleAndPermissionService->list(
+        $list = $this->permissionService->list(
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
@@ -37,39 +38,39 @@ class PermissionController extends Controller
         return Json::buildItems(null,['role_and_permissions' => RoleAndPermissionPresenter::collection($list['data']),'pagination' => $list['pagination']]);
     }
 
-    public function show(GetRoleAndPermissionRequest $request): JsonResponse
+    public function show(GetPermissionRequest $request): JsonResponse
     {
-        $item = $this->roleAndPermissionService->get(Uuid::fromString($request->route('id')));
+        $item = $this->permissionService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new RoleAndPermissionPresenter($item);
+        $presenter = new PermissionPresenter($item);
 
         return Json::buildItems('role_and_permission', $presenter->getData());
     }
 
-    public function store(CreateRoleAndPermissionRequest $request): JsonResponse
+    public function store(CreatePermissionRequest $request): JsonResponse
     {
-        $createdItem = $this->roleAndPermissionService->create($request->createCreateRoleAndPermissionDTO());
+        $createdItem = $this->permissionService->create($request->createCreatePermissionDTO());
 
-        $presenter = new RoleAndPermissionPresenter($createdItem);
+        $presenter = new PermissionPresenter($createdItem);
 
         return Json::buildItems('role_and_permission', $presenter->getData());
     }
 
-    public function update(UpdateRoleAndPermissionRequest $request): JsonResponse
+    public function update(UpdatePermissionRequest $request): JsonResponse
     {
-        $command = $request->createUpdateRoleAndPermissionCommand();
-        $this->updateRoleAndPermissionHandler->handle($command);
+        $command = $request->createUpdatePermissionCommand();
+        $this->updatePermissionHandler->handle($command);
 
-        $item = $this->roleAndPermissionService->get($command->getId());
+        $item = $this->permissionService->get($command->getId());
 
-        $presenter = new RoleAndPermissionPresenter($item);
+        $presenter = new permissionPresenter($item);
 
         return Json::buildItems('role_and_permission', $presenter->getData());
     }
 
-    public function delete(DeleteRoleAndPermissionRequest $request): JsonResponse
+    public function delete(DeletePermissionRequest $request): JsonResponse
     {
-        $this->deleteRoleAndPermissionHandler->handle(Uuid::fromString($request->route('id')));
+        $this->deletePermissionHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
     }
