@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Country\Models\Country;
 use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 
 class CompanyTypeSeederTableSeeder extends Seeder
 {
@@ -25,21 +26,23 @@ class CompanyTypeSeederTableSeeder extends Seeder
             ['name' => 'عمل حر']
         ];
         // $this->call("OthersTableSeeder");
-        foreach($companyTypes as $companyType){
-            CompanyType::create($companyType);
+        foreach ($companyTypes as $companyType) {
+            CompanyType::firstOrCreate(['name' => $companyType['name']]);
         }
-
+;
         $countries = Country::active()->get();
 
         $companyTypes = CompanyType::get();
 
-        foreach($countries as $country){
-            foreach($companyTypes as $companyType){
-                \DB::table('company_type_countries')->insert([
-                    'id' => Str::uuid()->toString(),
-                    'company_type_id' => $companyType->id,
-                    'country_id' => $country->id,
-                ]);
+        foreach ($countries as $country) {
+            foreach ($companyTypes as $companyType) {
+                \DB::table('company_type_countries')->insertOrIgnore(
+                    [
+                        'id' => Uuid::fromBytes($companyType['name'])->toString(),
+                        'company_type_id' => $companyType->id,
+                        'country_id' => $country->id,
+                    ]
+                );
             }
         }
     }
