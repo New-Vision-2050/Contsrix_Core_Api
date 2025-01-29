@@ -6,6 +6,7 @@ namespace Modules\Company\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\Models\Company;
 
@@ -47,4 +48,18 @@ class CompanyRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+    public function isEmailExists(string $email): bool
+    {
+        return Company::where('email', $email)->exists();
+    }
+    public function isPhoneExists(string $phone): bool
+    {
+        return Company::where('phone', $phone)->exists();
+    }
+    public function isRegistrationExists(string $registration_no): bool
+    {
+        return CompanyRegistrationForm::where('registration_no', $registration_no)->exists();
+    }
+
+
 }

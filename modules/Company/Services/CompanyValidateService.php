@@ -17,32 +17,84 @@ class CompanyValidateService
     public function validate($request): array
     {
         $errors = [];
+        $data = $request->all();  // Get all the request data
 
-        // Laravel validation rules
-        $rules = [
-            'email' => 'required|email|unique:companies,email',
-            'phone' => 'required|unique:companies,phone',
-            'registration_no' => 'nullable|unique:company_registration_forms,registration_no',
-        ];
-
-        // Run validation
-        $validator = Validator::make($request->all(), $rules);
-
-        foreach ($rules as $field => $rule) {
-            if ($validator->errors()->has($field)) {
+        // Validate registration_no
+        if (isset($data['registration_no'])) {
+            if (!str_starts_with((string) $data['registration_no'], '700')) {
                 $errors[] = [
-                    'sentence' => $validator->errors()->first($field),
-                    'sub_title' => $field,
-                    'status' => 0
+                    'sentence' => 'رقم التسجيل يجب أن يبدأ بـ 700 ويتبعه تسلسل رقمي',
+                    'sub_title' => 'registration_no',
+                    'status' => 0,
+                    'validate' => 'required'
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => "تم التحقق من {$field} بنجاح",
-                    'sub_title' => $field,
-                    'status' => 1
+                    'sentence' => 'رقم التسجيل يجب أن يبدأ بـ 700 ويتبعه تسلسل رقمي',
+                    'sub_title' => 'registration_no',
+                    'status' => 1,
+                    'validate' => 'required'
                 ];
             }
         }
+
+        if (isset($data['registration_no'])) {
+            if ($this->repository->isRegistrationExists($data['registration_no'])) {
+                $errors[] = [
+                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
+                    'sub_title' => 'registration_no',
+                    'status' => 0,
+                    'validate' => 'optional'
+                ];
+            } else {
+                $errors[] = [
+                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
+                    'sub_title' => 'registration_no',
+                    'status' => 1,
+                    'validate' => 'optional'
+                ];
+            }
+        }
+
+        // Validate phone
+        if (isset($data['phone'])) {
+            if ($this->repository->isPhoneExists($data['phone'])) {
+                $errors[] = [
+                    'sentence' => "رقم الهاتف موجود بالفعل.",
+                    'sub_title' => 'phone',
+                    'status' => 0,
+                    'validate' => 'optional'
+                ];
+            } else {
+                $errors[] = [
+                    'sentence' => "تم التحقق من رقم الهاتف بنجاح",
+                    'sub_title' => 'phone',
+                    'status' => 1,
+                    'validate' => 'optional'
+                ];
+            }
+        }
+
+        // Validate email
+        if (isset($data['email'])) {
+            if ($this->repository->isEmailExists($data['email'])) {
+                $errors[] = [
+                    'sentence' => "البريد الإلكتروني موجود بالفعل.",
+                    'sub_title' => 'email',
+                    'status' => 0,
+                    'validate' => 'optional',
+
+                ];
+            } else {
+                $errors[] = [
+                    'sentence' => "تم التحقق من البريد الإلكتروني بنجاح",
+                    'sub_title' => 'email',
+                    'status' => 1,
+                    'validate' => 'optional'
+                ];
+            }
+        }
+
         return $errors;
     }
 }
