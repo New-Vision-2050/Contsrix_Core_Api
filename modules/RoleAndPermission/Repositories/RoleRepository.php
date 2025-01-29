@@ -47,4 +47,10 @@ class RoleRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function givePermissionsToRole(UuidInterface $id ,array $permissions):Role
+    {
+        return $this->getRole($id)->syncPermissions($permissions);
+    }
+
 }

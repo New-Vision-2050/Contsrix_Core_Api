@@ -7,10 +7,12 @@ namespace Modules\RoleAndPermission\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Modules\RoleAndPermission\Handlers\AssignPermissionsToRoleHandler;
 use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\RoleAndPermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
+use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
 use Modules\RoleAndPermission\Requests\DeleteRoleRequest;
 use Modules\RoleAndPermission\Requests\GetRoleListRequest;
@@ -24,6 +26,7 @@ class RoleController extends Controller
     public function __construct(
         private RoleCRUDService $roleService,
         private UpdateRoleHandler $updateRoleHandler,
+        private AssignPermissionsToRoleHandler $assignPermissionsToRoleHandler,
         private DeleteRoleHandler $deleteRoleHandler,
     ) {
     }
@@ -67,6 +70,16 @@ class RoleController extends Controller
 
         return Json::buildItems('role', $presenter->getData());
     }
+
+    public function assignPermissionToRole(AssignPermissionToRoleRequest $request): JsonResponse
+    {
+        $command = $request->createAssignPermissionToRoleCommand();
+        $this->assignPermissionsToRoleHandler->handle($command);
+
+        return Json::buildItems("msg","permissions added successfully ");
+    }
+
+
 
     public function delete(DeleteRoleRequest $request): JsonResponse
     {
