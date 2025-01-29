@@ -20,9 +20,29 @@ echo "Deployment Directory: $DEPLOY_DIR"
 mkdir -p $DEPLOY_DIR
 cd $DEPLOY_DIR
 
+
+
+if [ "$APP_ENV" == "production" ]; then
+    EMAIL_HOST="smtp.yourmailprovider.com"
+    EMAIL_HOST_USER="your-email@example.com"
+    EMAIL_HOST_PASSWORD="your-secure-password"
+    EMAIL_PORT=587
+    EMAIL_USE_TLS=True
+else
+    EMAIL_HOST="mailcatcher"
+    EMAIL_HOST_USER=""
+    EMAIL_HOST_PASSWORD=""
+    EMAIL_PORT=1025
+    EMAIL_USE_TLS=False
+fi
+
+APP_NAME="Constrix"
+APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
+
 # Create .env file
 cat <<EOF > .env
 APP_ENV=$APP_ENV
+APP_URL=$APP_URL
 APP_DEBUG=$APP_DEBUG
 DB_CONNECTION=mysql
 DB_HOST=$DB_HOST
@@ -37,6 +57,17 @@ CACHE_PREFIX=$DEPLOYMENT_ID
 REDIS_HOST=redis
 APP_KEY=$APP_KEY
 JWT_SECRET=$JWT_SECRET
+MAIL_HOST = $EMAIL_HOST
+MAIL_PORT =
+MAIL_USERNAME = $EMAIL_HOST_USER
+MAIL_PASSWORD = $EMAIL_HOST_PASSWORD
+MAIL_FROM_ADDRESS = no-reply@constrix-nv.com
+MAIL_FROM_NAME = $APP_NAME
+EMAIL_HOST = $EMAIL_HOST
+EMAIL_HOST_USER = $EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = $EMAIL_HOST_PASSWORD
+EMAIL_PORT = $EMAIL_PORT
+EMAIL_USE_TLS = $EMAIL_USE_TLS
 EOF
 
 echo "APP_ENV: $APP_ENV"
