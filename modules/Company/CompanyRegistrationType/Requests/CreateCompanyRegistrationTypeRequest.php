@@ -14,6 +14,7 @@ class CreateCompanyRegistrationTypeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            'type' => 'required|numeric'
         ];
     }
 
@@ -21,6 +22,7 @@ class CreateCompanyRegistrationTypeRequest extends FormRequest
     {
         return new CreateCompanyRegistrationTypeDTO(
             name: $this->get('name'),
+            type: $this->get('type')
         );
     }
 }

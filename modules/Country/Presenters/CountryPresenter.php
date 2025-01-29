@@ -20,7 +20,8 @@ class CountryPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->country->id,
-            'name' => $this->country->name,
+            'name' => app()->getLocale() == 'en'? $this->country->name : $this->country->name_ar ,
+
         ];
     }
 }

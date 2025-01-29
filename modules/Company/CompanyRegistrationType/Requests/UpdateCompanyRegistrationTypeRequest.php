@@ -15,6 +15,7 @@ class UpdateCompanyRegistrationTypeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            'type' => 'required|numeric',
         ];
     }
 
@@ -23,6 +24,7 @@ class UpdateCompanyRegistrationTypeRequest extends FormRequest
         return new UpdateCompanyRegistrationTypeCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
+            type:$this->get('type'),
         );
     }
 }

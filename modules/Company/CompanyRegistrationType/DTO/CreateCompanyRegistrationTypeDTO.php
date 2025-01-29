@@ -10,6 +10,7 @@ class CreateCompanyRegistrationTypeDTO
 {
     public function __construct(
         public string $name,
+        public string $type,
     ) {
     }
 
@@ -17,6 +18,7 @@ class CreateCompanyRegistrationTypeDTO
     {
         return [
             'name' => $this->name,
+            'type' => $this->type
         ];
     }
 }

@@ -27,6 +27,7 @@ class CompanyRegistrationType extends Model
 
     protected $fillable = [
         'name',
+        'type'
     ];
 
     protected $casts = [
