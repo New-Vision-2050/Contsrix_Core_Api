@@ -15,8 +15,11 @@ use Modules\Company\Requests\DeleteCompanyRequest;
 use Modules\Company\Requests\GetCompanyListRequest;
 use Modules\Company\Requests\GetCompanyRequest;
 use Modules\Company\Requests\UpdateCompanyRequest;
+use Modules\Company\Requests\ValidateCompanyRequest;
 use Modules\Company\Services\CompanyCRUDService;
+use Modules\Company\Services\CompanyValidateService;
 use Ramsey\Uuid\Uuid;
+use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
@@ -24,6 +27,7 @@ class CompanyController extends Controller
         private CompanyCRUDService $companyService,
         private UpdateCompanyHandler $updateCompanyHandler,
         private DeleteCompanyHandler $deleteCompanyHandler,
+        private CompanyValidateService $validateCompanyService
     ) {
     }
 
@@ -46,7 +50,7 @@ class CompanyController extends Controller
         return Json::buildItems('company', $presenter->getData());
     }
 
-    public function store(CreateCompanyRequest $request)//: JsonResponse
+    public function store(CreateCompanyRequest $request): JsonResponse
     {
 
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
@@ -74,4 +78,14 @@ class CompanyController extends Controller
 
         return Json::deleted();
     }
+    public function validate(Request $request)//: JsonResponse
+    {
+        $validationResult = $this->validateCompanyService->validate($request);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $validationResult,
+        ]);
+    }
+
 }

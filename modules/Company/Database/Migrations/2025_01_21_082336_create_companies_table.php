@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('company_type_id')->index();
             $table->string('company_field_id')->index();
             $table->string('registration_type_id')->index();
-            $table->json('company_registration_form_id')->nullable();
             $table->string('general_manager_id')->index();
             $table->timestamps();
         });

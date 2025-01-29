@@ -27,9 +27,8 @@ class CompanyPresenter extends AbstractPresenter
             'company_type_id' => $this->company->company_type_id,
             'company_field_id' => $this->company->company_field_id,
             'registration_type_id' => $this->company->registration_type_id,
-            'company_registration_form_id' => $this->company->company_registration_form_id,
-            'general_manager_id' => $this->company->general_manager_id
-
+            'general_manager_id' => $this->company->general_manager_id,
+            'registration_no' => $this->company->companyRegistrationForm->registration_no
         ];
     }
 }
