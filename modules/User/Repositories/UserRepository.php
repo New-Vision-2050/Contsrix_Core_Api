@@ -56,5 +56,12 @@ class UserRepository extends BaseRepository
         return $this->delete($id);
     }
 
+    public function assignRole(UuidInterface $id,$roles):User
+    {
+        $user = $this->getUser($id);
+        $user->syncRoles($roles);
+        return $user;
+    }
+
 
 }
