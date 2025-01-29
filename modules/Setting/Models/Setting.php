@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    use UuidTrait;
-
     public $incrementing = false;
 
     protected $keyType = 'string';
