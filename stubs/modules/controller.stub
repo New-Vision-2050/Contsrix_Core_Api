@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace $CLASS_NAMESPACE$;
 
-use BasePackage\Shared\Facade\Json;
+use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use $MODULE_NAMESPACE$\$MODULENAME$\Handlers\Delete$MODULENAME$Handler;
