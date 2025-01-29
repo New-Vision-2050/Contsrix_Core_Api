@@ -9,7 +9,7 @@ use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\RoleAndPermission\DTO\CreateRoleAndPermissionDTO;
 
-class CreateRoleAndPermissionRequest extends FormRequest
+class CreateRoleRequest extends FormRequest
 {
     public function rules(): array
     {

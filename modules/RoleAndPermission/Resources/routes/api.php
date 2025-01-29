@@ -1,12 +1,23 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\RoleAndPermission\Controllers\PermissionController;
 use Modules\RoleAndPermission\Controllers\RoleAndPermissionController;
+use Modules\RoleAndPermission\Controllers\RoleController;
 
-Route::group(['middleware' => ['auth:api']], function () {
-    Route::get('/', [RoleAndPermissionController::class, 'index']);
-    Route::post('/', [RoleAndPermissionController::class, 'store']);
-    Route::get('/{id}', [RoleAndPermissionController::class, 'show']);
-    Route::put('/{id}', [RoleAndPermissionController::class, 'update']);
-    Route::delete('/{id}', [RoleAndPermissionController::class, 'delete']);
+Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
+    Route::get('/', [RoleController::class, 'index']);
+    Route::post('/', [RoleController::class, 'store']);
+    Route::get('/{id}', [RoleController::class, 'show']);
+    Route::put('/{id}', [RoleController::class, 'update']);
+    Route::delete('/{id}', [RoleController::class, 'delete']);
+});
+
+
+Route::group(['middleware' => ['auth:api'],"prefix"=>"permissions"], function () {
+    Route::get('/', [PermissionController::class, 'index']);
+    Route::post('/', [PermissionController::class, 'store']);
+    Route::get('/{id}', [PermissionController::class, 'show']);
+    Route::put('/{id}', [PermissionController::class, 'update']);
+    Route::delete('/{id}', [PermissionController::class, 'delete']);
 });
