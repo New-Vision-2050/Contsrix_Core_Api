@@ -2,19 +2,13 @@
 
 namespace Modules\Auth\Services;
 
-use BasePackage\Shared\Facade\Json;
-use Carbon\Carbon;
 use Ichtrojan\Otp\Otp;
-use Illuminate\Support\Facades\Auth;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\Handlers\LogoutHandler;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
-use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidInterface;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
