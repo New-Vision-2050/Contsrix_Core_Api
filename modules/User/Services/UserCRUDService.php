@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\User\Services;
 
 use Illuminate\Support\Collection;
+use Modules\RoleAndPermission\Models\Permission;
 use Modules\User\DTO\CreateUserDTO;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;

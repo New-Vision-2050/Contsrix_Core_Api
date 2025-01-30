@@ -31,7 +31,7 @@ class Permission extends SpatiePermission
 
 
 
-    protected $casts = [
-        'id' => UuidCast::class,
-    ];
+//    protected $casts = [
+//        'id' => UuidCast::class,
+//    ];
 }

@@ -92,7 +92,8 @@ class UserController extends Controller
 
     public function getMyPermissions()
     {
-        $permissionPresenter = PermissionPresenter::collection(auth()->user()->permissions);
+
+        $permissionPresenter = PermissionPresenter::collection(auth()->user()->getAllPermissions());
         return Json::buildItems("permissions", $permissionPresenter);
     }
 
@@ -105,7 +106,7 @@ class UserController extends Controller
     public function getPermissions(GetUserRolesAndPermissionRequest $request)
     {
         $user = $this->userService->get(Uuid::fromString($request->route('id')));
-        $permissionPresenter = PermissionPresenter::collection($user->permissions);
+        $permissionPresenter = PermissionPresenter::collection($user->getAllPermissions());
         return Json::buildItems("roles", $permissionPresenter);
     }
 
@@ -113,7 +114,7 @@ class UserController extends Controller
     {
         $user = $this->userService->get(Uuid::fromString($request->route('id')));
         $rolePresenter = RolePresenter::collection($user->roles);
-        return Json::buildItems("permissions", $rolePresenter);
+        return Json::buildItems("roles", $rolePresenter);
     }
 
 
