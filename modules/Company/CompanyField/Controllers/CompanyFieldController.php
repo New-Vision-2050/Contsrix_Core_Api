@@ -31,7 +31,7 @@ class CompanyFieldController extends Controller
     {
         $list = $this->companyFieldService->all();
 
-        return Json::buildItems(null,['company_fields' => CompanyFieldPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::buildItems(null,['company_fields' => CompanyFieldPresenter::collection($list)]);
     }
 
     public function show(GetCompanyFieldRequest $request): JsonResponse

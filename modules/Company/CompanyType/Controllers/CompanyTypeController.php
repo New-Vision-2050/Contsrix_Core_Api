@@ -29,12 +29,9 @@ class CompanyTypeController extends Controller
 
     public function index(GetCompanyTypeListRequest $request): JsonResponse
     {
-        $list = $this->companyTypeService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
-        );
+        $list = $this->companyTypeService->all();
 
-        return Json::buildItems(null,['company_types' => CompanyTypePresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::buildItems(null,['company_types' => CompanyTypePresenter::collection($list)]);
     }
 
     public function show(GetCompanyTypeRequest $request): JsonResponse

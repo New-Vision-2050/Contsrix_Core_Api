@@ -36,4 +36,9 @@ class CompanyRegistrationTypeCRUDService
             id: $id,
         );
     }
+
+    public function all()
+    {
+        return $this->repository->all();
+    }
 }
