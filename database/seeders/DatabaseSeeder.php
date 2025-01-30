@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -12,5 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
+        $this->call(AdminSeedTableSeeder::class);
+        $this->call(SettingSeeder::class);
     }
 }

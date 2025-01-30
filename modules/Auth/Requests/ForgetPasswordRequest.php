@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Auth\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Auth\Commands\ForgetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\Auth\DTO\CreateAuthDTO;
@@ -18,10 +19,10 @@ class ForgetPasswordRequest extends FormRequest
         ];
     }
 
-    public function createLoginDTO(): LoginDTO
+    public function createForgetPasswordCommand()
     {
-        return new LoginDTO(
-            email: $this->get('email'),
-        );
+        return new ForgetPasswordCommand(email:$this->get('email'));
     }
+
+
 }

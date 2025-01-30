@@ -2,11 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Auth\Controllers\AuthController;
+Route::group(['middleware' => ['throttle:5,1']],function (){
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login-otp', [AuthController::class, 'loginWithOtp']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+});
+
 
 Route::group(['middleware' => ['auth:api']], function () {
-    Route::get('/', [AuthController::class, 'index']);
-    Route::post('/', [AuthController::class, 'store']);
-    Route::get('/{id}', [AuthController::class, 'show']);
-    Route::put('/{id}', [AuthController::class, 'update']);
-    Route::delete('/{id}', [AuthController::class, 'delete']);
+
+    Route::post('/logout', [AuthController::class, 'logout']);
+
 });
+Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+

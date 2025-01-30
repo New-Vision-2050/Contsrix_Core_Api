@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace Modules\User\Models;
 
+use App\Casts\Uuid;
+use App\Casts\UuidCast;
+use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use Spatie\Permission\Traits\HasRoles;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -20,11 +25,13 @@ class User  extends Authenticatable implements JWTSubject
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    //use HasTranslations;
+    use Notifiable;
+    use HasTranslations;
+    use HasRoles;
     //use SoftDeletes;
 
-    //public array $translatable = [];
-
+//    public array $translatable = [];
+protected $primaryKey="id";
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -36,7 +43,7 @@ class User  extends Authenticatable implements JWTSubject
     ];
 
     protected $casts = [
-        'id' => 'string',
+        'id' => UuidCast::class,
         'email',
         'password',
     ];
@@ -61,11 +68,11 @@ class User  extends Authenticatable implements JWTSubject
 
     public function getJWTIdentifier()
     {
-        // TODO: Implement getJWTIdentifier() method.
+        return $this->getKey();
     }
 
     public function getJWTCustomClaims()
     {
-        // TODO: Implement getJWTCustomClaims() method.
+        return [];
     }
 }

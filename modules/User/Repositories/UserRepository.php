@@ -33,6 +33,14 @@ class UserRepository extends BaseRepository
         ]);
     }
 
+    public function getUserByEmail($email): User
+    {
+        return $this->findOneByOrFail([
+            'email' => $email,
+        ]);
+    }
+
+
     public function createUser(array $data): User
     {
         return $this->create($data);
@@ -47,4 +55,6 @@ class UserRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+
 }
