@@ -32,7 +32,7 @@ class AuthController extends Controller
         try {
             [$token, $user] = $this->authService->login($loginDTO);
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus: 403);
+            return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus: $e->getCode());
         }
 
         if (empty($token)) {
@@ -48,7 +48,7 @@ class AuthController extends Controller
         try {
             [$token, $user] = $this->authService->loginWithOtp($request->createLoginDTO());
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus: 403);
+            return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus: $e->getCode());
         }
 
         $userPresenter = (new UserPresenter($user))->getData();
@@ -71,7 +71,7 @@ class AuthController extends Controller
             $this->makeOtpHandler->handle($command);
 
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: 400);
+            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
         }
 
         return Json::buildItems(null, ["message" => "success"], "", 200);
@@ -83,7 +83,7 @@ class AuthController extends Controller
         try {
             $this->authService->ResetPassword($request->createResetPasswordCommand());
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus: 401);
+            return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus: $e->getCode());
         }
 
         return Json::buildItems(data: ["message" => "success"]);
@@ -97,7 +97,7 @@ class AuthController extends Controller
             $this->authService->resendOtp($command);
 
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: 400);
+            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
         }
         return Json::buildItems(data: ["msg" => "success"]);
 
