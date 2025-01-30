@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\Models\Company;
+use Carbon\Carbon;
 
 /**
  * @property Company $model
@@ -59,6 +60,24 @@ class CompanyRepository extends BaseRepository
     public function isRegistrationExists(string $registration_no): bool
     {
         return CompanyRegistrationForm::where('registration_no', $registration_no)->exists();
+    }
+    public function totalCompany(): int
+    {
+        return Company::count();
+    }
+    public function activeCompany(): int
+    {
+        return Company::where('is_active',1)->count();
+    }
+    public function completeDataCompany(): int
+    {
+        return Company::where('complete_data',1)->count();
+    }
+    public function dateActivateCompany(): int
+    {
+        return Company::where('date_activate', '>=', Carbon::today())
+        ->where('date_activate', '<', Carbon::today()->addDays(30))
+        ->count();
     }
 
 
