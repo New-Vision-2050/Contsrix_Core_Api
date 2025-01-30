@@ -18,8 +18,7 @@ Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
 
 Route::group(['middleware' => ['auth:api'],"prefix"=>"permissions"], function () {
     Route::get('/', [PermissionController::class, 'index']);
-    Route::post('/', [PermissionController::class, 'store']);
+
     Route::get('/{id}', [PermissionController::class, 'show']);
-    Route::put('/{id}', [PermissionController::class, 'update']);
-    Route::delete('/{id}', [PermissionController::class, 'delete']);
+
 });
