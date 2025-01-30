@@ -83,14 +83,11 @@ class AuthService
     public function resendOtp(ResendOtpCommand $resendOtpCommand)
     {
        $otp = $this->otpRepository->getOtpDataByIdentifier( $resendOtpCommand->getEmail());
-       if(!$otp)
-       {
-           throw new \ErrorException(__("validation.invalid-otp"), 401);
-       }
+
        if (Carbon::parse($otp->created_at)->diffInMinutes(Carbon::now())< 3)
 
        {
-           throw new \ErrorException(__("validation.can-not-resend-after",["minute"=>3]), 401);
+           throw new \ErrorException(__("validation.can-not-resend-before",["minute"=>3]), 401);
 
        }
        $user =$this->userRepository->getUserByEmail($resendOtpCommand->getEmail());
