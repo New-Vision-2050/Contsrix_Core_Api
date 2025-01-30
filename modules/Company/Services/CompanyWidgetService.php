@@ -74,7 +74,7 @@ class CompanyWidgetService
     private function calculatePercentageChange(int $thisMonth, int $lastMonth): float
     {
         if ($lastMonth == 0) {
-            return $thisMonth > 0 ? 100.0 : 0.0; // If there was no data last month, assume 100% growth
+            return $thisMonth > 0 ? 100.0 : 0.0;
         }
 
         return (($thisMonth - $lastMonth) / $lastMonth) * 100;
