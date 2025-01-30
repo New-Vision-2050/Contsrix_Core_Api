@@ -24,7 +24,9 @@ class MakeOtpHandler
     public function handle( ForgetPasswordCommand $command )
     {
         $otp = $this->otpRepository->getOtpDataByIdentifier( $command->getEmail());
-
+        if (empty($otp)) {
+            throw new \ErrorException(__("validation.invalid-otp"), 403);
+        }
         if (Carbon::parse($otp->created_at)->diffInMinutes(Carbon::now())< 3)
 
         {

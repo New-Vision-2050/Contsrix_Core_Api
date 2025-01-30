@@ -22,7 +22,7 @@ class OtpRepository extends BaseRepository
 
     public function getOtpDataByIdentifier( $identifier) :Otp
     {
-        return $this->findOneByOrFail([
+        return $this->findOneBy([
            "identifier" =>$identifier,
         ]);
     }
