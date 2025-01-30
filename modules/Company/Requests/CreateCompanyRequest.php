@@ -14,8 +14,8 @@ class CreateCompanyRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'email' => 'required|email|unique:companies,email',
-            'phone' => 'required|unique:companies,phone',
+            'email' => 'required|email',
+            'phone' => 'required|phone',
             'country_id' => 'required|exists:countries,id',
             'company_type_id' => 'required|exists:company_types,id',
             'company_field_id' => 'required|exists:company_fields,id',

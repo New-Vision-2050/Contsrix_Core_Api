@@ -19,15 +19,12 @@ class CompanyFieldCRUDService
 
     public function create(CreateCompanyFieldDTO $createCompanyFieldDTO): CompanyField
     {
-         return $this->repository->createCompanyField($createCompanyFieldDTO->toArray());
+        return $this->repository->createCompanyField($createCompanyFieldDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(): array
     {
-        return $this->repository->paginated(
-            page: $page,
-            perPage: $perPage,
-        );
+        return $this->repository->all();
     }
 
     public function get(UuidInterface $id): CompanyField
@@ -35,5 +32,10 @@ class CompanyFieldCRUDService
         return $this->repository->getCompanyField(
             id: $id,
         );
+    }
+
+    public function all()
+    {
+        return $this->repository->all();
     }
 }

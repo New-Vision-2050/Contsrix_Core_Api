@@ -29,12 +29,9 @@ class CompanyRegistrationTypeController extends Controller
 
     public function index(GetCompanyRegistrationTypeListRequest $request): JsonResponse
     {
-        $list = $this->companyRegistrationTypeService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
-        );
+        $list = $this->companyRegistrationTypeService->all();
 
-        return Json::buildItems(null,['company_registration_types' => CompanyRegistrationTypePresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::buildItems(null,['company_registration_types' => CompanyRegistrationTypePresenter::collection($list)]);
     }
 
     public function show(GetCompanyRegistrationTypeRequest $request): JsonResponse
