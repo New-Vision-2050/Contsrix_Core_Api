@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Modules\Auth\Commands\ForgetPasswordCommand;
 use Modules\Auth\Notifications\ResetPassword;
+use Modules\Auth\Repositories\OtpRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
@@ -14,13 +15,22 @@ class MakeOtpHandler
 {
     public function __construct(
         private UserRepository $userRepository,
-        private SendOtpEmail $sendOtpEmail
+        private SendOtpEmail $sendOtpEmail,
+        private OtpRepository $otpRepository
 
     ) {
     }
 
     public function handle( ForgetPasswordCommand $command )
     {
+        $otp = $this->otpRepository->getOtpDataByIdentifier( $command->getEmail());
+
+        if (Carbon::parse($otp->created_at)->diffInMinutes(Carbon::now())< 3)
+
+        {
+            throw new \ErrorException(__("validation.can-not-resend-before",["minute"=>3]), 400);
+
+        }
         $user = $this->userRepository->getUserByEmail($command->getEmail());
 
         $this->sendOtpEmail->resetPassword($user->id);
