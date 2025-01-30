@@ -41,8 +41,10 @@ class Company extends Model
         'company_field_id',
         'registration_type_id',
         'general_manager_id',
+        'is_active',
+        'complete_data',
+        'date_activate'
     ];
-
     protected $casts = [
         'id' => 'string',
     ];

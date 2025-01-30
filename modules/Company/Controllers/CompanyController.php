@@ -20,7 +20,10 @@ use Modules\Company\Services\CompanyCRUDService;
 use Modules\Company\Services\CompanyValidateService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
+use Modules\Company\Commands\ActivateCompanyCommand;
+use Modules\Company\Handlers\ActivateCompanyHandler;
 use Modules\Company\Presenters\CompanyWidgetPresenter;
+use Modules\Company\Requests\ActiveCompanyRequest;
 use Modules\Company\Services\CompanyWidgetService;
 
 class CompanyController extends Controller
@@ -30,7 +33,8 @@ class CompanyController extends Controller
         private UpdateCompanyHandler $updateCompanyHandler,
         private DeleteCompanyHandler $deleteCompanyHandler,
         private CompanyValidateService $validateCompanyService,
-        private CompanyWidgetService $companyWidgetService
+        private CompanyWidgetService $companyWidgetService,
+        private ActivateCompanyHandler $activateCompanyCommand
     ) {
     }
 
@@ -103,6 +107,17 @@ class CompanyController extends Controller
         $dataActivateCalculate = $this->companyWidgetService->dataActivateCalculate();
 
         $presenter = new CompanyWidgetPresenter($total,$active,$completeData,$dataActivate,$totalCalculate,$activeCalculate,$completeDataCalculate,$dataActivateCalculate);
+
+        return Json::buildItems('company', $presenter->getData());
+    }
+    public function activate(ActiveCompanyRequest $request): JsonResponse
+    {
+        $command = $request->createActiveCompanyCommand();
+        $this->activateCompanyCommand->handle($command);
+
+        $item = $this->companyService->get($command->getId());
+
+        $presenter = new CompanyPresenter($item);
 
         return Json::buildItems('company', $presenter->getData());
     }
