@@ -20,6 +20,8 @@ use Modules\Company\Services\CompanyCRUDService;
 use Modules\Company\Services\CompanyValidateService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
+use Modules\Company\Presenters\CompanyWidgetPresenter;
+use Modules\Company\Services\CompanyWidgetService;
 
 class CompanyController extends Controller
 {
@@ -27,7 +29,8 @@ class CompanyController extends Controller
         private CompanyCRUDService $companyService,
         private UpdateCompanyHandler $updateCompanyHandler,
         private DeleteCompanyHandler $deleteCompanyHandler,
-        private CompanyValidateService $validateCompanyService
+        private CompanyValidateService $validateCompanyService,
+        private CompanyWidgetService $companyWidgetService
     ) {
     }
 
@@ -87,5 +90,20 @@ class CompanyController extends Controller
             'data' => $validationResult,
         ]);
     }
+    public function widget(): JsonResponse
+    {
+        $total = $this->companyWidgetService->total();
+        $active = $this->companyWidgetService->active();
+        $completeData = $this->companyWidgetService->completeData();
+        $dataActivate = $this->companyWidgetService->dataActivate();
 
+        $totalCalculate = $this->companyWidgetService->totalCalculate();
+        $activeCalculate = $this->companyWidgetService->activeCalculate();
+        $completeDataCalculate = $this->companyWidgetService->completeDataCalculate();
+        $dataActivateCalculate = $this->companyWidgetService->dataActivateCalculate();
+
+        $presenter = new CompanyWidgetPresenter($total,$active,$completeData,$dataActivate,$totalCalculate,$activeCalculate,$completeDataCalculate,$dataActivateCalculate);
+
+        return Json::buildItems('company', $presenter->getData());
+    }
 }

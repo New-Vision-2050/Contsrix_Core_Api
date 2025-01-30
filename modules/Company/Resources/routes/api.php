@@ -5,6 +5,7 @@ use Modules\Company\Controllers\CompanyController;
 
 Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [CompanyController::class, 'index']);
+    Route::get('/widget', [CompanyController::class, 'widget']);
     Route::post('/', [CompanyController::class, 'store']);
     Route::post('/validate', [CompanyController::class, 'validate']);
     Route::get('/{id}', [CompanyController::class, 'show']);
