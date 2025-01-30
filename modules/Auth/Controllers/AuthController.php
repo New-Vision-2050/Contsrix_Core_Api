@@ -31,12 +31,13 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus: 403);
         }
-        if ($loginDTO->getContinueWithOtp() == 1) {
+
+        if (empty($token)) {
             return Json::buildItems(data: ["message" => "success", "continue_with_otp" => 1]);
         }
         $userPresenter = (new UserPresenter($user))->getData();
 
-        return Json::buildItems(data:["message" => "success", "token" => $token, "user" => $userPresenter]);
+        return Json::buildItems(data: ["message" => "success", "token" => $token, "user" => $userPresenter]);
     }
 
     public function loginWithOtp(LoginWithOtpRequest $request)

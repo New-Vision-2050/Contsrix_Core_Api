@@ -35,15 +35,16 @@ class SendOtpEmail
     }
 
     public function resetPassword(UuidInterface $userId){
-
-        $this->user->notify(new ResetPassword($this->createAuthMailData($userId)->toArray()));
+        $user = $this->userRepository->find($userId);
+        $user->notify(new ResetPassword($this->createAuthMailData($userId)->toArray()));
 
     }
 
     public function loginWithOtp(UuidInterface $userId)
     {
         $data =$this->createAuthMailData($userId)->toArray();
-        $this->user->notify(new SendOtpForLogin($data));
+        $user = $this->userRepository->find($userId);
+        $user->notify(new SendOtpForLogin($data));
     }
 
 }
