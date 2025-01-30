@@ -74,7 +74,7 @@ class Company extends Model
 
     public function companyRegistrationType()
     {
-        return $this->belongsTo(CompanyRegistrationType::class);
+        return $this->belongsTo(CompanyRegistrationType::class,'registration_type_id');
     }
     public function companyRegistrationForm()
     {
