@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Auth\Repositories;
+
+use BasePackage\Shared\Repositories\BaseRepository;
+use Ichtrojan\Otp\Models\Otp;
+use Illuminate\Database\Eloquent\Collection;
+use Ramsey\Uuid\UuidInterface;
+use Modules\Auth\Models\Auth;
+
+/**
+ * @property Otp $model
+ */
+class OtpRepository extends BaseRepository
+{
+    public function __construct(Otp $model)
+    {
+        parent::__construct($model);
+    }
+
+    public function getOtpData($token , $identifier) :Otp
+    {
+        return $this->findOneByOrFail([
+           "token" =>$token,
+           "identifier" =>$identifier,
+        ]);
+    }
+}

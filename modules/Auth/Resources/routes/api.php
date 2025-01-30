@@ -15,4 +15,5 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 });
 Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 

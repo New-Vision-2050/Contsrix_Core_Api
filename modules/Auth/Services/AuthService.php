@@ -2,11 +2,14 @@
 
 namespace Modules\Auth\Services;
 
+use Carbon\Carbon;
 use Ichtrojan\Otp\Otp;
+use Modules\Auth\Commands\ResendOtpCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\Handlers\LogoutHandler;
+use Modules\Auth\Repositories\OtpRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\Setting\Services\SettingCRUDService;
 use Modules\User\Repositories\UserRepository;
@@ -17,6 +20,7 @@ class AuthService
     public function __construct(
         private LogoutHandler $logoutHandler,
         private UserRepository $userRepository,
+        private OtpRepository $otpRepository,
         private SendOtpEmail $sendOtpEmail,
         private SettingCRUDService $settingCRUDService
     ) {
@@ -74,6 +78,24 @@ class AuthService
             return $this;
         }
         throw new \ErrorException(__("validation.invalid-otp"), 401);
+    }
+
+    public function resendOtp(ResendOtpCommand $resendOtpCommand)
+    {
+       $otp = $this->otpRepository->getOtpData($resendOtpCommand->getOtp(), $resendOtpCommand->getEmail());
+       if(!$otp)
+       {
+           throw new \ErrorException(__("validation.invalid-otp"), 401);
+       }
+       if (Carbon::parse($otp->created_at)->diffInMinutes(Carbon::now())< 3)
+
+       {
+           throw new \ErrorException(__("validation.can-not-resend-after",["minute"=>3]), 401);
+
+       }
+       $user =$this->userRepository->getUserByEmail($resendOtpCommand->getEmail());
+       $this->sendOtpEmail->loginWithOtp($user->id);
+
     }
 
 
