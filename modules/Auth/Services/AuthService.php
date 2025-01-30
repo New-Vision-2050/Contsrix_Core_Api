@@ -87,7 +87,7 @@ class AuthService
        if (Carbon::parse($otp->created_at)->diffInMinutes(Carbon::now())< 3)
 
        {
-           throw new \ErrorException(__("validation.can-not-resend-before",["minute"=>3]), 401);
+           throw new \ErrorException(__("validation.can-not-resend-before",["minute"=>3]), 400);
 
        }
        $user =$this->userRepository->getUserByEmail($resendOtpCommand->getEmail());
