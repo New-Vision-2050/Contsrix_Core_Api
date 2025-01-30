@@ -32,6 +32,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 }
 
             }
+            $superAdminRole->givePermissionTo(Permission::all());
+            $adminRole->givePermissionTo(Permission::all());
+
 
         }
     }

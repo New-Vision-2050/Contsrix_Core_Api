@@ -10,11 +10,13 @@ use Illuminate\Http\JsonResponse;
 use Modules\RoleAndPermission\Handlers\AssignPermissionsToRoleHandler;
 use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
+use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RoleAndPermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
 use Modules\RoleAndPermission\Requests\DeleteRoleRequest;
+use Modules\RoleAndPermission\Requests\GetPermissionRequest;
 use Modules\RoleAndPermission\Requests\GetRoleListRequest;
 use Modules\RoleAndPermission\Requests\GetRoleRequest;
 use Modules\RoleAndPermission\Requests\UpdateRoleRequest;
@@ -77,6 +79,13 @@ class RoleController extends Controller
         $this->assignPermissionsToRoleHandler->handle($command);
 
         return Json::buildItems("msg","permissions added successfully ");
+    }
+
+    public function getPermissions(GetPermissionRequest $request)
+    {
+        $role = $this->roleService->get(Uuid::fromString($request->route('id')));
+        $permissionRepresenter = PermissionPresenter::collection($role->permissions);
+        return Json::buildItems("permissions", $permissionRepresenter);
     }
 
 

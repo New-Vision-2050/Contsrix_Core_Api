@@ -9,6 +9,7 @@ Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
     Route::get('/', [RoleController::class, 'index']);
     Route::post('/', [RoleController::class, 'store']);
     Route::get('/{id}', [RoleController::class, 'show']);
+    Route::get('/{id}/permissions', [RoleController::class, 'getPermissions']);
     Route::post('/{id}/assign-permissions', [RoleController::class, 'assignPermissionToRole']);
     Route::put('/{id}', [RoleController::class, 'update']);
     Route::delete('/{id}', [RoleController::class, 'delete']);

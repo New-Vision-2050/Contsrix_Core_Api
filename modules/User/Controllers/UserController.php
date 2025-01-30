@@ -19,6 +19,7 @@ use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
+use Modules\User\Requests\GetUserRolesAndPermissionRequest;
 use Modules\User\Requests\UpdateUserRequest;
 use Modules\User\Services\UserCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -101,9 +102,18 @@ class UserController extends Controller
         return Json::buildItems("permissions", $permissionPresenter);
     }
 
-    public function getPermissions()
+    public function getPermissions(GetUserRolesAndPermissionRequest $request)
     {
+        $user = $this->userService->get(Uuid::fromString($request->route('id')));
+        $permissionPresenter = PermissionPresenter::collection($user->permissions);
+        return Json::buildItems("roles", $permissionPresenter);
+    }
 
+    public function getRoles(GetUserRolesAndPermissionRequest $request)
+    {
+        $user = $this->userService->get(Uuid::fromString($request->route('id')));
+        $rolePresenter = RolePresenter::collection($user->roles);
+        return Json::buildItems("permissions", $rolePresenter);
     }
 
 
