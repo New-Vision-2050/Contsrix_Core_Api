@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\Services;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Modules\Company\Repositories\CompanyRepository;
 
@@ -14,7 +15,7 @@ class CompanyValidateService
     ) {
     }
 
-    public function validate($request): array
+    public function validate(Request $request): array
     {
         $errors = [];
         $data = $request->all();  // Get all the request data
@@ -40,6 +41,8 @@ class CompanyValidateService
 
         // Validate phone
         if (isset($data['phone'])) {
+            $validator = Validator::make($request->all(), ['phone'=>'required|phone']);
+
             if ($this->repository->isPhoneExists($data['phone'])) {
                 $errors[] = [
                     'sentence' => "رقم الهاتف موجود بالفعل.",
@@ -47,7 +50,16 @@ class CompanyValidateService
                     'status' => 0,
                     'validate' => 'optional'
                 ];
-            } else {
+            }
+            else if($validator->fails()){
+                $errors[] = [
+                    'sentence' => "رقم الهاتف غير صحيح.",
+                    'sub_title' => 'phone',
+                    'status' => 0,
+                    'validate' => 'required'
+                ];
+            }
+            else {
                 $errors[] = [
                     'sentence' => "تم التحقق من رقم الهاتف بنجاح",
                     'sub_title' => '',
