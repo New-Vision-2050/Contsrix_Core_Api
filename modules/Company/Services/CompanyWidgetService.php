@@ -41,7 +41,7 @@ class CompanyWidgetService
     }
     public function totalCalculate(): float
     {
-        $thisMonth = $this->repository->totalCompany();
+        $thisMonth = $this->repository->totalCompany(Carbon::now());
         $lastMonth = $this->repository->totalCompany(Carbon::now()->subMonth());
 
         return $this->calculatePercentageChange($thisMonth, $lastMonth);
@@ -49,7 +49,7 @@ class CompanyWidgetService
 
     public function activeCalculate(): float
     {
-        $thisMonth = $this->repository->activeCompany();
+        $thisMonth = $this->repository->activeCompany(Carbon::now());
         $lastMonth = $this->repository->activeCompany(Carbon::now()->subMonth());
 
         return $this->calculatePercentageChange($thisMonth, $lastMonth);
@@ -57,7 +57,7 @@ class CompanyWidgetService
 
     public function completeDataCalculate(): float
     {
-        $thisMonth = $this->repository->completeDataCompany();
+        $thisMonth = $this->repository->completeDataCompany(Carbon::now());
         $lastMonth = $this->repository->completeDataCompany(Carbon::now()->subMonth());
 
         return $this->calculatePercentageChange($thisMonth, $lastMonth);
@@ -65,7 +65,7 @@ class CompanyWidgetService
 
     public function dataActivateCalculate(): float
     {
-        $thisMonth = $this->repository->dateActivateCompany();
+        $thisMonth = $this->repository->dateActivateCompany(Carbon::now());
         $lastMonth = $this->repository->dateActivateCompany(Carbon::now()->subMonth());
 
         return $this->calculatePercentageChange($thisMonth, $lastMonth);

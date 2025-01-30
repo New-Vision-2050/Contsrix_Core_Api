@@ -61,24 +61,48 @@ class CompanyRepository extends BaseRepository
     {
         return CompanyRegistrationForm::where('registration_no', $registration_no)->exists();
     }
-    public function totalCompany(): int
+    public function totalCompany(?Carbon $date = null): int
     {
+        if ($date) {
+            return Company::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+        }
         return Company::count();
     }
-    public function activeCompany(): int
+
+    public function activeCompany(?Carbon $date = null): int
     {
-        return Company::where('is_active',1)->count();
+        if ($date) {
+            return Company::where('is_active', 1)
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+        }
+        return Company::where('is_active', 1)->count();
     }
-    public function completeDataCompany(): int
+
+    public function completeDataCompany(?Carbon $date = null): int
     {
-        return Company::where('complete_data',1)->count();
+        if ($date) {
+            return Company::where('complete_data', 1)
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+        }
+        return Company::where('complete_data', 1)->count();
     }
-    public function dateActivateCompany(): int
+
+    public function dateActivateCompany(?Carbon $date = null): int
     {
+        if ($date) {
+            return Company::whereYear('date_activate', $date->year)
+                ->whereMonth('date_activate', $date->month)
+                ->count();
+        }
         return Company::where('date_activate', '>=', Carbon::today())
-        ->where('date_activate', '<', Carbon::today()->addDays(30))
-        ->count();
+            ->where('date_activate', '<', Carbon::today()->addDays(30))
+            ->count();
+
     }
-
-
 }
