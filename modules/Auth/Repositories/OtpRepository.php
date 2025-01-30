@@ -6,9 +6,6 @@ namespace Modules\Auth\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Ichtrojan\Otp\Models\Otp;
-use Illuminate\Database\Eloquent\Collection;
-use Ramsey\Uuid\UuidInterface;
-use Modules\Auth\Models\Auth;
 
 /**
  * @property Otp $model
@@ -20,7 +17,7 @@ class OtpRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getOtpDataByIdentifier( $identifier) :Otp
+    public function getOtpDataByIdentifier($identifier): ?Otp
     {
         return $this->findOneBy([
            "identifier" =>$identifier,
