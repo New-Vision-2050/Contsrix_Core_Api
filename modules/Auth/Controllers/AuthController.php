@@ -91,9 +91,9 @@ class AuthController extends Controller
 
         }
         catch (\Exception $e) {
-            return Json::buildItems(data: ["message" => $e->getMessage()], httpStatus:  401);
+            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus:  401);
         }
-        return Json::buildItems(data: ["message" => "success"]);
+        return Json::buildItems(data: ["msg" => "success"]);
 
 
     }

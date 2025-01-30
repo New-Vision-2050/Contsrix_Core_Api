@@ -20,10 +20,9 @@ class OtpRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getOtpData($token , $identifier) :Otp
+    public function getOtpDataByIdentifier( $identifier) :Otp
     {
         return $this->findOneByOrFail([
-           "token" =>$token,
            "identifier" =>$identifier,
         ]);
     }

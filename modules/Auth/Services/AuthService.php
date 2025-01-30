@@ -82,7 +82,7 @@ class AuthService
 
     public function resendOtp(ResendOtpCommand $resendOtpCommand)
     {
-       $otp = $this->otpRepository->getOtpData($resendOtpCommand->getOtp(), $resendOtpCommand->getEmail());
+       $otp = $this->otpRepository->getOtpDataByIdentifier( $resendOtpCommand->getEmail());
        if(!$otp)
        {
            throw new \ErrorException(__("validation.invalid-otp"), 401);
