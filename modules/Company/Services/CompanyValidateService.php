@@ -20,18 +20,54 @@ class CompanyValidateService
         $errors = [];
         $data = $request->all();  // Get all the request data
 
-        // Validate registration_no
-        if (isset($data['registration_no'])) {
-            if (!str_starts_with((string) $data['registration_no'], '700')) {
-                $errors[] = [
-                    'sentence' => 'رقم السجل التجاري صحيح',
+        if(isset($data['registration_type'])==1){
+            // Validate classification_no
+            if($this->repository->isClassificationExists($data['classification_no'])){
+               $errors[] = [
+                    'sentence' => 'رقم التصيف مقرر',
                     'sub_title' => '',
                     'status' => 0,
-                    'validate' => 'required'
+                    'validate' => 'change'
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => 'رقم السجل التجاري صحيح',
+                    'sentence' => 'رقم التصيف مقرر',
+                    'sub_title' => '',
+                    'status' => 1,
+                    'validate' => 'required'
+                ];
+            }
+        }elseif(isset($data['registration_type'])==2){
+            // Validate registration_no
+            if (isset($data['registration_no'])) {
+                if (str_starts_with($data['registration_no'], '700') || str_starts_with($data['registration_no'], '40') || str_starts_with($data['registration_no'], '1')) {
+
+                    $errors[] = [
+                        'sentence' => 'رقم السجل التجاري صحيح',
+                        'sub_title' => '',
+                        'status' => 0,
+                        'validate' => 'required'
+                    ];
+                } else {
+                    $errors[] = [
+                        'sentence' => 'رقم السجل التجاري صحيح',
+                        'sub_title' => '',
+                        'status' => 1,
+                        'validate' => 'required'
+                    ];
+                }
+            }
+
+            if ($this->repository->isRegistrationExists($data['registration_no'])) {
+                $errors[] = [
+                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
+                    'sub_title' => 'registration_no',
+                    'status' => 0,
+                    'validate' => 'optional'
+                ];
+            } else {
+                $errors[] = [
+                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
                     'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
@@ -89,23 +125,6 @@ class CompanyValidateService
             }
         }
 
-        if (isset($data['registration_no'])) {
-            if ($this->repository->isRegistrationExists($data['registration_no'])) {
-                $errors[] = [
-                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
-                    'sub_title' => 'registration_no',
-                    'status' => 0,
-                    'validate' => 'optional'
-                ];
-            } else {
-                $errors[] = [
-                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
-                    'sub_title' => '',
-                    'status' => 1,
-                    'validate' => 'required'
-                ];
-            }
-        }
 
         return $errors;
     }

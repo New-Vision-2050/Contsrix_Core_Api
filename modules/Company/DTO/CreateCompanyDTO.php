@@ -17,6 +17,7 @@ class CreateCompanyDTO
         private string $company_field_id,
         private string $registration_type_id,
         private string $registration_no,
+        private string $classification_no,
         private string $general_manager_id,
     ) {
     }
@@ -32,6 +33,7 @@ class CreateCompanyDTO
             'company_field_id' => $this->company_field_id,
             'registration_type_id' => $this->registration_type_id,
             'registration_no' => $this->registration_no,
+            'classification_no' => $this->classification_no,
             'general_manager_id' => $this->general_manager_id
         ];
     }

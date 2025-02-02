@@ -6,6 +6,7 @@ namespace Modules\Company\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Illuminate\Console\Scheduling\Schedule;
 
 class CompanyServiceProvider extends ModuleServiceProvider
 {
@@ -19,11 +20,20 @@ class CompanyServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerCommands();
+        $this->registerSchedules();
     }
 
     public function register(): void
     {
         $this->registerRoutes();
+    }
+    public function registerSchedules(): void
+    {
+        $this->app->booted(function () {
+            $schedule = $this->app->make(Schedule::class);
+            $schedule->command('companies:delete-inactive')->dailyAt('02:00');
+        });
     }
 
     public function mapRoutes(): void
@@ -32,5 +42,13 @@ class CompanyServiceProvider extends ModuleServiceProvider
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 
+    }
+    public function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Modules\Company\Console\CheckCompanyActivityCommand::class,
+            ]);
+        }
     }
 }

@@ -7,6 +7,7 @@ namespace Modules\Company\Services;
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\DTO\CreateCompanyDTO;
+use Modules\Company\Jobs\CheckCompanyActivity;
 use Modules\Company\Models\Company;
 use Modules\Company\Repositories\CompanyRepository;
 use Ramsey\Uuid\UuidInterface;
@@ -27,7 +28,10 @@ class CompanyCRUDService
         $companyRegistrationForm = CompanyRegistrationForm::create([
             'company_id' => $company->id,
             'registration_no' => $requestCompanyDTO['registration_no'],
+            'classification_no' => $requestCompanyDTO['classification_no'],
         ]);
+
+        CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
 
         return $company;
     }

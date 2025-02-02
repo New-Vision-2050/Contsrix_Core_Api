@@ -48,7 +48,7 @@ class CompanyFilter extends SearchModelFilter
                 $q->where('name','like','%'.$search.'%');
             })
             ->orWhereHas('companyRegistrationForm',function($q)use($search){
-                $q->where('registration_no','like','%'.$search.'%');
+                $q->where('registration_no','like','%'.$search.'%')->orWhere('classification_no','like','%'.$search.'%');
             });
     }
 

@@ -30,6 +30,7 @@ class UpdateCompanyRequest extends FormRequest
             company_field_id:  $this->get('company_field_id'),
             registration_type_id:  $this->get('registration_type_id'),
             registration_no:  $this->get('registration_no') ?? '',
+            classification_no: $this->get('classification_no') ?? '',
             general_manager_id:  $this->get('general_manager_id')
         );
     }

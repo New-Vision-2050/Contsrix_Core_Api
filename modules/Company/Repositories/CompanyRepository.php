@@ -61,6 +61,11 @@ class CompanyRepository extends BaseRepository
     {
         return CompanyRegistrationForm::where('registration_no', $registration_no)->exists();
     }
+    public function isClassificationExists(string $classification_no): bool
+    {
+        return CompanyRegistrationForm::where('classification_no', $classification_no)->exists();
+    }
+
     public function totalCompany(?Carbon $date = null): int
     {
         if ($date) {

@@ -18,6 +18,7 @@ class UpdateCompanyCommand
         private string $company_field_id,
         private string $registration_type_id,
         private string $registration_no,
+        private string $classification_no,
         private string $general_manager_id,
     ) {
     }
@@ -53,10 +54,17 @@ class UpdateCompanyCommand
     public function getRegistrationTypeId(): ?string
     {
         return $this->registration_type_id;
-    }   public function getRegistrationNo(): string
+    }
+    public function getRegistrationNo(): string
     {
         return $this->registration_no;
     }
+    public function getClassificationNo(): string
+    {
+        return $this->classification_no;
+    }
+
+
     public function getGeneralManagerId(): ?string
     {
         return $this->general_manager_id;
@@ -72,6 +80,7 @@ class UpdateCompanyCommand
             'company_field_id' => $this->company_field_id,
             'registration_type_id' => $this->registration_type_id,
             'registration_no' => $this->registration_no,
+            'classification_no' => $this->classification_no,
             'general_manager_id' => $this->general_manager_id
         ]);
     }
