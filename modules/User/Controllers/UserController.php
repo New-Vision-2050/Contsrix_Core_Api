@@ -21,6 +21,7 @@ use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
 use Modules\User\Requests\GetUserRolesAndPermissionRequest;
 use Modules\User\Requests\UpdateUserRequest;
+use Modules\User\Services\UserAuditService;
 use Modules\User\Services\UserCRUDService;
 use Modules\User\Services\UserRoleAndPermissionService;
 use Ramsey\Uuid\Uuid;
@@ -29,6 +30,7 @@ class UserController extends Controller
 {
     public function __construct(
         private UserCRUDService          $userService,
+        private UserAuditService          $userAuditService,
         private UserRoleAndPermissionService     $userRoleAndPermissionService,
         private UpdateUserHandler        $updateUserHandler,
         private AssignRoleForUserHandler $assignRoleForUserHandler,
@@ -128,5 +130,14 @@ class UserController extends Controller
         $this->deleteUserHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function getAudites(GetUserRequest $request)
+    {
+        $audit = $this->userAuditService->getAudits(Uuid::fromString($request->route('id')));
+
+//        $presenter = new UserPresenter($item);
+
+        return Json::buildItems('audits', $audit);
     }
 }

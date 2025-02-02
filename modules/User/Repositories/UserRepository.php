@@ -73,5 +73,10 @@ class UserRepository extends BaseRepository
        return $this->getUser($id)->getAllPermissions();
     }
 
+    public function getAllAudites(UuidInterface $id)
+    {
+        return $this->getUser($id)->audits;
+    }
+
 
 }

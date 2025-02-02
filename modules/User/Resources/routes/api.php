@@ -13,6 +13,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/{id}', [UserController::class, 'show'])->middleware("permission:user.show");
     Route::get('/{id}/roles', [UserController::class, 'getRoles']);
     Route::get('/{id}/permissions', [UserController::class, 'getPermissions']);
+    Route::get('/{id}/audits', [UserController::class, 'getAudites']);
     Route::put('/{id}', [UserController::class, 'update'])->middleware("permission:user.update");
     Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser']);
 

@@ -14,8 +14,9 @@
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
         "m-tech-stack/base-package": "^1.0",
-        "spatie/laravel-permission": "^6.10",
+        "owen-it/laravel-auditing": "^13.6",
         "propaganistas/laravel-phone": "^5.3",
+        "spatie/laravel-permission": "^6.10",
         "tymon/jwt-auth": "^2.1"
     },
     "require-dev": {
