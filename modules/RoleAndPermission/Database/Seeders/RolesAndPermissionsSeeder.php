@@ -23,11 +23,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
         if (App::environment('production') == false)
         {
-            $superAdminRole = Role::firstOrCreate(["name"=>"super-admin"],["name"=>"super-admin"]);
-            $adminRole = Role::firstOrCreate(["name"=>"admin"],["name"=>"admin"]);
+          Role::firstOrCreate(["name"=>"super-admin"],["name"=>"super-admin"]);
+            Role::firstOrCreate(["name"=>"admin"],["name"=>"admin"]);
 
-            $superAdminRole->givePermissionTo(Permission::all());
-            $adminRole->givePermissionTo(Permission::all());
 
 
         }
