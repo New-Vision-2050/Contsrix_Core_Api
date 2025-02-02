@@ -1,0 +1,14 @@
+{
+    "name": "CompanyRegistrationForm",
+    "alias": "companyregistrationform",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Company\\CompanyRegistrationForm\\Providers\\CompanyRegistrationFormServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Company"
+}

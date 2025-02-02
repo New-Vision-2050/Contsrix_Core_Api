@@ -1,0 +1,14 @@
+{
+    "name": "CompanyRegistrationType",
+    "alias": "companyregistrationtype",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Company\\CompanyRegistrationType\\Providers\\CompanyRegistrationTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Company"
+}

@@ -17,6 +17,7 @@ class AdminSeedTableSeeder extends Seeder
      */
     public function run()
     {
+
         if (App::environment('production') == false) {
             $user = User::firstOrCreate(['email' =>'admin@constrix-nv.com'],
                 [

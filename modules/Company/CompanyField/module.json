@@ -1,0 +1,14 @@
+{
+    "name": "CompanyField",
+    "alias": "companyfield",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Company\\CompanyField\\Providers\\CompanyFieldServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Company"
+}
