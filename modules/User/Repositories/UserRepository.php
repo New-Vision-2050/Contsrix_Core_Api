@@ -63,5 +63,15 @@ class UserRepository extends BaseRepository
         return $user;
     }
 
+    public function getRoles(UuidInterface $id)
+    {
+       return $this->getUser($id)->roles;
+    }
+
+    public function getPermissions(UuidInterface $id)
+    {
+       return $this->getUser($id)->getAllPermissions();
+    }
+
 
 }

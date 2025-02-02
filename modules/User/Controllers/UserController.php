@@ -22,12 +22,14 @@ use Modules\User\Requests\GetUserRequest;
 use Modules\User\Requests\GetUserRolesAndPermissionRequest;
 use Modules\User\Requests\UpdateUserRequest;
 use Modules\User\Services\UserCRUDService;
+use Modules\User\Services\UserRoleAndPermissionService;
 use Ramsey\Uuid\Uuid;
 
 class UserController extends Controller
 {
     public function __construct(
         private UserCRUDService          $userService,
+        private UserRoleAndPermissionService     $userRoleAndPermissionService,
         private UpdateUserHandler        $updateUserHandler,
         private AssignRoleForUserHandler $assignRoleForUserHandler,
         private DeleteUserHandler        $deleteUserHandler,
@@ -92,28 +94,31 @@ class UserController extends Controller
 
     public function getMyPermissions()
     {
+        $permissions = $this->userRoleAndPermissionService->getPermissions(auth()->user()->id);
 
-        $permissionPresenter = PermissionPresenter::collection(auth()->user()->getAllPermissions());
+        $permissionPresenter = PermissionPresenter::collection($permissions);
+
         return Json::buildItems("permissions", $permissionPresenter);
     }
 
     public function getMyRoles()
     {
-        $permissionPresenter = RolePresenter::collection(auth()->user()->roles);
+        $roles=$this->userRoleAndPermissionService->getRoles(auth()->user()->id);
+        $permissionPresenter = RolePresenter::collection($roles);
         return Json::buildItems("permissions", $permissionPresenter);
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)
     {
-        $user = $this->userService->get(Uuid::fromString($request->route('id')));
-        $permissionPresenter = PermissionPresenter::collection($user->getAllPermissions());
+        $permissions = $this->userRoleAndPermissionService->getPermissions(Uuid::fromString($request->route('id')));
+        $permissionPresenter = PermissionPresenter::collection($permissions);
         return Json::buildItems("roles", $permissionPresenter);
     }
 
     public function getRoles(GetUserRolesAndPermissionRequest $request)
     {
-        $user = $this->userService->get(Uuid::fromString($request->route('id')));
-        $rolePresenter = RolePresenter::collection($user->roles);
+        $roles = $this->userRoleAndPermissionService->getRoles(Uuid::fromString($request->route('id')));
+        $rolePresenter = RolePresenter::collection($roles);
         return Json::buildItems("roles", $rolePresenter);
     }
 
