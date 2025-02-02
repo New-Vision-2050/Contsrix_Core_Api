@@ -25,7 +25,7 @@ return [
     */
 
     'user'      => [
-        'morph_prefix' => 'auditable',
+        'morph_prefix' => 'user',
         'guards'       => [
             'web',
             'api'

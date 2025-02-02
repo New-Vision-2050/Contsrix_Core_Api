@@ -136,7 +136,6 @@ class UserController extends Controller
     {
         $audit = $this->userAuditService->getAudits(Uuid::fromString($request->route('id')));
 
-//        $presenter = new UserPresenter($item);
 
         return Json::buildItems('audits', $audit);
     }
