@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\User\Services;
 
 use Illuminate\Support\Collection;
+use Modules\Audit\Repositories\AuditRepository;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Models\Role;
 use Modules\User\DTO\CreateUserDTO;
@@ -21,10 +22,10 @@ class UserAuditService
 
 
 
-    public function getAudits(UuidInterface $id)
+    public function listPaginated(UuidInterface $id ,int $page , int $perPage    )
     {
         return $this->userRepository->getAllAudites(
-            id: $id,
+            id: $id,page: $page , perPage: $perPage
         );
     }
 

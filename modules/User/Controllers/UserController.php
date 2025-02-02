@@ -17,6 +17,7 @@ use Modules\User\Presenters\UserPresenter;
 use Modules\User\Requests\AssignRolesForUserRequest;
 use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
+use Modules\User\Requests\GetUserAuditListRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
 use Modules\User\Requests\GetUserRolesAndPermissionRequest;
@@ -29,12 +30,12 @@ use Ramsey\Uuid\Uuid;
 class UserController extends Controller
 {
     public function __construct(
-        private UserCRUDService          $userService,
-        private UserAuditService          $userAuditService,
-        private UserRoleAndPermissionService     $userRoleAndPermissionService,
-        private UpdateUserHandler        $updateUserHandler,
-        private AssignRoleForUserHandler $assignRoleForUserHandler,
-        private DeleteUserHandler        $deleteUserHandler,
+        private UserCRUDService              $userService,
+        private UserAuditService             $userAuditService,
+        private UserRoleAndPermissionService $userRoleAndPermissionService,
+        private UpdateUserHandler            $updateUserHandler,
+        private AssignRoleForUserHandler     $assignRoleForUserHandler,
+        private DeleteUserHandler            $deleteUserHandler,
     )
     {
     }
@@ -105,7 +106,7 @@ class UserController extends Controller
 
     public function getMyRoles()
     {
-        $roles=$this->userRoleAndPermissionService->getRoles(auth()->user()->id);
+        $roles = $this->userRoleAndPermissionService->getRoles(auth()->user()->id);
         $permissionPresenter = RolePresenter::collection($roles);
         return Json::buildItems("permissions", $permissionPresenter);
     }
@@ -132,11 +133,16 @@ class UserController extends Controller
         return Json::deleted();
     }
 
-    public function getAudites(GetUserRequest $request)
+    public function getAudites(GetUserAuditListRequest $request)
     {
-        $audit = $this->userAuditService->getAudits(Uuid::fromString($request->route('id')));
+        $list = $this->userAuditService->listPaginated(
+            Uuid::fromString($request->route('id')),
+                (int)$request->get('page', 1),
+                (int)$request->get('per_page', 10)
+            );
+
+        return Json::buildItems(null, ['audits' => $list["data"], 'pagination' => $list["pagination"]]);
 
 
-        return Json::buildItems('audits', $audit);
     }
 }

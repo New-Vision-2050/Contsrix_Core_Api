@@ -73,9 +73,16 @@ class UserRepository extends BaseRepository
        return $this->getUser($id)->getAllPermissions();
     }
 
-    public function getAllAudites(UuidInterface $id)
+    public function getAllAudites(UuidInterface $id,?int $page, ?int $perPage = 10)
     {
-        return $this->getUser($id)->audits;
+        $query =  $this->getUser($id)->audits();
+        $count = $query->count();
+            $data =$query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $data,
+        ];
     }
 
 
