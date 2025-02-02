@@ -164,6 +164,7 @@ return [
     'invalid-otp' => 'invalid Otp.',
     'invalid-credential' => 'invalid credential.',
     'invalid-to-login-with-otp' => 'invalid to login with otp',
+    "can-not-resend-before"=>'can not resend before :minute minutes',
 
 
 

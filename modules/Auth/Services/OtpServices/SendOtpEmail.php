@@ -2,7 +2,6 @@
 
 namespace Modules\Auth\Services\OtpServices;
 
-use App\Mail\ResetPasswordMail;
 use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Mail;
 use Modules\Auth\DataClasses\AuthMailData;
