@@ -27,7 +27,8 @@ class CompanyRegistrationForm extends Model
 
     protected $fillable = [
         'company_id',
-        'registration_no'
+        'registration_no',
+        'classification_no'
     ];
 
     protected $casts = [
