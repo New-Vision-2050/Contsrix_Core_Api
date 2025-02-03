@@ -6,6 +6,7 @@ namespace Modules\User\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Audit\Repositories\AuditRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\User\Models\User;
 
@@ -16,7 +17,7 @@ use Modules\User\Models\User;
  */
 class UserRepository extends BaseRepository
 {
-    public function __construct(User $model)
+    public function __construct(User $model,private AuditRepository $auditRepository)
     {
         parent::__construct($model);
     }
@@ -56,7 +57,7 @@ class UserRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function assignRole(UuidInterface $id,$roles):User
+    public function assignRole(UuidInterface $id, $roles): User
     {
         $user = $this->getUser($id);
         $user->syncRoles($roles);
@@ -65,24 +66,19 @@ class UserRepository extends BaseRepository
 
     public function getRoles(UuidInterface $id)
     {
-       return $this->getUser($id)->roles;
+        return $this->getUser($id)->roles;
     }
 
     public function getPermissions(UuidInterface $id)
     {
-       return $this->getUser($id)->getAllPermissions();
+        return $this->getUser($id)->getAllPermissions();
     }
 
-    public function getAllAudites(UuidInterface $id,?int $page, ?int $perPage = 10)
+    public function getAllAudites(UuidInterface $id, ?int $page, ?int $perPage = 10)
     {
-        $query =  $this->getUser($id)->audits();
-        $count = $query->count();
-            $data =$query->forPage($page, $perPage)->get();
-        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return [
-            'pagination' => $paginationArray['pagination'],
-            'data' => $data,
-        ];
+        $ids = $this->getUser($id)->audits()->pluck("id")->toArray();
+        return $this->auditRepository->whereInIds($ids)->paginated([],$page,$perPage);
+
     }
 
 
