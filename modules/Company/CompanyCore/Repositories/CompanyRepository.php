@@ -34,6 +34,12 @@ class CompanyRepository extends BaseRepository
             'id' => $id->toString(),
         ]);
     }
+    public function subdomainCompany(string $userName): Company
+    {
+        return $this->findOneByOrFail([
+            'user_name' => $userName,
+        ]);
+    }
 
     public function createCompany(array $data): Company
     {

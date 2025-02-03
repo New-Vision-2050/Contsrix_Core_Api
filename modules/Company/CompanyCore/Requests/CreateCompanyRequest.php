@@ -14,6 +14,7 @@ class CreateCompanyRequest extends FormRequest
     {
         return [
             'name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
+            'user_name' => 'required|unique:companies,user_name',
             'email' => 'required|email',
             'phone' => 'required',
             'country_id' => 'required|exists:countries,id',
@@ -22,7 +23,6 @@ class CreateCompanyRequest extends FormRequest
             'registration_type_id' => 'required|exists:company_registration_types,id',
             'general_manager_id' => 'required|exists:users,id',
             'registration_type'=> 'required',
-            // 'registration_no' => 'nullable|required_if:registration_type,1|regex:/^(1|700|40)\d+$/',
             'registration_no' => [
                 'nullable',
                 'required_if:registration_type,1',
@@ -36,6 +36,7 @@ class CreateCompanyRequest extends FormRequest
     {
         return new CreateCompanyDTO(
             name: $this->get('name'),
+            user_name: $this->get('user_name'),
             email: $this->get('email'),
             phone: $this->get('phone'),
             country_id:  $this->get('country_id'),

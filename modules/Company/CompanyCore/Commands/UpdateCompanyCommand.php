@@ -11,6 +11,7 @@ class UpdateCompanyCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
+        private string $user_name,
         private string $email,
         private string $phone,
         private string $country_id,
@@ -30,6 +31,10 @@ class UpdateCompanyCommand
     public function getName(): ?string
     {
         return $this->name;
+    }
+    public function getUserName(): ?string
+    {
+        return $this->user_name;
     }
     public function getEmail(): ?string
     {
@@ -73,6 +78,7 @@ class UpdateCompanyCommand
     {
         return array_filter([
             'name' => $this->name,
+            'user_name' => $this->user_name,
             'email' => $this->email,
             'phone' => $this->phone,
             'country_id' => $this->country_id,

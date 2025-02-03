@@ -119,4 +119,13 @@ class CompanyController extends Controller
 
         return Json::buildItems('company', $presenter->getData());
     }
+    public function handleSubdomain($subdomain)//: JsonResponse
+    {
+        $item = $this->companyService->subdomain($subdomain);
+
+        $presenter = new CompanyPresenter($item);
+
+        return Json::buildItems('company', $presenter->getData());
+    }
+
 }

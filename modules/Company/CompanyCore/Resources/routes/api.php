@@ -3,7 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Company\CompanyCore\Controllers\CompanyController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+
+Route::domain('{subdomain}.' . env('APP_URL'))->group(function () {
+    Route::get('/', [CompanyController::class, 'handleSubdomain']);
+});
+
+
+Route::middleware(['auth:api'])->group(function () {
     Route::get('/', [CompanyController::class, 'index']);
     Route::get('/widget', [CompanyController::class, 'widget']);
     Route::post('/', [CompanyController::class, 'store']);

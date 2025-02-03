@@ -8,6 +8,7 @@ class CreateCompanyDTO
 {
     public function __construct(
         public string $name,
+        public string $user_name,
         private string $email,
         private string $phone,
         private string $country_id,
@@ -24,6 +25,7 @@ class CreateCompanyDTO
     {
         return [
             'name' => $this->name,
+            'user_name' => $this->user_name,
             'email' => $this->email,
             'phone' => $this->phone,
             'country_id' => $this->country_id,

@@ -34,6 +34,7 @@ class Company extends Model
 
     protected $fillable = [
         'name',
+        'user_name',
         'email',
         'phone',
         'country_id',

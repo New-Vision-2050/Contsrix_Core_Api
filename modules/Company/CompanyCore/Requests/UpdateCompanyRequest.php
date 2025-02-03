@@ -23,6 +23,7 @@ class UpdateCompanyRequest extends FormRequest
         return new UpdateCompanyCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
+            user_name: $this->get('user_name'),
             email: $this->get('email'),
             phone: $this->get('phone'),
             country_id:  $this->get('country_id'),

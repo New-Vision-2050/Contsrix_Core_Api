@@ -30,6 +30,7 @@ class CompanyFilter extends SearchModelFilter
     public function search($search)
     {
         return $this->where('name', 'like', '%'.$search .'%')
+            ->orWhere('user_name', 'like', '%'.$search .'%')
             ->orWhere('phone', 'like', '%'.$search .'%')
             ->orWhere('email', 'like', '%'.$search .'%')
             ->orWhereHas('generalManager',function($q)use($search){
