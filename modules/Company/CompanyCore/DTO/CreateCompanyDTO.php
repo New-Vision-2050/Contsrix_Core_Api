@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\DTO;
 
-use Ramsey\Uuid\UuidInterface;
-
 class CreateCompanyDTO
 {
     public function __construct(

@@ -9,10 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\Company\CompanyCore\CompanyField\Models\CompanyField;
-use Modules\Company\CompanyCore\CompanyRegistrationForm\Models\CompanyRegistrationForm;
-use Modules\Company\CompanyCore\CompanyType\Models\CompanyType;
-use Modules\Company\CompanyCore\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Modules\Company\CompanyField\Models\CompanyField;
+use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 

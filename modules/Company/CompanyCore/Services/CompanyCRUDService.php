@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Services;
 
 use Illuminate\Support\Collection;
-use Modules\Company\CompanyCore\CompanyRegistrationForm\Models\CompanyRegistrationForm;
+use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;

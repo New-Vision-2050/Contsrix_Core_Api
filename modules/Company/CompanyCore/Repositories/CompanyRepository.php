@@ -6,7 +6,7 @@ namespace Modules\Company\CompanyCore\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-use Modules\Company\CompanyCore\CompanyRegistrationForm\Models\CompanyRegistrationForm;
+use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
