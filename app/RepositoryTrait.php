@@ -9,9 +9,9 @@ namespace App;
 
 trait RepositoryTrait
 {
-    public function whereInIds ($auditIds)
+    public function where ( array $conditions)
     {
-        $this->model->whereIn("id",$auditIds);
+        $this->model->where($conditions);
         return $this;
 
     }
