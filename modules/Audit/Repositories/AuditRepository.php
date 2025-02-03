@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Audit\Repositories;
 
-use App\RepositoryTrait;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
@@ -17,7 +16,6 @@ use Modules\Audit\Models\Audit;
  */
 class AuditRepository extends BaseRepository
 {
-    use RepositoryTrait;
     public function __construct(Audit $model)
     {
         parent::__construct($model);

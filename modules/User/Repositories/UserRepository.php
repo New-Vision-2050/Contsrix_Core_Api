@@ -76,7 +76,7 @@ class UserRepository extends BaseRepository
 
     public function getAllAudites(UuidInterface $id, ?int $page, ?int $perPage = 10)
     {
-        return $this->auditRepository->where(["user_id"=>$id,"user_type"=>User::class])->paginated([],$page,$perPage);
+        return $this->auditRepository->paginated(["user_id"=>$id,"user_type"=>User::class],$page,$perPage);
     }
 
 
