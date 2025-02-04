@@ -27,29 +27,29 @@ class CompanyFilter extends SearchModelFilter
         return $this->where('company_field_id', $companyFieldId);
     }
 
+
     public function search($search)
     {
-        return $this->where('name', 'like', '%'.$search .'%')
-            ->orWhere('user_name', 'like', '%'.$search .'%')
-            ->orWhere('phone', 'like', '%'.$search .'%')
-            ->orWhere('email', 'like', '%'.$search .'%')
-            ->orWhereHas('generalManager',function($q)use($search){
-                $q->where('name','like', '%'.$search .'%');
+        return $this->where('name', 'like', '%' . $search . '%')
+            ->orWhere('user_name', 'like', '%' . $search . '%')
+            ->orWhere('phone', 'like', '%' . $search . '%')
+            ->orWhere('email', 'like', '%' . $search . '%')
+            ->orWhere('serial_no', 'like', '%' . $search . '%')
+            ->orWhere('registration_no', 'like', '%' . $search . '%')
+            ->orWhereHas('generalManager', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             })
-            ->orWhereHas('country',function($q)use($search){
-                $q->where('name','like','%'.$search.'%');
+            ->orWhereHas('country', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             })
-            ->orWhereHas('companyType',function($q)use($search){
-                $q->where('name','like','%'.$search.'%');
+            ->orWhereHas('companyType', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             })
-            ->orWhereHas('companyField',function($q)use($search){
-                $q->where('name','like','%'.$search.'%');
+            ->orWhereHas('companyField', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             })
-            ->orWhereHas('companyRegistrationType',function($q)use($search){
-                $q->where('name','like','%'.$search.'%');
-            })
-            ->orWhereHas('companyRegistrationForm',function($q)use($search){
-                $q->where('registration_no','like','%'.$search.'%')->orWhere('classification_no','like','%'.$search.'%');
+            ->orWhereHas('companyRegistrationType', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             });
     }
 

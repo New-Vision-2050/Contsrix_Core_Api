@@ -45,7 +45,9 @@ class Company extends Model
         'general_manager_id',
         'is_active',
         'complete_data',
-        'date_activate'
+        'date_activate',
+        'registration_no',
+        'serial_no'
     ];
     protected $casts = [
         'id' => 'string',
@@ -79,20 +81,6 @@ class Company extends Model
     public function companyRegistrationType()
     {
         return $this->belongsTo(CompanyRegistrationType::class,'registration_type_id');
-    }
-    public function companyRegistrationForm()
-    {
-        return $this->hasOne(CompanyRegistrationForm::class);
-    }
-    protected static function booted()
-    {
-        static::deleting(function($company) {
-            // Get the IDs of the related companyRegistrationForm
-            $ids = $company->companyRegistrationForm()->pluck('id')->toArray();
-
-            // Delete the related companyRegistrationForm records by IDs
-            CompanyRegistrationForm::destroy($ids);
-        });
     }
 
 }

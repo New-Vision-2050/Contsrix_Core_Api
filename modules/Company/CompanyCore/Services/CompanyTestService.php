@@ -35,19 +35,11 @@ class CompanyTestService
             'company_field_id' => $companyField->id,
             'registration_type_id' => $registrationType->id,
             'general_manager_id' => $general_manager->id->toString(),
+            'registration_no' => '123456',
+            'serial_no'=> bin2hex(random_bytes(6))
         ];
 
-        // Create a company to test show and delete
         $company = Company::create($companyData);
-
-        $registrationFormData = [
-            'company_id' => $company->id,
-            'registration_no' => '123456', // Replace with actual logic for registration_no if needed
-        ];
-
-        // Create the registration form
-        $companyRegistrationForm = CompanyRegistrationForm::create($registrationFormData);
-        
 
         return $company;
     }

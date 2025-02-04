@@ -2,9 +2,7 @@
 
 namespace Modules\Company\CompanyCore\Tests\Feature;
 
-use DB;
 use Modules\Company\CompanyCore\Services\CompanyTestService;
-
 use Modules\User\Models\User;
 use Tests\TestCase;
 
@@ -38,10 +36,9 @@ class CompanyListTest extends TestCase
         $response->assertStatus(200);
 
     }
-    
+
     public function tearDown(): void
     {
-        // Assuming the company has an ID and can be deleted like this:
         $this->company->delete();
 
         parent::tearDown();

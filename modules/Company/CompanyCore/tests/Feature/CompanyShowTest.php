@@ -3,9 +3,7 @@
 namespace Modules\Company\CompanyCore\Tests\Feature;
 
 use Modules\User\Models\User;
-
 use Modules\Company\CompanyCore\Services\CompanyTestService;
-
 use Tests\TestCase;
 
 class CompanyShowTest extends TestCase
@@ -45,7 +43,6 @@ class CompanyShowTest extends TestCase
     }
     public function tearDown(): void
     {
-        // Assuming the company has an ID and can be deleted like this:
         $this->company->delete();
 
         parent::tearDown();

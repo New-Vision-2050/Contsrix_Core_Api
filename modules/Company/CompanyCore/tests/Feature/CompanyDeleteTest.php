@@ -21,7 +21,6 @@ class CompanyDeleteTest extends TestCase
         $this->user = User::first();
         $this->testCompanyService = new CompanyTestService();
 
-
         $this->company = $this->testCompanyService->create();
     }
     public function tearDown(): void

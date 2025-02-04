@@ -13,8 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('company_registration_forms', function (Blueprint $table) {
-            $table->string('classification_no')->nullable()->after('registration_no');
+        Schema::table('companies', function (Blueprint $table) {
+            $table->string('registration_no')->after('user_name');
+            $table->string('serial_no')->unique()->after('registration_no');
         });
     }
 
@@ -25,8 +26,9 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('company_registration_forms', function (Blueprint $table) {
-            $table->dropColumn('classification_no');
+        Schema::table('companies', function (Blueprint $table) {
+            $table->dropColumn('registration_no');
+            $table->dropColumn('serial_no');
         });
     }
 };

@@ -57,14 +57,14 @@ class CompanyRepository extends BaseRepository
     {
         return Company::where('phone', $phone)->exists();
     }
-    public function isRegistrationExists(string $registration_no): bool
+    public function isRegistrationExists(string $registration_no,$registration_type_id): bool
     {
-        return CompanyRegistrationForm::where('registration_no', $registration_no)->exists();
+
+        return Company::where('registration_no', $registration_no)
+        ->where('registration_type_id', $registration_type_id)
+        ->exists();
     }
-    public function isClassificationExists(string $classification_no): bool
-    {
-        return CompanyRegistrationForm::where('classification_no', $classification_no)->exists();
-    }
+
     public function isUserNameExists(string $userName): bool
     {
         return Company::where('user_name', $userName)->exists();

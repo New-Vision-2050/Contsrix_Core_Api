@@ -3,7 +3,6 @@
 namespace Modules\Company\CompanyCore\Tests\Feature;
 
 use Illuminate\Support\Facades\DB;
-use Modules\Company\CompanyCore\Services\CompanyTestService;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\CompanyType\Models\CompanyType;
@@ -40,11 +39,11 @@ class CompanyStoreTest extends TestCase
             'general_manager_id' => $general_manager->id->toString(),
             'registration_type' => 1,
             'registration_no' => '123456',
+            'serial_no' => bin2hex(random_bytes(6))
         ];
     }
     public function tearDown(): void
     {
-        // Rollback the transaction to remove any changes to the database
         DB::rollBack();
 
         parent::tearDown();
