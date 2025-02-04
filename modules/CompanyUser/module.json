@@ -1,0 +1,14 @@
+{
+    "name": "CompanyUser",
+    "alias": "companyuser",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\CompanyUser\\Providers\\CompanyUserServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

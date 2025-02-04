@@ -142,7 +142,5 @@ class UserController extends Controller
             );
 
         return Json::buildItems(null, ['audits' => $list["data"], 'pagination' => $list["pagination"]]);
-
-
     }
 }
