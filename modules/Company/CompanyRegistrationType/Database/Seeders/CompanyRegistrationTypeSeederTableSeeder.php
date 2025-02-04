@@ -19,9 +19,18 @@ class CompanyRegistrationTypeSeederTableSeeder extends Seeder
 
         CompanyRegistrationType::firstOrCreate([
             'name'=>'سجل تجاري',
+            'type' => 1
         ]);
 
+        CompanyRegistrationType::firstOrCreate([
+            'name'=>'تصنيف',
+            'type' => 2
+        ]);
 
-        // $this->call("OthersTableSeeder");
+        CompanyRegistrationType::firstOrCreate([
+            'name'=>'بدون سجل تجاري',
+            'type' => 3
+        ]);
+
     }
 }
