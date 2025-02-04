@@ -20,6 +20,26 @@ class CompanyValidateService
         $errors = [];
         $data = $request->all();  // Get all the request data
 
+
+
+        if (isset($data['user_name'])) {
+            if (!$this->repository->isUserNameExists($data['user_name']) && preg_match('/^[a-zA-Z0-9_]+$/', $data['user_name'])) {
+                $errors[] = [
+                    'sentence' => 'اسم المستخدم صحيح',
+                    'sub_title' => '',
+                    'status' => 1,
+                    'validate' => 'required'
+                ];
+            } else {
+                $errors[] = [
+                    'sentence' => 'اسم المستخدم صحيح',
+                    'sub_title' => '',
+                    'status' => 0,
+                    'validate' => 'change'
+                ];
+            }
+        }
+
         if(isset($data['registration_type'])==1){
             // Validate classification_no
             if($this->repository->isClassificationExists($data['classification_no'])){

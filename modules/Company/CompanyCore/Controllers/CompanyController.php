@@ -23,7 +23,9 @@ use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
-
+use Modules\Company\CompanyCore\Models\Company;
+use Tests\TestCase;
+use Mockery;
 class CompanyController extends Controller
 {
     public function __construct(
@@ -36,8 +38,9 @@ class CompanyController extends Controller
     ) {
     }
 
-    public function index(GetCompanyListRequest $request): JsonResponse
+    public function index(GetCompanyListRequest $request)//: JsonResponse
     {
+
         $list = $this->companyService->list(
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
@@ -57,7 +60,6 @@ class CompanyController extends Controller
 
     public function store(CreateCompanyRequest $request): JsonResponse
     {
-
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
 
         $presenter = new CompanyPresenter($createdItem);
@@ -114,14 +116,6 @@ class CompanyController extends Controller
         $this->activateCompanyCommand->handle($command);
 
         $item = $this->companyService->get($command->getId());
-
-        $presenter = new CompanyPresenter($item);
-
-        return Json::buildItems('company', $presenter->getData());
-    }
-    public function handleSubdomain($subdomain)//: JsonResponse
-    {
-        $item = $this->companyService->subdomain($subdomain);
 
         $presenter = new CompanyPresenter($item);
 

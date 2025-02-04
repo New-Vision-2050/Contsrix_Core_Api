@@ -15,6 +15,7 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -24,7 +25,7 @@ class Company extends Model
     use UuidTrait;
     use BaseFilterable;
     //use HasTranslations;
-    //use SoftDeletes;
+    // use SoftDeletes;
 
     //public array $translatable = [];
 
@@ -83,4 +84,15 @@ class Company extends Model
     {
         return $this->hasOne(CompanyRegistrationForm::class);
     }
+    protected static function booted()
+    {
+        static::deleting(function($company) {
+            // Get the IDs of the related companyRegistrationForm
+            $ids = $company->companyRegistrationForm()->pluck('id')->toArray();
+
+            // Delete the related companyRegistrationForm records by IDs
+            CompanyRegistrationForm::destroy($ids);
+        });
+    }
+
 }

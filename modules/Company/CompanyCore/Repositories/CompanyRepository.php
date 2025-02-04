@@ -34,12 +34,6 @@ class CompanyRepository extends BaseRepository
             'id' => $id->toString(),
         ]);
     }
-    public function subdomainCompany(string $userName): Company
-    {
-        return $this->findOneByOrFail([
-            'user_name' => $userName,
-        ]);
-    }
 
     public function createCompany(array $data): Company
     {
@@ -70,6 +64,10 @@ class CompanyRepository extends BaseRepository
     public function isClassificationExists(string $classification_no): bool
     {
         return CompanyRegistrationForm::where('classification_no', $classification_no)->exists();
+    }
+    public function isUserNameExists(string $userName): bool
+    {
+        return Company::where('user_name', $userName)->exists();
     }
 
     public function totalCompany(?Carbon $date = null): int

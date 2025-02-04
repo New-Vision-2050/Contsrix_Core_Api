@@ -50,10 +50,4 @@ class CompanyCRUDService
             id: $id,
         );
     }
-    public function subdomain(string $userName): Company
-    {
-        return $this->repository->subdomainCompany(
-            $userName,
-        );
-    }
 }

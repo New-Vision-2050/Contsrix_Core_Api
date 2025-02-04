@@ -31,10 +31,10 @@ class CreateCompanyDTO
             'country_id' => $this->country_id,
             'company_type_id' => $this->company_type_id,
             'company_field_id' => $this->company_field_id,
+            'general_manager_id' => $this->general_manager_id,
             'registration_type_id' => $this->registration_type_id,
             'registration_no' => $this->registration_no,
             'classification_no' => $this->classification_no,
-            'general_manager_id' => $this->general_manager_id
         ];
     }
 }

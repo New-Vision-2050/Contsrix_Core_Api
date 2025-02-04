@@ -14,14 +14,18 @@ class CreateCompanyRequest extends FormRequest
     {
         return [
             'name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
-            'user_name' => 'required|unique:companies,user_name',
+            'user_name' => [
+                'required',
+                'unique:companies,user_name',
+                'regex:/^[a-zA-Z0-9_]+$/'
+            ],
             'email' => 'required|email',
             'phone' => 'required',
             'country_id' => 'required|exists:countries,id',
             'company_type_id' => 'required|exists:company_types,id',
             'company_field_id' => 'required|exists:company_fields,id',
             'registration_type_id' => 'required|exists:company_registration_types,id',
-            'general_manager_id' => 'required|exists:users,id',
+            'general_manager_id' => 'required',
             'registration_type'=> 'required',
             'registration_no' => [
                 'nullable',

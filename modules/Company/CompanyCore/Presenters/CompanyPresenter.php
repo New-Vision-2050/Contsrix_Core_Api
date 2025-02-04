@@ -20,8 +20,8 @@ class CompanyPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->company->id,
-            'name' => $this->company->name,
             'user_name' => $this->company->user_name,
+            'name' => $this->company?->name,
             'email' => $this->company->email,
             'phone' => $this->company->email,
             'country_id' => $this->company->country_id,
@@ -29,9 +29,9 @@ class CompanyPresenter extends AbstractPresenter
             'company_field_id' => $this->company->company_field_id,
             'registration_type_id' => $this->company->registration_type_id,
             'general_manager_id' => $this->company->general_manager_id,
-            'registration_no' => $this->company->companyRegistrationForm->registration_no,
-            'classification_no'=> $this->company->companyRegistrationForm->classification_no,
-            'general_manager_name' => $this->company->generalManager->name,
+            'registration_no' => $this->company?->companyRegistrationForm?->registration_no,
+            'classification_no'=> $this->company?->companyRegistrationForm?->classification_no,
+            'general_manager_name' => $this->company->generalManager?->name,
             'company_type' => $this->company->companyType->name,
             'company_field' => $this->company->companyField->name,
             'registration_type' => $this->company->companyRegistrationType->name,
