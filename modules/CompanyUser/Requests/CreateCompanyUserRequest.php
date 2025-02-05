@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
@@ -14,11 +15,17 @@ class CreateCompanyUserRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'role' => 'required|array',
+            'role' => 'required',
             'company_id' => 'required|exists:companies,id',
             'country_id' => 'required|exists:countries,id',
-            'phone' => 'required|unique:company_users,phone',
+            'phone' => 'required|phone|unique:company_users,phone',
             'email' => 'required|email|unique:company_users,phone',
+
+            'border_number' => 'present|nullable|unique:company_users,phone',
+            'residence' => 'present|nullable|unique:company_users,residence',
+            'passport' => 'present|nullable|unique:company_users,passport',
+            'identity' => 'present|nullable|unique:company_users,identity',
+
         ];
     }
 
@@ -26,6 +33,23 @@ class CreateCompanyUserRequest extends FormRequest
     {
         return new CreateCompanyUserDTO(
             name: $this->get('name'),
+            email: $this->get('email'),
+            country_id: $this->get('country_id'),
+            phone: $this->get('phone'),
+            border_number: $this->get('border_number'),
+            residence: $this->get('residence'),
+            identity: $this->get('identity'),
+            passport: $this->get('passport'),
+
+        );
+    }
+
+    public function createCreateCompanyUserCompanyRoleDTO(): CreateCompanyUserCompanyRoleDTO
+    {
+        return new CreateCompanyUserCompanyRoleDTO(
+            company_id: Uuid::fromString($this->get('company_id')),
+            role: $this->get('role'),
+
         );
     }
 }

@@ -35,6 +35,8 @@ class CompanyUserCompany extends Pivot
 
     protected $casts = [
         'id' => 'string',
+        "company_id"=>"string",
+        "company_user_id"=>"string",
         "role"=>CompanyUserRole::class,
         "status"=>CompanyUserStatus::class
     ];

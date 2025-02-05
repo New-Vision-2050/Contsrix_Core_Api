@@ -8,5 +8,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::post('/', [CompanyUserController::class, 'store']);
     Route::get('/{id}', [CompanyUserController::class, 'show']);
     Route::put('/{id}', [CompanyUserController::class, 'update']);
+    Route::put('/{id}/assign-role', [CompanyUserController::class, 'assignRoleForCompanies']);
     Route::delete('/{id}', [CompanyUserController::class, 'delete']);
 });

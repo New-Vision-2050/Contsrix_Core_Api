@@ -30,9 +30,19 @@ class CompanyUser extends Model
 
     protected $keyType = 'string';
 
+
+
+
     protected $fillable = [
         'name',
-        "email"
+        "email",
+        "phone",
+        "country_id",
+        "border_number",
+        "residence",
+        "passport",
+        "identity",
+
     ];
 
     protected $casts = [
@@ -40,7 +50,7 @@ class CompanyUser extends Model
     ];
 
 
-    public function Companies()
+    public function companies()
     {
         return $this->belongsToMany(Company::class,"company_users_companies","company_id","company_user_id")
             ->using(CompanyUserCompany::class);

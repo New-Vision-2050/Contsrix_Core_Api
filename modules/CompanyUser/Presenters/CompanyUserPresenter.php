@@ -21,6 +21,14 @@ class CompanyUserPresenter extends AbstractPresenter
         return [
             'id' => $this->companyUser->id,
             'name' => $this->companyUser->name,
+            'email' => $this->companyUser->email,
+            "residence" => $this->companyUser->residence,
+            "passport" => $this->companyUser->passport,
+            "identity" => $this->companyUser->identity,
+            "border_number" => $this->companyUser->border_number,
+            "phone" => $this->companyUser->phone,
+
+
         ];
     }
 }

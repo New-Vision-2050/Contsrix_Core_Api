@@ -28,7 +28,7 @@ class CompanyUserServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/company_users')
+        Route::prefix('api/v1/company-users')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

@@ -152,6 +152,7 @@ return [
     'invalid-credential' => 'معلومات الدخول غير صحيحية',
     'invalid-to-login-with-otp' => 'غير مصرح لك بالدخول عن طريق كلمه المرور المؤقتة',
     "can-not-resend-before"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
+    "phone"=>"رقم الهاتف غير صحيح",
 
 
     'custom' => [

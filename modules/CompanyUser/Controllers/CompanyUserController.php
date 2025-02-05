@@ -7,9 +7,11 @@ namespace Modules\CompanyUser\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
@@ -23,6 +25,7 @@ class CompanyUserController extends Controller
     public function __construct(
         private CompanyUserCRUDService $companyUserService,
         private UpdateCompanyUserHandler $updateCompanyUserHandler,
+        private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
         private DeleteCompanyUserHandler $deleteCompanyUserHandler,
     ) {
     }
@@ -34,25 +37,41 @@ class CompanyUserController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['company_users' => CompanyUserPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::buildItems(null,['data' => CompanyUserPresenter::collection($list['data']),'pagination' => $list['pagination']]);
     }
 
     public function show(GetCompanyUserRequest $request): JsonResponse
     {
-        $item = $this->companyUserService->get(Uuid::fromString($request->route('id')));
+        $item = $this->companyUserService->get(Uuid::fromString($request->route('id')))->companyUser;
 
         $presenter = new CompanyUserPresenter($item);
 
         return Json::buildItems('company_user', $presenter->getData());
     }
 
-    public function store(CreateCompanyUserRequest $request): JsonResponse
+    public function store(CreateCompanyUserRequest $request)
     {
-        $createdItem = $this->companyUserService->create($request->createCreateCompanyUserDTO());
+        try {
+            $createdItem = $this->companyUserService->create($request->createCreateCompanyUserDTO(),$request->createCreateCompanyUserCompanyRoleDTO());
+        } catch (\Exception $e) {
+            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: 400);
+        }
+
 
         $presenter = new CompanyUserPresenter($createdItem);
+       return Json::buildItems(data:['data'=> $presenter->getData()]);
+    }
 
-        return Json::buildItems('company_user', $presenter->getData());
+    public function assignRoleForCompanies(AssignRoleCompanyUserRequest $request)
+    {
+        $command = $request->createAssignCompanyUserCommand();
+        $this->assignRoleCompanyUserHandler->handle($command);
+
+        $item = $this->companyUserService->get($command->getId());
+
+        $presenter = new CompanyUserPresenter($item);
+
+        return Json::buildItems('data', $presenter->getData());
     }
 
     public function update(UpdateCompanyUserRequest $request): JsonResponse
@@ -64,7 +83,7 @@ class CompanyUserController extends Controller
 
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::buildItems('company_user', $presenter->getData());
+        return Json::buildItems('data', $presenter->getData());
     }
 
     public function delete(DeleteCompanyUserRequest $request): JsonResponse

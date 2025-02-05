@@ -13,6 +13,11 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique()->index();
             $table->string('phone')->unique()->index();
+            $table->string('residence')->unique()->index()->nullable();
+            $table->string('identity')->unique()->index()->nullable();
+            $table->string('passport')->unique()->index()->nullable();
+            $table->string('border_number')->unique()->index()->nullable();
+
 
 
             $table->foreignIdFor(\Modules\Country\Models\Country::class,'country_id')->index()->constrained();

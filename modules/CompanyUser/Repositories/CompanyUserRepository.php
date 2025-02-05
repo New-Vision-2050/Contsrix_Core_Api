@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
+use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Ramsey\Uuid\UuidInterface;
 use Modules\CompanyUser\Models\CompanyUser;
 
@@ -16,6 +19,7 @@ use Modules\CompanyUser\Models\CompanyUser;
  */
 class CompanyUserRepository extends BaseRepository
 {
+
     public function __construct(CompanyUser $model)
     {
         parent::__construct($model);
@@ -33,9 +37,25 @@ class CompanyUserRepository extends BaseRepository
         ]);
     }
 
-    public function createCompanyUser(array $data): CompanyUser
+    public function createCompanyUser(array $companyUserData,array $companyRole): CompanyUser
     {
-        return $this->create($data);
+        try {
+            DB::beginTransaction();
+            $companyUser= $this->create($companyUserData);
+            CompanyUserCompany::create($companyRole+["company_user_id"=>$companyUser->id]);
+            DB::commit();
+        }catch (\Exception $exception){
+            DB::rollBack();
+            throw $exception;
+        }
+
+        return $companyUser;
+    }
+
+
+    public function assignRoleCompanyUser(UuidInterface $id , array $companyUserRoleData)
+    {
+        CompanyUserCompany::create($companyUserRoleData+["company_user_id"=>$id]);
     }
 
     public function updateCompanyUser(UuidInterface $id, array $data): bool
