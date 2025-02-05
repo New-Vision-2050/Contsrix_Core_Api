@@ -10,7 +10,14 @@ class UpdateCompanyUserCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
+        public string $name,
+        public string $email,
+        public string $country_id,
+        public string $phone,
+        public ? string $border_number ,
+        public ? string $residence,
+        public ? string $identity,
+        public ? string $passport,
     ) {
     }
 
@@ -26,8 +33,15 @@ class UpdateCompanyUserCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'name' => $this->name,
-        ]);
+            'email' => $this->email,
+            'country_id' => $this->country_id,
+            'phone' => $this->phone,
+            'border_number' => $this->border_number,
+            'residence' => $this->residence,
+            "identity"=>$this->identity,
+            "passport"=>$this->passport,
+        ];
     }
 }

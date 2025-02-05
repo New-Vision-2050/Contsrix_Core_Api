@@ -166,6 +166,8 @@ return [
     'invalid-to-login-with-otp' => 'invalid to login with otp',
     "can-not-resend-before"=>'can not resend before :minute minutes',
     "phone"=>"phone format is invalid",
+    'delete-not-successful' => 'Delete not successful',
+
 
 
 

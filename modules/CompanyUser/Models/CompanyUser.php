@@ -8,6 +8,7 @@ use AjCastro\EagerLoadPivotRelations\EagerLoadPivotTrait;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\DB;
 use Modules\Company\Models\Company;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -21,6 +22,7 @@ class CompanyUser extends Model
     use UuidTrait;
     use BaseFilterable;
     use EagerLoadPivotTrait;
+
     //use HasTranslations;
     //use SoftDeletes;
 
@@ -29,8 +31,6 @@ class CompanyUser extends Model
     public $incrementing = false;
 
     protected $keyType = 'string';
-
-
 
 
     protected $fillable = [
@@ -52,13 +52,30 @@ class CompanyUser extends Model
 
     public function companies()
     {
-        return $this->belongsToMany(Company::class,"company_users_companies","company_id","company_user_id")
-            ->using(CompanyUserCompany::class);
+        return $this->belongsToMany(Company::class, "company_users_companies", "company_user_id", "company_id")
+            ->using(CompanyUserCompany::class)->withPivot("role", "status");
     }
 
 
     protected static function newFactory(): CompanyUserFactory
     {
         return CompanyUserFactory::new();
+    }
+
+    public function delete()
+    {
+
+
+        try {
+            DB::beginTransaction();
+            $this->companies()->detach();
+            parent::delete();
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Handle the exception
+            throw new \Exception($e->getMessage(), 500);
+        }
+        return true;
     }
 }

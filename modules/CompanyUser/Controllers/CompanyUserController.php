@@ -42,7 +42,7 @@ class CompanyUserController extends Controller
 
     public function show(GetCompanyUserRequest $request): JsonResponse
     {
-        $item = $this->companyUserService->get(Uuid::fromString($request->route('id')))->companyUser;
+        $item = $this->companyUserService->get(Uuid::fromString($request->route('id')));
 
         $presenter = new CompanyUserPresenter($item);
 
@@ -54,7 +54,7 @@ class CompanyUserController extends Controller
         try {
             $createdItem = $this->companyUserService->create($request->createCreateCompanyUserDTO(),$request->createCreateCompanyUserCompanyRoleDTO());
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: 400);
+            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode);
         }
 
 
@@ -88,7 +88,13 @@ class CompanyUserController extends Controller
 
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
-        $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
+//        try {
+            $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
+
+//        }catch (\Exception $exception)
+//            {
+//                return Json::buildItems(data: ["msg" => $exception->getMessage()], httpStatus: $exception->getCode());
+//            }
 
         return Json::deleted();
     }

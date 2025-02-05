@@ -19,9 +19,8 @@ class CreateCompanyUserRequest extends FormRequest
             'company_id' => 'required|exists:companies,id',
             'country_id' => 'required|exists:countries,id',
             'phone' => 'required|phone|unique:company_users,phone',
-            'email' => 'required|email|unique:company_users,phone',
-
-            'border_number' => 'present|nullable|unique:company_users,phone',
+            'email' => 'required|email|unique:company_users,email',
+            'border_number' => 'present|nullable|unique:company_users,border_number',
             'residence' => 'present|nullable|unique:company_users,residence',
             'passport' => 'present|nullable|unique:company_users,passport',
             'identity' => 'present|nullable|unique:company_users,identity',

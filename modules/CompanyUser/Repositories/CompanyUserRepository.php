@@ -46,14 +46,14 @@ class CompanyUserRepository extends BaseRepository
             DB::commit();
         }catch (\Exception $exception){
             DB::rollBack();
-            throw $exception;
+            throw new \Exception(__("create-not-successful"),500);
         }
 
         return $companyUser;
     }
 
 
-    public function assignRoleCompanyUser(UuidInterface $id , array $companyUserRoleData)
+    public function assignRoleCompanyUser(UuidInterface $id , array $companyUserRoleData):void
     {
         CompanyUserCompany::create($companyUserRoleData+["company_user_id"=>$id]);
     }

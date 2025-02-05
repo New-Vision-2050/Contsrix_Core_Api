@@ -27,6 +27,7 @@ class CompanyUserPresenter extends AbstractPresenter
             "identity" => $this->companyUser->identity,
             "border_number" => $this->companyUser->border_number,
             "phone" => $this->companyUser->phone,
+            "company" => $this->companyUser->companies
 
 
         ];
