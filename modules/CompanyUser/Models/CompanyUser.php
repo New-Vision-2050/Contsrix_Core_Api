@@ -52,8 +52,8 @@ class CompanyUser extends Model
 
     public function companies()
     {
-        return $this->belongsToMany(Company::class, "company_users_companies", "company_user_id", "company_id")
-            ->using(CompanyUserCompany::class)->withPivot("role", "status");
+        return $this->belongsToMany(Company::class, 'company_users_companies', 'company_user_id', 'company_id')
+            ->withPivot('role','status');
     }
 
 
@@ -77,5 +77,10 @@ class CompanyUser extends Model
             throw new \Exception($e->getMessage(), 500);
         }
         return true;
+    }
+
+    public function rolesForCompany($companyId)
+    {
+        return $this->companies->where('id',$companyId)->pluck('pivot');
     }
 }

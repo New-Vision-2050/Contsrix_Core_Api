@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Services;
 
-use Illuminate\Support\Collection;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
-use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Ramsey\Uuid\UuidInterface;
 
 class CompanyUserCRUDService

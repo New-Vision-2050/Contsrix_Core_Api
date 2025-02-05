@@ -54,7 +54,7 @@ class CompanyUserController extends Controller
         try {
             $createdItem = $this->companyUserService->create($request->createCreateCompanyUserDTO(),$request->createCreateCompanyUserCompanyRoleDTO());
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode);
+            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
         }
 
 
