@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
-use Modules\Company\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
