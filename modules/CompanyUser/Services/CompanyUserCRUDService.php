@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Services;
 
 use Illuminate\Support\Collection;
+use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\Models\CompanyUser;
@@ -18,27 +19,38 @@ class CompanyUserCRUDService
 
     public function __construct(
         private CompanyUserRepository $repository,
+        private CompanyRepository     $companyRepository,
     )
     {
     }
 
-    public function create(CreateCompanyUserDTO $createCompanyUserDTO,CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
+    public function create(CreateCompanyUserDTO $createCompanyUserDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
-        return $this->repository->createCompanyUser($createCompanyUserDTO->toArray(),$companyRoleDTO->toArray());
+        $company = $this->companyRepository->findOneBy(["id" => $companyRoleDTO->getCompanyId()]);
+
+        if ($createCompanyUserDTO->getCoutryId() == $company->country_id) {//country of company same country of user must insert identity or passport
+            if (request()->identity == null && request()->passport == null) {
+                new \Exception(__("identity-or-passport-required"), 422);
+            }
+        } elseif (request()->residence == null && request()->border_number == null && request()->passport == null) {//must insert passport or border_number or residence
+            new \Exception(__("passport-or-residence-or-border_number-required"), 422);
+
+        }
+        return $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
 
 
     }
 
-    public function assignRole(UuidInterface $id , CreateCompanyUserCompanyRoleDTO $createRoleDTO)
+    public function assignRole(UuidInterface $id, CreateCompanyUserCompanyRoleDTO $createRoleDTO)
     {
-        $this->repository->assignRoleCompanyUser($id,$createRoleDTO->toArray());
+        $this->repository->assignRoleCompanyUser($id, $createRoleDTO->toArray());
     }
 
 
     public function list(int $page = 1, int $perPage = 10): array
     {
 
-        $companyUsers=  $this->repository->withRelations(["companies"], $page, $perPage);
+        $companyUsers = $this->repository->withRelations(["companies"], $page, $perPage);
 
         return $companyUsers;
     }

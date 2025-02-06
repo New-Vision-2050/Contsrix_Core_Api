@@ -9,7 +9,6 @@ use Carbon\Carbon;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Modules\Company\Models\Company;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Ramsey\Uuid\UuidInterface;
@@ -43,49 +42,46 @@ class CompanyUserRepository extends BaseRepository
 
     }
 
-    public function getCompanyUserCount(Carbon $date= null)
+    public function getCompanyUserCount(Carbon $date = null)
     {
 
 
-          return  $this->model->when($date !=null, function($query) use ($date){
+        return $this->model->when($date != null, function ($query) use ($date) {
             $query->whereYear('created_at', $date->year)
-            ->whereMonth('created_at', $date->month);
+                ->whereMonth('created_at', $date->month);
         })->count();
 
     }
 
-    public function getActiveInactiveCompanyUserCount(Carbon $date= null,$status=CompanyUserStatus::ACTIVE)
+    public function getActiveInactiveCompanyUserCount(Carbon $date = null, $status = CompanyUserStatus::ACTIVE)
     {
-        return  $this->model->when($date !=null, function($query) use ($date){
+        return $this->model->when($date != null, function ($query) use ($date) {
             $query->whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month);
-        })->when($status == CompanyUserStatus::ACTIVE,function ($q){ //one active mean user active
-            $q->whereHas("companies",function($query){
-                $query->where("company_users_companies.status",CompanyUserStatus::ACTIVE);
+        })->when($status == CompanyUserStatus::ACTIVE, function ($q) { //one active mean user active
+            $q->whereHas("companies", function ($query) {
+                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE);
             });
-        })->when($status == CompanyUserStatus::INACTIVE,function ($q){ //use does not have any active and inactive
-            $q->WhereDoesntHave("companies",function($query){
-                $query->where("company_users_companies.status",CompanyUserStatus::ACTIVE)->orWhere("company_users_companies.status",CompanyUserStatus::PENDING);
+        })->when($status == CompanyUserStatus::INACTIVE, function ($q) { //use does not have any active and inactive
+            $q->WhereDoesntHave("companies", function ($query) {
+                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE)->orWhere("company_users_companies.status", CompanyUserStatus::PENDING);
             });
-        })->when($status == CompanyUserStatus::PENDING,function ($q){//user would have at least one pending and does not have any active rolr
-            $q->WhereDoesntHave("companies",function($query){
-                $query->where("company_users_companies.status",CompanyUserStatus::ACTIVE);
-            })->whereHas("companies",function($query){
-                $query->where("company_users_companies.status",CompanyUserStatus::PENDING);
+        })->when($status == CompanyUserStatus::PENDING, function ($q) {//user would have at least one pending and does not have any active rolr
+            $q->WhereDoesntHave("companies", function ($query) {
+                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE);
+            })->whereHas("companies", function ($query) {
+                $query->where("company_users_companies.status", CompanyUserStatus::PENDING);
             });
-        })
-            ->count();
+        })->count();
 
 
     }
-
-
 
 
     public function deleteCompanyUserRole(
         UuidInterface $companyUserId,
         UuidInterface $companyId,
-        int        $role): void
+        int           $role): void
     {
         CompanyUserCompany::where('company_user_id', $companyUserId)
             ->where('company_id', $companyId)

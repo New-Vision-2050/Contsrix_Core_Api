@@ -7,6 +7,7 @@ namespace Modules\CompanyUser\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
@@ -140,5 +141,10 @@ class CompanyUserController extends Controller
         }
 
         return Json::deleted();
+    }
+
+    public function roles()
+    {
+        return Json::buildItems("data", CompanyUserRole::array());
     }
 }

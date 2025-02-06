@@ -6,6 +6,7 @@ use Modules\CompanyUser\Controllers\CompanyUserController;
 Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [CompanyUserController::class, 'index']);
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
+    Route::get('/roles', [CompanyUserController::class, 'roles']);
     Route::post('/', [CompanyUserController::class, 'store']);
     Route::post('/validations', [CompanyUserController::class, 'validation']);
     Route::get('/{id}', [CompanyUserController::class, 'show']);

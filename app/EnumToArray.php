@@ -18,7 +18,12 @@ trait EnumToArray
 
     public static function array(): array
     {
-        return array_combine(self::values(), self::names());
+        $terms = [];
+
+        foreach (self::cases() as $value) {
+            $terms[] = ["key"=>self::lang($value->value),"value"=>$value->value];
+        }
+        return $terms ;
     }
 
 }

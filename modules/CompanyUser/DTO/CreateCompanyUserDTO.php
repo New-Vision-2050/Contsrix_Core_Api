@@ -21,6 +21,11 @@ class CreateCompanyUserDTO
     ) {
     }
 
+    public function getCoutryId()
+    {
+        return $this->country_id;
+    }
+
     public function toArray(): array
     {
         return [

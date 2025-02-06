@@ -160,6 +160,10 @@ return [
     "user-email-success"=>"البريد الالكتروني موجود ضمن النظام",
     "user-phone-error"=>"رقم الجوال موجود ضمن النظام بأسم :name .",
     "user-phone-success"=>" رقم الجوال موجود ضمن النظام",
+    "identity-or-passport-required"=>"يجب ادخال رقم الهوية او رقم الجواز",
+    "passport-or-residence-or-border_number-required"=>"يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
+
+
 
 
     'custom' => [

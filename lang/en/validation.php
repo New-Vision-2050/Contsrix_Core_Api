@@ -173,6 +173,8 @@ return [
     'user-email-success' => 'The email is already exist in the system ',
     'user-phone-error' => 'The phone is already exist in the system in name :name',
     'user-phone-success' => 'The phone is already exist in the system ',
+    "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
+    "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
 
 
 
