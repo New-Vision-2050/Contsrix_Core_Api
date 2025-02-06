@@ -34,12 +34,13 @@ class CompanyUserCRUDService
         $this->repository->assignRoleCompanyUser($id,$createRoleDTO->toArray());
     }
 
+
     public function list(int $page = 1, int $perPage = 10): array
     {
-        return $this->repository->paginated(
-            page: $page,
-            perPage: $perPage,
-        );
+
+        $companyUsers=  $this->repository->withRelations(["companies"], $page, $perPage);
+
+        return $companyUsers;
     }
 
     public function get(UuidInterface $id): CompanyUser

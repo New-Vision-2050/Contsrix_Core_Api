@@ -4,7 +4,7 @@ namespace Modules\CompanyUser\Enum;
 
 use App\EnumToArray;
 
-enum CompanyUserRole :int
+enum CompanyUserRole: int
 {
     use EnumToArray;
 
@@ -14,12 +14,12 @@ enum CompanyUserRole :int
     case BROKER = 3;
 
 
-    public  function lang(): string
+    public static function lang($value): string
     {
-        return match ($this) {
-            self::EMPLOYEE => __('lookups.employee'),
-            self::CLIENT => __('lookups.client'),
-            self::BROKER => __('lookups.broker'),
+        return match ((int)$value) {
+            self::EMPLOYEE->value => __('lookups.employee'),
+            self::CLIENT->value => __('lookups.client'),
+            self::BROKER->value => __('lookups.broker'),
 
         };
     }

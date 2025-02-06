@@ -14,12 +14,12 @@ enum CompanyUserStatus :int
     case PENDING = -1;
 
 
-    public  function lang(): string
+    public static function  lang($value): string
     {
-        return match ($this) {
-            self::ACTIVE => __('lookups.active'),
-            self::INACTIVE => __('lookups.inactive'),
-            self::PENDING => __('lookups.pending'),
+        return match ((int)$value) {
+             self::ACTIVE->value => __('lookups.active'),
+            self::INACTIVE->value => __('lookups.inactive'),
+            self::PENDING->value => __('lookups.pending'),
 
         };
     }

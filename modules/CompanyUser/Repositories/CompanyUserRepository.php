@@ -25,9 +25,24 @@ class CompanyUserRepository extends BaseRepository
         parent::__construct($model);
     }
 
+    public function withRelations(array $relations = [],$page =1,$perPage=15)
+    {
+        $query =  $this->model->with($relations);
+        $count = $query->count();
+        $paginatedData =$query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData->toArray(),
+        ];
+
+
+    }
+
     public function getCompanyUserList(?int $page, ?int $perPage = 10): Collection
     {
-        return $this->paginatedList([], $page, $perPage);
+        return $this->withRelations(["companies"])->paginatedList([], $page, $perPage);
     }
 
     public function getCompanyUser(UuidInterface $id): CompanyUser
@@ -41,7 +56,7 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $companyUser= $this->create($companyUserData);
+            $companyUser= $this->create($companyUserData)->companies();
             CompanyUserCompany::create($companyRole+["company_user_id"=>$companyUser->id]);
             DB::commit();
         }catch (\Exception $exception){
@@ -55,7 +70,7 @@ class CompanyUserRepository extends BaseRepository
 
     public function assignRoleCompanyUser(UuidInterface $id , array $companyUserRoleData):void
     {
-        CompanyUserCompany::create($companyUserRoleData+["company_user_id"=>$id]);
+        CompanyUserCompany::firstOrCreate($companyUserRoleData+["company_user_id"=>$id],$companyUserRoleData+["company_user_id"=>$id]);
     }
 
     public function updateCompanyUser(UuidInterface $id, array $data): bool

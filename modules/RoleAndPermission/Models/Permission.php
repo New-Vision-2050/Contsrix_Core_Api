@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Models;
 
-use App\Casts\UuidCast;
+use App\Casts\CompanyRoleCast;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +32,6 @@ class Permission extends SpatiePermission
 
 
 //    protected $casts = [
-//        'id' => UuidCast::class,
+//        'id' => CompanyRoleCast::class,
 //    ];
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -20,27 +21,39 @@ class CompanyUserCompany extends Pivot
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+
     //use HasTranslations;
     //use SoftDeletes;
 
     //public array $translatable = [];
 
-    protected $table ="company_users_companies";
+    protected $table = "company_users_companies";
 
     public $incrementing = false;
 
     protected $keyType = 'string';
-    protected $guarded=[];
+    protected $guarded = [];
 
+
+    protected function role(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => CompanyUserRole::lang($value)
+        );
+    }
+
+    protected function status(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value) => CompanyUserStatus::lang($value)
+        );
+    }
 
     protected $casts = [
         'id' => 'string',
-        "company_id"=>"string",
-        "company_user_id"=>"string",
-        "role"=>CompanyUserRole::class,
-        "status"=>CompanyUserStatus::class
+        "company_id" => "string",
+        "company_user_id" => "string",
     ];
-
 
     protected static function newFactory(): CompanyUserFactory
     {
