@@ -13,6 +13,7 @@ use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
 use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserRequest;
@@ -22,12 +23,14 @@ use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\CompanyUserValidationService;
+use Modules\CompanyUser\Services\CompanyUserWidgetsService;
 use Ramsey\Uuid\Uuid;
 
 class CompanyUserController extends Controller
 {
     public function __construct(
         private CompanyUserCRUDService       $companyUserService,
+        private CompanyUserWidgetsService      $companyUserWidgetService,
         private CompanyUserValidationService $companyUserValidationService,
         private UpdateCompanyUserHandler     $updateCompanyUserHandler,
         private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
@@ -45,6 +48,17 @@ class CompanyUserController extends Controller
         );
 
         return Json::buildItems(null, ['data' => CompanyUserPresenter::collection($list["data"]), 'pagination' => $list['pagination']]);
+    }
+
+    public function widgets()
+    {
+        $presnter = new WidgetCompanyUserPresenter(
+            $this->companyUserWidgetService->getTotalUserWidget(),
+            $this->companyUserWidgetService->getTotalLastMonthUserWidget(),
+            $this->companyUserWidgetService->getTotalActiveUserWidget(),
+            $this->companyUserWidgetService->getTotalInactiveUserWidget()
+        );
+        return Json::buildItems('data' , $presnter->getData());
     }
 
     public function show(GetCompanyUserRequest $request): JsonResponse
