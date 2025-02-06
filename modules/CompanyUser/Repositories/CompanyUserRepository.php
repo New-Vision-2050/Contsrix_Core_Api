@@ -129,7 +129,7 @@ class CompanyUserRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new \Exception(__("create-not-successful"), 500);
+            throw new \Exception(__("validation.create-not-successful"), 500);
         }
 
         return $companyUser;

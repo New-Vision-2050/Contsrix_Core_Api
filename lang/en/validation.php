@@ -175,6 +175,7 @@ return [
     'user-phone-success' => 'The phone is already exist in the system ',
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
+    "company-not-found"=>"company not found",
 
 
 
