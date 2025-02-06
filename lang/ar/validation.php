@@ -155,6 +155,11 @@ return [
     "phone"=>"رقم الهاتف غير صحيح",
     'delete-not-successful' => 'فشل الحذف',
     'create-not-successful' => 'فشل الحفظ',
+    "user-name"=>"اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
+    "user-email-error"=>" البريد الالكتروني موجود ضمن النظام بأسم :name .",
+    "user-email-success"=>"البريد الالكتروني موجود ضمن النظام",
+    "user-phone-error"=>"رقم الجوال موجود ضمن النظام بأسم :name .",
+    "user-phone-success"=>" رقم الجوال موجود ضمن النظام",
 
 
     'custom' => [

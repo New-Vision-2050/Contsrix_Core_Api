@@ -19,12 +19,14 @@ use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Modules\CompanyUser\Services\CompanyUserValidationService;
 use Ramsey\Uuid\Uuid;
 
 class CompanyUserController extends Controller
 {
     public function __construct(
         private CompanyUserCRUDService       $companyUserService,
+        private CompanyUserValidationService $companyUserValidationService,
         private UpdateCompanyUserHandler     $updateCompanyUserHandler,
         private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
         private DeleteCompanyUserHandler     $deleteCompanyUserHandler,
@@ -74,6 +76,16 @@ class CompanyUserController extends Controller
         $presenter = new CompanyUserPresenter($item);
 
         return Json::buildItems('data', $presenter->getData());
+    }
+
+    public function validation()
+    {
+        $validations  = $this->companyUserValidationService
+            ->validateName()
+            ->validateEmail()
+            ->validatePhone()
+            ->get();
+        return Json::buildItems("validations",$validations);
     }
 
     public function update(UpdateCompanyUserRequest $request): JsonResponse

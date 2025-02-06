@@ -8,6 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\Models\Company;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Ramsey\Uuid\UuidInterface;
 use Modules\CompanyUser\Models\CompanyUser;
@@ -50,6 +51,22 @@ class CompanyUserRepository extends BaseRepository
         return $this->findOneByOrFail([
             'id' => $id->toString(),
         ]);
+    }
+    public function findByEmail(string $email)
+    {
+        return $this->findOneBy([
+            'email' => $email,
+        ]);
+    }
+    public function findByPhone(string $phone)
+    {
+        return $this->findOneBy([
+            'phone' => $phone,
+        ]);
+    }
+    public function getCompanyUserBy(array $by): CompanyUser
+    {
+        return $this->findOneBy($by);
     }
 
     public function createCompanyUser(array $companyUserData,array $companyRole): CompanyUser
