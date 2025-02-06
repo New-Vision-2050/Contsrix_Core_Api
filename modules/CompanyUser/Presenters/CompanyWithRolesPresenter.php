@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
-use Modules\Company\Models\Company;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 

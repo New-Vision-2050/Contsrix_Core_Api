@@ -11,4 +11,5 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::put('/{id}', [CompanyUserController::class, 'update']);
     Route::post('/{id}/assign-role', [CompanyUserController::class, 'assignRoleForCompanies']);
     Route::delete('/{id}', [CompanyUserController::class, 'delete']);
+    Route::delete('/{id}/specific-role', [CompanyUserController::class, 'deleteForSpecificRole']);
 });

@@ -26,11 +26,11 @@ class CompanyUserRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function withRelations(array $relations = [],$page =1,$perPage=15)
+    public function withRelations(array $relations = [], $page = 1, $perPage = 15)
     {
-        $query =  $this->model->with($relations);
+        $query = $this->model->with($relations);
         $count = $query->count();
-        $paginatedData =$query->forPage($page, $perPage)->get();
+        $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
 
         return [
@@ -39,6 +39,17 @@ class CompanyUserRepository extends BaseRepository
         ];
 
 
+    }
+
+    public function deleteCompanyUserRole(
+        UuidInterface $companyUserId,
+        UuidInterface $companyId,
+        int        $role): void
+    {
+        CompanyUserCompany::where('company_user_id', $companyUserId)
+            ->where('company_id', $companyId)
+            ->where('role', $role)
+            ->delete();
     }
 
     public function getCompanyUserList(?int $page, ?int $perPage = 10): Collection
@@ -52,42 +63,45 @@ class CompanyUserRepository extends BaseRepository
             'id' => $id->toString(),
         ]);
     }
+
     public function findByEmail(string $email)
     {
         return $this->findOneBy([
             'email' => $email,
         ]);
     }
+
     public function findByPhone(string $phone)
     {
         return $this->findOneBy([
             'phone' => $phone,
         ]);
     }
+
     public function getCompanyUserBy(array $by): CompanyUser
     {
         return $this->findOneBy($by);
     }
 
-    public function createCompanyUser(array $companyUserData,array $companyRole): CompanyUser
+    public function createCompanyUser(array $companyUserData, array $companyRole): CompanyUser
     {
         try {
             DB::beginTransaction();
-            $companyUser= $this->create($companyUserData);
-            CompanyUserCompany::create($companyRole+["company_user_id"=>$companyUser->id]);
+            $companyUser = $this->create($companyUserData);
+            CompanyUserCompany::create($companyRole + ["company_user_id" => $companyUser->id]);
             DB::commit();
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
             DB::rollBack();
-            throw new \Exception(__("create-not-successful"),500);
+            throw new \Exception(__("create-not-successful"), 500);
         }
 
         return $companyUser;
     }
 
 
-    public function assignRoleCompanyUser(UuidInterface $id , array $companyUserRoleData):void
+    public function assignRoleCompanyUser(UuidInterface $id, array $companyUserRoleData): void
     {
-        CompanyUserCompany::firstOrCreate($companyUserRoleData+["company_user_id"=>$id],$companyUserRoleData+["company_user_id"=>$id]);
+        CompanyUserCompany::firstOrCreate($companyUserRoleData + ["company_user_id" => $id], $companyUserRoleData + ["company_user_id" => $id]);
     }
 
     public function updateCompanyUser(UuidInterface $id, array $data): bool

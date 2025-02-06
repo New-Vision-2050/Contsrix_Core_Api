@@ -9,12 +9,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
+use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserRequest;
+use Modules\CompanyUser\Requests\DeleteCompanyUserSpecificRoleRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
@@ -29,6 +31,7 @@ class CompanyUserController extends Controller
         private CompanyUserValidationService $companyUserValidationService,
         private UpdateCompanyUserHandler     $updateCompanyUserHandler,
         private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
+        private DeleteCompanyUserRoleHandler $deleteCompanyUserRoleHandler,
         private DeleteCompanyUserHandler     $deleteCompanyUserHandler,
     )
     {
@@ -104,6 +107,19 @@ class CompanyUserController extends Controller
     {
         try {
             $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
+
+        } catch (\Exception $exception) {
+            return Json::buildItems(data: ["msg" => $exception->getMessage()], httpStatus: $exception->getCode());
+        }
+
+        return Json::deleted();
+    }
+
+    public function deleteForSpecificRole(DeleteCompanyUserSpecificRoleRequest $request): JsonResponse
+    {
+        try {
+            $command = $request->createDeleteRoleCommand();
+            $this->deleteCompanyUserRoleHandler->handle($command);
 
         } catch (\Exception $exception) {
             return Json::buildItems(data: ["msg" => $exception->getMessage()], httpStatus: $exception->getCode());
