@@ -81,6 +81,6 @@ class CompanyUser extends Model
 
     public function rolesForCompany($companyId)
     {
-        return $this->companies->where('id',$companyId)->pluck('pivot');
+        return $this->companies->where('id',$companyId)->pluck("pivot");
     }
 }

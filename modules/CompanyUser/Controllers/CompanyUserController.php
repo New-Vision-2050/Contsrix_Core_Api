@@ -39,7 +39,7 @@ class CompanyUserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::buildItems(null, ['data' => $list["data"], 'pagination' => $list['pagination']]);
+        return Json::buildItems(null, ['data' => CompanyUserPresenter::collection($list["data"]), 'pagination' => $list['pagination']]);
     }
 
     public function show(GetCompanyUserRequest $request): JsonResponse

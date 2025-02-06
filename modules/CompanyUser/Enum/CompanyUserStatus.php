@@ -14,7 +14,7 @@ enum CompanyUserStatus :int
     case PENDING = -1;
 
 
-    public static function  lang($value): string
+    public  static function  lang($value): string
     {
         return match ((int)$value) {
              self::ACTIVE->value => __('lookups.active'),

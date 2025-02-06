@@ -34,7 +34,7 @@ class CompanyUserRepository extends BaseRepository
 
         return [
             'pagination' => $paginationArray['pagination'],
-            'data' => $paginatedData->toArray(),
+            'data' => $paginatedData,
         ];
 
 
@@ -56,7 +56,7 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $companyUser= $this->create($companyUserData)->companies();
+            $companyUser= $this->create($companyUserData);
             CompanyUserCompany::create($companyRole+["company_user_id"=>$companyUser->id]);
             DB::commit();
         }catch (\Exception $exception){

@@ -14,7 +14,7 @@ enum CompanyUserRole: int
     case BROKER = 3;
 
 
-    public static function lang($value): string
+    public  static function lang($value): string
     {
         return match ((int)$value) {
             self::EMPLOYEE->value => __('lookups.employee'),

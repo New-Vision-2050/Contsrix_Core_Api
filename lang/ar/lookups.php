@@ -18,5 +18,5 @@ return [
     'broker' => 'وسيط',
     'active' => 'نشط',
     'inactive' => 'غير نشظ',
-    'pending' => 'وسيط',
+    'pending' => 'تحت الاجراء',
 ];

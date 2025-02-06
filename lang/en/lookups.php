@@ -16,5 +16,8 @@ return [
     'employee' => 'employee',
     'client' => 'client',
     'broker' => 'broker',
+    'active' => 'active',
+    'inactive' => 'in active',
+    'pending' => 'pending',
 
 ];

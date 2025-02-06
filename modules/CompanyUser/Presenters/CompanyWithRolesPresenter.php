@@ -7,6 +7,7 @@ namespace Modules\CompanyUser\Presenters;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\Models\Company;
 use Modules\CompanyUser\Models\CompanyUser;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 
 class CompanyWithRolesPresenter extends AbstractPresenter
 {
@@ -25,7 +26,7 @@ class CompanyWithRolesPresenter extends AbstractPresenter
         return [
             'id' => $this->company->id,
             'name' => $this->company->name,
-            'roles' => $this->companyUser->rolesForCompany($this->company->id)
+            'roles' => RolesPresenter::collection($this->companyUser->rolesForCompany($this->company->id))
         ];
     }
 
