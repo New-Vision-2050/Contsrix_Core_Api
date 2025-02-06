@@ -28,6 +28,28 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $this->call(CompanyFieldSeederTableSeeder::class);
         $this->call(CompanyTypeSeederTableSeeder::class);
         $this->call(CompanyRegistrationTypeSeederTableSeeder::class);
+        
+        $country = Country::first();
+        $companyType = CompanyType::first();
+        $companyField = CompanyField::first();
+        $registrationType = CompanyRegistrationType::first();
+        $general_manager = User::first();
+
+        $companyData = [
+            'name' => 'Test Company',
+            'user_name' => bin2hex(random_bytes(6)),
+            'email' => 'test@example.com',
+            'phone' => '123456789',
+            'country_id' => $country->id,
+            'company_type_id' => $companyType->id,
+            'company_field_id' => $companyField->id,
+            'registration_type_id' => $registrationType->id,
+            'general_manager_id' => $general_manager->id->toString(),
+            'registration_no' => '123456',
+            'serial_no'=> bin2hex(random_bytes(6))
+        ];
+
+        $company = Company::create($companyData);
 
     }
 }

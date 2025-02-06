@@ -152,7 +152,16 @@ return [
     'invalid-credential' => 'معلومات الدخول غير صحيحية',
     'invalid-to-login-with-otp' => 'غير مصرح لك بالدخول عن طريق كلمه المرور المؤقتة',
     "can-not-resend-before"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
-
+    'company_name' => 'اسم المستخدم صحيح',
+    'classification_number_already_in_use' => 'رقم التصنيف مستخدم بالفعل',
+    'classification_ number_available' => 'رقم التصنيف متاح',
+    'commercial_registration_number' => 'رقم السجل التجاري صحيح',
+    'Commercial_registration_number_with_another'=> 'رقم السجل التجاري مع رقم ترخيص اخر',
+    'phone_number_already_exists'=> 'رقم الهاتف موجود بالفعل',
+    'invalid_phone_number'=> 'رقم الهاتف غير صحيح',
+    'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
+    'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
+    'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
 
     'custom' => [
         'attribute-name' => [

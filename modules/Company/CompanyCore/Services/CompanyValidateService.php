@@ -25,14 +25,14 @@ class CompanyValidateService
         if (isset($data['user_name'])) {
             if (!$this->repository->isUserNameExists($data['user_name']) && preg_match('/^[a-zA-Z0-9_]+$/', $data['user_name'])) {
                 $errors[] = [
-                    'sentence' => 'اسم المستخدم صحيح',
+                    'sentence' => __("validation.company_name"),
                     'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => 'اسم المستخدم صحيح',
+                    'sentence' => __("validation.company_name"),
                     'sub_title' => '',
                     'status' => 0,
                     'validate' => 'change'
@@ -44,14 +44,14 @@ class CompanyValidateService
             // Validate registration_no
             if ($this->repository->isRegistrationExists($data['registration_no'], $data['registration_type_id'])) {
                 $errors[] = [
-                    'sentence' => 'رقم التصنيف مستخدم بالفعل',
+                    'sentence' => __("validation.classification_number_available"),
                     'sub_title' => '',
                     'status' => 0,
                     'validate' => 'change'
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => 'رقم التصنيف متاح',
+                    'sentence' => __("validation.classification_number_available"),
                     'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
@@ -65,14 +65,14 @@ class CompanyValidateService
                 str_starts_with($data['registration_no'], '1')
             ) {
                 $errors[] = [
-                    'sentence' => 'رقم السجل التجاري صحيح',
+                    'sentence' => __("validation.commercial_registration_number"),
                     'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => 'رقم السجل التجاري غير صحيح',
+                    'sentence' => __("validation.commercial_registration_number"),
                     'sub_title' => '',
                     'status' => 0,
                     'validate' => 'required'
@@ -81,14 +81,14 @@ class CompanyValidateService
 
             if ($this->repository->isRegistrationExists($data['registration_no'], $data['registration_type_id'])) {
                 $errors[] = [
-                    'sentence' => 'رقم السجل التجاري مع رقم ترخيص اخر',
+                    'sentence' => __("validation.commercial_registration_number_with_another"),
                     'sub_title' => 'registration_no',
                     'status' => 0,
                     'validate' => 'optional'
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => 'رقم السجل التجاري متاح',
+                    'sentence' =>__("validation.commercial_registration_number_with_another"),
                     'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
@@ -103,7 +103,7 @@ class CompanyValidateService
 
             if ($this->repository->isPhoneExists($data['phone'])) {
                 $errors[] = [
-                    'sentence' => "رقم الهاتف موجود بالفعل.",
+                    'sentence' => __("validation.phone_number_already_exists"),
                     'sub_title' => 'phone',
                     'status' => 0,
                     'validate' => 'optional'
@@ -111,7 +111,7 @@ class CompanyValidateService
             }
             else if($validator->fails()){
                 $errors[] = [
-                    'sentence' => "رقم الهاتف غير صحيح.",
+                    'sentence' => __("validation.invalid_phone_number"),
                     'sub_title' => 'phone',
                     'status' => 0,
                     'validate' => 'required'
@@ -119,7 +119,7 @@ class CompanyValidateService
             }
             else {
                 $errors[] = [
-                    'sentence' => "تم التحقق من رقم الهاتف بنجاح",
+                    'sentence' => __("validation.phone_number_verified_successfully"),
                     'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'
@@ -131,7 +131,7 @@ class CompanyValidateService
         if (isset($data['email'])) {
             if ($this->repository->isEmailExists($data['email'])) {
                 $errors[] = [
-                    'sentence' => "البريد الإلكتروني موجود بالفعل.",
+                    'sentence' => __('validation.email_already_exists'),
                     'sub_title' => 'email',
                     'status' => 0,
                     'validate' => 'optional',
@@ -139,7 +139,7 @@ class CompanyValidateService
                 ];
             } else {
                 $errors[] = [
-                    'sentence' => "تم التحقق من البريد الإلكتروني بنجاح",
+                    'sentence' => __("validation.email_verified_successfully"),
                     'sub_title' => '',
                     'status' => 1,
                     'validate' => 'required'

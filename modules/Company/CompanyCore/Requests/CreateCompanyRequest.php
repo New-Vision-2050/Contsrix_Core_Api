@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Requests;
 
+use App\Rules\Company\CompanyCore\Rules\RegistrationNoRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
@@ -32,23 +33,7 @@ class CreateCompanyRequest extends FormRequest
             'registration_no' => [
                 'nullable',
                 'required_if:registration_type,1,2',
-                function ($attribute, $value, $fail) {
-                    if ($this->input('registration_type') == 1) {
-                        if (!preg_match('/^(1|700|40)\d+$/', $value)) {
-                            $fail('The ' . $attribute . ' must follow the required pattern.');
-                        }
-                    } elseif ($this->input('registration_type') == 2) {
-                        // This will check if the registration_no is unique based on registration_type_id.
-                        $exists = \DB::table('companies')
-                            ->where('registration_no', $value)
-                            ->where('registration_type_id', $this->input('registration_type_id'))
-                            ->exists();
-
-                        if ($exists) {
-                            $fail('The ' . $attribute . ' has already been taken for this registration type.');
-                        }
-                    }
-                },
+                new RegistrationNoRule($this->input('registration_type'), $this->input('registration_type_id')),
             ],
         ];
     }
@@ -57,16 +42,16 @@ class CreateCompanyRequest extends FormRequest
     {
         return new CreateCompanyDTO(
             name: $this->get('name'),
-            user_name: $this->get('user_name'),
+            userName: $this->get('user_name'),
             email: $this->get('email'),
-            serial_no: $this->get('serial_no'),
+            serialNo: $this->get('serial_no'),
             phone: $this->get('phone'),
-            country_id:  $this->get('country_id'),
-            company_type_id:  $this->get('company_type_id'),
-            company_field_id:  $this->get('company_field_id'),
-            general_manager_id:  $this->get('general_manager_id'),
-            registration_type_id:  $this->get('registration_type_id'),
-            registration_no:  $this->get('registration_no') ?? '',
+            countryId:  $this->get('country_id'),
+            companyTypeId:  $this->get('company_type_id'),
+            companyFieldId:  $this->get('company_field_id'),
+            generalManagerId:  $this->get('general_manager_id'),
+            registrationTypeId:  $this->get('registration_type_id'),
+            registrationNo:  $this->get('registration_no') ?? '',
         );
     }
 }

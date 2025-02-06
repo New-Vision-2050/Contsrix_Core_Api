@@ -2,23 +2,22 @@
 
 namespace Modules\Company\CompanyCore\Tests\Feature;
 
-use Modules\Company\CompanyCore\Services\CompanyTestService;
 use Modules\User\Models\User;
 use Tests\TestCase;
+use Illuminate\Support\Facades\Artisan;
 
 class CompanyListTest extends TestCase
 {
     protected $user;
     protected $company;
-    private CompanyTestService $testCompanyService;
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->user = User::first();
-        $this->testCompanyService = new CompanyTestService();
+        Artisan::call('migrate:fresh');
+        Artisan::call('db:seed');
 
-        $this->company = $this->testCompanyService->create();
+        $this->user = User::first();
     }
 
     public function test_lists_companies_no_auth(): void
@@ -37,10 +36,4 @@ class CompanyListTest extends TestCase
 
     }
 
-    public function tearDown(): void
-    {
-        $this->company->delete();
-
-        parent::tearDown();
-    }
 }

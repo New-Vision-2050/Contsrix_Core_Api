@@ -18,7 +18,6 @@ class CompanyStoreTest extends TestCase
     {
 
         parent::setUp();
-        DB::beginTransaction();
         $this->user = User::first();
 
         $country = Country::first();
@@ -44,8 +43,6 @@ class CompanyStoreTest extends TestCase
     }
     public function tearDown(): void
     {
-        DB::rollBack();
-
         parent::tearDown();
     }
     public function test_stores_companies_no_auth(): void

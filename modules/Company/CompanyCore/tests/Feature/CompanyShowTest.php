@@ -2,23 +2,21 @@
 
 namespace Modules\Company\CompanyCore\Tests\Feature;
 
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\User\Models\User;
-use Modules\Company\CompanyCore\Services\CompanyTestService;
 use Tests\TestCase;
 
 class CompanyShowTest extends TestCase
 {
     protected $user;
     protected $company;
-    private CompanyTestService $testCompanyService;
     public function setUp(): void
     {
         parent::setUp();
 
         $this->user = User::first();
-        $this->testCompanyService = new CompanyTestService();
 
-        $this->company = $this->testCompanyService->create();
+        $this->company = Company::first();
     }
 
     public function test_shows_a_company_no_auth(): void
@@ -43,8 +41,6 @@ class CompanyShowTest extends TestCase
     }
     public function tearDown(): void
     {
-        $this->company->delete();
-
         parent::tearDown();
     }
 }

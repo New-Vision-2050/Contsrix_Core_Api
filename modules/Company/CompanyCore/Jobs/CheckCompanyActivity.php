@@ -7,23 +7,24 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Modules\Company\CompanyCore\Models\Company;
-use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
+use Modules\Company\CompanyCore\Services\CompanyCheckActivityService;
 
 class CheckCompanyActivity implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
     protected $company_id;
-
+    private $companyCheckActivityService;
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct($company_id)
+    public function __construct($company_id,)
     {
+        $companyCheckActivityService = new CompanyCheckActivityService;
+        
         $this->company_id = $company_id;
+        $this->companyCheckActivityService = $companyCheckActivityService;
     }
 
     /**
@@ -33,14 +34,6 @@ class CheckCompanyActivity implements ShouldQueue
      */
     public function handle()
     {
-        $company = Company::whereId($this->company_id)->where('check_activity',0)->first();
-
-        if (!$company) {
-            return;
-        }
-
-        $company->delete();
-        Log::warning("Company ID: {$company->id} has no activity within 24 hours.");
-
+        $this->companyCheckActivityService->handle($this->company_id);
     }
 }

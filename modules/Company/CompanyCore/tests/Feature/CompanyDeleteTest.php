@@ -4,29 +4,25 @@ namespace Modules\Company\CompanyCore\Tests\Feature;
 
 use Modules\User\Models\User;
 use Tests\TestCase;
-use DB;
-use Modules\Company\CompanyCore\Services\CompanyTestService;
+use Illuminate\Support\Facades\Artisan;
+use Modules\Company\CompanyCore\Models\Company;
 
 class CompanyDeleteTest extends TestCase
 {
     protected $user;
     protected $company;
-    private CompanyTestService $testCompanyService;
 
     public function setUp(): void
     {
         parent::setUp();
-        DB::beginTransaction();
+        Artisan::call('migrate:fresh');
+        Artisan::call('db:seed');
 
         $this->user = User::first();
-        $this->testCompanyService = new CompanyTestService();
 
-        $this->company = $this->testCompanyService->create();
+        $this->company = Company::first();
     }
-    public function tearDown(): void
-    {
-        parent::tearDown();
-    }
+
     public function test_delete_companies_no_auth(): void
     {
         $response = $this->deleteJson(route('companies.delete', $this->company->id));
@@ -40,5 +36,10 @@ class CompanyDeleteTest extends TestCase
             ->deleteJson(route('companies.delete', $this->company->id));
 
         $response->assertStatus(204);
+    }
+
+    public function tearDown(): void
+    {
+        parent::tearDown();
     }
 }
