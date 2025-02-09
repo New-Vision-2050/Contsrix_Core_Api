@@ -29,10 +29,7 @@ class CompanyUserCRUDService
 
     }
 
-    public function assignRole(UuidInterface $id, CreateCompanyUserCompanyRoleDTO $createRoleDTO)
-    {
-        $this->repository->assignRoleCompanyUser($id, $createRoleDTO->toArray());
-    }
+
 
 
     public function list(int $page = 1, int $perPage = 10): array
