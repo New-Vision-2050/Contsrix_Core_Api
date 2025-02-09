@@ -16,7 +16,7 @@ class CreateCompanyUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required|string',new UserNameValidation()],
+            'name' => ['required','string',new UserNameValidation()],
             'role' => 'required',
             'company_id' => 'required|exists:companies,id',
             'country_id' => 'required|exists:countries,id',
