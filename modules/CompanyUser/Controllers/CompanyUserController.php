@@ -31,7 +31,7 @@ class CompanyUserController extends Controller
 {
     public function __construct(
         private CompanyUserCRUDService       $companyUserService,
-        private CompanyUserWidgetsService      $companyUserWidgetService,
+        private CompanyUserWidgetsService    $companyUserWidgetService,
         private CompanyUserValidationService $companyUserValidationService,
         private UpdateCompanyUserHandler     $updateCompanyUserHandler,
         private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
@@ -59,7 +59,7 @@ class CompanyUserController extends Controller
             $this->companyUserWidgetService->getTotalActiveUserWidget(),
             $this->companyUserWidgetService->getTotalInactiveUserWidget()
         );
-        return Json::buildItems('data' , $presnter->getData());
+        return Json::buildItems('data', $presnter->getData());
     }
 
     public function show(GetCompanyUserRequest $request): JsonResponse
@@ -98,12 +98,12 @@ class CompanyUserController extends Controller
 
     public function validation()
     {
-        $validations  = $this->companyUserValidationService
+        $validations = $this->companyUserValidationService
             ->validateName()
             ->validateEmail()
             ->validatePhone()
             ->get();
-        return Json::buildItems("validations",$validations);
+        return Json::buildItems("validations", $validations);
     }
 
     public function update(UpdateCompanyUserRequest $request): JsonResponse

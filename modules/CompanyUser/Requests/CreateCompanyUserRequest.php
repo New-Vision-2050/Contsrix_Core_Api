@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
+use Modules\CompanyUser\Rules\UserNameValidation;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
@@ -14,7 +15,7 @@ class CreateCompanyUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => ['required|string',new UserNameValidation()],
             'role' => 'required',
             'company_id' => 'required|exists:companies,id',
             'country_id' => 'required|exists:countries,id',
