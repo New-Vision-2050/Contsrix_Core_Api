@@ -19,7 +19,6 @@ class CompanyUserCRUDService
 
     public function __construct(
         private CompanyUserRepository $repository,
-        private CompanyRepository     $companyRepository,
     )
     {
     }
