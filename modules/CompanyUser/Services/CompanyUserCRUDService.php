@@ -26,20 +26,7 @@ class CompanyUserCRUDService
 
     public function create(CreateCompanyUserDTO $createCompanyUserDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
-        $company = $this->companyRepository->findOneBy(["id" => $companyRoleDTO->getCompanyId()]);
-        if ($company === null) {
-          throw  new \Exception(__("validation.company-not-found"), 404);
-        }
-        if ($createCompanyUserDTO->getCoutryId() == $company->country_id) {//country of company same country of user must insert identity or passport
-            if (request()->identity == null && request()->passport == null) {
-                throw new \Exception(__("validation.identity-or-passport-required"), 400);
-            }
-        } elseif (request()->residence == null && request()->border_number == null && request()->passport == null) {//must insert passport or border_number or residence
-            throw new \Exception(__("validation.passport-or-residence-or-border_number-required"), 400);
-
-        }
         return $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
-
 
     }
 

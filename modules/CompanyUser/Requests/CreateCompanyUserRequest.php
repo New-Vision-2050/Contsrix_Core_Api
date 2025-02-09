@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
+use Modules\CompanyUser\Rules\CompanyUserValidation;
 use Modules\CompanyUser\Rules\UserNameValidation;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
@@ -25,6 +26,8 @@ class CreateCompanyUserRequest extends FormRequest
             'residence' => 'present|nullable|unique:company_users,residence',
             'passport' => 'present|nullable|unique:company_users,passport',
             'identity' => 'present|nullable|unique:company_users,identity',
+            'company_user_validation' => [new CompanyUserValidation($this->get('company_id'), $this->get('country_id'))],
+
 
         ];
     }
