@@ -2,13 +2,21 @@
 
 namespace App\Exceptions;
 
-use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Exception;
 
-
-class CustomException extends ExceptionHandler
+class CustomException extends Exception
 {
-    public function __construct($message = "A custom error occurred")
+    protected int $statusCode;
+
+    public function __construct(string $message = "A custom error occurred", int $statusCode = 400)
     {
         parent::__construct($message);
+        $this->statusCode = $statusCode;
     }
+
+    public function getStatusCode(): int
+    {
+        return $this->statusCode;
+    }
+
 }

@@ -7,8 +7,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use App\Exceptions\CustomException;
-
+use App\Exceptions\Handler;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -25,36 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\Localization::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Handle specific exceptions
         $exceptions->render(function (Throwable $e, $request) {
-            return match (true) {
-                $e instanceof ValidationException => response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $e->errors(),
-                ], 422),
-                $e instanceof AuthenticationException => response()->json([
-                    'success' => false,
-                    'message' => 'Unauthenticated',
-                ], 401),
-                $e instanceof AuthorizationException => response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403),
-                $e instanceof NotFoundHttpException => response()->json([
-                    'success' => false,
-                    'message' => 'Resource not found',
-                ], 404),
-                $e instanceof CustomException => response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 400),
-                default => response()->json([
-                    'success' => false,
-                    'message' => 'Something went wrong, please try again later.',
-                    'error' => env('APP_DEBUG') ? $e->getMessage() : null, // Hide error details in production
-                ], 500),
-            };
+            return Handler::handle($e); // Use the custom handler
         });
     })
     ->create();
