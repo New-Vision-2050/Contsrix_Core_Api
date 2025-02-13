@@ -11,6 +11,7 @@ use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
 use Ramsey\Uuid\UuidInterface;
 
 class CompanyUserCRUDService
@@ -25,7 +26,9 @@ class CompanyUserCRUDService
 
     public function create(CreateCompanyUserDTO $createCompanyUserDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
-        return $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
+
+       return $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
+
 
     }
 

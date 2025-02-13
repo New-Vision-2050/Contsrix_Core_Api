@@ -46,26 +46,7 @@ class AuditController extends Controller
         return Json::buildItems('audit', $presenter->getData());
     }
 
-    public function store(CreateAuditRequest $request): JsonResponse
-    {
-        $createdItem = $this->auditService->create($request->createCreateAuditDTO());
 
-        $presenter = new AuditPresenter($createdItem);
-
-        return Json::buildItems('audit', $presenter->getData());
-    }
-
-    public function update(UpdateAuditRequest $request): JsonResponse
-    {
-        $command = $request->createUpdateAuditCommand();
-        $this->updateAuditHandler->handle($command);
-
-        $item = $this->auditService->get($command->getId());
-
-        $presenter = new AuditPresenter($item);
-
-        return Json::buildItems('audit', $presenter->getData());
-    }
 
     public function delete(DeleteAuditRequest $request): JsonResponse
     {

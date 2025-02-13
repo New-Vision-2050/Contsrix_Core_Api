@@ -15,11 +15,6 @@ use Ramsey\Uuid\UuidInterface;
 
 class CompanyUserWidgetsService
 {
-
-
-
-
-
     public function __construct(
         private CompanyUserRepository $repository,
     )
@@ -83,8 +78,5 @@ class CompanyUserWidgetsService
 
         return ($thisMonth / $total) * 100;
     }
-
-
-
 
 }

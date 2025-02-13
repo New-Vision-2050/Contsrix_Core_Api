@@ -9,13 +9,13 @@ services:
     depends_on:
       - admin_db
   admin_db:
-    image: mysql:5.7.22
+    image: mysql:5.7
     environment:
-      MYSQL_DATABASE: admin
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: internal
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user_pass
+      MYSQL_ROOT_PASSWORD: user_pass
     volumes:
       - ./storage/dbdata:/var/lib/mysql
     ports:
-      - 33060:3306
+      - 6604:3306

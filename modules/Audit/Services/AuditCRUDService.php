@@ -17,10 +17,6 @@ class AuditCRUDService
     ) {
     }
 
-    public function create(CreateAuditDTO $createAuditDTO): Audit
-    {
-         return $this->repository->createAudit($createAuditDTO->toArray());
-    }
 
     public function list(int $page = 1, int $perPage = 10): array
     {

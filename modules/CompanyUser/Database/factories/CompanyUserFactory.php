@@ -16,6 +16,13 @@ class CompanyUserFactory extends Factory
     {
         return [
             'name' => $this->faker->name(),
+            'email' => $this->faker->unique()->safeEmail(),
+            'phone' => $this->faker->unique()->phoneNumber(),
+            'residence' => $this->faker->optional()->randomNumber(8, true),
+            'identity' => $this->faker->optional()->randomNumber(8, true),
+            'passport' => $this->faker->optional()->randomNumber(8, true),
+            'border_number' => $this->faker->optional()->randomNumber(8, true),
+            'country_id' =>20,
         ];
     }
 }
