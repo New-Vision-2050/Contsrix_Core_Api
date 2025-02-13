@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Services;
 
+use App\Http\Services\RabbitMqService;
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
@@ -19,14 +20,20 @@ class CompanyUserCRUDService
 
     public function __construct(
         private CompanyUserRepository $repository,
+        private RabbitMqService $rabbitMqService,
     )
     {
     }
 
     public function create(CreateCompanyUserDTO $createCompanyUserDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
-        return $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
+        $user =  $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
 
+
+
+        $this->rabbitMqService->sendMessage("company_user_created", $createCompanyUserDTO->toArray() + $companyRoleDTO->toArray()+["id"=>$user->id]);
+
+        return $user;
     }
 
 
