@@ -6,6 +6,7 @@ namespace Modules\Company\CompanyCore\Controllers;
 
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
+use App\Services\FileUploadService;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
@@ -23,9 +24,7 @@ use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
-use Modules\Company\CompanyCore\Models\Company;
-use Tests\TestCase;
-use Mockery;
+use Illuminate\Support\Facades\Storage;
 class CompanyController extends Controller
 {
     public function __construct(
@@ -34,7 +33,8 @@ class CompanyController extends Controller
         private DeleteCompanyHandler $deleteCompanyHandler,
         private CompanyValidateService $validateCompanyService,
         private CompanyWidgetService $companyWidgetService,
-        private ActivateCompanyHandler $activateCompanyCommand
+        private ActivateCompanyHandler $activateCompanyCommand,
+        private FileUploadService  $fileUploadService
     ) {
     }
 
@@ -122,5 +122,8 @@ class CompanyController extends Controller
 
         return Json::buildItems('company', $presenter->getData());
     }
-
+    public function test(Request $request)
+    {
+        return response()->json($this->fileUploadService->uploadToMinIO($request));
+    }
 }

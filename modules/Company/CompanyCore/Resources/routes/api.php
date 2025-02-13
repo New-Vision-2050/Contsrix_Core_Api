@@ -9,6 +9,8 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/widget', [CompanyController::class, 'widget']);
     Route::post('/', [CompanyController::class, 'store'])->name('companies.store');
     Route::post('/validate', [CompanyController::class, 'validate']);
+    Route::post('/test', [CompanyController::class, 'test']);
+
     Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show');
     Route::put('/{id}', [CompanyController::class, 'update']);
     Route::put('/activate/{id}', [CompanyController::class, 'activate']);
