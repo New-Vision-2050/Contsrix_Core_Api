@@ -9,7 +9,9 @@ use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
+use Modules\CompanyUser\Jobs\ComapnyUserCreated;
 use Modules\CompanyUser\Models\CompanyUser;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Ramsey\Uuid\UuidInterface;
@@ -31,7 +33,9 @@ class CompanyUserCRUDService
 
 
 
-        $this->rabbitMqService->sendMessage("company_user_created", $createCompanyUserDTO->toArray() + $companyRoleDTO->toArray()+["id"=>$user->id]);
+//        $this->rabbitMqService->sendMessage("crm", $createCompanyUserDTO->toArray() + $companyRoleDTO->toArray()+["id"=>$user->id]);
+        ComapnyUserCreated::dispatch($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray()+["id"=>$user->id])->onConnection('rabbitmq');
+//            ->onQueue('crm'); // This will be the routing key for direct exchange
 
         return $user;
     }
