@@ -20,7 +20,7 @@ class CompanyPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->company->id,
-            'name' => $this?->company?->name,
+            'name' => $this?->company->name,
             'user_name' => $this->company->user_name,
             'email' => $this->company->email,
             'phone' => $this->company->email,

@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\Company\CompanyCore\Observers\CompanyObserver;
 
 class CompanyServiceProvider extends ModuleServiceProvider
 {
@@ -24,7 +23,6 @@ class CompanyServiceProvider extends ModuleServiceProvider
         $this->registerMigrations();
         $this->registerCommands();
         $this->registerSchedules();
-        $this->registerObserve();
     }
 
     public function register(): void
@@ -53,10 +51,5 @@ class CompanyServiceProvider extends ModuleServiceProvider
                 \Modules\Company\CompanyCore\Console\CheckCompanyActivityCommand::class,
             ]);
         }
-    }
-    public function registerObserve(): void
-    {
-        Company::observe(CompanyObserver::class);
-
     }
 }

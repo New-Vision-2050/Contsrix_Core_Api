@@ -14,7 +14,7 @@ class CheckCompanyActivityCommand extends Command
     public function __construct()
     {
         parent::__construct();
-        $companyCheckActivityService = new CompanyCheckActivityService;
+        $companyCheckActivityService = app()->make(CompanyCheckActivityService::class);
         $this->companyCheckActivityService = $companyCheckActivityService;
     }
     public function handle()

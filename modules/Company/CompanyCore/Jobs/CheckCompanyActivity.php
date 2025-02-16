@@ -21,8 +21,8 @@ class CheckCompanyActivity implements ShouldQueue
      */
     public function __construct($company_id,)
     {
-        $companyCheckActivityService = new CompanyCheckActivityService;
-        
+        $companyCheckActivityService = app()->make(CompanyCheckActivityService::class);
+
         $this->company_id = $company_id;
         $this->companyCheckActivityService = $companyCheckActivityService;
     }

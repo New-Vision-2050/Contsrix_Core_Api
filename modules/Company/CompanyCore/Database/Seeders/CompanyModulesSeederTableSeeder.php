@@ -28,7 +28,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $this->call(CompanyFieldSeederTableSeeder::class);
         $this->call(CompanyTypeSeederTableSeeder::class);
         $this->call(CompanyRegistrationTypeSeederTableSeeder::class);
-        
+
         $country = Country::first();
         $companyType = CompanyType::first();
         $companyField = CompanyField::first();
@@ -49,7 +49,9 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'serial_no'=> bin2hex(random_bytes(6))
         ];
 
-        $company = Company::create($companyData);
-
+        $company = Company::firstOrCreate(
+            ['email' => $companyData['email']],
+            $companyData
+        );
     }
 }
