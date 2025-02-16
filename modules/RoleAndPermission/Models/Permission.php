@@ -30,8 +30,4 @@ class Permission extends SpatiePermission
     protected $keyType = 'string';
 
 
-
-//    protected $casts = [
-//        'id' => CompanyRoleCast::class,
-//    ];
 }
