@@ -12,10 +12,9 @@
         "php": "^8.2",
         "ajcastro/eager-load-pivot-relations": "^0.3.0",
         "guzzlehttp/guzzle": "^6.3|^7.0.1",
-
         "ichtrojan/laravel-otp": "^2.0",
         "laravel/framework": "^11.31",
-        "laravel/reverb": "^1.0",
+        "laravel/reverb": "^1.4",
         "laravel/tinker": "^2.9",
         "m-tech-stack/base-package": "^1.0",
         "owen-it/laravel-auditing": "^13.6",
