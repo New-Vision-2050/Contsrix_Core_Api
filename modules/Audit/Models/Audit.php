@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Audit\Database\factories\AuditFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\User\Models\User;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class Audit extends Model
@@ -20,6 +22,7 @@ class Audit extends Model
     //use SoftDeletes;
 
     //public array $translatable = [];
+    public $with = ['user'];
 
     public $incrementing = false;
 

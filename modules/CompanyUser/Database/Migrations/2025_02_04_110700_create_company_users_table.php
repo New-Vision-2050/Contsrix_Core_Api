@@ -20,7 +20,7 @@ return new class extends Migration
 
 
 
-            $table->foreignIdFor(\Modules\Country\Models\Country::class,'country_id')->index()->constrained()->onDelete('cascade');
+            $table->foreignIdFor(\Modules\Country\Models\Country::class,'country_id')->index();
 
             $table->timestamps();
         });

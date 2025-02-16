@@ -20,7 +20,20 @@ class AuditPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->audit->id,
-            'name' => $this->audit->name,
+            'user' => [
+                'id' => $this->audit->user->id,
+                'name' => $this->audit->user->name,
+                'email' => $this->audit->user->email,
+            ],
+            'event' => $this->audit->event,
+            'auditable_id' => $this->audit->auditable_id,
+            'auditable_type' => $this->audit->auditable_type,
+            'url' => $this->audit->url,
+            'ip_address' => $this->audit->ip_address,
+            'user_agent' => $this->audit->user_agent,
+            'tags' => $this->audit->tags,
+            'created_at' => $this->audit->created_at,
+            'updated_at' => $this->audit->updated_at,
         ];
     }
 }
