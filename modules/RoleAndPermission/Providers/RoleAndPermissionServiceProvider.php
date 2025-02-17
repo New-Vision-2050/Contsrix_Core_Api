@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Providers;
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 
@@ -19,6 +20,9 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('super-admin') ||  $user->hasRole('admin') ? true : null;
+        });
     }
 
     public function register(): void

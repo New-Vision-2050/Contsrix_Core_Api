@@ -19,13 +19,14 @@ class AdminSeedTableSeeder extends Seeder
     {
 
         if (App::environment('production') == false) {
-            User::firstOrCreate(['email' =>'admin@constrix-nv.com'],
+            $user = User::firstOrCreate(['email' =>'admin@constrix-nv.com'],
                 [
                     'name' => 'Admin',
                     'email' => 'admin@constrix-nv.com',
                     'password' => "Test1234",
                 ]
             );
+            $user->assignRole('super-admin');
         }
     }
 }

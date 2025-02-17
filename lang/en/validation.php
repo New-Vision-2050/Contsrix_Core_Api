@@ -163,9 +163,19 @@ return [
     'invalid-password' => 'invalid password.',
     'invalid-otp' => 'invalid Otp.',
     'invalid-credential' => 'invalid credential.',
-    'invalid-to-login-with-otp' => 'invalid-to-login-with-otp',
+    'invalid-to-login-with-otp' => 'invalid to login with otp',
     "can-not-resend-before"=>'can not resend before :minute minutes',
-
+    "phone"=>"phone format is invalid",
+    'delete-not-successful' => 'Delete not successful',
+    "create-not-successful"=>"Create not successful",
+    'user-name' => 'The name must consist of three Arabic words without any symbols.',
+    'user-email-error' => 'The email is already exist in the system in name :name',
+    'user-email-success' => 'The email is already exist in the system ',
+    'user-phone-error' => 'The phone is already exist in the system in name :name',
+    'user-phone-success' => 'The phone is already exist in the system ',
+    "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
+    "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
+    "company-not-found"=>"company not found",
 
 
 

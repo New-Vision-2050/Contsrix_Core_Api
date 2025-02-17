@@ -152,6 +152,19 @@ return [
     'invalid-credential' => 'معلومات الدخول غير صحيحية',
     'invalid-to-login-with-otp' => 'غير مصرح لك بالدخول عن طريق كلمه المرور المؤقتة',
     "can-not-resend-before"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
+    "phone"=>"رقم الهاتف غير صحيح",
+    'delete-not-successful' => 'فشل الحذف',
+    'create-not-successful' => 'فشل الحفظ',
+    "user-name"=>"اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
+    "user-email-error"=>" البريد الالكتروني موجود ضمن النظام بأسم :name .",
+    "user-email-success"=>"البريد الالكتروني موجود ضمن النظام",
+    "user-phone-error"=>"رقم الجوال موجود ضمن النظام بأسم :name .",
+    "user-phone-success"=>" رقم الجوال موجود ضمن النظام",
+    "identity-or-passport-required"=>"يجب ادخال رقم الهوية او رقم الجواز",
+    "passport-or-residence-or-border_number-required"=>"يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
+    "company-not-found"=>"الشركة غير موجودة",
+
+
 
 
     'custom' => [

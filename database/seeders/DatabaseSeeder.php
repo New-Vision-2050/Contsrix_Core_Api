@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
+use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 
@@ -14,6 +15,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(RolesAndPermissionsSeeder::class);
+
         $this->call(AdminSeedTableSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(CountrySeederTableSeeder::class);

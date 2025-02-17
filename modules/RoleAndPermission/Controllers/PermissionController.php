@@ -24,7 +24,9 @@ class PermissionController extends Controller
     public function __construct(
         private PermissionCRUDService $permissionService,
         private UpdatePermissionHandler $updatePermissionHandler,
-        private DeletePermissionHandler $deletePermissionHandler,
+        private DeletePermissionHandler $deletePermissionHandler
+
+
     ) {
     }
 
@@ -35,7 +37,7 @@ class PermissionController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['permissions' => RoleAndPermissionPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::buildItems(null,['permissions' => PermissionPresenter::collection($list['data']),'pagination' => $list['pagination']]);
     }
 
     public function show(GetPermissionRequest $request): JsonResponse
@@ -74,4 +76,6 @@ class PermissionController extends Controller
 
         return Json::deleted();
     }
+
+
 }

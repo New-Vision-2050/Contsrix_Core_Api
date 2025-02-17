@@ -9,7 +9,8 @@ Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
     Route::get('/', [RoleController::class, 'index']);
     Route::post('/', [RoleController::class, 'store']);
     Route::get('/{id}', [RoleController::class, 'show']);
-    Route::put('/{id}/assign-permissions', [RoleController::class, 'assignPermissionToRole']);
+    Route::get('/{id}/permissions', [RoleController::class, 'getPermissions']);
+    Route::post('/{id}/assign-permissions', [RoleController::class, 'assignPermissionToRole']);
     Route::put('/{id}', [RoleController::class, 'update']);
     Route::delete('/{id}', [RoleController::class, 'delete']);
 });
@@ -18,7 +19,9 @@ Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
 Route::group(['middleware' => ['auth:api'],"prefix"=>"permissions"], function () {
     Route::get('/', [PermissionController::class, 'index']);
     Route::post('/', [PermissionController::class, 'store']);
+
     Route::get('/{id}', [PermissionController::class, 'show']);
     Route::put('/{id}', [PermissionController::class, 'update']);
     Route::delete('/{id}', [PermissionController::class, 'delete']);
+
 });

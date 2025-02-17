@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\User\Models;
 
-use App\Casts\Uuid;
 use App\Casts\UuidCast;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
@@ -14,13 +13,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class User  extends Authenticatable implements JWTSubject
+class User  extends Authenticatable implements JWTSubject , Auditable
 {
     use HasFactory;
     use UuidTrait;
@@ -28,6 +28,8 @@ class User  extends Authenticatable implements JWTSubject
     use Notifiable;
     use HasTranslations;
     use HasRoles;
+    use \OwenIt\Auditing\Auditable;
+
     //use SoftDeletes;
 
 //    public array $translatable = [];
