@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Events\UserDeleted;
+use Modules\CompanyUser\Events\UserRoleDeleted;
 use Modules\CompanyUser\Events\UserUpdated;
 use Modules\CompanyUser\Listeners\CreateUserInAuth;
+use Modules\CompanyUser\Listeners\DeleteUserInAuth;
 use Modules\CompanyUser\Listeners\DeleteUserRoleInAuth;
 use Modules\CompanyUser\Listeners\UpdateUserInAuth;
 
@@ -31,7 +33,8 @@ class CompanyUserServiceProvider extends ModuleServiceProvider
 
         Event::listen(UserCreated::class,CreateUserInAuth::class );
         Event::listen(UserUpdated::class,UpdateUserInAuth::class );
-        Event::listen(UserDeleted::class,DeleteUserRoleInAuth::class );
+        Event::listen(UserRoleDeleted::class,DeleteUserRoleInAuth::class );
+        Event::listen(UserDeleted::class,DeleteUserInAuth::class );
 
     }
 
