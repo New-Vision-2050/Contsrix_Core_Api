@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Events\UserUpdated;
 use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;

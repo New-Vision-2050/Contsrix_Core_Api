@@ -54,7 +54,7 @@ class CompanyUserWidgetsService
 
     public function getTotalInactiveUserWidget ()
     {
-        $totalInActiveUser=$this->repository->getActiveInactiveCompanyUserCount(status: CompanyUserStatus::INACTIVE);
+        $totalInActiveUser=$this->repository->getActiveInactiveCompanyUserCount(status: CompanyUserStatus::INACTIVE->value);
         $totalUserCount =$this->repository->getCompanyUserCount();
 
         return ["total" => $totalInActiveUser,"percentage"=>$this->calculatePercentage($totalInActiveUser,$totalUserCount)];

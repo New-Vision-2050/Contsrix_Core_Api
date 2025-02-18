@@ -8,10 +8,12 @@ use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
+use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Models\CompanyUser;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+use RabbitMQ\Jobs\BroadcastMessage;
 use Ramsey\Uuid\UuidInterface;
 
 class CompanyUserCRUDService
@@ -26,13 +28,13 @@ class CompanyUserCRUDService
 
     public function create(CreateCompanyUserDTO $createCompanyUserDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
+        $user = $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
 
-       return $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
 
+        event(new UserCreated($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
 
+        return $user;
     }
-
-
 
 
     public function list(int $page = 1, int $perPage = 10): array

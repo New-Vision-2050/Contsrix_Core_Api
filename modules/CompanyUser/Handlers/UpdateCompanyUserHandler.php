@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Handlers;
 
 use Modules\CompanyUser\Commands\UpdateCompanyUserCommand;
+use Modules\CompanyUser\Events\UserUpdated;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 
 class UpdateCompanyUserHandler
@@ -17,5 +18,7 @@ class UpdateCompanyUserHandler
     public function handle(UpdateCompanyUserCommand $updateCompanyUserCommand)
     {
         $this->repository->updateCompanyUser($updateCompanyUserCommand->getId(), $updateCompanyUserCommand->toArray());
+        event(new UserUpdated(["id"=>$updateCompanyUserCommand->getId()]+ $updateCompanyUserCommand->toArray()));
+
     }
 }
