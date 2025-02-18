@@ -111,7 +111,6 @@ class CompanyUserController extends Controller
     {
         $command = $request->createUpdateCompanyUserCommand();
         $this->updateCompanyUserHandler->handle($command);
-        event(new UserUpdated(["id"=>$command->getId()]+ $command->toArray()));
 
         $item = $this->companyUserService->get($command->getId());
 

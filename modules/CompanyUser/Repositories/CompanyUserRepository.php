@@ -81,10 +81,21 @@ class CompanyUserRepository extends BaseRepository
         UuidInterface $companyId,
         int           $role): void
     {
-        CompanyUserCompany::where('company_user_id', $companyUserId)
-            ->where('company_id', $companyId)
-            ->where('role', $role)
-            ->delete();
+        try {
+            DB::beginTransaction();
+            CompanyUserCompany::where('company_user_id', $companyUserId)
+                ->where('company_id', $companyId)
+                ->where('role', $role)
+                ->delete();
+            if (CompanyUserCompany::where('company_user_id', $companyUserId)->count() == 0) {
+                $this->delete($companyUserId);
+            }
+            DB::commit();
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new \Exception(__("validation.delete-not-successful"), 500);
+        }
+
     }
 
     public function getCompanyUserList(?int $page, ?int $perPage = 10): Collection
