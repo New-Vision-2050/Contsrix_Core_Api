@@ -73,8 +73,6 @@ class CompanyUserRepository extends BaseRepository
                 $query->where("company_users_companies.status", CompanyUserStatus::PENDING->value);
             });
         })->count();
-
-
     }
 
 

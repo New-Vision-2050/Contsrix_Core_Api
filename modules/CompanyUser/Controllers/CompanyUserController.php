@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Events\UserUpdated;
 use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
@@ -110,6 +111,7 @@ class CompanyUserController extends Controller
     {
         $command = $request->createUpdateCompanyUserCommand();
         $this->updateCompanyUserHandler->handle($command);
+        event(new UserUpdated(["id"=>$command->getId()]+ $command->toArray()));
 
         $item = $this->companyUserService->get($command->getId());
 
