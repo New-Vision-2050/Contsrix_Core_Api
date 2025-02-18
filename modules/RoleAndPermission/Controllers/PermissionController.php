@@ -37,7 +37,7 @@ class PermissionController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['permissions' => PermissionPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::item(['permissions' => PermissionPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
     }
 
     public function show(GetPermissionRequest $request): JsonResponse
@@ -46,7 +46,7 @@ class PermissionController extends Controller
 
         $presenter = new PermissionPresenter($item);
 
-        return Json::buildItems('permissions', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(CreatePermissionRequest $request): JsonResponse
@@ -55,7 +55,7 @@ class PermissionController extends Controller
 
         $presenter = new PermissionPresenter($createdItem);
 
-        return Json::buildItems('permissions', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdatePermissionRequest $request): JsonResponse
@@ -67,14 +67,14 @@ class PermissionController extends Controller
 
         $presenter = new permissionPresenter($item);
 
-        return Json::buildItems('permissions', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeletePermissionRequest $request): JsonResponse
     {
         $this->deletePermissionHandler->handle(Uuid::fromString($request->route('id')));
 
-        return Json::deleted();
+        return Json::success("Deleted successfully");
     }
 
 

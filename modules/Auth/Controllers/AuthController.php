@@ -32,15 +32,16 @@ class AuthController extends Controller
         try {
             [$token, $user] = $this->authService->login($loginDTO);
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+
         }
 
         if (empty($token)) {
-            return Json::buildItems(data: ["msg" => "success", "continue_with_otp" => 1]);
+            return Json::item(["continue_with_otp" => 1]);
         }
         $userPresenter = (new UserPresenter($user))->getData();
 
-        return Json::buildItems(data: ["msg" => "success", "token" => $token, "user" => $userPresenter]);
+        return Json::item(["token" => $token, "user" => $userPresenter], message: "Logged in");
     }
 
     public function loginWithOtp(LoginWithOtpRequest $request)
@@ -48,12 +49,12 @@ class AuthController extends Controller
         try {
             [$token, $user] = $this->authService->loginWithOtp($request->createLoginDTO());
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
         $userPresenter = (new UserPresenter($user))->getData();
 
-        return Json::buildItems(data: ["msg" => "success", "token" => $token, "user" => $userPresenter]);
+        return Json::item(["token" => $token, "user" => $userPresenter]);
     }
 
 
@@ -61,47 +62,42 @@ class AuthController extends Controller
     {
         $this->authService->logout();
 
-        return Json::buildItems(data: ["msg" => "success"]);
+        return Json::success("logged out successfully");
+
     }
+
 
     public function forgetPassword(ForgetPasswordRequest $request)
     {
         $command = $request->createForgetPasswordCommand();
         try {
             $this->makeOtpHandler->handle($command);
-
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-        return Json::buildItems(null, ["msg" => "success"], "", 200);
+        return Json::success("success");
     }
 
-    public
-    function resetPassword(ResetPasswordRequest $request)
+    public function resetPassword(ResetPasswordRequest $request)
     {
         try {
             $this->authService->ResetPassword($request->createResetPasswordCommand());
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-        return Json::buildItems(data: ["msg" => "success"]);
+        return Json::success("success");
     }
 
-    public
-    function resendOtp(ResendOtpRequest $resendOtpRequest)
+    public function resendOtp(ResendOtpRequest $resendOtpRequest)
     {
         $command = $resendOtpRequest->createResendOtpCommand();
         try {
             $this->authService->resendOtp($command);
-
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
-        return Json::buildItems(data: ["msg" => "success"]);
-
-
+        return Json::success("success");
     }
-
 }

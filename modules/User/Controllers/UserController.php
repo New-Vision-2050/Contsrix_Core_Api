@@ -47,7 +47,7 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::buildItems(null, ['users' => UserPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
+        return Json::item(['users' => UserPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
     }
 
     public function show(GetUserRequest $request): JsonResponse
@@ -56,14 +56,14 @@ class UserController extends Controller
 
         $presenter = new UserPresenter($item);
 
-        return Json::buildItems('user', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function me()
     {
         $user = auth()->user();
         $userPresenter = new UserPresenter($user);
-        return Json::buildItems('user', $userPresenter->getData());
+        return Json::item('user', $userPresenter->getData());
     }
 
     public function store(CreateUserRequest $request): JsonResponse
@@ -72,7 +72,7 @@ class UserController extends Controller
 
         $presenter = new UserPresenter($createdItem);
 
-        return Json::buildItems('user', $presenter->getData());
+        return Json::item('user', $presenter->getData());
     }
 
     public function update(UpdateUserRequest $request): JsonResponse
@@ -84,7 +84,7 @@ class UserController extends Controller
 
         $presenter = new UserPresenter($item);
 
-        return Json::buildItems('user', $presenter->getData());
+        return Json::item('user', $presenter->getData());
     }
 
 
@@ -92,7 +92,7 @@ class UserController extends Controller
     {
         $command = $request->createAssignRoleForUserCommand();
         $this->assignRoleForUserHandler->handle($command);
-        return Json::buildItems('roles', "roles added successfully");
+        return Json::item('roles', "roles added successfully");
     }
 
     public function getMyPermissions()
@@ -101,28 +101,28 @@ class UserController extends Controller
 
         $permissionPresenter = PermissionPresenter::collection($permissions);
 
-        return Json::buildItems("permissions", $permissionPresenter);
+        return Json::item("permissions", $permissionPresenter);
     }
 
     public function getMyRoles()
     {
         $roles = $this->userRoleAndPermissionService->getRoles(auth()->user()->id);
         $permissionPresenter = RolePresenter::collection($roles);
-        return Json::buildItems("permissions", $permissionPresenter);
+        return Json::item("permissions", $permissionPresenter);
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)
     {
         $permissions = $this->userRoleAndPermissionService->getPermissions(Uuid::fromString($request->route('id')));
         $permissionPresenter = PermissionPresenter::collection($permissions);
-        return Json::buildItems("roles", $permissionPresenter);
+        return Json::item("roles", $permissionPresenter);
     }
 
     public function getRoles(GetUserRolesAndPermissionRequest $request)
     {
         $roles = $this->userRoleAndPermissionService->getRoles(Uuid::fromString($request->route('id')));
         $rolePresenter = RolePresenter::collection($roles);
-        return Json::buildItems("roles", $rolePresenter);
+        return Json::item("roles", $rolePresenter);
     }
 
 
@@ -130,17 +130,17 @@ class UserController extends Controller
     {
         $this->deleteUserHandler->handle(Uuid::fromString($request->route('id')));
 
-        return Json::deleted();
+        return Json::success("Deleted successfully");
     }
 
     public function getAudites(GetUserAuditListRequest $request)
     {
         $list = $this->userAuditService->listPaginated(
             Uuid::fromString($request->route('id')),
-                (int)$request->get('page', 1),
-                (int)$request->get('per_page', 10)
-            );
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
+        );
 
-        return Json::buildItems(null, ['audits' => $list["data"], 'pagination' => $list["pagination"]]);
+        return Json::item(null, ['audits' => $list["data"], 'pagination' => $list["pagination"]]);
     }
 }
