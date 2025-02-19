@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Controllers;
 
-use BasePackage\Shared\Facade\Json;
+use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\RoleAndPermission\Handlers\DeletePermissionHandler;
 use Modules\RoleAndPermission\Handlers\UpdatePermissionHandler;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
-use Modules\RoleAndPermission\Presenters\RoleAndPermissionPresenter;
 use Modules\RoleAndPermission\Requests\CreatePermissionRequest;
 use Modules\RoleAndPermission\Requests\DeletePermissionRequest;
 use Modules\RoleAndPermission\Requests\GetPermissionListRequest;
@@ -22,19 +21,20 @@ use Ramsey\Uuid\Uuid;
 class PermissionController extends Controller
 {
     public function __construct(
-        private PermissionCRUDService $permissionService,
+        private PermissionCRUDService   $permissionService,
         private UpdatePermissionHandler $updatePermissionHandler,
         private DeletePermissionHandler $deletePermissionHandler
 
 
-    ) {
+    )
+    {
     }
 
     public function index(GetPermissionListRequest $request): JsonResponse
     {
         $list = $this->permissionService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
         );
 
         return Json::item(['permissions' => PermissionPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
@@ -74,7 +74,7 @@ class PermissionController extends Controller
     {
         $this->deletePermissionHandler->handle(Uuid::fromString($request->route('id')));
 
-        return Json::success("Deleted successfully");
+        return Json::deleted();
     }
 
 

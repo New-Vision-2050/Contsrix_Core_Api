@@ -11,7 +11,6 @@ use Modules\RoleAndPermission\Handlers\AssignPermissionsToRoleHandler;
 use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
-use Modules\RoleAndPermission\Presenters\RoleAndPermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
@@ -94,6 +93,6 @@ class RoleController extends Controller
     {
         $this->deleteRoleHandler->handle(Uuid::fromString($request->route('id')));
 
-        return Json::success("Deleted successfully");
+        return Json::deleted();
     }
 }

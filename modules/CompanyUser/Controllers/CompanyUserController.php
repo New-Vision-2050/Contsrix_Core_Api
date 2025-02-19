@@ -133,7 +133,7 @@ class CompanyUserController extends Controller
             return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
         }
 
-        return Json::success("Deleted successfully");
+        return Json::deleted();
     }
 
 
@@ -146,7 +146,7 @@ class CompanyUserController extends Controller
             return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
         }
 
-        return Json::success("Deleted successfully");
+        return Json::deleted();
     }
 
 

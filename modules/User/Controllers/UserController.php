@@ -63,7 +63,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $userPresenter = new UserPresenter($user);
-        return Json::item('user', $userPresenter->getData());
+        return Json::item( $userPresenter->getData());
     }
 
     public function store(CreateUserRequest $request): JsonResponse
@@ -72,7 +72,7 @@ class UserController extends Controller
 
         $presenter = new UserPresenter($createdItem);
 
-        return Json::item('user', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateUserRequest $request): JsonResponse
@@ -84,7 +84,7 @@ class UserController extends Controller
 
         $presenter = new UserPresenter($item);
 
-        return Json::item('user', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
 
@@ -92,7 +92,7 @@ class UserController extends Controller
     {
         $command = $request->createAssignRoleForUserCommand();
         $this->assignRoleForUserHandler->handle($command);
-        return Json::item('roles', "roles added successfully");
+        return Json::success( "roles added successfully");
     }
 
     public function getMyPermissions()
@@ -101,28 +101,28 @@ class UserController extends Controller
 
         $permissionPresenter = PermissionPresenter::collection($permissions);
 
-        return Json::item("permissions", $permissionPresenter);
+        return Json::item( $permissionPresenter);
     }
 
     public function getMyRoles()
     {
         $roles = $this->userRoleAndPermissionService->getRoles(auth()->user()->id);
         $permissionPresenter = RolePresenter::collection($roles);
-        return Json::item("permissions", $permissionPresenter);
+        return Json::item( $permissionPresenter);
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)
     {
         $permissions = $this->userRoleAndPermissionService->getPermissions(Uuid::fromString($request->route('id')));
         $permissionPresenter = PermissionPresenter::collection($permissions);
-        return Json::item("roles", $permissionPresenter);
+        return Json::item( $permissionPresenter);
     }
 
     public function getRoles(GetUserRolesAndPermissionRequest $request)
     {
         $roles = $this->userRoleAndPermissionService->getRoles(Uuid::fromString($request->route('id')));
         $rolePresenter = RolePresenter::collection($roles);
-        return Json::item("roles", $rolePresenter);
+        return Json::item( $rolePresenter);
     }
 
 
@@ -130,7 +130,7 @@ class UserController extends Controller
     {
         $this->deleteUserHandler->handle(Uuid::fromString($request->route('id')));
 
-        return Json::success("Deleted successfully");
+        return Json::deleted();
     }
 
     public function getAudites(GetUserAuditListRequest $request)
@@ -141,6 +141,6 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(null, ['audits' => $list["data"], 'pagination' => $list["pagination"]]);
+        return Json::item(['audits' => $list["data"], 'pagination' => $list["pagination"]]);
     }
 }
