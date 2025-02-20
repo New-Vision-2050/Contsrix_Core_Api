@@ -7,6 +7,7 @@ namespace Modules\Setting\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Support\Facades\DB;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -44,8 +45,15 @@ class LoginWayStep extends Model
 
     public function delete()
     {
-        $this->drivers()->detach();
-        parent::delete();
+        try {
+            DB::beginTransaction();
+            $this->drivers()->detach();
+            return parent::delete();
+        }
+        catch (\Exception $e) {
+            throw new \Exception(__("validation.delete-not-successful"), 500);
+        }
+
     }
 
 

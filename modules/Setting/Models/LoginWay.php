@@ -30,13 +30,20 @@ class LoginWay extends Model
 
     public function loginWaySteps()
     {
-        return $this->hasMany(LoginWayStep::class, 'login_way_id', 'id');
+        return $this->hasMany(LoginWayStep::class, 'login_way_id', 'id')->orderBy("order", "ASC");
     }
 
     public function delete()
     {
-        $this->loginWaySteps()->delete();
-        parent::delete();
+        try {
+            $this->loginWaySteps()->each(function ($step) {
+                $step->drivers()->detach();
+            });
+            $this->loginWaySteps()->delete();
+            return parent::delete();
+        } catch (\Exception $e) {
+            throw new \Exception(__("validation.delete-not-successful"), 500);
+        }
 
     }
 }

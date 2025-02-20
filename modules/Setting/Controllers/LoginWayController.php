@@ -7,21 +7,23 @@ namespace Modules\Setting\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Modules\Setting\DTO\CreateLoginWayDTO;
+use Modules\Setting\Handlers\DeleteLoginWayHandler;
 use Modules\Setting\Handlers\UpdateLoginWayHandler;
 use Modules\Setting\Presenters\LoginWayPresenter;
-use Modules\Setting\Presenters\SettingPresenter;
 use Modules\Setting\Requests\LoginWay\CreateLoginWayRequest;
+use Modules\Setting\Requests\LoginWay\DeleteLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\GetLoginWayListRequest;
 use Modules\Setting\Requests\LoginWay\UpdateLoginWayRequest;
 use Modules\Setting\Services\LoginWayService;
+use Ramsey\Uuid\Uuid;
 
 
 class LoginWayController extends Controller
 {
     public function __construct(
         private LoginWayService       $loginWayService,
-        private UpdateLoginWayHandler $loginWayHandler
+        private UpdateLoginWayHandler $loginWayHandler,
+        private DeleteLoginWayHandler $deleteHandler,
     )
     {
     }
@@ -48,8 +50,28 @@ class LoginWayController extends Controller
         $command = $request->createUpdateLoginWayCommand();
         $this->loginWayHandler->handle($command);
         $loginWay = $this->loginWayService->getLoginWay($command->getId());
+//        return $loginWay;
 
         return Json::item((new LoginWayPresenter($loginWay))->getData(), message: "Login way Updated successfully");
+    }
+
+    public function show($id)
+    {
+        $loginWay = $this->loginWayService->getLoginWay($id);
+
+        return Json::item((new LoginWayPresenter($loginWay))->getData());
+    }
+
+    public function delete(DeleteLoginWayRequest $request)
+    {
+
+        try {
+            $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+        }
+
+        return Json::deleted();
     }
 
 

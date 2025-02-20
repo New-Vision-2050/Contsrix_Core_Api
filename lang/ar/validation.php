@@ -155,6 +155,7 @@ return [
     "phone"=>"رقم الهاتف غير صحيح",
     'delete-not-successful' => 'فشل الحذف',
     'create-not-successful' => 'فشل الحفظ',
+    'update-not-successful' => 'فشل التعديل',
     "user-name"=>"اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
     "user-email-error"=>" البريد الالكتروني موجود ضمن النظام بأسم :name .",
     "user-email-success"=>"البريد الالكتروني موجود ضمن النظام",
