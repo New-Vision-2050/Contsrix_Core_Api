@@ -32,4 +32,11 @@ class LoginWay extends Model
     {
         return $this->hasMany(LoginWayStep::class, 'login_way_id', 'id');
     }
+
+    public function delete()
+    {
+        $this->loginWaySteps()->delete();
+        parent::delete();
+
+    }
 }

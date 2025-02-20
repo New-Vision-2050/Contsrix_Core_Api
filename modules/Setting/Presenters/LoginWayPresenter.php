@@ -18,6 +18,7 @@ class LoginWayPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
+            'id' => $this->loginWay->id,
             'name' => $this->loginWay->name,
             'steps' => LoginOptionPresenter::collection($this->loginWay->loginWaySteps),
         ];

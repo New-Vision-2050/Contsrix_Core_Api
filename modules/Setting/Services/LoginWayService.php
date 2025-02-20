@@ -10,6 +10,7 @@ use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\Setting;
 use Modules\Setting\Repositories\LoginWayRepository;
 use Modules\Setting\Repositories\SettingRepository;
+use Ramsey\Uuid\UuidInterface;
 
 class LoginWayService
 {
@@ -36,8 +37,8 @@ class LoginWayService
         return $this->repository->all();
     }
 
-    public function getValue($key)
+    public function getLoginWay(UuidInterface $id)
     {
-        return $this->repository->findOneBy(['key'=>$key])?->value;
+        return $this->repository->findOneBy(['id'=>$id]);
     }
 }
