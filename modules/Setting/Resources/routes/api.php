@@ -8,3 +8,10 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::post('/', [SettingController::class, 'store']);
     Route::delete('/', [SettingController::class, 'delete']);
 });
+
+
+Route::group(['middleware' => ['auth:api'],"prefix"=>"login-way"], function () {
+    Route::get('/', [\Modules\Setting\Controllers\LoginWayController::class, 'index']);
+    Route::post('/', [\Modules\Setting\Controllers\LoginWayController::class, 'store']);
+    Route::delete('/', [\Modules\Setting\Controllers\LoginWayController::class, 'delete']);
+});

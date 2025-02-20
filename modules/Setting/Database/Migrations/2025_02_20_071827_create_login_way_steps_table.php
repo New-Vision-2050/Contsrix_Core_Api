@@ -1,0 +1,19 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('login_way_steps', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string("login_option");//otp , password , barcode
+            $table->integer('order');
+            $table->foreignIdFor(\Modules\Setting\Models\LoginWay::class , "login_way_id")->index();
+            $table->timestamps();
+        });
+    }
+};

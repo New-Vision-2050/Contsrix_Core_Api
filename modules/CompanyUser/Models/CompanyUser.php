@@ -42,7 +42,6 @@ class CompanyUser extends Model
         "residence",
         "passport",
         "identity",
-
     ];
 
     protected $casts = [
