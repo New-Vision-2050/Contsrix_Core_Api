@@ -12,7 +12,10 @@ use Modules\Setting\Handlers\UpdateLoginWayHandler;
 use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\Setting\Requests\LoginWay\CreateLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\DeleteLoginWayRequest;
+use Modules\Setting\Requests\LoginWay\getLoginWayByCompanyIdRequest;
 use Modules\Setting\Requests\LoginWay\GetLoginWayListRequest;
+use Modules\Setting\Requests\LoginWay\MakeLoginWayDefaultRequest;
+use Modules\Setting\Requests\LoginWay\ShowLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\UpdateLoginWayRequest;
 use Modules\Setting\Services\LoginWayService;
 use Ramsey\Uuid\Uuid;
@@ -24,6 +27,8 @@ class LoginWayController extends Controller
         private LoginWayService       $loginWayService,
         private UpdateLoginWayHandler $loginWayHandler,
         private DeleteLoginWayHandler $deleteHandler,
+        private MakeLoginWayDefaultHandler $makeDefaultHandler,
+
     )
     {
     }
@@ -55,9 +60,9 @@ class LoginWayController extends Controller
         return Json::item((new LoginWayPresenter($loginWay))->getData(), message: "Login way Updated successfully");
     }
 
-    public function show($id)
+    public function show(ShowLoginWayRequest $request)
     {
-        $loginWay = $this->loginWayService->getLoginWay($id);
+        $loginWay = $this->loginWayService->getLoginWay($request->get("id"));
 
         return Json::item((new LoginWayPresenter($loginWay))->getData());
     }
@@ -73,6 +78,24 @@ class LoginWayController extends Controller
 
         return Json::deleted();
     }
+
+
+    public function getLoginWayByCompanyId(getLoginWayByCompanyIdRequest $request)
+    {
+        $loginWay = $this->loginWayService->getLoginWayBycompanyId($request->get("company_id"));
+
+        return Json::item((new LoginWayPresenter($loginWay))->getData());
+    }
+
+
+    public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)
+    {
+        $this->makeDefaultHandler->handle($request->get("id"));
+        return Json::success(  "Login way default successfully");
+    }
+
+
+
 
 
 }

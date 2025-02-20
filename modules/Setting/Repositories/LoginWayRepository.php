@@ -81,4 +81,19 @@ class LoginWayRepository extends BaseRepository
     {
         return $this->findOneBy(['id' => $id])->delete();
     }
+
+    public function makeLoginWayDefault(UuidInterface $id)
+    {
+        try {
+            DB::beginTransaction();
+            $this->findOneBy(['id' => $id])->update(['default' => 1]);
+            $this->model->where('id', '<>', $id)->update(['default' => 0]);
+            DB::commit();
+        }
+        catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.update-not-successful"), 500);
+        }
+
+    }
 }

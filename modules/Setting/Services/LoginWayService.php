@@ -40,5 +40,10 @@ class LoginWayService
     public function getLoginWay(UuidInterface $id)
     {
         return $this->repository->findOneBy(['id'=>$id]);
+
+
+    }public function getLoginWayBycompanyId(UuidInterface $id)
+    {
+        return $this->repository->findOneBy(['company_id'=>$id,"default"=>1]);
     }
 }
