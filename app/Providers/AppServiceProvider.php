@@ -2,9 +2,7 @@
 
 namespace App\Providers;
 
-use App\Services\FileUploadService;
 use Illuminate\Support\ServiceProvider;
-
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -12,9 +10,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(FileUploadService::class, function () {
-            return new FileUploadService();
-        });
+
     }
 
     /**
@@ -22,6 +18,5 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
     }
 }
