@@ -36,11 +36,11 @@ class SendOtpEmail
 
     }
 
-    public function loginWithOtp(UuidInterface $userId)
+    public function loginWithOtp(UuidInterface $userId , array $types = ["mail"])
     {
         $data =$this->createAuthMailData($userId)->toArray();
         $user = $this->userRepository->find($userId);
-        $user->notify(new SendOtpForLogin($data));
+        $user->notify(new SendOtpForLogin($data,$types));
     }
 
 }

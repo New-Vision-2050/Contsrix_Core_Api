@@ -114,8 +114,15 @@ class AuthService
         $user = $this->userRepository->getUserByEmail($getLoginWaysDTO->getIdentfier()); // will change by default config of company
 
         if($step->login_option == "otp"){
+            $types = [];
+            foreach ($step->drivers as $driver)
+            {
+                $types[]=$driver->type;
+            }
 
-            $this->sendOtpEmail->loginWithOtp($user->id);
+
+
+            $this->sendOtpEmail->loginWithOtp($user->id,$types);
         }
 
         $token = $this->verficationDataRepository->createToken($user->id,["order"=>1])->token;

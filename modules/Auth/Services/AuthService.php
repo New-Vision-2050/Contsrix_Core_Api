@@ -23,13 +23,13 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class AuthService
 {
     public function __construct(
-        private LogoutHandler      $logoutHandler,
-        private UserRepository     $userRepository,
-        private OtpRepository      $otpRepository,
-        private SendOtpEmail       $sendOtpEmail,
-        private SettingCRUDService $settingCRUDService,
-        private LoginWayRepository $loginWayRepository,
-        private  VerficationDataRepository $verficationDataRepository,
+        private LogoutHandler             $logoutHandler,
+        private UserRepository            $userRepository,
+        private OtpRepository             $otpRepository,
+        private SendOtpEmail              $sendOtpEmail,
+        private SettingCRUDService        $settingCRUDService,
+        private LoginWayRepository        $loginWayRepository,
+        private VerficationDataRepository $verficationDataRepository,
     )
     {
     }
@@ -107,20 +107,27 @@ class AuthService
 
     }
 
+    private function sendOtpByStep($step, $user)
+    {
+        if ($step->login_option == "otp") {
+            $types = [];
+            foreach ($step->drivers as $driver) {
+                $types[] = $driver->type;
+            }
+            $this->sendOtpEmail->loginWithOtp($user->id, $types);
+        }
+    }
+
     public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
     {
-        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId(),"default"=>1]);
-        $step =$loginWay->loginWaySteps()->where("order",1)->first();
+        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId(), "default" => 1]);
+        $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userRepository->getUserByEmail($getLoginWaysDTO->getIdentfier()); // will change by default config of company
+        $this->sendOtpByStep($step, $user);
 
-        if($step->login_option == "otp"){
 
-
-            $this->sendOtpEmail->loginWithOtp($user->id);
-        }
-
-        $token = $this->verficationDataRepository->createToken($user->id,["order"=>1])->token;
-        return [$loginWay,$token];
+        $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1])->token;
+        return [$loginWay, $token];
 
     }
 
