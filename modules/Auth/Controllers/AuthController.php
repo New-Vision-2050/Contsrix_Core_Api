@@ -19,6 +19,7 @@ use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Services\AuthService;
 
 use Modules\Setting\Presenters\LoginWayPresenter;
+use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
 
 class AuthController extends Controller
@@ -107,11 +108,8 @@ class AuthController extends Controller
 
     public function getLoginWays(GetLoginWaysRequest $request)
     {
-       [$loginWay , $token]= $this->authService->getLoginWays($request->createGetLoginWaysDTO());
-        return Json::item(["login_way" => (new LoginWayPresenter($loginWay))->getData()]);
-
-
-
+        [$loginWay, $token] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
+        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, 1))->getData(), "token" => $token]);
     }
 
 }

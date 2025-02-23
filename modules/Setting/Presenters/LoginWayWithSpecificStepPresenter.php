@@ -18,11 +18,11 @@ class LoginWayWithSpecificStepPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-       $step = $this->loginWay->loginWaySteps[$this->step-1];
+       $step = $this->loginWay->loginWaySteps()->where("order",$this->step)->first();
         return [
             'id' => $this->loginWay->id,
             'name' => $this->loginWay->name,
-            'steps' =>
+            'step' =>
                 [
                     "login_option"=>$step->login_option,
                     "drivers"=> DriverPresenter::collection($step->drivers)

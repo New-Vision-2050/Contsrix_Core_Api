@@ -111,7 +111,7 @@ class AuthService
         $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId()]);
         $user = $this->userRepository->getUserByEmail($getLoginWaysDTO->getIdentfier()); // will change by default config of company
 
-        $token = $this->verficationDataRepository->createToken($user->id,["order"=>1])->token;
+        $token = $this->verficationDataRepository->createToken($user->id,["order"=>1]);
         return [$loginWay,$token];
 
     }
