@@ -154,9 +154,6 @@ class AuthService
         $step = $loginWay->loginWaySteps()->where($verficationData->data->order)->first( );
 
         $checkOtp  = $this->checkOtpByStep($step ,$loginStepDTO->getIdentifier() , $loginStepDTO->getPassword() );
-        /*
-         * TODO will implement for check with password
-         */
         if(!$checkOtp )
         {
             throw new \Exception(__("validation.invalid-otp"), 401);
@@ -172,6 +169,13 @@ class AuthService
         $token = JWTAuth::fromUser($user);
 
         return [$loginWay, $token , null];
+
+
+
+
+
+
+
 
 
     }
