@@ -95,7 +95,7 @@ class LoginWayController extends Controller
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-        return Json::item(( LoginWayPresenter::collection($loginWay)));
+        return Json::item((new LoginWayPresenter($loginWay))->getData());
 
     }
 

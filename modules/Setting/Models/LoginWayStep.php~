@@ -35,7 +35,7 @@ class LoginWayStep extends Model
     ];
 
     protected $casts = [
-        'id' => "string",
+        'id' => UuidCast::class,
     ];
 
     public function drivers()

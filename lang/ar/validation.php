@@ -164,6 +164,8 @@ return [
     "identity-or-passport-required"=>"يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required"=>"يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found"=>"الشركة غير موجودة",
+    "login-way-not-found"=>"طريقة الدخول غير موجودة",
+
 
 
 

@@ -7,14 +7,18 @@ namespace Modules\Auth\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Ichtrojan\Otp\Models\Otp;
+use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ForgetPasswordRequest;
+use Modules\Auth\Requests\GetLoginWaysRequest;
 use Modules\Auth\Requests\LoginRequest;
 use Modules\Auth\Requests\LoginWithOtpRequest;
 use Modules\Auth\Requests\LogoutRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Services\AuthService;
+
+use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\User\Presenters\UserPresenter;
 
 class AuthController extends Controller
@@ -100,4 +104,14 @@ class AuthController extends Controller
         }
         return Json::success("success");
     }
+
+    public function getLoginWays(GetLoginWaysRequest $request)
+    {
+       [$loginWay , $token]= $this->authService->getLoginWays($request->createGetLoginWaysDTO());
+        return Json::item(["login_way" => (new LoginWayPresenter($loginWay))->getData()]);
+
+
+
+    }
+
 }

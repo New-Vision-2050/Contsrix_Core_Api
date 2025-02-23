@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Setting\Models;
 
+use App\Casts\UuidCast;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,6 @@ class LoginWay extends Model
 
     public $incrementing = false;
 
-    protected $keyType = 'string';
 
 
     public $with = ['loginWaySteps'];
@@ -25,7 +25,8 @@ class LoginWay extends Model
         "company_id"
     ];
     protected $casts = [
-        'id' => 'string',
+        'id' => "string",
+
     ];
 
     public function loginWaySteps()

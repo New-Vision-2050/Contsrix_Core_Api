@@ -3,14 +3,17 @@
 namespace Modules\Auth\Services;
 
 use Carbon\Carbon;
+use Faker\Core\Uuid;
 use Ichtrojan\Otp\Otp;
 use Modules\Auth\Commands\ResendOtpCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
+use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\Handlers\LogoutHandler;
 use Modules\Auth\Repositories\OtpRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
+use Modules\Setting\Repositories\LoginWayRepository;
 use Modules\Setting\Services\SettingCRUDService;
 use Modules\User\Repositories\UserRepository;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -22,7 +25,8 @@ class AuthService
         private UserRepository     $userRepository,
         private OtpRepository      $otpRepository,
         private SendOtpEmail       $sendOtpEmail,
-        private SettingCRUDService $settingCRUDService
+        private SettingCRUDService $settingCRUDService,
+        private LoginWayRepository $loginWayRepository
     )
     {
     }
@@ -97,6 +101,13 @@ class AuthService
 
         $user = $this->userRepository->getUserByEmail($resendOtpCommand->getEmail());
         $this->sendOtpEmail->loginWithOtp($user->id);
+
+    }
+
+    public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
+    {
+        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId()]);
+        return [$loginWay,hash('sha256', time() . str()->random(8) . $getLoginWaysDTO->getIdentfier())];
 
     }
 

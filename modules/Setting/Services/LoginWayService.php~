@@ -49,7 +49,7 @@ class LoginWayService
     public function getLoginWayByCompanyId(UuidInterface $id)
     {
         try {
-            return $this->repository->findBy(['company_id'=>$id]);
+            return $this->repository->findOneByOrFail(['company_id'=>$id]);
         } catch (\Exception $e) {
             throw new \DomainException(__("validation.login-way-not-found"), 404);
         }
