@@ -11,6 +11,7 @@ use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\Handlers\LogoutHandler;
+use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Repositories\OtpRepository;
 use Modules\Auth\Repositories\VerficationDataRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
@@ -28,7 +29,7 @@ class AuthService
         private SendOtpEmail       $sendOtpEmail,
         private SettingCRUDService $settingCRUDService,
         private LoginWayRepository $loginWayRepository,
-        private  VerficationDataRepository $verficationDataRepository
+        private  VerficationDataRepository $verficationDataRepository,
     )
     {
     }
@@ -108,8 +109,15 @@ class AuthService
 
     public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
     {
-        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId()]);
+        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId(),"default"=>1]);
+        $step =$loginWay->loginWaySteps()->where("order",1)->first();
         $user = $this->userRepository->getUserByEmail($getLoginWaysDTO->getIdentfier()); // will change by default config of company
+
+        if($step->login_option == "otp"){
+
+
+            $this->sendOtpEmail->loginWithOtp($user->id);
+        }
 
         $token = $this->verficationDataRepository->createToken($user->id,["order"=>1])->token;
         return [$loginWay,$token];

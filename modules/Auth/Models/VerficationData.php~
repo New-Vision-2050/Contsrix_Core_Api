@@ -26,7 +26,6 @@ class VerficationData extends Model
         'data',
         'token',
         'user_id',
-        'expires_at',
     ];
 
     protected $casts = [

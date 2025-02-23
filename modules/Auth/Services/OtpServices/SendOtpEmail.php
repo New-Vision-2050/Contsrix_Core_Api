@@ -13,17 +13,14 @@ use Ramsey\Uuid\UuidInterface;
 
 class SendOtpEmail
 {
-    private  $user;
-    public function __construct(UserRepository $userRepository)
+    public function __construct(private UserRepository $userRepository)
     {
-        $this->userRepository = $userRepository;
     }
 
 
     private function  createAuthMailData(UuidInterface $userId)
     {
         $user = $this->userRepository->find($userId);
-        $this->user = $user;
 
         return new AuthMailData(
             $user->email,

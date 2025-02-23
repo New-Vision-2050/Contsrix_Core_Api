@@ -15,7 +15,7 @@ class LoginStepsRequest extends FormRequest
     {
         return [
             'identifier' => 'required',
-            'password' => 'required',//can be password or otp or anything else
+            'password' => 'required',//can be password or otp 
             "token" => "required"
         ];
     }
