@@ -38,7 +38,7 @@ class AuthController extends Controller
         try {
             [$token, $user] = $this->authService->login($loginDTO);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus:400);
 
         }
 

@@ -36,10 +36,9 @@ class SendOtpForLogin extends Notification
      */
     public function via($notifiable)
     {
-        $arr =[];
-        if(in_array("mail", $this->types))$arr[] = "mail";
-        if(in_array("sms",$this->types ))$arr[] = SmsChannel::class;
-        return $arr;
+
+
+        return ["mail","sms"];
     }
 
     /**
@@ -61,7 +60,7 @@ class SendOtpForLogin extends Notification
         // TODO: SmsMessage, doesn't exist yet :-) We should create it.
         return (new MoraSms())
             ->to($notifiable->phone)
-            ->line("These aren't the droids you are looking for.");
+            ->line(__("emails.login-with-otp").$this->data['otp']);
     }
 
     /**
