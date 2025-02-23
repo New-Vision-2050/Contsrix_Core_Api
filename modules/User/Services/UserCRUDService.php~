@@ -37,9 +37,4 @@ class UserCRUDService
             id: $id,
         );
     }
-    public function getUserByIdentifier($identifier): User
-    {
-        return $this->repository->getUserByEmail(
-            $identifier);
-    }
 }

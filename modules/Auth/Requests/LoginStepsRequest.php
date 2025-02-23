@@ -6,6 +6,7 @@ namespace Modules\Auth\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\DTO\LoginDTO;
+use Modules\Auth\DTO\LoginStepDTO;
 use Modules\Setting\Models\Setting;
 
 class LoginStepsRequest extends FormRequest
@@ -20,11 +21,13 @@ class LoginStepsRequest extends FormRequest
         ];
     }
 
-    public function createLoginDTO(): LoginDTO
+    public function createLoginStepDTO(): LoginStepDTO
     {
-        return new LoginDTO(
-            email:             $this->get('email'),
-            password:          $this->get('password')
+        return new LoginStepDTO(
+            identifier: $this->get('identifier'),
+            password: $this->get('password'),
+            token: $this->get('token'),
+            companyId : $this->get('company_id'),
         );
     }
 }

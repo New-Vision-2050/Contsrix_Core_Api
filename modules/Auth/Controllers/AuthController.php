@@ -13,6 +13,7 @@ use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ForgetPasswordRequest;
 use Modules\Auth\Requests\GetLoginWaysRequest;
 use Modules\Auth\Requests\LoginRequest;
+use Modules\Auth\Requests\LoginStepsRequest;
 use Modules\Auth\Requests\LoginWithOtpRequest;
 use Modules\Auth\Requests\LogoutRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
@@ -22,12 +23,14 @@ use Modules\Auth\Services\AuthService;
 use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
+use Modules\User\Services\UserCRUDService;
 
 class AuthController extends Controller
 {
     public function __construct(
         private AuthService    $authService,
         private MakeOtpHandler $makeOtpHandler,
+        private UserCRUDService $userCRUDService
     )
     {
     }
@@ -113,9 +116,18 @@ class AuthController extends Controller
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, 1))->getData(), "token" => $token]);
     }
 
-    public function loginBySteps()
+    public function loginBySteps(LoginStepsRequest $request)
     {
+         $loginDTO = $request->createLoginStepDTO();
+        try {
+            [$loginWay, $token , $order ] = $this->authService->loginBySteps($loginDTO);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+        }
+        $user=$this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
+        $userPresenter = (new UserPresenter($user))->getData();
 
+        return $order  == null ?Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(),"token" => $token  ]):Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(),"token" => $token ,"user"=> $userPresenter]);
     }
 
 }

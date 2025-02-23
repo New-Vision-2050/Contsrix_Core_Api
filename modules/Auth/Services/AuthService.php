@@ -9,6 +9,7 @@ use Modules\Auth\Commands\ResendOtpCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\DTO\LoginDTO;
+use Modules\Auth\DTO\LoginStepDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\Handlers\LogoutHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
@@ -118,18 +119,65 @@ class AuthService
         }
     }
 
+    private function checkOtpByStep($step, $identifier , $otp)
+    {
+        if ($step->login_option == "otp" ) {
+            return  (new Otp)->validate($identifier ,$otp)->status;
+
+        }
+        return true;
+    }
+
     public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
     {
         $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId(), "default" => 1]);
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userRepository->getUserByEmail($getLoginWaysDTO->getIdentfier()); // will change by default config of company
-        $this->sendOtpByStep($step, $user);
 
+        $this->sendOtpByStep($step, $user);
 
         $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1])->token;
         return [$loginWay, $token];
 
     }
 
+    public function loginBySteps(LoginStepDTO $loginStepDTO)
+    {
+        try {
+           $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $loginStepDTO->getToken()]);
+
+        }catch (\Exception $e) {
+            throw new \ErrorException("invalid token", 404);
+        }
+        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $loginStepDTO->getCompanyId(), "default" => 1]);
+
+        $step = $loginWay->loginWaySteps()->where($verficationData->data->order)->first( );
+
+        $checkOtp  = $this->checkOtpByStep($step ,$loginStepDTO->getIdentifier() , $loginStepDTO->getPassword() );
+        if(!$checkOtp )
+        {
+            throw new \Exception(__("validation.invalid-otp"), 401);
+        }
+        $user = $this->userRepository->getUserByEmail($loginStepDTO->getIdentifier()); // will change by default config of company
+        $step = $loginWay->loginWaySteps()->where($verficationData->data->order+1)->first( );
+        if($step)
+        {
+            $token = $this->verficationDataRepository->createToken($user->id, ["order" => $verficationData->data->order+1])->token;
+
+            return[$loginWay , $token ,$verficationData->data->order+1 ];
+        }
+        $token = JWTAuth::fromUser($user);
+
+        return [$loginWay, $token , null];
+
+
+
+
+
+
+
+
+
+    }
 
 }

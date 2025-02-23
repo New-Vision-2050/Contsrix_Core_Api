@@ -12,21 +12,24 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 class LoginWayWithSpecificStepPresenter extends AbstractPresenter
 {
 
-    public function __construct(public LoginWay $loginWay,public int $step)
+    public function __construct(public LoginWay $loginWay,public? int $step=null)
     {
     }
 
     protected function present(bool $isListing = false): array
     {
-       $step = $this->loginWay->loginWaySteps()->where("order",$this->step)->first();
+        if($this->step != null){
+            $step = $this->loginWay->loginWaySteps()->where("order",$this->step)->first();
+
+        }
         return [
             'id' => $this->loginWay->id,
             'name' => $this->loginWay->name,
-            'step' =>
+            'step' =>$this->step!= null?
                 [
                     "login_option"=>$step->login_option,
                     "drivers"=> DriverPresenter::collection($step->drivers)
-                ]
+                ]:null
         ];
     }
 }
