@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Auth\Controllers;
 
+use App\Notifications\Drivers\SMS\MoraSms;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Ichtrojan\Otp\Models\Otp;
@@ -33,6 +34,9 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
+       return ["k"=>(new MoraSms())
+           ->to("966542138116")
+           ->line("These aren't the droids you are looking for.")->send()] ;
         $loginDTO = $request->createLoginDTO();
         try {
             [$token, $user] = $this->authService->login($loginDTO);
@@ -110,6 +114,11 @@ class AuthController extends Controller
     {
         [$loginWay, $token] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, 1))->getData(), "token" => $token]);
+    }
+
+    public function loginBySteps()
+    {
+
     }
 
 }

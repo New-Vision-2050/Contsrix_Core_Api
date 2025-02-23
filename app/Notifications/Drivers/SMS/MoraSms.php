@@ -2,6 +2,8 @@
 
 namespace App\Notifications\Drivers\SMS;
 
+use Illuminate\Support\Facades\Http;
+
 class MoraSms
 {
 
@@ -11,15 +13,16 @@ class MoraSms
     protected string $username;
     protected string $to;
     protected string $from;
-    protected array $lines;
+    protected string $line;
+    protected string $dryrun = 'no';
 
     /**
      * SmsMessage constructor.
      * @param array $lines
      */
-    public function __construct($lines = [])
+    public function __construct($line = 'hello')
     {
-        $this->lines = $lines;
+        $this->line = $line;
 
         // Pull in config from the config/services.php file.
         $this->api_key = config('services.mora_sms.api_key');
@@ -30,21 +33,16 @@ class MoraSms
 
     public function line($line = ''): self
     {
-        $this->lines[] = $line;
+        $this->line = $line;
 
         return $this;
     }
 
     public function to($to): self
     {
-        $to = is_array($to) ? $to : (array)$to;
+        $this->to = $to;
 
-//        $addCode = function ($number){
-//            return '966'.ltrim(trim($number), '0');
-//        };
-//        $numbers = array_map($addCode, $to);
 
-        $this->to = json_encode($to);
 
         return $this;
     }
@@ -58,9 +56,7 @@ class MoraSms
 
     public function send(): mixed
     {
-        if (!$this->from || !$this->to || !count($this->lines)) {
-            throw new \Exception('SMS not correct.');
-        }
+
 
         // "966538500542,966545550161"
         $url = $this->baseUrl;
@@ -69,16 +65,11 @@ class MoraSms
             "username" => $this->username,
             "sender" => $this->from,
             "numbers" => $this->to,
-            "message" => $this->lines,
-            "response" => "text",
+            "message" => $this->line,
         );
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url.http_build_query($push_payload));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $output = curl_exec($ch);
-        curl_close($ch);
-
+        $response = Http::post($url, $push_payload);
+        $output = $response->body();
         return $output;
 
 
