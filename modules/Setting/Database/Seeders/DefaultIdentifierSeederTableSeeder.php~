@@ -21,7 +21,8 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
     {
         Model::unguard();
         if (App::environment('production') == false) {
-            IdentifierSetting::create(
+            IdentifierSetting::firstOrCreate(
+                ["name" => "email"],
                 [
                     "name" => ["en"=>"email","ar"=>"البريد الإلكتروني"],
                     "default" => 1

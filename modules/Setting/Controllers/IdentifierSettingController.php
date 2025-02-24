@@ -9,6 +9,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Setting\Handlers\DeleteSettingHandler;
 use Modules\Setting\Handlers\MakeIdentifierSettingDefaultHandler;
+use Modules\Setting\Models\IdentifierSetting;
+use Modules\Setting\Presenters\IdentifierPresenter;
 use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\Setting\Presenters\SettingPresenter;
 use Modules\Setting\Requests\CreateSettingRequest;
@@ -36,7 +38,7 @@ class IdentifierSettingController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(["identifiers" => $list["data"], "pagination" => $list["pagination"]]);
+        return Json::item(["identifiers" =>IdentifierPresenter::collection($list["data"]), "pagination" => $list["pagination"]]);
 
     }
 

@@ -58,7 +58,6 @@ class LoginWayController extends Controller
         $command = $request->createUpdateLoginWayCommand();
         $this->loginWayHandler->handle($command);
         $loginWay = $this->loginWayService->getLoginWay($command->getId());
-//        return $loginWay;
 
         return Json::item((new LoginWayPresenter($loginWay))->getData(), message: "Login way Updated successfully");
     }

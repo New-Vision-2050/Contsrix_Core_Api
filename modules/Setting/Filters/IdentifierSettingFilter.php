@@ -6,7 +6,7 @@ namespace Modules\Setting\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
 
-class LoginWayFilter extends SearchModelFilter
+class IdentifierSettingFilter extends SearchModelFilter
 {
     public $relations = [];
 

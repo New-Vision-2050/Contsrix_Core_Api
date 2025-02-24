@@ -42,7 +42,6 @@ class LoginWayController extends Controller
             (int)$request->get('page', 1),
             (int)$request->get('per_page', 10)
         );
-        return  response(["k"=>LoginWayStep::query()->get()]);
 
         return Json::item(["login_way" => LoginWayPresenter::collection($list["data"]), "pagination" => $list["pagination"]]);
     }
