@@ -16,8 +16,11 @@ use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Repositories\OtpRepository;
 use Modules\Auth\Repositories\VerficationDataRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
+use Modules\Setting\Models\LoginWay;
+use Modules\Setting\Models\LoginWayStep;
 use Modules\Setting\Repositories\LoginWayRepository;
 use Modules\Setting\Services\SettingCRUDService;
+use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Modules\User\Services\UserCRUDService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -163,23 +166,32 @@ class AuthService
         } catch (\Exception $e) {
             throw new \ErrorException("invalid token", 404);
         }
+        /**
+         * @var $loginWay LoginWay
+         * @var $user User
+         * @var $step LoginWayStep
+         */
         $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $loginStepDTO->getCompanyId(), "default" => 1]);
+        $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier());
 
-        $step = $loginWay->loginWaySteps()->where($verficationData->data["order"])->first();
-
+        //current step
+        $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"])->first();
+        // if current step has otp then validate
         $this->checkOtpByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
+        // if current step has password then validate
         $this->checkPasswordByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
 
+        //get next step
+        $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"] + 1)->first();
 
-        $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier()); // will change by default config of company
-
-        $step = $loginWay->loginWaySteps()->where($verficationData->data["order"] + 1)->first();
-
-        if ($step) {
+        if ($step) {//if we have step
             $token = $this->verficationDataRepository->createToken($user->id, ["order" => $verficationData->data["order"] + 1])->token;
+
+            $this->sendOtpByStep($step, $user); // if step has otp then send otp
 
             return [$loginWay, $token, $verficationData->data["order"] + 1];
         }
+        //if no step else send token and authorize
         $token = JWTAuth::fromUser($user);
 
         return [$loginWay, $token, null];

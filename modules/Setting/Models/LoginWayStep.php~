@@ -10,6 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @property string $id
+ * @property string $driver_id
+ * @property string $login_way_id
+ * @property int $order
+ * @property string $login_option
+ * @property-read Driver[] $drivers
+ */
+
 // use BasePackage\Shared\Traits\HasTranslations;
 
 class LoginWayStep extends Model
@@ -35,7 +44,7 @@ class LoginWayStep extends Model
     ];
 
     protected $casts = [
-        'id' => UuidCast::class,
+        'id' => "string",
     ];
 
     public function drivers()
