@@ -128,8 +128,6 @@ class AuthService
     {
         if ($step->login_option == "otp" && (new Otp)->validate($identifier, $otp)->status == false) {
             throw new \Exception(__("validation.invalid-otp"), 401);
-
-
         }
         return true;
     }

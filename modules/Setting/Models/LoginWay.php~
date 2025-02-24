@@ -8,14 +8,7 @@ use App\Casts\UuidCast;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
-/**
- * @property string $id
- * @property string $name
- * @property string $description
- * @property int $order
- * @property bool $is_active
- * @property-read LoginWayStep[] $loginWaySteps
- */
+
 class LoginWay extends Model
 {
     use UuidTrait;

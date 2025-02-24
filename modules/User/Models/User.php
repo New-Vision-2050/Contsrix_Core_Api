@@ -42,6 +42,7 @@ protected $primaryKey="id";
         'name',
         'email',
         'password',
+        'phone'
     ];
 
     protected $casts = [

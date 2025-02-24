@@ -180,6 +180,8 @@ class AuthService
         $this->checkOtpByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
         // if current step has password then validate
         $this->checkPasswordByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
+        //delete token for current step
+        $this->verficationDataRepository->deleteBy(["token"=>$loginStepDTO->getToken()]);
 
         //get next step
         $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"] + 1)->first();

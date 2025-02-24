@@ -16,8 +16,6 @@ class LoginWay extends Model
 
     public $incrementing = false;
 
-
-
     public $with = ['loginWaySteps'];
 
     protected $fillable = [

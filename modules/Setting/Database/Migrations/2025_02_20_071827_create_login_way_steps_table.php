@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string("login_option");//otp , password , barcode
             $table->integer('order');
-            $table->foreignIdFor(\Modules\Setting\Models\LoginWay::class , "login_way_id")->index();
+            $table->uuid( "login_way_id")->index();
             $table->timestamps();
         });
     }

@@ -16,8 +16,7 @@ class CreateUserRequest extends FormRequest
         return [
             'email' => 'required|email|unique:users,email',
             'name' => 'required',
-            'password' => ['required', new PasswordValidation()],
-            "phone" => "required|unique:users,phone",
+            'password' => ['required', new PasswordValidation()]
         ];
     }
 
@@ -27,7 +26,6 @@ class CreateUserRequest extends FormRequest
             name: $this->get('name'),
             email: $this->get('email'),
             password: $this->get('password'),
-            phone: $this->get('phone')
         );
     }
 }
