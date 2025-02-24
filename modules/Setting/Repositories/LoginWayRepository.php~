@@ -31,7 +31,7 @@ class LoginWayRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $loginWay = $this->create(["company_id" => $data["company_id"], "name" => $data["name"]]);
+            $loginWay = $this->create([ "name" => $data["name"]]);
             $i = 1;
             foreach ($data["login_options"] as $loginOption) {
                 $step = $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "order" => $i]);
@@ -44,7 +44,7 @@ class LoginWayRepository extends BaseRepository
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 500);
+            throw new \Exception($e->getMessage(), 500);
         }
         return $loginWay->fresh();
     }
@@ -54,7 +54,7 @@ class LoginWayRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $loginWay = $this->findOneBy(['id' => $id]);
-            $loginWay->update(["company_id" => $data["company_id"], "name" => $data["name"]]);
+            $loginWay->update([ "name" => $data["name"]]);
             $loginWay->loginWaySteps()->each(function ($step) {
                 $step->drivers()->detach();
             });

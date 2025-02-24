@@ -18,18 +18,19 @@ class LoginWay extends Model
 
     public $with = ['loginWaySteps'];
 
+    protected $table = 'login_ways';
     protected $fillable = [
         "name",
-        "company_id"
     ];
     protected $casts = [
         'id' => "string",
+
 
     ];
 
     public function loginWaySteps()
     {
-        return $this->hasMany(LoginWayStep::class, 'login_way_id', 'id')->orderBy("order", "ASC");
+        return $this->hasOne(LoginWayStep::class, 'login_way_id', 'id')->orderBy("order", "ASC");
     }
 
     public function delete()

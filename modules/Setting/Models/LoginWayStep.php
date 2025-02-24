@@ -9,6 +9,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Support\Facades\DB;
+use phpseclib3\Common\Functions\Strings;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -21,6 +22,7 @@ class LoginWayStep extends Model
     // use SoftDeletes;
 
     public $with = ['drivers'];
+    protected $table = "login_way_steps";
 
     public array $translatable = [];
 
@@ -36,6 +38,7 @@ class LoginWayStep extends Model
 
     protected $casts = [
         'id' => "string",
+        'login_way_id' => "string"
     ];
 
     public function drivers()

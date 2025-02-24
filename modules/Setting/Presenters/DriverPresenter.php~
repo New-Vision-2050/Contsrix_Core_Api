@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\Setting\Presenters;
 
-use Modules\Setting\Models\LoginWay;
+use Modules\Setting\Models\Driver;
+use Modules\Setting\Models\LoginWayStep;
 use Modules\Setting\Models\Setting;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class LoginWayPresenter extends AbstractPresenter
+class DriverPresenter extends AbstractPresenter
 {
 
-    public function __construct(public LoginWay $loginWay)
+    public function __construct(public Driver $driver)
     {
     }
 
     protected function present(bool $isListing = false): array
     {
         return [
-            'id' => $this->loginWay->id,
-            'name' => $this->loginWay->name,
-            'steps' => $this->loginWay,
+//            'type' => $this->driver->driver_type,
+//            'name' => $this->driver->name,
         ];
     }
 }

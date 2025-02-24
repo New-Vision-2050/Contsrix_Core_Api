@@ -18,11 +18,13 @@ class LoginWay extends Model
 
     public $with = ['loginWaySteps'];
 
+    protected $table = 'login_ways';
     protected $fillable = [
         "name",
     ];
     protected $casts = [
         'id' => "string",
+
 
     ];
 
