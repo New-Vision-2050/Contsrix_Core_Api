@@ -24,7 +24,6 @@ class DefaultLoginWaySeederTableSeeder extends Seeder
                 ["name" => "password"],
                 [
                     "name" => "password",
-                    "company_id" => Company::query()->inRandomOrder()->first()->id,
                     "default" => 1
                 ]
             );
