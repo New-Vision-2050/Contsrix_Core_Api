@@ -122,7 +122,7 @@ class AuthController extends Controller
         try {
             [$loginWay, $token, $order] = $this->authService->loginBySteps($loginDTO);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus:400);
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
         $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
 
