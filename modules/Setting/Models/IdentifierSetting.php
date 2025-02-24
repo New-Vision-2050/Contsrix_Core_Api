@@ -8,13 +8,15 @@ use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+
 // use BasePackage\Shared\Traits\HasTranslations;
 
 class IdentifierSetting extends Model
 {
     use UuidTrait;
     use BaseFilterable;
-     use HasTranslations;
+    use HasTranslations;
+
     // use SoftDeletes;
 
     public array $translatable = ["name"];
@@ -28,5 +30,6 @@ class IdentifierSetting extends Model
 
     protected $casts = [
         'id' => 'string',
+        "key" => "string"
     ];
 }

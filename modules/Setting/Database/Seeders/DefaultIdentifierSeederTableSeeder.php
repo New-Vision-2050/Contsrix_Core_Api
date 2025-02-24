@@ -28,6 +28,7 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
             IdentifierSetting::updateOrCreate(["id" => $id],
                 [
                     "id" => $id,
+                    "key" => $key,
                     "name" => $value,
                     "default" => 1
                 ]
