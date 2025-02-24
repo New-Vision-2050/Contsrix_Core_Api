@@ -2,13 +2,15 @@
 
 namespace Modules\Auth\DTO;
 
+use Ramsey\Uuid\UuidInterface;
+
 class LoginStepDTO
 {
     public function __construct(
         public string $identifier,
         public string $password,
         public string $token,
-        public string $companyId
+        public UuidInterface $companyId
     ) {
     }
 

@@ -128,7 +128,7 @@ class AuthController extends Controller
 
         $userPresenter = (new UserPresenter($user))->getData();
         if ($order == null) {
-            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(), "token" => $token, "user" => $userPresenter]);
+            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(), "token" => $token, "user" => $userPresenter]]);
         }
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(), "token" => $token]);
     }

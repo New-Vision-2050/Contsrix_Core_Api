@@ -13,7 +13,7 @@ class GetLoginWaysDTO
     }
 
 
-    public function getIdentfier()
+    public function getIdentifier()
     {
         return $this->identifier;
     }

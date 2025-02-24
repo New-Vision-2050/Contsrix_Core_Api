@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Auth\Controllers\AuthController;
 Route::group(['middleware' => ['throttle:5,1']],function (){
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login-step', [AuthController::class, 'loginBySteps']);
     Route::post('/login-otp', [AuthController::class, 'loginWithOtp']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
     Route::post('/get-login-ways', [AuthController::class, 'getLoginWays']);
