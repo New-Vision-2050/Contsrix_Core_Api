@@ -14,7 +14,6 @@ use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\Setting\Requests\LoginWay\CreateLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\DeleteLoginWayRequest;
-use Modules\Setting\Requests\LoginWay\getLoginWayByCompanyIdRequest;
 use Modules\Setting\Requests\LoginWay\GetLoginWayListRequest;
 use Modules\Setting\Requests\LoginWay\MakeLoginWayDefaultRequest;
 use Modules\Setting\Requests\LoginWay\ShowLoginWayRequest;
