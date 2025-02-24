@@ -30,16 +30,10 @@ class IdentifierSettingRepository extends BaseRepository
 
     public function makeIdentifierSettingDefault(UuidInterface $id)
     {
-        try {
-            $this->findOneByOrFail(['id' => $id])->update(['default' => 1]);
-        }
-        catch (\Exception $e) {
-            throw new \Exception(__("validation.update-not-successful"), 500);
-        }
+        $this->findOneBy(['id' => $id])->update(['default' => 1]);
+
 
     }
-
-
 
 
 }

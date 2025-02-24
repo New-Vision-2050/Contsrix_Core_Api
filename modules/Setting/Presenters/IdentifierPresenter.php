@@ -20,6 +20,7 @@ class IdentifierPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
+            'id' => $this->identifier->id,
             'name' => $this->identifier->name,
             'default' => $this->identifier->default,
         ];

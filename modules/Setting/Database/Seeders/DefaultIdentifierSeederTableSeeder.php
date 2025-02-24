@@ -9,6 +9,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\IdentifierSetting;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\Setting;
+use Ramsey\Uuid\Uuid;
 
 class DefaultIdentifierSeederTableSeeder extends Seeder
 {
@@ -19,16 +20,19 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
      */
     public function run()
     {
+        $names = ["email" => ["en" => "email", "ar" => "البريد الإلكتروني"], "phone" => ["en" => "phone", "ar" => "رقم الجوال"]];
         Model::unguard();
-        if (App::environment('production') == false) {
-            IdentifierSetting::create(
+        foreach ($names as $key => $value) {
+            $namespace = Uuid::NAMESPACE_DNS;
+            $id = Uuid::uuid5($namespace, $key)->toString();
+            IdentifierSetting::updateOrCreate(["id" => $id],
                 [
-                    "name" => ["en"=>"email","ar"=>"البريد الإلكتروني"],
+                    "id" => $id,
+                    "name" => $value,
                     "default" => 1
                 ]
             );
 
         }
-
     }
 }

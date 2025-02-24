@@ -10,7 +10,7 @@ use Modules\Setting\Models\LoginWayStep;
 use Modules\Setting\Models\Setting;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class IdentityPresenter extends AbstractPresenter
+class IdentifierPresenter extends AbstractPresenter
 {
 
     public function __construct(public IdentifierSetting $identifier)
