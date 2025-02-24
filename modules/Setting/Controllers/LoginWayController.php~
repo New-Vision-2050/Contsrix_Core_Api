@@ -86,6 +86,10 @@ class LoginWayController extends Controller
         return Json::deleted();
     }
 
+
+
+
+
     public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)
     {
         $this->makeDefaultHandler->handle($request->get("id"));
