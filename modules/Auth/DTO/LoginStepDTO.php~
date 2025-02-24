@@ -10,7 +10,7 @@ class LoginStepDTO
         public string $identifier,
         public string $password,
         public string $token,
-
+        public UuidInterface $companyId
     ) {
     }
 
@@ -39,7 +39,10 @@ class LoginStepDTO
     }
 
 
-
+    public function getCompanyId()
+    {
+        return $this->companyId;
+    }
 
 
 }

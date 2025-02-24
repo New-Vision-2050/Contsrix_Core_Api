@@ -12,7 +12,6 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 Route::group(['middleware' => ['auth:api'],"prefix"=>"login-way"], function () {
     Route::get('/', [\Modules\Setting\Controllers\LoginWayController::class, 'index']);
-    Route::get('/company-id/{id}', [\Modules\Setting\Controllers\LoginWayController::class, 'getLoginWayByCompanyId']);
     Route::get('/{id}', [\Modules\Setting\Controllers\LoginWayController::class, 'show']);
     Route::post('/', [\Modules\Setting\Controllers\LoginWayController::class, 'store']);
     Route::post('/make-default/{id}', [\Modules\Setting\Controllers\LoginWayController::class, 'makeLoginWayDefault']);

@@ -20,7 +20,6 @@ class LoginWay extends Model
 
     protected $fillable = [
         "name",
-        "company_id"
     ];
     protected $casts = [
         'id' => "string",

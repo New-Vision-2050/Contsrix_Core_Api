@@ -16,16 +16,14 @@ class GetLoginWaysRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'identifier' => 'required',
-            'company_id' => 'required',
+            'identifier' => 'required'
         ];
     }
 
     public function createGetLoginWaysDTO(): GetLoginWaysDTO
     {
         return new GetLoginWaysDTO (
-            identifier: $this->get('identifier'),
-            companyId: Uuid::fromString( $this->get('company_id'))
+            identifier: $this->get('identifier')
         );
     }
 }

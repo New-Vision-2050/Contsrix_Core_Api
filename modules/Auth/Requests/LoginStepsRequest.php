@@ -20,7 +20,6 @@ class LoginStepsRequest extends FormRequest
             'identifier' => 'required',
             'password' => 'required',//can be password or otp or anything else
             "token" => "required",
-            "company_id" => "required|exists:companies,id",
         ];
     }
 
@@ -30,7 +29,6 @@ class LoginStepsRequest extends FormRequest
             identifier: $this->get('identifier'),
             password: $this->get('password'),
             token: $this->get('token'),
-            companyId : Uuid::fromString( $this->get('company_id')),
         );
     }
 }

@@ -11,7 +11,6 @@ class CreateLoginWayDTO
     public function __construct(
         public string $name,
         public array $loginOptions,
-        public UuidInterface $companyId
 
     ) {
     }
@@ -21,7 +20,6 @@ class CreateLoginWayDTO
         return [
             'name' => $this->name,
             'login_options' => $this->loginOptions,
-            'company_id' => $this->companyId
         ];
     }
 }

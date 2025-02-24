@@ -8,7 +8,6 @@ class GetLoginWaysDTO
 {
     public function __construct(
         public string $identifier,
-        public UuidInterface $companyId,
     ) {
     }
 
@@ -18,9 +17,4 @@ class GetLoginWaysDTO
         return $this->identifier;
     }
 
-
-    public function getCompanyId()
-    {
-        return $this->companyId;
-    }
 }

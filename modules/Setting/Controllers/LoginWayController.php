@@ -87,17 +87,7 @@ class LoginWayController extends Controller
     }
 
 
-    public function getLoginWayByCompanyId(getLoginWayByCompanyIdRequest $request)
-    {
-        try {
-            $loginWay = $this->loginWayService->getLoginWayByCompanyId(Uuid::fromString($request->route("id")));
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
 
-        return Json::item(( LoginWayPresenter::collection($loginWay)));
-
-    }
 
 
     public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)

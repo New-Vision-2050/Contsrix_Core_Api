@@ -12,7 +12,6 @@ class UpdateLoginWayCommand
         private UuidInterface $id,
         private string $name,
         private array $loginOptions,
-        private UuidInterface $companyId
 
     ) {
     }
@@ -29,7 +28,6 @@ class UpdateLoginWayCommand
         return [
             'name' => $this->name,
             'login_options' => $this->loginOptions,
-            'company_id' => $this->companyId
         ];
     }
 }

@@ -145,7 +145,7 @@ class AuthService
 
     public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
     {
-        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $getLoginWaysDTO->getCompanyId(), "default" => 1]);
+        $loginWay = $this->loginWayRepository->findOneBy([ "default" => 1]);
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
 
@@ -169,7 +169,7 @@ class AuthService
          * @var $user User
          * @var $step LoginWayStep
          */
-        $loginWay = $this->loginWayRepository->findOneBy(['company_id' => $loginStepDTO->getCompanyId(), "default" => 1]);
+        $loginWay = $this->loginWayRepository->findOneBy(["default" => 1]);
         $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier());
 
         //current step

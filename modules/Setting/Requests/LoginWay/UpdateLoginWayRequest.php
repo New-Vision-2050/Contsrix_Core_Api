@@ -16,7 +16,6 @@ class UpdateLoginWayRequest extends FormRequest
     {
         return [
             "name" => "required|string",
-            "company_id" => "required|exists:companies,id",
             "login_options"=>"required|array",
             'login_options.*.login_option' => 'required|string|in:password,otp,barcode',
             'login_options.*.driver_ids' => 'required_if:login_options.*.login_option,otp|array|nullable',
@@ -28,8 +27,7 @@ class UpdateLoginWayRequest extends FormRequest
         return new UpdateLoginWayCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->input('name'),
-            loginOptions: $this->input('login_options'),
-            companyId: Uuid::fromString($this->input('company_id'))
+            loginOptions: $this->input('login_options')
         );
     }
 }

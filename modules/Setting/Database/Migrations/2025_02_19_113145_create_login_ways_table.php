@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('login_ways', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string("name");
-            $table->foreignIdFor(Modules\Company\CompanyCore\Models\Company::class,"company_id")->index();
             $table->tinyInteger("default")->default(0);
             $table->timestamps();
         });
