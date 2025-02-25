@@ -38,7 +38,7 @@ class SendOtpForLogin extends Notification
     {
 
 
-        return ["mail","sms"];
+        return $this->types;
     }
 
     /**
