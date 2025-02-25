@@ -79,6 +79,10 @@ class LoginWayRepository extends BaseRepository
 
     public function deleteLoginWay(UuidInterface $id)
     {
+        if($this->countBy([]) == 1)
+        {
+            throw new \Exception(__("validation.delete-not-successful-must-have-one"), 500);
+        }
         return $this->findOneBy(['id' => $id])->delete();
     }
 

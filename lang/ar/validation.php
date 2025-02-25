@@ -166,6 +166,7 @@ return [
     "company-not-found"=>"الشركة غير موجودة",
     "login-way-not-found"=>"طريقة الدخول غير موجودة",
     "user-not-found"=>"المستخدم غير موجود",
+    "delete-not-successful-must-have-one"=>"يجب ان يكون على الاقل صف واحد",
 
 
 

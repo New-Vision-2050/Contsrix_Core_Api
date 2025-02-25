@@ -19,17 +19,15 @@ class DefaultLoginWaySeederTableSeeder extends Seeder
     public function run()
     {
         Model::unguard();
-        if (App::environment('production') == false) {
-            $loginWay = LoginWay::firstOrCreate(
-                ["name" => "password"],
-                [
-                    "name" => "password",
-                    "default" => 1
-                ]
-            );
-            $loginWay->loginWaySteps()->delete();
-            $loginWay->loginWaySteps()->create(["login_option" => "password", "order" => 1]);
-        }
-
+        $loginWay = LoginWay::firstOrCreate(
+            ["name" => "password"],
+            [
+                "name" => "password",
+                "default" => 1
+            ]
+        );
+        $loginWay->loginWaySteps()->delete();
+        $loginWay->loginWaySteps()->create(["login_option" => "password", "order" => 1]);
     }
+
 }

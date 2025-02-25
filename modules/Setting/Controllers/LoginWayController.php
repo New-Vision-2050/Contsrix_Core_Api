@@ -82,7 +82,6 @@ class LoginWayController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
-
         return Json::deleted();
     }
 
