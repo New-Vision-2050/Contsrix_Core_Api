@@ -56,31 +56,26 @@ class LoginWayService
 
     public function loginOption()
     {
-        return
-            [
-            "login_options" => [
+        $driverTypesData = [];
+        $driverTypes = $this->driverRepository->getDataGroupByType()->keys()->toArray();
+        foreach ($driverTypes as $type) {
+            $driverTypesData[] = [
+                'key' => $type,
+                'drivers' => DriverPresenter::collection($this->driverRepository->findBy(['driver_type' => $type]))
+            ];
+        }
+
+        return [
+            'login_options' => [
                 [
-                    "login_option" => "password",
-                    "driver_types" => null
+                    'login_option' => 'password',
+                    'driver_types' => null
                 ],
                 [
-                    "login_option" => "otp",
-                    "driver_types" =>
-                        [
-                            [
-                                "key" => "sms",
-                                "drivers" => DriverPresenter::collection($this->driverRepository->findBy(["driver_type" => "sms"]))
-                            ],
-                            [
-                                "key" => "mail",
-                                "drivers" => DriverPresenter::collection($this->driverRepository->findBy(["driver_type" => "mail"]))
-                            ]
-
-                        ]
+                    'login_option' => 'otp',
+                    'driver_types' => $driverTypesData
                 ]
-
             ]
-
         ];
     }
 }

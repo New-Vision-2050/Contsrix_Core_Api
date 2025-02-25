@@ -54,33 +54,22 @@ class LoginWayService
         return $loginWay;
     }
 
-    public function loginOption()
+
+    public function loginOption(): array
     {
-        return
+        $loginOptions = [
             [
-            "login_options" => [
-                [
-                    "login_option" => "password",
-                    "driver_types" => null
-                ],
-                [
-                    "login_option" => "otp",
-                    "driver_types" =>
-                        [
-                            [
-                                "key" => "sms",
-                                "drivers" => $this->driverRepository->getDriverNamesByType("sms")
-                            ],
-                            [
-                                "key" => "mail",
-                                "drivers" => $this->driverRepository->getDriverNamesByType("mail")
-                            ]
-
-                        ]
-                ]
-
+                "login_option" => "password",
+                "driver_types" => []
+            ],
+            [
+                "login_option" => "otp",
+                "driver_types" => ["sms", "mail"]
             ]
-
         ];
+
+        $presenter = new LoginOptionLookupPresenter($loginOptions);
+        return $presenter->getData();
     }
+
 }
