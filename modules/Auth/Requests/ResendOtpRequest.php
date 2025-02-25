@@ -17,7 +17,7 @@ class ResendOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required',
+            'identifier' => 'required',
 
         ];
     }
@@ -25,7 +25,7 @@ class ResendOtpRequest extends FormRequest
     public function createResendOtpCommand()
     {
         return new ResendOtpCommand(
-            email: $this->get('email'),
+            identifier: $this->get('identifier'),
         );
     }
 }

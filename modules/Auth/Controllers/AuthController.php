@@ -139,4 +139,9 @@ class AuthController extends Controller
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(), "token" => $token]);
     }
 
+    public function checkQuestion()
+    {
+        
+    }
+
 }

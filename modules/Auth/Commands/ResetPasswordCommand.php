@@ -10,7 +10,7 @@ class ResetPasswordCommand
 
         private string $otp,
         private string $password,
-        private string $email,
+        private string $identifier,
     ) {
     }
 
@@ -26,10 +26,10 @@ class ResetPasswordCommand
         return $this->otp;
     }
 
-    public function getEmail(): ?string
+    public function getIdentifier(): ?string
 
     {
-        return $this->email;
+        return $this->identifier;
     }
 
 

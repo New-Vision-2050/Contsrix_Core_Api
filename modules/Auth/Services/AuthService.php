@@ -85,8 +85,8 @@ class AuthService
 
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
-        if ((new Otp)->validate($resetPasswordCommand->getEmail(), $resetPasswordCommand->getOtp())->status == true) {
-            $user = $this->userRepository->getUserByEmail($resetPasswordCommand->getEmail());
+        if ((new Otp)->validate($resetPasswordCommand->getIdentifier(), $resetPasswordCommand->getOtp())->status == true) {
+            $user = $this->userCRUDService->getUserByIdentifier($resetPasswordCommand->getIdentifier());
 
             $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword()]);
 
@@ -101,14 +101,14 @@ class AuthService
         if (!$isContinueWithOTP) {
             throw new \ErrorException(__("validation.invalid-to-login-with-otp"), 403);
         }
-        $otp = $this->otpRepository->getOtpDataByIdentifier($resendOtpCommand->getEmail());
+        $otp = $this->otpRepository->getOtpDataByIdentifier($resendOtpCommand->getIdentifier());
 
         if (Carbon::parse($otp->created_at)->diffInMinutes(Carbon::now()) < 3) {
             throw new \ErrorException(__("validation.can-not-resend-before", ["minute" => 3]), 400);
 
         }
 
-        $user = $this->userRepository->getUserByEmail($resendOtpCommand->getEmail());
+        $user = $this->userCRUDService->getUserByIdentifier($resendOtpCommand->getIdentifier());
         $this->sendOtpEmail->loginWithOtp($user->id);
 
     }
