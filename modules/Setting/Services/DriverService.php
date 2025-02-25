@@ -25,4 +25,11 @@ class DriverService
         return $this->repository->getDataGroupByType();
     }
 
+    public function show(UuidInterface $id)
+    {
+        return $this->repository->find($id);
+    }
+
+
+
 }
