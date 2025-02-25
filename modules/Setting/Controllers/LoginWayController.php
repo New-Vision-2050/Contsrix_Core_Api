@@ -91,5 +91,12 @@ class LoginWayController extends Controller
         return Json::success(  "Login way default successfully");
     }
 
+    public function loginOptions()
+    {
+        $loginOptions = $this->loginWayService->loginOption();
+        return Json::item($loginOptions);
+
+    }
+
 
 }

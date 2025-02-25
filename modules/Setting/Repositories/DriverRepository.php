@@ -19,13 +19,16 @@ class DriverRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getIdentifierSettingList(?int $page, ?int $perPage = 10): Collection
-    {
-        return $this->paginatedList([], $page, $perPage);
-    }
+
 
     public function getDataGroupByType()
     {
         return $this->all()->groupBy('driver_type');
+    }
+
+
+    public function getDriverNamesByType($type)
+    {
+        return $this->model->where(["driver_type"=>$type])->pluck('name')->toArray();
     }
 }

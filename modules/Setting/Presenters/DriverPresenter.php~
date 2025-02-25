@@ -19,8 +19,8 @@ class DriverPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-//            'type' => $this->driver->driver_type,
-//            'name' => $this->driver->name,
+            'type' => $this->driver->driver_type,
+            'name' => $this->driver->name,
         ];
     }
 }
