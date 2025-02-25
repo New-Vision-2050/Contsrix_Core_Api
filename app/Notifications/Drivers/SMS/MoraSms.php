@@ -24,12 +24,23 @@ class MoraSms
     {
         $this->line = $line;
 
-        // Pull in config from the config/services.php file.
-        $this->api_key = config('services.mora_sms.api_key');
-        $this->baseUrl = config('services.mora_sms.base_url');
-        $this->username = config('services.mora_sms.username');
-        $this->from = config('services.mora_sms.sender');
+        // Attempt to retrieve data from the drivers table
+        $driver = \DB::table('drivers')->where('driver_type', 'sms')->where('name', 'mora')->first();
+
+        if ($driver->config["SMS_MORA_KEY"]!=""&&$driver->config["SMS_MORA_USER"]!=""&&$driver->config["SMS_MORA_SENDER"]!="") {
+            $this->api_key = $driver->config["SMS_MORA_KEY"];
+            $this->username = $driver->config["SMS_MORA_USER"];
+            $this->from = $driver->config["SMS_MORA_SENDER"];
+            $this->baseUrl = config('services.mora_sms.base_url'); // Assuming baseUrl is not stored in the drivers table
+        } else {
+            // Pull in config from the config/services.php file if not found in the drivers table
+            $this->api_key = config('services.mora_sms.api_key');
+            $this->baseUrl = config('services.mora_sms.base_url');
+            $this->username = config('services.mora_sms.username');
+            $this->from = config('services.mora_sms.sender');
+        }
     }
+
 
     public function line($line = ''): self
     {
@@ -41,7 +52,6 @@ class MoraSms
     public function to($to): self
     {
         $this->to = $to;
-
 
 
         return $this;

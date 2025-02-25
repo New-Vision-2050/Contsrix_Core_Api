@@ -21,6 +21,7 @@ use Modules\Setting\Requests\LoginWay\MakeLoginWayDefaultRequest;
 use Modules\Setting\Requests\LoginWay\ShowLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\UpdateLoginWayRequest;
 use Modules\Setting\Services\LoginWayService;
+use Monolog\Processor\UidProcessor;
 use Ramsey\Uuid\Uuid;
 
 
@@ -87,7 +88,7 @@ class LoginWayController extends Controller
 
     public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)
     {
-        $this->makeDefaultHandler->handle($request->get("id"));
+        $this->makeDefaultHandler->handle(Uuid::fromString($request->route("id")));
         return Json::success(  "Login way default successfully");
     }
 

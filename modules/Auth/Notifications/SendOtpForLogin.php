@@ -37,7 +37,6 @@ class SendOtpForLogin extends Notification
     public function via($notifiable)
     {
 
-
         return $this->types;
     }
 
@@ -55,9 +54,6 @@ class SendOtpForLogin extends Notification
 
     public function toSms($notifiable)
     {
-        // We are assuming we are notifying a user or a model that has a telephone attribute/field.
-        // And the telephone number is correctly formatted.
-        // TODO: SmsMessage, doesn't exist yet :-) We should create it.
         return (new MoraSms())
             ->to($notifiable->phone)
             ->line(__("emails.login-with-otp").$this->data['otp']);
