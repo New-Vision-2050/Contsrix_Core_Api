@@ -37,7 +37,7 @@ class UserCRUDService
             id: $id,
         );
     }
-    public function getUserByIdentifier($identifier): User
+    public function getUserByIdentifier($identifier): User // will change by default config of company
     {
         return $this->repository->getUserByEmail(
             $identifier);

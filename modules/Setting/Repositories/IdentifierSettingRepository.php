@@ -23,10 +23,7 @@ class IdentifierSettingRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getIdentifierSetting(string $key): Setting
-    {
-        return $this->findOneBy(['key' => $key]);
-    }
+
 
     public function makeIdentifierSettingDefault(UuidInterface $id)
     {

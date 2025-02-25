@@ -36,8 +36,5 @@ class IdentifierSettingRepository extends BaseRepository
         } catch (\Exception $e) {
             throw new \Exception(__("validation.update-not-successful"), 500);
         }
-
     }
-
-
 }
