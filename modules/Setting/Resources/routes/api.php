@@ -24,6 +24,12 @@ Route::group(['middleware' => ['auth:api']], function () {
 
     });
 
+    Route::group(["prefix"=>"driver"], function () {
+
+        Route::get('/', [\Modules\Setting\Controllers\DriverController::class, 'index']);
+
+    });
+
 });
 
 
