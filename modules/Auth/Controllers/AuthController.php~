@@ -112,12 +112,7 @@ class AuthController extends Controller
 
     public function getLoginWays(GetLoginWaysRequest $request)
     {
-        try {
-            [$loginWay, $token] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
-
+        [$loginWay, $token] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, 1))->getData(), "token" => $token]);
     }
 
@@ -126,11 +121,10 @@ class AuthController extends Controller
         $loginDTO = $request->createLoginStepDTO();
         try {
             [$loginWay, $token, $order] = $this->authService->loginBySteps($loginDTO);
-            $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
-
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
+        $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
 
         $userPresenter = (new UserPresenter($user))->getData();
         if ($order == null) {

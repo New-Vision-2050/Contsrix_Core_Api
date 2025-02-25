@@ -178,6 +178,8 @@ return [
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
     "login-way-not-found"=>"login way not found",
+    "user-not-found"=>"user not found ",
+
 
 
 

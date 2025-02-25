@@ -165,6 +165,7 @@ return [
     "passport-or-residence-or-border_number-required"=>"يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found"=>"الشركة غير موجودة",
     "login-way-not-found"=>"طريقة الدخول غير موجودة",
+    "user-not-found"=>"المستخدم غير موجود",
 
 
 

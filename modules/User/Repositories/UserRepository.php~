@@ -45,7 +45,7 @@ class UserRepository extends BaseRepository
         ]);
     }
 
-    public function getUserByIdentifier($identifier): mixed
+    public function getUserByIdentifier($identifier): ?User
     {
         $identifierSettings = $this->identifierSettingRepository->list();
         $isEmailDefault = $identifierSettings->where('key', 'email')->first()->default;

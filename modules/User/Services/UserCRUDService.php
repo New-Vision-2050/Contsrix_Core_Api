@@ -37,8 +37,12 @@ class UserCRUDService
             id: $id,
         );
     }
-    public function getUserByIdentifier($identifier): User // will change by default config of company
+    public function getUserByIdentifier($identifier): ?User
     {
-        return $this->repository->getUserByIdentifier($identifier);
+        $user =  $this->repository->getUserByIdentifier($identifier);
+        if(!$user) {
+            throw new \Exception(__("validation.user-not-found"), 404);
+        }
+        return $user;
     }
 }
