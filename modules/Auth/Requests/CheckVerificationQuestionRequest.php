@@ -17,7 +17,8 @@ class CheckVerificationQuestionRequest extends FormRequest
     {
         return [
             "identifier" => "required",
-            'questions_and_answers.*.question' => 'required',
+            "questions_and_answers" => "required|array",
+            'questions_and_answers.*.question_id' => 'required',
             'questions_and_answers.*.answer' => 'required',
         ];
     }
@@ -26,7 +27,7 @@ class CheckVerificationQuestionRequest extends FormRequest
     {
         return new QuestionVerificationDTO(
             identifier: $this->get('identifier'),
-            questionsAndAnswers: $this->get('question_and_answers')
+            questionsAndAnswers: $this->get('questions_and_answers')
         );
     }
 }

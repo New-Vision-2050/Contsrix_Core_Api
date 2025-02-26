@@ -168,6 +168,8 @@ return [
     "user-not-found"=>"المستخدم غير موجود",
     "delete-not-successful-must-have-one"=>"يجب ان يكون على الاقل صف واحد",
     "invalid-answers"=>"الاجابات غير صحيحة",
+    "you-must-set-your-answers"=>"يجب ادخال الاجابات الخاصة بك",
+    "all-questions-are-required"=>"جميع الاسئلة مطلوبة",
 
 
 

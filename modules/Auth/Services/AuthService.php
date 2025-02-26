@@ -206,14 +206,21 @@ class AuthService
         $user = $this->userCRUDService->getUserByIdentifier($questionVerificationDTO->getIdentifier());
 
         $questionAndAnswers =$this->verficationQuestionRepository->findBy(["user_id" => $user->id]);
+        if($questionAndAnswers->count() == 0)
+        {
+            throw new \ErrorException(__("validation.you-must-set-your-answers"), 401);
+        }
+        if ($questionAndAnswers->count() != count($questionVerificationDTO->getquestionsAndAnswers())) {
+            throw new \ErrorException(__("validation.all-questions-are-required"), 422);
+        }
         foreach ($questionVerificationDTO->getquestionsAndAnswers() as $questionAndAnswer) {
-           $hashedCorrectAnswer = $questionAndAnswers->where("question", $questionAndAnswer["question"])->answer;
+           $hashedCorrectAnswer = $questionAndAnswers->where("question_id", $questionAndAnswer["question_id"])->first()->answer;
             if (!Hash::check($questionAndAnswer["answer"], $hashedCorrectAnswer)) {
                 return [false,null];
             }
         }
-        $token = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
-        return [true,$token];
+        $verficationData = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
+        return [true,$verficationData->token];
     }
 
 }
