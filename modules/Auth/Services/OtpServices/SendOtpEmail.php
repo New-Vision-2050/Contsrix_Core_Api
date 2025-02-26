@@ -6,6 +6,7 @@ use Ichtrojan\Otp\Otp;
 use Illuminate\Support\Facades\Mail;
 use Modules\Auth\DataClasses\AuthMailData;
 use Modules\Auth\Notifications\ResetPassword;
+use Modules\Auth\Notifications\SendOtpForEmailChange;
 use Modules\Auth\Notifications\SendOtpForLogin;
 use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\User\Repositories\UserRepository;
@@ -33,6 +34,12 @@ class SendOtpEmail
     public function resetPassword(UuidInterface $userId){
         $user = $this->userRepository->find($userId);
         $user->notify(new ResetPassword($this->createAuthMailData($userId)->toArray()));
+
+    }
+
+    public function sendOtpForEmailChange(UuidInterface $userId){
+        $user = $this->userRepository->find($userId);
+        $user->notify(new SendOtpForEmailChange($this->createAuthMailData($userId)->toArray()));
 
     }
 

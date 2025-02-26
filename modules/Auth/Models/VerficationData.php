@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Auth\Models;
 
+use App\Casts\UuidCast;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -30,7 +31,8 @@ class VerficationData extends Model
     ];
 
     protected $casts = [
-        'id' => 'string',
+        'id' => UuidCast::class,
+        'user_id' => UuidCast::class,
         "data"=>"array"
     ];
 }

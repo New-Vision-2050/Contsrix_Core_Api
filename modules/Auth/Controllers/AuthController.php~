@@ -146,11 +146,11 @@ class AuthController extends Controller
 
     public function checkAnswers(CheckVerificationQuestionRequest $request)
     {
-//        try {
+        try {
             [$res,$token] = $this->authService->checkQuestionAnswer($request->createLoginDTO());
-//        } catch (\Exception $e) {
-//            return Json::error($e->getMessage());
-//        }
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage());
+        }
         if (!$res) {
             return Json::error(__("validation.invalid-answers"), httpStatus: 401);
         }
@@ -160,12 +160,12 @@ class AuthController extends Controller
 
     public function changeEmail(ChangeEmailRequest $changeEmailRequest)
     {
-        try {
+//        try {
             $command = $changeEmailRequest->createChangeEmailCommand();
             $this->changeEmailHandler->handle($command);
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
+//        } catch (\Exception $e) {
+//            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+//        }
         return Json::success("success");
     }
 

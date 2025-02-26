@@ -28,4 +28,15 @@ class VerficationDataRepository extends BaseRepository
 
         return $this->updateOrCreate(["user_id"=>$userId], ["user_id"=>$userId,"token"=> hash('sha256', time() . str()->random(8) .$user->email ),"data"=>$data,"expires_at"=>Carbon::now()->addMinutes(5)]);
     }
+
+    public function validateToken($token)
+    {
+       $verfication =  $this->findOneBy(["token"=>$token]);
+       if(!$verfication)
+       {
+           throw new \ErrorException(__("validation.invalid-token"), 403);
+       }
+       $verfication->delete();
+       return $verfication;
+   }
 }
