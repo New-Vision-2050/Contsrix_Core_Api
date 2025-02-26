@@ -9,7 +9,9 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Ichtrojan\Otp\Models\Otp;
 use Modules\Auth\DTO\GetLoginWaysDTO;
+use Modules\Auth\Handlers\ChangeEmailHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
+use Modules\Auth\Requests\ChangeEmailRequest;
 use Modules\Auth\Requests\CheckVerificationQuestionRequest;
 use Modules\Auth\Requests\ForgetPasswordRequest;
 use Modules\Auth\Requests\GetLoginWaysRequest;
@@ -31,7 +33,8 @@ class AuthController extends Controller
     public function __construct(
         private AuthService     $authService,
         private MakeOtpHandler  $makeOtpHandler,
-        private UserCRUDService $userCRUDService
+        private UserCRUDService $userCRUDService,
+        private ChangeEmailHandler $changeEmailHandler,
     )
     {
     }
@@ -143,14 +146,25 @@ class AuthController extends Controller
     public function checkAnswers(CheckVerificationQuestionRequest $request)
     {
         try {
-            $res = $this->authService->checkQuestionAnswer($request->createLoginDTO());
+            [$res,$token] = $this->authService->checkQuestionAnswer($request->createLoginDTO());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
         if (!$res) {
-            return Json::error(__("validation.invalid-answers"), httpStatus: 400);
+            return Json::error(__("validation.invalid-answers"), httpStatus: 401);
         }
 
+        return Json::item(["token" => $token]);
+    }
+
+    public function changeEmail(ChangeEmailRequest $changeEmailRequest)
+    {
+        try {
+            $command = $changeEmailRequest->createChangeEmailCommand();
+            $this->changeEmailHandler->handle($command);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+        }
         return Json::success("success");
     }
 

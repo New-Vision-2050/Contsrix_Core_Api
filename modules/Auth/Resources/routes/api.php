@@ -11,6 +11,7 @@ Route::group(['middleware' => ['throttle:5,1']],function (){
     Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
     Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
     Route::post('/check-answers-questions', [AuthController::class, 'checkAnswers']);
+    Route::post('/change-email', [AuthController::class, 'changeEmail']);
 
 });
 

@@ -201,7 +201,7 @@ class AuthService
         return [$loginWay, $token, null];
     }
 
-    public function checkQuestionAnswer(QuestionVerificationDTO $questionVerificationDTO)
+    public function checkQuestionAnswer(QuestionVerificationDTO $questionVerificationDTO) : bool
     {
         $user = $this->userCRUDService->getUserByIdentifier($questionVerificationDTO->getIdentifier());
 
@@ -209,11 +209,10 @@ class AuthService
         foreach ($questionVerificationDTO->getquestionsAndAnswers() as $questionAndAnswer) {
            $hashedCorrectAnswer = $questionAndAnswers->where("question", $questionAndAnswer["question"])->answer;
             if (!Hash::check($questionAndAnswer["answer"], $hashedCorrectAnswer)) {
-                return [false,null];
+                return false;
             }
         }
-        $token = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
-        return [true,$token];
+        return true;
     }
 
 }
