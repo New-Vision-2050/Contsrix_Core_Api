@@ -180,6 +180,7 @@ return [
     "login-way-not-found"=>"login way not found",
     "user-not-found"=>"user not found ",
     "delete-not-successful-must-have-one"=>"Delete not successful must have one",
+    "validation.invalid-answers"=>"invalid answers",
 
 
 

@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use Ichtrojan\Otp\Models\Otp;
 use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\Handlers\MakeOtpHandler;
+use Modules\Auth\Requests\CheckVerificationQuestionRequest;
 use Modules\Auth\Requests\ForgetPasswordRequest;
 use Modules\Auth\Requests\GetLoginWaysRequest;
 use Modules\Auth\Requests\LoginRequest;
@@ -139,9 +140,18 @@ class AuthController extends Controller
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(), "token" => $token]);
     }
 
-    public function checkQuestion()
+    public function checkAnswers(CheckVerificationQuestionRequest $request)
     {
-        
+        try {
+            $res = $this->authService->checkQuestionAnswer($request->createLoginDTO());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+        }
+        if (!$res) {
+            return Json::error(__("validation.invalid-answers"), httpStatus: 400);
+        }
+
+        return Json::success("success");
     }
 
 }

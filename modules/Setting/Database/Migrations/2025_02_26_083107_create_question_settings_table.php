@@ -8,11 +8,9 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('verification_questions', function (Blueprint $table) {
+        Schema::create('question_settings', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
-            $table->uuid('question_id');
-            $table->string('answer');
+            $table->string('key');
 
             $table->timestamps();
         });

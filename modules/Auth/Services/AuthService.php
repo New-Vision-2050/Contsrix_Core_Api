@@ -5,16 +5,19 @@ namespace Modules\Auth\Services;
 use Carbon\Carbon;
 use Faker\Core\Uuid;
 use Ichtrojan\Otp\Otp;
+use Illuminate\Support\Facades\Hash;
 use Modules\Auth\Commands\ResendOtpCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\DTO\LoginStepDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
+use Modules\Auth\DTO\QuestionVerificationDTO;
 use Modules\Auth\Handlers\LogoutHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Repositories\OtpRepository;
 use Modules\Auth\Repositories\VerficationDataRepository;
+use Modules\Auth\Repositories\VerficationQuestionRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\LoginWayStep;
@@ -28,14 +31,15 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class AuthService
 {
     public function __construct(
-        private LogoutHandler             $logoutHandler,
-        private UserRepository            $userRepository,
-        private OtpRepository             $otpRepository,
-        private SendOtpEmail              $sendOtpEmail,
-        private SettingCRUDService        $settingCRUDService,
-        private LoginWayRepository        $loginWayRepository,
-        private VerficationDataRepository $verficationDataRepository,
-        private UserCRUDService           $userCRUDService
+        private LogoutHandler                 $logoutHandler,
+        private UserRepository                $userRepository,
+        private OtpRepository                 $otpRepository,
+        private SendOtpEmail                  $sendOtpEmail,
+        private SettingCRUDService            $settingCRUDService,
+        private LoginWayRepository            $loginWayRepository,
+        private VerficationDataRepository     $verficationDataRepository,
+        private UserCRUDService               $userCRUDService,
+        private VerficationQuestionRepository $verficationQuestionRepository
     )
     {
     }
@@ -145,7 +149,7 @@ class AuthService
 
     public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
     {
-        $loginWay = $this->loginWayRepository->findOneBy([ "default" => 1]);
+        $loginWay = $this->loginWayRepository->findOneBy(["default" => 1]);
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
 
@@ -179,7 +183,7 @@ class AuthService
         // if current step has password then validate
         $this->checkPasswordByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
         //delete token for current step
-        $this->verficationDataRepository->deleteBy(["token"=>$loginStepDTO->getToken()]);
+        $this->verficationDataRepository->deleteBy(["token" => $loginStepDTO->getToken()]);
 
         //get next step
         $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"] + 1)->first();
@@ -195,8 +199,20 @@ class AuthService
         $token = JWTAuth::fromUser($user);
 
         return [$loginWay, $token, null];
+    }
 
+    public function checkQuestionAnswer(QuestionVerificationDTO $questionVerificationDTO) : bool
+    {
+        $user = $this->userCRUDService->getUserByIdentifier($questionVerificationDTO->getIdentifier());
 
+        $questionAndAnswers =$this->verficationQuestionRepository->findBy(["user_id" => $user->id]);
+        foreach ($questionVerificationDTO->getquestionsAndAnswers() as $questionAndAnswer) {
+           $hashedCorrectAnswer = $questionAndAnswers->where("question", $questionAndAnswer["question"])->answer;
+            if (!Hash::check($questionAndAnswer["answer"], $hashedCorrectAnswer)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }
