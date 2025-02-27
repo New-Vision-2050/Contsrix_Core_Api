@@ -27,13 +27,11 @@ if [ "$APP_ENV" == "production" ]; then
     EMAIL_HOST_USER="your-email@example.com"
     EMAIL_HOST_PASSWORD="your-secure-password"
     EMAIL_PORT=587
-    EMAIL_USE_TLS=True
 else
     EMAIL_HOST="mailcatcher"
     EMAIL_HOST_USER=""
     EMAIL_HOST_PASSWORD=""
     EMAIL_PORT=1025
-    EMAIL_USE_TLS=False
 fi
 
 APP_NAME="Constrix"
@@ -41,6 +39,7 @@ APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
 
 # Create .env file
 cat <<EOF > .env
+APP_NAME=$APP_NAME
 APP_ENV=$APP_ENV
 APP_URL=$APP_URL
 APP_DEBUG=$APP_DEBUG
