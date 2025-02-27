@@ -15,27 +15,29 @@ use Modules\Setting\Requests\Controllers\DeleteSettingRequest;
 use Modules\Setting\Requests\Controllers\GetSettingListRequest;
 use Modules\Setting\Requests\Controllers\GetSettingRequest;
 use Modules\Setting\Requests\Controllers\UpdateSettingRequest;
+use Modules\Setting\Requests\question\GetQuestionListRequest;
+use Modules\Setting\Services\QuestionSettingService;
 use Modules\Setting\Services\SettingCRUDService;
 use Ramsey\Uuid\Uuid;
 
 class QuestionSettingController extends Controller
 {
     public function __construct(
+        public QuestionSettingService $questionSettingService
 
-
-    ) {
+    )
+    {
     }
 
-    public function index(): JsonResponse
+    public function index(GetQuestionListRequest $request): JsonResponse
     {
-        //TODO: get all questions settings
+        return $this->questionSettingService->all();
     }
 
     public function getQuestionsUserAnswered(): JsonResponse
     {
         //TODO: get all questions user answered
     }
-
 
 
 }

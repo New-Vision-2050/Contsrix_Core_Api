@@ -113,10 +113,9 @@ class AuthService
 
         $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"])->first();
 
-if($step->login_option != "otp")
-{
-    throw new \ErrorException(__("validation.can-not-resend-otp"), 400);
-}
+        if ($step->login_option != "otp") {
+            throw new \ErrorException(__("validation.can-not-resend-otp"), 400);
+        }
 
         $otp = $this->otpRepository->getOtpDataByIdentifier($resendOtpCommand->getIdentifier());
 
@@ -218,22 +217,21 @@ if($step->login_option != "otp")
     {
         $user = $this->userCRUDService->getUserByIdentifier($questionVerificationDTO->getIdentifier());
 
-        $questionAndAnswers =$this->verficationQuestionRepository->findBy(["user_id" => $user->id]);
-        if($questionAndAnswers->count() == 0)
-        {
+        $questionAndAnswers = $this->verficationQuestionRepository->findBy(["user_id" => $user->id]);
+        if ($questionAndAnswers->count() == 0) {
             throw new \ErrorException(__("validation.you-must-set-your-answers"), 401);
         }
         if ($questionAndAnswers->count() != count($questionVerificationDTO->getquestionsAndAnswers())) {
-            throw new \ErrorException(__("validation.all-questions-are-required"), 422);
+            throw new \ErrorException(__("validation.all-questions-are-required"), 428);
         }
         foreach ($questionVerificationDTO->getquestionsAndAnswers() as $questionAndAnswer) {
-           $hashedCorrectAnswer = $questionAndAnswers->where("question_id", $questionAndAnswer["question_id"])->first()->answer;
+            $hashedCorrectAnswer = $questionAndAnswers->where("question_id", $questionAndAnswer["question_id"])->first()->answer;
             if (!Hash::check($questionAndAnswer["answer"], $hashedCorrectAnswer)) {
-                return [false,null];
+                return [false, null];
             }
         }
         $verficationData = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
-        return [true,$verficationData->token];
+        return [true, $verficationData->token];
     }
 
 }
