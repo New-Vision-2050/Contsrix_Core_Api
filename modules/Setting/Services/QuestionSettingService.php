@@ -36,7 +36,7 @@ class QuestionSettingService
 
     public function getQuestionUserAnswered (GetUserQuestionsDTO $getUserQuestionsDTO)
     {
-        return $this->verficationQuestionRepository->findOneBy(['user_id'=>$getUserQuestionsDTO->getUserId()]);
+        return $this->verficationQuestionRepository->findBy(['user_id'=>$getUserQuestionsDTO->getUserId()]);
     }
 
 

@@ -24,7 +24,7 @@ class GetQuestionAnswerdForUserRequest extends FormRequest
     {
         return new GetUserQuestionsDTO(
 
-            userId: $this->get('user_id')
+            userId: Uuid::fromString($this->get('user_id'))
         );
     }
 

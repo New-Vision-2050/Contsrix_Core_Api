@@ -10,15 +10,9 @@ class GetUserQuestionsDTO
         private readonly UuidInterface $userId
     ) {}
 
-    public function getUserId(): int
+    public function getUserId(): UuidInterface
     {
         return $this->userId;
     }
 
-    public static function from(array $data): self
-    {
-        return new self(
-            userId: $data['user_id']
-        );
-    }
 }

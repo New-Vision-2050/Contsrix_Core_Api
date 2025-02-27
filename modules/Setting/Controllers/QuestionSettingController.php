@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\Auth\Models\VerificationQuestion;
 use Modules\Auth\Presenters\VerficationQuestionPresenter;
 use Modules\Setting\Handlers\DeleteSettingHandler;
+use Modules\Setting\Presenters\QuestionPresenter;
 use Modules\Setting\Presenters\SettingPresenter;
 
 use Modules\Setting\Requests\question\GetQuestionAnswerdForUserRequest;
@@ -26,7 +27,7 @@ class QuestionSettingController extends Controller
 
     public function index(GetQuestionListRequest $request): JsonResponse
     {
-        return $this->questionSettingService->all();
+        return Json::item(QuestionPresenter::collection($this->questionSettingService->all()));
     }
 
     public function getUserQuestions(GetQuestionAnswerdForUserRequest $request)
