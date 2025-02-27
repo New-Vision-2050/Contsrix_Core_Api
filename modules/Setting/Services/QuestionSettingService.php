@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Setting\Services;
 
+use Modules\Auth\Repositories\VerficationQuestionRepository;
 use Modules\Setting\DTO\CreateLoginWayDTO;
 use Modules\Setting\DTO\CreateSettingDTO;
+use Modules\Setting\DTO\GetUserQuestionsDTO;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\Setting;
 use Modules\Setting\Presenters\DriverPresenter;
@@ -21,7 +23,8 @@ use function Laravel\Prompts\password;
 class QuestionSettingService
 {
     public function __construct(
-    private QuestionSettingRepository $questionSettingRepository
+    private QuestionSettingRepository $questionSettingRepository,
+        private VerficationQuestionRepository $verficationQuestionRepository
     )
     {
     }
@@ -29,6 +32,11 @@ class QuestionSettingService
     public function all()
     {
         return $this->questionSettingRepository->all();
+    }
+
+    public function getQuestionUserAnswered (GetUserQuestionsDTO $getUserQuestionsDTO)
+    {
+        return $this->verficationQuestionRepository->findOneBy(['user_id'=>$getUserQuestionsDTO->getUserId()]);
     }
 
 
