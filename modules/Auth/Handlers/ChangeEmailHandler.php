@@ -31,6 +31,9 @@ class ChangeEmailHandler
 
             $this->userRepository->updateWhere(['email' => $changeEmailCommand->getEmail()], ["email" => $changeEmailCommand->getNewEmail()]);
             $this->sendOtpEmail->sendOtpForEmailChange($verficationData->user_id);
+
+            //TODO: fire event to update user authentication in auth project
+
             DB::commit();
         }
         catch (\Exception $e) {
@@ -39,6 +42,5 @@ class ChangeEmailHandler
         }
 
 
-        //TODO: fire event to update user authentication in auth project
     }
 }

@@ -18,6 +18,7 @@ class ResendOtpRequest extends FormRequest
     {
         return [
             'identifier' => 'required',
+            "token" => "required"
 
         ];
     }
@@ -26,6 +27,7 @@ class ResendOtpRequest extends FormRequest
     {
         return new ResendOtpCommand(
             identifier: $this->get('identifier'),
+            token: $this->get('token')
         );
     }
 }

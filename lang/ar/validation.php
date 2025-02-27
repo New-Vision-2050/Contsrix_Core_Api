@@ -171,6 +171,7 @@ return [
     "you-must-set-your-answers" => "يجب ادخال الاجابات الخاصة بك",
     "all-questions-are-required" => "جميع الاسئلة مطلوبة",
     "invalid-token" => "الرمز غير صحيح",
+    "can-not-resend-otp"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة",
 
 
     'custom' => [

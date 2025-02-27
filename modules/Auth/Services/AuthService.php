@@ -101,10 +101,23 @@ class AuthService
 
     public function resendOtp(ResendOtpCommand $resendOtpCommand)
     {
-        $isContinueWithOTP = $this->settingCRUDService->getValue('continue_with_otp');
-        if (!$isContinueWithOTP) {
-            throw new \ErrorException(__("validation.invalid-to-login-with-otp"), 403);
+
+        try {
+            $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $resendOtpCommand->getToken()]);
+
+        } catch (\Exception $e) {
+            throw new \ErrorException("invalid token", 404);
         }
+
+        $loginWay = $this->loginWayRepository->findOneBy(["default" => 1]);
+
+        $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"])->first();
+
+if($step->login_option != "otp")
+{
+    throw new \ErrorException(__("validation.can-not-resend-otp"), 400);
+}
+
         $otp = $this->otpRepository->getOtpDataByIdentifier($resendOtpCommand->getIdentifier());
 
         if (Carbon::parse($otp->created_at)->diffInMinutes(Carbon::now()) < 3) {
