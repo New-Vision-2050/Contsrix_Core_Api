@@ -4,6 +4,7 @@ namespace Modules\Setting\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Country\Models\Country;
 use Modules\Setting\Models\Driver;
 
 class DriverTableSeeder extends Seeder
@@ -30,6 +31,9 @@ class DriverTableSeeder extends Seeder
                 );
             }
         }
+
+        Country::query()->where("phonecode","966")->first()
+            ->update(["sms_driver_id"=>Driver::query()->where("name","mora")->first()->id]);
 
 
 

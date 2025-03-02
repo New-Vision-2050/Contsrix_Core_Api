@@ -12,7 +12,8 @@ class CreateUserDTO
         public string $name,
         public string $email,
         public string $password,
-        public string $phone
+        public string $phone,
+        public string $phoneCode
     ) {
     }
 
@@ -23,6 +24,7 @@ class CreateUserDTO
             'email' => $this->email,
             'password' => $this->password,
             'phone' => $this->phone,
+            'phone_code' => $this->phoneCode,
         ];
     }
 }

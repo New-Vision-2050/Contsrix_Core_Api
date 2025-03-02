@@ -23,7 +23,8 @@ class AdminSeedTableSeeder extends Seeder
                 [
                     'name' => 'Admin',
                     'email' => 'admin@constrix-nv.com',
-                    "phone"=>"966542138116",
+                    "phone"=>"542138116",
+                    "phone_code"=>"966",
                     'password' => "Test1234",
                 ]
             );

@@ -13,7 +13,9 @@ use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\User\Handlers\AssignRoleForUserHandler;
 use Modules\User\Handlers\DeleteUserHandler;
 use Modules\User\Handlers\UpdateUserHandler;
+use Modules\User\Handlers\UpdateUserLoginWayHandler;
 use Modules\User\Presenters\UserPresenter;
+use Modules\User\Presenters\UserWithLoginWayPresenter;
 use Modules\User\Requests\AssignRolesForUserRequest;
 use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
@@ -21,6 +23,7 @@ use Modules\User\Requests\GetUserAuditListRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
 use Modules\User\Requests\GetUserRolesAndPermissionRequest;
+use Modules\User\Requests\UpdateUserLoginWayRequest;
 use Modules\User\Requests\UpdateUserRequest;
 use Modules\User\Services\UserAuditService;
 use Modules\User\Services\UserCRUDService;
@@ -34,6 +37,7 @@ class UserController extends Controller
         private UserAuditService             $userAuditService,
         private UserRoleAndPermissionService $userRoleAndPermissionService,
         private UpdateUserHandler            $updateUserHandler,
+        private UpdateUserLoginWayHandler    $updateUserLoginWayHandler,
         private AssignRoleForUserHandler     $assignRoleForUserHandler,
         private DeleteUserHandler            $deleteUserHandler,
     )
@@ -63,7 +67,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $userPresenter = new UserPresenter($user);
-        return Json::item( $userPresenter->getData());
+        return Json::item($userPresenter->getData());
     }
 
     public function store(CreateUserRequest $request): JsonResponse
@@ -87,12 +91,26 @@ class UserController extends Controller
         return Json::item($presenter->getData());
     }
 
+    public function updateLoginWay(UpdateUserLoginWayRequest $request): JsonResponse
+    {
+
+        $command = $request->createUpdateUserLoginWayCommand();
+        $this->updateUserLoginWayHandler->handle($command);
+
+        $user = $this->userService->get($command->getId());
+
+        $presenter = new UserWithLoginWayPresenter($user);
+
+        return Json::item($presenter->getData());
+
+    }
+
 
     public function assignRolesForUser(AssignRolesForUserRequest $request): JsonResponse
     {
         $command = $request->createAssignRoleForUserCommand();
         $this->assignRoleForUserHandler->handle($command);
-        return Json::success( "roles added successfully");
+        return Json::success("roles added successfully");
     }
 
     public function getMyPermissions()
@@ -101,28 +119,28 @@ class UserController extends Controller
 
         $permissionPresenter = PermissionPresenter::collection($permissions);
 
-        return Json::item( $permissionPresenter);
+        return Json::item($permissionPresenter);
     }
 
     public function getMyRoles()
     {
         $roles = $this->userRoleAndPermissionService->getRoles(auth()->user()->id);
         $permissionPresenter = RolePresenter::collection($roles);
-        return Json::item( $permissionPresenter);
+        return Json::item($permissionPresenter);
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)
     {
         $permissions = $this->userRoleAndPermissionService->getPermissions(Uuid::fromString($request->route('id')));
         $permissionPresenter = PermissionPresenter::collection($permissions);
-        return Json::item( $permissionPresenter);
+        return Json::item($permissionPresenter);
     }
 
     public function getRoles(GetUserRolesAndPermissionRequest $request)
     {
         $roles = $this->userRoleAndPermissionService->getRoles(Uuid::fromString($request->route('id')));
         $rolePresenter = RolePresenter::collection($roles);
-        return Json::item( $rolePresenter);
+        return Json::item($rolePresenter);
     }
 
 

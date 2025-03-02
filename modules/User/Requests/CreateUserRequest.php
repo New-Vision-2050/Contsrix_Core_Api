@@ -18,6 +18,7 @@ class CreateUserRequest extends FormRequest
             'name' => 'required',
             'password' => ['required', new PasswordValidation()],
             "phone" => "required|unique:users,phone",
+            "phone_code" => "required|exists:countries,phonecode",
         ];
     }
 
@@ -27,7 +28,8 @@ class CreateUserRequest extends FormRequest
             name: $this->get('name'),
             email: $this->get('email'),
             password: $this->get('password'),
-            phone: $this->get('phone')
+            phone: $this->get('phone'),
+            phoneCode: $this->get('phone_code'),
         );
     }
 }

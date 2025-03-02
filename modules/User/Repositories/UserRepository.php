@@ -40,9 +40,9 @@ class UserRepository extends BaseRepository
 
     public function getUserByEmail($email): User
     {
-        return $this->findOneByOrFail([
+        return $this->findOneByWithRelationsOrFail([
             'email' => $email,
-        ]);
+        ],["loginWay"]);
     }
 
     public function getUserByIdentifier($identifier): mixed

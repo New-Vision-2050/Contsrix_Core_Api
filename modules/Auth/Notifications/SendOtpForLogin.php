@@ -8,12 +8,14 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use Modules\Country\Models\Country;
 
 class SendOtpForLogin extends Notification
 {
     use Queueable;
     protected $data;
     protected $types;
+    protected $smsDriver;
 
 
     /**
@@ -24,6 +26,7 @@ class SendOtpForLogin extends Notification
     public function __construct($data , array $types = ["mail"])
 
     {
+        $this->smsDriver= new MoraSms();//as a default driver
         $this->data = $data;
         $this->types = $types;
     }
@@ -34,8 +37,19 @@ class SendOtpForLogin extends Notification
      * @param mixed $notifiable
      * @return array
      */
+
+    private function setDriverSMS($notifiable):void
+    {
+        $driverName = Country::query()->where("phonecode",$notifiable->phone_code)->first()->smsDriver->name;
+        if($driverName == "mora"){
+            $this->smsDriver = new MoraSms();
+        }
+    }
+
+
     public function via($notifiable)
     {
+        $this->setDriverSMS($notifiable);
 
         return $this->types;
     }

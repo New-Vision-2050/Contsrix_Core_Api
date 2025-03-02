@@ -109,7 +109,7 @@ class AuthService
             throw new \ErrorException("invalid token", 404);
         }
 
-        $loginWay = $this->loginWayRepository->findOneBy(["default" => 1]);
+        $loginWay = $this->getDefaultLoginWay($resendOtpCommand->getIdentifier());
 
         $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"])->first();
 
@@ -124,7 +124,6 @@ class AuthService
 
         }
 
-        $user = $this->userCRUDService->getUserByIdentifier($resendOtpCommand->getIdentifier());
         $this->sendOtpByStep($step, $resendOtpCommand->getIdentifier());
 
     }
@@ -154,14 +153,25 @@ class AuthService
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
 
         if ($step->login_option == "password" && (!$user || !password_verify($password, $user->password))) {
-            throw new \ErrorException(__("validation.invalid-password"), 401);
+            throw new \ErrorException(__("validation.invalid-credential"), 401);
         }
         return true;
     }
 
-    public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
+    private function getDefaultLoginWay($identifier)
     {
         $loginWay = $this->loginWayRepository->findOneBy(["default" => 1]);
+        $user = $this->userCRUDService->getUserByIdentifier($identifier);
+        if($user->LoginWay != null)
+        {
+            $loginWay = $user->LoginWay;
+        }
+        return $loginWay;
+    }
+
+    public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
+    {
+        $loginWay = $this->getDefaultLoginWay($getLoginWaysDTO->getIdentifier());
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
 
@@ -185,7 +195,7 @@ class AuthService
          * @var $user User
          * @var $step LoginWayStep
          */
-        $loginWay = $this->loginWayRepository->findOneBy(["default" => 1]);
+        $loginWay = $this->getDefaultLoginWay($loginStepDTO->getIdentifier());
         $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier());
 
         //current step
