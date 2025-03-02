@@ -28,11 +28,11 @@ class MoraSms
         // Attempt to retrieve data from the drivers table
         $driver = Driver::query()->where('driver_type', 'sms')->where('name', 'mora')->first();
 
-        if ($driver->config["SMS_MORA_KEY"]!=""&&$driver->config["SMS_MORA_USER"]!=""&&$driver->config["SMS_MORA_SENDER"]!="") {
+        if ($driver->config["SMS_MORA_KEY"] != "" && $driver->config["SMS_MORA_USER"] != "" && $driver->config["SMS_MORA_SENDER"] != "") {
             $this->api_key = $driver->config["SMS_MORA_KEY"];
             $this->username = $driver->config["SMS_MORA_USER"];
             $this->from = $driver->config["SMS_MORA_SENDER"];
-            $this->baseUrl = config('services.mora_sms.base_url'); // Assuming baseUrl is not stored in the drivers table
+            $this->baseUrl = config('services.mora_sms.base_url');
         } else {
             // Pull in config from the config/services.php file if not found in the drivers table
             $this->api_key = config('services.mora_sms.api_key');
@@ -69,7 +69,6 @@ class MoraSms
     {
 
 
-        // "966538500542,966545550161"
         $url = $this->baseUrl;
         $push_payload = array(
             "api_key" => $this->api_key,

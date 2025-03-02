@@ -125,7 +125,7 @@ class AuthService
         }
 
         $user = $this->userCRUDService->getUserByIdentifier($resendOtpCommand->getIdentifier());
-        $this->sendOtpEmail->loginWithOtp($user->id);
+        $this->sendOtpByStep($step, $resendOtpCommand->getIdentifier());
 
     }
 

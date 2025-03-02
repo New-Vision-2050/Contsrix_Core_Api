@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Auth\Controllers;
 
-use App\Notifications\Drivers\SMS\MoraSms;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
-use Ichtrojan\Otp\Models\Otp;
-use Illuminate\Support\Facades\Hash;
-use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\Handlers\ChangeEmailHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ChangeEmailRequest;
@@ -23,8 +19,6 @@ use Modules\Auth\Requests\LogoutRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Services\AuthService;
-
-use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Services\UserCRUDService;
@@ -32,9 +26,9 @@ use Modules\User\Services\UserCRUDService;
 class AuthController extends Controller
 {
     public function __construct(
-        private AuthService     $authService,
-        private MakeOtpHandler  $makeOtpHandler,
-        private UserCRUDService $userCRUDService,
+        private AuthService        $authService,
+        private MakeOtpHandler     $makeOtpHandler,
+        private UserCRUDService    $userCRUDService,
         private ChangeEmailHandler $changeEmailHandler,
     )
     {
@@ -147,7 +141,7 @@ class AuthController extends Controller
     public function checkAnswers(CheckVerificationQuestionRequest $request)
     {
         try {
-            [$res,$token] = $this->authService->checkQuestionAnswer($request->createLoginDTO());
+            [$res, $token] = $this->authService->checkQuestionAnswer($request->createLoginDTO());
         } catch (\Exception $e) {
             return Json::error($e->getMessage());
         }
