@@ -10,11 +10,12 @@ use Modules\Auth\Notifications\SendOtpForEmailChange;
 use Modules\Auth\Notifications\SendOtpForLogin;
 use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\User\Repositories\UserRepository;
+use Modules\User\Services\UserCRUDService;
 use Ramsey\Uuid\UuidInterface;
 
 class SendOtpEmail
 {
-    public function __construct(private UserRepository $userRepository)
+    public function __construct(private UserRepository $userRepository,private UserCRUDService $userCRUDService)
     {
     }
 
@@ -26,6 +27,17 @@ class SendOtpEmail
         return new AuthMailData(
             $user->email,
             (new Otp)->generate($user->email, 'numeric', 5, 20)->token,
+            $user->name,20,
+            ""
+        );
+    }
+private function  createAuthMailForLoginStepData($identifier)
+    {
+        $user = $this->userCRUDService->getUserByIdentifier($identifier);
+
+        return new AuthMailData(
+            $identifier,
+            (new Otp)->generate($identifier, 'numeric', 5, 20)->token,
             $user->name,20,
             ""
         );
@@ -47,6 +59,13 @@ class SendOtpEmail
     {
         $data =$this->createAuthMailData($userId)->toArray();
         $user = $this->userRepository->find($userId);
+        $user->notify(new SendOtpForLogin($data,$types));
+
+    }
+    public function loginStepOtp( $identifier, array $types = ["mail"])
+    {
+        $data =$this->createAuthMailForLoginStepData($identifier)->toArray();
+        $user = $this->userCRUDService->getUserByIdentifier($identifier);
         $user->notify(new SendOtpForLogin($data,$types));
     }
 

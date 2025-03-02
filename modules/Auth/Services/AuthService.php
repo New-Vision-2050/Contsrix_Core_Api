@@ -129,14 +129,14 @@ class AuthService
 
     }
 
-    private function sendOtpByStep($step, $user)
+    private function sendOtpByStep($step, $identifier)
     {
         if ($step->login_option == "otp") {
             $types = [];
             foreach ($step->drivers as $driver) {
-                $types[] = $driver->type;
+                $types[] = $driver->driver_type;
             }
-            $this->sendOtpEmail->loginWithOtp($user->id, $types);
+            $this->sendOtpEmail->loginStepOtp($identifier, $types);
         }
     }
 
@@ -165,7 +165,7 @@ class AuthService
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
 
-        $this->sendOtpByStep($step, $user);
+        $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
 
         $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1])->token;
         return [$loginWay, $token];
@@ -203,7 +203,7 @@ class AuthService
         if ($step) {//if we have step
             $token = $this->verficationDataRepository->createToken($user->id, ["order" => $verficationData->data["order"] + 1])->token;
 
-            $this->sendOtpByStep($step, $user); // if step has otp then send otp
+            $this->sendOtpByStep($step, $loginStepDTO->getIdentifier()); // if step has otp then send otp
 
             return [$loginWay, $token, $verficationData->data["order"] + 1];
         }

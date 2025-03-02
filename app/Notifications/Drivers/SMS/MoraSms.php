@@ -3,6 +3,7 @@
 namespace App\Notifications\Drivers\SMS;
 
 use Illuminate\Support\Facades\Http;
+use Modules\Setting\Models\Driver;
 
 class MoraSms
 {
@@ -25,7 +26,7 @@ class MoraSms
         $this->line = $line;
 
         // Attempt to retrieve data from the drivers table
-        $driver = \DB::table('drivers')->where('driver_type', 'sms')->where('name', 'mora')->first();
+        $driver = Driver::query()->where('driver_type', 'sms')->where('name', 'mora')->first();
 
         if ($driver->config["SMS_MORA_KEY"]!=""&&$driver->config["SMS_MORA_USER"]!=""&&$driver->config["SMS_MORA_SENDER"]!="") {
             $this->api_key = $driver->config["SMS_MORA_KEY"];
