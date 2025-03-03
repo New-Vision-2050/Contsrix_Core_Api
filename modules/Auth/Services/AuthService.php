@@ -10,6 +10,7 @@ use Modules\Auth\Commands\ResendOtpCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\GetLoginWaysDTO;
 use Modules\Auth\DTO\LoginDTO;
+use Modules\Auth\DTO\LoginStepAlternativeDTO;
 use Modules\Auth\DTO\LoginStepDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\DTO\QuestionVerificationDTO;
@@ -177,7 +178,7 @@ class AuthService
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
 
         $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1, "login_way" => $loginWay])->token;
-        return [$loginWay, $token];
+        return [$loginWay->id, $token, $step];
 
     }
 
@@ -188,11 +189,36 @@ class AuthService
             return $item['order'] == $verficationData->data["order"];
         })->first();
         $nextStep = collect($verficationData->data["login_way"]["login_way_steps"])->filter(function ($item) use ($verficationData) {
-            return $item['order'] == $verficationData->data["order"]+1;
+            return $item['order'] == $verficationData->data["order"] + 1;
         })->first();
-       $nextStep =  $nextStep == null ? null :  (object)$nextStep;
-        return [(object)$step,$nextStep];
+        $nextStep = $nextStep == null ? null : (object)$nextStep;
+        return [(object)$step, $nextStep];
 
+    }
+
+    private function updateLoginStep($token, $loginOption)
+    {
+        $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $token]);
+        $updatedSteps = collect($verficationData->data["login_way"]["login_way_steps"])->map(function ($item) use ($verficationData, $loginOption) {
+            if ($item['order'] == $verficationData->data["order"]) {
+                if ($loginOption == "sms" || $loginOption == "mail" || $loginOption == "social") {
+                    $item["login_option"] = "otp";
+                    $item["drivers"] = [$loginOption];
+                }
+                elseif ($loginOption == "password" ) {
+                    $item["login_option"] = "password";
+                    $item["drivers"] = null;
+                }
+
+            }
+            return $item;
+        });
+        $data = $verficationData->data;
+        $data['login_way']['login_way_steps'] = $updatedSteps;
+        $verficationData->setAttribute('data', $data);
+        $verficationData->save();
+
+        return $verficationData;
     }
 
     public function loginBySteps(LoginStepDTO $loginStepDTO)
@@ -208,12 +234,12 @@ class AuthService
          * @var $user User
          * @var $step LoginWayStep
          */
-        $loginWay =  $verficationData->data["login_way"];
+        $loginWay = $verficationData->data["login_way"];
 
         $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier());
 
         //current step
-        [$step,$nextStep] = $this->getLoginStepAndNextStepFromToken($loginStepDTO->getToken());
+        [$step, $nextStep] = $this->getLoginStepAndNextStepFromToken($loginStepDTO->getToken());
 
         // if current step has otp then validate
         $this->checkOtpByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
@@ -257,6 +283,35 @@ class AuthService
         }
         $verficationData = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
         return [true, $verficationData->token];
+    }
+
+
+    public function loginStepAlternative(LoginStepAlternativeDTO $alternativeDTO)
+    {
+
+        try {
+            $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $alternativeDTO->getToken()]);
+
+        } catch (\Exception $e) {
+            throw new \ErrorException("invalid token", 404);
+        }
+        $this->updateLoginStep($alternativeDTO->getToken(), $alternativeDTO->getLoginOption());
+        [$step , $nextStep ]= $this->getLoginStepAndNextStepFromToken($alternativeDTO->getToken());
+        $this->sendOtpByStep($step,$alternativeDTO->getIdentifier());
+
+        return [$verficationData->data["login_way"]["id"], $verficationData->token, $step];
+
+
+
+
+        /**
+         * @var $loginWay LoginWay
+         * @var $user User
+         * @var $step LoginWayStep
+         */
+
+
+
     }
 
 }

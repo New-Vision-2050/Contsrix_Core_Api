@@ -1,10 +1,10 @@
 <?php
 
-namespace Modules\Auth\Commands;
+namespace Modules\Auth\DTO;
 
 use Ramsey\Uuid\UuidInterface;
 
-class LoginStepAlternativeCommand
+class LoginStepAlternativeDTO
 {
     public function __construct(
 
@@ -15,7 +15,7 @@ class LoginStepAlternativeCommand
     }
 
 
-    public function getPassword(): ?string
+    public function getLoginOption(): ?string
     {
         return $this->loginOption;
     }
