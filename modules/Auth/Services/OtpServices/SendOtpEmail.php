@@ -3,12 +3,10 @@
 namespace Modules\Auth\Services\OtpServices;
 
 use Ichtrojan\Otp\Otp;
-use Illuminate\Support\Facades\Mail;
 use Modules\Auth\DataClasses\AuthMailData;
 use Modules\Auth\Notifications\ResetPassword;
 use Modules\Auth\Notifications\SendOtpForEmailChange;
 use Modules\Auth\Notifications\SendOtpForLogin;
-use Modules\Auth\Services\Interfaces\SendOtp;
 use Modules\User\Repositories\UserRepository;
 use Modules\User\Services\UserCRUDService;
 use Ramsey\Uuid\UuidInterface;

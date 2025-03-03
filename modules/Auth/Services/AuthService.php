@@ -160,11 +160,10 @@ class AuthService
 
     private function getDefaultLoginWay($identifier)
     {
-        $loginWay = $this->loginWayRepository->findOneBy(["default" => 1]);
+        $loginWay = $this->loginWayRepository->findOneByWithRelations(["default" => 1], ["loginWaySteps"]);
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
-        if($user->LoginWay != null)
-        {
-            $loginWay = $user->LoginWay;
+        if ($user->login_way_id != null) {
+            $loginWay = $this->loginWayRepository->findOneByWithRelations(["id" => $user->login_way_id], ["loginWaySteps"]);
         }
         return $loginWay;
     }
@@ -177,8 +176,22 @@ class AuthService
 
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
 
-        $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1])->token;
+        $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1, "login_way" => $loginWay])->token;
         return [$loginWay, $token];
+
+    }
+
+    private function getLoginStepAndNextStepFromToken($token)
+    {
+        $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $token]);
+        $step = collect($verficationData->data["login_way"]["login_way_steps"])->filter(function ($item) use ($verficationData) {
+            return $item['order'] == $verficationData->data["order"];
+        })->first();
+        $nextStep = collect($verficationData->data["login_way"]["login_way_steps"])->filter(function ($item) use ($verficationData) {
+            return $item['order'] == $verficationData->data["order"]+1;
+        })->first();
+       $nextStep =  $nextStep == null ? null :  (object)$nextStep;
+        return [(object)$step,$nextStep];
 
     }
 
@@ -199,21 +212,21 @@ class AuthService
         $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier());
 
         //current step
-        $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"])->first();
+        [$step,$nextStep] = $this->getLoginStepAndNextStepFromToken($loginStepDTO->getToken());
         // if current step has otp then validate
         $this->checkOtpByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
         // if current step has password then validate
         $this->checkPasswordByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
+
         //delete token for current step
         $this->verficationDataRepository->deleteBy(["token" => $loginStepDTO->getToken()]);
 
         //get next step
-        $step = $loginWay->loginWaySteps()->where("order", $verficationData->data["order"] + 1)->first();
 
-        if ($step) {//if we have step
-            $token = $this->verficationDataRepository->createToken($user->id, ["order" => $verficationData->data["order"] + 1])->token;
+        if ($nextStep) {//if we have step
+            $token = $this->verficationDataRepository->createToken($user->id, ["order" => $verficationData->data["order"] + 1, "login_way" => $loginWay])->token;
 
-            $this->sendOtpByStep($step, $loginStepDTO->getIdentifier()); // if step has otp then send otp
+            $this->sendOtpByStep($nextStep, $loginStepDTO->getIdentifier()); // if step has otp then send otp
 
             return [$loginWay, $token, $verficationData->data["order"] + 1];
         }

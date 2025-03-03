@@ -124,6 +124,7 @@ class AuthController extends Controller
     {
         $loginDTO = $request->createLoginStepDTO();
 
+        return Json::item($this->authService->loginBySteps($loginDTO));
         try {
             [$loginWay, $token, $order] = $this->authService->loginBySteps($loginDTO);
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
