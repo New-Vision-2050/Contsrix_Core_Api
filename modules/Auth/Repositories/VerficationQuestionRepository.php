@@ -39,6 +39,7 @@ class VerficationQuestionRepository extends BaseRepository
 
         } catch (\Exception $e) {
             DB::rollBack();
+            throw new \Exception(__("validation.create-not-successful"), 500);
         }
 
         return $verificationQuestion;
