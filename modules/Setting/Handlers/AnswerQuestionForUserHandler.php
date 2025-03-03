@@ -21,6 +21,6 @@ class AnswerQuestionForUserHandler
 
     public function handle(AnswerQuestionsByUserCommand $answerQuestionsByUserCommand)
     {
-        $this->verficationQuestionRepository->createVerficationQuestion($answerQuestionsByUserCommand->getQuestionIdsAndAnswers());
+         $this->verficationQuestionRepository->createVerficationQuestion($answerQuestionsByUserCommand->getQuestionIdsAndAnswers());
     }
 }

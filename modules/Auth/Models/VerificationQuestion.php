@@ -22,6 +22,7 @@ class VerificationQuestion extends Model
     public array $translatable = [];
 
     public $incrementing = false;
+    protected $primaryKey = "id";
 
     protected $keyType = 'string';
 

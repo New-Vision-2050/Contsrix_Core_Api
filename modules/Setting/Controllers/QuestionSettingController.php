@@ -48,8 +48,7 @@ class QuestionSettingController extends Controller
 
     public function answerQuestionsForUser(AnswerQuestionsForUserRequest $request)
     {
-
-        $this->answerQuestionForUserHandler->handle($request->createAnswerQuestionsForUserCommand());
+         $this->answerQuestionForUserHandler->handle($request->createAnswerQuestionsForUserCommand());
         return Json::success("success");
 
     }

@@ -13,8 +13,8 @@ class AnswerQuestionsForUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ".*.question_id"=>"required|exists:questions,id",
-            ".*.answer"=>"required|string",
+            "*.question_id" => "required|exists:question_settings,id",
+            "*.answer" => "required|string",
         ];
     }
 
