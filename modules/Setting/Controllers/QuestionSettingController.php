@@ -9,10 +9,12 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Auth\Models\VerificationQuestion;
 use Modules\Auth\Presenters\VerficationQuestionPresenter;
+use Modules\Setting\Handlers\AnswerQuestionForUserHandler;
 use Modules\Setting\Handlers\DeleteSettingHandler;
 use Modules\Setting\Presenters\QuestionPresenter;
 use Modules\Setting\Presenters\SettingPresenter;
 
+use Modules\Setting\Requests\question\AnswerQuestionsForUserRequest;
 use Modules\Setting\Requests\question\GetQuestionAnswerdForUserRequest;
 use Modules\Setting\Requests\question\GetQuestionListRequest;
 use Modules\Setting\Services\QuestionSettingService;
@@ -22,8 +24,11 @@ use Ramsey\Uuid\Uuid;
 class QuestionSettingController extends Controller
 {
     public function __construct(
-        private QuestionSettingService $questionSettingService
-    ) {}
+        private QuestionSettingService       $questionSettingService,
+        private AnswerQuestionForUserHandler $answerQuestionForUserHandler
+    )
+    {
+    }
 
     public function index(GetQuestionListRequest $request): JsonResponse
     {
@@ -41,10 +46,11 @@ class QuestionSettingController extends Controller
 
     }
 
-    public function AnswerQuestionsForUser(GetQuestionAnswerdForUserRequest $request)
+    public function answerQuestionsForUser(AnswerQuestionsForUserRequest $request)
     {
-        $verficationQuestion = $this->questionSettingService->getQuestionUserAnswered($request->createGetUserQuestionDTO());
-        return Json::item(VerficationQuestionPresenter::collection($verficationQuestion));
+
+        $this->answerQuestionForUserHandler->handle($request->createAnswerQuestionsForUserCommand());
+        return Json::success("success");
 
     }
 }

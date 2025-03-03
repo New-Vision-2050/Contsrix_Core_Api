@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Auth\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
+use Illuminate\Support\Facades\Hash;
 use Modules\Auth\Models\VerficationData;
 use Modules\Auth\Models\VerificationQuestion;
 
@@ -19,9 +20,17 @@ class VerficationQuestionRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function createVerficationQuestion(array $data)
+    public function createVerficationQuestion(array $data )
     {
-        return $this->model->create($data);
+        $hashedAnswersForUser = collect($data)->map(function ($item) {
+            $item["user_id"] = auth()->user()->id;
+           $item["answer"]  = Hash::make($item["answer"]);
+           return $item;
+
+        })->toArray();
+//        throw new \Exception(json_encode($hashedAnswersForUser));
+//        throw new \ErrorException("test");
+        return $this->model->insert($hashedAnswersForUser);
     }
 
 }

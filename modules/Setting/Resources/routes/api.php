@@ -36,6 +36,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::get('/', [\Modules\Setting\Controllers\QuestionSettingController::class, 'index']);
         Route::post('/get-question-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'getUserQuestions']);
+        Route::post('/answer-questions-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'answerQuestionsForUser']);
 
     });
 
