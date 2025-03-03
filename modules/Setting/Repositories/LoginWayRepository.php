@@ -59,24 +59,24 @@ class LoginWayRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-        $loginWay = $this->findOneBy(['id' => $id]);
-        $loginWay->update(["name" => $data["name"]]);
-        $loginWay->loginWaySteps()->delete();
-        $i = 1;
-        foreach ($data["login_options"] as $loginOption) {
-            $drivers = null;
-            $loginOptionAlternatives = null;
-            if (isset($loginOption["drivers"])) {
-                $drivers = $loginOption["drivers"];
-            }
-            if (isset($loginOption["login_option_alternatives"])) {
-                $loginOptionAlternatives = $loginOption["login_option_alternatives"];
-            }
+            $loginWay = $this->findOneBy(['id' => $id]);
+            $loginWay->update(["name" => $data["name"]]);
+            $loginWay->loginWaySteps()->delete();
+            $i = 1;
+            foreach ($data["login_options"] as $loginOption) {
+                $drivers = null;
+                $loginOptionAlternatives = null;
+                if (isset($loginOption["drivers"])) {
+                    $drivers = $loginOption["drivers"];
+                }
+                if (isset($loginOption["login_option_alternatives"])) {
+                    $loginOptionAlternatives = $loginOption["login_option_alternatives"];
+                }
 
-            $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers, "login_option_alternatives" => $loginOptionAlternatives, "order" => $i]);
-            $i++;
+                $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers, "login_option_alternatives" => $loginOptionAlternatives, "order" => $i]);
+                $i++;
 
-        }
+            }
             DB::commit();
 
         } catch (\Exception $e) {
