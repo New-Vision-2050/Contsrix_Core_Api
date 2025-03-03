@@ -17,7 +17,7 @@ class CreateLoginWayRequest extends FormRequest
             "name" => "required|string",
             "login_options"=>"required|array",
             'login_options.*.login_option' => 'required|string|in:password,otp,barcode',
-            'login_options.*.driver_ids' => 'required_if:login_options.*.login_option,otp|array|nullable',
+            'login_options.*.drivers' => 'required_if:login_options.*.login_option,otp|array|nullable',
         ];
     }
 

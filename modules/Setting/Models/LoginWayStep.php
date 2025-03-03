@@ -21,7 +21,6 @@ class LoginWayStep extends Model
     // use HasTranslations;
     // use SoftDeletes;
 
-    public $with = ['drivers'];
     protected $table = "login_way_steps";
 
     public array $translatable = [];
@@ -34,30 +33,14 @@ class LoginWayStep extends Model
         'login_way_id',
         "login_option",
         "order",
+        "drivers",
     ];
 
     protected $casts = [
         'id' => "string",
-        'login_way_id' => "string"
+        'login_way_id' => "string",
+        "drivers" => "array",
     ];
-
-    public function drivers()
-    {
-        return $this->belongsToMany(Driver::class, 'login_way_steps_drivers', 'login_way_step_id', 'driver_id');
-    }
-
-    public function delete()
-    {
-        try {
-            DB::beginTransaction();
-            $this->drivers()->detach();
-            return parent::delete();
-        }
-        catch (\Exception $e) {
-            throw new \Exception(__("validation.delete-not-successful"), 500);
-        }
-
-    }
 
 
 }

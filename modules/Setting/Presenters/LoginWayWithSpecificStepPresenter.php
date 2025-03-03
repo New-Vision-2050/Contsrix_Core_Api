@@ -28,7 +28,6 @@ class LoginWayWithSpecificStepPresenter extends AbstractPresenter
             'step' =>$this->step!= null?
                 [
                     "login_option"=>$step->login_option,
-                    "drivers"=> DriverPresenter::collection($step->drivers)
                 ]:null
         ];
     }

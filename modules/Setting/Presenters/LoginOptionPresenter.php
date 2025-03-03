@@ -19,7 +19,7 @@ class LoginOptionPresenter extends AbstractPresenter
     {
         return [
             'login_option' => $this->loginWayStep->login_option,
-            'drivers' => DriverPresenter::collection($this->loginWayStep->drivers),
+            'drivers' => $this->loginWayStep->drivers,
         ];
     }
 }

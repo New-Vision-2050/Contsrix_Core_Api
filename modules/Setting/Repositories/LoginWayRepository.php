@@ -34,11 +34,13 @@ class LoginWayRepository extends BaseRepository
             $loginWay = $this->create([ "name" => $data["name"]]);
             $i = 1;
             foreach ($data["login_options"] as $loginOption) {
-                $step = $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "order" => $i]);
-                if (isset($loginOption["driver_ids"])) {
-                    $step->drivers()->attach($loginOption["driver_ids"]);
-                    $i++;
+                $drivers = null;
+                if (isset($loginOption["drivers"])) {
+                   $drivers = $loginOption["drivers"];
                 }
+               $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers, "order" => $i]);
+                $i++;
+
             }
             DB::commit();
 
@@ -61,11 +63,14 @@ class LoginWayRepository extends BaseRepository
             $loginWay->loginWaySteps()->delete();
             $i = 1;
             foreach ($data["login_options"] as $loginOption) {
-                $step = $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "order" => $i]);
-                if (isset($loginOption["driver_ids"])) {
-                    $step->drivers()->attach($loginOption["driver_ids"]);
-                    $i++;
+                $drivers = null;
+                if (isset($loginOption["drivers"])) {
+                    $drivers = $loginOption["drivers"];
                 }
+
+                $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"],"drivers" => $drivers, "order" => $i]);
+                $i++;
+
             }
             DB::commit();
 

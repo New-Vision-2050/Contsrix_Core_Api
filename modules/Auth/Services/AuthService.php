@@ -133,7 +133,7 @@ class AuthService
         if ($step->login_option == "otp") {
             $types = [];
             foreach ($step->drivers as $driver) {
-                $types[] = $driver->driver_type;
+                $types[] = $driver;
             }
             $this->sendOtpEmail->loginStepOtp($identifier, $types);
         }
