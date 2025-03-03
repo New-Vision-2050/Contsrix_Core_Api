@@ -6,6 +6,7 @@ namespace Modules\Setting\Requests\question;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Setting\Commands\Question\AnswerQuestionsByUserCommand;
+use Modules\Setting\Models\QuestionSetting;
 use Ramsey\Uuid\Uuid;
 
 class AnswerQuestionsForUserRequest extends FormRequest
