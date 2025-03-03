@@ -57,8 +57,8 @@ class LoginWayRepository extends BaseRepository
 
     public function updateLoginWay(UuidInterface $id, array $data): LoginWay
     {
-//        try {
-//            DB::beginTransaction();
+        try {
+            DB::beginTransaction();
         $loginWay = $this->findOneBy(['id' => $id]);
         $loginWay->update(["name" => $data["name"]]);
         $loginWay->loginWaySteps()->delete();
@@ -77,12 +77,12 @@ class LoginWayRepository extends BaseRepository
             $i++;
 
         }
-//            DB::commit();
-//
-//        } catch (\Exception $e) {
-//            DB::rollBack();
-//            throw new \Exception(__("validation.update-not-successful"), 500);
-//        }
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.update-not-successful"), 500);
+        }
         return $loginWay->fresh();
     }
 
