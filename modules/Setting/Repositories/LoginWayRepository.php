@@ -35,10 +35,14 @@ class LoginWayRepository extends BaseRepository
             $i = 1;
             foreach ($data["login_options"] as $loginOption) {
                 $drivers = null;
+                $loginOptionAlternatives = null;
                 if (isset($loginOption["drivers"])) {
                    $drivers = $loginOption["drivers"];
                 }
-               $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers, "order" => $i]);
+                if (isset($loginOption["login_option_alternatives"])) {
+                    $loginOptionAlternatives = $loginOption["drivers"];
+                }
+               $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers,"login_option_alternatives" => $loginOptionAlternatives ,"order" => $i]);
                 $i++;
 
             }
@@ -64,11 +68,15 @@ class LoginWayRepository extends BaseRepository
             $i = 1;
             foreach ($data["login_options"] as $loginOption) {
                 $drivers = null;
+                $loginOptionAlternatives = null;
                 if (isset($loginOption["drivers"])) {
                     $drivers = $loginOption["drivers"];
                 }
+                if (isset($loginOption["login_option_alternatives"])) {
+                    $loginOptionAlternatives = $loginOption["drivers"];
+                }
 
-                $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"],"drivers" => $drivers, "order" => $i]);
+                $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"],"drivers" => $drivers,"login_option_alternatives" =>$loginOptionAlternatives, "order" => $i]);
                 $i++;
 
             }

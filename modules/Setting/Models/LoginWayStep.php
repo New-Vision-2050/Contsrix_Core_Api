@@ -32,6 +32,7 @@ class LoginWayStep extends Model
         'driver_id',
         'login_way_id',
         "login_option",
+        "login_option_alternatives",
         "order",
         "drivers",
     ];
@@ -40,6 +41,7 @@ class LoginWayStep extends Model
         'id' => "string",
         'login_way_id' => "string",
         "drivers" => "array",
+        "login_option_alternatives" => "array",
     ];
 
 

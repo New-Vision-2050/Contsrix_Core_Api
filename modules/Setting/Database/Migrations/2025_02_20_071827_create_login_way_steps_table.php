@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string("login_option");//otp , password , barcode
             $table->integer('order');
             $table->json("drivers")->nullable();
+            $table->json("login_option_alternatives")->nullable();
             $table->uuid( "login_way_id")->index();
             $table->timestamps();
         });

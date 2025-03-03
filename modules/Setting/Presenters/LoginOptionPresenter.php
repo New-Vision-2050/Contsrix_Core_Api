@@ -20,6 +20,7 @@ class LoginOptionPresenter extends AbstractPresenter
         return [
             'login_option' => $this->loginWayStep->login_option,
             'drivers' => $this->loginWayStep->drivers,
+            'login_option_alternatives' => $this->loginWayStep->login_option_alternatives,
         ];
     }
 }

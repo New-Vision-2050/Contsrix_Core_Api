@@ -20,7 +20,7 @@ class LoginStepAlternativeRequest extends FormRequest
     {
         return [
             'identifier' => 'required',
-            'login_option' => 'required',//can be password or otp or anything else
+            'login_option' => 'required|in:sms,mail,social,password',
             "token" => "required",
         ];
     }
