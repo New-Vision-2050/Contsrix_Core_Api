@@ -58,22 +58,23 @@ class LoginWayService
     {
         $driverTypesData = [];
         $driverTypes = $this->driverRepository->getDataGroupByType()->keys()->toArray();
-        $alternatives = $driverTypes+["password"];
+        $alternatives = array_merge($driverTypes, ["password"]);
         foreach ($driverTypes as $type) {
             $driverTypesData[] = [
                 'key' => $type,
-                "alternatives" => array_filter($alternatives, function($item) use ($type) {
-                    return $item !== $type;
-                })
+                "alternatives" => array_values(array_filter($alternatives, function ($item) use ($type) {
+                    return $item != $type;
+                }))
 
             ];
         }
+
 
         return [
             'login_options' => [
                 [
                     'login_option' => 'password',
-                    'driver_types' => null
+                    'driver_types' => $driverTypes
                 ],
                 [
                     'login_option' => 'otp',
