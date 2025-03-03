@@ -58,10 +58,14 @@ class LoginWayService
     {
         $driverTypesData = [];
         $driverTypes = $this->driverRepository->getDataGroupByType()->keys()->toArray();
+        $alternatives = $driverTypes+["password"];
         foreach ($driverTypes as $type) {
             $driverTypesData[] = [
                 'key' => $type,
-                'drivers' => DriverPresenter::collection($this->driverRepository->findBy(['driver_type' => $type]))
+                "alternatives" => array_filter($alternatives, function($item) use ($type) {
+                    return $item !== $type;
+                })
+
             ];
         }
 
