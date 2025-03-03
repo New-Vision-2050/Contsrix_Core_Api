@@ -17,6 +17,7 @@ use Modules\Setting\Repositories\DriverRepository;
 use Modules\Setting\Repositories\LoginWayRepository;
 use Modules\Setting\Repositories\QuestionSettingRepository;
 use Modules\Setting\Repositories\SettingRepository;
+use Modules\User\Services\UserCRUDService;
 use Ramsey\Uuid\UuidInterface;
 use function Laravel\Prompts\password;
 
@@ -24,7 +25,8 @@ class QuestionSettingService
 {
     public function __construct(
     private QuestionSettingRepository $questionSettingRepository,
-        private VerficationQuestionRepository $verficationQuestionRepository
+        private VerficationQuestionRepository $verficationQuestionRepository,
+        private UserCRUDService $userCRUDService
     )
     {
     }
@@ -36,7 +38,8 @@ class QuestionSettingService
 
     public function getQuestionUserAnswered (GetUserQuestionsDTO $getUserQuestionsDTO)
     {
-        return $this->verficationQuestionRepository->findBy(['user_id'=>$getUserQuestionsDTO->getUserId()]);
+        $user = $this->userCRUDService->getUserByIdentifier($getUserQuestionsDTO->getIdentifier());
+        return $this->verficationQuestionRepository->findBy(['user_id'=>$user->id]);
     }
 
 

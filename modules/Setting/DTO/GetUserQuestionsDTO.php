@@ -7,12 +7,12 @@ use Ramsey\Uuid\UuidInterface;
 class GetUserQuestionsDTO
 {
     public function __construct(
-        private readonly UuidInterface $userId
+        private readonly string $identifier
     ) {}
 
-    public function getUserId(): UuidInterface
+    public function getIdentifier()
     {
-        return $this->userId;
+        return $this->identifier;
     }
 
 }

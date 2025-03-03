@@ -16,7 +16,7 @@ class GetQuestionAnswerdForUserRequest extends FormRequest
     public function rules(): array
     {
        return [
-           "user_id"=>"required"
+           "identifier"=>"required"
         ];
     }
 
@@ -24,7 +24,7 @@ class GetQuestionAnswerdForUserRequest extends FormRequest
     {
         return new GetUserQuestionsDTO(
 
-            userId: Uuid::fromString($this->get('user_id'))
+            identifier: $this->get('identifier')
         );
     }
 

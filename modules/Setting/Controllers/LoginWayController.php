@@ -21,7 +21,6 @@ use Modules\Setting\Requests\LoginWay\MakeLoginWayDefaultRequest;
 use Modules\Setting\Requests\LoginWay\ShowLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\UpdateLoginWayRequest;
 use Modules\Setting\Services\LoginWayService;
-use Monolog\Processor\UidProcessor;
 use Ramsey\Uuid\Uuid;
 
 
