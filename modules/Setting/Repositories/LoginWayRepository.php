@@ -40,7 +40,7 @@ class LoginWayRepository extends BaseRepository
                    $drivers = $loginOption["drivers"];
                 }
                 if (isset($loginOption["login_option_alternatives"])) {
-                    $loginOptionAlternatives = $loginOption["drivers"];
+                    $loginOptionAlternatives = $loginOption["login_option_alternatives"];
                 }
                $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers,"login_option_alternatives" => $loginOptionAlternatives ,"order" => $i]);
                 $i++;
@@ -50,7 +50,7 @@ class LoginWayRepository extends BaseRepository
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 500);
+            throw new \Exception($e->getMessage(), 500);
         }
         return $loginWay->fresh();
     }
@@ -73,7 +73,7 @@ class LoginWayRepository extends BaseRepository
                     $drivers = $loginOption["drivers"];
                 }
                 if (isset($loginOption["login_option_alternatives"])) {
-                    $loginOptionAlternatives = $loginOption["drivers"];
+                    $loginOptionAlternatives = $loginOption["login_option_alternatives"];
                 }
 
                 $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"],"drivers" => $drivers,"login_option_alternatives" =>$loginOptionAlternatives, "order" => $i]);
