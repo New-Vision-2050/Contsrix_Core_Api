@@ -31,40 +31,7 @@ class LoginWayRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $loginWay = $this->create([ "name" => $data["name"]]);
-            $i = 1;
-            foreach ($data["login_options"] as $loginOption) {
-                $drivers = null;
-                $loginOptionAlternatives = null;
-                if (isset($loginOption["drivers"])) {
-                   $drivers = $loginOption["drivers"];
-                }
-                if (isset($loginOption["login_option_alternatives"])) {
-                    $loginOptionAlternatives = $loginOption["login_option_alternatives"];
-                }
-               $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers,"login_option_alternatives" => $loginOptionAlternatives ,"order" => $i]);
-                $i++;
-
-            }
-            DB::commit();
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw new \Exception($e->getMessage(), 500);
-        }
-        return $loginWay->fresh();
-    }
-
-    public function updateLoginWay(UuidInterface $id, array $data): LoginWay
-    {
-        try {
-            DB::beginTransaction();
-            $loginWay = $this->findOneBy(['id' => $id]);
-            $loginWay->update([ "name" => $data["name"]]);
-            $loginWay->loginWaySteps()->each(function ($step) {
-                $step->drivers()->detach();
-            });
-            $loginWay->loginWaySteps()->delete();
+            $loginWay = $this->create(["name" => $data["name"]]);
             $i = 1;
             foreach ($data["login_options"] as $loginOption) {
                 $drivers = null;
@@ -75,8 +42,7 @@ class LoginWayRepository extends BaseRepository
                 if (isset($loginOption["login_option_alternatives"])) {
                     $loginOptionAlternatives = $loginOption["login_option_alternatives"];
                 }
-
-                $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"],"drivers" => $drivers,"login_option_alternatives" =>$loginOptionAlternatives, "order" => $i]);
+                $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers, "login_option_alternatives" => $loginOptionAlternatives, "order" => $i]);
                 $i++;
 
             }
@@ -84,16 +50,46 @@ class LoginWayRepository extends BaseRepository
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.update-not-successful"), 500);
+            throw new \Exception(__("validation.create-not-successful"), 500);
         }
+        return $loginWay->fresh();
+    }
+
+    public function updateLoginWay(UuidInterface $id, array $data): LoginWay
+    {
+//        try {
+//            DB::beginTransaction();
+        $loginWay = $this->findOneBy(['id' => $id]);
+        $loginWay->update(["name" => $data["name"]]);
+        $loginWay->loginWaySteps()->delete();
+        $i = 1;
+        foreach ($data["login_options"] as $loginOption) {
+            $drivers = null;
+            $loginOptionAlternatives = null;
+            if (isset($loginOption["drivers"])) {
+                $drivers = $loginOption["drivers"];
+            }
+            if (isset($loginOption["login_option_alternatives"])) {
+                $loginOptionAlternatives = $loginOption["login_option_alternatives"];
+            }
+
+            $loginWay->loginWaySteps()->create(["login_option" => $loginOption["login_option"], "drivers" => $drivers, "login_option_alternatives" => $loginOptionAlternatives, "order" => $i]);
+            $i++;
+
+        }
+//            DB::commit();
+//
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            throw new \Exception(__("validation.update-not-successful"), 500);
+//        }
         return $loginWay->fresh();
     }
 
 
     public function deleteLoginWay(UuidInterface $id)
     {
-        if($this->countBy([]) == 1)
-        {
+        if ($this->countBy([]) == 1) {
             throw new \Exception(__("validation.delete-not-successful-must-have-one"), 500);
         }
         return $this->findOneBy(['id' => $id])->delete();
@@ -106,8 +102,7 @@ class LoginWayRepository extends BaseRepository
             $this->findOneBy(['id' => $id])->update(['default' => 1]);
             $this->model->where('id', '<>', $id)->update(['default' => 0]);
             DB::commit();
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception(__("validation.update-not-successful"), 500);
         }

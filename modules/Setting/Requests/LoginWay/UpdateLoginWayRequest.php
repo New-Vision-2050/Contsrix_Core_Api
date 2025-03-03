@@ -18,7 +18,9 @@ class UpdateLoginWayRequest extends FormRequest
             "name" => "required|string",
             "login_options"=>"required|array",
             'login_options.*.login_option' => 'required|string|in:password,otp,barcode',
-            'login_options.*.drivers' => 'required_if:login_options.*.login_option,otp|array|nullable',
+            'login_options.*.drivers' => 'required_if:login_options.*.login_option,otp|array|in:sms,mail,social|nullable',
+            'login_options.*.login_option_alternatives' => 'array|in:sms,mail,social,password|nullable',
+
         ];
     }
 
