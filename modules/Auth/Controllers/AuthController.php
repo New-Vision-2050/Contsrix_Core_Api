@@ -22,6 +22,7 @@ use Modules\Auth\Services\AuthService;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Services\UserCRUDService;
+use Ramsey\Uuid\Uuid;
 
 class AuthController extends Controller
 {
@@ -125,18 +126,20 @@ class AuthController extends Controller
         $loginDTO = $request->createLoginStepDTO();
 
         try {
-            [$loginWay, $token, $order] = $this->authService->loginBySteps($loginDTO);
+            [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
+//            return [$loginWayId, $token, $nextStep];
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
 
         } catch (\Exception $e) {
-            return Json::error($e->getMessage());
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
         $userPresenter = (new UserPresenter($user))->getData();
-        if ($order == null) {
-            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(), "token" => $token, "user" => $userPresenter]);
+
+        if ($nextStep == null) {
+            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep))->getData(), "token" => $token, "user" => $userPresenter]);
         }
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter($loginWay, $order))->getData(), "token" => $token]);
+        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep))->getData(), "token" => $token]);
     }
 
     public function checkAnswers(CheckVerificationQuestionRequest $request)

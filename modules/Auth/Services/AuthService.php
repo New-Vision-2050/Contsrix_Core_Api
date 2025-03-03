@@ -208,11 +208,13 @@ class AuthService
          * @var $user User
          * @var $step LoginWayStep
          */
-        $loginWay = $this->getDefaultLoginWay($loginStepDTO->getIdentifier());
+        $loginWay =  $verficationData->data["login_way"];
+
         $user = $this->userCRUDService->getUserByIdentifier($loginStepDTO->getIdentifier());
 
         //current step
         [$step,$nextStep] = $this->getLoginStepAndNextStepFromToken($loginStepDTO->getToken());
+
         // if current step has otp then validate
         $this->checkOtpByStep($step, $loginStepDTO->getIdentifier(), $loginStepDTO->getPassword());
         // if current step has password then validate
@@ -228,12 +230,12 @@ class AuthService
 
             $this->sendOtpByStep($nextStep, $loginStepDTO->getIdentifier()); // if step has otp then send otp
 
-            return [$loginWay, $token, $verficationData->data["order"] + 1];
+            return [$loginWay["id"], $token, $nextStep];
         }
         //if no step else send token and authorize
         $token = JWTAuth::fromUser($user);
 
-        return [$loginWay, $token, null];
+        return [$loginWay["id"], $token, $nextStep];
     }
 
     public function checkQuestionAnswer(QuestionVerificationDTO $questionVerificationDTO)
