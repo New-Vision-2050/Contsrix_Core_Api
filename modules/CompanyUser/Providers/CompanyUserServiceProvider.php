@@ -10,9 +10,9 @@ use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Events\UserDeleted;
 use Modules\CompanyUser\Events\UserUpdated;
-use Modules\CompanyUser\Listeners\CreateUserInAuth;
-use Modules\CompanyUser\Listeners\DeleteUserRoleInAuth;
-use Modules\CompanyUser\Listeners\UpdateUserInAuth;
+use Modules\CompanyUser\Listeners\CreateUserInAuthListener;
+use Modules\CompanyUser\Listeners\DeleteUserRoleInAuthListener;
+use Modules\CompanyUser\Listeners\UpdateUserInAuthListener;
 
 class CompanyUserServiceProvider extends ModuleServiceProvider
 {
@@ -29,9 +29,9 @@ class CompanyUserServiceProvider extends ModuleServiceProvider
         //$this->registerConfig();
         $this->registerMigrations();
 
-        Event::listen(UserCreated::class,CreateUserInAuth::class );
-        Event::listen(UserUpdated::class,UpdateUserInAuth::class );
-        Event::listen(UserDeleted::class,DeleteUserRoleInAuth::class );
+        Event::listen(UserCreated::class,CreateUserInAuthListener::class );
+        Event::listen(UserUpdated::class,UpdateUserInAuthListener::class );
+        Event::listen(UserDeleted::class,DeleteUserRoleInAuthListener::class );
 
     }
 

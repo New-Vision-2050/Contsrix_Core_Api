@@ -2,14 +2,14 @@
 
 namespace Modules\CompanyUser\Listeners;
 
+use Modules\CompanyUser\Events\CompanyUser;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Modules\CompanyUser\Events\UserCreated;
-use Modules\CompanyUser\Events\UserUpdated;
 use Modules\User\Models\User;
 use RabbitMQ\Jobs\BroadcastMessage;
 
-class UpdateUserInAuth
+class CreateUserInAuthListener
 {
     /**
      * Create the event listener.
@@ -27,9 +27,9 @@ class UpdateUserInAuth
      * @param UserCreated $event
      * @return void
      */
-    public function handle(UserUpdated $event)
+    public function handle(UserCreated $event)
     {
-        BroadcastMessage::broadcastToExchange("updated_user",$event->data,"user_events_exchange");
+        BroadcastMessage::broadcastToExchange("created_user",$event->data,"user_events_exchange");
 
     }
 }

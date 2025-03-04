@@ -10,7 +10,7 @@ use Modules\CompanyUser\Events\UserUpdated;
 use Modules\User\Models\User;
 use RabbitMQ\Jobs\BroadcastMessage;
 
-class DeleteUserRoleInAuth
+class DeleteUserRoleInAuthListener
 {
     /**
      * Create the event listener.

@@ -40,7 +40,7 @@ class RoleController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['role' => RolePresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::items( RolePresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetRoleRequest $request): JsonResponse
@@ -49,7 +49,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($item);
 
-        return Json::buildItems('role', $presenter->getData());
+        return Json::item( $presenter->getData());
     }
 
     public function store(CreateRoleRequest $request): JsonResponse
@@ -58,7 +58,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($createdItem);
 
-        return Json::buildItems('role', $presenter->getData());
+        return Json::item( $presenter->getData());
     }
 
     public function update(UpdateRoleRequest $request): JsonResponse
@@ -70,7 +70,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($item);
 
-        return Json::buildItems('role', $presenter->getData());
+        return Json::item( $presenter->getData());
     }
 
     public function assignPermissionToRole(AssignPermissionToRoleRequest $request): JsonResponse
@@ -78,14 +78,14 @@ class RoleController extends Controller
         $command = $request->createAssignPermissionToRoleCommand();
         $this->assignPermissionsToRoleHandler->handle($command);
 
-        return Json::buildItems("msg","permissions added successfully ");
+        return Json::success("permissions added successfully ");
     }
 
     public function getPermissions(GetPermissionRequest $request)
     {
         $role = $this->roleService->get(Uuid::fromString($request->route('id')));
         $permissionRepresenter = PermissionPresenter::collection($role->permissions);
-        return Json::buildItems("permissions", $permissionRepresenter);
+        return Json::item( $permissionRepresenter);
     }
 
 
