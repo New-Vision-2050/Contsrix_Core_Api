@@ -172,8 +172,16 @@ return [
     "all-questions-are-required" => "جميع الاسئلة مطلوبة",
     "invalid-token" => "الرمز غير صحيح",
     "can-not-resend-otp"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة",
-
-
+    'company_name' => 'اسم المستخدم صحيح',
+    'classification_number_already_in_use' => 'رقم التصنيف مستخدم بالفعل',
+    'classification_ number_available' => 'رقم التصنيف متاح',
+    'commercial_registration_number' => 'رقم السجل التجاري صحيح',
+    'Commercial_registration_number_with_another'=> 'رقم السجل التجاري مع رقم ترخيص اخر',
+    'phone_number_already_exists'=> 'رقم الهاتف موجود بالفعل',
+    'invalid_phone_number'=> 'رقم الهاتف غير صحيح',
+    'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
+    'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
+    'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

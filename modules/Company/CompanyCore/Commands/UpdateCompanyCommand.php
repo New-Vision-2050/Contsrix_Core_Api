@@ -11,15 +11,16 @@ class UpdateCompanyCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
+        private string $userName,
         private string $email,
         private string $phone,
-        private string $country_id,
-        private string $company_type_id,
-        private string $company_field_id,
-        private string $registration_type_id,
-        private string $registration_no,
-        private string $classification_no,
-        private string $general_manager_id,
+        private string $countryId,
+        private string $companyTypeId,
+        private string $companyFieldId,
+        private string $registrationTypeId,
+        private string $registrationNo,
+        private string $serialNo,
+        private string $generalManagerId,
     ) {
     }
 
@@ -31,6 +32,10 @@ class UpdateCompanyCommand
     {
         return $this->name;
     }
+    public function getUserName(): ?string
+    {
+        return $this->userName;
+    }
     public function getEmail(): ?string
     {
         return $this->email;
@@ -41,47 +46,49 @@ class UpdateCompanyCommand
     }
     public function getCountryId(): ?string
     {
-        return $this->country_id;
+        return $this->countryId;
     }
     public function getCompanyTypeId(): ?string
     {
-        return $this->company_type_id;
+        return $this->companyTypeId;
     }
     public function getCompanyFieldId(): ?string
     {
-        return $this->company_field_id;
+        return $this->companyFieldId;
     }
     public function getRegistrationTypeId(): ?string
     {
-        return $this->registration_type_id;
+        return $this->registrationTypeId;
     }
     public function getRegistrationNo(): string
     {
-        return $this->registration_no;
+        return $this->registrationNo;
     }
-    public function getClassificationNo(): string
+
+    public function getSerialNo(): string
     {
-        return $this->classification_no;
+        return $this->serialNo;
     }
 
 
     public function getGeneralManagerId(): ?string
     {
-        return $this->general_manager_id;
+        return $this->generalManagerId;
     }
     public function toArray(): array
     {
         return array_filter([
             'name' => $this->name,
+            'user_name' => $this->userName,
             'email' => $this->email,
+            'serial_no' => $this->serialNo,
             'phone' => $this->phone,
-            'country_id' => $this->country_id,
-            'company_type_id' => $this->company_type_id,
-            'company_field_id' => $this->company_field_id,
-            'registration_type_id' => $this->registration_type_id,
-            'registration_no' => $this->registration_no,
-            'classification_no' => $this->classification_no,
-            'general_manager_id' => $this->general_manager_id
+            'country_id' => $this->countryId,
+            'company_type_id' => $this->companyTypeId,
+            'company_field_id' => $this->companyFieldId,
+            'registration_type_id' => $this->registrationTypeId,
+            'registration_no' => $this->registrationNo,
+            'general_manager_id' => $this->generalManagerId
         ]);
     }
 }
