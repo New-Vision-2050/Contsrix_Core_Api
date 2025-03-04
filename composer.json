@@ -16,6 +16,7 @@
         "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.29",
         "m-tech-stack/base-package": "^1.0",
+        "owen-it/laravel-auditing": "^14.0",
         "propaganistas/laravel-phone": "^5.3",
         "spatie/laravel-medialibrary": "^11.12",
         "spatie/laravel-permission": "^6.10",
