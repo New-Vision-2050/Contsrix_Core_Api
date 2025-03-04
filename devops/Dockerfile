@@ -1,6 +1,8 @@
 # Use an official PHP image with necessary extensions
 FROM mabou7agar/custom-nginx-php8-2
 
+RUN docker-php-ext-install sockets \
+    && docker-php-ext-enable sockets
 ARG CACHEBUST=1
 ## Set working directory
 WORKDIR /var/www
