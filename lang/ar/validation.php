@@ -163,6 +163,21 @@ return [
     'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
     'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
 
+    "phone"=>"رقم الهاتف غير صحيح",
+    'delete-not-successful' => 'فشل الحذف',
+    'create-not-successful' => 'فشل الحفظ',
+    "user-name"=>"اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
+    "user-email-error"=>" البريد الالكتروني موجود ضمن النظام بأسم :name .",
+    "user-email-success"=>"البريد الالكتروني موجود ضمن النظام",
+    "user-phone-error"=>"رقم الجوال موجود ضمن النظام بأسم :name .",
+    "user-phone-success"=>" رقم الجوال موجود ضمن النظام",
+    "identity-or-passport-required"=>"يجب ادخال رقم الهوية او رقم الجواز",
+    "passport-or-residence-or-border_number-required"=>"يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
+    "company-not-found"=>"الشركة غير موجودة",
+
+
+
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

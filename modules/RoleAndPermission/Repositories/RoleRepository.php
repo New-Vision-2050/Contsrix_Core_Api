@@ -50,7 +50,9 @@ class RoleRepository extends BaseRepository
 
     public function givePermissionsToRole(UuidInterface $id ,array $permissions):Role
     {
-        return $this->getRole($id)->syncPermissions($permissions);
+        $role = $this->getRole($id);
+        $role->syncPermissions($permissions);
+        return $role;
     }
 
 }
