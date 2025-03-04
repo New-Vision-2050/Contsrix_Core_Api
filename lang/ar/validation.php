@@ -152,17 +152,6 @@ return [
     'invalid-credential' => 'معلومات الدخول غير صحيحية',
     'invalid-to-login-with-otp' => 'غير مصرح لك بالدخول عن طريق كلمه المرور المؤقتة',
     "can-not-resend-before"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
-    'company_name' => 'اسم المستخدم صحيح',
-    'classification_number_already_in_use' => 'رقم التصنيف مستخدم بالفعل',
-    'classification_ number_available' => 'رقم التصنيف متاح',
-    'commercial_registration_number' => 'رقم السجل التجاري صحيح',
-    'Commercial_registration_number_with_another'=> 'رقم السجل التجاري مع رقم ترخيص اخر',
-    'phone_number_already_exists'=> 'رقم الهاتف موجود بالفعل',
-    'invalid_phone_number'=> 'رقم الهاتف غير صحيح',
-    'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
-    'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
-    'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
-
     "phone"=>"رقم الهاتف غير صحيح",
     'delete-not-successful' => 'فشل الحذف',
     'create-not-successful' => 'فشل الحفظ',
@@ -174,10 +163,16 @@ return [
     "identity-or-passport-required"=>"يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required"=>"يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found"=>"الشركة غير موجودة",
-
-
-
-
+    'company_name' => 'اسم المستخدم صحيح',
+    'classification_number_already_in_use' => 'رقم التصنيف مستخدم بالفعل',
+    'classification_ number_available' => 'رقم التصنيف متاح',
+    'commercial_registration_number' => 'رقم السجل التجاري صحيح',
+    'Commercial_registration_number_with_another'=> 'رقم السجل التجاري مع رقم ترخيص اخر',
+    'phone_number_already_exists'=> 'رقم الهاتف موجود بالفعل',
+    'invalid_phone_number'=> 'رقم الهاتف غير صحيح',
+    'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
+    'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
+    'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',
