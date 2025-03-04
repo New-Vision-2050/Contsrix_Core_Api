@@ -8,15 +8,16 @@ class CreateCompanyDTO
 {
     public function __construct(
         public string $name,
+        public string $userName,
         private string $email,
+        private string $serialNo,
         private string $phone,
-        private string $country_id,
-        private string $company_type_id,
-        private string $company_field_id,
-        private string $registration_type_id,
-        private string $registration_no,
-        private string $classification_no,
-        private string $general_manager_id,
+        private string $countryId,
+        private string $companyTypeId,
+        private string $companyFieldId,
+        private string $registrationTypeId,
+        private string $registrationNo,
+        private string $generalManagerId,
     ) {
     }
 
@@ -24,15 +25,16 @@ class CreateCompanyDTO
     {
         return [
             'name' => $this->name,
+            'user_name' => $this->userName,
             'email' => $this->email,
             'phone' => $this->phone,
-            'country_id' => $this->country_id,
-            'company_type_id' => $this->company_type_id,
-            'company_field_id' => $this->company_field_id,
-            'registration_type_id' => $this->registration_type_id,
-            'registration_no' => $this->registration_no,
-            'classification_no' => $this->classification_no,
-            'general_manager_id' => $this->general_manager_id
+            'country_id' => $this->countryId,
+            'company_type_id' => $this->companyTypeId,
+            'company_field_id' => $this->companyFieldId,
+            'general_manager_id' => $this->generalManagerId,
+            'registration_type_id' => $this->registrationTypeId,
+            'registration_no' => $this->registrationNo,
+            'serial_no' => $this->serialNo,
         ];
     }
 }

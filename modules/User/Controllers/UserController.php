@@ -7,6 +7,7 @@ namespace Modules\User\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\Audit\Presenters\AuditPresenter;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
@@ -47,7 +48,7 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(['users' => UserPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
+        return Json::items(UserPresenter::collection($list['data']),paginationSettings:  $list['pagination']);
     }
 
     public function show(GetUserRequest $request): JsonResponse
@@ -140,7 +141,6 @@ class UserController extends Controller
             (int)$request->get('page', 1),
             (int)$request->get('per_page', 10)
         );
-
-        return Json::item(['audits' => $list["data"], 'pagination' => $list["pagination"]]);
+        return Json::items(AuditPresenter::collection($list['data']),paginationSettings:  $list['pagination']);
     }
 }

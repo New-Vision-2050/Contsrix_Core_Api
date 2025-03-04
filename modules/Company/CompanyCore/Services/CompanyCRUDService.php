@@ -25,12 +25,6 @@ class CompanyCRUDService
 
         $company = $this->repository->createCompany($requestCompanyDTO);
 
-        $companyRegistrationForm = CompanyRegistrationForm::create([
-            'company_id' => $company->id,
-            'registration_no' => $requestCompanyDTO['registration_no'],
-            'classification_no' => $requestCompanyDTO['classification_no'],
-        ]);
-
         CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
 
         return $company;

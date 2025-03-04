@@ -10,21 +10,25 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyField\Models\CompanyField;
-use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class Company extends Model
+class Company extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use InteractsWithMedia;
     //use HasTranslations;
-    //use SoftDeletes;
+    // use SoftDeletes;
 
     //public array $translatable = [];
 
@@ -34,6 +38,7 @@ class Company extends Model
 
     protected $fillable = [
         'name',
+        'user_name',
         'email',
         'phone',
         'country_id',
@@ -43,7 +48,10 @@ class Company extends Model
         'general_manager_id',
         'is_active',
         'complete_data',
-        'date_activate'
+        'date_activate',
+        'registration_no',
+        'serial_no',
+        'image_path'
     ];
     protected $casts = [
         'id' => 'string',
@@ -78,8 +86,9 @@ class Company extends Model
     {
         return $this->belongsTo(CompanyRegistrationType::class,'registration_type_id');
     }
-    public function companyRegistrationForm()
+    public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
-        return $this->hasOne(CompanyRegistrationForm::class);
+        $media->getFullUrl(); // Ensure this is using your custom method
     }
+
 }

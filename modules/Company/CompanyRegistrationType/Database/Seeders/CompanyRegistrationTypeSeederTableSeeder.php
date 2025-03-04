@@ -17,11 +17,18 @@ class CompanyRegistrationTypeSeederTableSeeder extends Seeder
     {
         Model::unguard();
 
-        CompanyRegistrationType::firstOrCreate([
-            'name'=>'سجل تجاري',
-        ]);
+        $data = [
+            ['en' => 'Commercial Register', 'ar' => 'سجل تجاري', 'type' => 1],
+            ['en' => 'Classification', 'ar' => 'تصنيف', 'type' => 2],
+            ['en' => 'Without Commercial Register', 'ar' => 'بدون سجل تجاري', 'type' => 3],
+        ];
 
+        foreach ($data as $item) {
+            CompanyRegistrationType::firstOrCreate(
+                ['type' => $item['type']],
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
+            );
+        }
 
-        // $this->call("OthersTableSeeder");
     }
 }
