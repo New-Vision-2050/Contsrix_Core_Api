@@ -10,8 +10,12 @@ return new class extends Migration
     {
         Schema::create('company_registration_types', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name');
+            $table->string('name')->nullable();
             $table->timestamps();
         });
+    }
+    public function down(): void
+    {
+        Schema::dropIfExists('company_registration_types');
     }
 };

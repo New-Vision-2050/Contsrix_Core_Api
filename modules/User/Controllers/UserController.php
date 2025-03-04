@@ -63,6 +63,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $userPresenter = new UserPresenter($user);
+
         return Json::buildItems('user', $userPresenter->getData());
     }
 
