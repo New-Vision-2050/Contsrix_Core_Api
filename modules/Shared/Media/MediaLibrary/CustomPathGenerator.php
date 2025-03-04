@@ -29,11 +29,11 @@ class CustomPathGenerator extends DefaultPathGenerator
     }
     public function getFullUrl(Media $media): string
     {
-        $disk = Config::get('filesystems.default');
+        $disk = $media->conversions_disk;
 
         $url = Storage::disk($disk)->temporaryUrl(
             $this->getPathRelativeToRoot($media),
-            Carbon::now()->addMinutes(10)
+            Carbon::now()->addMinutes(60)
         );
 
         return $url;
@@ -41,7 +41,7 @@ class CustomPathGenerator extends DefaultPathGenerator
 
     private function getPathRelativeToRoot(Media $media): string
     {
-        return "{$media->getKey()}/{$media->file_name}";
+        return $this->getPath($media) . $media->file_name;
     }
 }
 
