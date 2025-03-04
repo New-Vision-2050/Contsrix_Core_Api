@@ -6,6 +6,7 @@ namespace Modules\User\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Audit\Repositories\AuditRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\User\Models\User;
 
@@ -16,7 +17,7 @@ use Modules\User\Models\User;
  */
 class UserRepository extends BaseRepository
 {
-    public function __construct(User $model)
+    public function __construct(User $model,private AuditRepository $auditRepository)
     {
         parent::__construct($model);
     }
@@ -54,6 +55,28 @@ class UserRepository extends BaseRepository
     public function deleteUser(UuidInterface $id): bool
     {
         return $this->delete($id);
+    }
+
+    public function assignRole(UuidInterface $id, $roles): User
+    {
+        $user = $this->getUser($id);
+        $user->syncRoles($roles);
+        return $user;
+    }
+
+    public function getRoles(UuidInterface $id)
+    {
+        return $this->getUser($id)->roles;
+    }
+
+    public function getPermissions(UuidInterface $id)
+    {
+        return $this->getUser($id)->getAllPermissions();
+    }
+
+    public function getAllAudites(UuidInterface $id, ?int $page, ?int $perPage = 10)
+    {
+        return $this->auditRepository->paginated(["user_id"=>$id,"user_type"=>User::class],$page,$perPage);
     }
 
 
