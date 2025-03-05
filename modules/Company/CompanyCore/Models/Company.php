@@ -8,6 +8,7 @@ use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\AdminRequest\Models\AdminRequest;
 use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyField\Models\CompanyField;
@@ -75,6 +76,12 @@ class Company extends Model implements HasMedia
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl(); // Ensure this is using your custom method
+    }
+
+    public function adminRequestTransaction()
+    {
+
+        return $this->morphMany(AdminRequest::class, 'requestable');
     }
 
 }

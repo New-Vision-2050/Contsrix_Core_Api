@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\AdminRequest\Models;
+
+use BasePackage\Shared\Traits\HasTranslations;
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\AdminRequest\Database\factories\AdminRequestFactory;
+use BasePackage\Shared\Traits\BaseFilterable;
+//use BasePackage\Shared\Traits\HasTranslations;
+
+class AdminRequest extends Model
+{
+    use HasFactory;
+    use UuidTrait;
+    use BaseFilterable;
+    use HasTranslations;
+    //use SoftDeletes;
+
+    public array $translatable = ["action"];
+    public $with = ["adminRequestTransactions"];
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        "user_id",
+        "request_type",
+        "data",
+        "status"
+    ];
+
+
+    protected $casts = [
+        'id' => 'string',
+        "data" => "array"
+    ];
+
+    public function adminRequestTransactions()
+    {
+        $this->hasMany(AdminRequestTransaction::class);
+    }
+
+    protected static function newFactory(): AdminRequestFactory
+    {
+        return AdminRequestFactory::new();
+    }
+}
