@@ -49,6 +49,7 @@ class CompanyRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
     public function isEmailExists(string $email): bool
     {
         return Company::where('email', $email)->exists();
@@ -57,13 +58,16 @@ class CompanyRepository extends BaseRepository
     {
         return Company::where('phone', $phone)->exists();
     }
-    public function isRegistrationExists(string $registration_no): bool
+    public function isRegistrationExists(string $registrationNo,string $registrationTypeId): bool
     {
-        return CompanyRegistrationForm::where('registration_no', $registration_no)->exists();
+        return Company::where('registration_no', $registrationNo)
+            ->where('registration_type_id', $registrationTypeId)
+            ->exists();
     }
-    public function isClassificationExists(string $classification_no): bool
+
+    public function isUserNameExists(string $userName): bool
     {
-        return CompanyRegistrationForm::where('classification_no', $classification_no)->exists();
+        return Company::where('user_name', $userName)->exists();
     }
 
     public function totalCompany(?Carbon $date = null): int
@@ -109,5 +113,21 @@ class CompanyRepository extends BaseRepository
             ->where('date_activate', '<', Carbon::today()->addDays(30))
             ->count();
 
+    }
+
+    public function getInactiveCompanyIds(int $hours = 24, $companyId = null)
+    {
+        $inactiveTime = Carbon::now()->subHours($hours);
+
+        return Company::where('check_activity', 0)
+            ->where('created_at', '<', $inactiveTime)
+            ->when($companyId, function ($query) use ($companyId) {
+                $query->where('id', $companyId);
+            })
+            ->pluck('id');
+    }
+    public function deleteCompaniesByIds(array $companyIds)
+    {
+        return Company::whereIn('id', $companyIds)->delete();
     }
 }

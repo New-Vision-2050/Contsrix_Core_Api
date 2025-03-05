@@ -6,6 +6,7 @@ namespace Modules\Company\CompanyCore\Controllers;
 
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
+use App\Services\FileUploadService;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
@@ -23,7 +24,7 @@ use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
-
+use Illuminate\Support\Facades\Storage;
 class CompanyController extends Controller
 {
     public function __construct(
@@ -32,12 +33,14 @@ class CompanyController extends Controller
         private DeleteCompanyHandler $deleteCompanyHandler,
         private CompanyValidateService $validateCompanyService,
         private CompanyWidgetService $companyWidgetService,
-        private ActivateCompanyHandler $activateCompanyCommand
+        private ActivateCompanyHandler $activateCompanyCommand,
+        private FileUploadService  $fileUploadService
     ) {
     }
 
-    public function index(GetCompanyListRequest $request): JsonResponse
+    public function index(GetCompanyListRequest $request)//: JsonResponse
     {
+
         $list = $this->companyService->list(
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
@@ -57,7 +60,6 @@ class CompanyController extends Controller
 
     public function store(CreateCompanyRequest $request): JsonResponse
     {
-
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
 
         $presenter = new CompanyPresenter($createdItem);
@@ -65,8 +67,9 @@ class CompanyController extends Controller
         return Json::buildItems('company', $presenter->getData());
     }
 
-    public function update(UpdateCompanyRequest $request): JsonResponse
+    public function update(UpdateCompanyRequest $request)//: JsonResponse
     {
+
         $command = $request->createUpdateCompanyCommand();
         $this->updateCompanyHandler->handle($command);
 
@@ -118,5 +121,9 @@ class CompanyController extends Controller
         $presenter = new CompanyPresenter($item);
 
         return Json::buildItems('company', $presenter->getData());
+    }
+    public function test(Request $request)
+    {
+        return response()->json($this->fileUploadService->uploadToMinIO($request));
     }
 }

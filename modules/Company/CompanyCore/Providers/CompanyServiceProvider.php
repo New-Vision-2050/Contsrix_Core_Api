@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Providers;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
+use Modules\Company\CompanyCore\Models\Company;
 
 class CompanyServiceProvider extends ModuleServiceProvider
 {
