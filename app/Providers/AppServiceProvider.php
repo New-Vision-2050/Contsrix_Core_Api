@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Channels\SmsChannel;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**

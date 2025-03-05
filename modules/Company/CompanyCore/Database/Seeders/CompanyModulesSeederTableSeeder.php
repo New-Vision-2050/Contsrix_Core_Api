@@ -4,7 +4,6 @@ namespace Modules\Company\CompanyCore\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Company\CompanyCore\Models\Company;
-use Illuminate\Support\Facades\App;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
@@ -15,7 +14,6 @@ use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
-
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {

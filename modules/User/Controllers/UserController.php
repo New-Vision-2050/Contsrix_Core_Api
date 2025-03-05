@@ -7,7 +7,6 @@ namespace Modules\User\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\User\Handlers\AssignRoleForUserHandler;
