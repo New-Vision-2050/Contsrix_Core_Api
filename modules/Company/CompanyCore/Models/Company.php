@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
+use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,31 +28,16 @@ class Company extends Model implements HasMedia
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
-    //use HasTranslations;
+    use HasTranslations;
     // use SoftDeletes;
 
-    //public array $translatable = [];
+    public array $translatable = ["name"];
 
     public $incrementing = false;
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
-        'user_name',
-        'email',
-        'phone',
-        'country_id',
-        'company_type_id',
-        'company_field_id',
-        'registration_type_id',
-        'general_manager_id',
-        'is_active',
-        'complete_data',
-        'date_activate',
-        'registration_no',
-        'serial_no',
-        'image_path'
     ];
     protected $casts = [
         'id' => 'string',

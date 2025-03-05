@@ -24,7 +24,7 @@ class CreateCompanyDTO
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
+            'name' => ["ar"=>$this->name],
             'user_name' => $this->userName,
             'email' => $this->email,
             'phone' => $this->phone,
