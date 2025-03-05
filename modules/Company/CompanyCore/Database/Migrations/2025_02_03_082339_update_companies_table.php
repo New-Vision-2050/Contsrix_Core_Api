@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::table('companies', function (Blueprint $table) {
             $table->string('user_name')->unique()->after("id");
+
         });
     }
 
