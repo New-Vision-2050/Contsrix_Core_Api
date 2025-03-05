@@ -31,7 +31,7 @@ class CompanyTypeController extends Controller
     {
         $list = $this->companyTypeService->all();
 
-        return Json::buildItems(null,['company_types' => CompanyTypePresenter::collection($list)]);
+        return Json::items(CompanyTypePresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetCompanyTypeRequest $request): JsonResponse
@@ -40,7 +40,7 @@ class CompanyTypeController extends Controller
 
         $presenter = new CompanyTypePresenter($item);
 
-        return Json::buildItems('company_type', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(CreateCompanyTypeRequest $request): JsonResponse
@@ -49,7 +49,7 @@ class CompanyTypeController extends Controller
 
         $presenter = new CompanyTypePresenter($createdItem);
 
-        return Json::buildItems('company_type', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateCompanyTypeRequest $request): JsonResponse
@@ -61,7 +61,7 @@ class CompanyTypeController extends Controller
 
         $presenter = new CompanyTypePresenter($item);
 
-        return Json::buildItems('company_type', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteCompanyTypeRequest $request): JsonResponse

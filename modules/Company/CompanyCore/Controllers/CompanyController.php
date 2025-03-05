@@ -6,10 +6,11 @@ namespace Modules\Company\CompanyCore\Controllers;
 
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
-use App\Services\FileUploadService;
+use Modules\Shared\Media\Services\FileUploadService;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CreateCompanyRequest;
 use Modules\Company\CompanyCore\Requests\DeleteCompanyRequest;
@@ -24,6 +25,7 @@ use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
+use App\Services\TransformImgsService;
 use Illuminate\Support\Facades\Storage;
 class CompanyController extends Controller
 {
@@ -34,7 +36,8 @@ class CompanyController extends Controller
         private CompanyValidateService $validateCompanyService,
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
-        private FileUploadService  $fileUploadService
+        private FileUploadService  $fileUploadService,
+        private TransformImgsService  $transformImgsService
     ) {
     }
 
@@ -46,7 +49,7 @@ class CompanyController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['companies' => CompanyPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::items(CompanyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetCompanyRequest $request): JsonResponse
@@ -55,7 +58,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($item);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(CreateCompanyRequest $request): JsonResponse
@@ -64,7 +67,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($createdItem);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateCompanyRequest $request)//: JsonResponse
@@ -77,7 +80,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($item);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteCompanyRequest $request): JsonResponse
@@ -97,7 +100,7 @@ class CompanyController extends Controller
     }
     public function widget(): JsonResponse
     {
-        $total = $this->companyWidgetService->total();
+        $total = $this->companyWidgetService->total(); //make a qury in this point and appaly filter //concarncy in laravel
         $active = $this->companyWidgetService->active();
         $completeData = $this->companyWidgetService->completeData();
         $dataActivate = $this->companyWidgetService->dataActivate();
@@ -109,7 +112,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyWidgetPresenter($total,$active,$completeData,$dataActivate,$totalCalculate,$activeCalculate,$completeDataCalculate,$dataActivateCalculate);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
     public function activate(ActiveCompanyRequest $request): JsonResponse
     {
@@ -120,10 +123,53 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($item);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
     public function test(Request $request)
     {
-        return response()->json($this->fileUploadService->uploadToMinIO($request));
+        $company = Company::first();
+
+        if (!$company) {
+            return response()->json(['error' => 'Company not found'], 404);
+        }
+
+        if (!$request->hasFile('file')) {
+            return response()->json(['error' => 'No file uploaded'], 400);
+        }
+
+        $service = new FileUploadService();
+        $response = $service->uploadFile($company, $request->file('file'),'image/test' ,'company_images', 'public');
+
+
+        return response()->json($response);
+
+        // Upload as a private file (expires in 10 minutes)
+        // $response = $service->uploadToS3($request, 'company_images', 'company_collection', 'private', 10);
+
+    }
+    // public function getImage($id)
+    // {
+    //     $file = Company::findOrFail($id);
+
+    //     $url = Storage::disk('s3')->temporaryUrl($file->image_path, now()->addMinutes(10));
+
+    //     $transformedImage = $this->transformImgsService->optimiseImage($url);
+
+    //     return response()->json([
+    //         'message' => 'File retrieved successfully!',
+    //         'url' => $url,
+    //         'transformed_image' => base64_encode($transformedImage),
+    //     ]);
+    // }
+
+    public function getImage()
+    {
+        // Get the first company
+        $company = Company::with('media')->first();
+
+        return $company;
+
+
+        return response()->json(['error' => 'No media found.'], 404);
     }
 }
