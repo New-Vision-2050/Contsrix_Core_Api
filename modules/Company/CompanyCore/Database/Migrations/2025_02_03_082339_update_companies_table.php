@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->string('user_name')->unique()->after('name');
+            $table->string('user_name')->unique()->nullable()->after('name');
         });
     }
 
