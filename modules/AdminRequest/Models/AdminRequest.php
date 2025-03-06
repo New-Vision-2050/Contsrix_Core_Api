@@ -31,7 +31,8 @@ class AdminRequest extends Model
         "user_id",
         "request_type",
         "data",
-        "status"
+        "status",
+        "action",
     ];
 
 
@@ -42,7 +43,7 @@ class AdminRequest extends Model
 
     public function adminRequestTransactions()
     {
-        $this->hasMany(AdminRequestTransaction::class);
+        return $this->hasMany(AdminRequestTransaction::class, 'admin_request_id');
     }
 
     protected static function newFactory(): AdminRequestFactory

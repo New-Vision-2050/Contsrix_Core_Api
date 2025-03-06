@@ -11,22 +11,25 @@ use Illuminate\Http\JsonResponse;
 
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyData;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
+use Modules\Company\CompanyCore\Services\CompanyProfileService;
 use Ramsey\Uuid\Uuid;
 
 class CompanyProfileController extends Controller
 {
     public function __construct(
         private UpdateOfficialCompanyDataHandler $updateOfficialCompanyDataHandler,
-        private CompanyCRUDService               $companyService
+        private CompanyCRUDService               $companyService,
+        private CompanyProfileService            $companyProfileService
 
     )
     {
     }
 
 
-    public function update(UpdateOfficialCompanyDataRequest $request): JsonResponse
+    public function updateOfficialData(UpdateOfficialCompanyData $request): JsonResponse
     {
         $command = $request->createUpdateOfficialCompanyDataCommand();
         $this->updateOfficialCompanyDataHandler->handle($command);
@@ -36,6 +39,13 @@ class CompanyProfileController extends Controller
         $presenter = new CompanyPresenter($item);
 
         return Json::item( $presenter->getData());
+    }
+
+    public function updateOfficialDataRequest(UpdateOfficialCompanyDataRequest $request)
+    {
+       $adminRequest =  $this->companyProfileService->updateCompanyProfileRequest($request->createUpdateOfficialCompanyDataRequestDTO());
+
+       return Json::item($adminRequest);
     }
 
 

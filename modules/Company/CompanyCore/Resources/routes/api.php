@@ -15,4 +15,11 @@ Route::middleware(['auth:api'])->group(function () {
     Route::put('/{id}', [CompanyController::class, 'update']);
     Route::put('/activate/{id}', [CompanyController::class, 'activate']);
     Route::delete('/{id}', [CompanyController::class, 'delete'])->name('companies.delete');
+    Route::prefix("{id}/company-profile")->group(function () {
+        Route::prefix("official-data")->group(function () {
+           Route::put("/",[\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class,"updateOfficialData"]);
+           Route::put("/request",[\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class,"updateOfficialDataRequest"]);
+        });
+
+    });
 });

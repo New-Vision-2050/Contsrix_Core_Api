@@ -5,28 +5,29 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Company\CompanyCore\Commands\CompanyProfile\UpdateOfficialCompanyDataCommand;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Ramsey\Uuid\Uuid;
-use Modules\Company\CompanyCore\Commands\UpdateCompanyCommand;
-use App\Rules\Company\CompanyCore\Rules\RegistrationNoRule;
+
 class UpdateOfficialCompanyDataRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'name_en' => 'required|string',
-            'email' => 'required|email|string',
-            'phone' => 'required|string',
+            'name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
+            'country_id' => 'required|exists:countries,id',
+            'company_type_id' => 'required|exists:company_types,id',
+            'company_field_id' => 'required|exists:company_fields,id',
         ];
     }
 
-    public function createUpdateOfficialCompanyDataCommand(): UpdateOfficialCompanyDataCommand
+    public function createUpdateOfficialCompanyDataRequestDTO(): UpdateOfficialCompanyDataRequestDTO
     {
-        return new UpdateOfficialCompanyDataCommand(
+        return new UpdateOfficialCompanyDataRequestDTO(
             id: Uuid::fromString($this->route('id')),
-            nameEn: $this->get('name'),
-            email: $this->get('email'),
-            phone: $this->get('phone'),
+            name: $this->get('name'),
+            countryId: (string)$this->get('country_id'),
+            companyTypeId: (string)$this->get('company_type_id'),
+            companyFieldId: (string)$this->get('company_field_id'),
         );
     }
 }

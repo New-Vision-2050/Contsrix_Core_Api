@@ -21,6 +21,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class Company extends Model implements HasMedia
@@ -30,6 +31,7 @@ class Company extends Model implements HasMedia
     use BaseFilterable;
     use InteractsWithMedia;
     use HasTranslations;
+
     // use SoftDeletes;
 
     public array $translatable = ["name"];
@@ -71,8 +73,9 @@ class Company extends Model implements HasMedia
 
     public function companyRegistrationType()
     {
-        return $this->belongsTo(CompanyRegistrationType::class,'registration_type_id');
+        return $this->belongsTo(CompanyRegistrationType::class, 'registration_type_id');
     }
+
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl(); // Ensure this is using your custom method
@@ -80,7 +83,6 @@ class Company extends Model implements HasMedia
 
     public function adminRequestTransaction()
     {
-
         return $this->morphMany(AdminRequest::class, 'requestable');
     }
 
