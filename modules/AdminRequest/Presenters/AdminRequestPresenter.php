@@ -20,7 +20,10 @@ class AdminRequestPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->adminRequest->id,
-            'name' => $this->adminRequest->name,
+            'user_name' => $this->adminRequest->user->name,
+            "data" => $this->adminRequest->data,
+            "action" => $this->adminRequest->action,
+            "request_type" => $this->adminRequest->request_type,
         ];
     }
 }

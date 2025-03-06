@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 
 
+use Modules\AdminRequest\Presenters\AdminRequestPresenter;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyData;
@@ -45,7 +46,7 @@ class CompanyProfileController extends Controller
     {
        $adminRequest =  $this->companyProfileService->updateCompanyProfileRequest($request->createUpdateOfficialCompanyDataRequestDTO());
 
-       return Json::item($adminRequest);
+       return Json::item((new AdminRequestPresenter($adminRequest))->getData());
     }
 
 

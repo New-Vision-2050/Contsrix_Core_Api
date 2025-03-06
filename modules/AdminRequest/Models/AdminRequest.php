@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\AdminRequest\Database\factories\AdminRequestFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\User\Models\User;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class AdminRequest extends Model
@@ -21,7 +23,7 @@ class AdminRequest extends Model
     //use SoftDeletes;
 
     public array $translatable = ["action"];
-    public $with = ["adminRequestTransactions"];
+    public $with = ["adminRequestTransactions","user"];
 
     public $incrementing = false;
 
@@ -44,6 +46,11 @@ class AdminRequest extends Model
     public function adminRequestTransactions()
     {
         return $this->hasMany(AdminRequestTransaction::class, 'admin_request_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     protected static function newFactory(): AdminRequestFactory

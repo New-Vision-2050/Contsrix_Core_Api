@@ -28,7 +28,7 @@ class CompanyProfileService
             userId: auth()->user()->id,
             data: ["id"=>$companyDataRequestDTO->getCompanyTypeId(),"data"=>$companyDataRequestDTO->toArray()],
             requestType: "companyOfficialDataUpdate",
-            action:["ar"=>"طلب تعديل البيانات الرسميه من الشركة","en"=>"Company official data update request"] ,
+            action:["ar"=>"طلب تعديل البيانات الرسميه للشركة","en"=>"Company official data update request"] ,
 
         );
 

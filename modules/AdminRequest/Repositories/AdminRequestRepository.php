@@ -51,7 +51,7 @@ class AdminRequestRepository extends BaseRepository
             $adminRequest = $this->create([
                 'user_id' => $userId,
                 'request_type' => $requestType,
-                'action' => ["ar"=>"طلب تعديل البيانات الرسميه من الشركة","en"=>"Company official data update request"],
+                'action' => $action,
                 'data' => $data,
 
             ]);
@@ -64,8 +64,7 @@ class AdminRequestRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception($e->getMessage(), 409);
-//            throw new \Exception(__("validation.create-not-successful"), 409);
+            throw new \Exception(__("validation.create-not-successful"), 409);
         }
 
 
