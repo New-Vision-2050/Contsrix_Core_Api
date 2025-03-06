@@ -182,6 +182,7 @@ return [
     'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
     'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
     'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
+    "action-took-before" => "تم اتخاذ الاجراء من قبل",
 
 
 
