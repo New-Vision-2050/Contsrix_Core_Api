@@ -24,7 +24,6 @@ class CompanyProfileController extends Controller
         private UpdateOfficialCompanyDataHandler $updateOfficialCompanyDataHandler,
         private CompanyCRUDService               $companyService,
         private CompanyProfileService            $companyProfileService
-
     )
     {
     }

@@ -16,13 +16,9 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 
-//use BasePackage\Shared\Traits\HasTranslations;
 
 class Company extends Model implements HasMedia
 {
