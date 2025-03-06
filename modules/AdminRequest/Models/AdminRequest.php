@@ -25,7 +25,7 @@ class AdminRequest extends Model
     //use SoftDeletes;
 
     public array $translatable = ["action"];
-    public $with = ["adminRequestTransactions", "user"];
+    public $with = ["adminRequestTransactions", "user","requestable"];
 
     public $incrementing = false;
 
@@ -37,6 +37,8 @@ class AdminRequest extends Model
         "data",
         "status",
         "action",
+        "requestable_id",
+        "requestable_type"
     ];
 
 
@@ -48,6 +50,11 @@ class AdminRequest extends Model
     public function adminRequestTransactions()
     {
         return $this->hasMany(AdminRequestTransaction::class, 'admin_request_id');
+    }
+
+    public function requestable()
+    {
+        return $this->morphTo();
     }
 
     public function user()

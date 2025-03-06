@@ -24,6 +24,7 @@ class AdminRequestPresenter extends AbstractPresenter
             "data" => $this->adminRequest->data,
             "action" => $this->adminRequest->action,
             "request_type" => $this->adminRequest->request_type,
+//            "requestable" => $this->adminRequest->requestable,TODO add requestable with specific information dependant on request type
         ];
     }
 }

@@ -53,6 +53,8 @@ class AdminRequestRepository extends BaseRepository
                 'request_type' => $requestType,
                 'action' => $action,
                 'data' => $data,
+                "requestable_id" => $data['id'],
+                "requestable_type" => Company::class,
 
             ]);
             $adminRequest->adminRequestTransactions()->create([
@@ -64,7 +66,7 @@ class AdminRequestRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 409);
+            throw new \Exception($e->getMessage(), 409);
         }
 
 

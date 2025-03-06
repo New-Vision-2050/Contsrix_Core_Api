@@ -26,7 +26,7 @@ class CompanyProfileService
     {
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyOfficialData(
             userId: auth()->user()->id,
-            data: ["id"=>$companyDataRequestDTO->getCompanyTypeId(),"data"=>$companyDataRequestDTO->toArray()],
+            data: ["id"=>$companyDataRequestDTO->getId(),"data"=>$companyDataRequestDTO->toArray()],
             requestType: "companyOfficialDataUpdate",
             action:["ar"=>"طلب تعديل البيانات الرسميه للشركة","en"=>"Company official data update request"] ,
 
