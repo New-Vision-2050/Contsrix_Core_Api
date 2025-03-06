@@ -45,7 +45,7 @@ class UpdateOfficialCompanyDataRequestDTO
     public function toArray(): array
     {
         return array_filter([
-            'name' => $this->name,
+            'name' => ["ar"=>$this->name],
             'country_id' => $this->countryId,
             'company_type_id' => $this->companyTypeId,
             'company_field_id' => $this->companyFieldId,

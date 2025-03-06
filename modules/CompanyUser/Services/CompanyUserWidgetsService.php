@@ -35,7 +35,7 @@ class CompanyUserWidgetsService
     public function getTotalLastMonthUserWidget()//widget number 2
     {
         $totalUserCountThisMonth = $this->repository->getCompanyUserCount(Carbon::now());
-        $totalUserCountLastMonth = $this->repository->getCompanyUserCount(Carbon::now());
+        $totalUserCountLastMonth = $this->repository->getCompanyUserCount(Carbon::now()->subMonth());
         return [
             "total" => $totalUserCountThisMonth,
             "percentage"=>$this->calculatePercentageChangeInMonth($totalUserCountThisMonth,$totalUserCountLastMonth)

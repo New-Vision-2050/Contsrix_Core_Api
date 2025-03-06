@@ -37,6 +37,20 @@ class Company extends Model implements HasMedia
     protected $keyType = 'string';
 
     protected $fillable = [
+        'user_name',
+        'email',
+        'phone',
+        'country_id',
+        'company_type_id',
+        'company_field_id',
+        'registration_type_id',
+        'general_manager_id',
+        'is_active',
+        'complete_data',
+        'date_activate',
+        'registration_no',
+        'serial_no',
+        'image_path'
     ];
     protected $casts = [
         'id' => 'string',

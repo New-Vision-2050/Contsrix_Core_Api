@@ -6,11 +6,11 @@ namespace Modules\AdminRequest\Commands;
 
 use Ramsey\Uuid\UuidInterface;
 
-class UpdateAdminRequestCommand
+class TakeActionOnAdminRequestCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
+        private string $status,
     ) {
     }
 
@@ -19,15 +19,15 @@ class UpdateAdminRequestCommand
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getStatus(): ?string
     {
-        return $this->name;
+        return $this->status;
     }
 
     public function toArray(): array
     {
-        return array_filter([
-            'name' => $this->name,
-        ]);
+        return [
+            "status" => $this->status
+        ];
     }
 }

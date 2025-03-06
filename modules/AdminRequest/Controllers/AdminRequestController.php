@@ -8,12 +8,13 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\AdminRequest\Handlers\DeleteAdminRequestHandler;
-use Modules\AdminRequest\Handlers\UpdateAdminRequestHandler;
+use Modules\AdminRequest\Handlers\TakeActionAdminRequestHandler;
 use Modules\AdminRequest\Presenters\AdminRequestPresenter;
 use Modules\AdminRequest\Requests\CreateAdminRequestRequest;
 use Modules\AdminRequest\Requests\DeleteAdminRequestRequest;
 use Modules\AdminRequest\Requests\GetAdminRequestListRequest;
 use Modules\AdminRequest\Requests\GetAdminRequestRequest;
+use Modules\AdminRequest\Requests\TakeActionOnAdminRequestRequest;
 use Modules\AdminRequest\Requests\UpdateAdminRequestRequest;
 use Modules\AdminRequest\Services\AdminRequestCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -21,9 +22,9 @@ use Ramsey\Uuid\Uuid;
 class AdminRequestController extends Controller
 {
     public function __construct(
-        private AdminRequestCRUDService   $adminRequestService,
-        private UpdateAdminRequestHandler $updateAdminRequestHandler,
-        private DeleteAdminRequestHandler $deleteAdminRequestHandler,
+        private AdminRequestCRUDService       $adminRequestService,
+        private TakeActionAdminRequestHandler $actionAdminRequestHandler,
+        private DeleteAdminRequestHandler     $deleteAdminRequestHandler,
     )
     {
     }
@@ -47,26 +48,24 @@ class AdminRequestController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function store(CreateAdminRequestRequest $request): JsonResponse
-    {
-        $createdItem = $this->adminRequestService->create($request->createCreateAdminRequestDTO());
-
-        $presenter = new AdminRequestPresenter($createdItem);
-
-        return Json::item($presenter->getData());
-    }
-
-    public function update(UpdateAdminRequestRequest $request): JsonResponse
+    public function takeActionRequest(TakeActionOnAdminRequestRequest $request): JsonResponse
     {
         $command = $request->createUpdateAdminRequestCommand();
-        $this->updateAdminRequestHandler->handle($command);
+        try {
+            $this->actionAdminRequestHandler->handle($command);
 
-        $item = $this->adminRequestService->get($command->getId());
+            $item = $this->adminRequestService->get($command->getId());
 
-        $presenter = new AdminRequestPresenter($item);
+            $presenter = new AdminRequestPresenter($item);
+        }
+        catch (\Exception $exception) {
+            return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
+        }
+
 
         return Json::item($presenter->getData());
     }
+
 
     public function delete(DeleteAdminRequestRequest $request): JsonResponse
     {

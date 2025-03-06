@@ -55,7 +55,6 @@ class AdminRequestRepository extends BaseRepository
                 'data' => $data,
                 "requestable_id" => $data['id'],
                 "requestable_type" => Company::class,
-
             ]);
             $adminRequest->adminRequestTransactions()->create([
                 "data" => $data,
@@ -68,10 +67,64 @@ class AdminRequestRepository extends BaseRepository
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);
         }
-
-
         return $adminRequest;
     }
+
+    public function acceptActionOnAdminRequest( UuidInterface $id , $status): AdminRequest
+    {
+        try {
+           $adminRequest =  $this->findOneByOrFail(["id"=>$id]);
+
+        }catch (\Exception $e) {
+            throw new \Exception(__("validation.not-found"), 404);
+        }
+        try {
+            DB::beginTransaction();
+            foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction){
+                if($adminRequestTransaction->action == "update"){
+                    $model  = new $adminRequestTransaction->requestable_type;
+                    $model->find($adminRequestTransaction->data["id"])->update($adminRequestTransaction->data["data"]);
+
+                }
+                $adminRequestTransaction->update(["status"=>$status]);
+            }
+            $adminRequest->update(["status"=>$status]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.create-not-successful"), 500);
+        }
+
+        return $adminRequest->fresh();
+    }
+
+    public function rejectActionOnAdminRequest( UuidInterface $id , $status): AdminRequest
+    {
+        try {
+           $adminRequest =  $this->findOneByOrFail(["id"=>$id]);
+
+        }catch (\Exception $e) {
+            throw new \Exception(__("validation.not-found"), 404);
+        }
+        try {
+            DB::beginTransaction();
+            foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction){
+
+                $adminRequestTransaction->update(["status"=>$status]);
+            }
+            $adminRequest->update(["status"=>$status]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.create-not-successful"), 500);
+        }
+
+        return $adminRequest->fresh();
+    }
+
+
 
     public function updateAdminRequest(UuidInterface $id, array $data): bool
     {
