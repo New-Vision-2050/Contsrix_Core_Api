@@ -10,12 +10,10 @@ use Illuminate\Http\JsonResponse;
 use Modules\AdminRequest\Handlers\DeleteAdminRequestHandler;
 use Modules\AdminRequest\Handlers\TakeActionAdminRequestHandler;
 use Modules\AdminRequest\Presenters\AdminRequestPresenter;
-use Modules\AdminRequest\Requests\CreateAdminRequestRequest;
 use Modules\AdminRequest\Requests\DeleteAdminRequestRequest;
 use Modules\AdminRequest\Requests\GetAdminRequestListRequest;
 use Modules\AdminRequest\Requests\GetAdminRequestRequest;
 use Modules\AdminRequest\Requests\TakeActionOnAdminRequestRequest;
-use Modules\AdminRequest\Requests\UpdateAdminRequestRequest;
 use Modules\AdminRequest\Services\AdminRequestCRUDService;
 use Ramsey\Uuid\Uuid;
 

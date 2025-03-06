@@ -15,7 +15,7 @@ class TakeActionOnAdminRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|in:' . implode(',', AdminRequestStatus::values()),
+            'status' => 'required|in:' . implode(',', [AdminRequestStatus::ACTIVE->value, AdminRequestStatus::INACTIVE->value]),
         ];
     }
 
