@@ -38,8 +38,7 @@ class AdminRequest extends Model
         "status",
         "action",
         "requestable_id",
-        "requestable_type",
-        "notes"
+        "requestable_type"
     ];
 
 

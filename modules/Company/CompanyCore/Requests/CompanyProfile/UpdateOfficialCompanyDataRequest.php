@@ -17,6 +17,7 @@ class UpdateOfficialCompanyDataRequest extends FormRequest
             'country_id' => 'required|exists:countries,id',
             'company_type_id' => 'required|exists:company_types,id',
             'company_field_id' => 'required|exists:company_fields,id',
+            'notes' => 'nullable|string',
         ];
     }
 
@@ -28,6 +29,7 @@ class UpdateOfficialCompanyDataRequest extends FormRequest
             countryId: (string)$this->get('country_id'),
             companyTypeId: (string)$this->get('company_type_id'),
             companyFieldId: (string)$this->get('company_field_id'),
+            notes: $this->get('notes'),
         );
     }
 }

@@ -44,7 +44,7 @@ class AdminRequestRepository extends BaseRepository
      * @return AdminRequest
      */
 
-    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action): AdminRequest
+    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action,string $notes=""): AdminRequest
     {
         try {
             DB::beginTransaction();
@@ -55,6 +55,7 @@ class AdminRequestRepository extends BaseRepository
                 'data' => $data,
                 "requestable_id" => $data['id'],
                 "requestable_type" => Company::class,
+                "notes" => $notes
             ]);
             $adminRequest->adminRequestTransactions()->create([
                 "data" => $data,

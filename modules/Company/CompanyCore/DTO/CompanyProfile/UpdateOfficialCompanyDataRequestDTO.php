@@ -14,6 +14,7 @@ class UpdateOfficialCompanyDataRequestDTO
         private string $countryId,
         private string $companyTypeId,
         private string $companyFieldId,
+        private string $notes
 
     ) {
     }
@@ -39,6 +40,10 @@ class UpdateOfficialCompanyDataRequestDTO
     public function getCompanyFieldId(): ?string
     {
         return $this->companyFieldId;
+    }
+    public function getNotes(): ?string
+    {
+        return $this->notes;
     }
 
 
