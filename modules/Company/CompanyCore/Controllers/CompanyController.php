@@ -6,7 +6,6 @@ namespace Modules\Company\CompanyCore\Controllers;
 
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
-use App\Services\FileUploadService;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
@@ -18,13 +17,14 @@ use Modules\Company\CompanyCore\Requests\GetCompanyRequest;
 use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyValidateService;
+use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
-use Illuminate\Support\Facades\Storage;
+
 class CompanyController extends Controller
 {
     public function __construct(
