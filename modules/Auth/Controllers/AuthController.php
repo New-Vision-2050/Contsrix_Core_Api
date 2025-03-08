@@ -6,8 +6,8 @@ namespace Modules\Auth\Controllers;
 
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Modules\Auth\Handlers\ChangeEmailHandler;
-use Modules\Auth\Handlers\LoginStepAlternativeHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ChangeEmailRequest;
 use Modules\Auth\Requests\CheckVerificationQuestionRequest;
@@ -30,22 +30,20 @@ class AuthController extends Controller
 {
 
     public function __construct(
-        private AuthService                 $authService,
-        private MakeOtpHandler              $makeOtpHandler,
-        private UserCRUDService             $userCRUDService,
-        private ChangeEmailHandler          $changeEmailHandler,
-    )
-    {
+        private AuthService $authService,
+        private MakeOtpHandler $makeOtpHandler,
+        private UserCRUDService $userCRUDService,
+        private ChangeEmailHandler $changeEmailHandler,
+    ) {
     }
 
-    public function login(LoginRequest $request)
+    public function login(LoginRequest $request): JsonResponse
     {
         $loginDTO = $request->createLoginDTO();
         try {
             [$token, $user] = $this->authService->login($loginDTO);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: 400);
-
         }
 
         if (empty($token)) {
@@ -56,30 +54,31 @@ class AuthController extends Controller
         return Json::item(["token" => $token, "user" => $userPresenter], message: "Logged in");
     }
 
-    public function loginWithOtp(LoginWithOtpRequest $request)
+    public function loginWithOtp(LoginWithOtpRequest $request): JsonResponse
     {
         try {
-            [$token, $user] = $this->authService->loginWithOtp($request->createLoginDTO());
+            $user = $this->authService->loginWithOtp($request->createLoginDTO());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
-
+        $request->session()->regenerate();
         $userPresenter = (new UserPresenter($user))->getData();
 
-        return Json::item(["token" => $token, "user" => $userPresenter]);
+        return Json::item(["user" => $userPresenter]);
     }
 
 
-    public function logout(LogoutRequest $request)
+    public function logout(LogoutRequest $request): JsonResponse
     {
         $this->authService->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return Json::success("logged out successfully");
-
     }
 
 
-    public function forgetPassword(ForgetPasswordRequest $request)
+    public function forgetPassword(ForgetPasswordRequest $request): JsonResponse
     {
         $command = $request->createForgetPasswordCommand();
         try {
@@ -91,7 +90,7 @@ class AuthController extends Controller
         return Json::success("success");
     }
 
-    public function resetPassword(ResetPasswordRequest $request)
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
         try {
             $this->authService->ResetPassword($request->createResetPasswordCommand());
@@ -102,7 +101,7 @@ class AuthController extends Controller
         return Json::success("success");
     }
 
-    public function resendOtp(ResendOtpRequest $resendOtpRequest)
+    public function resendOtp(ResendOtpRequest $resendOtpRequest): JsonResponse
     {
         $command = $resendOtpRequest->createResendOtpCommand();
         try {
@@ -110,29 +109,33 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
+
         return Json::success("success");
     }
 
-    public function getLoginWays(GetLoginWaysRequest $request)
+    public function getLoginWays(GetLoginWaysRequest $request): JsonResponse
     {
         try {
-            [$loginWayId, $token,$step] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
+            [$loginWayId, $token, $step] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step))->getData(), "token" => $token]);
+        return Json::item(
+            [
+                "login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step))->getData(),
+                "token" => $token
+            ]
+        );
     }
 
-    public function loginBySteps(LoginStepsRequest $request)
+    public function loginBySteps(LoginStepsRequest $request): JsonResponse
     {
         $loginDTO = $request->createLoginStepDTO();
 
         try {
             [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
-//            return [$loginWayId, $token, $nextStep];
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
-
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
@@ -140,12 +143,28 @@ class AuthController extends Controller
         $userPresenter = (new UserPresenter($user))->getData();
 
         if ($nextStep == null) {
-            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep))->getData(), "token" => $token, "user" => $userPresenter]);
+            return Json::item(
+                [
+                    "login_way" => (new LoginWayWithSpecificStepPresenter(
+                        Uuid::fromString($loginWayId), $nextStep
+                    ))->getData(),
+                    "token" => $token,
+                    "user" => $userPresenter
+                ]
+            );
         }
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep))->getData(), "token" => $token]);
+
+        return Json::item(
+            [
+                "login_way" => (new LoginWayWithSpecificStepPresenter(
+                    Uuid::fromString($loginWayId), $nextStep
+                ))->getData(),
+                "token" => $token
+            ]
+        );
     }
 
-    public function checkAnswers(CheckVerificationQuestionRequest $request)
+    public function checkAnswers(CheckVerificationQuestionRequest $request): JsonResponse
     {
         try {
             [$res, $token] = $this->authService->checkQuestionAnswer($request->createLoginDTO());
@@ -159,20 +178,25 @@ class AuthController extends Controller
         return Json::item(["token" => $token]);
     }
 
-    public function loginStepAlternative(LoginStepAlternativeRequest $request)
+    public function loginStepAlternative(LoginStepAlternativeRequest $request): JsonResponse
     {
-//       return $this->authService->loginStepAlternative( $request->createLoginStepAlternativeDTO());
-
         try {
-           [$loginWayId , $token , $step]= $this->authService->loginStepAlternative( $request->createLoginStepAlternativeDTO());
+            [$loginWayId, $token, $step] = $this->authService->loginStepAlternative(
+                $request->createLoginStepAlternativeDTO()
+            );
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step))->getData(), "token" => $token]);
+        return Json::item(
+            [
+                "login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step))->getData(),
+                "token" => $token
+            ]
+        );
     }
 
-    public function changeEmail(ChangeEmailRequest $changeEmailRequest)
+    public function changeEmail(ChangeEmailRequest $changeEmailRequest): JsonResponse
     {
         try {
             $command = $changeEmailRequest->createChangeEmailCommand();
@@ -180,6 +204,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
+
         return Json::success("success");
     }
 

@@ -5,6 +5,7 @@ namespace Modules\Auth\Services;
 use Carbon\Carbon;
 use Faker\Core\Uuid;
 use Ichtrojan\Otp\Otp;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Modules\Auth\Commands\ResendOtpCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
@@ -27,7 +28,6 @@ use Modules\Setting\Services\SettingCRUDService;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Modules\User\Services\UserCRUDService;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
 {
@@ -54,12 +54,11 @@ class AuthService
             return [null, $user];
         }
 
-        $token = JWTAuth::attempt($authDTO->toArray());
-        if (!$token) {
-            throw new \ErrorException(__("validation.invalid-credential"), 403);
+        if (!Auth::attempt($authDTO->toArray())) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-        $user = auth()->user();
-        return [$token, $user];
+
+        return auth()->user();
     }
 
 
@@ -73,13 +72,7 @@ class AuthService
             throw new \ErrorException(__("validation.invalid-otp"), 401);
         }
 
-
-        $user = $this->userRepository->getUserByEmail($loginWithOtpDTO->getEmail());
-
-        $token = JWTAuth::fromUser($user);
-
-        return [$token, $user];
-
+        return $this->userRepository->getUserByEmail($loginWithOtpDTO->getEmail());
     }
 
     public function logout()
@@ -258,10 +251,8 @@ class AuthService
 
             return [$loginWay["id"], $token, $nextStep];
         }
-        //if no step else send token and authorize
-        $token = JWTAuth::fromUser($user);
 
-        return [$loginWay["id"], $token, $nextStep];
+        return [$loginWay["id"], $nextStep];
     }
 
     public function checkQuestionAnswer(QuestionVerificationDTO $questionVerificationDTO)
@@ -281,8 +272,8 @@ class AuthService
                 return [false, null];
             }
         }
-        $verficationData = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
-        return [true, $verficationData->token];
+        $verificationData = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
+        return [true, $verificationData->token];
     }
 
 

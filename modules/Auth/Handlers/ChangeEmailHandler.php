@@ -2,13 +2,11 @@
 
 namespace Modules\Auth\Handlers;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Auth\Commands\ChangeEmailCommand;
 use Modules\Auth\Repositories\VerficationDataRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\User\Repositories\UserRepository;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ChangeEmailHandler
 {
@@ -24,13 +22,13 @@ class ChangeEmailHandler
     {
         try {
             DB::BeginTransaction();
-            $verficationData = $this->verficationDataRepository->validateToken($changeEmailCommand->getToken());
-            if (!isset($verficationData->data["change_email"]) || $verficationData->data["change_email"] != 1) {
+            $verificationData = $this->verficationDataRepository->validateToken($changeEmailCommand->getToken());
+            if (!isset($verificationData->data["change_email"]) || $verificationData->data["change_email"] != 1) {
                 throw new \ErrorException(__("validation.invalid-token"), 403);
             }
 
             $this->userRepository->updateWhere(['email' => $changeEmailCommand->getEmail()], ["email" => $changeEmailCommand->getNewEmail()]);
-            $this->sendOtpEmail->sendOtpForEmailChange($verficationData->user_id);
+            $this->sendOtpEmail->sendOtpForEmailChange($verificationData->user_id);
 
             //TODO: fire event to update user authentication in auth project
 
@@ -40,7 +38,5 @@ class ChangeEmailHandler
             DB::rollBack();
             throw new \ErrorException($e->getMessage(), 400);
         }
-
-
     }
 }
