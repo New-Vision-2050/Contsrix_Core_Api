@@ -137,7 +137,7 @@ class AuthController extends Controller
             [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus: 500);
         }
 
         $userPresenter = (new UserPresenter($user))->getData();
