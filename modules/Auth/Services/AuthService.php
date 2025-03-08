@@ -154,7 +154,7 @@ class AuthService
 
     private function getDefaultLoginWay($identifier)
     {
-        $loginWay = $this->loginWayRepository->findOneByWithRelations(["default" => 1], ["loginWaySteps"]);
+        $loginWay = $this->loginWayRepository->findOneByWithRelationsOrFail(["default" => 1], ["loginWaySteps"]);
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
         if ($user->login_way_id != null) {
             $loginWay = $this->loginWayRepository->findOneByWithRelations(["id" => $user->login_way_id], ["loginWaySteps"]);
@@ -252,7 +252,7 @@ class AuthService
             return [$loginWay["id"], $token, $nextStep];
         }
 
-        return [$loginWay["id"], $nextStep];
+        return [$loginWay["id"], null, $nextStep];
     }
 
     public function checkQuestionAnswer(QuestionVerificationDTO $questionVerificationDTO)

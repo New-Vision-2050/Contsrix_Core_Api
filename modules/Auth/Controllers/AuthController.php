@@ -40,11 +40,8 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $loginDTO = $request->createLoginDTO();
-        try {
-            [$token, $user] = $this->authService->login($loginDTO);
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: 400);
-        }
+
+        [$token, $user] = $this->authService->login($loginDTO);
 
         if (empty($token)) {
             return Json::item(["continue_with_otp" => 1]);
@@ -115,11 +112,7 @@ class AuthController extends Controller
 
     public function getLoginWays(GetLoginWaysRequest $request): JsonResponse
     {
-        try {
-            [$loginWayId, $token, $step] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
+        [$loginWayId, $token, $step] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
 
         return Json::item(
             [
@@ -133,12 +126,8 @@ class AuthController extends Controller
     {
         $loginDTO = $request->createLoginStepDTO();
 
-        try {
-            [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
-            $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: 500);
-        }
+        [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
+        $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
 
         $userPresenter = (new UserPresenter($user))->getData();
 
@@ -166,11 +155,8 @@ class AuthController extends Controller
 
     public function checkAnswers(CheckVerificationQuestionRequest $request): JsonResponse
     {
-        try {
-            [$res, $token] = $this->authService->checkQuestionAnswer($request->createLoginDTO());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage());
-        }
+        [$res, $token] = $this->authService->checkQuestionAnswer($request->createLoginDTO());
+
         if (!$res) {
             return Json::error(__("validation.invalid-answers"), httpStatus: 401);
         }
@@ -180,13 +166,9 @@ class AuthController extends Controller
 
     public function loginStepAlternative(LoginStepAlternativeRequest $request): JsonResponse
     {
-        try {
             [$loginWayId, $token, $step] = $this->authService->loginStepAlternative(
                 $request->createLoginStepAlternativeDTO()
             );
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
 
         return Json::item(
             [
@@ -198,12 +180,8 @@ class AuthController extends Controller
 
     public function changeEmail(ChangeEmailRequest $changeEmailRequest): JsonResponse
     {
-        try {
-            $command = $changeEmailRequest->createChangeEmailCommand();
-            $this->changeEmailHandler->handle($command);
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
+        $command = $changeEmailRequest->createChangeEmailCommand();
+        $this->changeEmailHandler->handle($command);
 
         return Json::success("success");
     }
