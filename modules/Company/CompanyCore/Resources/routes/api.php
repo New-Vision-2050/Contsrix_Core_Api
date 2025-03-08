@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Company\CompanyCore\Controllers\CompanyController;
 
 
-Route::middleware(['auth:api'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/', [CompanyController::class, 'index'])->name('companies.index');
     Route::get('/widget', [CompanyController::class, 'widget']);
     Route::post('/', [CompanyController::class, 'store'])->name('companies.store');

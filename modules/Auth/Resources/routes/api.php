@@ -17,7 +17,7 @@ Route::group(['middleware' => ['throttle:5,1']],function (){
 });
 
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 

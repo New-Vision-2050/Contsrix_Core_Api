@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\User\Controllers\UserController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/', [UserController::class, 'index'])->middleware("permission:user.list")->name("users.list");
     Route::post('/', [UserController::class, 'store'])->middleware("permission:user.create");
     Route::get('/me', [UserController::class, 'me'])->middleware("permission:user.list");

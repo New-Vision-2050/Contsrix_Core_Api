@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Country\Controllers\CountryController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/', [CountryController::class, 'index']);
     Route::post('/', [CountryController::class, 'store']);
     Route::get('/{id}', [CountryController::class, 'show']);

@@ -5,7 +5,7 @@ use Modules\RoleAndPermission\Controllers\PermissionController;
 use Modules\RoleAndPermission\Controllers\RoleAndPermissionController;
 use Modules\RoleAndPermission\Controllers\RoleController;
 
-Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
+Route::group(['middleware' => ['auth:sanctum'],"prefix"=>"roles"], function () {
     Route::get('/', [RoleController::class, 'index']);
     Route::post('/', [RoleController::class, 'store']);
     Route::get('/{id}', [RoleController::class, 'show']);
@@ -16,7 +16,7 @@ Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
 });
 
 
-Route::group(['middleware' => ['auth:api'],"prefix"=>"permissions"], function () {
+Route::group(['middleware' => ['auth:sanctum'],"prefix"=>"permissions"], function () {
     Route::get('/', [PermissionController::class, 'index']);
     Route::post('/', [PermissionController::class, 'store']);
 

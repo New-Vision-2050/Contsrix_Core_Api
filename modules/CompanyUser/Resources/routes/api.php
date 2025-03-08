@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\CompanyUser\Controllers\CompanyUserController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/', [CompanyUserController::class, 'index']);
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
     Route::get('/roles', [CompanyUserController::class, 'roles']);
