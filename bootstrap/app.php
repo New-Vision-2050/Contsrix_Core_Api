@@ -19,8 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
         $middleware->group('api', [
+            \App\Http\Middleware\TenantDomainMiddleware::class,
             EnsureFrontendRequestsAreStateful::class,  // Add this middleware
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            //\Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
         $middleware->append(\App\Http\Middleware\Localization::class);
