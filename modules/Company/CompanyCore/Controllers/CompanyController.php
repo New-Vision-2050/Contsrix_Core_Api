@@ -24,7 +24,7 @@ use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
-use Illuminate\Support\Facades\Storage;
+
 class CompanyController extends Controller
 {
     public function __construct(
