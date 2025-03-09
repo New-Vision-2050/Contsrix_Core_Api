@@ -35,7 +35,7 @@ class CompanyController extends Controller
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
         private FileUploadService  $fileUploadService,
-        private TransformImgsService  $transformImgsService
+        // private TransformImgsService  $transformImgsService
     ) {
     }
 
