@@ -120,8 +120,9 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
+        $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step))->getData(), "token" => $token]);
+        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step, $user))->getData(), "token" => $token]);
     }
 
     public function loginBySteps(LoginStepsRequest $request)
@@ -140,9 +141,9 @@ class AuthController extends Controller
         $userPresenter = (new UserPresenter($user))->getData();
 
         if ($nextStep == null) {
-            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep))->getData(), "token" => $token, "user" => $userPresenter]);
+            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep,$user))->getData(), "token" => $token, "user" => $userPresenter]);
         }
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep))->getData(), "token" => $token]);
+        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep,$user))->getData(), "token" => $token]);
     }
 
     public function checkAnswers(CheckVerificationQuestionRequest $request)
@@ -168,8 +169,10 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
+        $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step))->getData(), "token" => $token]);
+
+        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step,$user))->getData(), "token" => $token]);
     }
 
     public function changeEmail(ChangeEmailRequest $changeEmailRequest)
