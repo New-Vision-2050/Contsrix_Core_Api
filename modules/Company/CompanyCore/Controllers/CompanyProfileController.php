@@ -38,14 +38,14 @@ class CompanyProfileController extends Controller
 
         $presenter = new CompanyPresenter($item);
 
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function updateOfficialDataRequest(UpdateOfficialCompanyDataRequest $request)
     {
-       $adminRequest =  $this->companyProfileService->updateCompanyProfileRequest($request->createUpdateOfficialCompanyDataRequestDTO());
+        $adminRequest = $this->companyProfileService->updateCompanyProfileRequest($request->createUpdateOfficialCompanyDataRequestDTO());
 
-       return Json::item((new AdminRequestPresenter($adminRequest))->getData());
+        return Json::item((new AdminRequestPresenter($adminRequest))->getData());
     }
 
 
