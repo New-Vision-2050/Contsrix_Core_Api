@@ -14,8 +14,7 @@ class UpdateOfficialCompanyDataRequestDTO
         private string $countryId,
         private string $companyTypeId,
         private string $companyFieldId,
-        private string $notes
-
+        private ?string $notes
     ) {
     }
 

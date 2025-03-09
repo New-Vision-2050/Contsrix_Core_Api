@@ -6,11 +6,14 @@ namespace Modules\AdminRequest\Models;
 
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Database\factories\AdminRequestFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\AdminRequest\Enum\AdminRequestStatus;
+use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\User\Models\User;
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -47,6 +50,8 @@ class AdminRequest extends Model
         'id' => 'string',
         "data" => "array"
     ];
+
+
 
     public function adminRequestTransactions()
     {

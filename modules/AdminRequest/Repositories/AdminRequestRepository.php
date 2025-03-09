@@ -44,7 +44,7 @@ class AdminRequestRepository extends BaseRepository
      * @return AdminRequest
      */
 
-    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action,string $notes=""): AdminRequest
+    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action,?string $notes=""): AdminRequest
     {
         try {
             DB::beginTransaction();

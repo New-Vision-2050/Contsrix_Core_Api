@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\AdminRequest\Presenters;
 
+use Modules\AdminRequest\Enum\AdminRequestStatus;
 use Modules\AdminRequest\Models\AdminRequest;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
@@ -24,6 +25,7 @@ class AdminRequestPresenter extends AbstractPresenter
             "data" => $this->adminRequest->data,
             "action" => $this->adminRequest->action,
             "request_type" => $this->adminRequest->request_type,
+            "status" => AdminRequestStatus::lang($this->adminRequest->status),
 //            "requestable" => $this->adminRequest->requestable,TODO add requestable with specific information dependant on request type
         ];
     }
