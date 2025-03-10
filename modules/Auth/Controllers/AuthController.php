@@ -7,7 +7,6 @@ namespace Modules\Auth\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Modules\Auth\Handlers\ChangeEmailHandler;
-use Modules\Auth\Handlers\LoginStepAlternativeHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ChangeEmailRequest;
 use Modules\Auth\Requests\CheckVerificationQuestionRequest;
@@ -20,6 +19,7 @@ use Modules\Auth\Requests\LoginWithOtpRequest;
 use Modules\Auth\Requests\LogoutRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
+use Modules\Auth\Requests\ValidateOtpRequest;
 use Modules\Auth\Services\AuthService;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
@@ -30,11 +30,10 @@ class AuthController extends Controller
 {
 
     public function __construct(
-        private AuthService                 $authService,
-        private MakeOtpHandler              $makeOtpHandler,
-        private UserCRUDService             $userCRUDService,
-        private ChangeEmailHandler          $changeEmailHandler,
-
+        private AuthService        $authService,
+        private MakeOtpHandler     $makeOtpHandler,
+        private UserCRUDService    $userCRUDService,
+        private ChangeEmailHandler $changeEmailHandler,
     )
     {
     }
@@ -103,6 +102,11 @@ class AuthController extends Controller
         return Json::success("success");
     }
 
+    public function validateOtp(ValidateOtpRequest $request)
+    {
+        return Json::item(["token" => $this->authService->validateOtp($request->createValidateOtpDTO())]);
+    }
+
     public function resendOtp(ResendOtpRequest $resendOtpRequest)
     {
         $command = $resendOtpRequest->createResendOtpCommand();
@@ -117,13 +121,17 @@ class AuthController extends Controller
     public function getLoginWays(GetLoginWaysRequest $request)
     {
         try {
-            [$loginWayId, $token,$step] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
+            [$loginWayId, $token, $step, $canSetPass] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus:400);
         }
         $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step,$user))->getData(), "token" => $token]);
+        return Json::item([
+            "login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step, $user))->getData(),
+            "token" => $token,
+            "can_set_pass" => $canSetPass
+        ]);
     }
 
     public function loginBySteps(LoginStepsRequest $request)
@@ -132,19 +140,15 @@ class AuthController extends Controller
 
         try {
             [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
-//            return [$loginWayId, $token, $nextStep];
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
-
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
-
         $userPresenter = (new UserPresenter($user))->getData();
-
         if ($nextStep == null) {
-            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep,$user))->getData(), "token" => $token, "user" => $userPresenter]);
+            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep, $user))->getData(), "token" => $token, "user" => $userPresenter]);
         }
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep,$user))->getData(), "token" => $token]);
+        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep, $user))->getData(), "token" => $token]);
     }
 
     public function checkAnswers(CheckVerificationQuestionRequest $request)
@@ -163,16 +167,15 @@ class AuthController extends Controller
 
     public function loginStepAlternative(LoginStepAlternativeRequest $request)
     {
-//       return $this->authService->loginStepAlternative( $request->createLoginStepAlternativeDTO());
-
         try {
-           [$loginWayId , $token , $step]= $this->authService->loginStepAlternative( $request->createLoginStepAlternativeDTO());
+            [$loginWayId, $token, $step] = $this->authService->loginStepAlternative($request->createLoginStepAlternativeDTO());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
         $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
-        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step,$user))->getData(), "token" => $token]);
+
+        return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step, $user))->getData(), "token" => $token]);
     }
 
     public function changeEmail(ChangeEmailRequest $changeEmailRequest)

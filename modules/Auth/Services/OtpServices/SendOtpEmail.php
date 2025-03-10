@@ -41,9 +41,11 @@ private function  createAuthMailForLoginStepData($identifier)
         );
     }
 
-    public function resetPassword(UuidInterface $userId){
-        $user = $this->userRepository->find($userId);
-        $user->notify(new ResetPassword($this->createAuthMailData($userId)->toArray()));
+    public function resetPassword($identifier){
+        $data =$this->createAuthMailForLoginStepData($identifier)->toArray();
+        $user = $this->userCRUDService->getUserByIdentifier($identifier);
+
+        $user->notify(new ResetPassword($data));
 
     }
 

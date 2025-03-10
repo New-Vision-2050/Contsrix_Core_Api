@@ -13,7 +13,7 @@ use Ramsey\Uuid\UuidInterface;
 class LoginWayWithSpecificStepPresenter extends AbstractPresenter
 {
 
-    public function __construct(public UuidInterface $loginWay, public $step = null, public $user = null)
+    public function __construct(public UuidInterface $loginWay,public $step=null,public $user=null)
     {
     }
 
@@ -22,23 +22,24 @@ class LoginWayWithSpecificStepPresenter extends AbstractPresenter
         $loginWay = LoginWay::find($this->loginWay);
         $email = $this->user->email;
         $phone = $this->user->phone;
+        $type = "mail";
 
         $by = $this->user != null ? substr($email, 0, 2) . str_repeat('*', strlen($email) - 5) . substr($email, -3) : null;
-        if ( $this->step->drivers &&in_array("sms", $this->step->drivers) && $this->user) {
+        if ( $this?->step?->drivers &&in_array("sms", $this->step->drivers) && $this->user) {
             $by = substr($phone, 0, 2) . str_repeat('*', strlen($phone) - 5) . substr($phone, -3);
+            $type = "sms";
         }
-
 
         return [
             'id' => $loginWay->id,
             'name' => $loginWay->name,
             'step' => $this->step != null ?
                 [
-                    "login_option" => $this->step->login_option,
-                    "login_option_alternatives" => $this->step->login_option_alternatives
-                ] : null,
-            "by" => $by
-
+                    "login_option"=>$this->step->login_option,
+                    "login_option_alternatives"=>$this->step->login_option_alternatives
+                ]:null,
+            'by' => $by,
+            'type' => $type
         ];
     }
 }
