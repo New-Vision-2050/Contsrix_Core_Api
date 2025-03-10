@@ -74,22 +74,4 @@ class JobTitleController extends Controller
 
         return Json::deleted();
     }
-    public function runJobTitleSeeder(): JsonResponse
-    {
-        try {
-            Artisan::call('db:seed', [
-                '--class' => 'Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder'
-            ]);
-
-            return response()->json([
-                'message' => 'JobTitle seeder executed successfully',
-                'output'  => Artisan::output(),
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error'   => 'Seeder execution failed',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
 }

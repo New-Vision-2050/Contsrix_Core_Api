@@ -5,8 +5,6 @@ use Modules\JobTitle\Controllers\JobTitleController;
 
 Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [JobTitleController::class, 'index']);
-    Route::get('/runJobTitleSeeder', [JobTitleController::class, 'runJobTitleSeeder']);
-
     Route::post('/', [JobTitleController::class, 'store']);
     Route::get('/{id}', [JobTitleController::class, 'show']);
     Route::put('/{id}', [JobTitleController::class, 'update']);
