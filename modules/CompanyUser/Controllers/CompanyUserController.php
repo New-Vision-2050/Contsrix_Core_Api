@@ -74,11 +74,15 @@ class CompanyUserController extends Controller
     public function store(CreateCompanyUserRequest $request)
     {
         try {
-            $createdItem = $this->companyUserService->create($request->createCreateCompanyUserDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
+            $createdItem = $this->companyUserService->create(
+                $request->createCreateCompanyUserDTO(),
+                $request->createCreateCompanyUserCompanyRoleDTO()
+            );
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
+            // Ensure the status code is always an integer, defaulting to 500 if invalid
+            $statusCode = is_int($e->getCode()) && $e->getCode() >= 100 && $e->getCode() < 600 ? $e->getCode() : 500;
+            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $statusCode);
         }
-
 
         $presenter = new CompanyUserPresenter($createdItem);
         return Json::buildItems(data: ['data' => $presenter->getData()]);

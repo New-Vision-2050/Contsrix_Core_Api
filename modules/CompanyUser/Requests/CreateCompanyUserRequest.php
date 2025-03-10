@@ -17,12 +17,13 @@ class CreateCompanyUserRequest extends FormRequest
     {
         return [
             'name' => ['required','string',new UserNameValidation()],
-            'role' => 'required',
+            'role' => 'nullable',
             'company_id' => 'required|exists:companies,id',
             'country_id' => 'required|exists:countries,id',
             'phone' => 'required|phone|unique:company_users,phone',
             'email' => 'required|email|unique:company_users,email',
-            'border_number' => 'present|nullable|unique:company_users,border_number',
+            'job_title_id'=>'required',
+            'border_number' => 'nullable|unique:company_users,border_number',
             'residence' => 'present|nullable|unique:company_users,residence',
             'passport' => 'present|nullable|unique:company_users,passport',
             'identity' => 'present|nullable|unique:company_users,identity',
@@ -43,7 +44,7 @@ class CreateCompanyUserRequest extends FormRequest
             residence: $this->get('residence'),
             identity: $this->get('identity'),
             passport: $this->get('passport'),
-
+            job_title_id: $this->get('job_title_id'),
         );
     }
 
@@ -51,7 +52,7 @@ class CreateCompanyUserRequest extends FormRequest
     {
         return new CreateCompanyUserCompanyRoleDTO(
             company_id: Uuid::fromString($this->get('company_id')),
-            role: $this->get('role'),
+            role: $this->get('role')?? '1',
 
         );
     }

@@ -38,7 +38,7 @@ class CompanyUserCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
 
-        $companyUsers = $this->repository->withRelations(["companies"], $page, $perPage);
+        $companyUsers = $this->repository->withRelations(["companies",'jobTitle'], $page, $perPage);
 
         return $companyUsers;
     }

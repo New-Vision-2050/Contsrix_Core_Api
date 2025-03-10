@@ -13,6 +13,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\JobTitle\Models\JobTitle;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -42,13 +43,13 @@ class CompanyUser extends Model
         "residence",
         "passport",
         "identity",
-
+        'job_title_id',
     ];
 
     protected $casts = [
         'id' => 'string',
     ];
-
+    
 
     public function companies()
     {
@@ -82,5 +83,9 @@ class CompanyUser extends Model
     public function rolesForCompany($companyId)
     {
         return $this->companies->where('id',$companyId)->pluck("pivot");
+    }
+    public function jobTitle()
+    {
+        return $this->belongsTo(JobTitle::class);
     }
 }
