@@ -174,11 +174,13 @@ class AuthService
         $loginWay = $this->getDefaultLoginWay($getLoginWaysDTO->getIdentifier());
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
-
+        if ($user->password == null) {
+            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier());
+            return [$loginWay->id, null, $step,1];
+        }
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
-
         $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1, "login_way" => $loginWay])->token;
-        return [$loginWay->id, $token, $step];
+        return [$loginWay->id, $token, $step,0];
 
     }
 
@@ -204,8 +206,7 @@ class AuthService
                 if ($loginOption == "sms" || $loginOption == "mail" || $loginOption == "social") {
                     $item["login_option"] = "otp";
                     $item["drivers"] = [$loginOption];
-                }
-                elseif ($loginOption == "password" ) {
+                } elseif ($loginOption == "password") {
                     $item["login_option"] = "password";
                     $item["drivers"] = null;
                 }
@@ -296,21 +297,10 @@ class AuthService
             throw new \ErrorException("invalid token", 404);
         }
         $this->updateLoginStep($alternativeDTO->getToken(), $alternativeDTO->getLoginOption());
-        [$step , $nextStep ]= $this->getLoginStepAndNextStepFromToken($alternativeDTO->getToken());
-        $this->sendOtpByStep($step,$alternativeDTO->getIdentifier());
+        [$step, $nextStep] = $this->getLoginStepAndNextStepFromToken($alternativeDTO->getToken());
+        $this->sendOtpByStep($step, $alternativeDTO->getIdentifier());
 
         return [$verficationData->data["login_way"]["id"], $verficationData->token, $step];
-
-
-
-
-        /**
-         * @var $loginWay LoginWay
-         * @var $user User
-         * @var $step LoginWayStep
-         */
-
-
 
     }
 

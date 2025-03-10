@@ -32,8 +32,7 @@ class MakeOtpHandler
             throw new \ErrorException(__("validation.can-not-resend-before",["minute"=>3]), 400);
 
         }
-        $user = $this->userCRUDService->getUserByIdentifier($command->getIdentifier());
 
-        $this->sendOtpEmail->resetPassword($user->id);
+        $this->sendOtpEmail->resetPassword($command->getIdentifier());
     }
 }
