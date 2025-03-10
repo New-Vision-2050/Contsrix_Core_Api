@@ -34,5 +34,6 @@ class MakeOtpHandler
         }
 
         $this->sendOtpEmail->resetPassword($command->getIdentifier());
+
     }
 }
