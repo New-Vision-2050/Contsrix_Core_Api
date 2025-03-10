@@ -11,7 +11,7 @@ class CreateCompanyUserDTO
     public function __construct(
         public string $name,
         public string $email,
-        public string $country_id,
+        public ? string $country_id,
         public string $phone,
         public string $job_title_id,
         public ? string $border_number ,

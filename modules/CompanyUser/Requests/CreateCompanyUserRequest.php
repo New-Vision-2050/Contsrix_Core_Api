@@ -19,7 +19,7 @@ class CreateCompanyUserRequest extends FormRequest
             'name' => ['required','string',new UserNameValidation()],
             'role' => 'nullable',
             'company_id' => 'required|exists:companies,id',
-            'country_id' => 'required|exists:countries,id',
+            'country_id' => 'nullable|exists:countries,id',
             'phone' => 'required|phone|unique:company_users,phone',
             'email' => 'required|email|unique:company_users,email',
             'job_title_id'=>'required',
