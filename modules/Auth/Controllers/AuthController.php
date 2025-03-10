@@ -6,6 +6,7 @@ namespace Modules\Auth\Controllers;
 
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
+use http\Env\Request;
 use Modules\Auth\Handlers\ChangeEmailHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ChangeEmailRequest;
@@ -19,6 +20,7 @@ use Modules\Auth\Requests\LoginWithOtpRequest;
 use Modules\Auth\Requests\LogoutRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
+use Modules\Auth\Requests\ValidateOtpRequest;
 use Modules\Auth\Services\AuthService;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
@@ -99,6 +101,11 @@ class AuthController extends Controller
         }
 
         return Json::success("success");
+    }
+
+    public function validateOtp(ValidateOtpRequest $request)
+    {
+        return Json::item(["token" => $this->authService->validateOtp($request->createValidateOtpDTO())]);
     }
 
     public function resendOtp(ResendOtpRequest $resendOtpRequest)

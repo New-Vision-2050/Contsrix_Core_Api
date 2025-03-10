@@ -14,6 +14,7 @@ use Modules\Auth\DTO\LoginStepAlternativeDTO;
 use Modules\Auth\DTO\LoginStepDTO;
 use Modules\Auth\DTO\LoginWithOtpDTO;
 use Modules\Auth\DTO\QuestionVerificationDTO;
+use Modules\Auth\DTO\ValidateOtpDTO;
 use Modules\Auth\Handlers\LogoutHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Repositories\OtpRepository;
@@ -88,16 +89,30 @@ class AuthService
         return $this;
     }
 
+
+    public function validateOtp(ValidateOtpDTO $validateOtpDTO)
+    {
+        if ((new Otp)->validate($validateOtpDTO->getIdentifier(), $validateOtpDTO->getOtp())->status == true) {
+            $user = $this->userCRUDService->getUserByIdentifier($validateOtpDTO->getIdentifier());
+
+            $token = $this->verficationDataRepository->createToken($user->id, ["can_reset_password" => true])->token;
+            return $token;
+        }
+        throw new \ErrorException(__("validation.invalid-otp"), 401);
+
+    }
+
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
-        if ((new Otp)->validate($resetPasswordCommand->getIdentifier(), $resetPasswordCommand->getOtp())->status == true) {
+        $token  = $this->verficationDataRepository->findOneByOrFail(["token" => $resetPasswordCommand->getToken()]);
+        if (isset($token->data["can_reset_password"]) && $token->data["can_reset_password"]==1) {
             $user = $this->userCRUDService->getUserByIdentifier($resetPasswordCommand->getIdentifier());
 
             $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword()]);
 
             return $this;
         }
-        throw new \ErrorException(__("validation.invalid-otp"), 401);
+        throw new \ErrorException(__("validation.invalid-token"), 401);
     }
 
     public function resendOtp(ResendOtpCommand $resendOtpCommand)
@@ -176,11 +191,11 @@ class AuthService
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
         if ($user->password == null) {
             $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier());
-            return [$loginWay->id, null, $step,1];
+            return [$loginWay->id, null, $step, 1];
         }
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
         $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1, "login_way" => $loginWay])->token;
-        return [$loginWay->id, $token, $step,0];
+        return [$loginWay->id, $token, $step, 0];
 
     }
 

@@ -9,26 +9,25 @@ use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\Commands\ForgetPasswordCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
+use Modules\Auth\DTO\ValidateOtpDTO;
 use Ramsey\Uuid\Uuid;
 
-class ResetPasswordRequest extends FormRequest
+class ValidateOtpRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            "token"=>"required",
+            'otp' => 'required',
             'identifier' => 'required',
-            "password"=> [
-                new PasswordValidation(),
-            'confirmed']
+
         ];
     }
 
-    public function createResetPasswordCommand()
+    public function createValidateOtpDTO()
     {
-        return new ResetPasswordCommand(
-            token: $this->get('token'),
-            password: $this->get('password'),
+        return new ValidateOtpDTO(
+            otp: $this->get('otp'),
+
             identifier: $this->get('identifier'),
         );
     }

@@ -8,7 +8,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\Commands\ForgetPasswordCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Ramsey\Uuid\Uuid;
-use Modules\Auth\DTO\CreateAuthDTO;
 
 class ForgetPasswordRequest extends FormRequest
 {
