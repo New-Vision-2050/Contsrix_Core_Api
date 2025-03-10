@@ -27,7 +27,7 @@ class CreateUserRequest extends FormRequest
         return new CreateUserDTO(
             name: $this->get('name'),
             email: $this->get('email'),
-            password: $this->get('password'),
+//            password: $this->get('password'),
             phone: $this->get('phone'),
             phoneCode: $this->get('phone_code'),
         );
