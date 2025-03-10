@@ -25,7 +25,7 @@ class LoginWayWithSpecificStepPresenter extends AbstractPresenter
         $type = "mail";
 
         $by = $this->user != null ? substr($email, 0, 2) . str_repeat('*', strlen($email) - 5) . substr($email, -3) : null;
-        if ( $this->step->drivers &&in_array("sms", $this->step->drivers) && $this->user) {
+        if ( $this?->step?->drivers &&in_array("sms", $this->step->drivers) && $this->user) {
             $by = substr($phone, 0, 2) . str_repeat('*', strlen($phone) - 5) . substr($phone, -3);
             $type = "sms";
         }
