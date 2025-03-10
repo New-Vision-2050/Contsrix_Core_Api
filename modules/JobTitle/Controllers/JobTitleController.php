@@ -17,6 +17,7 @@ use Modules\JobTitle\Requests\GetJobTitleRequest;
 use Modules\JobTitle\Requests\UpdateJobTitleRequest;
 use Modules\JobTitle\Services\JobTitleCRUDService;
 use Ramsey\Uuid\Uuid;
+use Illuminate\Support\Facades\Artisan;
 
 class JobTitleController extends Controller
 {
@@ -72,5 +73,23 @@ class JobTitleController extends Controller
         $this->deleteJobTitleHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+    public function runJobTitleSeeder(): JsonResponse
+    {
+        try {
+            Artisan::call('db:seed', [
+                '--class' => 'Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder'
+            ]);
+
+            return response()->json([
+                'message' => 'JobTitle seeder executed successfully',
+                'output'  => Artisan::output(),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error'   => 'Seeder execution failed',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
