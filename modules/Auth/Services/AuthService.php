@@ -104,8 +104,8 @@ class AuthService
 
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
-        $token  = $this->verficationDataRepository->findOneByOrFail(["token" => $resetPasswordCommand->getToken()]);
-        if (isset($token->data["can_reset_password"]) && $token->data["can_reset_password"]==1) {
+        $token  = $this->verficationDataRepository->findOneBy(["token" => $resetPasswordCommand->getToken()]);
+        if ($token && isset($token->data["can_reset_password"]) && $token->data["can_reset_password"]==1) {
             $user = $this->userCRUDService->getUserByIdentifier($resetPasswordCommand->getIdentifier());
 
             $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword()]);
