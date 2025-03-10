@@ -24,9 +24,9 @@ class CreateCompanyUserRequest extends FormRequest
             'email' => 'required|email|unique:company_users,email',
             'job_title_id'=>'required',
             'border_number' => 'nullable|unique:company_users,border_number',
-            'residence' => 'present|nullable|unique:company_users,residence',
-            'passport' => 'present|nullable|unique:company_users,passport',
-            'identity' => 'present|nullable|unique:company_users,identity',
+            'residence' => 'nullable|unique:company_users,residence',
+            'passport' => 'nullable|unique:company_users,passport',
+            'identity' => 'nullable|unique:company_users,identity',
             'company_user_validation' => [new CompanyUserValidation($this->get('company_id'), $this->get('country_id'))],
 
 
