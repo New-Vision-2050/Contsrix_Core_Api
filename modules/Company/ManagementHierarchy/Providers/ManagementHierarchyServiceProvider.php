@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
+use Modules\Company\ManagementHierarchy\Listeners\CreateHierarchyListener;
 
 class ManagementHierarchyServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +22,8 @@ class ManagementHierarchyServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+
+        Event::listen(CompanyCreatedEvent::class,CreateHierarchyListener::class );
     }
 
     public function register(): void

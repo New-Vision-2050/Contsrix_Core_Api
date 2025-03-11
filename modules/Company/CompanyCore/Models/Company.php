@@ -37,6 +37,7 @@ class Company extends Model implements HasMedia
     protected $keyType = 'string';
 
     protected $fillable = [
+        'name',
         'user_name',
         'email',
         'phone',

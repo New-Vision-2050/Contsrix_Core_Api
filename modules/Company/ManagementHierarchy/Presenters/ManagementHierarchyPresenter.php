@@ -19,8 +19,8 @@ class ManagementHierarchyPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'id' => $this->managementHierarchy->id,
-            'name' => $this->managementHierarchy->name,
+//            'id' => $this->managementHierarchy->id,
+            'name' => $this->managementHierarchy->getAttribute("id"),
         ];
     }
 }
