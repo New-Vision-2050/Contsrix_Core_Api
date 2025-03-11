@@ -22,7 +22,7 @@ class CreateCompanyUserRequest extends FormRequest
             'country_id' => 'nullable|exists:countries,id',
             'phone' => 'required|phone|unique:company_users,phone',
             'email' => 'required|email|unique:company_users,email',
-            'job_title_id'=>'required',
+            'job_title_id'=>'required|exists:job_titles,id',
             'border_number' => 'nullable|unique:company_users,border_number',
             'residence' => 'nullable|unique:company_users,residence',
             'passport' => 'nullable|unique:company_users,passport',
