@@ -9,7 +9,7 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 
 class CompanyWidgetPresenter extends AbstractPresenter
 {
-    private  $total;
+    private $total;
     private $active;
     private $completeData;
     private $dataActivate;
@@ -18,15 +18,24 @@ class CompanyWidgetPresenter extends AbstractPresenter
     private $completeDataCalculate;
     private $dataActivateCalculate;
 
-    public function __construct($total,$active,$completeData,$dataActivate,$totalCalculate,$activeCalculate,$completeDataCalculate,$dataActivateCalculate)
+    public function __construct(
+        $total,
+        $active,
+        $completeData,
+        $dataActivate,
+        $totalCalculate,
+        $activeCalculate,
+        $completeDataCalculate,
+        $dataActivateCalculate
+    )
     {
         $this->total = $total;
         $this->active = $active;
         $this->completeData = $completeData;
         $this->dataActivate = $dataActivate;
-        $this->totalCalculate= $totalCalculate;
-        $this->activeCalculate =$activeCalculate;
-        $this->completeDataCalculate= $completeDataCalculate;
+        $this->totalCalculate = $totalCalculate;
+        $this->activeCalculate = $activeCalculate;
+        $this->completeDataCalculate = $completeDataCalculate;
         $this->dataActivateCalculate = $dataActivateCalculate;
     }
 
