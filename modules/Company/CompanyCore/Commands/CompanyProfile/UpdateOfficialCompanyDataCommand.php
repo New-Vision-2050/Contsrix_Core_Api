@@ -13,6 +13,7 @@ class UpdateOfficialCompanyDataCommand
         private string        $nameEn,
         private string        $email,
         private string        $phone,
+        private string        $branchName,
     )
     {
     }
@@ -35,6 +36,11 @@ class UpdateOfficialCompanyDataCommand
     public function getPhone(): ?string
     {
         return $this->phone;
+    }
+
+    public function getBranchName()
+    {
+        return $this->branchName;
     }
 
     public function toArray(): array

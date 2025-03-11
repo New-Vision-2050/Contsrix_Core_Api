@@ -34,10 +34,19 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
+    public function getMainBranchForCompany(UuidInterface $id): ManagementHierarchy
+    {
+        return $this->findOneBy([
+            "company_id" => $id,
+            "parent_id" => null,
+            "type" => "branch"
+        ]);
+    }
+
     public function createManagementHierarchy(array $data): ManagementHierarchy
     {
-         $root = $this->create($data+["id"=>Uuid::uuid4()->toString()]);
-         return $root;
+        $root = $this->create($data + ["id" => Uuid::uuid4()->toString()]);
+        return $root;
     }
 
     public function updateManagementHierarchy(UuidInterface $id, array $data): bool

@@ -17,6 +17,7 @@ class UpdateOfficialCompanyData extends FormRequest
             'name_en' => 'required|string',
             'email' => 'required|email|string',
             'phone' => 'required|string',
+            'branch_name' => 'required|string',
         ];
     }
 
@@ -27,6 +28,7 @@ class UpdateOfficialCompanyData extends FormRequest
             nameEn: $this->get('name'),
             email: $this->get('email'),
             phone: $this->get('phone'),
+            branchName: $this->get('branch_name'),
         );
     }
 }
