@@ -33,7 +33,7 @@ class CreateHierarchyListener
 //        $company = $this->companyRepository->getCompany(Uuid::fromString($event->data->id));
 ////        throw new \Exception(json_encode($company->name));
 
-        $this->managementHierarchyRepository->createManagementHierarchy(["parent_id"=>"5f3047df-ceea-45a1-8002-c3a92cd7917e","company_id"=>$event->data->id , "name"=>$event->data->name,"type"=>"branch"]);
+        $this->managementHierarchyRepository->createManagementHierarchy(["company_id"=>$event->data->id , "name"=>$event->data->name,"type"=>"branch"]);
 
     }
 }

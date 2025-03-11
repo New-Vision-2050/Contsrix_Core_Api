@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Database\factories\ManagementHierarchyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\User\Models\User;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 
@@ -48,6 +49,13 @@ class ManagementHierarchy extends Model
     {
         return $this->belongsTo(Company::class);
     }
+
+    //example for nested set
+
+//    public function users()
+//    {
+//        return HasManyDeep::between($this , User::class,"management_hierarchy_id","id");
+//    }
 
 
     protected static function newFactory(): ManagementHierarchyFactory
