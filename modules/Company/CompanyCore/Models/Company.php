@@ -14,6 +14,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
@@ -31,6 +32,8 @@ class Company extends Model implements HasMedia
     // use SoftDeletes;
 
     public array $translatable = ["name"];
+
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager',"mainBranch"];
 
     public $incrementing = false;
 
@@ -95,6 +98,11 @@ class Company extends Model implements HasMedia
     public function adminRequestTransaction()
     {
         return $this->morphMany(AdminRequest::class, 'requestable');
+    }
+
+    public function mainBranch()
+    {
+        return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('parent_id', null)->where('type', 'branch');
     }
 
 }

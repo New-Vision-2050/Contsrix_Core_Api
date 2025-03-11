@@ -15,7 +15,7 @@ class UpdateOfficialCompanyData extends FormRequest
     {
         return [
             'name_en' => 'required|string',
-            'email' => 'required|email|string',
+            'email' => 'required|email|string|unique:companies,email,' . Uuid::fromString($this->route('id')),
             'phone' => 'required|string',
             'branch_name' => 'required|string',
         ];
@@ -25,7 +25,7 @@ class UpdateOfficialCompanyData extends FormRequest
     {
         return new UpdateOfficialCompanyDataCommand(
             id: Uuid::fromString($this->route('id')),
-            nameEn: $this->get('name'),
+            nameEn: $this->get('name_en'),
             email: $this->get('email'),
             phone: $this->get('phone'),
             branchName: $this->get('branch_name'),

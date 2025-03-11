@@ -20,10 +20,11 @@ class CompanyPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->company->id,
-            'name' => $this?->company->name,
+            'name_ar' => $this?->company->getTranslation("name","ar"),
+            'name_en' => $this?->company->getTranslation("name","en"),
             'user_name' => $this->company->user_name,
             'email' => $this->company->email,
-            'phone' => $this->company->email,
+            'phone' => $this->company->phone,
             'serial_no' => $this->company->serial_no,
             'country_id' => $this->company->country_id,
             'company_type_id' => $this->company->company_type_id,
@@ -37,7 +38,10 @@ class CompanyPresenter extends AbstractPresenter
             'registration_type' => $this->company->companyRegistrationType->name,
             'is_active' => $this->company->is_active,
             'complete_data' => $this->company->complete_data,
-            'date_activate' => $this->company->date_activate
+            'date_activate' => $this->company->date_activate,
+            "main_branch"=>[
+                "name" => $this->company->mainBranch?->name
+            ]
         ];
     }
 }
