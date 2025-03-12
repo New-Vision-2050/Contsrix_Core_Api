@@ -20,7 +20,8 @@ class TimeZonePresenter extends AbstractPresenter
     {
         return [
             'id' => $this->timeZone->id,
-            'name' => $this->timeZone->name,
+            'time_zone' => $this->timeZone->time_zone,
+            'country'=> $this->timeZone->country->name,
         ];
     }
 }

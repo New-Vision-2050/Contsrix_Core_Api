@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Shared\TimeZone\Database\factories\TimeZoneFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Country\Models\Country;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class TimeZone extends Model
@@ -33,7 +35,10 @@ class TimeZone extends Model
     protected $casts = [
         'id' => 'string',
     ];
-
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
     protected static function newFactory(): TimeZoneFactory
     {
         return TimeZoneFactory::new();

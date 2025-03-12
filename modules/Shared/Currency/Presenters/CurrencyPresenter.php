@@ -21,6 +21,7 @@ class CurrencyPresenter extends AbstractPresenter
         return [
             'id' => $this->currency->id,
             'name' => $this->currency->name,
+            'short_name' => $this->currency->short_name,
         ];
     }
 }

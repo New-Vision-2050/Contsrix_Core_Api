@@ -21,6 +21,7 @@ class LanguagePresenter extends AbstractPresenter
         return [
             'id' => $this->language->id,
             'name' => $this->language->name,
+            'short_name'=> $this->language->short_name,
         ];
     }
 }
