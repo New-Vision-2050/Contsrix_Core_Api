@@ -18,7 +18,9 @@ class CreateCompanyUserDTO
         public ? string $residence,
         public ? string $identity,
         public ? string $passport,
-
+        public ? string $time_zone_id,
+        public ? string $language_id,
+        public ? string $currency_id,
     ) {
     }
 
@@ -39,6 +41,9 @@ class CreateCompanyUserDTO
             'residence' => $this->residence,
             "identity"=>$this->identity,
             "passport"=>$this->passport,
+            'time_zone_id' => $this->time_zone_id,
+            'language_id' => $this->language_id,
+            'currency_id' => $this->currency_id,
         ];
     }
 
