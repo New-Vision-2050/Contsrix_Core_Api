@@ -49,4 +49,11 @@ class CompanyUserCRUDService
             id: $id,
         );
     }
+    public function getByEmail(string $email): ?CompanyUser
+    {
+        return $this->repository->findByEmail(
+            email: $email,
+        );
+    }
+
 }

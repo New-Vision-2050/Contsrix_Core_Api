@@ -74,6 +74,18 @@ class CompanyUserController extends Controller
 
         return Json::buildItems('company_user', $presenter->getData());
     }
+    public function showByEmail(GetCompanyUserRequest $request)//: JsonResponse
+    {
+            $item = $this->companyUserService->getByEmail($request->email);
+            if (!$item) {
+                return Json::buildItems(data: ["msg" => "User not found."], httpStatus: 404);
+            }
+            $presenter = new CompanyUserPresenter($item);
+
+            return Json::buildItems('company_user', $presenter->getData());
+
+
+    }
 
     public function store(CreateCompanyUserRequest $request)
     {
