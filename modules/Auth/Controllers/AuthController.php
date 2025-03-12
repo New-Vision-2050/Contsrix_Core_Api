@@ -173,7 +173,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
         }
-        $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
+        $user = $this->userCRUDService->getUserByIdentifier($request->createLoginStepAlternativeDTO()->getIdentifier());
 
 
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step, $user))->getData(), "token" => $token]);
