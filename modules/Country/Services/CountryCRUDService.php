@@ -25,6 +25,7 @@ class CountryCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
+            ['status' => '1'],
             page: $page,
             perPage: $perPage,
         );
