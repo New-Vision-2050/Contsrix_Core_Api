@@ -10,6 +10,7 @@ use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Carbon\Carbon;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 
+
 class CompanyWidgetService
 {
     protected $repository;

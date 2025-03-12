@@ -12,8 +12,10 @@ use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
+use Modules\CompanyUser\Handlers\UpdateTimeZoneCompanyUserHandler;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\CompanyUser\Presenters\TimeZoneCompanyUserPresenter;
 use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
 use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
@@ -22,6 +24,7 @@ use Modules\CompanyUser\Requests\DeleteCompanyUserSpecificRoleRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
+use Modules\CompanyUser\Requests\UpdateTimeZoneCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\CompanyUserValidationService;
 use Modules\CompanyUser\Services\CompanyUserWidgetsService;
@@ -34,6 +37,7 @@ class CompanyUserController extends Controller
         private CompanyUserWidgetsService    $companyUserWidgetService,
         private CompanyUserValidationService $companyUserValidationService,
         private UpdateCompanyUserHandler     $updateCompanyUserHandler,
+        private UpdateTimeZoneCompanyUserHandler     $updateTimeZoneCompanyUserHandler,
         private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
         private DeleteCompanyUserRoleHandler $deleteCompanyUserRoleHandler,
         private DeleteCompanyUserHandler     $deleteCompanyUserHandler,
@@ -121,7 +125,17 @@ class CompanyUserController extends Controller
 
         return Json::buildItems('data', $presenter->getData());
     }
+    public function changeTimeZone(UpdateTimeZoneCompanyUserRequest $request): JsonResponse
+    {
+        $command = $request->updateTimeZoneUpdateCompanyUserCommand();
+        $this->updateTimeZoneCompanyUserHandler->handle($command);
 
+        $item = $this->companyUserService->get($command->getId());
+
+        $presenter = new TimeZoneCompanyUserPresenter($item);
+
+        return Json::buildItems('data', $presenter->getData());
+    }
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
         try {
