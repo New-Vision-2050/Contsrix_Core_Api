@@ -21,5 +21,9 @@ Route::middleware(['auth:api'])->group(function () {
            Route::put("/request",[\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class,"updateOfficialDataRequest"]);
         });
 
+        Route::prefix("national-address")->group(function () {
+           Route::put("/",[\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class,"getAddressFromMap"]);
+        });
+
     });
 });
