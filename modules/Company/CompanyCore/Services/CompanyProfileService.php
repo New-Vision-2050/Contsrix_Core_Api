@@ -46,7 +46,10 @@ class CompanyProfileService
         $poltical = "";
         $locality = "";
         $area = "";
+
         $country = "";
+        $postalCode = "";
+        $route = "";
         foreach ($response['results'] as $key => $value) {
             if ($value['types'][0] == "political") {
                 $poltical = $value["address_components"][0]["long_name"];
@@ -62,12 +65,21 @@ class CompanyProfileService
             if ($value['types'][0] == "country") {
                 $country = $value["address_components"][0]["long_name"];
             }
+
+            if ($value['types'][0] == "postal_code") {
+                $postalCode = $value["address_components"][0]["long_name"];
+            }
+            if ($value['types'][0] == "route") {
+                $route = $value["address_components"][0]["long_name"];
+            }
         }
         return [
             "country" => $country,
             "state" => $area,
             "city" => $locality,
-            "neighborhood" => $poltical
+            "neighborhood" => $poltical,
+            "postalCode" => $postalCode,
+            "route" => $route,
         ];
 
     }
