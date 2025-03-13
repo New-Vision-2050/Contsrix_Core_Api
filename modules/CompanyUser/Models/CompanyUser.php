@@ -69,8 +69,6 @@ class CompanyUser extends Model
 
     public function delete()
     {
-
-
         try {
             DB::beginTransaction();
             $this->companies()->detach();
