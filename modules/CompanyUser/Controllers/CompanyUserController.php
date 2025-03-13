@@ -78,7 +78,7 @@ class CompanyUserController extends Controller
     {
             $item = $this->companyUserService->getByEmail($request->email);
             if (!$item) {
-                return Json::buildItems(data: ["msg" => "User not found."], httpStatus: 200);
+                return Json::buildItems(data: ["company_user" => null], httpStatus: 200);
             }
             $presenter = new CompanyUserPresenter($item);
 
