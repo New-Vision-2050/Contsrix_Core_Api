@@ -44,4 +44,5 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 
 
+Route::post('/get-question-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'getUserQuestions']);
 
