@@ -22,7 +22,7 @@ Route::middleware(['auth:api'])->group(function () {
         });
 
         Route::prefix("national-address")->group(function () {
-           Route::put("/",[\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class,"getAddressFromMap"]);
+           Route::post("/",[\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class,"getAddressFromMap"]);
         });
 
     });

@@ -21,16 +21,17 @@ class CompanyProfileService
 {
     public function __construct(
         private AdminRequestRepository $adminRequestRepository,
-    ) {
+    )
+    {
     }
 
     public function updateCompanyProfileRequest(UpdateOfficialCompanyDataRequestDTO $companyDataRequestDTO)
     {
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyOfficialData(
             userId: auth()->user()->id,
-            data: ["id"=>$companyDataRequestDTO->getId(),"data"=>$companyDataRequestDTO->toArray()],
+            data: ["id" => $companyDataRequestDTO->getId(), "data" => $companyDataRequestDTO->toArray()],
             requestType: "companyOfficialDataUpdate",
-            action:["ar"=>"طلب تعديل البيانات الرسميه للشركة","en"=>"Company official data update request"] ,
+            action: ["ar" => "طلب تعديل البيانات الرسميه للشركة", "en" => "Company official data update request"],
             notes: $companyDataRequestDTO->getNotes()
 
         );
@@ -41,7 +42,7 @@ class CompanyProfileService
 
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
-        $response = Http::get("https://maps.googleapis.com/maps/apis/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=ar&key=".env('GOOGLE_MAPS_API_KEY'));
+        $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=ar&key=" . env('GOOGLE_MAPS_API_KEY'));
         $poltical = "";
         $locality = "";
         $area = "";
@@ -62,15 +63,42 @@ class CompanyProfileService
                 $country = $value["address_components"][0]["long_name"];
             }
         }
-
-//        return $country . " " . $area . " " . $locality . " " . $poltical;
-
         return [
             "country" => $country,
             "state" => $area,
             "city" => $locality,
             "neighborhood" => $poltical
         ];
+
+    }
+
+    public function geoCodingUsingNationalAddressKSA(GeoCodingDTO $geoCodingDTO)
+    {
+        $url = "https://apina.address.gov.sa/NationalAddress/v3.1/Address/address-geocode?language=A&format=json&lat={$geoCodingDTO->getLatitude()}&long={$geoCodingDTO->getLongitude()}";
+        $curl = curl_init($url);
+
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_ENCODING, 'UTF-8');
+
+        $headers = array(
+            'api_key: 4c26a4bcbe11402e9782d13b155584dc',
+        );
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+
+        $resp = curl_exec($curl);
+
+        if ($resp !== false) {
+            $resp = json_decode($resp, true, 512, JSON_INVALID_UTF8_IGNORE);
+            return $resp;
+        } else {
+            // Handle curl error
+            $error = curl_error($curl);
+            curl_close($curl);
+            throw new Exception($error);
+        }
+
     }
 
 }
