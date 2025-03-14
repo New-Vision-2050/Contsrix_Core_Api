@@ -4,13 +4,15 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
+use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
+use Modules\Country\Database\Seeders\StatesTableSeeder;
+
 use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
-use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -29,5 +31,7 @@ class DatabaseSeeder extends Seeder
         $this->call(DefaultIdentifierSeederTableSeeder::class);
         $this->call(DriverTableSeeder::class);
         $this->call(QuestionSettingTableSeeder::class);
+        $this->call(StatesTableSeeder::class);
+        $this->call(CitiesTableSeeder::class);
     }
 }
