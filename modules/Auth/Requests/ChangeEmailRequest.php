@@ -16,7 +16,7 @@ class ChangeEmailRequest extends FormRequest
     {
         return [
             "token" => "required",
-            'email' => 'required|email|exists:users,email',
+            'email' => 'nullable',
             'new_email' => 'required|email|unique:users,email',
             'new_email_confirmation' => 'required|email|same:new_email',
         ];

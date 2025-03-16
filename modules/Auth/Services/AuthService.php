@@ -186,6 +186,7 @@ class AuthService
 
     public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
     {
+
         $loginWay = $this->getDefaultLoginWay($getLoginWaysDTO->getIdentifier());
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
