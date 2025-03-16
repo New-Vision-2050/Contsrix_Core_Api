@@ -83,7 +83,7 @@ class CompanyUser extends Model
 
     public function rolesForCompany($companyId)
     {
-        return $this->companies()->where('id',$companyId)->orderBy('role')->pluck("pivot");
+        return $this->companies->where('id',$companyId)->orderBy('role')->pluck("pivot");
     }
     public function country()
     {
