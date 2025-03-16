@@ -15,7 +15,8 @@ class CreateCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
+            'first_name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
+            'last_name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
             'user_name' => [
                 'required',
                 'unique:companies,user_name',
