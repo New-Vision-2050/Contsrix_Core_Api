@@ -25,7 +25,7 @@ class UserNameValidation implements Rule
      */
     public function passes($attribute, $value): bool
     {
-        if(!preg_match("/\p{Arabic}/u", $value) ||count(explode(" ", trim($value))) <3) return false;
+        if(!preg_match("/\p{Arabic}/u", $value) ||count(explode(" ", trim($value))) <1) return false;
         return true;
     }
 

@@ -8,10 +8,10 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class CompanyFieldFilter extends SearchModelFilter
 {
-       public $relations = [];
+    public $relations = [];
 
-        public function name($name)
-        {
-            return $this->where('name', $name);
-        }
+    public function name($name)
+    {
+        return $this->where('name', 'LIKE', "%{$name}%");
+    }
 }

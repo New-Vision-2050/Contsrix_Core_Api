@@ -42,14 +42,11 @@ class CompanyWidgetPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'total' => $this->total,
-            'total_calculate' => $this->totalCalculate,
-            'active' => $this->active,
-            'active_calculate' => $this->activeCalculate,
-            'complete_data' => $this->completeData,
-            'complete_data_calculate' => $this->completeDataCalculate,
-            'data_activate' => $this->dataActivate,
-            'data_activate_calculate' => $this->dataActivateCalculate
+            ['title'=>'اجمالي الشركات','code'=> 'total_companies' , 'total'=> $this->total,'percentage' => $this->totalCalculate],
+            ['title'=>'الشركات الفعالة','code'=> 'active_companies' , 'total'=> $this->active,'percentage' => $this->activeCalculate],
+            ['title'=>'شركات غير مكتملة البيانات','code'=> 'complete_data' , 'total'=> $this->completeData,'percentage' => $this->completeDataCalculate],
+            //['title'=>'','data_activate' => $this->dataActivate,'percentage' => $this->dataActivateCalculate],
+            ['title'=>'شركات قاربت على الانتهاء','code'=> 'nearly_end' , 'total'=> $this->dataActivate,'percentage' => $this->dataActivateCalculate],
         ];
     }
 }

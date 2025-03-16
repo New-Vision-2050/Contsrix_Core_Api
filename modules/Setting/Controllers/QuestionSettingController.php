@@ -37,22 +37,15 @@ class QuestionSettingController extends Controller
 
     public function getUserQuestions(GetQuestionAnswerdForUserRequest $request)
     {
-        try {
-            $verficationQuestion = $this->questionSettingService->getQuestionUserAnswered($request->createGetUserQuestionDTO());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
-        return Json::item(VerficationQuestionPresenter::collection($verficationQuestion));
+        $verficationQuestion = $this->questionSettingService->getQuestionUserAnswered($request->createGetUserQuestionDTO());
 
+        return Json::item(VerficationQuestionPresenter::collection($verficationQuestion));
     }
 
     public function answerQuestionsForUser(AnswerQuestionsForUserRequest $request)
     {
-        try {
-            $this->answerQuestionForUserHandler->handle($request->createAnswerQuestionsForUserCommand());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
+        $this->answerQuestionForUserHandler->handle($request->createAnswerQuestionsForUserCommand());
+
         return Json::success("success");
 
     }

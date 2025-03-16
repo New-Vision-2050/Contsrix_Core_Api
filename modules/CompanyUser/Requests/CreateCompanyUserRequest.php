@@ -16,7 +16,8 @@ class CreateCompanyUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required','string',new UserNameValidation()],
+            'first_name' => ['required','string',new UserNameValidation()],
+            'last_name' => ['required','string',new UserNameValidation()],
             'role' => 'nullable',
             'company_id' => 'required|exists:companies,id',
             'country_id' => 'nullable|exists:countries,id',
@@ -39,18 +40,19 @@ class CreateCompanyUserRequest extends FormRequest
     public function createCreateCompanyUserDTO(): CreateCompanyUserDTO
     {
         return new CreateCompanyUserDTO(
-            name: $this->get('name'),
-            email: $this->get('email'),
-            country_id: $this->get('country_id'),
-            time_zone_id: $this->get('time_zone_id'),
-            language_id: $this->get('language_id'),
-            currency_id: $this->get('currency_id'),
-            phone: $this->get('phone'),
+            firstName:     $this->get('first_name'),
+            lastName:      $this->get('last_name'),
+            email:         $this->get('email'),
+            country_id:    $this->get('country_id'),
+            phone:         $this->get('phone'),
+            job_title_id:  $this->get('job_title_id'),
             border_number: $this->get('border_number'),
-            residence: $this->get('residence'),
-            identity: $this->get('identity'),
-            passport: $this->get('passport'),
-            job_title_id: $this->get('job_title_id'),
+            residence:     $this->get('residence'),
+            identity:      $this->get('identity'),
+            passport:      $this->get('passport'),
+            time_zone_id:  $this->get('time_zone_id'),
+            language_id:   $this->get('language_id'),
+            currency_id:   $this->get('currency_id'),
         );
     }
 

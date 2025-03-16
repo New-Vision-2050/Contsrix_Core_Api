@@ -26,11 +26,12 @@ class WidgetCompanyUserPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+
         return [
-            "total_user_widget" => $this->totalUserWidget,
-            "total_last_month_user_widget" => $this->totalLastMonthUserWidget,
-            "total_active_user_widget" => $this->totalActiveUserWidget,
-            "total_inactive_user_widget" => $this->totalInactiveUserWidget,
+            array_merge(['title'=>'اجمالي عدد المستخدمين','code'=> 'total_user_widget'],$this->totalUserWidget),
+            array_merge(['title'=>'المستخدمين المضافين اخر شهر','code'=> 'total_last_month_user_widget'],$this->totalLastMonthUserWidget),
+            array_merge(['title'=>'المستخدمين النشيطين','code'=> 'total_active_user_widget'],$this->totalActiveUserWidget),
+            array_merge(['title'=>'المستخدمين المعلقين','code'=> 'total_inactive_user_widget'],$this->totalInactiveUserWidget)
         ];
     }
 }

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\DTO;
 
-use Ramsey\Uuid\UuidInterface;
 
 class CreateCompanyUserDTO
 {
     public function __construct(
-        public string $name,
+        public string $firstName,
+        public string $lastName,
         public string $email,
         public ? string $country_id,
         public string $phone,
@@ -32,7 +32,7 @@ class CreateCompanyUserDTO
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
+            'name' => $this->firstName.' '.$this->lastName,
             'email' => $this->email,
             'country_id' => $this->country_id,
             'job_title_id'=>$this->job_title_id,
