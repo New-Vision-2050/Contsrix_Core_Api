@@ -31,7 +31,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'job_title_id'=>$this->companyUser->job_title_id,
             "job_title" => $this->companyUser?->jobTitle?->name,
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
-            'data_status' => false,
+            'data_status' => 0,
             "company" => CompanyWithRolesPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser)
         ];
     }
