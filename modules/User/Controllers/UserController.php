@@ -50,7 +50,7 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(['users' => UserPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
+        return Json::items(['users' => UserPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
     }
 
     public function show(GetUserRequest $request): JsonResponse
