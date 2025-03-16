@@ -14,6 +14,8 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/{id}/roles', [UserController::class, 'getRoles']);
     Route::get('/{id}/permissions', [UserController::class, 'getPermissions']);
     Route::get('/{id}/audits', [UserController::class, 'getAudites']);
+    Route::put('/{id}/update-login-way', [UserController::class, 'updateLoginWay'])->middleware("permission:user.update");
+
     Route::put('/{id}', [UserController::class, 'update'])->middleware("permission:user.update");
     Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser']);
 

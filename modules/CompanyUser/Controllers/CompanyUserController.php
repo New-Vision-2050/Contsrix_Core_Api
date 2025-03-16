@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Events\UserUpdated;
 use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
@@ -48,19 +49,21 @@ class CompanyUserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::buildItems(null, ['data' => CompanyUserPresenter::collection($list["data"]), 'pagination' => $list['pagination']]);
+        return Json::item(['data' => CompanyUserPresenter::collection($list["data"]), 'pagination' => $list['pagination']]);
     }
+
 
     public function widgets()
     {
-        $presnter = new WidgetCompanyUserPresenter(
+        $presenter = new WidgetCompanyUserPresenter(
             $this->companyUserWidgetService->getTotalUserWidget(),
             $this->companyUserWidgetService->getTotalLastMonthUserWidget(),
             $this->companyUserWidgetService->getTotalActiveUserWidget(),
             $this->companyUserWidgetService->getTotalInactiveUserWidget()
         );
-        return Json::buildItems('data', $presnter->getData());
+        return Json::item($presenter->getData());
     }
+
 
     public function show(GetCompanyUserRequest $request): JsonResponse
     {
@@ -68,21 +71,22 @@ class CompanyUserController extends Controller
 
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::buildItems('company_user', $presenter->getData());
+        return Json::item($presenter->getData());
     }
+
 
     public function store(CreateCompanyUserRequest $request)
     {
         try {
             $createdItem = $this->companyUserService->create($request->createCreateCompanyUserDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
         } catch (\Exception $e) {
-            return Json::buildItems(data: ["msg" => $e->getMessage()], httpStatus: $e->getCode());
+            return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-
         $presenter = new CompanyUserPresenter($createdItem);
-        return Json::buildItems(data: ['data' => $presenter->getData()]);
+        return Json::item($presenter->getData());
     }
+
 
     public function assignRoleForCompanies(AssignRoleCompanyUserRequest $request)
     {
@@ -93,8 +97,9 @@ class CompanyUserController extends Controller
 
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::buildItems('data', $presenter->getData());
+        return Json::item($presenter->getData());
     }
+
 
     public function validation()
     {
@@ -103,7 +108,8 @@ class CompanyUserController extends Controller
             ->validateEmail()
             ->validatePhone()
             ->get();
-        return Json::buildItems("validations", $validations);
+        return Json::item($validations);
+
     }
 
     public function update(UpdateCompanyUserRequest $request): JsonResponse
@@ -115,36 +121,38 @@ class CompanyUserController extends Controller
 
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::buildItems('data', $presenter->getData());
+        return Json::item($presenter->getData());
+
     }
 
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
         try {
             $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
-
         } catch (\Exception $exception) {
-            return Json::buildItems(data: ["msg" => $exception->getMessage()], httpStatus: $exception->getCode());
+            return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
         }
 
         return Json::deleted();
     }
+
 
     public function deleteForSpecificRole(DeleteCompanyUserSpecificRoleRequest $request): JsonResponse
     {
         try {
             $command = $request->createDeleteRoleCommand();
             $this->deleteCompanyUserRoleHandler->handle($command);
-
         } catch (\Exception $exception) {
-            return Json::buildItems(data: ["msg" => $exception->getMessage()], httpStatus: $exception->getCode());
+            return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
         }
 
         return Json::deleted();
     }
 
+
     public function roles()
     {
-        return Json::buildItems("data", CompanyUserRole::array());
+        return Json::item(CompanyUserRole::array());
     }
+
 }

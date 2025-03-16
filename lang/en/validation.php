@@ -178,6 +178,7 @@ return [
     "phone"=>"phone format is invalid",
     'delete-not-successful' => 'Delete not successful',
     "create-not-successful"=>"Create not successful",
+    "update-not-successful"=>"Update not successful",
     'user-name' => 'The name must consist of three Arabic words without any symbols.',
     'user-email-error' => 'The email is already exist in the system in name :name',
     'user-email-success' => 'The email is already exist in the system ',
@@ -186,6 +187,17 @@ return [
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
+    "login-way-not-found"=>"login way not found",
+    "user-not-found"=>"user not found ",
+    "delete-not-successful-must-have-one"=>"Delete not successful must have one",
+    "you-must-set-your-answers"=>"You must set your answers",
+    "all-questions-are-required"=>"All questions are required",
+    "invalid-token"=>"invalid token",
+    "can-not-resend-otp"=>"can not resend otp",
+
+
+
+
 
 
 

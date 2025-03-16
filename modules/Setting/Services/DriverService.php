@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Setting\Services;
+
+use Faker\Core\Uuid;
+use Modules\Setting\DTO\CreateSettingDTO;
+use Modules\Setting\Models\Setting;
+use Modules\Setting\Repositories\DriverRepository;
+use Modules\Setting\Repositories\IdentifierSettingRepository;
+use Modules\Setting\Repositories\SettingRepository;
+use Ramsey\Uuid\UuidInterface;
+
+class DriverService
+{
+    public function __construct(
+        private DriverRepository $repository,
+    ) {
+    }
+
+
+    public function all()
+    {
+        return $this->repository->getDataGroupByType();
+    }
+
+    public function show(UuidInterface $id)
+    {
+        return $this->repository->find($id);
+    }
+
+
+
+}

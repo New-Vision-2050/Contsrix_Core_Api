@@ -8,9 +8,9 @@ class ResetPasswordCommand
 {
     public function __construct(
 
-        private string $otp,
+        private string $token,
         private string $password,
-        private string $email,
+        private string $identifier,
     ) {
     }
 
@@ -20,16 +20,16 @@ class ResetPasswordCommand
         return $this->password;
     }
 
-    public function getOtp(): ?string
+    public function getToken(): ?string
 
     {
-        return $this->otp;
+        return $this->token;
     }
 
-    public function getEmail(): ?string
+    public function getIdentifier(): ?string
 
     {
-        return $this->email;
+        return $this->identifier;
     }
 
 

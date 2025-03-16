@@ -5,6 +5,9 @@ return [
     'login-with-otp' => 'login with otp',
     'welcome' => 'welcome',
     'you-tried-to-change-password-with' => 'you tried to change password with',
+    "you-tried-to-change-email-with"=>"you tried to change email with :email",
+    "change-your-email" => "change your email with otp",
+
     'you-tried-to-login-with' => 'you tried to login with',
 
     'your-verification-code-is' => 'Your verification code is',

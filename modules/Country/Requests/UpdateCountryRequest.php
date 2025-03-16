@@ -15,6 +15,8 @@ class UpdateCountryRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            "status"=>"required|in:1,0",
+            "sms_driver_id" => "required|exists:drivers,id",
         ];
     }
 
@@ -23,6 +25,8 @@ class UpdateCountryRequest extends FormRequest
         return new UpdateCountryCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
+            status: $this->get('status'),
+            smsDriverId: Uuid::fromString($this->get('sms_driver_id')),
         );
     }
 }

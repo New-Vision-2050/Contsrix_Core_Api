@@ -2,15 +2,20 @@
 
 namespace Modules\Auth\Notifications;
 
+use App\Channels\SmsChannel;
+use App\Notifications\Drivers\SMS\MoraSms;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use Modules\Country\Models\Country;
 
 class SendOtpForLogin extends Notification
 {
     use Queueable;
     protected $data;
+    protected $types;
+    protected $smsDriver;
 
 
     /**
@@ -18,9 +23,12 @@ class SendOtpForLogin extends Notification
      *
      * @return void
      */
-    public function __construct($data)
+    public function __construct($data , array $types = ["mail"])
+
     {
+        $this->smsDriver= new MoraSms();//as a default driver
         $this->data = $data;
+        $this->types = $types;
     }
 
     /**
@@ -29,9 +37,21 @@ class SendOtpForLogin extends Notification
      * @param mixed $notifiable
      * @return array
      */
+
+    private function setDriverSMS($notifiable):void
+    {
+        $driverName = Country::query()->where("phonecode",$notifiable->phone_code)->first()->smsDriver->name;
+        if($driverName == "mora"){
+            $this->smsDriver = new MoraSms();
+        }
+    }
+
+
     public function via($notifiable)
     {
-        return ['mail'];
+        $this->setDriverSMS($notifiable);
+
+        return ["mail"]; //TODO : $this->types
     }
 
     /**
@@ -44,6 +64,13 @@ class SendOtpForLogin extends Notification
     {
         return (new MailMessage)->subject(__('emails.login-with-otp'))
             ->markdown('emails.loginWithOtp', ['data' => $this->data]);
+    }
+
+    public function toSms($notifiable)
+    {
+        return (new MoraSms())
+            ->to($notifiable->phone)
+            ->line(__("emails.login-with-otp").$this->data['otp']);
     }
 
     /**
