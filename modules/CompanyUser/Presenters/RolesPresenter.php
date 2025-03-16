@@ -25,7 +25,7 @@ class RolesPresenter extends AbstractPresenter
     {
         return [
             'role' => CompanyUserRole::lang($this->company->role),
-            'status' => CompanyUserStatus::lang($this->company->status)
+            'status' => $this->company->status
         ];
     }
 
