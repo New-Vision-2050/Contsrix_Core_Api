@@ -30,7 +30,7 @@ class CompanyFilter extends SearchModelFilter
 
     public function search($search, $filters = [])
     {
-        $query = $this->query();
+        $query = $this;
 
         $query->when($search, function ($q) use ($search) {
             $q->where(function ($q) use ($search) {
