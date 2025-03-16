@@ -16,9 +16,8 @@ class StatesTableSeeder extends Seeder
     {
 
 
-        \DB::table('states')->delete();
 
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 1,

@@ -18,9 +18,8 @@ class CountrySeederTableSeeder extends Seeder
     {
 
 
-        \DB::table('countries')->delete();
 
-        \DB::table('countries')->insert(array(
+        \DB::table('countries')->insertOrIgnore(array(
             0 =>
                 array(
                     'id' => 1,
