@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CreateCompanyRequest;
 use Modules\Company\CompanyCore\Requests\DeleteCompanyRequest;
@@ -24,7 +25,6 @@ use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
-
 class CompanyController extends Controller
 {
     public function __construct(
@@ -34,7 +34,8 @@ class CompanyController extends Controller
         private CompanyValidateService $validateCompanyService,
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
-        private FileUploadService  $fileUploadService
+        private FileUploadService  $fileUploadService,
+        // private TransformImgsService  $transformImgsService
     ) {
     }
 
@@ -46,7 +47,7 @@ class CompanyController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['companies' => CompanyPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::items(CompanyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetCompanyRequest $request): JsonResponse
@@ -55,7 +56,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($item);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(CreateCompanyRequest $request): JsonResponse
@@ -64,7 +65,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($createdItem);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateCompanyRequest $request)//: JsonResponse
@@ -77,7 +78,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($item);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteCompanyRequest $request): JsonResponse
@@ -97,20 +98,12 @@ class CompanyController extends Controller
     }
     public function widget(): JsonResponse
     {
-        $total = $this->companyWidgetService->total();
-        $active = $this->companyWidgetService->active();
-        $completeData = $this->companyWidgetService->completeData();
-        $dataActivate = $this->companyWidgetService->dataActivate();
+        $presenter = $this->companyWidgetService->getCompanyStatistics();
 
-        $totalCalculate = $this->companyWidgetService->totalCalculate();
-        $activeCalculate = $this->companyWidgetService->activeCalculate();
-        $completeDataCalculate = $this->companyWidgetService->completeDataCalculate();
-        $dataActivateCalculate = $this->companyWidgetService->dataActivateCalculate();
+        return Json::item($presenter->getData());
 
-        $presenter = new CompanyWidgetPresenter($total,$active,$completeData,$dataActivate,$totalCalculate,$activeCalculate,$completeDataCalculate,$dataActivateCalculate);
-
-        return Json::buildItems('company', $presenter->getData());
     }
+    //concarncy in laravel
     public function activate(ActiveCompanyRequest $request): JsonResponse
     {
         $command = $request->createActiveCompanyCommand();
@@ -120,10 +113,7 @@ class CompanyController extends Controller
 
         $presenter = new CompanyPresenter($item);
 
-        return Json::buildItems('company', $presenter->getData());
+        return Json::item($presenter->getData());
     }
-    public function test(Request $request)
-    {
-        return response()->json($this->fileUploadService->uploadToMinIO($request));
-    }
+
 }

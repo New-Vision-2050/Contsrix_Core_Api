@@ -23,7 +23,7 @@ class CountryRepository extends BaseRepository
 
     public function getCountryList(?int $page, ?int $perPage = 10): Collection
     {
-        return $this->paginatedList([], $page, $perPage);
+        return $this->paginatedList(['status' => 1], $page, $perPage);
     }
 
     public function getCountry(UuidInterface $id): Country

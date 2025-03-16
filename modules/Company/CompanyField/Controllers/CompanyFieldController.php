@@ -27,11 +27,14 @@ class CompanyFieldController extends Controller
     ) {
     }
 
-    public function index(GetCompanyFieldListRequest $request): JsonResponse
+    public function index(GetCompanyFieldListRequest $request)//: JsonResponse
     {
-        $list = $this->companyFieldService->all();
+        $list = $this->companyFieldService->list(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+        return Json::items(CompanyFieldPresenter::collection($list['data']), paginationSettings: $list['pagination']);
 
-        return Json::buildItems(null,['company_fields' => CompanyFieldPresenter::collection($list)]);
     }
 
     public function show(GetCompanyFieldRequest $request): JsonResponse
@@ -40,7 +43,7 @@ class CompanyFieldController extends Controller
 
         $presenter = new CompanyFieldPresenter($item);
 
-        return Json::buildItems('company_field', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(CreateCompanyFieldRequest $request): JsonResponse
@@ -49,7 +52,7 @@ class CompanyFieldController extends Controller
 
         $presenter = new CompanyFieldPresenter($createdItem);
 
-        return Json::buildItems('company_field', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateCompanyFieldRequest $request): JsonResponse
@@ -61,7 +64,7 @@ class CompanyFieldController extends Controller
 
         $presenter = new CompanyFieldPresenter($item);
 
-        return Json::buildItems('company_field', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteCompanyFieldRequest $request): JsonResponse

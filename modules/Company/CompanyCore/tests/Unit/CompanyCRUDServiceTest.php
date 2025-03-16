@@ -36,15 +36,15 @@ class CompanyCRUDServiceTest extends TestCase
         $companyDTO = new CreateCompanyDTO(
             name: 'Test Company',
             userName: 'test_user',
-            email: 'test@example.com',
-            phone: '123456789',
+            // email: 'test@example.com',
+            // phone: '123456789',
             countryId: 1,
-            companyTypeId: 1,
+            // companyTypeId: 1,
             companyFieldId: 1,
-            registrationTypeId: 1,
+            // registrationTypeId: 1,
             generalManagerId: Uuid::uuid4(),
-            registrationNo: '123456',
-            serialNo: 'abcdef'
+            // registrationNo: '123456',
+            // serialNo: 'abcdef'
         );
 
         // Create mock company object
