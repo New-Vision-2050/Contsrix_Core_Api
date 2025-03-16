@@ -11,7 +11,8 @@ class UpdateCountryCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
-        private string $status
+        private string $status,
+        private UuidInterface $smsDriverId
     ) {
     }
 
@@ -33,7 +34,8 @@ class UpdateCountryCommand
     {
         return array_filter([
             'name' => $this->name,
-            'status' => $this->status
+            'status' => $this->status,
+            'sms_driver_id' => $this->smsDriverId
         ]);
     }
 }

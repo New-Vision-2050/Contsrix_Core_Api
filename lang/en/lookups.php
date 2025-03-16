@@ -19,5 +19,12 @@ return [
     'active' => 'active',
     'inactive' => 'in active',
     'pending' => 'pending',
+    "email" => "email",
+    "sms" => "sms",
+    "password" => "password",
+    "otp" => "otp",
+    "telegram" => "telegram",
+    "whatsapp" => "whatsapp",
+    "social" => "social",
 
 ];

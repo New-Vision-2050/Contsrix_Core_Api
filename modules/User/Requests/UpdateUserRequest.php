@@ -16,6 +16,9 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email,'. $this->route('id'),
+            "phone"=>"required|unique:users,phone,". $this->route('id'),
+            "phone_code" => "required|exists:countries,phonecode",
+
         ];
     }
 
@@ -25,6 +28,8 @@ class UpdateUserRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
             email: $this->get('email'),
+            phone: $this->get('phone'),
+            phoneCode: $this->get('phone_code'),
         );
     }
 }

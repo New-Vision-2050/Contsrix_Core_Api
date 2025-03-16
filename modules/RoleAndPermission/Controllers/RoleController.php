@@ -11,7 +11,6 @@ use Modules\RoleAndPermission\Handlers\AssignPermissionsToRoleHandler;
 use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
-use Modules\RoleAndPermission\Presenters\RoleAndPermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
@@ -40,7 +39,7 @@ class RoleController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['role' => RolePresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::item(['roles' => RolePresenter::collection($list['data']), 'pagination' => $list['pagination']]);
     }
 
     public function show(GetRoleRequest $request): JsonResponse
@@ -49,7 +48,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($item);
 
-        return Json::buildItems('role', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(CreateRoleRequest $request): JsonResponse
@@ -58,7 +57,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($createdItem);
 
-        return Json::buildItems('role', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateRoleRequest $request): JsonResponse
@@ -70,7 +69,7 @@ class RoleController extends Controller
 
         $presenter = new RolePresenter($item);
 
-        return Json::buildItems('role', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function assignPermissionToRole(AssignPermissionToRoleRequest $request): JsonResponse
@@ -78,14 +77,14 @@ class RoleController extends Controller
         $command = $request->createAssignPermissionToRoleCommand();
         $this->assignPermissionsToRoleHandler->handle($command);
 
-        return Json::buildItems("msg","permissions added successfully ");
+        return Json::item("msg", "permissions added successfully");
     }
 
     public function getPermissions(GetPermissionRequest $request)
     {
         $role = $this->roleService->get(Uuid::fromString($request->route('id')));
         $permissionRepresenter = PermissionPresenter::collection($role->permissions);
-        return Json::buildItems("permissions", $permissionRepresenter);
+        return Json::item("permissions", $permissionRepresenter);
     }
 
 

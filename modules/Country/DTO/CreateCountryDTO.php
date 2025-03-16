@@ -10,6 +10,8 @@ class CreateCountryDTO
 {
     public function __construct(
         public string $name,
+        private UuidInterface $smsDriverId,
+        private string $status
     ) {
     }
 
@@ -17,6 +19,8 @@ class CreateCountryDTO
     {
         return [
             'name' => $this->name,
+            'status' => $this->status,
+            'sms_driver_id' => $this->smsDriverId
         ];
     }
 }

@@ -8,19 +8,22 @@ class ResendOtpCommand
 {
     public function __construct(
 
-        private string $email,
+        private string $identifier,
+        private string $token
     ) {
     }
 
 
-
-
-
-
-    public function getEmail(): ?string
+    public function getIdentifier(): ?string
 
     {
-        return $this->email;
+        return $this->identifier;
+    }
+
+    public function getToken(): ?string
+
+    {
+        return $this->token;
     }
 
 

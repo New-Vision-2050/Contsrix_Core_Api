@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'mora_sms' => [
+        "api_key" => env("SMS_MORA_KEY",""),
+        "username" => env("SMS_MORA_USER",""),
+        "sender" => env("SMS_MORA_SENDER",""),
+        "base_url"=>env("SMS_MORA_BASE_URL","https://mora-sa.com/api/v1/sendsms")
+    ],
 
 ];

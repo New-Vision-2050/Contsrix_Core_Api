@@ -53,28 +53,26 @@ class CompanyUserRepository extends BaseRepository
 
     }
 
-    public function getActiveInactiveCompanyUserCount(Carbon $date = null, $status = CompanyUserStatus::ACTIVE)
+    public function getActiveInactiveCompanyUserCount(Carbon $date = null, $status = CompanyUserStatus::ACTIVE->value)
     {
         return $this->model->when($date != null, function ($query) use ($date) {
             $query->whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month);
-        })->when($status == CompanyUserStatus::ACTIVE, function ($q) { //one active mean user active
+        })->when($status == CompanyUserStatus::ACTIVE->value, function ($q) { //one active mean user active
             $q->whereHas("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE);
+                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE->value);
             });
-        })->when($status == CompanyUserStatus::INACTIVE, function ($q) { //use does not have any active and inactive
+        })->when($status == CompanyUserStatus::INACTIVE->value, function ($q) { //use does not have any active and inactive
             $q->WhereDoesntHave("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE)->orWhere("company_users_companies.status", CompanyUserStatus::PENDING);
+                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE->value)->orWhere("company_users_companies.status", CompanyUserStatus::PENDING->value);
             });
-        })->when($status == CompanyUserStatus::PENDING, function ($q) {//user would have at least one pending and does not have any active rolr
+        })->when($status == CompanyUserStatus::PENDING->value, function ($q) {//user would have at least one pending and does not have any active rolr
             $q->WhereDoesntHave("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE);
+                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE->value);
             })->whereHas("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::PENDING);
+                $query->where("company_users_companies.status", CompanyUserStatus::PENDING->value);
             });
         })->count();
-
-
     }
 
 
@@ -83,10 +81,21 @@ class CompanyUserRepository extends BaseRepository
         UuidInterface $companyId,
         int           $role): void
     {
-        CompanyUserCompany::where('company_user_id', $companyUserId)
-            ->where('company_id', $companyId)
-            ->where('role', $role)
-            ->delete();
+        try {
+            DB::beginTransaction();
+            CompanyUserCompany::where('company_user_id', $companyUserId)
+                ->where('company_id', $companyId)
+                ->where('role', $role)
+                ->delete();
+            if (CompanyUserCompany::where('company_user_id', $companyUserId)->count() == 0) {
+                $this->delete($companyUserId);
+            }
+            DB::commit();
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new \Exception(__("validation.delete-not-successful"), 500);
+        }
+
     }
 
     public function getCompanyUserList(?int $page, ?int $perPage = 10): Collection

@@ -13,7 +13,6 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Ramsey\Uuid\Uuid;
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {
