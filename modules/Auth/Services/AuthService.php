@@ -122,7 +122,7 @@ class AuthService
             $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $resendOtpCommand->getToken()]);
 
         } catch (\Exception $e) {
-            throw new \ErrorException("invalid token", 404);
+            throw new \ErrorException(__("validation.invalid-token"), 404);
         }
 
         $loginWay = $this->getDefaultLoginWay($resendOtpCommand->getIdentifier());
@@ -243,7 +243,7 @@ class AuthService
             $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $loginStepDTO->getToken()]);
 
         } catch (\Exception $e) {
-            throw new \ErrorException("invalid token", 404);
+            throw new \ErrorException(__("validation.invalid-token"), 404);
         }
         /**
          * @var $loginWay LoginWay
@@ -309,7 +309,7 @@ class AuthService
             $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $alternativeDTO->getToken()]);
 
         } catch (\Exception $e) {
-            throw new \ErrorException("invalid token", 404);
+            throw new \ErrorException(__("validation.invalid-token"), 404);
         }
         $this->updateLoginStep($alternativeDTO->getToken(), $alternativeDTO->getLoginOption());
         [$step, $nextStep] = $this->getLoginStepAndNextStepFromToken($alternativeDTO->getToken());

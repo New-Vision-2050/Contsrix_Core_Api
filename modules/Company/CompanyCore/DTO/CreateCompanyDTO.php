@@ -27,7 +27,7 @@ class CreateCompanyDTO
             'name' => ["ar"=>$this->name],
             'user_name' => $this->userName,
             'country_id' => $this->countryId,
-            'company_field_id' => implode(',',$this->companyFieldId),//TODO Fix this
+            'company_field_id' => $this->companyFieldId,//TODO Fix this
             'general_manager_id' => $this->generalManagerId
         ];
     }
