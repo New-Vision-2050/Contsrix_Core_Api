@@ -21,6 +21,8 @@ class CountryPresenter extends AbstractPresenter
         return [
             'id' => $this->country->id,
             'name' => app()->getLocale() == 'en'? $this->country->name : $this->country->name_ar ,
+            "status"=> $this->country->status,
+            "sms_driver" => $this->country->smsDriver?->name
 
         ];
     }

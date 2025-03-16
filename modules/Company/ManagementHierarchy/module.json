@@ -1,0 +1,14 @@
+{
+    "name": "ManagementHierarchy",
+    "alias": "managementhierarchy",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Company\\ManagementHierarchy\\Providers\\ManagementHierarchyServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Company"
+}

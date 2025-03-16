@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Country\Database\factories\CountryFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Setting\Models\Driver;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class Country extends Model
@@ -23,6 +25,8 @@ class Country extends Model
 
     public $incrementing = false;
 
+    public $with = ['smsDriver'];
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -30,12 +34,18 @@ class Country extends Model
         'shortname',
         'name_ar',
         'phonecode',
-        'status'
+        'status',
+        'sms_driver_id',
     ];
 
     protected $casts = [
         'id' => 'string',
     ];
+
+    public function smsDriver()
+    {
+        return $this->belongsTo(Driver::class, 'sms_driver_id');
+    }
 
     protected static function newFactory(): CountryFactory
     {

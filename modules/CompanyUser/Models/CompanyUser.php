@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\Country\Models\Country;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\Currency\Models\Currency;

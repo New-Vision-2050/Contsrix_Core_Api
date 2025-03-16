@@ -37,4 +37,12 @@ class UserCRUDService
             id: $id,
         );
     }
+    public function getUserByIdentifier($identifier): ?User
+    {
+        $user =  $this->repository->getUserByIdentifier($identifier);
+        if(!$user) {
+            throw new \Exception(__("validation.user-not-found"), 404);
+        }
+        return $user;
+    }
 }

@@ -21,13 +21,12 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $this->call(UserPermissionsTableSeeder::class);//add permissions for user module
 
-        if (App::environment('production') == false)
-        {
-          Role::firstOrCreate(["name"=>"super-admin"],["name"=>"super-admin"]);
-            Role::firstOrCreate(["name"=>"admin"],["name"=>"admin"]);
-
-
-
+        if (App::environment('production') == false) {
+            $superAdminRole = Role::firstOrCreate(["name" => "super-admin"], ["name" => "super-admin"]);
+            $adminRole = Role::firstOrCreate(["name" => "admin"], ["name" => "admin"]);
         }
+        $superAdminRole->givePermissionTo(Permission::all());
+        $adminRole->givePermissionTo(Permission::all());
+
     }
 }

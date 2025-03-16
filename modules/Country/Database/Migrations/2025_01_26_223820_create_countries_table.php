@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('shortname');
             $table->string('name_ar');
             $table->string('phonecode');
+            $table->uuid('sms_driver_id')->nullable();
             $table->string('status');
             $table->timestamps();
         });

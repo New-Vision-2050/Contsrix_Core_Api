@@ -16,8 +16,8 @@ class ResetPasswordRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'otp' => 'required',
-            'email' => 'required',
+            "token"=>"required",
+            'identifier' => 'required',
             "password"=> [
                 new PasswordValidation(),
             'confirmed']
@@ -27,9 +27,9 @@ class ResetPasswordRequest extends FormRequest
     public function createResetPasswordCommand()
     {
         return new ResetPasswordCommand(
-            otp: $this->get('otp'),
+            token: $this->get('token'),
             password: $this->get('password'),
-            email: $this->get('email'),
+            identifier: $this->get('identifier'),
         );
     }
 }

@@ -52,7 +52,7 @@ return [
             'controllers/controller' => 'Controllers/$STUDLY_NAME$Controller.php',
             'handler/delete' => 'Handlers/Delete$STUDLY_NAME$Handler.php',
             'handler/update' => 'Handlers/Update$STUDLY_NAME$Handler.php',
-            'presenter/presenter' => 'Presenters/$STUDLY_NAME$Presenter.php',
+            'presenter/presenter' => 'Presenters/$STUDLY_NAME$Presenters.php',
             'repository/repository' => 'Repositories/$STUDLY_NAME$Repository.php',
             'requests/create' => 'Requests/Create$STUDLY_NAME$Request.php',
             'requests/getOne' => 'Requests/Get$STUDLY_NAME$Request.php',

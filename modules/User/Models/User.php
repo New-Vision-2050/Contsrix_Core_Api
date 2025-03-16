@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Modules\Setting\Models\LoginWay;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -20,7 +21,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class User  extends Authenticatable implements JWTSubject , Auditable
+class User extends Authenticatable implements JWTSubject, Auditable
 {
     use HasFactory;
     use UuidTrait;
@@ -33,7 +34,7 @@ class User  extends Authenticatable implements JWTSubject , Auditable
     //use SoftDeletes;
 
 //    public array $translatable = [];
-protected $primaryKey="id";
+    protected $primaryKey = "id";
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -42,6 +43,9 @@ protected $primaryKey="id";
         'name',
         'email',
         'password',
+        'phone',
+        "phone_code",
+        "login_way_id",
     ];
 
     protected $casts = [
@@ -66,6 +70,11 @@ protected $primaryKey="id";
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
+    }
+
+    public function LoginWay()
+    {
+        return $this->belongsTo(LoginWay::class, 'login_way_id');
     }
 
     public function getJWTIdentifier()

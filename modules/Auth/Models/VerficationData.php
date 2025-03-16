@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Auth\Models;
+
+use App\Casts\UuidCast;
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Model;
+use BasePackage\Shared\Traits\BaseFilterable;
+// use BasePackage\Shared\Traits\HasTranslations;
+
+class VerficationData extends Model
+{
+    use UuidTrait;
+    use BaseFilterable;
+    // use HasTranslations;
+    // use SoftDeletes;
+
+    public array $translatable = [];
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'data',
+        'token',
+        'user_id',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'id' => UuidCast::class,
+        'user_id' => UuidCast::class,
+        "data"=>"array"
+    ];
+}
