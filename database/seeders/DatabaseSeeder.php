@@ -7,6 +7,7 @@ use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder
 use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
+use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -21,5 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SettingSeeder::class);
         $this->call(CountrySeederTableSeeder::class);
         $this->call(CompanyModulesSeederTableSeeder::class);
+        
+        $this->call(JobTitleModulesSeederTableSeeder::class);
     }
 }
