@@ -29,7 +29,7 @@ if [ "$APP_ENV" == "production" ]; then
      EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
      EMAIL_ENCRYPTION=tls
      EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
-elif [ "$APP_ENV" == "staging" ]; then
+elif [ "$APP_ENV" == "stage" ]; then
     EMAIL_HOST=vision-dashbord.com
     EMAIL_PORT=465
     EMAIL_HOST_USER=info@vision-dashbord.com
@@ -37,12 +37,18 @@ elif [ "$APP_ENV" == "staging" ]; then
     EMAIL_ENCRYPTION=tls
     EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 else
-    EMAIL_HOST="mailcatcher"
-    EMAIL_HOST_USER=""
-    EMAIL_HOST_PASSWORD=""
-    EMAIL_PORT=1025
-    EMAIL_ENCRYPTION=
-    EMAIL_FROM_ADDRESS=""
+#    EMAIL_HOST="mailcatcher"
+#    EMAIL_HOST_USER=""
+#    EMAIL_HOST_PASSWORD=""
+#    EMAIL_PORT=1025
+#    EMAIL_ENCRYPTION=
+#    EMAIL_FROM_ADDRESS=""
+      EMAIL_HOST=vision-dashbord.com
+      EMAIL_PORT=465
+      EMAIL_HOST_USER=info@vision-dashbord.com
+      EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+      EMAIL_ENCRYPTION=tls
+      EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 fi
 
 APP_NAME="Constrix"
