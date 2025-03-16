@@ -23,15 +23,26 @@ cd $DEPLOY_DIR
 
 
 if [ "$APP_ENV" == "production" ]; then
-    EMAIL_HOST="smtp.yourmailprovider.com"
-    EMAIL_HOST_USER="your-email@example.com"
-    EMAIL_HOST_PASSWORD="your-secure-password"
-    EMAIL_PORT=587
+     EMAIL_HOST=vision-dashbord.com
+     EMAIL_PORT=465
+     EMAIL_HOST_USER=info@vision-dashbord.com
+     EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+     EMAIL_ENCRYPTION=tls
+     EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+elif [ "$APP_ENV" == "staging" ]; then
+    EMAIL_HOST=vision-dashbord.com
+    EMAIL_PORT=465
+    EMAIL_HOST_USER=info@vision-dashbord.com
+    EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+    EMAIL_ENCRYPTION=tls
+    EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 else
     EMAIL_HOST="mailcatcher"
     EMAIL_HOST_USER=""
     EMAIL_HOST_PASSWORD=""
     EMAIL_PORT=1025
+    EMAIL_ENCRYPTION=
+    EMAIL_FROM_ADDRESS=""
 fi
 
 APP_NAME="Constrix"
@@ -61,7 +72,8 @@ MAIL_HOST=$EMAIL_HOST
 MAIL_PORT=$EMAIL_PORT
 MAIL_USERNAME=$EMAIL_HOST_USER
 MAIL_PASSWORD=$EMAIL_HOST_PASSWORD
-MAIL_FROM_ADDRESS=no-reply@constrix-nv.com
+MAIL_ENCRYPTION=$EMAIL_ENCRYPTION
+MAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
 MAIL_FROM_NAME=$APP_NAME
 EOF
 
