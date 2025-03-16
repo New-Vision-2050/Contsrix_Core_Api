@@ -35,7 +35,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::group(["prefix"=>"questions"], function () {
 
         Route::get('/', [\Modules\Setting\Controllers\QuestionSettingController::class, 'index']);
-        Route::post('/get-question-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'getUserQuestions']);
         Route::post('/answer-questions-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'answerQuestionsForUser']);
 
     });
@@ -44,4 +43,5 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 
 
+Route::post('questions/get-question-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'getUserQuestions']);
 

@@ -29,6 +29,5 @@ class CompanyRegistrationTypeSeederTableSeeder extends Seeder
                 ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
             );
         }
-
     }
 }

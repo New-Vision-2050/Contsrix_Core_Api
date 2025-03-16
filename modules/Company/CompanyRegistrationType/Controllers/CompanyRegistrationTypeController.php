@@ -29,9 +29,11 @@ class CompanyRegistrationTypeController extends Controller
 
     public function index(GetCompanyRegistrationTypeListRequest $request): JsonResponse
     {
-        $list = $this->companyRegistrationTypeService->all();
-
-        return Json::buildItems(null,['company_registration_types' => CompanyRegistrationTypePresenter::collection($list)]);
+        $list = $this->companyRegistrationTypeService->list(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+        return Json::items(CompanyRegistrationTypePresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetCompanyRegistrationTypeRequest $request): JsonResponse
@@ -40,7 +42,7 @@ class CompanyRegistrationTypeController extends Controller
 
         $presenter = new CompanyRegistrationTypePresenter($item);
 
-        return Json::buildItems('company_registration_type', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(CreateCompanyRegistrationTypeRequest $request): JsonResponse
@@ -49,7 +51,7 @@ class CompanyRegistrationTypeController extends Controller
 
         $presenter = new CompanyRegistrationTypePresenter($createdItem);
 
-        return Json::buildItems('company_registration_type', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateCompanyRegistrationTypeRequest $request): JsonResponse
@@ -61,7 +63,7 @@ class CompanyRegistrationTypeController extends Controller
 
         $presenter = new CompanyRegistrationTypePresenter($item);
 
-        return Json::buildItems('company_registration_type', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteCompanyRegistrationTypeRequest $request): JsonResponse

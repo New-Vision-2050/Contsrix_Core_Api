@@ -1,0 +1,14 @@
+{
+    "name": "JobTitle",
+    "alias": "jobtitle",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\JobTitle\\Providers\\JobTitleServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

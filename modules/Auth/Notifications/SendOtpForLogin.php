@@ -51,7 +51,7 @@ class SendOtpForLogin extends Notification
     {
         $this->setDriverSMS($notifiable);
 
-        return $this->types;
+        return ["mail"]; //TODO : $this->types
     }
 
     /**

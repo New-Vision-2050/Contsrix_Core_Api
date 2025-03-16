@@ -2,7 +2,6 @@
 
 namespace Modules\Auth\DTO;
 
-use Ramsey\Uuid\UuidInterface;
 
 class LoginStepAlternativeDTO
 {

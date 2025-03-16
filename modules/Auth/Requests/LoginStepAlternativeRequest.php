@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Auth\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Auth\Commands\LoginStepAlternativeCommand;
 use Modules\Auth\DTO\LoginDTO;
 use Modules\Auth\DTO\LoginStepAlternativeDTO;
 use Modules\Auth\DTO\LoginStepDTO;

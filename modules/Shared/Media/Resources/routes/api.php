@@ -1,8 +1,8 @@
 <?php
 
-//use Illuminate\Support\Facades\Route;
-//use Modules\Shared\Media\Controllers\MediaController;
-//
+use Illuminate\Support\Facades\Route;
+use Modules\Shared\Media\Controllers\MediaController;
+
 //Route::group(['middleware' => ['auth:api']], function () {
 //    Route::get('/', [MediaController::class, 'index']);
 //    Route::post('/', [MediaController::class, 'store']);

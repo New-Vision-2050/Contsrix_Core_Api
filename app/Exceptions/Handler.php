@@ -44,7 +44,7 @@ class Handler
                 'success' => false,
                 'message' => 'Something went wrong, please try again later.',
                 'error' => env('APP_DEBUG') ? $e->getMessage() : null, // Hide error details in production
-                "trace"=>$e->getTrace()
+                "trace"=>env('APP_DEBUG') ? $e->getTrace() : null, // Hide error details in production <==>
             ], 500),
         };
     }
