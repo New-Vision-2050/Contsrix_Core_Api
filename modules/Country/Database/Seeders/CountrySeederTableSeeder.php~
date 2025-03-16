@@ -4,7 +4,6 @@ namespace Modules\Country\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Country\Models\Country;
 use Modules\Setting\Models\Driver;
 
 class CountrySeederTableSeeder extends Seeder
@@ -20,9 +19,9 @@ class CountrySeederTableSeeder extends Seeder
 
         \DB::table('countries')->delete();
 
-        \DB::table('countries')->insert(array(
+        \DB::table('countries')->insert(array (
             0 =>
-                array(
+                array (
                     'id' => 1,
                     'name' => 'Afghanistan',
                     'iso3' => 'AFG',
@@ -52,7 +51,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q889',
                 ),
             1 =>
-                array(
+                array (
                     'id' => 2,
                     'name' => 'Aland Islands',
                     'iso3' => 'ALA',
@@ -82,7 +81,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q5689',
                 ),
             2 =>
-                array(
+                array (
                     'id' => 3,
                     'name' => 'Albania',
                     'iso3' => 'ALB',
@@ -112,7 +111,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q222',
                 ),
             3 =>
-                array(
+                array (
                     'id' => 4,
                     'name' => 'Algeria',
                     'iso3' => 'DZA',
@@ -142,7 +141,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q262',
                 ),
             4 =>
-                array(
+                array (
                     'id' => 5,
                     'name' => 'American Samoa',
                     'iso3' => 'ASM',
@@ -172,7 +171,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q16641',
                 ),
             5 =>
-                array(
+                array (
                     'id' => 6,
                     'name' => 'Andorra',
                     'iso3' => 'AND',
@@ -202,7 +201,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q228',
                 ),
             6 =>
-                array(
+                array (
                     'id' => 7,
                     'name' => 'Angola',
                     'iso3' => 'AGO',
@@ -232,7 +231,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q916',
                 ),
             7 =>
-                array(
+                array (
                     'id' => 8,
                     'name' => 'Anguilla',
                     'iso3' => 'AIA',
@@ -262,7 +261,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q25228',
                 ),
             8 =>
-                array(
+                array (
                     'id' => 9,
                     'name' => 'Antarctica',
                     'iso3' => 'ATA',
@@ -292,7 +291,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q51',
                 ),
             9 =>
-                array(
+                array (
                     'id' => 10,
                     'name' => 'Antigua and Barbuda',
                     'iso3' => 'ATG',
@@ -322,7 +321,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q781',
                 ),
             10 =>
-                array(
+                array (
                     'id' => 11,
                     'name' => 'Argentina',
                     'iso3' => 'ARG',
@@ -352,7 +351,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q414',
                 ),
             11 =>
-                array(
+                array (
                     'id' => 12,
                     'name' => 'Armenia',
                     'iso3' => 'ARM',
@@ -382,7 +381,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q399',
                 ),
             12 =>
-                array(
+                array (
                     'id' => 13,
                     'name' => 'Aruba',
                     'iso3' => 'ABW',
@@ -412,7 +411,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q21203',
                 ),
             13 =>
-                array(
+                array (
                     'id' => 14,
                     'name' => 'Australia',
                     'iso3' => 'AUS',
@@ -442,7 +441,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q408',
                 ),
             14 =>
-                array(
+                array (
                     'id' => 15,
                     'name' => 'Austria',
                     'iso3' => 'AUT',
@@ -472,7 +471,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q40',
                 ),
             15 =>
-                array(
+                array (
                     'id' => 16,
                     'name' => 'Azerbaijan',
                     'iso3' => 'AZE',
@@ -502,7 +501,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q227',
                 ),
             16 =>
-                array(
+                array (
                     'id' => 17,
                     'name' => 'The Bahamas',
                     'iso3' => 'BHS',
@@ -532,7 +531,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q778',
                 ),
             17 =>
-                array(
+                array (
                     'id' => 18,
                     'name' => 'Bahrain',
                     'iso3' => 'BHR',
@@ -562,7 +561,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q398',
                 ),
             18 =>
-                array(
+                array (
                     'id' => 19,
                     'name' => 'Bangladesh',
                     'iso3' => 'BGD',
@@ -592,7 +591,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q902',
                 ),
             19 =>
-                array(
+                array (
                     'id' => 20,
                     'name' => 'Barbados',
                     'iso3' => 'BRB',
@@ -622,7 +621,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q244',
                 ),
             20 =>
-                array(
+                array (
                     'id' => 21,
                     'name' => 'Belarus',
                     'iso3' => 'BLR',
@@ -652,7 +651,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q184',
                 ),
             21 =>
-                array(
+                array (
                     'id' => 22,
                     'name' => 'Belgium',
                     'iso3' => 'BEL',
@@ -682,7 +681,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q31',
                 ),
             22 =>
-                array(
+                array (
                     'id' => 23,
                     'name' => 'Belize',
                     'iso3' => 'BLZ',
@@ -712,7 +711,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q242',
                 ),
             23 =>
-                array(
+                array (
                     'id' => 24,
                     'name' => 'Benin',
                     'iso3' => 'BEN',
@@ -742,7 +741,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q962',
                 ),
             24 =>
-                array(
+                array (
                     'id' => 25,
                     'name' => 'Bermuda',
                     'iso3' => 'BMU',
@@ -772,7 +771,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q23635',
                 ),
             25 =>
-                array(
+                array (
                     'id' => 26,
                     'name' => 'Bhutan',
                     'iso3' => 'BTN',
@@ -802,7 +801,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q917',
                 ),
             26 =>
-                array(
+                array (
                     'id' => 27,
                     'name' => 'Bolivia',
                     'iso3' => 'BOL',
@@ -832,7 +831,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q750',
                 ),
             27 =>
-                array(
+                array (
                     'id' => 28,
                     'name' => 'Bosnia and Herzegovina',
                     'iso3' => 'BIH',
@@ -862,7 +861,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q225',
                 ),
             28 =>
-                array(
+                array (
                     'id' => 29,
                     'name' => 'Botswana',
                     'iso3' => 'BWA',
@@ -892,7 +891,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q963',
                 ),
             29 =>
-                array(
+                array (
                     'id' => 30,
                     'name' => 'Bouvet Island',
                     'iso3' => 'BVT',
@@ -922,7 +921,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q23408',
                 ),
             30 =>
-                array(
+                array (
                     'id' => 31,
                     'name' => 'Brazil',
                     'iso3' => 'BRA',
@@ -952,7 +951,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q155',
                 ),
             31 =>
-                array(
+                array (
                     'id' => 32,
                     'name' => 'British Indian Ocean Territory',
                     'iso3' => 'IOT',
@@ -982,7 +981,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q43448',
                 ),
             32 =>
-                array(
+                array (
                     'id' => 33,
                     'name' => 'Brunei',
                     'iso3' => 'BRN',
@@ -1012,7 +1011,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q921',
                 ),
             33 =>
-                array(
+                array (
                     'id' => 34,
                     'name' => 'Bulgaria',
                     'iso3' => 'BGR',
@@ -1042,7 +1041,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q219',
                 ),
             34 =>
-                array(
+                array (
                     'id' => 35,
                     'name' => 'Burkina Faso',
                     'iso3' => 'BFA',
@@ -1072,7 +1071,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q965',
                 ),
             35 =>
-                array(
+                array (
                     'id' => 36,
                     'name' => 'Burundi',
                     'iso3' => 'BDI',
@@ -1102,7 +1101,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q967',
                 ),
             36 =>
-                array(
+                array (
                     'id' => 37,
                     'name' => 'Cambodia',
                     'iso3' => 'KHM',
@@ -1132,7 +1131,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q424',
                 ),
             37 =>
-                array(
+                array (
                     'id' => 38,
                     'name' => 'Cameroon',
                     'iso3' => 'CMR',
@@ -1162,7 +1161,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1009',
                 ),
             38 =>
-                array(
+                array (
                     'id' => 39,
                     'name' => 'Canada',
                     'iso3' => 'CAN',
@@ -1192,7 +1191,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q16',
                 ),
             39 =>
-                array(
+                array (
                     'id' => 40,
                     'name' => 'Cape Verde',
                     'iso3' => 'CPV',
@@ -1222,7 +1221,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1011',
                 ),
             40 =>
-                array(
+                array (
                     'id' => 41,
                     'name' => 'Cayman Islands',
                     'iso3' => 'CYM',
@@ -1252,7 +1251,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q5785',
                 ),
             41 =>
-                array(
+                array (
                     'id' => 42,
                     'name' => 'Central African Republic',
                     'iso3' => 'CAF',
@@ -1282,7 +1281,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q929',
                 ),
             42 =>
-                array(
+                array (
                     'id' => 43,
                     'name' => 'Chad',
                     'iso3' => 'TCD',
@@ -1312,7 +1311,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q657',
                 ),
             43 =>
-                array(
+                array (
                     'id' => 44,
                     'name' => 'Chile',
                     'iso3' => 'CHL',
@@ -1342,7 +1341,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q298',
                 ),
             44 =>
-                array(
+                array (
                     'id' => 45,
                     'name' => 'China',
                     'iso3' => 'CHN',
@@ -1372,7 +1371,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q148',
                 ),
             45 =>
-                array(
+                array (
                     'id' => 46,
                     'name' => 'Christmas Island',
                     'iso3' => 'CXR',
@@ -1402,7 +1401,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q31063',
                 ),
             46 =>
-                array(
+                array (
                     'id' => 47,
                     'name' => 'Cocos (Keeling) Islands',
                     'iso3' => 'CCK',
@@ -1432,7 +1431,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q36004',
                 ),
             47 =>
-                array(
+                array (
                     'id' => 48,
                     'name' => 'Colombia',
                     'iso3' => 'COL',
@@ -1462,7 +1461,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q739',
                 ),
             48 =>
-                array(
+                array (
                     'id' => 49,
                     'name' => 'Comoros',
                     'iso3' => 'COM',
@@ -1492,7 +1491,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q970',
                 ),
             49 =>
-                array(
+                array (
                     'id' => 50,
                     'name' => 'Congo',
                     'iso3' => 'COG',
@@ -1522,7 +1521,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q971',
                 ),
             50 =>
-                array(
+                array (
                     'id' => 51,
                     'name' => 'Democratic Republic of the Congo',
                     'iso3' => 'COD',
@@ -1552,7 +1551,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q974',
                 ),
             51 =>
-                array(
+                array (
                     'id' => 52,
                     'name' => 'Cook Islands',
                     'iso3' => 'COK',
@@ -1582,7 +1581,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q26988',
                 ),
             52 =>
-                array(
+                array (
                     'id' => 53,
                     'name' => 'Costa Rica',
                     'iso3' => 'CRI',
@@ -1612,7 +1611,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q800',
                 ),
             53 =>
-                array(
+                array (
                     'id' => 54,
                     'name' => 'Cote D\'Ivoire (Ivory Coast)',
                     'iso3' => 'CIV',
@@ -1642,7 +1641,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1008',
                 ),
             54 =>
-                array(
+                array (
                     'id' => 55,
                     'name' => 'Croatia',
                     'iso3' => 'HRV',
@@ -1672,7 +1671,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q224',
                 ),
             55 =>
-                array(
+                array (
                     'id' => 56,
                     'name' => 'Cuba',
                     'iso3' => 'CUB',
@@ -1702,7 +1701,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q241',
                 ),
             56 =>
-                array(
+                array (
                     'id' => 57,
                     'name' => 'Cyprus',
                     'iso3' => 'CYP',
@@ -1732,7 +1731,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q229',
                 ),
             57 =>
-                array(
+                array (
                     'id' => 58,
                     'name' => 'Czech Republic',
                     'iso3' => 'CZE',
@@ -1762,7 +1761,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q213',
                 ),
             58 =>
-                array(
+                array (
                     'id' => 59,
                     'name' => 'Denmark',
                     'iso3' => 'DNK',
@@ -1792,7 +1791,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q35',
                 ),
             59 =>
-                array(
+                array (
                     'id' => 60,
                     'name' => 'Djibouti',
                     'iso3' => 'DJI',
@@ -1822,7 +1821,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q977',
                 ),
             60 =>
-                array(
+                array (
                     'id' => 61,
                     'name' => 'Dominica',
                     'iso3' => 'DMA',
@@ -1852,7 +1851,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q784',
                 ),
             61 =>
-                array(
+                array (
                     'id' => 62,
                     'name' => 'Dominican Republic',
                     'iso3' => 'DOM',
@@ -1882,7 +1881,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q786',
                 ),
             62 =>
-                array(
+                array (
                     'id' => 63,
                     'name' => 'Timor-Leste',
                     'iso3' => 'TLS',
@@ -1912,7 +1911,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q574',
                 ),
             63 =>
-                array(
+                array (
                     'id' => 64,
                     'name' => 'Ecuador',
                     'iso3' => 'ECU',
@@ -1942,7 +1941,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q736',
                 ),
             64 =>
-                array(
+                array (
                     'id' => 65,
                     'name' => 'Egypt',
                     'iso3' => 'EGY',
@@ -1972,7 +1971,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q79',
                 ),
             65 =>
-                array(
+                array (
                     'id' => 66,
                     'name' => 'El Salvador',
                     'iso3' => 'SLV',
@@ -2002,7 +2001,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q792',
                 ),
             66 =>
-                array(
+                array (
                     'id' => 67,
                     'name' => 'Equatorial Guinea',
                     'iso3' => 'GNQ',
@@ -2032,7 +2031,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q983',
                 ),
             67 =>
-                array(
+                array (
                     'id' => 68,
                     'name' => 'Eritrea',
                     'iso3' => 'ERI',
@@ -2062,7 +2061,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q986',
                 ),
             68 =>
-                array(
+                array (
                     'id' => 69,
                     'name' => 'Estonia',
                     'iso3' => 'EST',
@@ -2092,7 +2091,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q191',
                 ),
             69 =>
-                array(
+                array (
                     'id' => 70,
                     'name' => 'Ethiopia',
                     'iso3' => 'ETH',
@@ -2122,7 +2121,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q115',
                 ),
             70 =>
-                array(
+                array (
                     'id' => 71,
                     'name' => 'Falkland Islands',
                     'iso3' => 'FLK',
@@ -2152,7 +2151,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q9648',
                 ),
             71 =>
-                array(
+                array (
                     'id' => 72,
                     'name' => 'Faroe Islands',
                     'iso3' => 'FRO',
@@ -2182,7 +2181,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q4628',
                 ),
             72 =>
-                array(
+                array (
                     'id' => 73,
                     'name' => 'Fiji Islands',
                     'iso3' => 'FJI',
@@ -2212,7 +2211,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q712',
                 ),
             73 =>
-                array(
+                array (
                     'id' => 74,
                     'name' => 'Finland',
                     'iso3' => 'FIN',
@@ -2242,7 +2241,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q33',
                 ),
             74 =>
-                array(
+                array (
                     'id' => 75,
                     'name' => 'France',
                     'iso3' => 'FRA',
@@ -2272,7 +2271,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q142',
                 ),
             75 =>
-                array(
+                array (
                     'id' => 76,
                     'name' => 'French Guiana',
                     'iso3' => 'GUF',
@@ -2302,7 +2301,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q3769',
                 ),
             76 =>
-                array(
+                array (
                     'id' => 77,
                     'name' => 'French Polynesia',
                     'iso3' => 'PYF',
@@ -2332,7 +2331,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q30971',
                 ),
             77 =>
-                array(
+                array (
                     'id' => 78,
                     'name' => 'French Southern Territories',
                     'iso3' => 'ATF',
@@ -2362,7 +2361,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q129003',
                 ),
             78 =>
-                array(
+                array (
                     'id' => 79,
                     'name' => 'Gabon',
                     'iso3' => 'GAB',
@@ -2392,7 +2391,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1000',
                 ),
             79 =>
-                array(
+                array (
                     'id' => 80,
                     'name' => 'The Gambia ',
                     'iso3' => 'GMB',
@@ -2422,7 +2421,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1005',
                 ),
             80 =>
-                array(
+                array (
                     'id' => 81,
                     'name' => 'Georgia',
                     'iso3' => 'GEO',
@@ -2452,7 +2451,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q230',
                 ),
             81 =>
-                array(
+                array (
                     'id' => 82,
                     'name' => 'Germany',
                     'iso3' => 'DEU',
@@ -2482,7 +2481,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q183',
                 ),
             82 =>
-                array(
+                array (
                     'id' => 83,
                     'name' => 'Ghana',
                     'iso3' => 'GHA',
@@ -2512,7 +2511,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q117',
                 ),
             83 =>
-                array(
+                array (
                     'id' => 84,
                     'name' => 'Gibraltar',
                     'iso3' => 'GIB',
@@ -2542,7 +2541,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1410',
                 ),
             84 =>
-                array(
+                array (
                     'id' => 85,
                     'name' => 'Greece',
                     'iso3' => 'GRC',
@@ -2572,7 +2571,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q41',
                 ),
             85 =>
-                array(
+                array (
                     'id' => 86,
                     'name' => 'Greenland',
                     'iso3' => 'GRL',
@@ -2602,7 +2601,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q223',
                 ),
             86 =>
-                array(
+                array (
                     'id' => 87,
                     'name' => 'Grenada',
                     'iso3' => 'GRD',
@@ -2632,7 +2631,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q769',
                 ),
             87 =>
-                array(
+                array (
                     'id' => 88,
                     'name' => 'Guadeloupe',
                     'iso3' => 'GLP',
@@ -2662,7 +2661,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q17012',
                 ),
             88 =>
-                array(
+                array (
                     'id' => 89,
                     'name' => 'Guam',
                     'iso3' => 'GUM',
@@ -2692,7 +2691,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q16635',
                 ),
             89 =>
-                array(
+                array (
                     'id' => 90,
                     'name' => 'Guatemala',
                     'iso3' => 'GTM',
@@ -2722,7 +2721,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q774',
                 ),
             90 =>
-                array(
+                array (
                     'id' => 91,
                     'name' => 'Guernsey and Alderney',
                     'iso3' => 'GGY',
@@ -2752,7 +2751,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => NULL,
                 ),
             91 =>
-                array(
+                array (
                     'id' => 92,
                     'name' => 'Guinea',
                     'iso3' => 'GIN',
@@ -2782,7 +2781,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1006',
                 ),
             92 =>
-                array(
+                array (
                     'id' => 93,
                     'name' => 'Guinea-Bissau',
                     'iso3' => 'GNB',
@@ -2812,7 +2811,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1007',
                 ),
             93 =>
-                array(
+                array (
                     'id' => 94,
                     'name' => 'Guyana',
                     'iso3' => 'GUY',
@@ -2842,7 +2841,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q734',
                 ),
             94 =>
-                array(
+                array (
                     'id' => 95,
                     'name' => 'Haiti',
                     'iso3' => 'HTI',
@@ -2872,7 +2871,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q790',
                 ),
             95 =>
-                array(
+                array (
                     'id' => 96,
                     'name' => 'Heard Island and McDonald Islands',
                     'iso3' => 'HMD',
@@ -2902,7 +2901,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q131198',
                 ),
             96 =>
-                array(
+                array (
                     'id' => 97,
                     'name' => 'Honduras',
                     'iso3' => 'HND',
@@ -2932,7 +2931,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q783',
                 ),
             97 =>
-                array(
+                array (
                     'id' => 98,
                     'name' => 'Hong Kong S.A.R.',
                     'iso3' => 'HKG',
@@ -2962,7 +2961,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q8646',
                 ),
             98 =>
-                array(
+                array (
                     'id' => 99,
                     'name' => 'Hungary',
                     'iso3' => 'HUN',
@@ -2992,7 +2991,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q28',
                 ),
             99 =>
-                array(
+                array (
                     'id' => 100,
                     'name' => 'Iceland',
                     'iso3' => 'ISL',
@@ -3022,7 +3021,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q189',
                 ),
             100 =>
-                array(
+                array (
                     'id' => 101,
                     'name' => 'India',
                     'iso3' => 'IND',
@@ -3052,7 +3051,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q668',
                 ),
             101 =>
-                array(
+                array (
                     'id' => 102,
                     'name' => 'Indonesia',
                     'iso3' => 'IDN',
@@ -3082,7 +3081,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q252',
                 ),
             102 =>
-                array(
+                array (
                     'id' => 103,
                     'name' => 'Iran',
                     'iso3' => 'IRN',
@@ -3112,7 +3111,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q794',
                 ),
             103 =>
-                array(
+                array (
                     'id' => 104,
                     'name' => 'Iraq',
                     'iso3' => 'IRQ',
@@ -3142,7 +3141,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q796',
                 ),
             104 =>
-                array(
+                array (
                     'id' => 105,
                     'name' => 'Ireland',
                     'iso3' => 'IRL',
@@ -3172,7 +3171,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q27',
                 ),
             105 =>
-                array(
+                array (
                     'id' => 106,
                     'name' => 'Israel',
                     'iso3' => 'ISR',
@@ -3202,7 +3201,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q801',
                 ),
             106 =>
-                array(
+                array (
                     'id' => 107,
                     'name' => 'Italy',
                     'iso3' => 'ITA',
@@ -3232,7 +3231,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q38',
                 ),
             107 =>
-                array(
+                array (
                     'id' => 108,
                     'name' => 'Jamaica',
                     'iso3' => 'JAM',
@@ -3262,7 +3261,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q766',
                 ),
             108 =>
-                array(
+                array (
                     'id' => 109,
                     'name' => 'Japan',
                     'iso3' => 'JPN',
@@ -3292,7 +3291,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q17',
                 ),
             109 =>
-                array(
+                array (
                     'id' => 110,
                     'name' => 'Jersey',
                     'iso3' => 'JEY',
@@ -3322,7 +3321,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q785',
                 ),
             110 =>
-                array(
+                array (
                     'id' => 111,
                     'name' => 'Jordan',
                     'iso3' => 'JOR',
@@ -3352,7 +3351,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q810',
                 ),
             111 =>
-                array(
+                array (
                     'id' => 112,
                     'name' => 'Kazakhstan',
                     'iso3' => 'KAZ',
@@ -3382,7 +3381,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q232',
                 ),
             112 =>
-                array(
+                array (
                     'id' => 113,
                     'name' => 'Kenya',
                     'iso3' => 'KEN',
@@ -3412,7 +3411,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q114',
                 ),
             113 =>
-                array(
+                array (
                     'id' => 114,
                     'name' => 'Kiribati',
                     'iso3' => 'KIR',
@@ -3442,7 +3441,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q710',
                 ),
             114 =>
-                array(
+                array (
                     'id' => 115,
                     'name' => 'North Korea',
                     'iso3' => 'PRK',
@@ -3472,7 +3471,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q423',
                 ),
             115 =>
-                array(
+                array (
                     'id' => 116,
                     'name' => 'South Korea',
                     'iso3' => 'KOR',
@@ -3502,7 +3501,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q884',
                 ),
             116 =>
-                array(
+                array (
                     'id' => 117,
                     'name' => 'Kuwait',
                     'iso3' => 'KWT',
@@ -3532,7 +3531,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q817',
                 ),
             117 =>
-                array(
+                array (
                     'id' => 118,
                     'name' => 'Kyrgyzstan',
                     'iso3' => 'KGZ',
@@ -3562,7 +3561,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q813',
                 ),
             118 =>
-                array(
+                array (
                     'id' => 119,
                     'name' => 'Laos',
                     'iso3' => 'LAO',
@@ -3592,7 +3591,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q819',
                 ),
             119 =>
-                array(
+                array (
                     'id' => 120,
                     'name' => 'Latvia',
                     'iso3' => 'LVA',
@@ -3622,7 +3621,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q211',
                 ),
             120 =>
-                array(
+                array (
                     'id' => 121,
                     'name' => 'Lebanon',
                     'iso3' => 'LBN',
@@ -3652,7 +3651,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q822',
                 ),
             121 =>
-                array(
+                array (
                     'id' => 122,
                     'name' => 'Lesotho',
                     'iso3' => 'LSO',
@@ -3682,7 +3681,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1013',
                 ),
             122 =>
-                array(
+                array (
                     'id' => 123,
                     'name' => 'Liberia',
                     'iso3' => 'LBR',
@@ -3712,7 +3711,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1014',
                 ),
             123 =>
-                array(
+                array (
                     'id' => 124,
                     'name' => 'Libya',
                     'iso3' => 'LBY',
@@ -3742,7 +3741,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1016',
                 ),
             124 =>
-                array(
+                array (
                     'id' => 125,
                     'name' => 'Liechtenstein',
                     'iso3' => 'LIE',
@@ -3772,7 +3771,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q347',
                 ),
             125 =>
-                array(
+                array (
                     'id' => 126,
                     'name' => 'Lithuania',
                     'iso3' => 'LTU',
@@ -3802,7 +3801,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q37',
                 ),
             126 =>
-                array(
+                array (
                     'id' => 127,
                     'name' => 'Luxembourg',
                     'iso3' => 'LUX',
@@ -3832,7 +3831,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q32',
                 ),
             127 =>
-                array(
+                array (
                     'id' => 128,
                     'name' => 'Macau S.A.R.',
                     'iso3' => 'MAC',
@@ -3862,7 +3861,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q14773',
                 ),
             128 =>
-                array(
+                array (
                     'id' => 129,
                     'name' => 'North Macedonia',
                     'iso3' => 'MKD',
@@ -3892,7 +3891,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q221',
                 ),
             129 =>
-                array(
+                array (
                     'id' => 130,
                     'name' => 'Madagascar',
                     'iso3' => 'MDG',
@@ -3922,7 +3921,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1019',
                 ),
             130 =>
-                array(
+                array (
                     'id' => 131,
                     'name' => 'Malawi',
                     'iso3' => 'MWI',
@@ -3952,7 +3951,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1020',
                 ),
             131 =>
-                array(
+                array (
                     'id' => 132,
                     'name' => 'Malaysia',
                     'iso3' => 'MYS',
@@ -3982,7 +3981,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q833',
                 ),
             132 =>
-                array(
+                array (
                     'id' => 133,
                     'name' => 'Maldives',
                     'iso3' => 'MDV',
@@ -4012,7 +4011,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q826',
                 ),
             133 =>
-                array(
+                array (
                     'id' => 134,
                     'name' => 'Mali',
                     'iso3' => 'MLI',
@@ -4042,7 +4041,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q912',
                 ),
             134 =>
-                array(
+                array (
                     'id' => 135,
                     'name' => 'Malta',
                     'iso3' => 'MLT',
@@ -4072,7 +4071,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q233',
                 ),
             135 =>
-                array(
+                array (
                     'id' => 136,
                     'name' => 'Man (Isle of)',
                     'iso3' => 'IMN',
@@ -4102,7 +4101,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => NULL,
                 ),
             136 =>
-                array(
+                array (
                     'id' => 137,
                     'name' => 'Marshall Islands',
                     'iso3' => 'MHL',
@@ -4132,7 +4131,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q709',
                 ),
             137 =>
-                array(
+                array (
                     'id' => 138,
                     'name' => 'Martinique',
                     'iso3' => 'MTQ',
@@ -4162,7 +4161,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q17054',
                 ),
             138 =>
-                array(
+                array (
                     'id' => 139,
                     'name' => 'Mauritania',
                     'iso3' => 'MRT',
@@ -4192,7 +4191,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1025',
                 ),
             139 =>
-                array(
+                array (
                     'id' => 140,
                     'name' => 'Mauritius',
                     'iso3' => 'MUS',
@@ -4222,7 +4221,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1027',
                 ),
             140 =>
-                array(
+                array (
                     'id' => 141,
                     'name' => 'Mayotte',
                     'iso3' => 'MYT',
@@ -4252,7 +4251,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q17063',
                 ),
             141 =>
-                array(
+                array (
                     'id' => 142,
                     'name' => 'Mexico',
                     'iso3' => 'MEX',
@@ -4282,7 +4281,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q96',
                 ),
             142 =>
-                array(
+                array (
                     'id' => 143,
                     'name' => 'Micronesia',
                     'iso3' => 'FSM',
@@ -4312,7 +4311,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q702',
                 ),
             143 =>
-                array(
+                array (
                     'id' => 144,
                     'name' => 'Moldova',
                     'iso3' => 'MDA',
@@ -4342,7 +4341,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q217',
                 ),
             144 =>
-                array(
+                array (
                     'id' => 145,
                     'name' => 'Monaco',
                     'iso3' => 'MCO',
@@ -4372,7 +4371,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q235',
                 ),
             145 =>
-                array(
+                array (
                     'id' => 146,
                     'name' => 'Mongolia',
                     'iso3' => 'MNG',
@@ -4402,7 +4401,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q711',
                 ),
             146 =>
-                array(
+                array (
                     'id' => 147,
                     'name' => 'Montenegro',
                     'iso3' => 'MNE',
@@ -4432,7 +4431,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q236',
                 ),
             147 =>
-                array(
+                array (
                     'id' => 148,
                     'name' => 'Montserrat',
                     'iso3' => 'MSR',
@@ -4462,7 +4461,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q13353',
                 ),
             148 =>
-                array(
+                array (
                     'id' => 149,
                     'name' => 'Morocco',
                     'iso3' => 'MAR',
@@ -4492,7 +4491,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1028',
                 ),
             149 =>
-                array(
+                array (
                     'id' => 150,
                     'name' => 'Mozambique',
                     'iso3' => 'MOZ',
@@ -4522,7 +4521,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1029',
                 ),
             150 =>
-                array(
+                array (
                     'id' => 151,
                     'name' => 'Myanmar',
                     'iso3' => 'MMR',
@@ -4552,7 +4551,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q836',
                 ),
             151 =>
-                array(
+                array (
                     'id' => 152,
                     'name' => 'Namibia',
                     'iso3' => 'NAM',
@@ -4582,7 +4581,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1030',
                 ),
             152 =>
-                array(
+                array (
                     'id' => 153,
                     'name' => 'Nauru',
                     'iso3' => 'NRU',
@@ -4612,7 +4611,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q697',
                 ),
             153 =>
-                array(
+                array (
                     'id' => 154,
                     'name' => 'Nepal',
                     'iso3' => 'NPL',
@@ -4642,7 +4641,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q837',
                 ),
             154 =>
-                array(
+                array (
                     'id' => 155,
                     'name' => 'Bonaire, Sint Eustatius and Saba',
                     'iso3' => 'BES',
@@ -4672,7 +4671,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q27561',
                 ),
             155 =>
-                array(
+                array (
                     'id' => 156,
                     'name' => 'Netherlands',
                     'iso3' => 'NLD',
@@ -4702,7 +4701,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q55',
                 ),
             156 =>
-                array(
+                array (
                     'id' => 157,
                     'name' => 'New Caledonia',
                     'iso3' => 'NCL',
@@ -4732,7 +4731,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q33788',
                 ),
             157 =>
-                array(
+                array (
                     'id' => 158,
                     'name' => 'New Zealand',
                     'iso3' => 'NZL',
@@ -4762,7 +4761,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q664',
                 ),
             158 =>
-                array(
+                array (
                     'id' => 159,
                     'name' => 'Nicaragua',
                     'iso3' => 'NIC',
@@ -4792,7 +4791,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q811',
                 ),
             159 =>
-                array(
+                array (
                     'id' => 160,
                     'name' => 'Niger',
                     'iso3' => 'NER',
@@ -4822,7 +4821,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1032',
                 ),
             160 =>
-                array(
+                array (
                     'id' => 161,
                     'name' => 'Nigeria',
                     'iso3' => 'NGA',
@@ -4852,7 +4851,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1033',
                 ),
             161 =>
-                array(
+                array (
                     'id' => 162,
                     'name' => 'Niue',
                     'iso3' => 'NIU',
@@ -4882,7 +4881,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q34020',
                 ),
             162 =>
-                array(
+                array (
                     'id' => 163,
                     'name' => 'Norfolk Island',
                     'iso3' => 'NFK',
@@ -4912,7 +4911,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q31057',
                 ),
             163 =>
-                array(
+                array (
                     'id' => 164,
                     'name' => 'Northern Mariana Islands',
                     'iso3' => 'MNP',
@@ -4942,7 +4941,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q16644',
                 ),
             164 =>
-                array(
+                array (
                     'id' => 165,
                     'name' => 'Norway',
                     'iso3' => 'NOR',
@@ -4972,7 +4971,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q20',
                 ),
             165 =>
-                array(
+                array (
                     'id' => 166,
                     'name' => 'Oman',
                     'iso3' => 'OMN',
@@ -5002,7 +5001,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q842',
                 ),
             166 =>
-                array(
+                array (
                     'id' => 167,
                     'name' => 'Pakistan',
                     'iso3' => 'PAK',
@@ -5032,7 +5031,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q843',
                 ),
             167 =>
-                array(
+                array (
                     'id' => 168,
                     'name' => 'Palau',
                     'iso3' => 'PLW',
@@ -5062,7 +5061,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q695',
                 ),
             168 =>
-                array(
+                array (
                     'id' => 169,
                     'name' => 'Palestinian Territory Occupied',
                     'iso3' => 'PSE',
@@ -5092,7 +5091,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => NULL,
                 ),
             169 =>
-                array(
+                array (
                     'id' => 170,
                     'name' => 'Panama',
                     'iso3' => 'PAN',
@@ -5122,7 +5121,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q804',
                 ),
             170 =>
-                array(
+                array (
                     'id' => 171,
                     'name' => 'Papua New Guinea',
                     'iso3' => 'PNG',
@@ -5152,7 +5151,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q691',
                 ),
             171 =>
-                array(
+                array (
                     'id' => 172,
                     'name' => 'Paraguay',
                     'iso3' => 'PRY',
@@ -5182,7 +5181,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q733',
                 ),
             172 =>
-                array(
+                array (
                     'id' => 173,
                     'name' => 'Peru',
                     'iso3' => 'PER',
@@ -5212,7 +5211,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q419',
                 ),
             173 =>
-                array(
+                array (
                     'id' => 174,
                     'name' => 'Philippines',
                     'iso3' => 'PHL',
@@ -5242,7 +5241,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q928',
                 ),
             174 =>
-                array(
+                array (
                     'id' => 175,
                     'name' => 'Pitcairn Island',
                     'iso3' => 'PCN',
@@ -5272,7 +5271,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1779748',
                 ),
             175 =>
-                array(
+                array (
                     'id' => 176,
                     'name' => 'Poland',
                     'iso3' => 'POL',
@@ -5302,7 +5301,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q36',
                 ),
             176 =>
-                array(
+                array (
                     'id' => 177,
                     'name' => 'Portugal',
                     'iso3' => 'PRT',
@@ -5332,7 +5331,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q45',
                 ),
             177 =>
-                array(
+                array (
                     'id' => 178,
                     'name' => 'Puerto Rico',
                     'iso3' => 'PRI',
@@ -5362,7 +5361,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1183',
                 ),
             178 =>
-                array(
+                array (
                     'id' => 179,
                     'name' => 'Qatar',
                     'iso3' => 'QAT',
@@ -5392,7 +5391,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q846',
                 ),
             179 =>
-                array(
+                array (
                     'id' => 180,
                     'name' => 'Reunion',
                     'iso3' => 'REU',
@@ -5422,7 +5421,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q293585',
                 ),
             180 =>
-                array(
+                array (
                     'id' => 181,
                     'name' => 'Romania',
                     'iso3' => 'ROU',
@@ -5452,7 +5451,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q218',
                 ),
             181 =>
-                array(
+                array (
                     'id' => 182,
                     'name' => 'Russia',
                     'iso3' => 'RUS',
@@ -5482,7 +5481,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q159',
                 ),
             182 =>
-                array(
+                array (
                     'id' => 183,
                     'name' => 'Rwanda',
                     'iso3' => 'RWA',
@@ -5512,7 +5511,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1037',
                 ),
             183 =>
-                array(
+                array (
                     'id' => 184,
                     'name' => 'Saint Helena',
                     'iso3' => 'SHN',
@@ -5542,7 +5541,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q34497',
                 ),
             184 =>
-                array(
+                array (
                     'id' => 185,
                     'name' => 'Saint Kitts and Nevis',
                     'iso3' => 'KNA',
@@ -5572,7 +5571,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q763',
                 ),
             185 =>
-                array(
+                array (
                     'id' => 186,
                     'name' => 'Saint Lucia',
                     'iso3' => 'LCA',
@@ -5602,7 +5601,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q760',
                 ),
             186 =>
-                array(
+                array (
                     'id' => 187,
                     'name' => 'Saint Pierre and Miquelon',
                     'iso3' => 'SPM',
@@ -5632,7 +5631,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q34617',
                 ),
             187 =>
-                array(
+                array (
                     'id' => 188,
                     'name' => 'Saint Vincent and the Grenadines',
                     'iso3' => 'VCT',
@@ -5662,7 +5661,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q757',
                 ),
             188 =>
-                array(
+                array (
                     'id' => 189,
                     'name' => 'Saint-Barthelemy',
                     'iso3' => 'BLM',
@@ -5692,7 +5691,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q25362',
                 ),
             189 =>
-                array(
+                array (
                     'id' => 190,
                     'name' => 'Saint-Martin (French part)',
                     'iso3' => 'MAF',
@@ -5722,7 +5721,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => NULL,
                 ),
             190 =>
-                array(
+                array (
                     'id' => 191,
                     'name' => 'Samoa',
                     'iso3' => 'WSM',
@@ -5752,7 +5751,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q683',
                 ),
             191 =>
-                array(
+                array (
                     'id' => 192,
                     'name' => 'San Marino',
                     'iso3' => 'SMR',
@@ -5782,7 +5781,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q238',
                 ),
             192 =>
-                array(
+                array (
                     'id' => 193,
                     'name' => 'Sao Tome and Principe',
                     'iso3' => 'STP',
@@ -5812,7 +5811,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1039',
                 ),
             193 =>
-                array(
+                array (
                     'id' => 194,
                     'name' => 'Saudi Arabia',
                     'iso3' => 'SAU',
@@ -5842,7 +5841,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q851',
                 ),
             194 =>
-                array(
+                array (
                     'id' => 195,
                     'name' => 'Senegal',
                     'iso3' => 'SEN',
@@ -5872,7 +5871,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1041',
                 ),
             195 =>
-                array(
+                array (
                     'id' => 196,
                     'name' => 'Serbia',
                     'iso3' => 'SRB',
@@ -5902,7 +5901,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q403',
                 ),
             196 =>
-                array(
+                array (
                     'id' => 197,
                     'name' => 'Seychelles',
                     'iso3' => 'SYC',
@@ -5932,7 +5931,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1042',
                 ),
             197 =>
-                array(
+                array (
                     'id' => 198,
                     'name' => 'Sierra Leone',
                     'iso3' => 'SLE',
@@ -5962,7 +5961,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1044',
                 ),
             198 =>
-                array(
+                array (
                     'id' => 199,
                     'name' => 'Singapore',
                     'iso3' => 'SGP',
@@ -5992,7 +5991,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q334',
                 ),
             199 =>
-                array(
+                array (
                     'id' => 200,
                     'name' => 'Slovakia',
                     'iso3' => 'SVK',
@@ -6022,7 +6021,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q214',
                 ),
             200 =>
-                array(
+                array (
                     'id' => 201,
                     'name' => 'Slovenia',
                     'iso3' => 'SVN',
@@ -6052,7 +6051,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q215',
                 ),
             201 =>
-                array(
+                array (
                     'id' => 202,
                     'name' => 'Solomon Islands',
                     'iso3' => 'SLB',
@@ -6082,7 +6081,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q685',
                 ),
             202 =>
-                array(
+                array (
                     'id' => 203,
                     'name' => 'Somalia',
                     'iso3' => 'SOM',
@@ -6112,7 +6111,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1045',
                 ),
             203 =>
-                array(
+                array (
                     'id' => 204,
                     'name' => 'South Africa',
                     'iso3' => 'ZAF',
@@ -6142,7 +6141,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q258',
                 ),
             204 =>
-                array(
+                array (
                     'id' => 205,
                     'name' => 'South Georgia',
                     'iso3' => 'SGS',
@@ -6172,7 +6171,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1137202',
                 ),
             205 =>
-                array(
+                array (
                     'id' => 206,
                     'name' => 'South Sudan',
                     'iso3' => 'SSD',
@@ -6202,7 +6201,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q958',
                 ),
             206 =>
-                array(
+                array (
                     'id' => 207,
                     'name' => 'Spain',
                     'iso3' => 'ESP',
@@ -6232,7 +6231,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q29',
                 ),
             207 =>
-                array(
+                array (
                     'id' => 208,
                     'name' => 'Sri Lanka',
                     'iso3' => 'LKA',
@@ -6262,7 +6261,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q854',
                 ),
             208 =>
-                array(
+                array (
                     'id' => 209,
                     'name' => 'Sudan',
                     'iso3' => 'SDN',
@@ -6292,7 +6291,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1049',
                 ),
             209 =>
-                array(
+                array (
                     'id' => 210,
                     'name' => 'Suriname',
                     'iso3' => 'SUR',
@@ -6322,7 +6321,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q730',
                 ),
             210 =>
-                array(
+                array (
                     'id' => 211,
                     'name' => 'Svalbard and Jan Mayen Islands',
                     'iso3' => 'SJM',
@@ -6352,7 +6351,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q842829',
                 ),
             211 =>
-                array(
+                array (
                     'id' => 212,
                     'name' => 'Eswatini',
                     'iso3' => 'SWZ',
@@ -6382,7 +6381,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1050',
                 ),
             212 =>
-                array(
+                array (
                     'id' => 213,
                     'name' => 'Sweden',
                     'iso3' => 'SWE',
@@ -6412,7 +6411,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q34',
                 ),
             213 =>
-                array(
+                array (
                     'id' => 214,
                     'name' => 'Switzerland',
                     'iso3' => 'CHE',
@@ -6442,7 +6441,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q39',
                 ),
             214 =>
-                array(
+                array (
                     'id' => 215,
                     'name' => 'Syria',
                     'iso3' => 'SYR',
@@ -6472,7 +6471,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q858',
                 ),
             215 =>
-                array(
+                array (
                     'id' => 216,
                     'name' => 'Taiwan',
                     'iso3' => 'TWN',
@@ -6502,7 +6501,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q865',
                 ),
             216 =>
-                array(
+                array (
                     'id' => 217,
                     'name' => 'Tajikistan',
                     'iso3' => 'TJK',
@@ -6532,7 +6531,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q863',
                 ),
             217 =>
-                array(
+                array (
                     'id' => 218,
                     'name' => 'Tanzania',
                     'iso3' => 'TZA',
@@ -6562,7 +6561,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q924',
                 ),
             218 =>
-                array(
+                array (
                     'id' => 219,
                     'name' => 'Thailand',
                     'iso3' => 'THA',
@@ -6592,7 +6591,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q869',
                 ),
             219 =>
-                array(
+                array (
                     'id' => 220,
                     'name' => 'Togo',
                     'iso3' => 'TGO',
@@ -6622,7 +6621,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q945',
                 ),
             220 =>
-                array(
+                array (
                     'id' => 221,
                     'name' => 'Tokelau',
                     'iso3' => 'TKL',
@@ -6652,7 +6651,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q36823',
                 ),
             221 =>
-                array(
+                array (
                     'id' => 222,
                     'name' => 'Tonga',
                     'iso3' => 'TON',
@@ -6682,7 +6681,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q678',
                 ),
             222 =>
-                array(
+                array (
                     'id' => 223,
                     'name' => 'Trinidad and Tobago',
                     'iso3' => 'TTO',
@@ -6712,7 +6711,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q754',
                 ),
             223 =>
-                array(
+                array (
                     'id' => 224,
                     'name' => 'Tunisia',
                     'iso3' => 'TUN',
@@ -6742,7 +6741,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q948',
                 ),
             224 =>
-                array(
+                array (
                     'id' => 225,
                     'name' => 'Turkey',
                     'iso3' => 'TUR',
@@ -6772,7 +6771,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q43',
                 ),
             225 =>
-                array(
+                array (
                     'id' => 226,
                     'name' => 'Turkmenistan',
                     'iso3' => 'TKM',
@@ -6802,7 +6801,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q874',
                 ),
             226 =>
-                array(
+                array (
                     'id' => 227,
                     'name' => 'Turks and Caicos Islands',
                     'iso3' => 'TCA',
@@ -6832,7 +6831,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q18221',
                 ),
             227 =>
-                array(
+                array (
                     'id' => 228,
                     'name' => 'Tuvalu',
                     'iso3' => 'TUV',
@@ -6862,7 +6861,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q672',
                 ),
             228 =>
-                array(
+                array (
                     'id' => 229,
                     'name' => 'Uganda',
                     'iso3' => 'UGA',
@@ -6892,7 +6891,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1036',
                 ),
             229 =>
-                array(
+                array (
                     'id' => 230,
                     'name' => 'Ukraine',
                     'iso3' => 'UKR',
@@ -6922,7 +6921,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q212',
                 ),
             230 =>
-                array(
+                array (
                     'id' => 231,
                     'name' => 'United Arab Emirates',
                     'iso3' => 'ARE',
@@ -6952,7 +6951,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q878',
                 ),
             231 =>
-                array(
+                array (
                     'id' => 232,
                     'name' => 'United Kingdom',
                     'iso3' => 'GBR',
@@ -6982,7 +6981,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q145',
                 ),
             232 =>
-                array(
+                array (
                     'id' => 233,
                     'name' => 'United States',
                     'iso3' => 'USA',
@@ -7012,7 +7011,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q30',
                 ),
             233 =>
-                array(
+                array (
                     'id' => 234,
                     'name' => 'United States Minor Outlying Islands',
                     'iso3' => 'UMI',
@@ -7042,7 +7041,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q16645',
                 ),
             234 =>
-                array(
+                array (
                     'id' => 235,
                     'name' => 'Uruguay',
                     'iso3' => 'URY',
@@ -7072,7 +7071,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q77',
                 ),
             235 =>
-                array(
+                array (
                     'id' => 236,
                     'name' => 'Uzbekistan',
                     'iso3' => 'UZB',
@@ -7102,7 +7101,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q265',
                 ),
             236 =>
-                array(
+                array (
                     'id' => 237,
                     'name' => 'Vanuatu',
                     'iso3' => 'VUT',
@@ -7132,7 +7131,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q686',
                 ),
             237 =>
-                array(
+                array (
                     'id' => 238,
                     'name' => 'Vatican City State (Holy See)',
                     'iso3' => 'VAT',
@@ -7162,7 +7161,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q237',
                 ),
             238 =>
-                array(
+                array (
                     'id' => 239,
                     'name' => 'Venezuela',
                     'iso3' => 'VEN',
@@ -7192,7 +7191,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q717',
                 ),
             239 =>
-                array(
+                array (
                     'id' => 240,
                     'name' => 'Vietnam',
                     'iso3' => 'VNM',
@@ -7222,7 +7221,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q881',
                 ),
             240 =>
-                array(
+                array (
                     'id' => 241,
                     'name' => 'Virgin Islands (British)',
                     'iso3' => 'VGB',
@@ -7252,7 +7251,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q25305',
                 ),
             241 =>
-                array(
+                array (
                     'id' => 242,
                     'name' => 'Virgin Islands (US)',
                     'iso3' => 'VIR',
@@ -7282,7 +7281,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q11703',
                 ),
             242 =>
-                array(
+                array (
                     'id' => 243,
                     'name' => 'Wallis and Futuna Islands',
                     'iso3' => 'WLF',
@@ -7312,7 +7311,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q35555',
                 ),
             243 =>
-                array(
+                array (
                     'id' => 244,
                     'name' => 'Western Sahara',
                     'iso3' => 'ESH',
@@ -7342,7 +7341,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q6250',
                 ),
             244 =>
-                array(
+                array (
                     'id' => 245,
                     'name' => 'Yemen',
                     'iso3' => 'YEM',
@@ -7372,7 +7371,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q805',
                 ),
             245 =>
-                array(
+                array (
                     'id' => 246,
                     'name' => 'Zambia',
                     'iso3' => 'ZMB',
@@ -7402,7 +7401,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q953',
                 ),
             246 =>
-                array(
+                array (
                     'id' => 247,
                     'name' => 'Zimbabwe',
                     'iso3' => 'ZWE',
@@ -7432,7 +7431,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q954',
                 ),
             247 =>
-                array(
+                array (
                     'id' => 248,
                     'name' => 'Kosovo',
                     'iso3' => 'XKX',
@@ -7462,7 +7461,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q1246',
                 ),
             248 =>
-                array(
+                array (
                     'id' => 249,
                     'name' => 'Curaçao',
                     'iso3' => 'CUW',
@@ -7492,7 +7491,7 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q25279',
                 ),
             249 =>
-                array(
+                array (
                     'id' => 250,
                     'name' => 'Sint Maarten (Dutch part)',
                     'iso3' => 'SXM',
@@ -7522,12 +7521,6 @@ class CountrySeederTableSeeder extends Seeder
                     'wikiDataId' => 'Q26273',
                 ),
         ));
-
-
-        Country::query()
-            ->where("name", "Egypt")
-            ->orWhere("name", "Saudi Arabia")
-            ->update(["status" => 1]);
 
 
     }
