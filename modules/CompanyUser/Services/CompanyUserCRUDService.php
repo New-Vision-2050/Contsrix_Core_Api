@@ -30,8 +30,12 @@ class CompanyUserCRUDService
     {
         $user = $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
 
+        try {
+            event(new UserCreated($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
+        }
+        catch (\Exception $e){
 
-        event(new UserCreated($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
+        }
 
         return $user;
     }
