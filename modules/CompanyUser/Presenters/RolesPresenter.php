@@ -24,7 +24,7 @@ class RolesPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'role' => CompanyUserRole::lang($this->company->role),
+            'role' => $this->company->role,
             'status' => $this->company->status
         ];
     }
