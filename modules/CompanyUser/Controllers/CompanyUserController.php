@@ -80,11 +80,11 @@ class CompanyUserController extends Controller
     {
             $item = $this->companyUserService->getByEmail($request->email);
             if (!$item) {
-                return Json::buildItems(data: ["company_user" => null], httpStatus: 200);
+                return Json::item(null);
             }
             $presenter = new CompanyUserPresenter($item);
 
-            return Json::buildItems('company_user', $presenter->getData());
+            return Json::item($presenter->getData());
 
 
     }

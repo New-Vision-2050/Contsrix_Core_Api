@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Country\Controllers;
 
-use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Country\Handlers\DeleteCountryHandler;
 use Modules\Country\Handlers\UpdateCountryHandler;
@@ -34,7 +34,7 @@ class CountryController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems(null,['countries' => CountryPresenter::collection($list['data']),'pagination' => $list['pagination']]);
+        return Json::items(CountryPresenter::collection($list['data']),$list['pagination']);
     }
 
     public function show(GetCountryRequest $request): JsonResponse
@@ -43,7 +43,7 @@ class CountryController extends Controller
 
         $presenter = new CountryPresenter($item);
 
-        return Json::buildItems('country', $presenter->getData());
+        return Json::item('country', $presenter->getData());
     }
 
     public function store(CreateCountryRequest $request): JsonResponse
@@ -52,7 +52,7 @@ class CountryController extends Controller
 
         $presenter = new CountryPresenter($createdItem);
 
-        return Json::buildItems('country', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(UpdateCountryRequest $request): JsonResponse
@@ -64,7 +64,7 @@ class CountryController extends Controller
 
         $presenter = new CountryPresenter($item);
 
-        return Json::buildItems('country', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteCountryRequest $request): JsonResponse

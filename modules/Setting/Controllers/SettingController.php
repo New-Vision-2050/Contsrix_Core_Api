@@ -25,13 +25,7 @@ class SettingController extends Controller
     public function index(GetSettingListRequest $request): JsonResponse
     {
         $list = $this->settingService->all();
-
-        return Json::buildItems(
-            null,
-            [
-                'settings' => SettingPresenter::collection($list['data'])
-            ]
-        );
+        return Json::Items( SettingPresenter::collection($list['data'], $list['pagination']));
     }
 
     public function store(CreateSettingRequest $request): JsonResponse
@@ -40,7 +34,7 @@ class SettingController extends Controller
 
         $presenter = new SettingPresenter($createdItem);
 
-        return Json::buildItems('setting', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteSettingRequest $request): JsonResponse
