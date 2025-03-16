@@ -91,14 +91,10 @@ class CompanyUserController extends Controller
 
     public function store(CreateCompanyUserRequest $request)
     {
-        try {
             $createdItem = $this->companyUserService->create(
                 $request->createCreateCompanyUserDTO(),
                 $request->createCreateCompanyUserCompanyRoleDTO()
             );
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
 
         $presenter = new CompanyUserPresenter($createdItem);
         return Json::item($presenter->getData());
@@ -154,24 +150,16 @@ class CompanyUserController extends Controller
     }
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
-        try {
-            $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
-        } catch (\Exception $exception) {
-            return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
-        }
-
-        return Json::deleted();
+       $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
+       return Json::deleted();
     }
 
 
     public function deleteForSpecificRole(DeleteCompanyUserSpecificRoleRequest $request): JsonResponse
     {
-        try {
+
             $command = $request->createDeleteRoleCommand();
             $this->deleteCompanyUserRoleHandler->handle($command);
-        } catch (\Exception $exception) {
-            return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
-        }
 
         return Json::deleted();
     }
