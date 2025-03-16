@@ -8,7 +8,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/', [CompanyController::class, 'index'])->name('companies.index');
     Route::get('/widget', [CompanyController::class, 'widget']);
     Route::post('/', [CompanyController::class, 'store'])->name('companies.store');
-    Route::post('/validate', [CompanyController::class, 'validate']);
+    Route::post('/validated', [CompanyController::class, 'validated']);
     Route::post('/test', [CompanyController::class, 'test']);
 
     Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show');
