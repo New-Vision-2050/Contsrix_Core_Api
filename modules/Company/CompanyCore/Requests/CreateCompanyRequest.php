@@ -41,8 +41,9 @@ class CreateCompanyRequest extends FormRequest
     public function createCreateCompanyDTO(): CreateCompanyDTO
     {
         return new CreateCompanyDTO(
-            name: $this->get('name'),
             userName: $this->get('user_name'),
+            firstName: $this->get('first_name'),
+            lastName: $this->get('last_name'),
             // email: $this->get('email'),
             // serialNo: $this->get('serial_no'),
             // phone: $this->get('phone'),

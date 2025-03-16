@@ -7,8 +7,9 @@ namespace Modules\Company\CompanyCore\DTO;
 class CreateCompanyDTO
 {
     public function __construct(
-        public string $name,
         public string $userName,
+        public string $firstName,
+        public string $lastName,
         // private string $email,
         // private string $serialNo,
         // private string $phone,
@@ -24,7 +25,7 @@ class CreateCompanyDTO
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
+            'name' => $this->firstName.' '.$this->lastName,
             'user_name' => $this->userName,
             'country_id' => $this->countryId,
             'company_field_id' => implode(',',$this->companyFieldId),//TODO Fix this
