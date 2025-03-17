@@ -55,6 +55,7 @@ class Company extends Model implements HasMedia
     ];
     protected $casts = [
         'id' => 'string',
+        'date_activate' => 'date'
     ];
 
     protected static function newFactory(): CompanyFactory

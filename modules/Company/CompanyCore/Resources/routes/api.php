@@ -11,8 +11,8 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/validate', [CompanyController::class, 'validate']);
     Route::post('/test', [CompanyController::class, 'test']);
 
+    Route::put('/{id}/activate', [CompanyController::class, 'activate']);
     Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show');
     Route::put('/{id}', [CompanyController::class, 'update']);
-    Route::put('/activate/{id}', [CompanyController::class, 'activate']);
     Route::delete('/{id}', [CompanyController::class, 'delete'])->name('companies.delete');
 });
