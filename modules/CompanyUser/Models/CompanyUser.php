@@ -12,7 +12,11 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\Country\Models\Country;
+use Modules\JobTitle\Models\JobTitle;
+use Modules\Shared\Currency\Models\Currency;
+use Modules\Shared\Language\Models\Language;
+use Modules\Shared\TimeZone\Models\TimeZone;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -42,6 +46,7 @@ class CompanyUser extends Model
         "residence",
         "passport",
         "identity",
+        'job_title_id',
     ];
 
     protected $casts = [
@@ -63,8 +68,6 @@ class CompanyUser extends Model
 
     public function delete()
     {
-
-
         try {
             DB::beginTransaction();
             $this->companies()->detach();
@@ -80,6 +83,26 @@ class CompanyUser extends Model
 
     public function rolesForCompany($companyId)
     {
-        return $this->companies->where('id',$companyId)->pluck("pivot");
+        return $this->companies->where('id',$companyId)->sortByDesc('role')->pluck("pivot");
+    }
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+    public function timeZone()
+    {
+        return $this->belongsTo(TimeZone::class);
+    }
+    public function language()
+    {
+        return $this->belongsTo(Language::class);
+    }
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
+    }
+    public function jobTitle()
+    {
+        return $this->belongsTo(JobTitle::class);
     }
 }

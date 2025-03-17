@@ -13,8 +13,10 @@ use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
+use Modules\CompanyUser\Handlers\UpdateTimeZoneCompanyUserHandler;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\CompanyUser\Presenters\TimeZoneCompanyUserPresenter;
 use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
 use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
@@ -23,6 +25,7 @@ use Modules\CompanyUser\Requests\DeleteCompanyUserSpecificRoleRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
+use Modules\CompanyUser\Requests\UpdateTimeZoneCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\CompanyUserValidationService;
 use Modules\CompanyUser\Services\CompanyUserWidgetsService;
@@ -35,6 +38,7 @@ class CompanyUserController extends Controller
         private CompanyUserWidgetsService    $companyUserWidgetService,
         private CompanyUserValidationService $companyUserValidationService,
         private UpdateCompanyUserHandler     $updateCompanyUserHandler,
+        private UpdateTimeZoneCompanyUserHandler     $updateTimeZoneCompanyUserHandler,
         private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
         private DeleteCompanyUserRoleHandler $deleteCompanyUserRoleHandler,
         private DeleteCompanyUserHandler     $deleteCompanyUserHandler,
@@ -49,9 +53,8 @@ class CompanyUserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(['data' => CompanyUserPresenter::collection($list["data"]), 'pagination' => $list['pagination']]);
+        return Json::items(CompanyUserPresenter::collection($list["data"]), $list['pagination']);
     }
-
 
     public function widgets()
     {
@@ -73,15 +76,25 @@ class CompanyUserController extends Controller
 
         return Json::item($presenter->getData());
     }
+    public function showByEmail(GetCompanyUserRequest $request)//: JsonResponse
+    {
+            $item = $this->companyUserService->getByEmail($request->email);
+            if (!$item) {
+                return Json::item(null);
+            }
+            $presenter = new CompanyUserPresenter($item);
 
+            return Json::item($presenter->getData());
+
+
+    }
 
     public function store(CreateCompanyUserRequest $request)
     {
-        try {
-            $createdItem = $this->companyUserService->create($request->createCreateCompanyUserDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
+            $createdItem = $this->companyUserService->create(
+                $request->createCreateCompanyUserDTO(),
+                $request->createCreateCompanyUserCompanyRoleDTO()
+            );
 
         $presenter = new CompanyUserPresenter($createdItem);
         return Json::item($presenter->getData());
@@ -124,27 +137,29 @@ class CompanyUserController extends Controller
         return Json::item($presenter->getData());
 
     }
+    public function changeTimeZone(UpdateTimeZoneCompanyUserRequest $request): JsonResponse
+    {
+        $command = $request->updateTimeZoneUpdateCompanyUserCommand();
+        $this->updateTimeZoneCompanyUserHandler->handle($command);
 
+        $item = $this->companyUserService->get($command->getId());
+
+        $presenter = new TimeZoneCompanyUserPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
-        try {
-            $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
-        } catch (\Exception $exception) {
-            return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
-        }
-
-        return Json::deleted();
+       $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
+       return Json::deleted();
     }
 
 
     public function deleteForSpecificRole(DeleteCompanyUserSpecificRoleRequest $request): JsonResponse
     {
-        try {
+
             $command = $request->createDeleteRoleCommand();
             $this->deleteCompanyUserRoleHandler->handle($command);
-        } catch (\Exception $exception) {
-            return Json::error($exception->getMessage(), httpStatus: $exception->getCode());
-        }
 
         return Json::deleted();
     }

@@ -43,7 +43,7 @@ class LoginWayController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(["login_way" => LoginWayPresenter::collection($list["data"]), "pagination" => $list["pagination"]]);
+        return Json::items(LoginWayPresenter::collection($list["data"]), $list["pagination"]);
     }
 
     public function store(CreateLoginWayRequest $request)
@@ -64,24 +64,15 @@ class LoginWayController extends Controller
 
     public function show(ShowLoginWayRequest $request)
     {
-        try {
             $loginWay = $this->loginWayService->getLoginWay(Uuid::fromString($request->route("id")));
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
-
 
         return Json::item((new LoginWayPresenter($loginWay))->getData());
     }
 
     public function delete(DeleteLoginWayRequest $request)
     {
+       $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
 
-        try {
-            $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode());
-        }
         return Json::deleted();
     }
 

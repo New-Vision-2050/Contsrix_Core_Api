@@ -8,16 +8,17 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class CompanyTypeFilter extends SearchModelFilter
 {
-       public $relations = [];
+    public $relations = [];
 
-        public function name($name)
-        {
-            return $this->where('name', $name);
-        }
-        public function countryId($countryId)
-        {
-            return $this->whereHas('countries', function ($q)use($countryId) {
-                        $q->where('country_id', $countryId);
-                    });
-        }
+    public function name($name)
+    {
+        return $this->where('name', 'LIKE', "%{$name}%");
+    }
+
+    public function countryId($countryId)
+    {
+        return $this->whereHas('countries', function ($q) use ($countryId) {
+            $q->where('country_id', $countryId);
+        });
+    }
 }

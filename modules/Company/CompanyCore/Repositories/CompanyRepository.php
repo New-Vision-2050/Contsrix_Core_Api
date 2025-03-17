@@ -52,74 +52,29 @@ class CompanyRepository extends BaseRepository
 
     public function isEmailExists(string $email): bool
     {
-        return Company::where('email', $email)->exists();
+        return  $this->model->where('email', $email)->exists();
     }
     public function isPhoneExists(string $phone): bool
     {
-        return Company::where('phone', $phone)->exists();
+        return  $this->model->where('phone', $phone)->exists();
     }
     public function isRegistrationExists(string $registrationNo,string $registrationTypeId): bool
     {
-        return Company::where('registration_no', $registrationNo)
+        return  $this->model->where('registration_no', $registrationNo)
             ->where('registration_type_id', $registrationTypeId)
             ->exists();
     }
 
     public function isUserNameExists(string $userName): bool
     {
-        return Company::where('user_name', $userName)->exists();
-    }
-
-    public function totalCompany(?Carbon $date = null): int
-    {
-        if ($date) {
-            return Company::whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
-        }
-        return Company::count();
-    }
-
-    public function activeCompany(?Carbon $date = null): int
-    {
-        if ($date) {
-            return Company::where('is_active', 1)
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
-        }
-        return Company::where('is_active', 1)->count();
-    }
-
-    public function completeDataCompany(?Carbon $date = null): int
-    {
-        if ($date) {
-            return Company::where('complete_data', 1)
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
-        }
-        return Company::where('complete_data', 1)->count();
-    }
-
-    public function dateActivateCompany(?Carbon $date = null): int
-    {
-        if ($date) {
-            return Company::whereYear('date_activate', $date->year)
-                ->whereMonth('date_activate', $date->month)
-                ->count();
-        }
-        return Company::where('date_activate', '>=', Carbon::today())
-            ->where('date_activate', '<', Carbon::today()->addDays(30))
-            ->count();
-
+        return  $this->model->where('user_name', $userName)->exists();
     }
 
     public function getInactiveCompanyIds(int $hours = 24, $companyId = null)
     {
         $inactiveTime = Carbon::now()->subHours($hours);
 
-        return Company::where('check_activity', 0)
+        return  $this->model->where('check_activity', 0)
             ->where('created_at', '<', $inactiveTime)
             ->when($companyId, function ($query) use ($companyId) {
                 $query->where('id', $companyId);
@@ -128,6 +83,18 @@ class CompanyRepository extends BaseRepository
     }
     public function deleteCompaniesByIds(array $companyIds)
     {
-        return Company::whereIn('id', $companyIds)->delete();
+        return  $this->model->whereIn('id', $companyIds)->delete();
+    }
+
+    public function getCompanyStatistics($date = null)
+    {
+        return $this->model->selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN is_active = 'active' THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN complete_data IS NOT NULL THEN 1 ELSE 0 END) as complete_data,
+            SUM(CASE WHEN date_activate IS NOT NULL THEN 1 ELSE 0 END) as data_activate
+        ")
+        ->when($date, fn($query) => $query->whereDate('created_at', '<=', $date))
+        ->first();
     }
 }

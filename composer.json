@@ -19,7 +19,7 @@
         "m-tech-stack/base-package": "^1.0",
         "m-tech-stack/rabbit-mq": "^1.0",
         "nevadskiy/laravel-tree": "^0.6.0",
-        "owen-it/laravel-auditing": "^13.6",
+        "owen-it/laravel-auditing": "^14.0",
         "php-amqplib/php-amqplib": "^3.7",
         "propaganistas/laravel-phone": "^5.3",
         "spatie/laravel-medialibrary": "^11.12",

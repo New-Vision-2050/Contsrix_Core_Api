@@ -9,7 +9,8 @@ class FileUploadService
 
     public function uploadFile($model, $file,$filePath ='default' ,string $collectionName = 'upload', string $visibility = 'public', ?string $folderId = null)
     {
-        $disk = Config::get('filesystems.default');
+        // $disk = Config::get('filesystems.default');
+        $disk =$visibility == 'public' ? "s3_public" : "s3_private";
 
         // Generate a unique file name
         $fileName = sprintf(
@@ -26,8 +27,11 @@ class FileUploadService
             ->withCustomProperties([
                 'folder_id' => $folderId,
                 'file_path' => $filePath,
+                'disk'=> $disk,
             ])
             ->toMediaCollection($collectionName, $disk);
+
+        return $media;
 
     }
 

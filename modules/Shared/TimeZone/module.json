@@ -1,0 +1,14 @@
+{
+    "name": "TimeZone",
+    "alias": "timezone",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\TimeZone\\Providers\\TimeZoneServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

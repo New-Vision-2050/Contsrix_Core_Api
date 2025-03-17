@@ -14,15 +14,15 @@ class CompanyFilter extends SearchModelFilter
     {
         return $this->where('name', 'like', '%'.$name .'%');
     }
-    public function countryId($countryId)
+    public function country($countryId)
     {
         return $this->where('country_id', $countryId);
     }
-    public function companyTypeId($companyTypeId)
+    public function companyType($companyTypeId)
     {
         return $this->where('company_type_id', $companyTypeId);
     }
-    public function companyFieldId($companyFieldId)
+    public function companyField($companyFieldId)
     {
         return $this->where('company_field_id', $companyFieldId);
     }
@@ -30,7 +30,7 @@ class CompanyFilter extends SearchModelFilter
 
     public function search($search, $filters = [])
     {
-        $query = $this->query();
+        $query = $this;
 
         $query->when($search, function ($q) use ($search) {
             $q->where(function ($q) use ($search) {

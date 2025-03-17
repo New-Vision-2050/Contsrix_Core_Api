@@ -1,0 +1,14 @@
+{
+    "name": "Folder",
+    "alias": "folder",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ArchiveLibrary\\Folder\\Providers\\FolderServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\ArchiveLibrary"
+}

@@ -34,7 +34,7 @@ class $CLASS$ extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::buildItems('$SNAKE_PLURAL_MODULE_NAME$', $MODULENAME$Presenter::collection($list));
+        return Json::items($MODULENAME$Presenter::collection($list['data'], $list['pagination']));
     }
 
     public function show(Get$MODULENAME$Request $request): JsonResponse
@@ -43,7 +43,7 @@ class $CLASS$ extends Controller
 
         $presenter = new $MODULENAME$Presenter($item);
 
-        return Json::buildItems('$SNAKE_MODULE_NAME$', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function store(Create$MODULENAME$Request $request): JsonResponse
@@ -52,7 +52,7 @@ class $CLASS$ extends Controller
 
         $presenter = new $MODULENAME$Presenter($createdItem);
 
-        return Json::buildItems('$SNAKE_MODULE_NAME$', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function update(Update$MODULENAME$Request $request): JsonResponse
@@ -64,7 +64,7 @@ class $CLASS$ extends Controller
 
         $presenter = new $MODULENAME$Presenter($item);
 
-        return Json::buildItems('$SNAKE_MODULE_NAME$', $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(Delete$MODULENAME$Request $request): JsonResponse
