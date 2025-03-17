@@ -41,7 +41,7 @@ class CompanyController extends Controller
     ) {
     }
 
-    public function index(GetCompanyListRequest $request)//: JsonResponse
+    public function index(GetCompanyListRequest $request): JsonResponse
     {
 
         $list = $this->companyService->list(
