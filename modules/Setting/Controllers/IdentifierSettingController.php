@@ -38,7 +38,7 @@ class IdentifierSettingController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(["identifiers" =>IdentifierPresenter::collection($list["data"]), "pagination" => $list["pagination"]]);
+        return Json::items(IdentifierPresenter::collection($list["data"]), $list["pagination"]);
 
     }
 
