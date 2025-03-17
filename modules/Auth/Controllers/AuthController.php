@@ -44,7 +44,7 @@ class AuthController extends Controller
         try {
             [$token, $user] = $this->authService->login($loginDTO);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: 400);
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
 
         }
 
@@ -61,7 +61,7 @@ class AuthController extends Controller
         try {
             [$token, $user] = $this->authService->loginWithOtp($request->createLoginDTO());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
 
         $userPresenter = (new UserPresenter($user))->getData();
@@ -85,7 +85,7 @@ class AuthController extends Controller
         try {
             $this->makeOtpHandler->handle($command);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
 
         return Json::success("success");
@@ -96,7 +96,7 @@ class AuthController extends Controller
         try {
             $this->authService->ResetPassword($request->createResetPasswordCommand());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
 
         return Json::success("success");
@@ -113,7 +113,7 @@ class AuthController extends Controller
         try {
             $this->authService->resendOtp($command);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
         return Json::success("success");
     }
@@ -123,7 +123,7 @@ class AuthController extends Controller
         try {
             [$loginWayId, $token, $step, $canSetPass] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus:400);
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
         $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
@@ -142,7 +142,7 @@ class AuthController extends Controller
             [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
         $userPresenter = (new UserPresenter($user))->getData();
         if ($nextStep == null) {
@@ -159,7 +159,7 @@ class AuthController extends Controller
             return Json::error($e->getMessage());
         }
         if (!$res) {
-            return Json::error(__("validation.invalid-answers"), httpStatus: 401);
+            return Json::error(__("validation.invalid-answers"), httpStatus: 401,code: "unauthorized_login");
         }
 
         return Json::item(["token" => $token]);
@@ -170,7 +170,7 @@ class AuthController extends Controller
         try {
             [$loginWayId, $token, $step] = $this->authService->loginStepAlternative($request->createLoginStepAlternativeDTO());
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
         $user = $this->userCRUDService->getUserByIdentifier($request->createLoginStepAlternativeDTO()->getIdentifier());
 
@@ -184,7 +184,7 @@ class AuthController extends Controller
             $command = $changeEmailRequest->createChangeEmailCommand();
             $this->changeEmailHandler->handle($command);
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: $e->getCode(),code: "unauthorized_login");
+            return Json::error($e->getMessage(), httpStatus: $e->getCode(), code: "unauthorized_login");
         }
         return Json::success("success");
     }
