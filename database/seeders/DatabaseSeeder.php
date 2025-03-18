@@ -12,7 +12,7 @@ use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
-use Modules\Shared\Currency\Database\Seeders\LanguagesTableSeeder;
+use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 
 class DatabaseSeeder extends Seeder
