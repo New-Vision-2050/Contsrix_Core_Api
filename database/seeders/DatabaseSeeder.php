@@ -14,6 +14,11 @@ use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
+use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
+use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
+use Modules\Shared\Currency\Database\Seeders\CurrencySeederTableSeeder;
+use Modules\Shared\Language\Database\Seeders\LanguageSeederTableSeeder;
+use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -23,11 +28,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RolesAndPermissionsSeeder::class);
-
         $this->call(AdminSeedTableSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(CountrySeederTableSeeder::class);
         $this->call(CompanyModulesSeederTableSeeder::class);
+        $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(DefaultLoginWaySeederTableSeeder::class);
         $this->call(DefaultIdentifierSeederTableSeeder::class);
         $this->call(DriverTableSeeder::class);
@@ -35,5 +40,8 @@ class DatabaseSeeder extends Seeder
         $this->call(StatesTableSeeder::class);
         $this->call(CitiesTableSeeder::class);
         $this->call(LanguagesTableSeeder::class);
+        $this->call(TimeZoneSeederTableSeeder::class);
+        $this->call(CurrencySeederTableSeeder::class);
+
     }
 }
