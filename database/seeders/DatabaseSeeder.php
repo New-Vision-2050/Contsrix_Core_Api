@@ -12,6 +12,7 @@ use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
+use Modules\Shared\Currency\Database\Seeders\LanguagesTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 
 class DatabaseSeeder extends Seeder
@@ -33,5 +34,6 @@ class DatabaseSeeder extends Seeder
         $this->call(QuestionSettingTableSeeder::class);
         $this->call(StatesTableSeeder::class);
         $this->call(CitiesTableSeeder::class);
+        $this->call(LanguagesTableSeeder::class);
     }
 }
