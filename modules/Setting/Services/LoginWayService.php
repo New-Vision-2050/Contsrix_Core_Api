@@ -71,7 +71,7 @@ class LoginWayService
 
 
         return [
-            'login_options' => [
+
                 [
                     'login_option' => 'password',
                     'driver_types' => ["key"=>null,"alternatives"=>$driverTypes]
@@ -80,7 +80,7 @@ class LoginWayService
                     'login_option' => 'otp',
                     'driver_types' => $driverTypesData
                 ]
-            ]
+
         ];
     }
 }
