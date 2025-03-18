@@ -50,7 +50,7 @@ class LoginWayController extends Controller
     {
         $loginWay = $this->loginWayService->create($request->createCreateLoginWayDTO());
 
-        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: __("validation.created_successfully"));
+        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: __("validation.create-successful"));
     }
 
     public function update(UpdateLoginWayRequest $request)
@@ -59,7 +59,7 @@ class LoginWayController extends Controller
         $this->loginWayHandler->handle($command);
         $loginWay = $this->loginWayService->getLoginWay($command->getId());
 
-        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: __('validation.updated_successfully'));
+        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: __('validation.update-successful'));
     }
 
     public function show(ShowLoginWayRequest $request)
@@ -79,7 +79,7 @@ class LoginWayController extends Controller
     public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)
     {
         $this->makeDefaultHandler->handle(Uuid::fromString($request->route("id")));
-        return Json::success(  __("validation.updated_successfully"));
+        return Json::success(  __("validation.update-successful"));
     }
 
     public function loginOptions()

@@ -22,7 +22,7 @@ class IdentifierPresenter extends AbstractPresenter
         return [
             'id' => $this->identifier->id,
             'name' => $this->identifier->name,
-            'default' => $this->identifier->default,
+            'status' => $this->identifier->status,
         ];
     }
 }

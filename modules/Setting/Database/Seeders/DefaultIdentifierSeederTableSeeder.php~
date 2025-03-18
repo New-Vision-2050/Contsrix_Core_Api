@@ -30,7 +30,7 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
                     "id" => $id,
                     "key" => $key,
                     "name" => $value,
-                    "status" => 1
+                    "default" => 1
                 ]
             );
 
