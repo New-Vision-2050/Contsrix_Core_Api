@@ -22,7 +22,9 @@ class FolderPresenter extends AbstractPresenter
             'id' => $this->folder->id,
             'name' => $this->folder->name,
             'parent_id' => $this->folder?->parent_id,
-            
+            'modified' => '',
+            'size'=>'',
+            'document_no' => 0,
         ];
     }
 }
