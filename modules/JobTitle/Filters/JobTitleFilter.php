@@ -12,7 +12,7 @@ class JobTitleFilter extends SearchModelFilter
 
         public function name($name)
         {
-            return $this->whereHas('translation',function($q) use ($name){
+            return $this->whereHas('translations',function($q) use ($name){
                 $q->where('name','like','%'.$name.'%');
             });
         }
