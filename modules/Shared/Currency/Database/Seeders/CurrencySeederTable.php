@@ -1,0 +1,31 @@
+<?php
+
+namespace Modules\Shared\Currency\Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Database\Eloquent\Model;
+use Modules\Shared\Currency\Models\Currency;
+
+class CurrencySeederTable extends Seeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        Model::unguard();
+        $data = [
+            ['en' => 'Egyptian pound', 'ar' => 'جنيه مصري', 'short_name' => 'EGP'],
+            ['en' => 'Saudi riyal', 'ar' => 'ريال سعودي', 'short_name' => 'SAR'],
+        ];
+
+        foreach ($data as $item) {
+            Currency::firstOrCreate(
+                ['short_name' => $item['short_name']],
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
+            );
+        }
+    }
+}
