@@ -25,6 +25,8 @@ class FolderPresenter extends AbstractPresenter
             'modified' => '',
             'size'=>'',
             'document_no' => 0,
+            'latest_activity'=> '',
+            'status' =>1,
         ];
     }
 }
