@@ -24,19 +24,12 @@ class FolderCRUDService
 
     public function list(int $page = 1, int $perPage = 10): array
     {
-        $folders = $this->repository->getFolderList(
+        return $this->repository->paginated(
             page: $page,
             perPage: $perPage,
         );
-
-        return [
-            'data' => $folders,
-            'pagination' => [
-                'page' => $page,
-                'per_page' => $perPage,
-            ],
-        ];
     }
+
 
 
     public function get(UuidInterface $id): Folder
@@ -86,22 +79,24 @@ class FolderCRUDService
         $foldersData = [];
 
         foreach ($folders as $folder) {
-            if ($folder->access_type === 'public') {
+            // if ($folder->access_type === 'public') {
 
-                $files = $folder->files()->where('access_type', 'public')->get();
+                $files = $folder->files()
+                // ->where('access_type', 'public')
+                ->get();
                 $foldersData[] = [
                     'folder' => $folder,
                     'files' => $files,
                 ];
-            } else {
-                if ($this->repository->canViewFolder($folder->id, $userId)) {
-                    $files = $this->repository->getViewableFilesInFolder($folder->id, $userId);
-                    $foldersData[] = [
-                        'folder' => $folder,
-                        'files' => $files,
-                    ];
-                }
-            }
+            // } else {
+            //     if ($this->repository->canViewFolder($folder->id, $userId)) {
+            //         $files = $this->repository->getViewableFilesInFolder($folder->id, $userId);
+            //         $foldersData[] = [
+            //             'folder' => $folder,
+            //             'files' => $files,
+            //         ];
+            //     }
+            // }
         }
 
         return [
@@ -128,4 +123,3 @@ class FolderCRUDService
     }
 
 }
- 

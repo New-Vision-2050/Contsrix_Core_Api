@@ -24,12 +24,12 @@ class FolderRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getFolderList(?int $page, ?int $perPage = 10, ?UuidInterface $parentId = null)
+    public function getFolderList(int $page, int $perPage = 10, ?UuidInterface $parentId = null)
     {
         $query = $this->model->query();
 
-        if ($parentId) {
-            $query->where('parent_id', $parentId->toString());
+        if ($parentId !=null) {
+            $query->where('parent_id', $parentId);
         } else {
             $query->whereNull('parent_id');
         }
@@ -67,14 +67,14 @@ class FolderRepository extends BaseRepository
     {
         $folder = $this->getFolder($folderId);
 
-        if ($folder->access_type === 'public') {
+        // if ($folder->access_type === 'public') {
             return true;
-        }
+        // }
 
-        return UserFolderPermission::where('user_id', $userId)
-            ->where('folder_id', $folderId)
-            ->where('permission_type', 'view')
-            ->exists();
+        // return UserFolderPermission::where('folder_id', $folderId)
+        //     ->where('user_id', $userId)
+        //     ->where('permission_type', 'view')
+        //     ->exists();
     }
     public function getViewableFilesInFolder( $folderId,  $userId): Collection
     {
