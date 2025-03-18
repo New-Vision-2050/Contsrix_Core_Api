@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
+use Modules\Company\CompanyCore\Services\CompanyValidatedService;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
 class CompanyController extends Controller
 {
@@ -32,6 +33,7 @@ class CompanyController extends Controller
         private UpdateCompanyHandler $updateCompanyHandler,
         private DeleteCompanyHandler $deleteCompanyHandler,
         private CompanyValidateService $validateCompanyService,
+        private CompanyValidatedService $validatedCompanyService,
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
         private FileUploadService  $fileUploadService,
@@ -39,7 +41,7 @@ class CompanyController extends Controller
     ) {
     }
 
-    public function index(GetCompanyListRequest $request)//: JsonResponse
+    public function index(GetCompanyListRequest $request): JsonResponse
     {
 
         $list = $this->companyService->list(
@@ -116,4 +118,12 @@ class CompanyController extends Controller
         return Json::item($presenter->getData());
     }
 
+    public function validated(Request $request): JsonResponse
+    {
+
+        $item = $this->validatedCompanyService->validate($request);
+
+
+        return Json::item($item);
+    }
 }

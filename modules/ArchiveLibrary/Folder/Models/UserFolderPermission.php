@@ -11,15 +11,12 @@ use Modules\ArchiveLibrary\Folder\Database\factories\FolderFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\File\Models\File;
 //use BasePackage\Shared\Traits\HasTranslations;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Folder extends Model implements HasMedia
+class UserFolderPermission extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    use InteractsWithMedia;
     //use HasTranslations;
     //use SoftDeletes;
 
@@ -30,36 +27,15 @@ class Folder extends Model implements HasMedia
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
-        'parent_id',
-        'access_type'
+        'user_id',
+        'folder_id',
+        'permission_type'
     ];
 
     protected $casts = [
         'id' => 'string',
     ];
 
-    public function getMediaUrlsAttribute()
-    {
-        return $this->media->map(fn($media) => $media->getFullUrl());
-    }
-    public function parent()
-    {
-        return $this->belongsTo(Folder::class, 'parent_id');
-    }
-
-    public function children()
-    {
-        return $this->hasMany(Folder::class, 'parent_id');
-    }
-    public function files()
-    {
-        return $this->hasMany(File::class);
-    }
-    public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
-    {
-        $media->getFullUrl();
-    }
     protected static function newFactory(): FolderFactory
     {
         return FolderFactory::new();
