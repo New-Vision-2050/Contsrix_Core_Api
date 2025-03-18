@@ -1,0 +1,14 @@
+{
+    "name": "File",
+    "alias": "file",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ArchiveLibrary\\File\\Providers\\FileServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\ArchiveLibrary"
+}
