@@ -27,7 +27,7 @@ class UniversityController extends Controller
     ) {
     }
 
-    public function index(GetUniversityListRequest $request): JsonResponse
+    public function index(GetUniversityListRequest $request)
     {
         $list = $this->universityService->list(
             (int) $request->get('page', 1),

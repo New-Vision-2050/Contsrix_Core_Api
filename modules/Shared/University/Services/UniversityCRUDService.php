@@ -26,6 +26,8 @@ class UniversityCRUDService
         return $this->repository->paginated(
             page: $page,
             perPage: $perPage,
+            orderBy: "id",
+            sortBy: "asc",
         );
     }
 

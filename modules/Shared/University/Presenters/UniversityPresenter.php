@@ -21,6 +21,7 @@ class UniversityPresenter extends AbstractPresenter
         return [
             'id' => $this->university->id,
             'name' => $this->university->name,
+            'url' => $this->university->url,
         ];
     }
 }
