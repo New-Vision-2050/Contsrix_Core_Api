@@ -109,7 +109,7 @@ class UserController extends Controller
     {
         $command = $request->createAssignRoleForUserCommand();
         $this->assignRoleForUserHandler->handle($command);
-        return Json::success("roles added successfully");
+        return Json::success(__("validation.created_successfully"));
     }
 
     public function getMyPermissions()
