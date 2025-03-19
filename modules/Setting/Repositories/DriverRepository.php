@@ -26,6 +26,11 @@ class DriverRepository extends BaseRepository
         return $this->all()->groupBy('driver_type');
     }
 
+    public function getDrivers()
+    {
+        return $this->all();
+    }
+
 
     public function getDriverNamesByType($type)
     {

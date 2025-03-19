@@ -19,7 +19,7 @@ class CompanyUserFilter extends SearchModelFilter
     {
         return $this
             ->where('email', 'like', '%' . $value . '%')
-            ->where('phone', 'like', '%' . $value . '%');
+            ->Orwhere('phone', 'like', '%' . $value . '%');
     }
 
     public function company($companyId)
