@@ -36,7 +36,7 @@ return new class extends Migration
             $table->string('flag');
             $table->string('wikiDataId')->nullable();
             $table->uuid('sms_driver_id')->nullable();
-            $table->string('status')->default(0);
+            $table->tinyInteger('status')->default(0);
             $table->timestamps();
         });
     }

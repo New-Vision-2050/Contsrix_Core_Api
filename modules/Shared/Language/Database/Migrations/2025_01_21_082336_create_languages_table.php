@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('languages', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id()->primary();
             $table->string('lang');
             $table->string('lang_ar');
             $table->string('native');
