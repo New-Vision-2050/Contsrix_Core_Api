@@ -186,6 +186,7 @@ return [
     'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
     'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
     'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
+    "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

@@ -30,7 +30,7 @@ Route::group(['middleware' => ['auth:api']], function () {
 
         Route::get('/', [\Modules\Setting\Controllers\DriverController::class, 'index']);
         Route::get('/get-drivers-by-login-option/{loginOption}', [\Modules\Setting\Controllers\LoginWayController::class, 'getDriversByLoginOption']);
-        Route::get('/get-alternatives-drivers-by-login-option/{loginOption}/{driver}', [\Modules\Setting\Controllers\LoginWayController::class, 'getAlternativesByLoginOption']);
+        Route::get('/get-alternatives-drivers-by-login-option/{loginOption}/{driver?}', [\Modules\Setting\Controllers\LoginWayController::class, 'getAlternativesByLoginOption']);
 
         Route::put('/{id}', [\Modules\Setting\Controllers\DriverController::class, 'updateDriver']);
 

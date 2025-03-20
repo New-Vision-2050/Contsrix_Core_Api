@@ -100,12 +100,21 @@ class LoginWayController extends Controller
     public function getDriversByLoginOption(ShowLoginWayRequest $request)
     {
 
-        return Json::item($this->loginWayService->getDriversByLoginOption($request->route("loginOption")));
+        try {
+            return Json::item($this->loginWayService->getDriversByLoginOption($request->route("loginOption")));
+        } catch (\Exception $e) {
+            return Json::error(__("validation.lookups-value-not-correct"), 400);
+        }
     }
     public function getAlternativesByLoginOption(ShowLoginWayRequest $request)
     {
 
-        return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->route("loginOption"),$request->route("driver")));
+        try {
+            return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->route("loginOption"), $request->route("driver")));
+        } catch (\Exception $e) {
+            return Json::error(__("validation.lookups-value-not-correct"), 400);
+
+        }
     }
 
 

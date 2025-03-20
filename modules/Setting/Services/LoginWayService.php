@@ -72,7 +72,7 @@ class LoginWayService
 
             [
                 'login_option' => 'password',
-                'driver_types' => ["key"=>null,"alternatives"=>$driverTypes]
+                'driver_types' => [["key"=>null,"alternatives"=>$driverTypes]]
             ],
             [
                 'login_option' => 'otp',
@@ -88,14 +88,21 @@ class LoginWayService
     {
         $drivers = [];
         foreach ($this->loginOptionWithAllRelatedRelations()->where("login_option",$loginOption)->first() ["driver_types"] as $driverType) {
-            array_push($drivers,$driverType['key']);
+            if ($driverType['key'] != null)
+            {
+                array_push($drivers,$driverType['key']);
+            }
         }
         return $drivers;
     }
 
     public function getAlternativeDriversByLoginOption($loginOption , $driver)
     {
-        $drivers= collect($this->loginOptionWithAllRelatedRelations()->where("login_option",$loginOption) ->pluck("driver_types")[0])->where("key",$driver)->first()["alternatives"];
+        if ($driver == "null")
+        {
+            $driver=null;
+        }
+        $drivers= collect($this->loginOptionWithAllRelatedRelations()->where("login_option",$loginOption)->first()["driver_types"] )->where("key",$driver)->first()["alternatives"];
 
         return $drivers;
     }
