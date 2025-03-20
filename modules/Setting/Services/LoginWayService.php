@@ -68,11 +68,11 @@ class LoginWayService
 
             ];
         }
-        $result =[
+        $result = [
 
             [
                 'login_option' => 'password',
-                'driver_types' => [["key"=>null,"alternatives"=>$driverTypes]]
+                'driver_types' => [["key" => null, "alternatives" => $driverTypes]]
             ],
             [
                 'login_option' => 'otp',
@@ -84,24 +84,35 @@ class LoginWayService
 
         return collect($result);
     }
+
     public function getDriversByLoginOption($loginOption)
     {
-        $drivers = collect($this->loginOptionWithAllRelatedRelations()
-            ->where("login_option",$loginOption)->first() ["driver_types"])
-            ->where("key","<>",null)->pluck("key")->toArray();
-
+        $driverTypes = collect($this->loginOptionWithAllRelatedRelations()
+            ->where("login_option", $loginOption)->first() ["driver_types"])
+            ->where("key", "<>", null);
+        $drivers = [];
+        foreach ($driverTypes as $driverType) {
+            $drivers[] = [
+                "key" => $driverType["key"],
+            ];
+        }
         return $drivers;
     }
 
-    public function getAlternativeDriversByLoginOption($loginOption , $driver)
+    public function getAlternativeDriversByLoginOption($loginOption, $driver)
     {
-        if ($driver == "null")
-        {
-            $driver=null;
+        if ($driver == "null") {
+            $driver = null;
         }
-        $drivers= collect($this->loginOptionWithAllRelatedRelations()
-            ->where("login_option",$loginOption)->first()["driver_types"] )
-            ->where("key",$driver)->first()["alternatives"];
+        $alternatives = collect($this->loginOptionWithAllRelatedRelations()
+            ->where("login_option", $loginOption)->first()["driver_types"])
+            ->where("key", $driver)->first()["alternatives"];
+        $drivers = [];
+        foreach ($alternatives as $alternative) {
+            $drivers[] = [
+                "key" => $alternative,
+            ];
+        }
 
         return $drivers;
     }
