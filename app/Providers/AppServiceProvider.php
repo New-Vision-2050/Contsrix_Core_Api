@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Channels\SmsChannel;
+use App\Http\Controllers\HelperClass\MailClass;
 use App\Http\Controllers\HelperClasses\MailClass;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
