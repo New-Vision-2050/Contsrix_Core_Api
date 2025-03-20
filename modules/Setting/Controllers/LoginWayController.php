@@ -16,6 +16,8 @@ use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\Setting\Requests\LoginWay\CreateLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\DeleteLoginWayRequest;
+use Modules\Setting\Requests\LoginWay\GetAlternativeDriverByLoginOptionAndDriverRequest;
+use Modules\Setting\Requests\LoginWay\GetDriverByLoginOptionRequest;
 use Modules\Setting\Requests\LoginWay\GetLoginWayListRequest;
 use Modules\Setting\Requests\LoginWay\MakeLoginWayDefaultRequest;
 use Modules\Setting\Requests\LoginWay\ShowLoginWayRequest;
@@ -92,25 +94,27 @@ class LoginWayController extends Controller
     public function loginOptions()
     {
 
-        return Json::item($this->loginWayService->loginOptionWithAllRelatedRelations()->pluck("login_option"));
+        return Json::item($this->loginWayService->loginOptionWithAllRelatedRelations()->map(function ($value) {
+            return ['login_option' => $value["login_option"]];
+        })->all());
 
     }
 
 
-    public function getDriversByLoginOption(ShowLoginWayRequest $request)
+    public function getDriversByLoginOption(GetDriverByLoginOptionRequest $request)
     {
 
         try {
-            return Json::item($this->loginWayService->getDriversByLoginOption($request->route("loginOption")));
+            return Json::item($this->loginWayService->getDriversByLoginOption($request->login_option));
         } catch (\Exception $e) {
             return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
         }
     }
-    public function getAlternativesByLoginOption(ShowLoginWayRequest $request)
+    public function getAlternativesByLoginOption(GetAlternativeDriverByLoginOptionAndDriverRequest $request)
     {
 
         try {
-            return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->route("loginOption"), $request->route("driver")));
+            return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->login_option_driver));
         } catch (\Exception $e) {
             return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
 
