@@ -114,7 +114,7 @@ class LoginWayController extends Controller
     {
 
         try {
-            return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->login_option, $request->driver));
+            return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->login_option_driver));
         } catch (\Exception $e) {
             return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
 

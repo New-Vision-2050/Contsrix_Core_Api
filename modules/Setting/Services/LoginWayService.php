@@ -93,14 +93,24 @@ class LoginWayService
         $drivers = [];
         foreach ($driverTypes as $driverType) {
             $drivers[] = [
-                "key" => $driverType["key"],
+                "value" => $loginOption . "-" . $driverType["key"],
+                "name" => $driverType["key"],
             ];
         }
         return $drivers;
     }
 
-    public function getAlternativeDriversByLoginOption($loginOption, $driver)
+    public function getAlternativeDriversByLoginOption($loginOptionDriver)
     {
+        $loginOptionDriver = explode("-", $loginOptionDriver);
+        $loginOption = $loginOptionDriver[0];
+        if (isset($loginOptionDriver[1])) {
+            $driver = $loginOptionDriver[1];
+        } else {
+            $driver = null;
+        }
+
+
         if ($driver == "null") {
             $driver = null;
         }

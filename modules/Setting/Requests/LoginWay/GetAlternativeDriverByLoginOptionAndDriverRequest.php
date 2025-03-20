@@ -14,8 +14,7 @@ class GetAlternativeDriverByLoginOptionAndDriverRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "login_option"=>"required",
-            "driver"=>"nullable",
+            "login_option_driver"=>"required",
 
         ];
     }
