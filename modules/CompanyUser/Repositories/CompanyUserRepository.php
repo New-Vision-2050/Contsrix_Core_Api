@@ -29,7 +29,12 @@ class CompanyUserRepository extends BaseRepository
 
     public function withRelations(array $relations = [], $page = 1, $perPage = 15)
     {
-        $query = $this->model->with($relations);
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all())->with($relations);
+        }else{
+            $query = $this->model->with($relations);
+        }
+
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\ArchiveLibrary\Folder\Database\factories\FolderFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\ArchiveLibrary\File\Models\File;
 //use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -30,13 +31,13 @@ class Folder extends Model implements HasMedia
 
     protected $fillable = [
         'name',
-        'parent_id'
+        'parent_id',
+        'access_type'
     ];
 
     protected $casts = [
         'id' => 'string',
     ];
-    protected $appends = ['media_urls'];
 
     public function getMediaUrlsAttribute()
     {
@@ -50,6 +51,10 @@ class Folder extends Model implements HasMedia
     public function children()
     {
         return $this->hasMany(Folder::class, 'parent_id');
+    }
+    public function files()
+    {
+        return $this->hasMany(File::class);
     }
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {

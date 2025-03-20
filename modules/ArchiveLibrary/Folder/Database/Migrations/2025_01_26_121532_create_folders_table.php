@@ -12,6 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('parent_id')->index()->nullable();
+            $table->enum('access_type', ['public', 'private'])->default('private');
             $table->timestamps();
         });
     }

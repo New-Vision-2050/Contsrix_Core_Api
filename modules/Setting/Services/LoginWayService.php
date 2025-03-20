@@ -84,4 +84,19 @@ class LoginWayService
 
         return collect($result);
     }
+    public function getDriversByLoginOption($loginOption)
+    {
+        $drivers = [];
+        foreach ($this->loginOptionWithAllRelatedRelations()->where("login_option",$loginOption)->first() ["driver_types"] as $driverType) {
+            array_push($drivers,$driverType['key']);
+        }
+        return $drivers;
+    }
+
+    public function getAlternativeDriversByLoginOption($loginOption , $driver)
+    {
+        $drivers= collect($this->loginOptionWithAllRelatedRelations()->where("login_option",$loginOption) ->pluck("driver_types")[0])->where("key",$driver)->first()["alternatives"];
+
+        return $drivers;
+    }
 }

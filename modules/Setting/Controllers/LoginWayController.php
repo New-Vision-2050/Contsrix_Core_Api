@@ -99,19 +99,13 @@ class LoginWayController extends Controller
 
     public function getDriversByLoginOption(ShowLoginWayRequest $request)
     {
-        $drivers = [];
-        foreach ($this->loginWayService->loginOptionWithAllRelatedRelations()->where("login_option",$request->route("loginOption"))->first() ["driver_types"] as $driverType) {
-            array_push($drivers,$driverType['key']);
 
-        }
-        return Json::item($drivers);
+        return Json::item($this->loginWayService->getDriversByLoginOption($request->route("loginOption")));
     }
     public function getAlternativesByLoginOption(ShowLoginWayRequest $request)
     {
-        $drivers = [];
-        $drivers= collect($this->loginWayService->loginOptionWithAllRelatedRelations()->where("login_option",$request->route("loginOption")) ->pluck("driver_types")[0])->where("key",$request->route("driver"))->first()["alternatives"];
 
-        return Json::item($drivers);
+        return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->route("loginOption"),$request->route("driver")));
     }
 
 

@@ -69,6 +69,10 @@ class CompanyRepository extends BaseRepository
     {
         return  $this->model->where('user_name', $userName)->exists();
     }
+    public function isNameExists(string $name): bool
+    {
+        return  $this->model->where('name', $name)->exists();
+    }
 
     public function getInactiveCompanyIds(int $hours = 24, $companyId = null)
     {

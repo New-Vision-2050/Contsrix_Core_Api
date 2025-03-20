@@ -100,6 +100,22 @@ class FolderController extends Controller
     }
 
 
+    public function showFolders(GetFolderListRequest $request)//: JsonResponse
+    {
+        $userId = auth()->user()->id;
+        $parentId = $request->get('parent_id');
+
+        $list = $this->folderService->listFolders(
+            $userId,
+            $parentId,
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        // Return the response in JSON format with pagination info
+        return Json::items($list['data'], paginationSettings: $list['pagination']);
+    }
+
 
 
 }
