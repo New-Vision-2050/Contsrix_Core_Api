@@ -22,7 +22,7 @@ class DriverService
 
     public function all()
     {
-        return $this->repository->getDataGroupByType();
+        return $this->repository->getDrivers();
     }
 
     public function show(UuidInterface $id)

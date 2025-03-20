@@ -27,9 +27,9 @@ use Ramsey\Uuid\Uuid;
 class LoginWayController extends Controller
 {
     public function __construct(
-        private LoginWayService       $loginWayService,
-        private UpdateLoginWayHandler $loginWayHandler,
-        private DeleteLoginWayHandler $deleteHandler,
+        private LoginWayService            $loginWayService,
+        private UpdateLoginWayHandler      $loginWayHandler,
+        private DeleteLoginWayHandler      $deleteHandler,
         private MakeLoginWayDefaultHandler $makeDefaultHandler,
 
     )
@@ -64,14 +64,14 @@ class LoginWayController extends Controller
 
     public function show(ShowLoginWayRequest $request)
     {
-            $loginWay = $this->loginWayService->getLoginWay(Uuid::fromString($request->route("id")));
+        $loginWay = $this->loginWayService->getLoginWay(Uuid::fromString($request->route("id")));
 
         return Json::item((new LoginWayPresenter($loginWay))->getData());
     }
 
     public function delete(DeleteLoginWayRequest $request)
     {
-       $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
+        $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
     }
@@ -79,14 +79,42 @@ class LoginWayController extends Controller
     public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)
     {
         $this->makeDefaultHandler->handle(Uuid::fromString($request->route("id")));
-        return Json::success(  __("validation.update-successful"));
+        return Json::success(__("validation.update-successful"));
+    }
+
+    public function loginOptionsWithAllRelatedRelations()
+    {
+        $loginOptions = $this->loginWayService->loginOptionWithAllRelatedRelations();
+        return Json::item($loginOptions);
+
     }
 
     public function loginOptions()
     {
-        $loginOptions = $this->loginWayService->loginOption();
-        return Json::item($loginOptions);
 
+        return Json::item($this->loginWayService->loginOptionWithAllRelatedRelations()->pluck("login_option"));
+
+    }
+
+
+    public function getDriversByLoginOption(ShowLoginWayRequest $request)
+    {
+
+        try {
+            return Json::item($this->loginWayService->getDriversByLoginOption($request->route("loginOption")));
+        } catch (\Exception $e) {
+            return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
+        }
+    }
+    public function getAlternativesByLoginOption(ShowLoginWayRequest $request)
+    {
+
+        try {
+            return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->route("loginOption"), $request->route("driver")));
+        } catch (\Exception $e) {
+            return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
+
+        }
     }
 
 
