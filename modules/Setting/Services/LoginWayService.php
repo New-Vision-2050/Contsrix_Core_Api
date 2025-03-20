@@ -54,7 +54,7 @@ class LoginWayService
         return $loginWay;
     }
 
-    public function loginOption()
+    public function loginOptionWithAllRelatedRelations()
     {
         $driverTypesData = [];
         $driverTypes = $this->driverRepository->getDataGroupByType()->keys()->toArray();
@@ -68,19 +68,20 @@ class LoginWayService
 
             ];
         }
+        $result =[
 
-
-        return [
-
-                [
-                    'login_option' => 'password',
-                    'driver_types' => ["key"=>null,"alternatives"=>$driverTypes]
-                ],
-                [
-                    'login_option' => 'otp',
-                    'driver_types' => $driverTypesData
-                ]
+            [
+                'login_option' => 'password',
+                'driver_types' => ["key"=>null,"alternatives"=>$driverTypes]
+            ],
+            [
+                'login_option' => 'otp',
+                'driver_types' => $driverTypesData
+            ]
 
         ];
+
+
+        return collect($result);
     }
 }

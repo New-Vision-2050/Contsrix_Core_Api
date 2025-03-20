@@ -27,9 +27,9 @@ use Ramsey\Uuid\Uuid;
 class LoginWayController extends Controller
 {
     public function __construct(
-        private LoginWayService       $loginWayService,
-        private UpdateLoginWayHandler $loginWayHandler,
-        private DeleteLoginWayHandler $deleteHandler,
+        private LoginWayService            $loginWayService,
+        private UpdateLoginWayHandler      $loginWayHandler,
+        private DeleteLoginWayHandler      $deleteHandler,
         private MakeLoginWayDefaultHandler $makeDefaultHandler,
 
     )
@@ -64,14 +64,14 @@ class LoginWayController extends Controller
 
     public function show(ShowLoginWayRequest $request)
     {
-            $loginWay = $this->loginWayService->getLoginWay(Uuid::fromString($request->route("id")));
+        $loginWay = $this->loginWayService->getLoginWay(Uuid::fromString($request->route("id")));
 
         return Json::item((new LoginWayPresenter($loginWay))->getData());
     }
 
     public function delete(DeleteLoginWayRequest $request)
     {
-       $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
+        $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
     }
@@ -79,13 +79,34 @@ class LoginWayController extends Controller
     public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)
     {
         $this->makeDefaultHandler->handle(Uuid::fromString($request->route("id")));
-        return Json::success(  __("validation.update-successful"));
+        return Json::success(__("validation.update-successful"));
+    }
+
+    public function loginOptionsWithAllRelatedRelations()
+    {
+        $loginOptions = $this->loginWayService->loginOptionWithAllRelatedRelations();
+        return Json::item($loginOptions);
+
     }
 
     public function loginOptions()
     {
-        $loginOptions = $this->loginWayService->loginOption();
-        return Json::item($loginOptions);
+
+        return Json::item($this->loginWayService->loginOptionWithAllRelatedRelations()->pluck("login_option"));
+
+    }
+
+
+    public function getDriversByLoginOption(ShowLoginWayRequest $request)
+    {
+        $drivers = [];
+        foreach ($this->loginWayService->loginOptionWithAllRelatedRelations()->where("login_option",$request->route("loginOption")) ->pluck("driver_types")[0]as $driverType) {
+            array_push($drivers,$driverType['key']);
+
+        }
+
+
+        return Json::item($drivers);
 
     }
 
