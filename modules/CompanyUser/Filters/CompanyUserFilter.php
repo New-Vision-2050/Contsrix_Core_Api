@@ -20,6 +20,7 @@ class CompanyUserFilter extends SearchModelFilter
         return $this
             ->where('email', 'like', '%' . $value . '%')
             ->Orwhere('phone', 'like', '%' . $value . '%');
+
     }
 
     public function company($companyId)
@@ -32,10 +33,9 @@ class CompanyUserFilter extends SearchModelFilter
     public function status($status)
     {
         $this->whereHas('companies', function ($q) use ($status) {
-            if($status == 'active' || $status) {
+            if ($status == 'active' || $status) {
                 $q->where('status', '=', 1);
-            }
-            else{
+            } else {
                 $q->where('status', '=', 0);
             }
         });

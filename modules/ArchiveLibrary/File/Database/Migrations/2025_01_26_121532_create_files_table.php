@@ -8,11 +8,11 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('folders', function (Blueprint $table) {
+        Schema::create('files', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('parent_id')->index()->nullable();
-            $table->enum('access_type', ['public', 'private'])->default('private');
+            $table->uuid('Folder_id')->index()->nullable();
+            $table->enum('access_type', ['public', 'private'])->default('private'); 
             $table->timestamps();
         });
     }
