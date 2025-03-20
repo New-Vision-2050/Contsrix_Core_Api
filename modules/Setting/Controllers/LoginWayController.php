@@ -103,7 +103,7 @@ class LoginWayController extends Controller
         try {
             return Json::item($this->loginWayService->getDriversByLoginOption($request->route("loginOption")));
         } catch (\Exception $e) {
-            return Json::error(__("validation.lookups-value-not-correct"), 400);
+            return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
         }
     }
     public function getAlternativesByLoginOption(ShowLoginWayRequest $request)
@@ -112,7 +112,7 @@ class LoginWayController extends Controller
         try {
             return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->route("loginOption"), $request->route("driver")));
         } catch (\Exception $e) {
-            return Json::error(__("validation.lookups-value-not-correct"), 400);
+            return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
 
         }
     }
