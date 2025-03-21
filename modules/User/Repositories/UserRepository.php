@@ -48,12 +48,12 @@ class UserRepository extends BaseRepository
     public function getUserByIdentifier($identifier): mixed
     {
         $identifierSettings = $this->identifierSettingRepository->list();
-        $isEmailDefault = $identifierSettings->where('key', 'email')->first()->default;
-        $isPhoneDefault = $identifierSettings->where('key', 'phone')->first()->default;
+        $isEmailActive = $identifierSettings->where('key', 'email')->first()->status;
+        $isPhoneActive = $identifierSettings->where('key', 'phone')->first()->status;
         return $this->model->query()
-            ->when($isEmailDefault == 1, function ($query) use ($identifier) {
+            ->when($isEmailActive == 1, function ($query) use ($identifier) {
                 return $query->where('email', $identifier);
-            })->when($isPhoneDefault == 1, function ($query) use ($identifier) {
+            })->when($isPhoneActive == 1, function ($query) use ($identifier) {
                 return $query->orWhere('phone', $identifier);
             })->first();
     }

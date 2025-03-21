@@ -29,7 +29,7 @@ class IdentifierSettingRepository extends BaseRepository
     {
         try {
             $identifier = $this->findOneByOrFail(['id' => $id]);
-            $identifier->update(['default' => $identifier->default^1]);
+            $identifier->update(['status' => $identifier->status^1]);
         } catch (\Exception $e) {
             throw new \Exception(__("validation.update-not-successful"), 500);
         }

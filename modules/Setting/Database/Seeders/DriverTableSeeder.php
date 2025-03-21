@@ -20,7 +20,7 @@ class DriverTableSeeder extends Seeder
         $drivers =
             [
                 "sms" => ["mora" => ["SMS_MORA_KEY" => "", "SMS_MORA_USER" => "", "SMS_MORA_SENDER" => ""]],
-                "mail" => ["web_mail" => ["MAIL_MAILER"=>"","MAIL_HOST"=>"","MAIL_PORT"=>"","MAIL_USERNAME"=>"","MAIL_PASSWORD"=>""]]
+                "mail" => ["web mail" => ["MAIL_DRIVER"=>"","MAIL_HOST"=>"","MAIL_PORT"=>"","MAIL_USERNAME"=>"","MAIL_PASSWORD"=>"","MAIL_ENCRYPTION"=>"","MAIL_FROM_NAME"=>"","MAIL_FROM_ADDRESS"=>""]],
             ];
 
         foreach ($drivers as $driver_type => $data) {

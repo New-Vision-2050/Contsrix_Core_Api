@@ -12,6 +12,8 @@ use Modules\Setting\Handlers\UpdateLoginWayHandler;
 use Modules\Setting\Presenters\LoginWayPresenter;
 use Modules\Setting\Requests\LoginWay\CreateLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\DeleteLoginWayRequest;
+use Modules\Setting\Requests\LoginWay\GetAlternativeDriverByLoginOptionAndDriverRequest;
+use Modules\Setting\Requests\LoginWay\GetDriverByLoginOptionRequest;
 use Modules\Setting\Requests\LoginWay\GetLoginWayListRequest;
 use Modules\Setting\Requests\LoginWay\MakeLoginWayDefaultRequest;
 use Modules\Setting\Requests\LoginWay\ShowLoginWayRequest;
@@ -23,9 +25,9 @@ use Ramsey\Uuid\Uuid;
 class LoginWayController extends Controller
 {
     public function __construct(
-        private LoginWayService       $loginWayService,
-        private UpdateLoginWayHandler $loginWayHandler,
-        private DeleteLoginWayHandler $deleteHandler,
+        private LoginWayService            $loginWayService,
+        private UpdateLoginWayHandler      $loginWayHandler,
+        private DeleteLoginWayHandler      $deleteHandler,
         private MakeLoginWayDefaultHandler $makeDefaultHandler,
 
     )
@@ -46,7 +48,7 @@ class LoginWayController extends Controller
     {
         $loginWay = $this->loginWayService->create($request->createCreateLoginWayDTO());
 
-        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: "Login way created successfully");
+        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: __("validation.create-successful"));
     }
 
     public function update(UpdateLoginWayRequest $request)
@@ -55,19 +57,19 @@ class LoginWayController extends Controller
         $this->loginWayHandler->handle($command);
         $loginWay = $this->loginWayService->getLoginWay($command->getId());
 
-        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: "Login way Updated successfully");
+        return Json::item((new LoginWayPresenter($loginWay))->getData(), message: __('validation.update-successful'));
     }
 
     public function show(ShowLoginWayRequest $request)
     {
-            $loginWay = $this->loginWayService->getLoginWay(Uuid::fromString($request->route("id")));
+        $loginWay = $this->loginWayService->getLoginWay(Uuid::fromString($request->route("id")));
 
         return Json::item((new LoginWayPresenter($loginWay))->getData());
     }
 
     public function delete(DeleteLoginWayRequest $request)
     {
-       $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
+        $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
     }
@@ -75,14 +77,44 @@ class LoginWayController extends Controller
     public function makeLoginWayDefault(MakeLoginWayDefaultRequest $request)
     {
         $this->makeDefaultHandler->handle(Uuid::fromString($request->route("id")));
-        return Json::success(  "Login way default successfully");
+        return Json::success(__("validation.update-successful"));
+    }
+
+    public function loginOptionsWithAllRelatedRelations()
+    {
+        $loginOptions = $this->loginWayService->loginOptionWithAllRelatedRelations();
+        return Json::item($loginOptions);
+
     }
 
     public function loginOptions()
     {
-        $loginOptions = $this->loginWayService->loginOption();
-        return Json::item($loginOptions);
 
+        return Json::item($this->loginWayService->loginOptionWithAllRelatedRelations()->map(function ($value) {
+            return ['login_option' => $value["login_option"]];
+        })->all());
+
+    }
+
+
+    public function getDriversByLoginOption(GetDriverByLoginOptionRequest $request)
+    {
+
+        try {
+            return Json::item($this->loginWayService->getDriversByLoginOption($request->login_option));
+        } catch (\Exception $e) {
+            return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
+        }
+    }
+    public function getAlternativesByLoginOption(GetAlternativeDriverByLoginOptionAndDriverRequest $request)
+    {
+
+        try {
+            return Json::item($this->loginWayService->getAlternativeDriversByLoginOption($request->login_option_driver));
+        } catch (\Exception $e) {
+            return Json::error(__("validation.lookups-value-not-correct"), 400,httpStatus: 400);
+
+        }
     }
 
 

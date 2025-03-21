@@ -18,7 +18,7 @@ use Modules\Setting\Services\DriverService;
 class DriverController extends Controller
 {
     public function __construct(
-        private DriverService $driverService,
+        private DriverService       $driverService,
         private UpdateDriverHandler $updateDriverHandler
     )
     {
@@ -35,8 +35,7 @@ class DriverController extends Controller
     {
         try {
             $command = $request->createUpdateDriverCommand();
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return Json::error($e->getMessage());
         }
 
@@ -44,7 +43,7 @@ class DriverController extends Controller
 
         $driver = $this->driverService->show($command->getId());
 
-        return Json::item(["driver"=> $driver]);
+        return Json::item( $driver);
 
     }
 

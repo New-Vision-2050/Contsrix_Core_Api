@@ -52,7 +52,7 @@ class IdentifierSettingController extends Controller
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-        return Json::success("Identifier default successfully");
+        return Json::success(__("validation.update-successful"));
     }
 
 }
