@@ -6,14 +6,10 @@ namespace Modules\Setting\Controllers;
 
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use Modules\Setting\Handlers\DeleteLoginWayHandler;
 use Modules\Setting\Handlers\MakeLoginWayDefaultHandler;
 use Modules\Setting\Handlers\UpdateLoginWayHandler;
-use Modules\Setting\Models\LoginWay;
-use Modules\Setting\Models\LoginWayStep;
 use Modules\Setting\Presenters\LoginWayPresenter;
-use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\Setting\Requests\LoginWay\CreateLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\DeleteLoginWayRequest;
 use Modules\Setting\Requests\LoginWay\GetLoginWayListRequest;
@@ -43,7 +39,7 @@ class LoginWayController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items(LoginWayPresenter::collection($list["data"]), $list["pagination"]);
+        return Json::items(LoginWayPresenter::collection($list["data"]),paginationSettings: $list["pagination"]);
     }
 
     public function store(CreateLoginWayRequest $request)
