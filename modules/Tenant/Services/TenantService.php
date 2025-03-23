@@ -19,20 +19,42 @@ class TenantService
      */
     public function createTenant(Company $company): Tenant
     {
-        return DB::transaction(function () use ($company) {
+
             // Create a tenant with the company's ID as the tenant ID
-            $tenant = Tenant::create([
-                'id' => $company->id,
-                'company_id' => $company->id,
-                'name' => $company->name,
-            ]);
+            $tenant = Tenant::firstOrCreate(
+                ['id' => $company->id],
+                [
+                    'id' => $company->id,
+                    'company_id' => $company->id, // This will be stored in the data column
+                    'name' => $company->name,     // This will be stored in the data column
+                ]
+            );
 
             // Create a domain for the tenant (using company's user_name as subdomain)
-            $domain = $company->user_name . '.' . config('app.domain', 'localhost');
-            $tenant->domains()->create(['domain' => $domain]);
+            $domain = $company->user_name . '.' . config('tenancy.central_domains.0', 'localhost');
+            $tenant->createDomain(['domain' => $domain]);
+
+            try {
+                // For schema-based tenancy in PostgreSQL, ensure the schema exists
+                if (!$tenant->database()->manager()->databaseExists($tenant->database()->getName())) {
+                    \Log::info('Creating schema for tenant: ' . $tenant->id);
+                    $tenant->database()->manager()->createDatabase($tenant->database()->getName());
+
+                    // Run migrations for the tenant
+                    \Artisan::call('tenants:migrate', [
+                        '--tenants' => [$tenant->id]
+                    ]);
+                    \Log::info('Ran migrations for tenant: ' . $tenant->id);
+                } else {
+                    \Log::info('Schema already exists for tenant: ' . $tenant->id);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to create tenant schema: ' . $e->getMessage());
+                throw $e;
+            }
 
             return $tenant;
-        });
+
     }
 
     /**
@@ -43,7 +65,8 @@ class TenantService
      */
     public function getTenantByCompanyId(string $companyId): ?Tenant
     {
-        return Tenant::where('company_id', $companyId)->first();
+        // Since company_id is stored in the data column, we need to use whereData
+        return Tenant::where('data->company_id', $companyId)->first();
     }
 
     /**
@@ -81,8 +104,10 @@ class TenantService
     {
         return DB::transaction(function () use ($tenant) {
             // Delete the tenant's domains
-            $tenant->domains()->delete();
-            
+            foreach ($tenant->domains as $domain) {
+                $domain->delete();
+            }
+
             // Delete the tenant
             return $tenant->delete();
         });

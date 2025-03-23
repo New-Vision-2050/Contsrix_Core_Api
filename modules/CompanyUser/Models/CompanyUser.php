@@ -47,10 +47,25 @@ class CompanyUser extends Model
         "passport",
         "identity",
         'job_title_id',
+        'password',
+        'email_verified_at',
+        'remember_token',
     ];
 
     protected $casts = [
         'id' => 'string',
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
 

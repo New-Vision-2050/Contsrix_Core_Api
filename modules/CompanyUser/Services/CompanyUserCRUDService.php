@@ -31,10 +31,18 @@ class CompanyUserCRUDService
         $user = $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
 
         try {
-            event(new UserCreated($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
+            // Get the company ID from the DTO
+            $companyId = $companyRoleDTO->getCompanyId();
+
+            // Create additional data for the event
+            $additionalData = $createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id];
+
+            // Dispatch the event with the user, company ID, and additional data
+            event(new UserCreated($user, $companyId->toString(), $additionalData));
         }
         catch (\Exception $e){
-
+            // Log the exception
+            \Log::error('Failed to dispatch UserCreated event: ' . $e->getMessage());
         }
 
         return $user;

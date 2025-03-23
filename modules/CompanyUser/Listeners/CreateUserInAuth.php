@@ -2,11 +2,7 @@
 
 namespace Modules\CompanyUser\Listeners;
 
-use Modules\CompanyUser\Events\CompanyUser;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Modules\CompanyUser\Events\UserCreated;
-use Modules\User\Models\User;
 use RabbitMQ\Jobs\BroadcastMessage;
 
 class CreateUserInAuth

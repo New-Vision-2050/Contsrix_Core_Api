@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 use Stancl\Tenancy\Database\Models\Domain;
-use Stancl\Tenancy\Database\Models\Tenant;
 
 return [
-    'tenant_model' => Tenant::class,
+    'tenant_model' => \Modules\Tenant\Models\Tenant::class,
     'id_generator' => Stancl\Tenancy\UUIDGenerator::class,
 
     'domain_model' => Domain::class,
@@ -17,8 +16,9 @@ return [
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
     'central_domains' => [
+        'constrix-api.test',
         '127.0.0.1',
-        'localhost',
+        'localhost'
     ],
 
     /**
@@ -45,7 +45,7 @@ return [
          * Connection used as a "template" for the dynamically created tenant database connection.
          * Note: don't name your template connection tenant. That name is reserved by package.
          */
-        'template_tenant_connection' => 'tenant',
+        'template_tenant_connection' => null,
 
         /**
          * Tenant database names are created like this:

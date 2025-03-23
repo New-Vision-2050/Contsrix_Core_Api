@@ -34,6 +34,7 @@ class CompanyObserver
     {
         // Only create a tenant if the company is active
         if ($company->is_active) {
+            // Create a tenant with the company's ID and store company_id in the data column
             $this->tenantService->createTenant($company);
         }
     }

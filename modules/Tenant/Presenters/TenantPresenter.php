@@ -33,15 +33,15 @@ class TenantPresenter extends BasePresenter
             ] : null;
         }
 
-        // Add domains if relationship is loaded
-        if ($this->tenant->relationLoaded('domains')) {
-            $data['domains'] = $this->tenant->domains->map(function ($domain) {
-                return [
-                    'id' => $domain->id,
-                    'domain' => $domain->domain,
-                ];
-            });
+        // Add domains
+        $domains = [];
+        foreach ($this->tenant->domains as $domain) {
+            $domains[] = [
+                'id' => $domain->id,
+                'domain' => $domain->domain,
+            ];
         }
+        $data['domains'] = $domains;
 
         return $data;
     }

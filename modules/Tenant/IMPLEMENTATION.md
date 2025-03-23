@@ -18,9 +18,18 @@ The multi-tenancy implementation follows a database-per-tenant approach, where:
 A dedicated Tenant module has been created with the following components:
 
 - **Models**: `Tenant` model that extends the stancl/tenancy Tenant model
-- **Services**: `TenantService` for tenant management and `TenantReportingService` for cross-tenant reporting
+- **Services**:
+  - `TenantService` for tenant management
+  - `TenantReportingService` for cross-tenant reporting
+  - `TenantAuthService` for tenant-specific authentication
+  - `TenantWelcomeService` for sending welcome emails
 - **Controllers**: `TenantController` for tenant management and `TenantReportingController` for reporting
 - **Observers**: `CompanyObserver` to automatically create tenants when companies are created
+- **Listeners**: `SendTenantWelcomeEmail` to send welcome emails when company users are created
+- **Notifications**: `TenantWelcomeNotification` for sending welcome emails with tenant login information
+- **Commands**:
+  - `SetCompanyUserPasswordCommand` for setting user passwords
+  - `SendTenantWelcomeEmailsCommand` for sending welcome emails
 - **Routes**: API routes for tenant management and reporting
 
 ### 2. Database Configuration

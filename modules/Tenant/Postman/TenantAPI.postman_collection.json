@@ -1,0 +1,411 @@
+{
+	"info": {
+		"_postman_id": "a5e7b8c9-d0e1-4f23-a456-789b0c1d2e3f",
+		"name": "Tenant API",
+		"description": "A collection to test the tenant authentication and management APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Tenant Authentication",
+			"description": "Endpoints for tenant-specific authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.token) {",
+									"    pm.environment.set(\"tenant_token\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{tenant_user_email}}\",\n    \"password\": \"{{tenant_user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{tenant_domain}}/api/auth/login",
+							"host": [
+								"{{tenant_domain}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login to a tenant with email and password"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Authenticated User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{tenant_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{tenant_domain}}/api/auth/me",
+							"host": [
+								"{{tenant_domain}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Get the authenticated user's information"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData && jsonData.token) {",
+									"    pm.environment.set(\"tenant_token\", jsonData.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{tenant_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{tenant_domain}}/api/auth/refresh",
+							"host": [
+								"{{tenant_domain}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Refresh the JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{tenant_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{tenant_domain}}/api/auth/logout",
+							"host": [
+								"{{tenant_domain}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout and invalidate the token"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tenant Information",
+			"description": "Endpoints for tenant information",
+			"item": [
+				{
+					"name": "Get Tenant Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{tenant_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{tenant_domain}}/api/tenant/info",
+							"host": [
+								"{{tenant_domain}}"
+							],
+							"path": [
+								"api",
+								"tenant",
+								"info"
+							]
+						},
+						"description": "Get information about the current tenant"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tenant Management",
+			"description": "Endpoints for managing tenants (central application)",
+			"item": [
+				{
+					"name": "List All Tenants",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{central_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{central_domain}}/api/tenants",
+							"host": [
+								"{{central_domain}}"
+							],
+							"path": [
+								"api",
+								"tenants"
+							]
+						},
+						"description": "List all tenants"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tenant Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{central_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{central_domain}}/api/tenants/{{tenant_id}}",
+							"host": [
+								"{{central_domain}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Get details of a specific tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Tenant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{central_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"companyId\": \"{{company_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{central_domain}}/api/tenants/companies/{{company_id}}",
+							"host": [
+								"{{central_domain}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"companies",
+								"{{company_id}}"
+							]
+						},
+						"description": "Create a new tenant for a company"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Tenant",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{central_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{central_domain}}/api/tenants/{{tenant_id}}",
+							"host": [
+								"{{central_domain}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"{{tenant_id}}"
+							]
+						},
+						"description": "Delete a tenant"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tenant Reporting",
+			"description": "Endpoints for cross-tenant reporting",
+			"item": [
+				{
+					"name": "Get User Count By Tenant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{central_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{central_domain}}/api/tenants/reports/users",
+							"host": [
+								"{{central_domain}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"reports",
+								"users"
+							]
+						},
+						"description": "Get user count by tenant"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Dashboard Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{central_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{central_domain}}/api/tenants/reports/dashboard",
+							"host": [
+								"{{central_domain}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"reports",
+								"dashboard"
+							]
+						},
+						"description": "Get dashboard statistics across all tenants"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tenant Health",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{central_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{central_domain}}/api/tenants/reports/health",
+							"host": [
+								"{{central_domain}}"
+							],
+							"path": [
+								"api",
+								"tenants",
+								"reports",
+								"health"
+							]
+						},
+						"description": "Get health report for all tenants"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "central_domain",
+			"value": "http://localhost:8000",
+			"type": "string",
+			"description": "The domain of the central application"
+		},
+		{
+			"key": "tenant_domain",
+			"value": "http://tenant-domain.localhost:8000",
+			"type": "string",
+			"description": "The domain of the tenant application"
+		}
+	]
+}
