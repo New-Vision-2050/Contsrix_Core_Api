@@ -38,7 +38,7 @@ class IdentifierSettingController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items(IdentifierPresenter::collection($list["data"]), $list["pagination"]);
+        return Json::items(IdentifierPresenter::collection($list["data"]),paginationSettings: $list["pagination"]);
 
     }
 
@@ -52,7 +52,7 @@ class IdentifierSettingController extends Controller
             return Json::error($e->getMessage(), httpStatus: $e->getCode());
         }
 
-        return Json::success("Identifier default successfully");
+        return Json::success(__("validation.update-successful"));
     }
 
 }

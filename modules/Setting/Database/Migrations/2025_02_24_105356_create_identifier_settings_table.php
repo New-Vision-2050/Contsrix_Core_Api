@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('identifier_settings', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string("key");
-            $table->tinyInteger("default")->default(0);
+            $table->tinyInteger("status")->default(0);
             $table->timestamps();
         });
     }

@@ -25,7 +25,7 @@ class IdentifierSetting extends Model
 
 
     protected $fillable = [
-        "default"
+        "status"
     ];
 
     protected $casts = [

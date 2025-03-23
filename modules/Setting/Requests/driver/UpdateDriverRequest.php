@@ -38,11 +38,14 @@ class UpdateDriverRequest extends FormRequest
             {
                 return new UpdateMailCommand(
                     id: Uuid::fromString($this->route('id')),
-                    mailMailer: $this->config["MAIL_MAILER"],
+                    mailDriver: $this->config["MAIL_DRIVER"],
                     mailHost: $this->config["MAIL_HOST"],
                     mailPort: $this->config["MAIL_PORT"],
                     mailUsername: $this->config["MAIL_USERNAME"],
-                    mailPassword: $this->config["MAIL_PASSWORD"]
+                    mailPassword: $this->config["MAIL_PASSWORD"],
+                    mailEncryption: $this->config["MAIL_ENCRYPTION"],
+                    mailAddress: $this->config["MAIL_FROM_ADDRESS"],
+                    mailFromName: $this->config["MAIL_FROM_NAME"],
                 );
             }elseif ($driver->driver_type == "sms" && $driver->name == "mora")
             {

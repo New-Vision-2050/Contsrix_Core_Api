@@ -54,7 +54,7 @@ class LoginWayService
         return $loginWay;
     }
 
-    public function loginOption()
+    public function loginOptionWithAllRelatedRelations()
     {
         $driverTypesData = [];
         $driverTypes = $this->driverRepository->getDataGroupByType()->keys()->toArray();
@@ -68,19 +68,71 @@ class LoginWayService
 
             ];
         }
+        $result = [
 
-
-        return [
-            'login_options' => [
-                [
-                    'login_option' => 'password',
-                    'driver_types' => $driverTypes
-                ],
-                [
-                    'login_option' => 'otp',
-                    'driver_types' => $driverTypesData
-                ]
+            [
+                'login_option' => 'password',
+                'driver_types' => [["key" => null, "alternatives" => $driverTypes]]
+            ],
+            [
+                'login_option' => 'otp',
+                'driver_types' => $driverTypesData
             ]
+
         ];
+
+
+        return collect($result);
+    }
+
+    public function getDriversByLoginOption($loginOption)
+    {
+        $driverTypes = collect($this->loginOptionWithAllRelatedRelations()
+            ->where("login_option", $loginOption)->first() ["driver_types"])
+            ->where("key", "<>", null);
+        $drivers = [];
+        foreach ($driverTypes as $driverType) {
+            $drivers[] = [
+                "value" => $loginOption . "-" . $driverType["key"],
+                "name" => $driverType["key"],
+            ];
+        }
+        return $drivers;
+    }
+
+    public function getAlternativeDriversByLoginOption(string $loginOptionDriver): array
+    {
+
+        [$loginOption, $driver] = $this->parseLoginOptionDriver($loginOptionDriver);
+        $alternatives = $this->getAlternativesForDriver($loginOption, $driver);
+
+        $drivers = [];
+        foreach ($alternatives as $alternative) {
+            $drivers[] = [
+                "key" => $alternative,
+            ];
+        }
+
+        return $drivers;
+    }
+
+    private function parseLoginOptionDriver(string $loginOptionDriver): array
+    {
+        $parts = explode("-", $loginOptionDriver);
+        $loginOption = $parts[0];
+        $driver = $parts[1] ?? null;
+
+        if ($driver === "null") {
+            $driver = null;
+        }
+
+        return [$loginOption, $driver];
+    }
+
+    private function getAlternativesForDriver(string $loginOption, $driver): array
+    {
+        return collect($this->loginOptionWithAllRelatedRelations()
+            ->where("login_option", $loginOption)->first()["driver_types"])
+            ->where("key", $driver)->first()["alternatives"];
     }
 }

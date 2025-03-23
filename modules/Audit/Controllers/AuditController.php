@@ -34,7 +34,7 @@ class AuditController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::items(AuditPresenter::collection($list['data']), $list['pagination']);
+        return Json::items(AuditPresenter::collection($list['data']),paginationSettings: $list['pagination']);
     }
 
     public function show(GetAuditRequest $request): JsonResponse
