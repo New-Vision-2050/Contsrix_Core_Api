@@ -24,6 +24,7 @@
         "propaganistas/laravel-phone": "^5.3",
         "spatie/laravel-medialibrary": "^11.12",
         "spatie/laravel-permission": "^6.10",
+        "stancl/tenancy": "^3.9",
         "tymon/jwt-auth": "^2.1",
         "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1"
     },
