@@ -20,6 +20,7 @@ class LoginWayPresenter extends AbstractPresenter
         return [
             'id' => $this->loginWay->id,
             'name' => $this->loginWay->name,
+            'default' => $this->loginWay->default,
             'steps' => LoginOptionPresenter::collection($this->loginWay->loginWaySteps),
         ];
     }

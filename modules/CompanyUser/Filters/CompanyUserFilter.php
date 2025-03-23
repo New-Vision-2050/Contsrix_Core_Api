@@ -17,9 +17,11 @@ class CompanyUserFilter extends SearchModelFilter
 
     public function emailOrPhone($value)
     {
-        return $this
-            ->where('email', 'like', '%' . $value . '%')
-            ->where('phone', 'like', '%' . $value . '%');
+        return $this->where(function ($q) use ($value) {
+            $q->where('email', 'like', '%' . $value . '%')
+                ->Orwhere('phone', 'like', '%' . $value . '%');
+        });
+
     }
 
     public function company($companyId)
@@ -32,10 +34,9 @@ class CompanyUserFilter extends SearchModelFilter
     public function status($status)
     {
         $this->whereHas('companies', function ($q) use ($status) {
-            if($status == 'active' || $status) {
+            if ($status == 'active' || $status) {
                 $q->where('status', '=', 1);
-            }
-            else{
+            } else {
                 $q->where('status', '=', 0);
             }
         });

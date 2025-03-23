@@ -50,7 +50,7 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items(UserPresenter::collection($list['data']), $list['pagination']);
+        return Json::items(UserPresenter::collection($list['data']),paginationSettings: $list['pagination']);
     }
 
     public function show(GetUserRequest $request): JsonResponse
@@ -109,7 +109,7 @@ class UserController extends Controller
     {
         $command = $request->createAssignRoleForUserCommand();
         $this->assignRoleForUserHandler->handle($command);
-        return Json::success("roles added successfully");
+        return Json::success(__("validation.created_successfully"));
     }
 
     public function getMyPermissions()

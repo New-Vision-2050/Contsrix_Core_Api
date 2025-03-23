@@ -154,8 +154,11 @@ return [
     "can-not-resend-before" => "لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
     "phone" => "رقم الهاتف غير صحيح",
     'delete-not-successful' => 'فشل الحذف',
+    'delete-successful' => 'تم الحذف بنجاح',
     'create-not-successful' => 'فشل الحفظ',
+    'create-successful' => 'تم الحفظ بنجاح',
     'update-not-successful' => 'فشل التعديل',
+    'update-successful' => 'تم التعديل بنجاح',
     "user-name" => "اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
     "user-email-error" => " البريد الالكتروني موجود ضمن النظام بأسم :name .",
     "user-email-success" => "البريد الالكتروني موجود ضمن النظام",
@@ -183,6 +186,7 @@ return [
     'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
     'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
     'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
+    "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

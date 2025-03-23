@@ -8,7 +8,7 @@ class ResetPasswordCommand
 {
     public function __construct(
 
-        private string $token,
+        private ?string $token,
         private string $password,
         private string $identifier,
     ) {

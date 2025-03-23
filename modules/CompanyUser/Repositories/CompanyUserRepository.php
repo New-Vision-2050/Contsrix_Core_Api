@@ -40,7 +40,7 @@ class CompanyUserRepository extends BaseRepository
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
 
         return [
-            'pagination' => $paginationArray['pagination'],
+            'pagination' => $paginationArray,
             'data' => $paginatedData,
         ];
 
