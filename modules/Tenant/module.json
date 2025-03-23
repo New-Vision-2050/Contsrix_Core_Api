@@ -1,0 +1,11 @@
+{
+    "name": "Tenant",
+    "alias": "tenant",
+    "description": "Tenant management module for multi-tenant functionality",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Tenant\\Providers\\TenantServiceProvider"
+    ],
+    "files": []
+}
