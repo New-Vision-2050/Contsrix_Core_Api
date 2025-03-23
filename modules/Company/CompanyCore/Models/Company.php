@@ -51,11 +51,20 @@ class Company extends Model implements HasMedia
         'date_activate',
         'registration_no',
         'serial_no',
-        'image_path'
+        'image_path',
+        'subdomain',
+        'database_schema',
+        'is_tenant',
+        'tenant_created_at',
+        'tenant_expires_at',
+        'tenant_plan'
     ];
     protected $casts = [
         'id' => 'string',
-        'date_activate' => 'date'
+        'date_activate' => 'date',
+        'is_tenant' => 'boolean',
+        'tenant_created_at' => 'datetime',
+        'tenant_expires_at' => 'datetime'
     ];
 
     protected static function newFactory(): CompanyFactory
@@ -92,4 +101,107 @@ class Company extends Model implements HasMedia
         $media->getFullUrl(); // Ensure this is using your custom method
     }
 
+    /**
+     * Check if the company is a tenant.
+     *
+     * @return bool
+     */
+    public function isTenant(): bool
+    {
+        return $this->is_tenant;
+    }
+
+    /**
+     * Get the tenant's schema name.
+     *
+     * @return string|null
+     */
+    public function getSchemaName(): ?string
+    {
+        return $this->database_schema;
+    }
+
+    /**
+     * Check if the tenant's subscription is active.
+     *
+     * @return bool
+     */
+    public function isActive(): bool
+    {
+        if (!$this->is_tenant) {
+            return false;
+        }
+
+        if (!$this->tenant_expires_at) {
+            return true; // No expiration date means it's active
+        }
+
+        return $this->tenant_expires_at->isFuture();
+    }
+
+    /**
+     * Get the tenant's subdomain URL.
+     *
+     * @return string|null
+     */
+    public function getSubdomainUrl(): ?string
+    {
+        if (!$this->subdomain) {
+            return null;
+        }
+
+        $format = config('tenant.domain.tenant_domain_format', '{tenant}.example.com');
+        return str_replace('{tenant}', $this->subdomain, $format);
+    }
+
+    /**
+     * Get the days remaining in the tenant's subscription.
+     *
+     * @return int|null
+     */
+    public function getDaysRemaining(): ?int
+    {
+        if (!$this->tenant_expires_at) {
+            return null;
+        }
+
+        return now()->diffInDays($this->tenant_expires_at, false);
+    }
+
+    /**
+     * Extend the tenant's subscription.
+     *
+     * @param int $days
+     * @return bool
+     */
+    public function extendSubscription(int $days): bool
+    {
+        if (!$this->is_tenant) {
+            return false;
+        }
+
+        if ($this->tenant_expires_at) {
+            $this->tenant_expires_at = $this->tenant_expires_at->addDays($days);
+        } else {
+            $this->tenant_expires_at = now()->addDays($days);
+        }
+
+        return $this->save();
+    }
+
+    /**
+     * Change the tenant's plan.
+     *
+     * @param string $plan
+     * @return bool
+     */
+    public function changePlan(string $plan): bool
+    {
+        if (!$this->is_tenant) {
+            return false;
+        }
+
+        $this->tenant_plan = $plan;
+        return $this->save();
+    }
 }
