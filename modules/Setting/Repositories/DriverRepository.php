@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace Modules\Setting\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
+
 use Modules\Setting\Models\Driver;
-use Modules\Setting\Models\IdentifierSetting;
-use Modules\Setting\Models\Setting;
-use Ramsey\Uuid\UuidInterface;
+
 
 class DriverRepository extends BaseRepository
 {
@@ -28,7 +25,7 @@ class DriverRepository extends BaseRepository
 
     public function getDrivers()
     {
-        return $this->all();
+        return $this->model->filter(request()->all())->get();
     }
 
 
