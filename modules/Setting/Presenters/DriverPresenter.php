@@ -22,6 +22,7 @@ class DriverPresenter extends AbstractPresenter
             "id" => $this->driver->id,
             'type' => $this->driver->driver_type,
             'name' => $this->driver->name,
+            "config"=> $this->driver->config
         ];
     }
 }
