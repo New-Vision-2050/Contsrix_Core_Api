@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\CompanyUser\Models\CompanyUser;
 
@@ -22,7 +23,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 class CompanyUserRepository extends BaseRepository
 {
 
-    public function __construct(CompanyUser $model)
+    public function __construct(CompanyUser $model,private UserRepository $userRepository)
     {
         parent::__construct($model);
     }
@@ -31,7 +32,7 @@ class CompanyUserRepository extends BaseRepository
     {
         if (method_exists($this->model, 'scopeFilter')) {
             $query = $this->model->filter(request()->all())->with($relations);
-        }else{
+        } else {
             $query = $this->model->with($relations);
         }
 
@@ -138,8 +139,19 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $companyUser = $this->create($companyUserData);
+            $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
+            if (!$companyUser) {
+
+                $companyUser = $this->create($companyUserData );
+            }
+            $user = $this->userRepository->createUser([
+                'name' => $companyUserData['first_name'] . ' ' . $companyUserData['last_name'],
+                'email' => $companyUserData['email'],
+                'company_id' => $companyRole['company_id'],
+                "global_company_user_id" => $companyUser->id
+            ]);
             CompanyUserCompany::create($companyRole + ["company_user_id" => $companyUser->id]);
+
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();

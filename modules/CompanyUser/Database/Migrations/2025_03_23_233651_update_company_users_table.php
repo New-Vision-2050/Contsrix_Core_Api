@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('company_users', function (Blueprint $table) {
-            $table->uuid("global_user_id")->nullable();
+            $table->uuid("global_id")->nullable();
         });
     }
 };
