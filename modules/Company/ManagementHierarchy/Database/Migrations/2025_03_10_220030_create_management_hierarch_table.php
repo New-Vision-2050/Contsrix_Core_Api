@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('name');
             $table->enum("type",["branch","management","department"])->default("branch");
             $table->uuid("company_id")->index();
-            $table->string('path')->nullable()->index();
+            $table->text('path')->nullable()->index();
 
             $table->timestamps();
         });

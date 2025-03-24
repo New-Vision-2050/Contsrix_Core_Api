@@ -13,6 +13,7 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Ramsey\Uuid\Uuid;
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {
@@ -35,7 +36,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $general_manager = User::first();
 
         $companyData = [
-            'name' => 'Test Company',
+            'name' => ["ar"=>'شركة تيست '],
             'user_name' => bin2hex(random_bytes(6)),
             'email' => 'test@example.com',
             'phone' => '123456789',

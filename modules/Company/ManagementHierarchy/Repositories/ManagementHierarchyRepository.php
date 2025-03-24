@@ -6,6 +6,7 @@ namespace Modules\Company\ManagementHierarchy\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 
@@ -33,9 +34,19 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
+    public function getMainBranchForCompany(UuidInterface $id): ManagementHierarchy
+    {
+        return $this->findOneBy([
+            "company_id" => $id,
+            "parent_id" => null,
+            "type" => "branch"
+        ]);
+    }
+
     public function createManagementHierarchy(array $data): ManagementHierarchy
     {
-        return $this->create($data);
+        $root = $this->create($data + ["id" => Uuid::uuid4()->toString()]);
+        return $root;
     }
 
     public function updateManagementHierarchy(UuidInterface $id, array $data): bool

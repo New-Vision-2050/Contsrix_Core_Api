@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
+use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\AdminRequest\Models\AdminRequest;
 use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
-//use BasePackage\Shared\Traits\HasTranslations;
+
 
 class Company extends Model implements HasMedia
 {
@@ -27,10 +27,13 @@ class Company extends Model implements HasMedia
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
-    //use HasTranslations;
+    use HasTranslations;
+
     // use SoftDeletes;
 
-    //public array $translatable = [];
+    public array $translatable = ["name"];
+
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager',"mainBranch"];
 
     public $incrementing = false;
 
@@ -85,11 +88,22 @@ class Company extends Model implements HasMedia
 
     public function companyRegistrationType()
     {
-        return $this->belongsTo(CompanyRegistrationType::class,'registration_type_id');
+        return $this->belongsTo(CompanyRegistrationType::class, 'registration_type_id');
     }
+
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl(); // Ensure this is using your custom method
+    }
+
+    public function adminRequestTransaction()
+    {
+        return $this->morphMany(AdminRequest::class, 'requestable');
+    }
+
+    public function mainBranch()
+    {
+        return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('parent_id', null)->where('type', 'branch');
     }
 
 }
