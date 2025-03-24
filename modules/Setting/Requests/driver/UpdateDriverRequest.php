@@ -29,30 +29,29 @@ class UpdateDriverRequest extends FormRequest
     {
             $this->driverRepository  = app(DriverRepository::class);
             $driver = $this->driverRepository->find(Uuid::fromString($this->route('id')));
+            $config = $this->get('config',[]);
             if($driver->driver_type == "mail")
             {
                 return new UpdateMailCommand(
                     id: Uuid::fromString($this->route('id')),
-                    mailDriver: $this->config["MAIL_DRIVER"],
-                    mailHost: $this->config["MAIL_HOST"],
-                    mailPort: $this->config["MAIL_PORT"],
-                    mailUsername: $this->config["MAIL_USERNAME"],
-                    mailPassword: $this->config["MAIL_PASSWORD"],
-                    mailEncryption: $this->config["MAIL_ENCRYPTION"],
-                    mailAddress: $this->config["MAIL_FROM_ADDRESS"],
-                    mailFromName: $this->config["MAIL_FROM_NAME"],
+                    mailDriver: $config["MAIL_DRIVER"],
+                    mailHost: $config["MAIL_HOST"],
+                    mailPort: $config["MAIL_PORT"],
+                    mailUsername: $config["MAIL_USERNAME"],
+                    mailPassword: $config["MAIL_PASSWORD"],
+                    mailEncryption: $config["MAIL_ENCRYPTION"],
+                    mailAddress: $config["MAIL_FROM_ADDRESS"],
+                    mailFromName: $config["MAIL_FROM_NAME"],
                 );
             }elseif ($driver->driver_type == "sms" && $driver->name == "mora")
             {
                 return new UpdateMoraSMSCommand(
                     id: Uuid::fromString($this->route('id')),
-                    smsMoraKey: $this->config["SMS_KEY"],
-                    smsMoraUser: $this->config["SMS_USERNAME"],
-                    smsMoraSender: $this->config["SMS_SENDER"],
+                    smsMoraKey: $config["SMS_KEY"],
+                    smsMoraUser: $config["SMS_USERNAME"],
+                    smsMoraSender: $config["SMS_SENDER"],
                 );
             }
-
-
 
         throw new \Exception(__("validation.update-not-successful"), 500);
 
