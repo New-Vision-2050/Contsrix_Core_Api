@@ -33,11 +33,8 @@ class DriverController extends Controller
 
     public function updateDriver(UpdateDriverRequest $request): JsonResponse
     {
-        try {
-            $command = $request->createUpdateDriverCommand();
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage());
-        }
+
+       $command = $request->createUpdateDriverCommand();
 
         $this->updateDriverHandler->handle($command);
 

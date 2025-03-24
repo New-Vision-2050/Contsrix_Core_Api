@@ -16,12 +16,7 @@ use Ramsey\Uuid\Uuid;
 class UpdateDriverRequest extends FormRequest
 {
     private DriverRepository $driverRepository;
-    public function __construct(array $query = [], array $request = [], array $attributes = [], array $cookies = [], array $files = [], array $server = [], $content = null)
-    {
-        $this->driverRepository  = app(DriverRepository::class);
 
-        parent::__construct($query, $request, $attributes, $cookies, $files, $server, $content);
-    }
 
     public function rules(): array
     {
@@ -32,7 +27,7 @@ class UpdateDriverRequest extends FormRequest
 
     public function createUpdateDriverCommand()
     {
-        try {
+            $this->driverRepository  = app(DriverRepository::class);
             $driver = $this->driverRepository->find(Uuid::fromString($this->route('id')));
             if($driver->driver_type == "mail")
             {
@@ -57,11 +52,6 @@ class UpdateDriverRequest extends FormRequest
                 );
             }
 
-        }
-        catch (\Exception $e) {
-            throw new \Exception(__("validation.update-not-successful"), 500);
-
-        }
 
 
         throw new \Exception(__("validation.update-not-successful"), 500);
