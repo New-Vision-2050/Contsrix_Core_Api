@@ -193,6 +193,7 @@ return [
     "company-not-found"=>"company not found",
     "login-way-not-found"=>"login way not found",
     "user-not-found"=>"user not found ",
+    "identifier-not-found"=>"identifier not found ",
     "delete-not-successful-must-have-one"=>"Delete not successful must have one",
     "deactivate-not-successful-must-have-one"=>"deactivate not successful must have one at leaset active ",
     "you-must-set-your-answers"=>"You must set your answers",
