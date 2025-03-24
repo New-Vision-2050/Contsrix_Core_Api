@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 
 use Modules\Setting\Handlers\UpdateDriverHandler;
+use Modules\Setting\Presenters\DriverPresenter;
 use Modules\Setting\Requests\driver\GetDriverListRequest;
 
 use Modules\Setting\Requests\driver\UpdateDriverRequest;
@@ -27,8 +28,7 @@ class DriverController extends Controller
     public function index(GetDriverListRequest $request): JsonResponse
     {
         $list = $this->driverService->all();
-
-        return Json::item($list);
+        return Json::items(DriverPresenter::collection($list));
     }
 
     public function updateDriver(UpdateDriverRequest $request): JsonResponse
