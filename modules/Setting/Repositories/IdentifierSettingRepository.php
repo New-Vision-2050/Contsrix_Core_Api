@@ -29,9 +29,13 @@ class IdentifierSettingRepository extends BaseRepository
     {
         try {
             $identifier = $this->findOneByOrFail(['id' => $id]);
-            $identifier->update(['status' => $identifier->status^1]);
+
         } catch (\Exception $e) {
             throw new \Exception(__("validation.update-not-successful"), 500);
         }
+        if ($this->countBy(["status"=>1]) == 1 && $identifier->status^1 == 0) {
+            throw new \Exception(__("validation.deactivate-not-successful-must-have-one"), 500);
+        }
+        $identifier->update(['status' => $identifier->status^1]);
     }
 }

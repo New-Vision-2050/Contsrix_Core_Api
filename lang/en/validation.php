@@ -194,6 +194,7 @@ return [
     "login-way-not-found"=>"login way not found",
     "user-not-found"=>"user not found ",
     "delete-not-successful-must-have-one"=>"Delete not successful must have one",
+    "deactivate-not-successful-must-have-one"=>"deactivate not successful must have one at leaset active ",
     "you-must-set-your-answers"=>"You must set your answers",
     "all-questions-are-required"=>"All questions are required",
     "invalid-token"=>"invalid token",
