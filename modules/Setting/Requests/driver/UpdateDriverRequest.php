@@ -48,7 +48,7 @@ class UpdateDriverRequest extends FormRequest
                 return new UpdateMoraSMSCommand(
                     id: Uuid::fromString($this->route('id')),
                     smsMoraKey: $config["SMS_MORA_KEY"],
-                    smsMoraUser: $config["SMS_MORA_USERNAME"],
+                    smsMoraUser: $config["SMS_MORA_USER"],
                     smsMoraSender: $config["SMS_MORA_SENDER"],
                 );
             }
