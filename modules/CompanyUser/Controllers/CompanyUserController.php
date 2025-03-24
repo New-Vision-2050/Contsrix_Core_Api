@@ -53,7 +53,7 @@ class CompanyUserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items(CompanyUserPresenter::collection($list["data"]), $list['pagination']);
+        return Json::items(CompanyUserPresenter::collection($list["data"]),paginationSettings: $list['pagination']);
     }
 
     public function widgets()

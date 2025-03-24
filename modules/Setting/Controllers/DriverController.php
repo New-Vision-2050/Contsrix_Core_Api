@@ -29,6 +29,7 @@ class DriverController extends Controller
     {
         $list = $this->driverService->all();
         return Json::items(DriverPresenter::collection($list));
+
     }
 
     public function updateDriver(UpdateDriverRequest $request): JsonResponse

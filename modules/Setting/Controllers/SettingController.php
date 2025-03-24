@@ -25,7 +25,7 @@ class SettingController extends Controller
     public function index(GetSettingListRequest $request): JsonResponse
     {
         $list = $this->settingService->all();
-        return Json::Items( SettingPresenter::collection($list['data'], $list['pagination']));
+        return Json::Items( SettingPresenter::collection($list['data'],paginationSettings: $list['pagination']));
     }
 
     public function store(CreateSettingRequest $request): JsonResponse
