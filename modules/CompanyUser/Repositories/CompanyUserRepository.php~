@@ -207,14 +207,16 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             $companyUser = $this->findOneBy(["id" => $id]);
-            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id],[
-                "name" => $data["name"],
-                "email" => $data["email"],
-                "phone" => $data['phone'],
-                "phone_code" => $data["phone_code"],
-                "global_company_user_id" => $companyUser->global_id
-            ]);
-
+            $users = $this->userRepository->findBy(["global_company_user_id" => $companyUser->global_id]);
+            $users->each(function ($user) use ($data,$companyUser) {//this data update globally in all companies
+                $user->update([
+                    "name" => $data["name"],
+                    "email" => $data["email"],
+                    "phone" => $data['phone'],
+                    "phone_code" => $data["phone_code"],
+                    "global_company_user_id" => $companyUser->global_id
+                ]);
+            });
             $this->update($id, $data);
         } catch (\Exception $e) {
             DB::rollBack();
