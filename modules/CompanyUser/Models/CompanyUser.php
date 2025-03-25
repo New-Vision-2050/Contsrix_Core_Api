@@ -79,6 +79,7 @@ class CompanyUser extends Model
         try {
             DB::beginTransaction();
             $this->companies()->detach();
+            $this->users()->delete();
             parent::delete();
             DB::commit();
         } catch (\Exception $e) {
