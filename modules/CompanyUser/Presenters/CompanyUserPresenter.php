@@ -7,6 +7,7 @@ namespace Modules\CompanyUser\Presenters;
 use Modules\CompanyUser\Models\CompanyUser;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Country\Presenters\CountryPresenter;
+use Modules\User\Presenters\UserPresenter;
 
 class CompanyUserPresenter extends AbstractPresenter
 {
@@ -21,6 +22,7 @@ class CompanyUserPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->companyUser->id,
+            'global_id' => $this->companyUser->global_id,
             'name' => $this->companyUser->name,
             'email' => $this->companyUser->email,
             "residence" => $this->companyUser->residence,
@@ -32,7 +34,8 @@ class CompanyUserPresenter extends AbstractPresenter
             "job_title" => $this->companyUser?->jobTitle?->name,
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
             'data_status' => 0,
-            "company" => CompanyWithRolesPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser)
+            "company" => CompanyWithRolesPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
+
         ];
     }
 }

@@ -32,8 +32,7 @@ class CompanyUserCRUDService
 
         try {
             event(new UserCreated($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
-        }
-        catch (\Exception $e){
+        } catch (\Exception $e) {
 
         }
 
@@ -44,7 +43,7 @@ class CompanyUserCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
 
-        $companyUsers = $this->repository->withRelations(["companies",'jobTitle'], $page, $perPage);
+        $companyUsers = $this->repository->withRelations(["companies", 'jobTitle'], $page, $perPage);
 
         return $companyUsers;
     }
@@ -55,6 +54,7 @@ class CompanyUserCRUDService
             id: $id,
         );
     }
+
     public function getByEmail(string $email): ?CompanyUser
     {
         return $this->repository->findByEmail(

@@ -17,6 +17,7 @@ use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\Currency\Models\Currency;
 use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
+use Modules\User\Models\User;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -60,6 +61,11 @@ class CompanyUser extends Model
     {
         return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
             ->withPivot('role','status');
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'global_company_user_id',"global_id");
     }
 
 
