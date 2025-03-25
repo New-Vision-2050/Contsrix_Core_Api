@@ -47,6 +47,7 @@ class CompanyUser extends Model
         "passport",
         "identity",
         'job_title_id',
+        "global_id",
     ];
 
     protected $casts = [
@@ -56,7 +57,7 @@ class CompanyUser extends Model
 
     public function companies()
     {
-        return $this->belongsToMany(Company::class, 'company_users_companies', 'company_user_id', 'company_id')
+        return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
             ->withPivot('role','status');
     }
 

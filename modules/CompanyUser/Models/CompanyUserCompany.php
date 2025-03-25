@@ -52,7 +52,7 @@ class CompanyUserCompany extends Pivot
     protected $casts = [
         'id' => 'string',
         "company_id" => "string",
-        "company_user_id" => "string",
+        "global_company_user_id" => "string",
     ];
 
     protected static function newFactory(): CompanyUserFactory

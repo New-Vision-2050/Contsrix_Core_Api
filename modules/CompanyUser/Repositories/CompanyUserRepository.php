@@ -144,12 +144,15 @@ class CompanyUserRepository extends BaseRepository
 
                 $companyUser = $this->create($companyUserData);
             }
-            $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different login  in the future
+            $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
+            $companyUser = $companyUser->fresh();//get updated data for company user
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
             if (!$user) {
                 $this->userRepository->createUser([
-                    'name' => $companyUserData['first_name'] . ' ' . $companyUserData['last_name'],
+                    'name' => $companyUserData['name'] ,
                     'email' => $companyUserData['email'],
+                    "phone"=> $companyUserData['phone'],
+                    "phone_code"=> "966",//TODO must seperate between phone code and phone
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id
                 ]);
@@ -160,7 +163,7 @@ class CompanyUserRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 500);
+            throw new \Exception($exception->getMessage(), 500);
         }
 
         return $companyUser;
