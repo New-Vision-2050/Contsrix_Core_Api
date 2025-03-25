@@ -10,6 +10,8 @@ use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Database\Seeders\CompanyRegistrationTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -52,5 +54,11 @@ class CompanyModulesSeederTableSeeder extends Seeder
             ['email' => $companyData['email']],
             $companyData
         );
+
+        CompanyUserCompany::query()->create([
+            'company_id' => $company->id,
+            'global_company_user_id' => $general_manager->global_company_user_id,
+            'role' => CompanyUserRole::EMPLOYEE->value
+        ]);
     }
 }

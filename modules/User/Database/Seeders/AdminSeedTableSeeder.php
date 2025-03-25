@@ -35,7 +35,6 @@ class AdminSeedTableSeeder extends Seeder
                     "phone"=>"542138116",
                     "phone_code"=>"966",
                     "currency_id"=> Currency::query()->first()->id,
-//                    "company_id"=>Company::query()->first()->id,
                     "job_title_id"=>jobTitle::query()->first()->id,
                     "country_id"=>Country::query()->first()->id,
                     "time_zone_id"=>TimeZone::query()->first()->id,
