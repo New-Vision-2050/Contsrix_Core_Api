@@ -147,7 +147,7 @@ class CompanyUserRepository extends BaseRepository
             $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
             $companyUser = $companyUser->fresh();//get updated data for company user
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
-            if (!$user) {
+            if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
                 $this->userRepository->createUser([
                     'name' => $companyUserData['name'] ,
                     'email' => $companyUserData['email'],
