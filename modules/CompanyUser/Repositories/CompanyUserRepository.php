@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\CompanyUser\Models\CompanyUser;
@@ -89,17 +90,22 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            CompanyUserCompany::where('company_user_id', $companyUserId)
+            $companyUser = $this->findOneByOrFail(['id' => $companyUserId]);
+            CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)
                 ->where('company_id', $companyId)
                 ->where('role', $role)
                 ->delete();
-            if (CompanyUserCompany::where('company_user_id', $companyUserId)->count() == 0) {
+            if(CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)->where('company_id', $companyId)->count() == 0){
+                $this->userRepository->deleteWhere(["global_company_user_id"=>$companyUser->global_id,"company_id"=>$companyId]);
+
+            }
+            if (CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)->count() == 0) {
                 $this->delete($companyUserId);
             }
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new \Exception(__("validation.delete-not-successful"), 500);
+            throw new \Exception($exception->getMessage(), 500);
         }
 
     }

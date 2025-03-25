@@ -96,5 +96,10 @@ class UserRepository extends BaseRepository
         return $this->auditRepository->paginated(["user_id" => $id, "user_type" => User::class], $page, $perPage);
     }
 
+    public function deleteWhere(array $conditions)
+    {
+        $this->model->where($conditions)->delete();
+    }
+
 
 }

@@ -35,6 +35,7 @@ class CompanyUserPresenter extends AbstractPresenter
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
             'data_status' => 0,
             "company" => CompanyWithRolesPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
+//            "users"=> UserPresenter::collection($this->companyUser->users)
 
         ];
     }
