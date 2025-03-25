@@ -41,6 +41,7 @@ class CompanyUser extends Model
         'name',
         "email",
         "phone",
+        "phone_code",
         "country_id",
         "border_number",
         "residence",

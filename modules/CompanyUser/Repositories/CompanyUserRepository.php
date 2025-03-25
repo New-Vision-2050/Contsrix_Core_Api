@@ -152,7 +152,7 @@ class CompanyUserRepository extends BaseRepository
                     'name' => $companyUserData['name'] ,
                     'email' => $companyUserData['email'],
                     "phone"=> $companyUserData['phone'],
-                    "phone_code"=> "966",//TODO must seperate between phone code and phone
+                    "phone_code"=> $companyUserData['phone_code'],
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id
                 ]);
@@ -189,7 +189,7 @@ class CompanyUserRepository extends BaseRepository
                     'email' => $companyUser->email,
                     'company_id' => $companyUserRoleData["company_id"],
                     "phone"=> $companyUser->phone,
-                    "phone_code"=> "966",//TODO must seperate between phone code and phone
+                    "phone_code"=> $companyUser->phone_code,//TODO must seperate between phone code and phone
                     "global_company_user_id" => $companyUser->global_id
                 ]);
             }
