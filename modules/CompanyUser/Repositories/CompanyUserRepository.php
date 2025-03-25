@@ -179,6 +179,7 @@ class CompanyUserRepository extends BaseRepository
             if($user) {
                 $newUser = $user->replicate();
                 $newUser->password = null; // make password null
+                $newUser->company_id = $companyUserRoleData["company_id"];
                 $newUser->save();
             }
             else
@@ -187,6 +188,8 @@ class CompanyUserRepository extends BaseRepository
                     'name' => $companyUser->first_name . ' ' . $companyUser->last_name,
                     'email' => $companyUser->email,
                     'company_id' => $companyUserRoleData["company_id"],
+                    "phone"=> $companyUser->phone,
+                    "phone_code"=> "966",//TODO must seperate between phone code and phone
                     "global_company_user_id" => $companyUser->global_id
                 ]);
             }
