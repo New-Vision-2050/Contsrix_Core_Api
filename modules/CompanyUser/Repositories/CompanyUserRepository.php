@@ -105,7 +105,7 @@ class CompanyUserRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new \Exception($exception->getMessage(), 500);
+            throw new \Exception(__("validation.delete-not-successful"), 500);
         }
 
     }
