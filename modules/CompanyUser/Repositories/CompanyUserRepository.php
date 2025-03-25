@@ -23,7 +23,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 class CompanyUserRepository extends BaseRepository
 {
 
-    public function __construct(CompanyUser $model,private UserRepository $userRepository)
+    public function __construct(CompanyUser $model, private UserRepository $userRepository)
     {
         parent::__construct($model);
     }
@@ -142,15 +142,20 @@ class CompanyUserRepository extends BaseRepository
             $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
             if (!$companyUser) {
 
-                $companyUser = $this->create($companyUserData );
+                $companyUser = $this->create($companyUserData);
             }
-            $user = $this->userRepository->createUser([
-                'name' => $companyUserData['first_name'] . ' ' . $companyUserData['last_name'],
-                'email' => $companyUserData['email'],
-                'company_id' => $companyRole['company_id'],
-                "global_company_user_id" => $companyUser->id
-            ]);
-            CompanyUserCompany::create($companyRole + ["company_user_id" => $companyUser->id]);
+            $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different login  in the future
+            $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
+            if (!$user) {
+                $this->userRepository->createUser([
+                    'name' => $companyUserData['first_name'] . ' ' . $companyUserData['last_name'],
+                    'email' => $companyUserData['email'],
+                    'company_id' => $companyRole['company_id'],
+                    "global_company_user_id" => $companyUser->global_id
+                ]);
+            }
+
+            CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
 
             DB::commit();
         } catch (\Exception $exception) {
@@ -164,7 +169,27 @@ class CompanyUserRepository extends BaseRepository
 
     public function assignRoleCompanyUser(UuidInterface $id, array $companyUserRoleData): void
     {
-        CompanyUserCompany::firstOrCreate($companyUserRoleData + ["company_user_id" => $id], $companyUserRoleData + ["company_user_id" => $id]);
+        $companyUser = $this->findOneBy(["id" => $id]);
+        $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]]);
+        if(!$user) {
+            $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
+            if($user) {
+                $newUser = $user->replicate();
+                $newUser->password = null; // make password null
+                $newUser->save();
+            }
+            else
+            {
+                $this->userRepository->createUser([
+                    'name' => $companyUser->first_name . ' ' . $companyUser->last_name,
+                    'email' => $companyUser->email,
+                    'company_id' => $companyUserRoleData["company_id"],
+                    "global_company_user_id" => $companyUser->global_id
+                ]);
+            }
+
+        }
+        CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
     }
 
     public function updateCompanyUser(UuidInterface $id, array $data): bool
