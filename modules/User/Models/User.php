@@ -46,6 +46,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         'phone',
         "phone_code",
         "login_way_id",
+        "global_company_user_id",
+        "company_id"
     ];
 
     protected $casts = [
