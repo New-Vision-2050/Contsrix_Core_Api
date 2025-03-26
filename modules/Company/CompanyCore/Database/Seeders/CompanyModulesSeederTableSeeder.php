@@ -55,10 +55,12 @@ class CompanyModulesSeederTableSeeder extends Seeder
             $companyData
         );
 
+        $general_manager->update(['company_id' => $company->id]);
         CompanyUserCompany::query()->create([
             'company_id' => $company->id,
             'global_company_user_id' => $general_manager->global_company_user_id,
             'role' => CompanyUserRole::EMPLOYEE->value
         ]);
+
     }
 }
