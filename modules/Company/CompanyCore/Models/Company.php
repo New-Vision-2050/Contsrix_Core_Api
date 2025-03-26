@@ -16,23 +16,38 @@ use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
+use Stancl\Tenancy\Database\Concerns\HasDatabase;
+use Stancl\Tenancy\Database\Concerns\HasDomains;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
+
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
+use Stancl\Tenancy\Contracts\TenantWithDatabase;
+use Stancl\Tenancy\DatabaseConfig;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class Company extends Model implements HasMedia
+/**
+ * @method  __call(string $method, array $parameters)
+ * @method  __callStatic(string $method, array $parameters)
+ */
+class Company extends BaseTenant implements TenantWithDatabase , HasMedia
 {
     use HasFactory;
-    use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use HasDatabase, HasDomains;
     //use HasTranslations;
     // use SoftDeletes;
 
     //public array $translatable = [];
 
     public $incrementing = false;
+    protected $table = 'companies';
+    protected $connection = "mysql";
+
+
 
     protected $keyType = 'string';
 
@@ -57,6 +72,28 @@ class Company extends Model implements HasMedia
         'id' => 'string',
         'date_activate' => 'date'
     ];
+
+    public static function getCustomColumns(): array
+    {
+        return [
+            'name',
+            'user_name',
+            'email',
+            'phone',
+            'country_id',
+            'company_type_id',
+            'company_field_id',
+            'registration_type_id',
+            'general_manager_id',
+            'is_active',
+            'complete_data',
+            'date_activate',
+            'registration_no',
+            'serial_no',
+            'image_path'
+        ];
+    }
+
 
     protected static function newFactory(): CompanyFactory
     {
@@ -91,5 +128,17 @@ class Company extends Model implements HasMedia
     {
         $media->getFullUrl(); // Ensure this is using your custom method
     }
+
+    public function getTenantKeyName(): string
+    {
+        return 'id';
+    }
+
+    public function getTenantKey()
+    {
+        return $this->getAttribute($this->getTenantKeyName());
+    }
+
+
 
 }
