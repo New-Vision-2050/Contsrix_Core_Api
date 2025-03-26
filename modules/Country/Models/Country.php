@@ -25,6 +25,8 @@ class Country extends Model
 
     public $incrementing = false;
 
+    protected $table = 'countries';
+
     public $with = ['smsDriver'];
 
     protected $keyType = 'string';

@@ -23,6 +23,7 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
+use Stancl\Tenancy\Database\Concerns\HasScopedValidationRules;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\DatabaseConfig;
 
@@ -38,6 +39,9 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
     use BaseFilterable;
     use InteractsWithMedia;
     use HasDatabase, HasDomains;
+    use UuidTrait;
+    use HasScopedValidationRules;
+
     //use HasTranslations;
     // use SoftDeletes;
 
@@ -45,13 +49,14 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
 
     public $incrementing = false;
     protected $table = 'companies';
-    protected $connection = "mysql";
+//    protected $connection = "mysql";
 
 
 
     protected $keyType = 'string';
 
     protected $fillable = [
+        "id",
         'name',
         'user_name',
         'email',
@@ -76,6 +81,7 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
     public static function getCustomColumns(): array
     {
         return [
+            "id",
             'name',
             'user_name',
             'email',
@@ -138,7 +144,6 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
     {
         return $this->getAttribute($this->getTenantKeyName());
     }
-
 
 
 }

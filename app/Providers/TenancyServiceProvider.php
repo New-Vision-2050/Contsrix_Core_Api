@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Stancl\JobPipeline\JobPipeline;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
@@ -27,7 +28,7 @@ class TenancyServiceProvider extends ServiceProvider
                 JobPipeline::make([
                     Jobs\CreateDatabase::class,
                     Jobs\MigrateDatabase::class,
-                     Jobs\SeedDatabase::class,
+//                     Jobs\SeedDatabase::class,
 
                     // Your own jobs to prepare the tenant.
                     // Provision API keys, create S3 buckets, anything you want!
@@ -75,10 +76,19 @@ class TenancyServiceProvider extends ServiceProvider
             Events\EndingTenancy::class => [],
             Events\TenancyEnded::class => [
                 Listeners\RevertToCentralContext::class,
+                function (Events\TenancyEnded $event) {
+                    $permissionRegistrar = app(\Spatie\Permission\PermissionRegistrar::class);
+                    $permissionRegistrar->cacheKey = 'spatie.permission.cache';
+                }
             ],
 
             Events\BootstrappingTenancy::class => [],
-            Events\TenancyBootstrapped::class => [],
+            Events\TenancyBootstrapped::class => [
+                function (Events\TenancyBootstrapped $event) {
+                    $permissionRegistrar = app(\Spatie\Permission\PermissionRegistrar::class);
+                    $permissionRegistrar->cacheKey = 'spatie.permission.cache.tenant.' . $event->tenancy->tenant->getTenantKey();
+                }
+            ],
             Events\RevertingToCentralContext::class => [],
             Events\RevertedToCentralContext::class => [],
 
@@ -101,6 +111,8 @@ class TenancyServiceProvider extends ServiceProvider
     {
         $this->bootEvents();
         $this->mapRoutes();
+        BelongsToTenant::$tenantIdColumn = 'team_id';
+
 
         $this->makeTenancyMiddlewareHighestPriority();
     }
