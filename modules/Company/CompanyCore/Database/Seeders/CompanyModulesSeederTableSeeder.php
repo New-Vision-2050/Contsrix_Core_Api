@@ -37,7 +37,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $general_manager = User::first();
 
         $companyData = [
-            'name' => 'Test Company',
+            'name' => 'new vision',
             'user_name' => bin2hex(random_bytes(6)),
             'email' => 'test@example.com',
             'phone' => '123456789',

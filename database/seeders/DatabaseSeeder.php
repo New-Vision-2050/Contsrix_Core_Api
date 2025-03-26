@@ -24,13 +24,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RolesAndPermissionsSeeder::class);
-        $this->call(SettingSeeder::class);
         $this->call(CountrySeederTableSeeder::class);
         $this->call(JobTitleModulesSeederTableSeeder::class);
-        $this->call(DefaultLoginWaySeederTableSeeder::class);
-        $this->call(DefaultIdentifierSeederTableSeeder::class);
-        $this->call(DriverTableSeeder::class);
-        $this->call(QuestionSettingTableSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(LanguageSeederTableSeeder::class);
         $this->call(CurrencySeederTableSeeder::class);
@@ -38,6 +33,12 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CompanyModulesSeederTableSeeder::class);
 
+        $this->call(SettingSeeder::class);
+        $this->call(DriverTableSeeder::class);
+        $this->call(QuestionSettingTableSeeder::class);
+        $this->call(DefaultIdentifierSeederTableSeeder::class);
+
+        $this->call(DefaultLoginWaySeederTableSeeder::class);
 
 
     }

@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('settings', function (Blueprint $table) {
             $table->string("key")->primary();
             $table->string("value");
+            $table->uuid("company_id")->index();
+
             $table->timestamps();
         });
     }

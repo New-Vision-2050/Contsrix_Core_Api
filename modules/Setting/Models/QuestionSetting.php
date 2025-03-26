@@ -29,6 +29,7 @@ class QuestionSetting extends Model
 
     protected $fillable = [
         'key',
+        "company_id"
     ];
 
     protected $casts = [

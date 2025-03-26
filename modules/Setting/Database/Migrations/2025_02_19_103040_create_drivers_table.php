@@ -13,6 +13,8 @@ return new class extends Migration
             $table->string("driver_type");
             $table->string("name")->unique();//like sms mora , web mail
             $table->json("config");
+            $table->uuid("company_id")->index();
+
             $table->timestamps();
         });
     }
