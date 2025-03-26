@@ -16,6 +16,7 @@ use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Permission\Traits\HasRoles;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 
@@ -30,6 +31,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use HasTranslations;
     use HasRoles;
     use \OwenIt\Auditing\Auditable;
+    use BelongsToTenant;
 
     //use SoftDeletes;
 

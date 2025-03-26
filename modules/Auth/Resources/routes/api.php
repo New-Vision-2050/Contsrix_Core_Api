@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Auth\Controllers\AuthController;
-Route::group(['middleware' => ['throttle:25,1']],function (){
+Route::group(['middleware' => ['throttle:35,1',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]],function (){
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/login-step', [AuthController::class, 'loginBySteps']);
     Route::post('/login-otp', [AuthController::class, 'loginWithOtp']);

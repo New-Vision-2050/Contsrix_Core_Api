@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Http\Middleware\IntializeTenantMiddleware;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -13,6 +14,7 @@ use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
+use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 class TenancyServiceProvider extends ServiceProvider
 {
@@ -111,9 +113,8 @@ class TenancyServiceProvider extends ServiceProvider
     {
         $this->bootEvents();
         $this->mapRoutes();
-        BelongsToTenant::$tenantIdColumn = 'team_id';
-
-
+        BelongsToTenant::$tenantIdColumn = 'company_id';
+        InitializeTenancyByRequestData::$header = 'X-Tenant';
         $this->makeTenancyMiddlewareHighestPriority();
     }
 
