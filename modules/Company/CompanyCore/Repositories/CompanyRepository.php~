@@ -42,8 +42,7 @@ class CompanyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $company =  $this->create($data);
-            $company->domains()->create([
+            $company =  $this->create($data)->domains()->create([
                 'domain' => $data["user_name"],
             ]);
             DB::commit();

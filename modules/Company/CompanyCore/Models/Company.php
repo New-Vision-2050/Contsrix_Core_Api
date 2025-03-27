@@ -103,6 +103,11 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
     }
 
 
+    public function domains()
+    {
+        return $this->hasMany(config('tenancy.domain_model'), 'company_id');
+    }
+
     protected static function newFactory(): CompanyFactory
     {
         return CompanyFactory::new();

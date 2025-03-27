@@ -9,7 +9,7 @@ return [
     'tenant_model' => \Modules\Company\CompanyCore\Models\Company::class,
     'id_generator' => Stancl\Tenancy\UUIDGenerator::class,
 
-    'domain_model' => Domain::class,
+    'domain_model' => \Modules\Company\CompanyCore\Models\Domain::class,
 
     /**
      * The list of domains hosting your central app.
