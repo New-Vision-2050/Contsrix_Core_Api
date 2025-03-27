@@ -131,4 +131,15 @@ class CompanyRepository extends BaseRepository
             ->when($date, fn($query) => $query->whereDate('created_at', '<=', $date))
             ->first();
     }
+
+    public function whereIn($column , array $conditions)
+    {
+        $this->model->whereIn($column,$conditions);
+        return $this;
+    }
+
+    public function get()
+    {
+        return$this->model->get();
+    }
 }

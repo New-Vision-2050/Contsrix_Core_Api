@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\LoginWay;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -32,6 +33,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use HasRoles;
     use \OwenIt\Auditing\Auditable;
     use BelongsToTenant;
+
 
     //use SoftDeletes;
 
@@ -89,5 +91,10 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

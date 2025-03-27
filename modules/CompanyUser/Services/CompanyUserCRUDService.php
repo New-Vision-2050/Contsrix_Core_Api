@@ -13,6 +13,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
+use Modules\User\Repositories\UserRepository;
 use RabbitMQ\Jobs\BroadcastMessage;
 use Ramsey\Uuid\UuidInterface;
 
@@ -22,6 +23,7 @@ class CompanyUserCRUDService
 
     public function __construct(
         private CompanyUserRepository $repository,
+        private UserRepository $userRepository,
     )
     {
     }
@@ -61,5 +63,7 @@ class CompanyUserCRUDService
             email: $email,
         );
     }
+
+
 
 }

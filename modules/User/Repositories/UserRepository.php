@@ -101,5 +101,16 @@ class UserRepository extends BaseRepository
         $this->model->where($conditions)->delete();
     }
 
+    public function getWithoutTenancy()
+    {
+        $this->model->withoutTenancy();
+        return $this;
+    }
+
+    public function getWherePluck(array $conditions, $pluck):array
+    {
+        return $this->model->where($conditions)->pluck($pluck)->toArray();
+    }
+
 
 }

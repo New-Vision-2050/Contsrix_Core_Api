@@ -5,6 +5,7 @@ use Modules\User\Controllers\UserController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [UserController::class, 'index'])->middleware("permission:user.list")->name("users.list");
+    Route::get('/available-tenants-for-auth-user', [UserController::class, 'getAvailableTenantsForAuthUser'])->name("tenants-for-user");
     Route::post('/', [UserController::class, 'store'])->middleware("permission:user.create");
     Route::get('/me', [UserController::class, 'me'])->middleware("permission:user.list");
     Route::get('/my-permissions', [UserController::class, 'getMyPermissions']);
