@@ -12,9 +12,7 @@ class Setting extends Model
 {
     use BelongsToTenant;
 
-    public $incrementing = false;
 
-    protected $keyType = 'string';
 
     protected $primaryKey = 'key';
 
