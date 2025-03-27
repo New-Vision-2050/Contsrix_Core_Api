@@ -28,7 +28,7 @@ class QuestionSettingTableSeeder extends Seeder
                     "id" => $id,
                     "key" => $key,
                     "question" => $value,
-                    "company_id"=>Company::query()->first()->id
+                    "company_id"=>tenant("id")??Company::query()->first()->id
                 ]
             );
         }

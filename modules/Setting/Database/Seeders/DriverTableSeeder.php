@@ -28,7 +28,7 @@ class DriverTableSeeder extends Seeder
             foreach ($data as $key => $value) {
                 Driver::query()->firstOrCreate(
                     ["name" => $key],
-                    ["name" => $key, "driver_type" => $driver_type,"config"=>$value,"company_id"=>Company::query()->first()->id]
+                    ["name" => $key, "driver_type" => $driver_type,"config"=>$value,"company_id"=>tenant("id")??Company::query()->first()->id]
                 );
             }
         }
