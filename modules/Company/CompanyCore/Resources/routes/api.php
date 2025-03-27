@@ -4,8 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Modules\Company\CompanyCore\Controllers\CompanyController;
 
 
-Route::middleware(['auth:api'])->group(function () {
+Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(function () {
     Route::get('/', [CompanyController::class, 'index'])->name('companies.index');
+    Route::get('/current-auth-company', [CompanyController::class, 'getCurrentCompanyLoggedIn'])->name('companies.current-auth-company');
     Route::get('/widget', [CompanyController::class, 'widget']);
     Route::post('/', [CompanyController::class, 'store'])->name('companies.store');
     Route::post('/validated', [CompanyController::class, 'validated']);

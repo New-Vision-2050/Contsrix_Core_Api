@@ -122,7 +122,14 @@ class CompanyController extends Controller
 
         $item = $this->validatedCompanyService->validate($request);
 
-
         return Json::item($item);
+    }
+
+    public function getCurrentCompanyLoggedIn()
+    {
+
+        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        return Json::item((new CompanyPresenter($company))->getData());
+
     }
 }

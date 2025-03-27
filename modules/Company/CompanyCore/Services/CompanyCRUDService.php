@@ -11,6 +11,7 @@ use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Ramsey\Uuid\UuidInterface;
+use function PHPUnit\Framework\throwException;
 
 class CompanyCRUDService
 {
@@ -43,5 +44,15 @@ class CompanyCRUDService
         return $this->repository->getCompany(
             id: $id,
         );
+    }
+
+    public function getCurrentCompanyLoggedIn()
+    {
+        try {
+            return $this->repository->findOneOrFail(tenant("id"));
+        } catch (\Exception $e) {
+            throw new \Exception(__("validation.company-not-found"), 404);
+
+        }
     }
 }
