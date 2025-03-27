@@ -42,7 +42,7 @@ class CompanyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $company =  $this->create($data);
+            $company = $this->create($data);
             $company->domains()->create([
                 'domain' => $data["user_name"],
             ]);
@@ -51,13 +51,24 @@ class CompanyRepository extends BaseRepository
         } catch (\Exception $e) {
 
             DB::rollBack();
-            throw new \Exception($e->getMessage(), 500);
+            throw new \Exception(__("validation.create-not-successful"), 500);
         }
     }
 
     public function updateCompany(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        try {
+            DB::beginTransaction();
+            $this->update($id, $data);
+            $company = $this->find($id);
+            Domain::query()->where("company_id", $company->id)->update(["domain" => $data["user_name"]]);
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.update-not-successful"), 500);
+
+        }
     }
 
     public function deleteCompany(UuidInterface $id): bool
@@ -67,42 +78,46 @@ class CompanyRepository extends BaseRepository
 
     public function isEmailExists(string $email): bool
     {
-        return  $this->model->where('email', $email)->exists();
+        return $this->model->where('email', $email)->exists();
     }
+
     public function isPhoneExists(string $phone): bool
     {
-        return  $this->model->where('phone', $phone)->exists();
+        return $this->model->where('phone', $phone)->exists();
     }
-    public function isRegistrationExists(string $registrationNo,string $registrationTypeId): bool
+
+    public function isRegistrationExists(string $registrationNo, string $registrationTypeId): bool
     {
-        return  $this->model->where('registration_no', $registrationNo)
+        return $this->model->where('registration_no', $registrationNo)
             ->where('registration_type_id', $registrationTypeId)
             ->exists();
     }
 
     public function isUserNameExists(string $userName): bool
     {
-        return  $this->model->where('user_name', $userName)->exists();
+        return $this->model->where('user_name', $userName)->exists();
     }
+
     public function isNameExists(string $name): bool
     {
-        return  $this->model->where('name', $name)->exists();
+        return $this->model->where('name', $name)->exists();
     }
 
     public function getInactiveCompanyIds(int $hours = 24, $companyId = null)
     {
         $inactiveTime = Carbon::now()->subHours($hours);
 
-        return  $this->model->where('check_activity', 0)
+        return $this->model->where('check_activity', 0)
             ->where('created_at', '<', $inactiveTime)
             ->when($companyId, function ($query) use ($companyId) {
                 $query->where('id', $companyId);
             })
             ->pluck('id');
     }
+
     public function deleteCompaniesByIds(array $companyIds)
     {
-        return  $this->model->whereIn('id', $companyIds)->delete();
+        return $this->model->whereIn('id', $companyIds)->delete();
     }
 
     public function getCompanyStatistics($date = null)
@@ -113,7 +128,7 @@ class CompanyRepository extends BaseRepository
             SUM(CASE WHEN complete_data IS NOT NULL THEN 1 ELSE 0 END) as complete_data,
             SUM(CASE WHEN date_activate IS NOT NULL THEN 1 ELSE 0 END) as data_activate
         ")
-        ->when($date, fn($query) => $query->whereDate('created_at', '<=', $date))
-        ->first();
+            ->when($date, fn($query) => $query->whereDate('created_at', '<=', $date))
+            ->first();
     }
 }
