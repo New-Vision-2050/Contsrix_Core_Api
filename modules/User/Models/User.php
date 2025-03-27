@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
+
+use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +19,6 @@ use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Permission\Traits\HasRoles;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 
@@ -32,7 +33,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use HasTranslations;
     use HasRoles;
     use \OwenIt\Auditing\Auditable;
-    use BelongsToTenant;
+    use CustomBelongsToTenant;
 
 
     //use SoftDeletes;

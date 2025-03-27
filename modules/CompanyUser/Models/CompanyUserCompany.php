@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Models;
 
+use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +23,7 @@ class CompanyUserCompany extends Pivot
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    use BelongsToTenant;
+    use CustomBelongsToTenant;
 
 
 
@@ -37,7 +38,6 @@ class CompanyUserCompany extends Pivot
 
     protected $keyType = 'string';
     protected $guarded = [];
-use BelongsToTenant;
 
 
     protected function role(): Attribute

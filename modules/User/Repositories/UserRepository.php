@@ -42,7 +42,7 @@ class UserRepository extends BaseRepository
     {
         return $this->findOneByWithRelationsOrFail([
             'email' => $email,
-        ],["loginWay"]);
+        ], ["loginWay"]);
     }
 
     public function getUserByIdentifier($identifier): mixed
@@ -107,7 +107,7 @@ class UserRepository extends BaseRepository
         return $this;
     }
 
-    public function getWherePluck(array $conditions, $pluck):array
+    public function getWherePluck(array $conditions, $pluck): array
     {
         return $this->model->where($conditions)->pluck($pluck)->toArray();
     }
