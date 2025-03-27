@@ -8,11 +8,14 @@ use App\Casts\UuidCast;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class LoginWay extends Model
 {
     use UuidTrait;
     use BaseFilterable;
+    use BelongsToTenant;
+
 
     public $incrementing = false;
 

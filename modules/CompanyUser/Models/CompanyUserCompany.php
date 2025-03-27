@@ -13,6 +13,7 @@ use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -21,6 +22,9 @@ class CompanyUserCompany extends Pivot
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use BelongsToTenant;
+
+
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -33,6 +37,7 @@ class CompanyUserCompany extends Pivot
 
     protected $keyType = 'string';
     protected $guarded = [];
+use BelongsToTenant;
 
 
     protected function role(): Attribute

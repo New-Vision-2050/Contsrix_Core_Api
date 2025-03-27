@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Support\Facades\DB;
 use phpseclib3\Common\Functions\Strings;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -17,6 +18,9 @@ class LoginWayStep extends Model
 {
     use UuidTrait;
     use BaseFilterable;
+    use BelongsToTenant;
+
+
 
     // use HasTranslations;
     // use SoftDeletes;

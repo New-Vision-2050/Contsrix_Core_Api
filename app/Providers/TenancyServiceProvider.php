@@ -11,6 +11,7 @@ use Illuminate\Support\ServiceProvider;
 use Stancl\JobPipeline\JobPipeline;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Stancl\Tenancy\Events;
+use Stancl\Tenancy\Features\UserImpersonation;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
@@ -115,6 +116,8 @@ class TenancyServiceProvider extends ServiceProvider
         $this->mapRoutes();
         BelongsToTenant::$tenantIdColumn = 'company_id';
         InitializeTenancyByRequestData::$header = 'X-Tenant';
+
+
         $this->makeTenancyMiddlewareHighestPriority();
     }
 

@@ -18,6 +18,7 @@ use Modules\Shared\Currency\Models\Currency;
 use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
 use Modules\User\Models\User;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -27,6 +28,8 @@ class CompanyUser extends Model
     use UuidTrait;
     use BaseFilterable;
     use EagerLoadPivotTrait;
+    use BelongsToPrimaryModel;
+
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -113,5 +116,10 @@ class CompanyUser extends Model
     public function jobTitle()
     {
         return $this->belongsTo(JobTitle::class);
+    }
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+      return "users";
     }
 }

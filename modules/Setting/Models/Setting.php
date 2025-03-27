@@ -6,9 +6,12 @@ namespace Modules\Setting\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Setting extends Model
 {
+    use BelongsToTenant;
+
     public $incrementing = false;
 
     protected $keyType = 'string';
