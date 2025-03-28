@@ -4,6 +4,7 @@ namespace Modules\Company\CompanyCore\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
@@ -38,7 +39,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
         $companyData = [
             'name' => 'new vision',
-            'user_name' => bin2hex(random_bytes(6)),
+            'user_name' => "new-vision",
             'email' => 'test@example.com',
             'phone' => '123456789',
             'country_id' => $country->id,
@@ -54,6 +55,10 @@ class CompanyModulesSeederTableSeeder extends Seeder
             ['email' => $companyData['email']],
             $companyData
         );
+        Domain::query()->create([
+           "company_id" => $company->id,
+           "domain" => $companyData['user_name']
+        ]);
 
         $general_manager->update(['company_id' => $company->id]);
         CompanyUserCompany::query()->create([
