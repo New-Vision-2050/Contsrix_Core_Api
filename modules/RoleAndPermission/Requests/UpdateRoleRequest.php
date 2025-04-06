@@ -15,7 +15,9 @@ class UpdateRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => 'required|string|unique:roles,name,' . $this->route('id'),
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'required|exists:permissions,name',
         ];
     }
 
@@ -24,6 +26,7 @@ class UpdateRoleRequest extends FormRequest
         return new UpdateRoleCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
+            permissions: $this->get('permissions'),
         );
     }
 }

@@ -6,8 +6,10 @@ namespace Modules\RoleAndPermission\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\RoleAndPermission\Models\Role;
 use Ramsey\Uuid\UuidInterface;
+use function Symfony\Component\Translation\t;
 
 /**
  * @property Role $model
@@ -38,9 +40,20 @@ class RoleRepository extends BaseRepository
         return $this->create($roleData)->syncPermissions($permissions);
     }
 
-    public function updateRole(UuidInterface $id, array $data): bool
+    public function updateRole(UuidInterface $id, array $data , ?array $permissions): bool
     {
-        return $this->update($id, $data);
+
+        try {
+            DB::beginTransaction();
+            $this->update($id, $data);
+            $this->givePermissionsToRole($id, $permissions);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.update-not-successful"), 500);
+        }
+        return true;
+
     }
 
     public function deleteRole(UuidInterface $id): bool
