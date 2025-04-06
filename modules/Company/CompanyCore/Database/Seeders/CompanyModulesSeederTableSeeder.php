@@ -16,6 +16,7 @@ use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Ramsey\Uuid\Uuid;
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {
@@ -37,7 +38,11 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $registrationType = CompanyRegistrationType::first();
         $general_manager = User::first();
 
+        $namespace = Uuid::NAMESPACE_DNS;
+        $id = Uuid::uuid5($namespace, "new-vision")->toString();
+
         $companyData = [
+            'id' => $id,
             'name' => 'new vision',
             'user_name' => "new-vision",
             'email' => 'test@example.com',
@@ -51,18 +56,15 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'serial_no'=> bin2hex(random_bytes(6))
         ];
 
-        $company = Company::firstOrCreate(
-            ['email' => $companyData['email']],
-            $companyData
-        );
+        $company = Company::insertOrIgnore($companyData);
         Domain::query()->create([
-           "company_id" => $company->id,
+           "company_id" => $id,
            "domain" => $companyData['user_name']
         ]);
 
-        $general_manager->update(['company_id' => $company->id]);
+        $general_manager->update(['company_id' => $id]);
         CompanyUserCompany::query()->create([
-            'company_id' => $company->id,
+            'company_id' => $id,
             'global_company_user_id' => $general_manager->global_company_user_id,
             'role' => CompanyUserRole::EMPLOYEE->value
         ]);
