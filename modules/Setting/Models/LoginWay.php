@@ -41,9 +41,7 @@ class LoginWay extends Model
     public function delete()
     {
         try {
-            $this->loginWaySteps()->each(function ($step) {
-                $step->drivers()->detach();
-            });
+
             $this->loginWaySteps()->delete();
             return parent::delete();
         } catch (\Exception $e) {
