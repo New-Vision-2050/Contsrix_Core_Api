@@ -115,10 +115,10 @@ class CompanyUserRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getCompanyUser(UuidInterface $id): CompanyUser
+    public function getCompanyUser(UuidInterface $global_id): CompanyUser
     {
         return $this->findOneByOrFail([
-            'id' => $id->toString(),
+            'global_id' => $global_id->toString(),
         ]);
     }
 
