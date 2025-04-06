@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\RoleAndPermission\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\RoleAndPermission\DTO\CreatePermissionForRoleDTO;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Ramsey\Uuid\Uuid;
@@ -15,7 +16,7 @@ class CreateRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|unique:roles,name|string',
+            'name' => ['required','string', Rule::unique('roles', 'name')->where('company_id', tenant('id'))],
             'permissions' => 'nullable|array',
             'permissions.*' => 'required|exists:permissions,name',
         ];

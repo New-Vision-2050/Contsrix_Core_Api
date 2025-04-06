@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Handlers;
 
-use Modules\RoleAndPermission\Commands\UpdateRoleAndPermissionCommand;
 use Modules\RoleAndPermission\Commands\UpdateRoleCommand;
 use Modules\RoleAndPermission\Repositories\RoleRepository;
 

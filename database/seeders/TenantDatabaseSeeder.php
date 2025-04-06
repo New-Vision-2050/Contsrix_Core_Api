@@ -23,7 +23,7 @@ class TenantDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-//        $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
 //        $this->call(CountrySeederTableSeeder::class);
 //        $this->call(JobTitleModulesSeederTableSeeder::class);
 //        $this->call(TimeZoneSeederTableSeeder::class);
