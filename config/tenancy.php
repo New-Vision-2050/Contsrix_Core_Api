@@ -20,7 +20,7 @@ return [
         '127.0.0.1',
         'localhost',
         "https://core-be-stage.constrix-nv.com"
-    ],env('APP_URL')),
+    ],[env('APP_URL')]),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
