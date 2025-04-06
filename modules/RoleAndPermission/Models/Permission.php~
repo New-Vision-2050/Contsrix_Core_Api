@@ -6,22 +6,20 @@ namespace Modules\RoleAndPermission\Models;
 
 use App\Casts\CompanyRoleCast;
 use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Spatie\Permission\Models\Role as SpatieRole;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Spatie\Permission\Models\Permission as SpatiePermission;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
-class Role extends SpatieRole
+class Permission extends SpatiePermission
 {
     use UuidTrait;
     use BaseFilterable;
     use HasFactory;
-    use BelongsToTenant;
-//    use HasUuids;
+//    use BelongsToPrimaryModel;
 
     // use HasTranslations;
     // use SoftDeletes;
@@ -29,12 +27,13 @@ class Role extends SpatieRole
     public array $translatable = [];
 
     public $incrementing = false;
+    protected $primaryKey = "id";
 
     protected $keyType = 'string';
-    protected $primaryKey = 'id';
 
-    protected $casts = [
-        'company_id' => "string",
-    ];
 
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "roles";
+    }
 }

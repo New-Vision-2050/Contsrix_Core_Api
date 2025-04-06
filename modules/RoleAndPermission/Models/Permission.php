@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Spatie\Permission\Models\Permission as SpatiePermission;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -18,6 +19,7 @@ class Permission extends SpatiePermission
     use UuidTrait;
     use BaseFilterable;
     use HasFactory;
+    use BelongsToPrimaryModel;
 
     // use HasTranslations;
     // use SoftDeletes;
@@ -30,6 +32,8 @@ class Permission extends SpatiePermission
     protected $keyType = 'string';
 
 
-
-
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "roles";
+    }
 }
