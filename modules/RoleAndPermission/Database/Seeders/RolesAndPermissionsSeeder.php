@@ -30,6 +30,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdminRole->givePermissionTo(Permission::all());
         $adminRole->givePermissionTo(Permission::all());
         $user =  User::first();
+        setPermissionsTeamId(tenant("id")??Company::query()->first()->id);
+
 
         $user->assignRole('super-admin');
 

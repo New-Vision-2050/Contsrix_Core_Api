@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\TenancePermision;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
         $middleware->append(\App\Http\Middleware\Localization::class);
+        $middleware->append(\App\Http\Middleware\TenancePermision::class);
 
     })
     ->withExceptions(function (Exceptions $exceptions) {
