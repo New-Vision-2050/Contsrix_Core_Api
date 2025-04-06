@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Ramsey\Uuid\UuidInterface;
 
 class CompanyCRUDService
@@ -22,10 +24,22 @@ class CompanyCRUDService
     public function create(CreateCompanyDTO $createCompanyDTO): Company
     {
         $requestCompanyDTO = $createCompanyDTO->toArray();
+        try {
 
-        $company = $this->repository->createCompany($requestCompanyDTO);
 
-        CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
+            DB::beginTransaction();
+
+            $company = $this->repository->createCompany($requestCompanyDTO);
+
+            CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
+            event(new CompanyCreatedEvent($company) );
+
+            DB::commit();
+        }
+        catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 400);
+        }
 
         return $company;
     }

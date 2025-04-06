@@ -33,7 +33,7 @@ class LoginWayWithSpecificStepPresenter extends AbstractPresenter
         return [
             'id' => $loginWay->id,
             'name' => $loginWay->name,
-            'step' =>$this->step!= null?
+            'step' => $this->step != null ?
                 [
                     "login_option"=>$this->step->login_option,
                     "login_option_alternatives"=>$this->step->login_option_alternatives

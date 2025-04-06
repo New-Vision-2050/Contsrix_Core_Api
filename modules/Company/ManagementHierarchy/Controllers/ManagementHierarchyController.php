@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
@@ -33,6 +34,7 @@ class ManagementHierarchyController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
+
 
         return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }

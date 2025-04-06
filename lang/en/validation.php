@@ -200,7 +200,9 @@ return [
     "all-questions-are-required"=>"All questions are required",
     "invalid-token"=>"invalid token",
     "can-not-resend-otp"=>"can not resend otp",
+    "action-took-before"=>"action took before",
     "lookups-value-not-correct"=>"lookups value not correct",
+
 
 
 
