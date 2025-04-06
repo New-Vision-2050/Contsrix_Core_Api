@@ -21,6 +21,7 @@ class RolePresenter extends AbstractPresenter
         return [
             'id' => $this->role->id,
             'name' => $this->role->name,
+            "permissions" => PermissionPresenter::collection($this->role->permissions)
         ];
     }
 }

@@ -33,9 +33,9 @@ class RoleRepository extends BaseRepository
         ]);
     }
 
-    public function createRole(array $data): Role
+    public function createRole(array $roleData , array $permissions): Role
     {
-        return $this->create($data);
+        return $this->create($roleData)->syncPermissions($permissions);
     }
 
     public function updateRole(UuidInterface $id, array $data): bool

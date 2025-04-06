@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\RoleAndPermission\Services;
 
 use Illuminate\Support\Collection;
+use Modules\RoleAndPermission\DTO\CreatePermissionForRoleDTO;
 use Modules\RoleAndPermission\DTO\CreateRoleAndPermissionDTO;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Modules\RoleAndPermission\Models\Role;
@@ -19,9 +20,9 @@ class RoleCRUDService
     ) {
     }
 
-    public function create(CreateRoleDTO $createRoleDTO): Role
+    public function create(CreateRoleDTO $createRoleDTO,CreatePermissionForRoleDTO $createPermissionForRoleDTO): Role
     {
-         return $this->repository->createRole($createRoleDTO->toArray());
+         return $this->repository->createRole($createRoleDTO->toArray(),$createPermissionForRoleDTO->toArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array
