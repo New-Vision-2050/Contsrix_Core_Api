@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\RoleAndPermission\Controllers\PermissionController;
-use Modules\RoleAndPermission\Controllers\RoleAndPermissionController;
 use Modules\RoleAndPermission\Controllers\RoleController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class],"prefix"=>"roles"], function () {

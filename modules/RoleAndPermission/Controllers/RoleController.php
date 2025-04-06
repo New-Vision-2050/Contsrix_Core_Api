@@ -53,7 +53,7 @@ class RoleController extends Controller
 
     public function store(CreateRoleRequest $request): JsonResponse
     {
-        $createdItem = $this->roleService->create($request->createCreateRoleDTO());
+        $createdItem = $this->roleService->create($request->createCreateRoleDTO(),$request->createCreatePermissionForRoleDTO());
 
         $presenter = new RolePresenter($createdItem);
 
