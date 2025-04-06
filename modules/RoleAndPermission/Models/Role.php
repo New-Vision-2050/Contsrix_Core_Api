@@ -30,6 +30,8 @@ class Role extends SpatieRole
     protected $keyType = 'string';
     protected $primaryKey = 'id';
 
-
+    protected $casts = [
+        'company_id' => "string",
+    ];
 
 }

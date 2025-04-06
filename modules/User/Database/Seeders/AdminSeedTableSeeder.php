@@ -54,7 +54,7 @@ class AdminSeedTableSeeder extends Seeder
                     "global_company_user_id"=>$companyUser->global_id
                 ]
             );
-            $user->assignRole('super-admin');
+
         }
     }
 }

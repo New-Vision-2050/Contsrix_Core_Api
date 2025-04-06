@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(RolesAndPermissionsSeeder::class);
         $this->call(CountrySeederTableSeeder::class);
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
@@ -32,6 +31,8 @@ class DatabaseSeeder extends Seeder
         $this->call(AdminSeedTableSeeder::class);
 
         $this->call(CompanyModulesSeederTableSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
+
 
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);

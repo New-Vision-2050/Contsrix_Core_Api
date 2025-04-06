@@ -30,4 +30,6 @@ class Permission extends SpatiePermission
     protected $keyType = 'string';
 
 
+
+
 }
