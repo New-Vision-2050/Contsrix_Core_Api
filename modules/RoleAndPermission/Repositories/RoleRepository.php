@@ -33,7 +33,7 @@ class RoleRepository extends BaseRepository
         ]);
     }
 
-    public function createRole(array $roleData , array $permissions): Role
+    public function createRole(array $roleData , ?array $permissions): Role
     {
         return $this->create($roleData)->syncPermissions($permissions);
     }
