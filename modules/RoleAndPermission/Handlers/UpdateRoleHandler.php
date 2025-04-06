@@ -17,6 +17,6 @@ class UpdateRoleHandler
 
     public function handle(UpdateRoleCommand $updateRoleCommand)
     {
-        $this->repository->updateRole($updateRoleCommand->getId(), $updateRoleCommand->toArray());
+        $this->repository->updateRole($updateRoleCommand->getId(), $updateRoleCommand->toArray(), $updateRoleCommand->getPermissions());
     }
 }
