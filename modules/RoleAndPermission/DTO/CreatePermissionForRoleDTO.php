@@ -9,11 +9,11 @@ use Ramsey\Uuid\UuidInterface;
 class CreatePermissionForRoleDTO
 {
     public function __construct(
-        public array $permissions,
+        public ?array $permissions,
     ) {
     }
 
-    public function toArray(): array
+    public function toArray(): ?array
     {
         return $this->permissions;
     }
