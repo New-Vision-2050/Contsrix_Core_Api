@@ -36,7 +36,7 @@ class CompanyUserProfileController extends Controller
     public function validatePhoto(GetCompanyUserRequest $request): JsonResponse
     {
         $errors = $this->companyUserImageValidationService->validateName($request);
-        
+
         return Json::item($errors);
     }
 }

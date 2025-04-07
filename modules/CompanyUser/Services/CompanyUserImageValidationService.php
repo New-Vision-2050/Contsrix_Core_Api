@@ -37,15 +37,21 @@ class CompanyUserImageValidationService
                     array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 1]);
                 }
 
-                // Get image dimensions
                 list($width, $height) = getimagesize($image->getPathname());
 
                 // Validate dimensions
-                if ($width < 468 || $width > 477 || $height < 704 || $height > 714) {
+                if ($width < 600 || $height < 800) {
                     array_push($errors, [
-                        "sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين 468x704 و 477x714", "sub_title" => null, "status" => -1]);
+                        "sentence" => "حجم الصورة غير مناسب. يفضل أن يكون العرض أكبر من 600 والطول أكبر من 800 بكسل",
+                        "sub_title" => null,
+                        "status" => -1
+                    ]);
                 } else {
-                    array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين 468x704 و 477x714", "sub_title" => null, "status" => 1]);
+                    array_push($errors, [
+                        "sentence" => "الصورة مناسبة",
+                        "sub_title" => null,
+                        "status" => 1
+                    ]);
                 }
 
                 $serviceUser =  $this->checkImageTenant($image);
