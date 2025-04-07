@@ -47,7 +47,6 @@ class FolderRepository extends BaseRepository
     public function getChildFolders(UuidInterface $parentId, int $page = 1, int $perPage = 10)
     {
         return $this->paginatedList(['parent_id' => $parentId->toString()], $page, $perPage);
-
     }
     public function createFolder(array $data): Folder
     {
