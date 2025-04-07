@@ -9,6 +9,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
     Route::get('/roles', [CompanyUserController::class, 'roles']);
     Route::get('/profile', [CompanyUserProfileController::class, 'profile']);
+    Route::post('/validate-photo', [CompanyUserProfileController::class, 'validatePhoto']);
 
     Route::get('/show-by-email/{email}', [CompanyUserController::class, 'showByEmail']);
     Route::post('/change-time-zone/{id}', [CompanyUserController::class, 'changeTimeZone']);
