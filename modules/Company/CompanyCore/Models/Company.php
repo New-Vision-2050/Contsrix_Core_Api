@@ -60,7 +60,10 @@ class Company extends Model implements HasMedia
         'id' => 'string',
         'date_activate' => 'date'
     ];
-
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
+    }
     protected static function newFactory(): CompanyFactory
     {
         return CompanyFactory::new();

@@ -174,7 +174,9 @@ class CompanyProfileService
             throw new \Exception(__("validation.logo-not-valid"), 400);
         }
         $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
-        $this->fileUploadService->uploadFile($company, $assignLogoToCompanyDTO->getLogo(), 'company', 'public');
+        $company->clearMediaCollection('logo');
+
+        $this->fileUploadService->uploadFile($company, $assignLogoToCompanyDTO->getLogo(), 'company', 'logo');
         return $company;
     }
 

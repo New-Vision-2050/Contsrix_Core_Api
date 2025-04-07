@@ -65,7 +65,7 @@ class CompanyProfileController extends Controller
         $company = $this->companyProfileService->assignLogo($logo);
         $presenter = new CompanyPresenter($company);
 
-        return Json::item($presenter);
+        return Json::item($presenter->getData());
     }
 
 
