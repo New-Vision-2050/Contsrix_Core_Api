@@ -62,8 +62,10 @@ class CompanyProfileController extends Controller
     public function setCompanyLogo(setCompanyLogoRequest $request)
     {
         $logo = $request->createAssignLogoToCompanyDTO();
-        $result = $this->companyProfileService->assignLogo($logo);
-        return Json::item($result);
+        $company = $this->companyProfileService->assignLogo($logo);
+        $presenter = new CompanyPresenter($company);
+
+        return Json::item($presenter);
     }
 
 

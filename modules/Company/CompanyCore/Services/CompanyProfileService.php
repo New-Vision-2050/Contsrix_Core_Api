@@ -17,6 +17,7 @@ use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
@@ -24,6 +25,8 @@ class CompanyProfileService
 {
     public function __construct(
         private AdminRequestRepository $adminRequestRepository,
+        private FileUploadService $fileUploadService,
+        private CompanyRepository $companyRepository
     )
     {
     }
@@ -170,8 +173,9 @@ class CompanyProfileService
         {
             throw new \Exception(__("validation.logo-not-valid"), 400);
         }
-
-
+        $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
+        $this->fileUploadService->uploadFile($company, $assignLogoToCompanyDTO->getLogo(), 'company', 'public');
+        return $company;
     }
 
 }
