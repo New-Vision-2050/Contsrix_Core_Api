@@ -40,7 +40,7 @@ class CompanyUserImageValidationService
                 list($width, $height) = getimagesize($image->getPathname());
 
                 // Validate dimensions
-                if ($width < 600 || $height < 800) {
+                if ($width < 478 || $height < 484) {
                     array_push($errors, [
                         "sentence" => "حجم الصورة غير مناسب. يفضل أن يكون العرض أكبر من 600 والطول أكبر من 800 بكسل",
                         "sub_title" => null,
