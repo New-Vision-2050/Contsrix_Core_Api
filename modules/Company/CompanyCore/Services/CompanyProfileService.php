@@ -6,7 +6,10 @@ namespace Modules\Company\CompanyCore\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Intervention\Image\Drivers\Imagick\Driver;
+use Intervention\Image\ImageManager;
 use Modules\AdminRequest\Repositories\AdminRequestRepository;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\AssignLogoToCompanyDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
@@ -111,6 +114,60 @@ class CompanyProfileService
             throw new Exception($error);
         }
 
+    }
+
+    private  function checkImage( $image): int
+    {
+        $manager = new ImageManager(new Driver());
+        $img = $manager->read($image);
+        $width = $img->width();
+        $height = $img->height();
+        $white = 0;
+        $color = 0;
+
+// Iterate over each pixel
+        for ($x = 0; $x < 2; $x++) {
+            for ($y = 0; $y < $width; $y++) {
+                $rgb = $img->pickColor($x, $y)->toArray();
+                // Check if the pixel color is white (255, 255, 255)
+                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
+                    $white++;
+                } else {
+                    $color++;
+                }
+            }
+        }
+
+        for ($x = 0; $x < 2; $x++) {
+            for ($y = 0; $y < $height; $y++) {
+                $rgb = $img->pickColor($y, $x)->toArray();
+                // Check if the pixel color is white (255, 255, 255)
+                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
+                    $white++;
+                } else {
+                    $color++;
+                }
+            }
+        }
+
+        $percentage = ($white / ($white + $color)) * 100;
+//        return response(['kk' => $percentage]);
+
+
+        if ($percentage > 70) {
+            $this->response = response(['msg' => "image uploaded successfully"]);
+            return 1;
+        } else {
+
+            $this->response = response(['msg' => "image does not white background"], 422);
+            return 0;
+        }
+
+    }
+
+    public function assignLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
+    {
+//        $image = ->file('image');
     }
 
 }

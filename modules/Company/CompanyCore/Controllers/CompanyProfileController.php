@@ -15,6 +15,7 @@ use Modules\AdminRequest\Presenters\AdminRequestPresenter;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyData;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
@@ -53,11 +54,16 @@ class CompanyProfileController extends Controller
 
     public function getAddressFromMap(getLocationByLatLongRequest $request)
     {
-
         $geoCodingDTO = $request->createGeoCodingDTO();
         $result = $this->companyProfileService->geoCoding($geoCodingDTO);
         return Json::item($result);
+    }
 
+    public function setCompanyLogo(setCompanyLogoRequest $request)
+    {
+        $logo = $request->createAssignLogoToCompanyDTO();
+        $result = $this->companyProfileService->assignLogo($logo);
+        return Json::item($result);
     }
 
 
