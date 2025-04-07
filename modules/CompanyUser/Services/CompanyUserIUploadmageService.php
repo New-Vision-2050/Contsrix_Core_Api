@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Services;
 
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
-use Intervention\Image\Drivers\Imagick\Driver;
-use Intervention\Image\ImageManager;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\Shared\Media\Services\FileUploadService;
-use Ramsey\Uuid\Uuid;
 class CompanyUserIUploadmageService
 {
     public function __construct(
@@ -32,7 +29,7 @@ class CompanyUserIUploadmageService
 
         $companyUser  =CompanyUser::find(auth()->user()->global_company_user_id);
 
-        $media = $this->fileUploadService->uploadFile($companyUser, $file, $path, 'upload', $visibility );
+        $media = $this->fileUploadService->uploadFile($companyUser, $file, $path, 'upload_user', $visibility );
         return $media->getFullUrl();
     }
 

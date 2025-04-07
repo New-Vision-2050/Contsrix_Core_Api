@@ -45,11 +45,19 @@ class CompanyUserProfileController extends Controller
         return Json::item($errors);
     }
 
-    public function uploadPhoto(UploadPhotoCompanyUserRequest $request)//: JsonResponse
+    public function uploadPhoto(UploadPhotoCompanyUserRequest $request): JsonResponse
     {
+        try {
+            $path = $this->companyUserIUploadImageService->uploadFile($request);
 
-        $path = $this->companyUserIUploadImageService->uploadFile($request);
-
-        return Json::item($path);
+            return Json::success([
+                'message' => 'Photo uploaded successfully',
+                'url' => $path,
+            ]);
+        } catch (\Exception $e) {
+            return Json::error('Something went wrong, please try again later.', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
