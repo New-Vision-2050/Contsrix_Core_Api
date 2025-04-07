@@ -116,7 +116,7 @@ class CompanyProfileService
 
     }
 
-    private  function checkImage( $image): int
+    private function checkImage($image): int
     {
         $manager = new ImageManager(new Driver());
         $img = $manager->read($image);
@@ -155,11 +155,9 @@ class CompanyProfileService
 
 
         if ($percentage > 70) {
-            $this->response = response(['msg' => "image uploaded successfully"]);
             return 1;
         } else {
 
-            $this->response = response(['msg' => "image does not white background"], 422);
             return 0;
         }
 
@@ -167,7 +165,13 @@ class CompanyProfileService
 
     public function assignLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
     {
-//        $image = ->file('image');
+        $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
+        if (!$result)
+        {
+            throw new \Exception(__("validation.logo-not-valid"), 400);
+        }
+
+
     }
 
 }

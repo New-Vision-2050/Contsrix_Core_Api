@@ -200,6 +200,7 @@ return [
     "can-not-resend-otp"=>"can not resend otp",
     "action-took-before"=>"action took before",
     "lookups-value-not-correct"=>"lookups value not correct",
+    "logo-not-valid"=>"logo not valid",
 
 
 
