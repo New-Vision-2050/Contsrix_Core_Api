@@ -169,7 +169,10 @@ return [
     "company-not-found" => "الشركة غير موجودة",
     "login-way-not-found" => "طريقة الدخول غير موجودة",
     "user-not-found" => "المستخدم غير موجود",
+    "identifier-not-found" => "المعرف غير موجود",
     "delete-not-successful-must-have-one" => "يجب ان يكون على الاقل صف واحد",
+    "deactivate-not-successful-must-have-one" =>"يجب ان يكون على الاقل صف واحد نشط" ,
+
     "invalid-answers" => "الاجابات غير صحيحة",
     "you-must-set-your-answers" => "يجب ادخال الاجابات الخاصة بك",
     "all-questions-are-required" => "جميع الاسئلة مطلوبة",
