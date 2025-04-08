@@ -30,6 +30,14 @@ class CompanyRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getByHost($domain)
+    {
+        return $this->model->whereHas("domains",function ($query) use ($domain) {
+            $query->where("domain", $domain);
+        })->first();
+
+    }
+
     public function getCompany(UuidInterface $id): Company
     {
         return $this->findOneByOrFail([

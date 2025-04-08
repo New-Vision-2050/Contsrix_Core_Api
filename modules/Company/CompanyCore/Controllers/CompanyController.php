@@ -11,6 +11,7 @@ use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
+use Modules\Company\CompanyCore\Presenters\CompanyUnAuthPresenter;
 use Modules\Company\CompanyCore\Requests\CreateCompanyRequest;
 use Modules\Company\CompanyCore\Requests\DeleteCompanyRequest;
 use Modules\Company\CompanyCore\Requests\GetCompanyListRequest;
@@ -130,6 +131,12 @@ class CompanyController extends Controller
 
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
+    }
 
+    public function getCompanyByHost(Request $request)
+    {
+
+        $company = $this->companyService->getCompanyByHost($request->getHost());
+        return Json::item((new CompanyUnAuthPresenter($company))->getData());
     }
 }
