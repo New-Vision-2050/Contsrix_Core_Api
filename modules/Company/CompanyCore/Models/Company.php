@@ -53,6 +53,8 @@ class Company extends Model implements HasMedia
         'complete_data',
         'date_activate',
         'registration_no',
+        'registration_no_start_date',
+        'registration_no_end_date',
         'serial_no',
         'image_path'
     ];

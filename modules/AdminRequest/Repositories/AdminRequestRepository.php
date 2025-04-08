@@ -71,6 +71,36 @@ class AdminRequestRepository extends BaseRepository
         return $adminRequest;
     }
 
+
+    public function createAdminRequestForCompanyLegalData(UuidInterface $userId, array $data, string $requestType, array $action,?string $notes=""): AdminRequest
+    {
+        $id = $data['id'];
+        unset($data["id"]);
+        try {
+            DB::beginTransaction();
+            $adminRequest = $this->create([
+                'user_id' => $userId,
+                'request_type' => $requestType,
+                'action' => $action,
+                'data' =>$data,
+                "requestable_id" => $id,
+                "requestable_type" => Company::class,
+                "notes" => $notes
+            ]);
+            $adminRequest->adminRequestTransactions()->create([
+                "data" => $data,
+                "action" => "update",
+                "requestable_id" => $data['id'],
+                "requestable_type" => Company::class,
+            ]);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 409);
+        }
+        return $adminRequest;
+    }
+
     public function acceptActionOnAdminRequest( UuidInterface $id , $status): AdminRequest
     {
         try {
@@ -84,7 +114,7 @@ class AdminRequestRepository extends BaseRepository
             foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction){
                 if($adminRequestTransaction->action == "update"){
                     $model  = new $adminRequestTransaction->requestable_type;
-                    $model->find($adminRequestTransaction->data["id"])->update($adminRequestTransaction->data["data"]);
+                    $model->find($adminRequestTransaction->requestable_id)->update($adminRequestTransaction->data["data"]);
 
                 }
                 $adminRequestTransaction->update(["status"=>$status]);

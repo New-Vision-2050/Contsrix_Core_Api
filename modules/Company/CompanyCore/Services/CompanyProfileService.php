@@ -13,6 +13,7 @@ use Intervention\Image\ImageManager;
 use Modules\AdminRequest\Repositories\AdminRequestRepository;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\AssignLogoToCompanyDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
@@ -217,6 +218,18 @@ class CompanyProfileService
 
         $this->fileUploadService->uploadFile($company, $assignLogoToCompanyDTO->getLogo(), 'company', 'logo');
         return $company;
+    }
+
+    public function updateLegalDataRequest(UpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
+    {
+        $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
+            userId: auth()->user()->id,
+            data: ["id" => $companyDataRequestDTO->getId(), "data" => $companyDataRequestDTO->toArray()],
+            requestType: "companyLegalDataUpdate",
+            action: ["ar" => "طلب تعديل البيانات القانونيه للشركة", "en" => "Company legal data update request"],
+            notes: ""
+        );
+        return $adminRequest;
     }
 
 }

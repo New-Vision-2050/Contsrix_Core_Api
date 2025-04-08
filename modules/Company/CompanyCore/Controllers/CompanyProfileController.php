@@ -16,6 +16,7 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDat
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateLegalCompanyDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyData;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
@@ -73,6 +74,11 @@ class CompanyProfileController extends Controller
         $logo = $request->createAssignLogoToCompanyDTO();
         $validations = $this->companyProfileService->validateLogo($logo);
         return Json::item($validations);
+    }
+
+    public function updateLegalDataRequest(UpdateLegalCompanyDataRequest $request)
+    {
+
     }
 
 
