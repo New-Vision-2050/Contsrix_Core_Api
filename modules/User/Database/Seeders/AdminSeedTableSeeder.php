@@ -27,7 +27,6 @@ class AdminSeedTableSeeder extends Seeder
                     "phone"=>"542138116",
                     "phone_code"=>"966",
                     'password' => "Test1234",
-                    "global_id" => Uuid::uuid4()->toString()
                 ]
             );
             $user->assignRole('super-admin');
