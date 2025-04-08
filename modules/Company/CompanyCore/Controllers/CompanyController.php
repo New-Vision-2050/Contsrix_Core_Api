@@ -139,7 +139,6 @@ class CompanyController extends Controller
         if($request->header("X-DOMAIN") !=null)
         {
             $url = $request->header("X-DOMAIN");
-
         }
 
         $company = $this->companyService->getCompanyByHost($url);
