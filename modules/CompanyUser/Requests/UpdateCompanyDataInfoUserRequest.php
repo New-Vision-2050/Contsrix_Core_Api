@@ -5,10 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Ramsey\Uuid\Uuid;
-use Modules\CompanyUser\Commands\UpdateCompanyUserCommand;
 use Modules\CompanyUser\Commands\UpdateCompanyUserDataInfoCommand;
-use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 
 class UpdateCompanyDataInfoUserRequest extends FormRequest
 {
