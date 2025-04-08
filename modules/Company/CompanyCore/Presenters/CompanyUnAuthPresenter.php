@@ -22,6 +22,8 @@ class CompanyUnAuthPresenter extends AbstractPresenter
             'id' => $this->company->id,
             'name' => $this?->company?->name,
             'user_name' => $this->company->user_name,
+            "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
+
 
         ];
     }
