@@ -167,8 +167,13 @@ class CompanyProfileService
 
     public function assignLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
     {
-        $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
-        if (!$result) {
+        $flag = 0;
+        try {//TODO this fun check image must call pr dependency imagpic if found on server would delete try catch
+            $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
+        }catch (\Exception $e){
+            $flag = 1 ;
+        }
+        if ($flag == 0 && !$result) {
             throw new \Exception(__("validation.logo-not-valid"), 400);
         }
         $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
