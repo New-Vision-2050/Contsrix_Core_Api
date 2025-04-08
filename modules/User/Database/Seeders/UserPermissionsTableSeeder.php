@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\App;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Models\Role;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class UserPermissionsTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

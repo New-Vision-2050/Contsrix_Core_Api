@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Country\Models\Country;
 use Modules\Setting\Models\Driver;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DriverTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

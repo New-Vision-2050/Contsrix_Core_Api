@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Country\Models\Country;
 use Ramsey\Uuid\Uuid;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class CompanyTypeSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

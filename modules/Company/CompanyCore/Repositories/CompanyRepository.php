@@ -34,7 +34,7 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->whereHas("domains",function ($query) use ($domain) {
             $query->where("domain", $domain);
-        })->firstOtFail();
+        })->firstOrFail();
 
     }
 
