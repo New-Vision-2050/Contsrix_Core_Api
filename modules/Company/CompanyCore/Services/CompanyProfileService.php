@@ -25,8 +25,8 @@ class CompanyProfileService
 {
     public function __construct(
         private AdminRequestRepository $adminRequestRepository,
-        private FileUploadService $fileUploadService,
-        private CompanyRepository $companyRepository
+        private FileUploadService      $fileUploadService,
+        private CompanyRepository      $companyRepository
     )
     {
     }
@@ -154,7 +154,6 @@ class CompanyProfileService
         }
 
         $percentage = ($white / ($white + $color)) * 100;
-//        return response(['kk' => $percentage]);
 
 
         if ($percentage > 70) {
@@ -169,8 +168,7 @@ class CompanyProfileService
     public function assignLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
     {
         $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
-        if (!$result)
-        {
+        if (!$result) {
             throw new \Exception(__("validation.logo-not-valid"), 400);
         }
         $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
