@@ -20,8 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'domain.tenant' => \App\Http\Middleware\DomainToTenantMiddleware::class,
         ]);
         $middleware->append(\App\Http\Middleware\Localization::class);
+        $middleware->prepend(\App\Http\Middleware\DomainToTenantMiddleware::class);
 
     })
     ->withExceptions(function (Exceptions $exceptions) {
