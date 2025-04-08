@@ -7,11 +7,14 @@ namespace Modules\Setting\Models;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Driver extends Model
 {
     use UuidTrait;
     use BaseFilterable;
+    use BelongsToTenant;
+
 
     public $incrementing = false;
 

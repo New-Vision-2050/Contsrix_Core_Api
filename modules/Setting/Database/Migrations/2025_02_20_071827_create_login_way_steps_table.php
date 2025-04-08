@@ -15,6 +15,7 @@ return new class extends Migration
             $table->json("drivers")->nullable();
             $table->json("login_option_alternatives")->nullable();
             $table->uuid( "login_way_id")->index();
+
             $table->timestamps();
         });
     }

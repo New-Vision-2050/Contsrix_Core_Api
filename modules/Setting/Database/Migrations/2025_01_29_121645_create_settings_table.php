@@ -8,9 +8,12 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('settings', function (Blueprint $table) {
-            $table->string("key")->primary();
+        Schema::create('settings', function (Blueprint $table){
+            $table->id();
+            $table->string("key");
             $table->string("value");
+            $table->uuid("company_id")->index();
+
             $table->timestamps();
         });
     }

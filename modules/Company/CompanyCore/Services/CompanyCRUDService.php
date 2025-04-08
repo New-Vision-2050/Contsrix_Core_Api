@@ -11,12 +11,14 @@ use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Ramsey\Uuid\UuidInterface;
+use function PHPUnit\Framework\throwException;
 
 class CompanyCRUDService
 {
     public function __construct(
         private CompanyRepository $repository,
-    ) {
+    )
+    {
     }
 
     public function create(CreateCompanyDTO $createCompanyDTO): Company
@@ -25,7 +27,7 @@ class CompanyCRUDService
 
         $company = $this->repository->createCompany($requestCompanyDTO);
 
-        CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
+//        CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
 
         return $company;
     }
@@ -43,5 +45,20 @@ class CompanyCRUDService
         return $this->repository->getCompany(
             id: $id,
         );
+    }
+
+    public function getCurrentCompanyLoggedIn()
+    {
+        try {
+            return $this->repository->findOneOrFail(tenant("id"));
+        } catch (\Exception $e) {
+            throw new \Exception(__("validation.company-not-found"), 404);
+
+        }
+    }
+
+    public function getCompanyByHost($host)
+    {
+        return $this->repository->getByHost($host);
     }
 }

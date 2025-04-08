@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('company_type_id')->nullable()->change();
             $table->string('registration_type_id')->nullable()->change();
             $table->string('registration_no')->nullable()->change();
+            $table->json('data')->nullable();
+
 
         });
     }

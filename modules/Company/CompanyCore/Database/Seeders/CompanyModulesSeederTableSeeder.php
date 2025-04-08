@@ -4,15 +4,19 @@ namespace Modules\Company\CompanyCore\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Database\Seeders\CompanyRegistrationTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Ramsey\Uuid\Uuid;
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {
@@ -34,9 +38,13 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $registrationType = CompanyRegistrationType::first();
         $general_manager = User::first();
 
+        $namespace = Uuid::NAMESPACE_DNS;
+        $id = Uuid::uuid5($namespace, "new-vision")->toString();
+
         $companyData = [
-            'name' => 'Test Company',
-            'user_name' => bin2hex(random_bytes(6)),
+            'id' => $id,
+            'name' => 'new vision',
+            'user_name' => "new-vision",
             'email' => 'test@example.com',
             'phone' => '123456789',
             'country_id' => $country->id,
@@ -48,9 +56,18 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'serial_no'=> bin2hex(random_bytes(6))
         ];
 
-        $company = Company::firstOrCreate(
-            ['email' => $companyData['email']],
-            $companyData
-        );
+        $company = Company::insertOrIgnore($companyData);
+        Domain::query()->create([
+           "company_id" => $id,
+           "domain" => $companyData['user_name']
+        ]);
+
+        $general_manager->update(['company_id' => $id]);
+        CompanyUserCompany::query()->create([
+            'company_id' => $id,
+            'global_company_user_id' => $general_manager->global_company_user_id,
+            'role' => CompanyUserRole::EMPLOYEE->value
+        ]);
+
     }
 }

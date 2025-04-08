@@ -11,8 +11,10 @@ return new class extends Migration
         Schema::create('drivers', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string("driver_type");
-            $table->string("name")->unique();//like sms mora , web mail
+            $table->string("name");//like sms mora , web mail
             $table->json("config");
+            $table->uuid("company_id")->index();
+
             $table->timestamps();
         });
     }

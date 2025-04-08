@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
-use Modules\Company\Models\Company;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUser;
@@ -24,8 +23,8 @@ class RolesPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'role' => (int) $this->company->role,
-            'status' => (int) $this->company->status
+            'role' => CompanyUserRole::lang((int) $this->company->role),
+            'status' => CompanyUserStatus::lang((int) $this->company->status)
         ];
     }
 

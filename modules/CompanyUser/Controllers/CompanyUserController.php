@@ -34,14 +34,14 @@ use Ramsey\Uuid\Uuid;
 class CompanyUserController extends Controller
 {
     public function __construct(
-        private CompanyUserCRUDService       $companyUserService,
-        private CompanyUserWidgetsService    $companyUserWidgetService,
-        private CompanyUserValidationService $companyUserValidationService,
-        private UpdateCompanyUserHandler     $updateCompanyUserHandler,
-        private UpdateTimeZoneCompanyUserHandler     $updateTimeZoneCompanyUserHandler,
-        private AssignRoleCompanyUserHandler $assignRoleCompanyUserHandler,
-        private DeleteCompanyUserRoleHandler $deleteCompanyUserRoleHandler,
-        private DeleteCompanyUserHandler     $deleteCompanyUserHandler,
+        private CompanyUserCRUDService           $companyUserService,
+        private CompanyUserWidgetsService        $companyUserWidgetService,
+        private CompanyUserValidationService     $companyUserValidationService,
+        private UpdateCompanyUserHandler         $updateCompanyUserHandler,
+        private UpdateTimeZoneCompanyUserHandler $updateTimeZoneCompanyUserHandler,
+        private AssignRoleCompanyUserHandler     $assignRoleCompanyUserHandler,
+        private DeleteCompanyUserRoleHandler     $deleteCompanyUserRoleHandler,
+        private DeleteCompanyUserHandler         $deleteCompanyUserHandler,
     )
     {
     }
@@ -76,25 +76,26 @@ class CompanyUserController extends Controller
 
         return Json::item($presenter->getData());
     }
+
     public function showByEmail(GetCompanyUserRequest $request)//: JsonResponse
     {
-            $item = $this->companyUserService->getByEmail($request->email);
-            if (!$item) {
-                return Json::item(null);
-            }
-            $presenter = new CompanyUserPresenter($item);
+        $item = $this->companyUserService->getByEmail($request->email);
+        if (!$item) {
+            return Json::item(null);
+        }
+        $presenter = new CompanyUserPresenter($item);
 
-            return Json::item($presenter->getData());
+        return Json::item($presenter->getData());
 
 
     }
 
     public function store(CreateCompanyUserRequest $request)
     {
-            $createdItem = $this->companyUserService->create(
-                $request->createCreateCompanyUserDTO(),
-                $request->createCreateCompanyUserCompanyRoleDTO()
-            );
+        $createdItem = $this->companyUserService->create(
+            $request->createCreateCompanyUserDTO(),
+            $request->createCreateCompanyUserCompanyRoleDTO()
+        );
 
         $presenter = new CompanyUserPresenter($createdItem);
         return Json::item($presenter->getData());
@@ -137,6 +138,7 @@ class CompanyUserController extends Controller
         return Json::item($presenter->getData());
 
     }
+
     public function changeTimeZone(UpdateTimeZoneCompanyUserRequest $request): JsonResponse
     {
         $command = $request->updateTimeZoneUpdateCompanyUserCommand();
@@ -148,18 +150,19 @@ class CompanyUserController extends Controller
 
         return Json::item($presenter->getData());
     }
+
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
-       $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
-       return Json::deleted();
+        $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
+        return Json::deleted();
     }
 
 
     public function deleteForSpecificRole(DeleteCompanyUserSpecificRoleRequest $request): JsonResponse
     {
 
-            $command = $request->createDeleteRoleCommand();
-            $this->deleteCompanyUserRoleHandler->handle($command);
+        $command = $request->createDeleteRoleCommand();
+        $this->deleteCompanyUserRoleHandler->handle($command);
 
         return Json::deleted();
     }
@@ -169,5 +172,6 @@ class CompanyUserController extends Controller
     {
         return Json::item(CompanyUserRole::array());
     }
+
 
 }

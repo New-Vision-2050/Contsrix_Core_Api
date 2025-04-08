@@ -30,7 +30,8 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
                     "id" => $id,
                     "key" => $key,
                     "name" => $value,
-                    "status" => 1
+                    "status" => 1,
+                    "company_id"=>tenant("id")??Company::query()->first()->id
                 ]
             );
 
