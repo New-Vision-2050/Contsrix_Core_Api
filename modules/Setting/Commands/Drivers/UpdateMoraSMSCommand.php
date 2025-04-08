@@ -26,9 +26,9 @@ class UpdateMoraSMSCommand implements DriverCommand
     public function toArray(): array
     {
         return [
-            'sms_mora_key' => $this->smsMoraKey,
-            'sms_mora_user' => $this->smsMoraUser,
-            'sms_mora_sender' => $this->smsMoraSender,
+            'SMS_MORA_KEY' => $this->smsMoraKey,
+            'SMS_MORA_USER' => $this->smsMoraUser,
+            'SMS_MORA_SENDER' => $this->smsMoraSender,
         ];
     }
 }
