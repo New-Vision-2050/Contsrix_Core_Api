@@ -67,7 +67,7 @@ class CompanyUserProfileController extends Controller
     public function updateDataInfo(UpdateCompanyDataInfoUserRequest $request)
     {
         $command = $request->createUpdateCompanyUserCommand();
-        $command->global_id = Uuid::fromString(auth('api')->user()->global_company_user_id);
+        $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
 
         $this->updateCompanyUserDataInfoHandler->handle($command);
 
@@ -77,5 +77,19 @@ class CompanyUserProfileController extends Controller
 
         return Json::item($presenter->getData());
     }
+    public function updateContactInfo(UpdateCompanyDataInfoUserRequest $request)
+    {
+        $command = $request->createUpdateCompanyUserCommand();
+        $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
+
+        $this->updateCompanyUserDataInfoHandler->handle($command);
+
+        $item = $this->companyUserService->getGlobalId($command->global_id);
+
+        $presenter = new CompanyUserPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
 
 }
