@@ -37,22 +37,28 @@ elif [ "$APP_ENV" == "stage" ]; then
     EMAIL_ENCRYPTION=tls
     EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 else
-#    EMAIL_HOST="mailcatcher"
-#    EMAIL_HOST_USER=""
-#    EMAIL_HOST_PASSWORD=""
-#    EMAIL_PORT=1025
-#    EMAIL_ENCRYPTION=
-#    EMAIL_FROM_ADDRESS=""
-      EMAIL_HOST=vision-dashbord.com
-      EMAIL_PORT=465
-      EMAIL_HOST_USER=info@vision-dashbord.com
-      EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
-      EMAIL_ENCRYPTION=tls
-      EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+    EMAIL_HOST="mailcatcher"
+    EMAIL_HOST_USER=""
+    EMAIL_HOST_PASSWORD=""
+    EMAIL_PORT=1025
+    EMAIL_ENCRYPTION=
+    EMAIL_FROM_ADDRESS=""
+     #EMAIL_HOST=vision-dashbord.com
+     #EMAIL_PORT=465
+     #EMAIL_HOST_USER=info@vision-dashbord.com
+     #EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+     #EMAIL_ENCRYPTION=tls
+     #EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 fi
 
 APP_NAME="Constrix"
 APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
+
+if [[ "$DEPLOYMENT_ID" == *"pr"* ]]; then
+  DB_NAME="$DB_NAME-pr"
+else
+  DB_NAME="$DB_NAME-$DEPLOYMENT_ID"
+fi
 
 # Create .env file
 cat <<EOF > .env
@@ -65,7 +71,7 @@ DB_HOST=$DB_HOST
 DB_PORT=$DB_PORT
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
-DB_DATABASE=$DB_NAME-$DEPLOYMENT_ID
+DB_DATABASE=$DB_NAME
 QUEUE_CONNECTION=redis
 SESSION_DRIVER=redis
 CACHE_STORE=redis
