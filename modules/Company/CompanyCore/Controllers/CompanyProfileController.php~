@@ -68,13 +68,6 @@ class CompanyProfileController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function validateCompanyLogo(setCompanyLogoRequest $request)
-    {
-        $logo = $request->createAssignLogoToCompanyDTO();
-        $validations = $this->companyProfileService->validateLogo($logo);
-        return Json::item($validations);
-    }
-
 
 
 }

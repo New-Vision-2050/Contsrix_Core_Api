@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Services;
 
+use App\Http\Controllers\Api\V1\Admin\Tenant\TenantServiceClass;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Intervention\Image\Drivers\Imagick\Driver;
@@ -165,15 +167,49 @@ class CompanyProfileService
 
     }
 
+    public function validateLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
+    {
+        $errors = [];
+        // Ensure the image is uploaded
+        $image = $assignLogoToCompanyDTO->getLogo();
+
+        // Check if the file is an image and is valid
+
+        $maxSizeInMB = 5;
+        $fileSizeInMB = $image->getSize() / (1024 * 1024); // Convert bytes to MB
+
+        if ($fileSizeInMB > $maxSizeInMB) {
+            array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 0, "validate" => "required"]);
+        } else {
+            array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 1, 'validate' => 'required']);
+        }
+
+        // Get image dimensions
+        list($width, $height) = getimagesize($image->getPathname());
+
+        // Validate dimensions
+        if ($width == 1920 && $height == 1080) {
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1]);
+        } else {
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين 468x704 و 477x714", "sub_title" => null, "status" => 0]);
+        }
+
+        $result = $this->checkImage($image);
+
+        if ($result === 0) {
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0]);
+        } else {
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1]);
+        }
+        return $errors;
+    }
+
+
     public function assignLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
     {
-        $flag = 0;
-        try {//TODO this fun check image must call pr dependency imagpic if found on server would delete try catch
-            $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
-        }catch (\Exception $e){
-            $flag = 1 ;
-        }
-        if ($flag == 0 && !$result) {
+
+        $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
+        if (!$result) {
             throw new \Exception(__("validation.logo-not-valid"), 400);
         }
         $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
