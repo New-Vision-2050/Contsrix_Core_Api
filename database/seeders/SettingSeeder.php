@@ -6,9 +6,11 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\Setting;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class SettingSeeder extends Seeder
 {
+    use SeedOnce;
     public function run(): void
     {
         if (App::environment('production') == false) {

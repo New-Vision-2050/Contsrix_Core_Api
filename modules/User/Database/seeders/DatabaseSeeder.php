@@ -7,16 +7,17 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DatabaseSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
         // User::factory(10)->create();
-        dd('Seeder is running 1');
 
         Model::unguard();
         User::factory()->create([
