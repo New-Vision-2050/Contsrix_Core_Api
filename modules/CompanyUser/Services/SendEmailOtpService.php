@@ -35,15 +35,18 @@ class SendEmailOtpService
             ""
         );
     }
-    public function sendOtpForEmailChange($command,UuidInterface $user_id)
+    public function sendOtpForEmailChange($command, UuidInterface $user_id)
     {
-       $user = $this->userRepository->find($user_id);
+        $user = $this->userRepository->find($user_id);
+        $otpData = $command->toArray();
 
-        $otpData = $this->send($command);
+        // Ensure 'otp' key is in the data
+        $otp = (new Otp)->generate($command->email, 'numeric', 5, 20)->token;
+        $otpData['otp'] = $otp;
 
+        // Now, send the OTP via the notification
         $user->notifyNow(new SendOtpForEmailChange($otpData));
 
         return $otpData;
     }
-
 }

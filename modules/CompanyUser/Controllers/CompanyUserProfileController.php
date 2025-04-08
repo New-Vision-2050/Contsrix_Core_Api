@@ -98,7 +98,7 @@ class CompanyUserProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'OTP sent successfully',
-            'data'    => $otpData->toArray(),
+            'data'    => $otpData,
         ]);
     }
     public function verifyContactInformation(UpdateCompanyContactInfoUserRequest $request)
