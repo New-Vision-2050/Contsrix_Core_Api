@@ -4,6 +4,7 @@ namespace Modules\Setting\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\QuestionSetting;
 use Ramsey\Uuid\Uuid;
 
@@ -27,6 +28,7 @@ class QuestionSettingTableSeeder extends Seeder
                     "id" => $id,
                     "key" => $key,
                     "question" => $value,
+                    "company_id"=>tenant("id")??Company::query()->first()->id
                 ]
             );
         }

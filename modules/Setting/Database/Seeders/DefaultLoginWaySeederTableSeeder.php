@@ -23,7 +23,8 @@ class DefaultLoginWaySeederTableSeeder extends Seeder
             ["name" => "password"],
             [
                 "name" => "password",
-                "default" => 1
+                "default" => 1,
+                "company_id"=>tenant("id")??Company::query()->first()->id
             ]
         );
         $loginWay->loginWaySteps()->delete();

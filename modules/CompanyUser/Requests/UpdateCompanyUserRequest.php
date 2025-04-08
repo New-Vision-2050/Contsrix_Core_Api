@@ -16,7 +16,8 @@ class UpdateCompanyUserRequest extends FormRequest
         return [
             'name' => 'required|string',
             'country_id' => 'required|exists:countries,id',
-            'phone' => 'required|phone|unique:company_users,phone,'.$this->route("id"),
+            'phone' => 'required|unique:company_users,phone,'.$this->route("id"),
+            'phone_code' => 'required',
             'email' => 'required|email|unique:company_users,email,'.$this->route("id"),
             'border_number' => 'present|nullable|unique:company_users,border_number,'.$this->route("id"),
             'residence' => 'present|nullable|unique:company_users,residence,'.$this->route("id"),
@@ -31,11 +32,12 @@ class UpdateCompanyUserRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
             email: $this->get('email'),
-            country_id: $this->get('country_id'),
-            phone: $this->get('phone'),
-            border_number: $this->get('border_number'),
-            residence: $this->get('residence'),
-            identity: $this->get('identity'),
+            country_id:(string) $this->get('country_id'),
+            phone: (string)$this->get('phone'),
+            phoneCode:(string) $this->get('phone_code'),
+            border_number:(string) $this->get('border_number'),
+            residence: (string)$this->get('residence'),
+            identity:(string) $this->get('identity'),
             passport: $this->get('passport'),
         );
     }

@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique()->index();
             $table->string('phone')->unique()->index();
+            $table->string('phone_code')->index();
             $table->string('residence')->unique()->index()->nullable();
             $table->string('identity')->unique()->index()->nullable();
             $table->string('passport')->unique()->index()->nullable();

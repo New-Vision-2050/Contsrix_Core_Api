@@ -17,6 +17,8 @@ use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\Currency\Models\Currency;
 use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
+use Modules\User\Models\User;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -26,6 +28,8 @@ class CompanyUser extends Model
     use UuidTrait;
     use BaseFilterable;
     use EagerLoadPivotTrait;
+    use BelongsToPrimaryModel;
+
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -41,12 +45,14 @@ class CompanyUser extends Model
         'name',
         "email",
         "phone",
+        "phone_code",
         "country_id",
         "border_number",
         "residence",
         "passport",
         "identity",
         'job_title_id',
+        "global_id",
     ];
 
     protected $casts = [
@@ -56,8 +62,13 @@ class CompanyUser extends Model
 
     public function companies()
     {
-        return $this->belongsToMany(Company::class, 'company_users_companies', 'company_user_id', 'company_id')
+        return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
             ->withPivot('role','status');
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'global_company_user_id',"global_id");
     }
 
 
@@ -71,6 +82,7 @@ class CompanyUser extends Model
         try {
             DB::beginTransaction();
             $this->companies()->detach();
+            $this->users()->delete();
             parent::delete();
             DB::commit();
         } catch (\Exception $e) {
@@ -104,5 +116,10 @@ class CompanyUser extends Model
     public function jobTitle()
     {
         return $this->belongsTo(JobTitle::class);
+    }
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+      return "users";
     }
 }

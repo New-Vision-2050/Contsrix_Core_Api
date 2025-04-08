@@ -7,6 +7,7 @@ namespace Modules\User\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\User\Handlers\AssignRoleForUserHandler;
@@ -159,5 +160,11 @@ class UserController extends Controller
         );
 
         return Json::item(['audits' => $list["data"], 'pagination' => $list["pagination"]]);
+    }
+
+    public function getAvailableTenantsForAuthUser()
+    {
+
+        return Json::items(CompanyPresenter::collection($this->userService->getAvailableTenantForUser(auth()->user()->id)));
     }
 }

@@ -12,6 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string("name");
             $table->tinyInteger("default")->default(0);
+            $table->uuid("company_id")->index();
             $table->timestamps();
         });
     }

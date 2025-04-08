@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Support\Facades\DB;
 use phpseclib3\Common\Functions\Strings;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -17,6 +19,9 @@ class LoginWayStep extends Model
 {
     use UuidTrait;
     use BaseFilterable;
+    use BelongsToPrimaryModel;
+
+
 
     // use HasTranslations;
     // use SoftDeletes;
@@ -45,4 +50,15 @@ class LoginWayStep extends Model
     ];
 
 
+    public function loginWay()
+    {
+        return $this->belongsTo(LoginWay::class, 'login_way_id');
+
+    }
+
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "loginWay";
+    }
 }

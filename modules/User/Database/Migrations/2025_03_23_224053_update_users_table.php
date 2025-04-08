@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->string('email')->unique(false)->change();
             $table->string('phone')->unique(false)->change();
+            $table->uuid("global_company_user_id");
             $table->uuid("company_id")->nullable();
-            $table->uuid("global_id");
 
         });
     }

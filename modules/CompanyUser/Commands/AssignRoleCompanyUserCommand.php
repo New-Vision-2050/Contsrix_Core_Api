@@ -27,7 +27,6 @@ class AssignRoleCompanyUserCommand
         return [
             "company_id"=>$this->company_id,
             "role"=>$this->role,
-            "company_user_id"=>$this->id
         ];
     }
 }

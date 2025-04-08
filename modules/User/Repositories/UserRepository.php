@@ -42,7 +42,7 @@ class UserRepository extends BaseRepository
     {
         return $this->findOneByWithRelationsOrFail([
             'email' => $email,
-        ],["loginWay"]);
+        ], ["loginWay"]);
     }
 
     public function getUserByIdentifier($identifier): mixed
@@ -94,6 +94,22 @@ class UserRepository extends BaseRepository
     public function getAllAudites(UuidInterface $id, ?int $page, ?int $perPage = 10)
     {
         return $this->auditRepository->paginated(["user_id" => $id, "user_type" => User::class], $page, $perPage);
+    }
+
+    public function deleteWhere(array $conditions)
+    {
+        $this->model->where($conditions)->delete();
+    }
+
+    public function getWithoutTenancy()
+    {
+        $this->model->withoutTenancy();
+        return $this;
+    }
+
+    public function getWherePluck(array $conditions, $pluck): array
+    {
+        return $this->model->where($conditions)->pluck($pluck)->toArray();
     }
 
 

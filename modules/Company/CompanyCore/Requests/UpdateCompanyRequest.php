@@ -43,14 +43,14 @@ class UpdateCompanyRequest extends FormRequest
             name: $this->get('name'),
             userName: $this->get('user_name'),
             email: $this->get('email'),
-            serialNo: $this->get('serial_no'),
             phone: $this->get('phone'),
-            countryId:  $this->get('country_id'),
-            companyTypeId:  $this->get('company_type_id'),
-            companyFieldId:  $this->get('company_field_id'),
-            generalManagerId:  $this->get('general_manager_id'),
-            registrationTypeId:  $this->get('registration_type_id'),
-            registrationNo:  $this->get('registration_no') ?? '',
+            countryId: $this->get('country_id'),
+            companyTypeId: $this->get('company_type_id'),
+            companyFieldId: $this->get('company_field_id'),
+            registrationTypeId: $this->get('registration_type_id'),
+            registrationNo: $this->get('registration_no') ?? '',
+            serialNo: $this->get('serial_no'),
+            generalManagerId: $this->get('general_manager_id'),
         );
     }
 }
