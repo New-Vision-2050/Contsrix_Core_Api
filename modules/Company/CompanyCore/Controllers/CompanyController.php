@@ -135,8 +135,14 @@ class CompanyController extends Controller
 
     public function getCompanyByHost(Request $request)
     {
+        $url  = $request->getHost();
+        if($request->header("X-DOMAIN") !=null)
+        {
+            $url = $request->header("X-DOMAIN");
 
-        $company = $this->companyService->getCompanyByHost($request->getHost());
+        }
+
+        $company = $this->companyService->getCompanyByHost($url);
         return Json::item((new CompanyUnAuthPresenter($company))->getData());
     }
 }
