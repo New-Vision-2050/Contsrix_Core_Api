@@ -27,7 +27,9 @@ COPY devops/supervisord.conf /etc/supervisord.conf
 RUN mkdir -p storage/framework/sessions && \
     mkdir -p storage/framework/views && \
     mkdir -p storage/framework/cache && \
-    chmod -R 775 storage/framework
+    mkdir -p storage/logs && \
+    chmod -R 775 storage/framework && \
+    chmod -R 775 storage/logs
 
 RUN mkdir -p bootstrap/cache && \
    chmod -R 775 bootstrap/cache
