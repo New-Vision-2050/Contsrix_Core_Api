@@ -34,7 +34,7 @@ class UpdateCompanyUserRequest extends FormRequest
             email: $this->get('email'),
             country_id:(string) $this->get('country_id'),
             phone: (string)$this->get('phone'),
-            phoneCode:(string) $this->get('phone_code'),
+            phone_code:(string) $this->get('phone_code'),
             border_number:(string) $this->get('border_number'),
             residence: (string)$this->get('residence'),
             identity:(string) $this->get('identity'),

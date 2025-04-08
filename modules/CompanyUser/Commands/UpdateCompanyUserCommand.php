@@ -14,7 +14,7 @@ class UpdateCompanyUserCommand
         public string $email,
         public string $country_id,
         public string $phone,
-        public string $phoneCode,
+        public string $phone_code,
         public ? string $border_number ,
         public ? string $residence,
         public ? string $identity,
@@ -39,11 +39,11 @@ class UpdateCompanyUserCommand
             'email' => $this->email,
             'country_id' => $this->country_id,
             'phone' => $this->phone,
-            'phone_code' => $this->phoneCode,
+            'phone_code' => $this->phone_code,
             'border_number' => $this->border_number,
             'residence' => $this->residence,
             "identity"=>$this->identity,
-            "passport"=>$this->passport,
+            "passport"=>$this->passport
         ];
     }
 }

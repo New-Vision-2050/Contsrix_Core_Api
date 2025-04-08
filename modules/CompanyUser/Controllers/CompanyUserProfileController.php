@@ -8,8 +8,10 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\CompanyUser\Handlers\UpdateCompanyUserDataInfoHandler;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
+use Modules\CompanyUser\Requests\UpdateCompanyDataInfoUserRequest;
 use Modules\CompanyUser\Requests\UploadPhotoCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\CompanyUserImageValidationService;
@@ -23,6 +25,7 @@ class CompanyUserProfileController extends Controller
         private CompanyUserCRUDService  $companyUserService,
         private CompanyUserImageValidationService $companyUserImageValidationService,
         private CompanyUserIUploadmageService $companyUserIUploadImageService,
+        private UpdateCompanyUserDataInfoHandler         $updateCompanyUserDataInfoHandler ,
     )
     {
     }
@@ -60,4 +63,19 @@ class CompanyUserProfileController extends Controller
             ]);
         }
     }
+
+    public function updateDataInfo(UpdateCompanyDataInfoUserRequest $request)
+    {
+        $command = $request->createUpdateCompanyUserCommand();
+        $command->global_id = Uuid::fromString(auth('api')->user()->global_company_user_id);
+
+        $this->updateCompanyUserDataInfoHandler->handle($command);
+
+        $item = $this->companyUserService->getGlobalId($command->global_id);
+
+        $presenter = new CompanyUserPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
 }

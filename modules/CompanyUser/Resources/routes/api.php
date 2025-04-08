@@ -11,6 +11,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/profile', [CompanyUserProfileController::class, 'profile']);
     Route::post('/validate-photo', [CompanyUserProfileController::class, 'validatePhoto']);
     Route::post('/upload-photo', [CompanyUserProfileController::class, 'uploadPhoto']);
+    Route::put('/data-info', [CompanyUserProfileController::class, 'updateDataInfo']);
 
     Route::get('/show-by-email/{email}', [CompanyUserController::class, 'showByEmail']);
     Route::post('/change-time-zone/{id}', [CompanyUserController::class, 'changeTimeZone']);

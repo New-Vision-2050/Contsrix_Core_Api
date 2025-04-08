@@ -114,8 +114,13 @@ class CompanyUserRepository extends BaseRepository
     {
         return $this->paginatedList([], $page, $perPage);
     }
-
-    public function getCompanyUser(UuidInterface $global_id): CompanyUser
+    public function getCompanyUser(UuidInterface $id): CompanyUser
+    {
+        return $this->findOneByOrFail([
+            'id' => $id->toString(),
+        ]);
+    }
+    public function getCompanyUserGlobalId(UuidInterface $global_id): CompanyUser
     {
         return $this->findOneByOrFail([
             'global_id' => $global_id->toString(),
@@ -226,6 +231,15 @@ class CompanyUserRepository extends BaseRepository
             DB::rollBack();
             throw new \Exception($e->getMessage(), 500);
         }
+        return true;
+
+    }
+
+
+    public function updateCompanyUserDataInfo(UuidInterface $global_id, array $data): bool
+    {
+        $this->updateWhere(["global_id" => $global_id],$data);
+
         return true;
 
     }

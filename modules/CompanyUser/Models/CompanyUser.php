@@ -54,6 +54,15 @@ class CompanyUser extends Model implements HasMedia
         "identity",
         'job_title_id',
         "global_id",
+
+        "other_phone",
+        "address",
+        "address_attendance",
+        "nickname",
+        "is_default",
+        "birthdate_gregorian",
+        "birthdate_hijri",
+        "nationality",
     ];
 
     protected $casts = [
