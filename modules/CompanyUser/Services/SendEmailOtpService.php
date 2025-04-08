@@ -18,13 +18,13 @@ class SendEmailOtpService
 {
     public function __construct(
         private UserRepository $userRepository,
-        private SendOtpEmail          $sendOtpEmail
+        private SendOtpEmail   $sendOtpEmail
     )
     {
 
     }
 
-    public function send($command)
+    public function authMailData($command)
     {
         $otp = (new Otp)->generate($command->email, 'numeric', 5, 20)->token;
 
@@ -36,23 +36,12 @@ class SendEmailOtpService
             ""
         );
     }
-    public function sendOtpForEmailChange($command, UuidInterface $user_id)
-{
-    // Get the user from the database
-    $user = $this->userRepository->find($user_id);
+    public function sendOtpForEmailChange($command)
+    {
+        $mailClass = new \App\Http\Controllers\HelperClass\MailClass();
+        $mailClass->setConfig();
 
-    // Generate OTP
-    $otpData = $command->toArray();
-    $otp = (new Otp)->generate($command->email, 'numeric', 5, 20)->token;
-    $otpData['otp'] = $otp;
+        Mail::to($command->email)->send(new OtpMail($this->authMailData($command)->toArray()));
 
-    // Set email configuration dynamically
-    $mailClass = new \App\Http\Controllers\HelperClass\MailClass();
-    $mailClass->setConfig(); // Ensure the configuration is set from DB
-
-    // Send the OTP to the new email address using Mail facade
-    Mail::to($command->email)->send(new OtpMail($otpData));
-
-    return $otpData;
-}
+    }
 }
