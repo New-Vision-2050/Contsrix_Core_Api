@@ -13,14 +13,16 @@ class SendEmailOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email'
+            'type'=>'required|in:email,phone',
+            'identifier' => 'required',
         ];
     }
 
     public function updateEmailOtpCommand(): UpdateEmailOtpCommand
     {
         return new UpdateEmailOtpCommand(
-            email: $this->get('email'),
+            identifier: $this->get('identifier'),
+            type: $this->get('type'),
         );
     }
 }

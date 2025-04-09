@@ -9,7 +9,8 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateEmailOtpCommand
 {
     public function __construct(
-        public string $email,
+        public string $identifier,
+        public string $type,
     ) {
     }
 
@@ -17,7 +18,8 @@ class UpdateEmailOtpCommand
     public function toArray(): array
     {
         return [
-            'email' => $this->email,
+            'identifier' => $this->identifier,
+            'type' => $this->type
         ];
     }
 }
