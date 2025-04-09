@@ -23,7 +23,7 @@ class CustomTenantScope implements Scope
         $tenant = tenant();
 
         // Check if the current tenant's name is "New Vision"
-        if ($tenant->name === 'new vision') {
+        if ($tenant->is_central_company) {
             // Don't apply any filtering - this tenant can see all data
             return;
         }
