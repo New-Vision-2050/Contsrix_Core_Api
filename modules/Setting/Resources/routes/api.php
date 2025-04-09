@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Setting\Controllers\SettingController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [SettingController::class, 'index']);
     Route::post('/', [SettingController::class, 'store']);
     Route::delete('/', [SettingController::class, 'delete']);
@@ -47,5 +47,5 @@ Route::group(['middleware' => ['auth:api']], function () {
 
 
 
-Route::post('questions/get-question-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'getUserQuestions']);
+Route::post('questions/get-question-for-user', [\Modules\Setting\Controllers\QuestionSettingController::class, 'getUserQuestions'])->middleware(\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class);
 
