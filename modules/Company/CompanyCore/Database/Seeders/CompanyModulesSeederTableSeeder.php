@@ -63,12 +63,13 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'registration_type_id' => $registrationType->id,
             'general_manager_id' => $general_manager->id->toString(),
             'registration_no' => '123456',
-            'serial_no'=> bin2hex(random_bytes(6))
+            'serial_no'=> bin2hex(random_bytes(6)),
+            "is_central_company"=>1
         ];
 
         $company = Company::insertOrIgnore($companyData);
         $company = Company::query()->find($id);
-        $path = Storage::disk('public')->path("company-logo/new-vision-logo.jpg");
+        $path = Storage::disk('public')->path("default_path/new-vision-logo.jpg");
         $file = new \Illuminate\Http\UploadedFile(
             $path,
             'new-vision-logo.jpg',
@@ -77,6 +78,8 @@ class CompanyModulesSeederTableSeeder extends Seeder
             true
         );
         $this->fileUploadService->uploadFile($company, $file, 'company',"logo");
+
+
         $domain = str_replace("be-","",env("APP_URL"));
 
         Domain::query()->create([
