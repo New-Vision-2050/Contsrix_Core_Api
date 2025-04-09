@@ -116,7 +116,7 @@ class AdminRequestRepository extends BaseRepository
             foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction){
                 if($adminRequestTransaction->action == "update"){
                     $model  = new $adminRequestTransaction->requestable_type;
-                    $model->find($adminRequestTransaction->requestable_id)->update($adminRequestTransaction->data["data"]);
+                    $model->find($adminRequestTransaction->requestable_id)->update($adminRequestTransaction->data);
 
                 }
                 $adminRequestTransaction->update(["status"=>$status]);

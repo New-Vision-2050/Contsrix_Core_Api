@@ -31,7 +31,6 @@ class UpdateLegalCompanyDataRequest extends FormRequest
             registrationNoStartDate: $this->registration_no_start_date,
             registrationNoEndDate: $this->registration_no_end_date,
             file: $this->file("file"),
-
         );
     }
 }

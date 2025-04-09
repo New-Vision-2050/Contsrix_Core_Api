@@ -38,13 +38,11 @@ class CompanyProfileService
     {
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyOfficialData(
             userId: auth()->user()->id,
-            data: ["id" => $companyDataRequestDTO->getId(), "data" => $companyDataRequestDTO->toArray()],
+            data: $companyDataRequestDTO->toArray()+["id"=>$companyDataRequestDTO->getId()],
             requestType: "companyOfficialDataUpdate",
             action: ["ar" => "طلب تعديل البيانات الرسميه للشركة", "en" => "Company official data update request"],
             notes: $companyDataRequestDTO->getNotes()
-
         );
-
         return $adminRequest;
 
     }
@@ -224,10 +222,9 @@ class CompanyProfileService
     {
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
             userId: auth()->user()->id,
-            data: ["id" => $companyDataRequestDTO->getId(), "data" => $companyDataRequestDTO->toArray()],
+            data: $companyDataRequestDTO->toArray()+["id"=>$companyDataRequestDTO->getId()],
             requestType: "companyLegalDataUpdate",
             action: ["ar" => "طلب تعديل البيانات القانونيه للشركة", "en" => "Company legal data update request"],
-            notes: ""
         );
         return $adminRequest;
     }
