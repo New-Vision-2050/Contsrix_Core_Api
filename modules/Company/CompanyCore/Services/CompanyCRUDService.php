@@ -27,7 +27,7 @@ class CompanyCRUDService
 
         $company = $this->repository->createCompany($requestCompanyDTO);
 
-//        CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
+//        CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));TODO un comment this put queue connection has issue
 
         return $company;
     }

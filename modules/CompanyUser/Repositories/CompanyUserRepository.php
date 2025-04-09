@@ -95,8 +95,8 @@ class CompanyUserRepository extends BaseRepository
                 ->where('company_id', $companyId)
                 ->where('role', $role)
                 ->delete();
-            if(CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)->where('company_id', $companyId)->count() == 0){
-                $this->userRepository->deleteWhere(["global_company_user_id"=>$companyUser->global_id,"company_id"=>$companyId]);
+            if (CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)->where('company_id', $companyId)->count() == 0) {
+                $this->userRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]);
 
             }
             if (CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)->count() == 0) {
@@ -146,9 +146,20 @@ class CompanyUserRepository extends BaseRepository
         return $this->findOneBy($by);
     }
 
+    private function getPhoneNumberInfo(string $phone): array
+    {
+        $phoneArray = explode(' ', $phone);
+        return [
+            'phone_code' => $phoneArray[0],
+            'phone' => $phone,
+        ];
+    }
+
     public function createCompanyUser(array $companyUserData, array $companyRole): CompanyUser
     {
         try {
+            $phoneInfo = $this->getPhoneNumberInfo($companyUserData['phone']);
+
             DB::beginTransaction();
             $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
             if (!$companyUser) {
@@ -159,14 +170,12 @@ class CompanyUserRepository extends BaseRepository
             $companyUser = $companyUser->fresh();//get updated data for company user
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
-                $this->userRepository->createUser([
+                $this->userRepository->createUser(array_merge([
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
-                    "phone" => $companyUserData['phone'],
-                    "phone_code" => $companyUserData['phone_code'],
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id
-                ]);
+                ],$phoneInfo));
             }
 
             CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
@@ -217,16 +226,19 @@ class CompanyUserRepository extends BaseRepository
     public function updateCompanyUser(UuidInterface $id, array $data): bool
     {
         try {
+            DB::beginTransaction();
+            $phoneInfo = $this->getPhoneNumberInfo($data['phone']);
+
+
             $companyUser = $this->findOneBy(["id" => $id]);
-            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id],[
+            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id], [
                 "name" => $data["name"],
                 "email" => $data["email"],
-                "phone" => $data['phone'],
-                "phone_code" => $data["phone_code"],
                 "global_company_user_id" => $companyUser->global_id
             ]);
 
-            $this->update($id, $data);
+            $this->update($id, array_merge($data,$phoneInfo));
+            DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 500);

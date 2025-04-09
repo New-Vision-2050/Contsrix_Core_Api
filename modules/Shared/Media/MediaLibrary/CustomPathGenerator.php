@@ -30,11 +30,21 @@ class CustomPathGenerator extends DefaultPathGenerator
     public function getFullUrl(Media $media): string
     {
         $disk = $media->conversions_disk;
+        if($disk=="s3_private")
+        {
+            $url = Storage::disk($disk)->temporaryUrl(
+                $this->getPathRelativeToRoot($media),
+                Carbon::now()->addMinutes(60)
+            );
+        }else
+        {
+            $url = Storage::disk($disk)->url(
+                $this->getPathRelativeToRoot($media)
 
-        $url = Storage::disk($disk)->temporaryUrl(
-            $this->getPathRelativeToRoot($media),
-            Carbon::now()->addMinutes(60)
-        );
+            );
+        }
+
+
 
         return $url;
     }
