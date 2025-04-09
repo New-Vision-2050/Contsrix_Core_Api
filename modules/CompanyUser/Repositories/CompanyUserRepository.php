@@ -146,7 +146,7 @@ class CompanyUserRepository extends BaseRepository
         $phoneArray = explode(' ', $phone);
         return [
             'phone_code' => $phoneArray[0],
-            'phone' => $phone,
+            'phone' => str_replace(" ","",$phone),
         ];
     }
 

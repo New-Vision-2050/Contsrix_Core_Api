@@ -16,7 +16,7 @@ return [
     'new-vision' => 'New Vision',
     'enter-otp' => 'enter otp',
     'rights' => '© 2025 New Vision . All rights reserved.',
-    "you-are-added-to-company"=>"your company has created company: ",
+    "you-are-added-to-company"=>"your company has created :company ",
     "your-domain-is"=>"your domain is",
 
 
