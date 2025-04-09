@@ -41,7 +41,7 @@ class SendDomainForUser extends Notification
     private function setDriverSMS($notifiable): void
     {
         $driverName = Country::query()->where("phonecode", str_replace("+","",$notifiable->phone_code))->first();
-        if ($driverName) {
+        if ($driverName && $driverName->smsDriver) {
             if ($driverName?->smsDriver?->name == "mora") {
                 $this->smsDriver = new MoraSms();
             } else {
