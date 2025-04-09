@@ -126,9 +126,10 @@ class CompanyUserController extends Controller
 
     }
 
-    public function update(UpdateCompanyUserRequest $request): JsonResponse
+    public function update(UpdateCompanyUserRequest $request)//: JsonResponse
     {
         $command = $request->createUpdateCompanyUserCommand();
+
         $this->updateCompanyUserHandler->handle($command);
 
         $item = $this->companyUserService->get($command->getId());

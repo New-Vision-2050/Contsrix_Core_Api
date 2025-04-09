@@ -42,6 +42,9 @@ class SendOtpForEmailChange extends Notification
      */
     public function toMail($notifiable)
     {
+        if (empty($this->data['otp']) || empty($this->data['email'])) {
+            \Log::error('OTP or Email is missing in the notification data');
+        }
         return (new MailMessage)
             ->subject(__('emails.change-your-email'))
             ->line(__('emails.you-tried-to-change-email-with',["email"=>$this->data['email']]) )

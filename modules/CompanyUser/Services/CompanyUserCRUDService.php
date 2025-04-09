@@ -50,9 +50,15 @@ class CompanyUserCRUDService
         return $companyUsers;
     }
 
-    public function get(UuidInterface $global_id): CompanyUser
+    public function get(UuidInterface $id): CompanyUser
     {
         return $this->repository->getCompanyUser(
+            id:$id,
+        );
+    }
+    public function getGlobalId(UuidInterface $global_id): CompanyUser
+    {
+        return $this->repository->getCompanyUserGlobalId(
             global_id:$global_id,
         );
     }

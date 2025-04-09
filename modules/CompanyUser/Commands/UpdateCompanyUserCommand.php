@@ -41,7 +41,7 @@ class UpdateCompanyUserCommand
             'border_number' => $this->border_number,
             'residence' => $this->residence,
             "identity"=>$this->identity,
-            "passport"=>$this->passport,
+            "passport"=>$this->passport
         ];
     }
 }

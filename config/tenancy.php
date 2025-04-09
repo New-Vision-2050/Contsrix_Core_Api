@@ -16,11 +16,11 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
+    'central_domains' => array_merge([
         '127.0.0.1',
         'localhost',
         "https://core-be-stage.constrix-nv.com"
-    ],
+    ],[env('APP_URL')]),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.

@@ -7,35 +7,38 @@ namespace Modules\CompanyUser\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
-use Modules\CompanyUser\Enum\CompanyUserRole;
-use Modules\CompanyUser\Events\UserUpdated;
-use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
-use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
-use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
-use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
-use Modules\CompanyUser\Handlers\UpdateTimeZoneCompanyUserHandler;
-use Modules\CompanyUser\Models\CompanyUser;
+use Modules\Auth\Requests\ValidateOtpRequest;
+use Modules\Auth\Services\AuthService;
+use Modules\Auth\Services\OtpServices\SendOtpEmail;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\CompanyUser\Handlers\UpdateCompanyUserContactInfoHandler;
+use Modules\CompanyUser\Handlers\UpdateCompanyUserDataInfoHandler;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
-use Modules\CompanyUser\Presenters\TimeZoneCompanyUserPresenter;
-use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
-use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
-use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
-use Modules\CompanyUser\Requests\DeleteCompanyUserRequest;
-use Modules\CompanyUser\Requests\DeleteCompanyUserSpecificRoleRequest;
-use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
-use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
-use Modules\CompanyUser\Requests\UpdateTimeZoneCompanyUserRequest;
+use Modules\CompanyUser\Requests\SendEmailOtpRequest;
+use Modules\CompanyUser\Requests\UpdateCompanyContactInfoUserRequest;
+use Modules\CompanyUser\Requests\UpdateCompanyDataInfoUserRequest;
+use Modules\CompanyUser\Requests\UploadPhotoCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
-use Modules\CompanyUser\Services\CompanyUserValidationService;
-use Modules\CompanyUser\Services\CompanyUserWidgetsService;
-use Modules\User\Models\User;
+use Modules\CompanyUser\Services\CompanyUserImageValidationService;
+use Modules\CompanyUser\Services\CompanyUserIUploadmageService;
+use Modules\CompanyUser\Services\SendOtpService;
+use Modules\CompanyUser\Services\ValidateOtpService;
+use Modules\CompanyUser\Services\VerifyCompanyUserContactInfoService;
+use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 
 class CompanyUserProfileController extends Controller
 {
     public function __construct(
-        private CompanyUserCRUDService           $companyUserService,
+        private CompanyUserCRUDService              $companyUserService,
+        private CompanyUserImageValidationService   $companyUserImageValidationService,
+        private CompanyUserIUploadmageService       $companyUserIUploadImageService,
+        private UpdateCompanyUserDataInfoHandler    $updateCompanyUserDataInfoHandler ,
+        private UpdateCompanyUserContactInfoHandler $updateCompanyUserContactInfoHandler ,
+        private VerifyCompanyUserContactInfoService $verifyCompanyUserContactInfoService,
+        private SendOtpService                      $sendOtpService,
+        private ValidateOtpService                  $validateOtpService
     )
     {
     }
@@ -47,6 +50,75 @@ class CompanyUserProfileController extends Controller
         );
 
         $presenter = new CompanyUserPresenter($user);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function validatePhoto(UploadPhotoCompanyUserRequest $request): JsonResponse
+    {
+        $errors = $this->companyUserImageValidationService->validateName($request);
+
+        return Json::item($errors);
+    }
+
+    public function uploadPhoto(UploadPhotoCompanyUserRequest $request): JsonResponse
+    {
+        try {
+            $path = $this->companyUserIUploadImageService->uploadFile($request);
+
+            return Json::success([
+                'message' => 'Photo uploaded successfully',
+                'url' => $path,
+            ]);
+        } catch (\Exception $e) {
+            return Json::error('Something went wrong, please try again later.', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function updateDataInfo(UpdateCompanyDataInfoUserRequest $request)
+    {
+        $command = $request->createUpdateCompanyUserCommand();
+        $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
+
+        $this->updateCompanyUserDataInfoHandler->handle($command);
+
+        $item = $this->companyUserService->getGlobalId($command->global_id);
+
+        $presenter = new CompanyUserPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function sendOtp(SendEmailOtpRequest $request)
+    {
+        $command = $request->updateEmailOtpCommand();
+        $command->name = auth()->user()->name;
+        $user_id = auth()->user()->id;
+        $otpData = $this->sendOtpService->sendOtp($command,$user_id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP sent successfully',
+            'data'    => $otpData,
+        ]);
+    }
+
+    public function validateOtp(ValidateOtpRequest $request)
+    {
+        return Json::item(["status" => $this->validateOtpService->validateOtp($request->createValidateOtpDTO())]);
+    }
+    public function updateContactInformation(UpdateCompanyContactInfoUserRequest $request)
+    {
+        $command = $request->createUpdateCompanyUserCommand();
+        $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
+
+        $this->updateCompanyUserContactInfoHandler->handle($command);
+
+        $item = $this->companyUserService->getGlobalId($command->global_id);
+
+        $presenter = new CompanyUserPresenter($item);
 
         return Json::item($presenter->getData());
     }

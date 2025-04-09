@@ -19,17 +19,18 @@ use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
 use Modules\User\Models\User;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
-
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class CompanyUser extends Model
+class CompanyUser extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use EagerLoadPivotTrait;
     use BelongsToPrimaryModel;
-
+    use InteractsWithMedia;
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -53,6 +54,15 @@ class CompanyUser extends Model
         "identity",
         'job_title_id',
         "global_id",
+
+        "other_phone",
+        "address",
+        "address_attendance",
+        "nickname",
+        "is_default",
+        "birthdate_gregorian",
+        "birthdate_hijri",
+        "nationality",
     ];
 
     protected $casts = [
@@ -121,5 +131,9 @@ class CompanyUser extends Model
     public function getRelationshipToPrimaryModel(): string
     {
       return "users";
+    }
+    public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
+    {
+        $media->getFullUrl();
     }
 }
