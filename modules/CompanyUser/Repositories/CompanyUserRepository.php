@@ -243,6 +243,13 @@ class CompanyUserRepository extends BaseRepository
         return true;
 
     }
+    public function updateCompanyUserIdentityData(UuidInterface $global_id, array $data): bool
+    {
+        $this->updateWhere(["global_id" => $global_id],$data);
+
+        return true;
+
+    }
 
     public function deleteCompanyUser(UuidInterface $id): bool
     {

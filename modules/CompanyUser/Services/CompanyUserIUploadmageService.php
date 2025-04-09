@@ -27,7 +27,7 @@ class CompanyUserIUploadmageService
 
         $path = Company::find(auth()->user()->company_id)->name . '/' . auth()->user()->name;
 
-        $companyUser  =CompanyUser::find(auth()->user()->global_company_user_id);
+        $companyUser  = CompanyUser::find(auth()->user()->global_company_user_id);
 
         $media = $this->fileUploadService->uploadFile($companyUser, $file, $path, 'upload_user', $visibility );
         return $media->getFullUrl();
