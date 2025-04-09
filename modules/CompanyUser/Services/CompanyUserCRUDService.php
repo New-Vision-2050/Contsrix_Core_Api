@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Services;
 
 use Illuminate\Support\Collection;
+use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
@@ -30,7 +31,15 @@ class CompanyUserCRUDService
 
     public function create(CreateCompanyUserDTO $createCompanyUserDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
+
         $user = $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
+        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id, "company_id" => $companyRoleDTO->getCompanyId()]);
+        $data = [
+            "name"=>$userInCompany->name,
+            "company_name"=>$userInCompany->company?->name,
+            "domain_name"=>$userInCompany->company?->domains()->first()?->domain
+        ];
+        $userInCompany->notify(new SendDomainForUser($data));
 
         try {
             event(new UserCreated($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
