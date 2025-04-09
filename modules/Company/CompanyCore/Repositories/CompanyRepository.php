@@ -47,7 +47,7 @@ class CompanyRepository extends BaseRepository
 
     private function parseDomain($username)
     {
-        $url = request()->host();
+        $url = request()->header("X-DOMAIN")??request()->host();
         if (strpos($url, '.') !== false) {
             $url = explode(".", $url);
             $subDomain = $url[0] . "-" . $username;
