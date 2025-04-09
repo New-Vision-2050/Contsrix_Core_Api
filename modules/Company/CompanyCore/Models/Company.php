@@ -111,4 +111,9 @@ class Company extends Model implements HasMedia
         return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('parent_id', null)->where('type', 'branch');
     }
 
+    public function companyAddress()
+    {
+        return $this->hasOne(CompanyAddress::class, 'company_id');
+    }
+
 }

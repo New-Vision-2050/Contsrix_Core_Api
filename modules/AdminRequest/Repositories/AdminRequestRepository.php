@@ -157,6 +157,10 @@ class AdminRequestRepository extends BaseRepository
         return $adminRequest->fresh();
     }
 
+    public function setAddress(UuidInterface $id ,array $array)
+    {
+
+    }
 
 
     public function updateAdminRequest(UuidInterface $id, array $data): bool
