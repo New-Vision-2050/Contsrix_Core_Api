@@ -45,9 +45,11 @@ class SendDomainForUser extends Notification
             if ($driverName?->smsDriver?->name == "mora") {
                 $this->smsDriver = new MoraSms();
             } else {
+                //TODO if there is many sms provider choose default one
                 $this->smsDriver = $driverName->smsDriver->name;
             }
         } else {
+            //TODO if there is many sms provider choose default one
             $this->smsDriver = new MoraSms();
         }
     }
