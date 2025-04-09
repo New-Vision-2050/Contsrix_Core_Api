@@ -35,6 +35,7 @@ class CompanyCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
+            ['is_central_company' => 0],
             page: $page,
             perPage: $perPage,
         );
