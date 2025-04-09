@@ -6,8 +6,10 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Modules\User\Models\User;
+use Ranium\SeedOnce\Traits\SeedOnce;
 class SeedUserTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

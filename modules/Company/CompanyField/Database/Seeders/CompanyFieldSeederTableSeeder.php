@@ -5,10 +5,12 @@ namespace Modules\Company\CompanyField\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyField\Models\CompanyField;
+use Ranium\SeedOnce\Traits\SeedOnce;
 use Ramsey\Uuid\Uuid;
 
 class CompanyFieldSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

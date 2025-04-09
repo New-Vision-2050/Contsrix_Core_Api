@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\App;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\Setting;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DefaultLoginWaySeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

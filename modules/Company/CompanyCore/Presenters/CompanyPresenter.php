@@ -35,9 +35,11 @@ class CompanyPresenter extends AbstractPresenter
             'company_type' => $this->company?->companyType?->name,
             'company_field' => $this->company?->companyField?->name,
             'registration_type' => $this->company?->companyRegistrationType?->name,
+            "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
             'is_active' => $this->company->is_active,
             'complete_data' => $this->company->complete_data,
-            'date_activate' => $this->company->date_activate
+            'date_activate' => $this->company->date_activate,
+            "is_central_company" => $this->company->is_central_company
         ];
     }
 }

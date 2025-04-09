@@ -5,9 +5,11 @@ namespace Modules\Shared\TimeZone\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Shared\TimeZone\Models\TimeZone;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class TimeZoneSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *
