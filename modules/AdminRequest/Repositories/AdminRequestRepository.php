@@ -46,6 +46,8 @@ class AdminRequestRepository extends BaseRepository
 
     public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action,?string $notes=""): AdminRequest
     {
+        $id = $data['id'];
+        unset($data["id"]);
         try {
             DB::beginTransaction();
             $adminRequest = $this->create([
@@ -53,14 +55,14 @@ class AdminRequestRepository extends BaseRepository
                 'request_type' => $requestType,
                 'action' => $action,
                 'data' => $data,
-                "requestable_id" => $data['id'],
+                "requestable_id" => $id,
                 "requestable_type" => Company::class,
                 "notes" => $notes
             ]);
             $adminRequest->adminRequestTransactions()->create([
                 "data" => $data,
                 "action" => "update",
-                "requestable_id" => $data['id'],
+                "requestable_id" => $id,
                 "requestable_type" => Company::class,
             ]);
             DB::commit();
@@ -90,7 +92,7 @@ class AdminRequestRepository extends BaseRepository
             $adminRequest->adminRequestTransactions()->create([
                 "data" => $data,
                 "action" => "update",
-                "requestable_id" => $data['id'],
+                "requestable_id" => $id,
                 "requestable_type" => Company::class,
             ]);
             DB::commit();
