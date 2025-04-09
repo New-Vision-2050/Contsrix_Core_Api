@@ -30,6 +30,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
     }
 
     use SeedOnce;
+
     /**
      * Run the database seeds.
      *
@@ -63,8 +64,8 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'registration_type_id' => $registrationType->id,
             'general_manager_id' => $general_manager->id->toString(),
             'registration_no' => '123456',
-            'serial_no'=> bin2hex(random_bytes(6)),
-            "is_central_company"=>1
+            'serial_no' => bin2hex(random_bytes(6)),
+            "is_central_company" => 1
         ];
 
         $company = Company::insertOrIgnore($companyData);
@@ -77,14 +78,14 @@ class CompanyModulesSeederTableSeeder extends Seeder
             null,
             true
         );
-        $this->fileUploadService->uploadFile($company, $file, 'company',"logo");
+        $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
 
 
-        $domain = str_replace("be-","",env("APP_URL"));
+        $domain = str_replace("be-", "", env("APP_URL"));
 
         Domain::query()->create([
-           "company_id" => $id,
-           "domain" =>env("NEW_VISION_DOMAIN", $domain)
+            "company_id" => $id,
+            "domain" => env("NEW_VISION_DOMAIN", $domain)
         ]);
 
         $general_manager->update(['company_id' => $id]);

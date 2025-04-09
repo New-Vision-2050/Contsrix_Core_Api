@@ -51,7 +51,7 @@ class CompanyRepository extends BaseRepository
         if (strpos($url, '.') !== false) {
             $url = explode(".", $url);
             $subDomain = $url[0] . "-" . $username;
-            $url = $subDomain . "." . $url[1].$url[2];
+            $url = $subDomain . "." . $url[1].".".$url[2];
         } else {
             $url = $username . "." . $url;
         }
