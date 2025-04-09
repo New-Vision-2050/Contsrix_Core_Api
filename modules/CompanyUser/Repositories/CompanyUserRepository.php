@@ -226,11 +226,11 @@ class CompanyUserRepository extends BaseRepository
 
 
             $companyUser = $this->findOneBy(["id" => $id]);
-            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id], [
+            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id],array_merge( [
                 "name" => $data["name"],
                 "email" => $data["email"],
                 "global_company_user_id" => $companyUser->global_id
-            ]);
+            ],$phoneInfo));
 
             $this->update($id, array_merge($data,$phoneInfo));
             DB::commit();

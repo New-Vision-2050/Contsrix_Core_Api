@@ -56,7 +56,7 @@
                                        {{ __("emails.you-are-added-to-company",["company"=>$data["company_name"]]) }}<br>
                                     </p>
                                     <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                       {{ __("emails.your-domain-is") ." ".$data["domain_name"]}}<br>
+                                       {{ __("emails.your-domain-is") ." "}}<a href="{{$data['domain_name']}}">{{$data['domain_name']}}</a><br>
                                     </p>
 
 
