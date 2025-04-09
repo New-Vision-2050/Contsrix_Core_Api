@@ -5,10 +5,12 @@ namespace Modules\JobTitle\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\JobTitle\Models\JobTitle;
+use Ranium\SeedOnce\Traits\SeedOnce;
 use Ramsey\Uuid\Uuid;
 
 class JobTitleModulesSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

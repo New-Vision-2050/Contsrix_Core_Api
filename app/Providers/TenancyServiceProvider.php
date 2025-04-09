@@ -150,6 +150,9 @@ class TenancyServiceProvider extends ServiceProvider
             // Even higher priority than the initialization middleware
             Middleware\PreventAccessFromCentralDomains::class,
 
+            // Our custom middleware to convert X-Domain to X-Tenant
+            \App\Http\Middleware\DomainToTenantMiddleware::class,
+
             Middleware\InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,
             Middleware\InitializeTenancyByDomainOrSubdomain::class,

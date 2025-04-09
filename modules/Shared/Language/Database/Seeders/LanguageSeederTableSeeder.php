@@ -5,9 +5,11 @@ namespace Modules\Shared\Language\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Shared\Language\Models\Language;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class LanguageSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

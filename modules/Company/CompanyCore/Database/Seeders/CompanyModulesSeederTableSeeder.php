@@ -17,9 +17,11 @@ use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *
