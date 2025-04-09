@@ -12,7 +12,6 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DefaultLoginWaySeederTableSeeder extends Seeder
 {
-    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -22,7 +21,7 @@ class DefaultLoginWaySeederTableSeeder extends Seeder
     {
         Model::unguard();
         $loginWay = LoginWay::firstOrCreate(
-            ["name" => "password"],
+            ["name" => "password","company_id"=>tenant("id")??Company::query()->first()->id],
             [
                 "name" => "password",
                 "default" => 1,
