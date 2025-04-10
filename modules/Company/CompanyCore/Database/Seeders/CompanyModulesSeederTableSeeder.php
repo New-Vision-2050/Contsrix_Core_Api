@@ -3,8 +3,6 @@
 namespace Modules\Company\CompanyCore\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
-use Modules\ArchiveLibrary\Folder\Requests\UploadFileRequest;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
@@ -16,21 +14,14 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Country\Models\Country;
-use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-
 class CompanyModulesSeederTableSeeder extends Seeder
 {
-    public function __construct(private FileUploadService $fileUploadService)
-    {
-    }
-
     use SeedOnce;
-
     /**
      * Run the database seeds.
      *
@@ -64,28 +55,13 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'registration_type_id' => $registrationType->id,
             'general_manager_id' => $general_manager->id->toString(),
             'registration_no' => '123456',
-            'serial_no' => bin2hex(random_bytes(6)),
-            "is_central_company" => 1
+            'serial_no'=> bin2hex(random_bytes(6))
         ];
 
         $company = Company::insertOrIgnore($companyData);
-        $company = Company::query()->find($id);
-        $path = Storage::disk('public')->path("default_path/new-vision-logo.jpg");
-        $file = new \Illuminate\Http\UploadedFile(
-            $path,
-            'new-vision-logo.jpg',
-            null,
-            null,
-            true
-        );
-        $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
-
-
-        $domain = str_replace("be-", "", env("APP_URL"));
-
         Domain::query()->create([
-            "company_id" => $id,
-            "domain" => env("NEW_VISION_DOMAIN", $domain)
+           "company_id" => $id,
+           "domain" => $companyData['user_name']
         ]);
 
         $general_manager->update(['company_id' => $id]);

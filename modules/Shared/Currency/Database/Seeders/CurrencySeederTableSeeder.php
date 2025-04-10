@@ -1,14 +1,13 @@
 <?php
 
-namespace Modules\JobTitle\Database\Seeders;
+namespace Modules\Shared\Currency\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
-use Modules\JobTitle\Models\JobTitle;
+use Modules\Shared\Currency\Models\Currency;
 use Ranium\SeedOnce\Traits\SeedOnce;
-use Ramsey\Uuid\Uuid;
 
-class JobTitleModulesSeederTableSeeder extends Seeder
+class CurrencySeederTableSeeder extends Seeder
 {
     use SeedOnce;
     /**
@@ -19,16 +18,21 @@ class JobTitleModulesSeederTableSeeder extends Seeder
     public function run()
     {
         Model::unguard();
+
         $data = [
-            ['en' => 'General Manager', 'ar' => 'مدير عام'],
-            ['en' => 'Head of Department', 'ar' => 'تصنيف', 'رئيس قسم'],
-            ['en' => 'hr manager', 'ar' => 'مدير الموارد البشرية'],
+            ['en' => 'Egyptian pound', 'ar' => 'جنيه مصري', 'short_name' => 'EGP'],
+            ['en' => 'Saudi riyal', 'ar' => 'ريال سعودي', 'short_name' => 'SAR'],
         ];
 
         foreach ($data as $item) {
-            JobTitle::Create(
+            Currency::firstOrCreate(
+                ['short_name' => $item['short_name']],
                 ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
             );
         }
+
+
+
     }
+
 }

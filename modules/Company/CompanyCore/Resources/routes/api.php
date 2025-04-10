@@ -12,6 +12,7 @@ Route::middleware(['auth:api'])->group(function () {
 
 });
 
+Route::get('/company-by-host', [CompanyController::class, 'getCompanyByHost'])->name('companies.company-by-host');
 
 Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(function () {
     Route::get('/', [CompanyController::class, 'index'])->name('companies.index');

@@ -10,6 +10,7 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class SettingSeeder extends Seeder
 {
+    use SeedOnce;
     public function run(): void
     {
         if (App::environment('production') == false) {

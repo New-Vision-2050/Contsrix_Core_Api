@@ -12,6 +12,7 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DefaultLoginWaySeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

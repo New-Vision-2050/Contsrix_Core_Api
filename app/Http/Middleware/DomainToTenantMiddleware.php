@@ -31,9 +31,6 @@ class DomainToTenantMiddleware
             // If domain exists, set the X-Tenant header with the company_id
             if ($domain) {
                 $request->headers->set('X-Tenant', $domain->company_id);
-                if(empty($request->get('company_id')) && $request->method() !='GET'){
-                    $request->merge(['company_id'=>$domain->company_id]);
-                }
             }
         }
 

@@ -23,8 +23,6 @@ class CompanyUnAuthPresenter extends AbstractPresenter
             'name' => $this?->company?->name,
             'user_name' => $this->company->user_name,
             "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
-            "is_central_company" => $this->company->is_central_company
-
 
 
         ];

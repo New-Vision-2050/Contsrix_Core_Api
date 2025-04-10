@@ -14,6 +14,7 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DefaultIdentifierSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

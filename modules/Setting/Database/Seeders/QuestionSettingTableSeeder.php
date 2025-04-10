@@ -11,6 +11,7 @@ use Ramsey\Uuid\Uuid;
 
 class QuestionSettingTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *
