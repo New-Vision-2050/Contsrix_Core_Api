@@ -23,7 +23,7 @@ class RolePresenter extends AbstractPresenter
         $modified = [];
         foreach ($permissions as $permission) {
             $permission->is_active = $this->role->permissions()->where("name", $permission->name)->first() ? true : false;
-            $modified[] = ["id" => $permission->id, "name" => $permission->name, "is_active" => $permission->is_active];
+            $modified[] = ["id" => $permission->id, "name" => $permission->name,"permission"=>explode('.', $permission->name)[1], "is_active" => $permission->is_active];
         }
         $modified = collect($modified)->groupBy(function($query) {
         return explode('.', $query["name"])[0];
