@@ -1,0 +1,14 @@
+{
+    "name": "UserBank",
+    "alias": "userbank",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserBank\\Providers\\UserBankServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}
