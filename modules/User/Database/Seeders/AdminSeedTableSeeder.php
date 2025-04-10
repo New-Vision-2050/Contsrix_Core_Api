@@ -15,9 +15,11 @@ use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class AdminSeedTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

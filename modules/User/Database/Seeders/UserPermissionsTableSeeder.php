@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\App;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Models\Role;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class UserPermissionsTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

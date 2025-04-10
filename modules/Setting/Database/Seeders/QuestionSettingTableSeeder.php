@@ -6,10 +6,12 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\QuestionSetting;
+use Ranium\SeedOnce\Traits\SeedOnce;
 use Ramsey\Uuid\Uuid;
 
 class QuestionSettingTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

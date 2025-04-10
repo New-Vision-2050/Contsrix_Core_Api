@@ -15,9 +15,11 @@ use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTableSeeder;
 use Modules\Shared\Language\Database\Seeders\LanguageSeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DatabaseSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Seed the application's database.
      */

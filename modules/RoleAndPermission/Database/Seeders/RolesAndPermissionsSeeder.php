@@ -10,9 +10,11 @@ use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Models\Role;
 use Modules\User\Database\Seeders\UserPermissionsTableSeeder;
 use Modules\User\Models\User;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

@@ -30,6 +30,14 @@ class CompanyRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getByHost($domain)
+    {
+        return $this->model->whereHas("domains",function ($query) use ($domain) {
+            $query->where("domain", $domain);
+        })->firstOrFail();
+
+    }
+
     public function getCompany(UuidInterface $id): Company
     {
         return $this->findOneByOrFail([
@@ -37,14 +45,27 @@ class CompanyRepository extends BaseRepository
         ]);
     }
 
+    private function parseDomain($username)
+    {
+        $url = request()->header("X-DOMAIN")??request()->host();
+        if (strpos($url, '.') !== false) {
+            $url = explode(".", $url);
+            $subDomain = $url[0] . "-" . $username;
+            $url = $subDomain . "." . $url[1];
+        } else {
+            $url = $username . "." . $url;
+        }
+        return $url;
+    }
+
     public function createCompany(array $data): Company
     {
-
+        $url = $this->parseDomain($data["user_name"]);
         try {
             DB::beginTransaction();
             $company = $this->create($data);
             $company->domains()->create([
-                'domain' => $data["user_name"],
+                'domain' => $url,
             ]);
             DB::commit();
             return $company;
@@ -57,11 +78,12 @@ class CompanyRepository extends BaseRepository
 
     public function updateCompany(UuidInterface $id, array $data): bool
     {
+
         try {
             DB::beginTransaction();
             $this->update($id, $data);
             $company = $this->find($id);
-            Domain::query()->where("company_id", $company->id)->update(["domain" => $data["user_name"]]);
+            Domain::query()->where("company_id", $company->id)->update(["domain" => $this->parseDomain($data["user_name"])]);
             DB::commit();
             return true;
         } catch (\Exception $e) {
@@ -132,14 +154,14 @@ class CompanyRepository extends BaseRepository
             ->first();
     }
 
-    public function whereIn($column , array $conditions)
+    public function whereIn($column, array $conditions)
     {
-        $this->model->whereIn($column,$conditions);
+        $this->model->whereIn($column, $conditions);
         return $this;
     }
 
     public function get()
     {
-        return$this->model->get();
+        return $this->model->get();
     }
 }
