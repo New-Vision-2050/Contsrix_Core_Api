@@ -7,11 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Country\Models\Country;
 use Modules\Setting\Models\Driver;
-use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DriverTableSeeder extends Seeder
 {
-    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -29,7 +27,7 @@ class DriverTableSeeder extends Seeder
         foreach ($drivers as $driver_type => $data) {
             foreach ($data as $key => $value) {
                 Driver::query()->firstOrCreate(
-                    ["name" => $key],
+                    ["name" => $key, "company_id"=>tenant("id")??Company::query()->first()->id],
                     ["name" => $key, "driver_type" => $driver_type,"config"=>$value,"company_id"=>tenant("id")??Company::query()->first()->id]
                 );
             }

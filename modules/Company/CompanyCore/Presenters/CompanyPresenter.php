@@ -41,6 +41,7 @@ class CompanyPresenter extends AbstractPresenter
             'is_active' => $this->company->is_active,
             'complete_data' => $this->company->complete_data,
             'date_activate' => $this->company->date_activate,
+            "is_central_company" => $this->company->is_central_company,
             "main_branch"=>[
                 "name" => $this->company->mainBranch?->name
             ]

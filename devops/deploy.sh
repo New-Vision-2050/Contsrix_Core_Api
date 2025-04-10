@@ -37,18 +37,18 @@ elif [ "$APP_ENV" == "stage" ]; then
     EMAIL_ENCRYPTION=tls
     EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 else
-    EMAIL_HOST="mailcatcher"
-    EMAIL_HOST_USER=""
-    EMAIL_HOST_PASSWORD=""
-    EMAIL_PORT=1025
-    EMAIL_ENCRYPTION=
-    EMAIL_FROM_ADDRESS=""
-     #EMAIL_HOST=vision-dashbord.com
-     #EMAIL_PORT=465
-     #EMAIL_HOST_USER=info@vision-dashbord.com
-     #EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
-     #EMAIL_ENCRYPTION=tls
-     #EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+   # EMAIL_HOST="mailcatcher"
+   # EMAIL_HOST_USER=""
+   # EMAIL_HOST_PASSWORD=""
+   # EMAIL_PORT=1025
+   # EMAIL_ENCRYPTION=
+   # EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+    EMAIL_HOST=vision-dashbord.com
+    EMAIL_PORT=465
+    EMAIL_HOST_USER=info@vision-dashbord.com
+    EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+    EMAIL_ENCRYPTION=tls
+    EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 fi
 
 APP_NAME="Constrix"
@@ -87,6 +87,13 @@ MAIL_PASSWORD=$EMAIL_HOST_PASSWORD
 MAIL_ENCRYPTION=$EMAIL_ENCRYPTION
 MAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
 MAIL_FROM_NAME=$APP_NAME
+AWS_ACCESS_KEY_ID=$AWS_KEY
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET
+AWS_DEFAULT_REGION=us-east-1
+AWS_ENDPOINT=http://82.112.241.33:9000
+AWS_USE_PATH_STYLE_ENDPOINT=true
+MINIO_PUBLIC_BUCKET=contrix-archive
+MINIO_PRIVATE_BUCKET=contrix-archive-private
 EOF
 
 echo "APP_ENV: $APP_ENV"

@@ -13,6 +13,15 @@ use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
 class CreateCompanyUserRequest extends FormRequest
 {
+    protected function prepareForValidation()
+    {
+        if ($this->has('phone')) {
+            $this->merge([
+                'phone' => preg_replace('/\s+/', '', $this->phone),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -24,8 +33,8 @@ class CreateCompanyUserRequest extends FormRequest
             'time_zone_id' => 'nullable|exists:time_zones,id',
             'language_id' => 'nullable|exists:languages,id',
             'currency_id' => 'nullable|exists:currencies,id',
+
             'phone' => 'required|unique:company_users,phone',
-            'phone_code' => 'required|exists:countries,phonecode',
             'email' => 'required|email|unique:company_users,email',
             'job_title_id' => 'required|exists:job_titles,id',
             'border_number' => 'nullable|unique:company_users,border_number',
@@ -46,7 +55,6 @@ class CreateCompanyUserRequest extends FormRequest
             email: $this->get('email'),
             country_id: $this->get('country_id'),
             phone: $this->get('phone'),
-            phoneCode: $this->get('phone_code'),
             job_title_id: $this->get('job_title_id'),
             border_number: $this->get('border_number'),
             residence: $this->get('residence'),

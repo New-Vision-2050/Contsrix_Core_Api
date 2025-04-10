@@ -25,7 +25,7 @@ class QuestionSettingTableSeeder extends Seeder
         foreach ($keys as $key => $value) {
             $namespace = Uuid::NAMESPACE_DNS;
             $id = Uuid::uuid5($namespace, $key)->toString();
-            QuestionSetting::updateOrCreate(["id" => $id],
+            QuestionSetting::updateOrCreate(["id" => $id, "company_id"=>tenant("id")??Company::query()->first()->id],
                 [
                     "id" => $id,
                     "key" => $key,

@@ -10,11 +10,10 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class SettingSeeder extends Seeder
 {
-    use SeedOnce;
     public function run(): void
     {
         if (App::environment('production') == false) {
-            Setting::firstOrCreate(["key" => "continue_with_otp"], ["key" => "continue_with_otp", "value" => 0,"company_id"=>tenant("id")??Company::query()->first()->id]);
+            Setting::firstOrCreate(["key" => "continue_with_otp","company_id"=>tenant("id")??Company::query()->first()->id], ["key" => "continue_with_otp", "value" => 0,"company_id"=>tenant("id")??Company::query()->first()->id]);
         }
     }
 }
