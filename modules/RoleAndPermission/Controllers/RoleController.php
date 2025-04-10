@@ -39,7 +39,7 @@ class RoleController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        return Json::item(['roles' => RolePresenter::collection($list['data']), 'pagination' => $list['pagination']]);
+        return Json::items( RolePresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetRoleRequest $request): JsonResponse

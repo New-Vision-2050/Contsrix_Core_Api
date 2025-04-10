@@ -37,7 +37,7 @@ class PermissionController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::item(['permissions' => PermissionPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
+        return Json::items( PermissionPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetPermissionRequest $request): JsonResponse
