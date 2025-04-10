@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\User\Models\User;
+use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\CompanyUser\Models\CompanyUser;
 
@@ -22,7 +24,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 class CompanyUserRepository extends BaseRepository
 {
 
-    public function __construct(CompanyUser $model)
+    public function __construct(CompanyUser $model, private UserRepository $userRepository)
     {
         parent::__construct($model);
     }
@@ -31,7 +33,7 @@ class CompanyUserRepository extends BaseRepository
     {
         if (method_exists($this->model, 'scopeFilter')) {
             $query = $this->model->filter(request()->all())->with($relations);
-        }else{
+        } else {
             $query = $this->model->with($relations);
         }
 
@@ -88,11 +90,16 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            CompanyUserCompany::where('company_user_id', $companyUserId)
+            $companyUser = $this->findOneByOrFail(['id' => $companyUserId]);
+            CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)
                 ->where('company_id', $companyId)
                 ->where('role', $role)
                 ->delete();
-            if (CompanyUserCompany::where('company_user_id', $companyUserId)->count() == 0) {
+            if(CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)->where('company_id', $companyId)->count() == 0){
+                $this->userRepository->deleteWhere(["global_company_user_id"=>$companyUser->global_id,"company_id"=>$companyId]);
+
+            }
+            if (CompanyUserCompany::where('global_company_user_id', $companyUser->global_id)->count() == 0) {
                 $this->delete($companyUserId);
             }
             DB::commit();
@@ -108,10 +115,10 @@ class CompanyUserRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getCompanyUser(UuidInterface $id): CompanyUser
+    public function getCompanyUser(UuidInterface $global_id): CompanyUser
     {
         return $this->findOneByOrFail([
-            'id' => $id->toString(),
+            'global_id' => $global_id->toString(),
         ]);
     }
 
@@ -138,8 +145,27 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $companyUser = $this->create($companyUserData);
-            CompanyUserCompany::create($companyRole + ["company_user_id" => $companyUser->id]);
+            $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
+            if (!$companyUser) {
+
+                $companyUser = $this->create($companyUserData);
+            }
+            $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
+            $companyUser = $companyUser->fresh();//get updated data for company user
+            $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
+            if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
+                $this->userRepository->createUser([
+                    'name' => $companyUserData['name'],
+                    'email' => $companyUserData['email'],
+                    "phone" => $companyUserData['phone'],
+                    "phone_code" => $companyUserData['phone_code'],
+                    'company_id' => $companyRole['company_id'],
+                    "global_company_user_id" => $companyUser->global_id
+                ]);
+            }
+
+            CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
@@ -152,12 +178,56 @@ class CompanyUserRepository extends BaseRepository
 
     public function assignRoleCompanyUser(UuidInterface $id, array $companyUserRoleData): void
     {
-        CompanyUserCompany::firstOrCreate($companyUserRoleData + ["company_user_id" => $id], $companyUserRoleData + ["company_user_id" => $id]);
+        try {
+            DB::beginTransaction();
+            $companyUser = $this->findOneBy(["id" => $id]);
+            $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]]);
+            if (!$user) {
+                $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
+                if ($user) {
+                    $newUser = $user->replicate();
+                    $newUser->password = null; // make password null
+                    $newUser->company_id = $companyUserRoleData["company_id"];
+                    $newUser->save();
+                } else {
+                    $this->userRepository->createUser([
+                        'name' => $companyUser->first_name . ' ' . $companyUser->last_name,
+                        'email' => $companyUser->email,
+                        'company_id' => $companyUserRoleData["company_id"],
+                        "phone" => $companyUser->phone,
+                        "phone_code" => $companyUser->phone_code,
+                        "global_company_user_id" => $companyUser->global_id
+                    ]);
+                }
+
+            }
+            CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.update-not-successful"), 500);
+        }
     }
 
     public function updateCompanyUser(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        try {
+            $companyUser = $this->findOneBy(["id" => $id]);
+            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id],[
+                "name" => $data["name"],
+                "email" => $data["email"],
+                "phone" => $data['phone'],
+                "phone_code" => $data["phone_code"],
+                "global_company_user_id" => $companyUser->global_id
+            ]);
+
+            $this->update($id, $data);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+        }
+        return true;
+
     }
 
     public function deleteCompanyUser(UuidInterface $id): bool

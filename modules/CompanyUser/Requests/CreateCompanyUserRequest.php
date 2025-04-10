@@ -16,17 +16,18 @@ class CreateCompanyUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required','string',new UserNameValidation()],
-            'last_name' => ['required','string',new UserNameValidation()],
+            'first_name' => ['required', 'string', new UserNameValidation()],
+            'last_name' => ['required', 'string', new UserNameValidation()],
             'role' => 'nullable',
             'company_id' => 'required|exists:companies,id',
             'country_id' => 'nullable|exists:countries,id',
             'time_zone_id' => 'nullable|exists:time_zones,id',
             'language_id' => 'nullable|exists:languages,id',
             'currency_id' => 'nullable|exists:currencies,id',
-            'phone' => 'required|phone|unique:company_users,phone',
+            'phone' => 'required|unique:company_users,phone',
+            'phone_code' => 'required|exists:countries,phonecode',
             'email' => 'required|email|unique:company_users,email',
-            'job_title_id'=>'required|exists:job_titles,id',
+            'job_title_id' => 'required|exists:job_titles,id',
             'border_number' => 'nullable|unique:company_users,border_number',
             'residence' => 'nullable|unique:company_users,residence',
             'passport' => 'nullable|unique:company_users,passport',
@@ -40,19 +41,20 @@ class CreateCompanyUserRequest extends FormRequest
     public function createCreateCompanyUserDTO(): CreateCompanyUserDTO
     {
         return new CreateCompanyUserDTO(
-            firstName:     $this->get('first_name'),
-            lastName:      $this->get('last_name'),
-            email:         $this->get('email'),
-            country_id:    $this->get('country_id'),
-            phone:         $this->get('phone'),
-            job_title_id:  $this->get('job_title_id'),
+            firstName: $this->get('first_name'),
+            lastName: $this->get('last_name'),
+            email: $this->get('email'),
+            country_id: $this->get('country_id'),
+            phone: $this->get('phone'),
+            phoneCode: $this->get('phone_code'),
+            job_title_id: $this->get('job_title_id'),
             border_number: $this->get('border_number'),
-            residence:     $this->get('residence'),
-            identity:      $this->get('identity'),
-            passport:      $this->get('passport'),
-            time_zone_id:  $this->get('time_zone_id'),
-            language_id:   $this->get('language_id'),
-            currency_id:   $this->get('currency_id'),
+            residence: $this->get('residence'),
+            identity: $this->get('identity'),
+            passport: $this->get('passport'),
+            time_zone_id: $this->get('time_zone_id'),
+            language_id: $this->get('language_id'),
+            currency_id: $this->get('currency_id'),
         );
     }
 
@@ -60,7 +62,7 @@ class CreateCompanyUserRequest extends FormRequest
     {
         return new CreateCompanyUserCompanyRoleDTO(
             company_id: Uuid::fromString($this->get('company_id')),
-            role: $this->get('role')?? '1',
+            role: $this->get('role') ?? '1',
 
         );
     }

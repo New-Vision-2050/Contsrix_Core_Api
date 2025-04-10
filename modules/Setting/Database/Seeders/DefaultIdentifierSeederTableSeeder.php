@@ -10,9 +10,11 @@ use Modules\Setting\Models\IdentifierSetting;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\Setting;
 use Ramsey\Uuid\Uuid;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DefaultIdentifierSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -30,7 +32,8 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
                     "id" => $id,
                     "key" => $key,
                     "name" => $value,
-                    "status" => 1
+                    "status" => 1,
+                    "company_id"=>tenant("id")??Company::query()->first()->id
                 ]
             );
 

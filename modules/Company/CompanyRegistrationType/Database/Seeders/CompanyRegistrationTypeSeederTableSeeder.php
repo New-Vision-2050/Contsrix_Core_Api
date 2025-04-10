@@ -5,9 +5,11 @@ namespace Modules\Company\CompanyRegistrationType\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class CompanyRegistrationTypeSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

@@ -16,31 +16,42 @@ use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
-use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 
+
+
+use Modules\User\Database\Seeders\AdminSeedTableSeeder;
+use Ranium\SeedOnce\Traits\SeedOnce;
 class DatabaseSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        $this->call(RolesAndPermissionsSeeder::class);
-        $this->call(AdminSeedTableSeeder::class);
-        $this->call(SettingSeeder::class);
-        $this->call(CountrySeederTableSeeder::class);
-        $this->call(CompanyModulesSeederTableSeeder::class);
-        $this->call(JobTitleModulesSeederTableSeeder::class);
-        $this->call(DefaultLoginWaySeederTableSeeder::class);
-        $this->call(DefaultIdentifierSeederTableSeeder::class);
-        $this->call(DriverTableSeeder::class);
-        $this->call(QuestionSettingTableSeeder::class);
         $this->call(StatesTableSeeder::class);
         $this->call(CitiesTableSeeder::class);
-        $this->call(LanguagesTableSeeder::class);
-        $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(CurrencySeederTable::class);
 
         $this->call(UniversitiesTableSeeder::class);
+
+        $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(CountrySeederTableSeeder::class);
+        $this->call(JobTitleModulesSeederTableSeeder::class);
+        $this->call(TimeZoneSeederTableSeeder::class);
+        $this->call(LanguagesTableSeeder::class);
+        $this->call(AdminSeedTableSeeder::class);
+
+        $this->call(CompanyModulesSeederTableSeeder::class);
+
+        $this->call(SettingSeeder::class);
+        $this->call(DriverTableSeeder::class);
+        $this->call(QuestionSettingTableSeeder::class);
+        $this->call(DefaultIdentifierSeederTableSeeder::class);
+
+        $this->call(DefaultLoginWaySeederTableSeeder::class);
+
+
+
     }
 }

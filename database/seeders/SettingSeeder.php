@@ -4,14 +4,17 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\Setting;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class SettingSeeder extends Seeder
 {
+    use SeedOnce;
     public function run(): void
     {
         if (App::environment('production') == false) {
-            Setting::firstOrCreate(["key" => "continue_with_otp"], ["key" => "continue_with_otp", "value" => 0]);
+            Setting::firstOrCreate(["key" => "continue_with_otp"], ["key" => "continue_with_otp", "value" => 0,"company_id"=>tenant("id")??Company::query()->first()->id]);
         }
     }
 }

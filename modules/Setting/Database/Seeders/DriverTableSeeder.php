@@ -4,11 +4,14 @@ namespace Modules\Setting\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Country\Models\Country;
 use Modules\Setting\Models\Driver;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DriverTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -27,7 +30,7 @@ class DriverTableSeeder extends Seeder
             foreach ($data as $key => $value) {
                 Driver::query()->firstOrCreate(
                     ["name" => $key],
-                    ["name" => $key, "driver_type" => $driver_type,"config"=>$value]
+                    ["name" => $key, "driver_type" => $driver_type,"config"=>$value,"company_id"=>tenant("id")??Company::query()->first()->id]
                 );
             }
         }

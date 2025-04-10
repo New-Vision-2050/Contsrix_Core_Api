@@ -28,7 +28,7 @@ class FileUploadService
                 'folder_id' => $folderId,
                 'file_path' => $filePath,
                 'disk'=> $disk,
-            ])
+            ])->preservingOriginal()
             ->toMediaCollection($collectionName, $disk);
 
         return $media;

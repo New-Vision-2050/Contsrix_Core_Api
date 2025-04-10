@@ -8,6 +8,7 @@ use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -16,6 +17,8 @@ class IdentifierSetting extends Model
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
+    use BelongsToTenant;
+
 
     // use SoftDeletes;
 
@@ -25,7 +28,8 @@ class IdentifierSetting extends Model
 
 
     protected $fillable = [
-        "status"
+        "status",
+        "company_id"
     ];
 
     protected $casts = [

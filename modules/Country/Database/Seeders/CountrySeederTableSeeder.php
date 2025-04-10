@@ -6,9 +6,11 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Country\Models\Country;
 use Modules\Setting\Models\Driver;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class CountrySeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

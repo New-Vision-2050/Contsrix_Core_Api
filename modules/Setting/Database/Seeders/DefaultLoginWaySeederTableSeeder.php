@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\App;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\Setting;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DefaultLoginWaySeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -23,7 +25,8 @@ class DefaultLoginWaySeederTableSeeder extends Seeder
             ["name" => "password"],
             [
                 "name" => "password",
-                "default" => 1
+                "default" => 1,
+                "company_id"=>tenant("id")??Company::query()->first()->id
             ]
         );
         $loginWay->loginWaySteps()->delete();

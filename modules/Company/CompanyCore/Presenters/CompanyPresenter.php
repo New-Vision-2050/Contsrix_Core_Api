@@ -20,7 +20,7 @@ class CompanyPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->company->id,
-            'name' => $this?->company?->name,//TODO this must deleted put frontend use it
+            'name' => $this?->company?->name,
             'name_ar' => $this?->company->getTranslation("name","ar"),
             'name_en' => $this?->company->getTranslation("name","en"),
             'user_name' => $this->company->user_name,
@@ -37,10 +37,10 @@ class CompanyPresenter extends AbstractPresenter
             'company_type' => $this->company->companyType?->name,
             'company_field' => $this->company->companyField?->name,
             'registration_type' => $this->company->companyRegistrationType?->name,
+            "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
             'is_active' => $this->company->is_active,
             'complete_data' => $this->company->complete_data,
             'date_activate' => $this->company->date_activate,
-            "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
             "main_branch"=>[
                 "name" => $this->company->mainBranch?->name
             ]

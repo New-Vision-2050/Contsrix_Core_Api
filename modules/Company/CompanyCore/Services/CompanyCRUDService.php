@@ -13,12 +13,14 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Ramsey\Uuid\UuidInterface;
+use function PHPUnit\Framework\throwException;
 
 class CompanyCRUDService
 {
     public function __construct(
         private CompanyRepository $repository,
-    ) {
+    )
+    {
     }
 
     public function create(CreateCompanyDTO $createCompanyDTO): Company
@@ -57,5 +59,20 @@ class CompanyCRUDService
         return $this->repository->getCompany(
             id: $id,
         );
+    }
+
+    public function getCurrentCompanyLoggedIn()
+    {
+        try {
+            return $this->repository->findOneOrFail(tenant("id"));
+        } catch (\Exception $e) {
+            throw new \Exception(__("validation.company-not-found"), 404);
+
+        }
+    }
+
+    public function getCompanyByHost($host)
+    {
+        return $this->repository->getByHost($host);
     }
 }

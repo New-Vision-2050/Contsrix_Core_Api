@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\User\Services;
 
 use Illuminate\Support\Collection;
+use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\User\DTO\CreateUserDTO;
 use Modules\User\Models\User;
@@ -15,6 +16,7 @@ class UserCRUDService
 {
     public function __construct(
         private UserRepository $repository,
+        private CompanyRepository $companyRepository,
     ) {
     }
 
@@ -44,5 +46,12 @@ class UserCRUDService
             throw new \Exception(__("validation.user-not-found"), 404);
         }
         return $user;
+    }
+
+    public function getAvailableTenantForUser(UuidInterface $id)
+    {
+        $user = $this->repository->find($id);
+         $company_ids =  $this->repository->getWithoutTenancy()->getWherePluck(["global_company_user_id"=>$user->global_company_user_id],"company_id");
+         return $this->companyRepository->whereIn("id", $company_ids)->get();
     }
 }

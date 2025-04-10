@@ -10,9 +10,11 @@ return new class extends Migration
     {
         Schema::create('company_users', function (Blueprint $table) {
             $table->uuid('id')->primary()->index();
+            $table->uuid('global_id')->nullable()->index();
             $table->string('name');
             $table->string('email')->unique()->index();
             $table->string('phone')->unique()->index();
+            $table->string('phone_code')->index();
             $table->string('residence')->unique()->index()->nullable();
             $table->string('identity')->unique()->index()->nullable();
             $table->string('passport')->unique()->index()->nullable();

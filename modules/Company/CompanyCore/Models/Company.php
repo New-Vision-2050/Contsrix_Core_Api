@@ -18,29 +18,50 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
+use Stancl\Tenancy\Database\Concerns\HasDatabase;
+use Stancl\Tenancy\Database\Concerns\HasDomains;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
+
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
+use Stancl\Tenancy\Database\Concerns\HasScopedValidationRules;
+use Stancl\Tenancy\Contracts\TenantWithDatabase;
+use Stancl\Tenancy\DatabaseConfig;
+
+//use BasePackage\Shared\Traits\HasTranslations;
 
 
-class Company extends Model implements HasMedia
+/**
+ * @method  __call(string $method, array $parameters)
+ * @method  __callStatic(string $method, array $parameters)
+ */
+class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 {
     use HasFactory;
-    use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
     use HasTranslations;
 
-    // use SoftDeletes;
+    use HasDatabase, HasDomains;
+    use UuidTrait;
+    use HasScopedValidationRules;
+
 
     public array $translatable = ["name"];
 
-    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager',"mainBranch"];
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch"];
 
     public $incrementing = false;
+    protected $table = 'companies';
+//    protected $connection = "mysql";
+
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
+        "name",
+        "id",
         'user_name',
         'email',
         'phone',
@@ -62,10 +83,41 @@ class Company extends Model implements HasMedia
         'id' => 'string',
         'date_activate' => 'date'
     ];
+
+    public static function getCustomColumns(): array
+    {
+        return [
+            "id",
+            'user_name',
+            'email',
+            'phone',
+            'country_id',
+            'company_type_id',
+            'company_field_id',
+            'registration_type_id',
+            'general_manager_id',
+            'is_active',
+            'complete_data',
+            'date_activate',
+            'registration_no',
+            'serial_no',
+            'image_path',
+            "created_at",
+            "updated_at"
+        ];
+    }
+
+
+    public function domains()
+    {
+        return $this->hasMany(config('tenancy.domain_model'), 'company_id');
+    }
+
     public function getMediaUrlsAttribute()
     {
         return $this->media->map(fn($media) => $media->getFullUrl());
     }
+
     protected static function newFactory(): CompanyFactory
     {
         return CompanyFactory::new();
@@ -100,6 +152,17 @@ class Company extends Model implements HasMedia
     {
         $media->getFullUrl(); // Ensure this is using your custom method
     }
+
+    public function getTenantKeyName(): string
+    {
+        return 'id';
+    }
+
+    public function getTenantKey()
+    {
+        return $this->getAttribute($this->getTenantKeyName());
+    }
+
 
     public function adminRequestTransaction()
     {

@@ -12,6 +12,8 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string("key");
             $table->tinyInteger("status")->default(0);
+            $table->uuid("company_id")->index();
+
             $table->timestamps();
         });
     }

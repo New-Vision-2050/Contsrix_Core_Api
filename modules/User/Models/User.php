@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
+
+use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Setting\Models\LoginWay;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -30,6 +33,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use HasTranslations;
     use HasRoles;
     use \OwenIt\Auditing\Auditable;
+    use CustomBelongsToTenant;
+
 
     //use SoftDeletes;
 
@@ -46,6 +51,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         'phone',
         "phone_code",
         "login_way_id",
+        "global_company_user_id",
+        "company_id"
     ];
 
     protected $casts = [
@@ -85,5 +92,10 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }
