@@ -98,7 +98,8 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
             'serial_no',
             'image_path',
             "created_at",
-            "updated_at"
+            "updated_at",
+            "is_central_company"
         ];
     }
 

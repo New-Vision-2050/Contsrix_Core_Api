@@ -19,7 +19,6 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class TenantDatabaseSeeder extends Seeder
 {
-    use SeedOnce;
     /**
      * Seed the application's database.
      */
