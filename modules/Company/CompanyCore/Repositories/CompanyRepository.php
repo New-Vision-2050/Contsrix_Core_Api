@@ -8,7 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Domain;
-use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
@@ -20,8 +20,6 @@ use Carbon\Carbon;
  */
 class CompanyRepository extends BaseRepository
 {
-    private $relations= ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner","branches.address"];
-    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(Company $model)
     {
         parent::__construct($model);
@@ -36,13 +34,8 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->whereHas("domains",function ($query) use ($domain) {
             $query->where("domain", $domain);
-        })->where('is_active',1)->firstOrFail();
+        })->firstOrFail();
 
-    }
-
-    public function getByIdentifierCode($identifierCode)
-    {
-        return $this->model->where("serial_no", $identifierCode)->where('is_active', 1)->firstOrFail();
     }
 
     public function getCompany(UuidInterface $id): Company
@@ -55,10 +48,10 @@ class CompanyRepository extends BaseRepository
     private function parseDomain($username)
     {
         $url = request()->header("X-DOMAIN")??request()->host();
-        if (substr_count($url, '.') > 1) {
-            $urlParts = explode(".", $url);
-            $subDomain = $urlParts[0] . "-" . $username;
-            $url = $subDomain . "." . $urlParts[1] . "." . $urlParts[2];
+        if (strpos($url, '.') !== false) {
+            $url = explode(".", $url);
+            $subDomain = $url[0] . "-" . $username;
+            $url = $subDomain . "." . $url[1].".".$url[2];
         } else {
             $url = $username . "." . $url;
         }
@@ -85,15 +78,12 @@ class CompanyRepository extends BaseRepository
 
     public function updateCompany(UuidInterface $id, array $data): bool
     {
+
         try {
             DB::beginTransaction();
             $this->update($id, $data);
             $company = $this->find($id);
-            if(isset($data["user_name"]))
-            {
-                Domain::query()->where("company_id", $company->id)->update(["domain" => $this->parseDomain($data["user_name"])]);
-
-            }
+            Domain::query()->where("company_id", $company->id)->update(["domain" => $this->parseDomain($data["user_name"])]);
             DB::commit();
             return true;
         } catch (\Exception $e) {
@@ -120,20 +110,19 @@ class CompanyRepository extends BaseRepository
 
     public function isRegistrationExists(string $registrationNo, string $registrationTypeId): bool
     {
-        return $this->model->whereHas("companyLegalData",function ($query) use ($registrationNo,$registrationTypeId)
-        {
-            $query->where("registration_number", $registrationNo)->where("registration_type_id", $registrationTypeId);
-        })->exists();
+        return $this->model->where('registration_no', $registrationNo)
+            ->where('registration_type_id', $registrationTypeId)
+            ->exists();
     }
 
     public function isUserNameExists(string $userName): bool
     {
-        return $this->model->query()->withTrashed()->where('user_name', $userName)->exists();
+        return $this->model->where('user_name', $userName)->exists();
     }
 
     public function isNameExists(string $name): bool
     {
-        return $this->model->whereTranslatable('name', $name)->exists();
+        return $this->model->where('name', $name)->exists();
     }
 
     public function getInactiveCompanyIds(int $hours = 24, $companyId = null)
@@ -157,7 +146,7 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->selectRaw("
             COUNT(*) as total,
-            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN is_active = 'active' THEN 1 ELSE 0 END) as active,
             SUM(CASE WHEN complete_data IS NOT NULL THEN 1 ELSE 0 END) as complete_data,
             SUM(CASE WHEN date_activate IS NOT NULL THEN 1 ELSE 0 END) as data_activate
         ")
@@ -173,55 +162,6 @@ class CompanyRepository extends BaseRepository
 
     public function get()
     {
-        return $this->model->with($this->relations)->get();
-    }
-
-    public function getCurrentCompany() : Company
-    {
-       [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
-        return $this->model->where("id",$company->id)->with(array_merge($this->relations ,["companyAddress"=>function ($query)use ($branch) {
-            $query->where("management_hierarchy_id",$branch->id);
-        },"companyLegalData"=>function ($query)use ($branch) {
-            $query->where("management_hierarchy_id",$branch->id);
-
-        },"companyOfficialDocuments"=>function ($query)use ($branch) {
-            $query->where("management_hierarchy_id",$branch->id);}
-
-        ]))->first();
-    }
-
-
-
-    public function getAllWithRelations(array $relations = []): Collection
-    {
-        $query = $this->model->with($relations)->where(['is_central_company' => 0]);
-        if (method_exists($this->model, 'scopeFilter')) {
-            $query->filter(request()->all());
-        }
-        return $query->get();
-    }
-
-    public function getCompaniesByIdsWithRelations(array $ids, array $relations = []): Collection
-    {
-        $query =  $this->model->whereIn('id', $ids)->where(['is_central_company' => 0])->with($relations);
-
-        if (method_exists($this->model, 'scopeFilter')) {
-            $query->filter(request()->all());
-        }
-
-        return $query->get();
-    }
-
-    public function getLastCreatedCompany(): ?Company
-    {
-        return $this->model->latest('created_at')->with($this->relations)->first();
-    }
-
-    /**
-     * Count records by criteria
-     */
-    public function countWhere(array $conditions): int
-    {
-        return $this->model->where($conditions)->count();
+        return $this->model->get();
     }
 }

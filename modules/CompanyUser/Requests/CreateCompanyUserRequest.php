@@ -6,20 +6,21 @@ namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
-use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Rules\CompanyUserValidation;
-use Modules\CompanyUser\Rules\PhoneEmailConsistencyRule;
 use Modules\CompanyUser\Rules\UserNameValidation;
-use Modules\CompanyUser\Rules\ResidenceValidationRule;
-use Modules\CompanyUser\Rules\PassportValidationRule;
-use Modules\CompanyUser\Rules\IdentityValidationRule;
-use Modules\CompanyUser\Rules\BorderNumberValidationRule;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
 class CreateCompanyUserRequest extends FormRequest
 {
-
+    protected function prepareForValidation()
+    {
+        if ($this->has('phone')) {
+            $this->merge([
+                'phone' => preg_replace('/\s+/', '', $this->phone),
+            ]);
+        }
+    }
 
     public function rules(): array
     {
@@ -31,48 +32,21 @@ class CreateCompanyUserRequest extends FormRequest
             'country_id' => 'nullable|exists:countries,id',
             'time_zone_id' => 'nullable|exists:time_zones,id',
             'language_id' => 'nullable|exists:languages,id',
-            'currency_id' => 'nullable|exists:countries,id',
+            'currency_id' => 'nullable|exists:currencies,id',
 
-            'phone' => [
-                'required'
-                , new PhoneEmailConsistencyRule($this->input('email'))
-            ],
-            'email' => [
-                'required',
-                'email'
-            ],
+            'phone' => 'required|unique:company_users,phone',
+            'email' => 'required|email|unique:company_users,email',
             'job_title_id' => 'required|exists:job_titles,id',
-            'border_number' => ['nullable', 'unique:company_users,border_number', new BorderNumberValidationRule($this->input('email'))],
-            'residence' => ['nullable', 'unique:company_users,residence', new ResidenceValidationRule($this->input('email'))],
-            'passport' => ['nullable', 'unique:company_users,passport', new PassportValidationRule($this->input('email'))],
-            'identity' => ['nullable', 'unique:company_users,identity', new IdentityValidationRule($this->input('email'))],
+            'border_number' => 'nullable|unique:company_users,border_number',
+            'residence' => 'nullable|unique:company_users,residence',
+            'passport' => 'nullable|unique:company_users,passport',
+            'identity' => 'nullable|unique:company_users,identity',
             'company_user_validation' => [new CompanyUserValidation($this->get('company_id'), $this->get('country_id'))],
 
 
         ];
     }
-    public function messages(): array
-    {
-        return [
-            'first_name.required' => __('validation.company_user.first_name_required'),
-            'last_name.required' => __('validation.company_user.last_name_required'),
-            'company_id.required' => __('validation.company_user.company_id_required'),
-            'company_id.exists' => __('validation.company_user.company_id_exists'),
-            'country_id.exists' => __('validation.company_user.country_id_exists'),
-            'time_zone_id.exists' => __('validation.company_user.time_zone_id_exists'),
-            'language_id.exists' => __('validation.company_user.language_id_exists'),
-            'currency_id.exists' => __('validation.company_user.currency_id_exists'),
-            'phone.required' => __('validation.company_user.phone_required'),
-            'email.required' => __('validation.company_user.email_required'),
-            'email.email' => __('validation.company_user.email_invalid'),
-            'job_title_id.required' => __('validation.company_user.job_title_required'),
-            'job_title_id.exists' => __('validation.company_user.job_title_exists'),
-            'border_number.unique' => __('validation.company_user.border_number_unique'),
-            'residence.unique' => __('validation.company_user.residence_unique'),
-            'passport.unique' => __('validation.company_user.passport_unique'),
-            'identity.unique' => __('validation.company_user.identity_unique'),
-        ];
-    }
+
     public function createCreateCompanyUserDTO(): CreateCompanyUserDTO
     {
         return new CreateCompanyUserDTO(

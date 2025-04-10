@@ -10,12 +10,12 @@ class UpdateCompanyUserDataInfoCommand
 {
     public function __construct(
         public string $name,
-        public ?string $nickname,
-        public ?string $gender,
-        public ?string $birthdate_gregorian,
-        public ?string $birthdate_hijri,
+        public string $nickname,
+        public string $gender,
+        public string $birthdate_gregorian,
+        public string $birthdate_hijri,
         public int $is_default,
-        public string $country_id,
+        public string $nationality,
     ) {
     }
 
@@ -33,7 +33,7 @@ class UpdateCompanyUserDataInfoCommand
             'birthdate_gregorian' => $this->birthdate_gregorian,
             'birthdate_hijri' => $this->birthdate_hijri,
             'is_default' => $this->is_default,
-            'country_id' => $this->country_id,
+            'nationality' => $this->nationality,
         ];
     }
 }

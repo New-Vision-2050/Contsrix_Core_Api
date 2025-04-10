@@ -13,6 +13,7 @@ return new class extends Migration
             $table->integer("is_default")->default(0);
             $table->string("birthdate_gregorian")->nullable();
             $table->string("birthdate_hijri")->nullable();
+            $table->string("nationality")->nullable();
             $table->string("gender")->nullable();
         });
     }

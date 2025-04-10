@@ -17,7 +17,6 @@ class CompanyUserImageValidationService
 
         // Ensure the image is uploaded
         if (!$request->hasFile('image')) {
-
             array_push($errors, ["sentence" => "الصورة مطلوبة", "sub_title" => null, "status" => -1]);
         } else {
             $image = $request->file('image');
@@ -39,73 +38,49 @@ class CompanyUserImageValidationService
                 }
 
                 list($width, $height) = getimagesize($image->getPathname());
-                $allowedWidth = 1920;
-                $allowedHeight = 1080;
-                $tolerance = 0.1;
 
-                $minWidth = $allowedWidth - ($allowedWidth * $tolerance);
-                $maxWidth = $allowedWidth + ($allowedWidth * $tolerance);
-                $minHeight = $allowedHeight - ($allowedHeight * $tolerance);
-                $maxHeight = $allowedHeight + ($allowedHeight * $tolerance);
                 // Validate dimensions
-                if ($width >= $minWidth && $width <= $maxWidth && $height >= $minHeight && $height <= $maxHeight) {
+                if ($width < 478 || $height < 484) {
+                    array_push($errors, [
+                        "sentence" => "حجم الصورة غير مناسب. يفضل أن يكون العرض أكبر من 600 والطول أكبر من 800 بكسل",
+                        "sub_title" => null,
+                        "status" => -1
+                    ]);
+                } else {
                     array_push($errors, [
                         "sentence" => "الصورة مناسبة",
                         "sub_title" => null,
                         "status" => 1
-                    ]);
-                } else {
-                    array_push($errors, [
-                        "sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080",
-                        "sub_title" => null,
-                        "status" => -1
                     ]);
                 }
 
                 $serviceUser =  $this->checkImageTenant($image);
 
                 if ($serviceUser === 0) {
-                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => $serviceUser, "status" => -1]);
+                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => -1]);
                 } else {
-                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => $serviceUser, "status" => 1]);
+                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1]);
                 }
 
             }
             return $errors;
         }
     }
-    public function checkImageTenant($image)//: int
+    public function checkImageTenant( $image): int
     {
         $manager = new ImageManager(new Driver());
         $img = $manager->read($image);
         $width = $img->width();
         $height = $img->height();
-
         $white = 0;
         $color = 0;
 
-        // Coordinates of the 4 corners
-        $corners = [
-            [0, 0],                    // top-left
-            [$width - 1, 0],           // top-right
-            [0, $height - 1],          // bottom-left
-            [$width - 1, $height - 1], // bottom-right
-        ];
-
-        foreach ($corners as [$x, $y]) {
-            $rgb = $img->pickColor($x, $y)->toArray();
-            if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) { // allow slight variation
-                $white++;
-            } else {
-                $color++;
-            }
-        }
-
-        // Sample horizontal and vertical edges (skip corners)
-        for ($i = 10; $i < $width - 10; $i += 20) {
-            foreach ([0, $height - 1] as $y) {
-                $rgb = $img->pickColor($i, $y)->toArray();
-                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
+// Iterate over each pixel
+        for ($x = 0; $x < 2; $x++) {
+            for ($y = 0; $y < $width; $y++) {
+                $rgb = $img->pickColor($x, $y)->toArray();
+                // Check if the pixel color is white (255, 255, 255)
+                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
                     $white++;
                 } else {
                     $color++;
@@ -113,10 +88,11 @@ class CompanyUserImageValidationService
             }
         }
 
-        for ($i = 10; $i < $height - 10; $i += 20) {
-            foreach ([0, $width - 1] as $x) {
-                $rgb = $img->pickColor($x, $i)->toArray();
-                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
+        for ($x = 0; $x < 2; $x++) {
+            for ($y = 0; $y < $height; $y++) {
+                $rgb = $img->pickColor($y, $x)->toArray();
+                // Check if the pixel color is white (255, 255, 255)
+                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
                     $white++;
                 } else {
                     $color++;
@@ -125,9 +101,15 @@ class CompanyUserImageValidationService
         }
 
         $percentage = ($white / ($white + $color)) * 100;
+//        return response(['kk' => $percentage]);
 
-        return $percentage >= 25 ? 1 : 0;
+
+        if ($percentage > 70) {
+            return 1;
+        } else {
+            return 0;
+        }
+
     }
-
 
 }

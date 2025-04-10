@@ -8,10 +8,8 @@ use AjCastro\EagerLoadPivotRelations\EagerLoadPivotTrait;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Country\Models\Country;
@@ -20,12 +18,9 @@ use Modules\Shared\Currency\Models\Currency;
 use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
 use Modules\User\Models\User;
-use Modules\UserInfo\BankAccount\Models\BankAccount;
-use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class CompanyUser extends Model implements HasMedia
@@ -38,10 +33,10 @@ class CompanyUser extends Model implements HasMedia
     use InteractsWithMedia;
 
     //use HasTranslations;
-    use SoftDeletes;
+    //use SoftDeletes;
 
     //public array $translatable = [];
-    protected $with = ["users"];
+
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -50,7 +45,8 @@ class CompanyUser extends Model implements HasMedia
     protected $fillable = [
         'name',
         "email",
-
+        "phone",
+        "phone_code",
         "country_id",
         "border_number",
         "residence",
@@ -60,41 +56,13 @@ class CompanyUser extends Model implements HasMedia
         "global_id",
 
         "other_phone",
-        "code_other_phone",
         "address",
         "address_attendance",
         "nickname",
         "is_default",
         "birthdate_gregorian",
         "birthdate_hijri",
-        "landline_number",
-        "postal_code",
-
-        "whatsapp",
-        "facebook",
-        "telegram",
-        "instagram",
-        "snapchat",
-        "linkedin",
-
-        'work_permit_start_date',
-        'work_permit_end_date',
-        'work_permit',
-
-        'passport_start_date',
-        'identity_start_date',
-        'border_number_start_date',
-        'entry_number_start_date',
-
-        'passport_end_date',
-        'identity_end_date',
-        'border_number_end_date',
-        'entry_number_end_date',
-        'active_type',
-        'active_date_to',
-        'currency_id',
-        'time_zone_id',
-        'language_id',
+        "nationality",
     ];
 
     protected $casts = [
@@ -105,13 +73,14 @@ class CompanyUser extends Model implements HasMedia
     public function companies()
     {
         return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
-            ->withPivot('role', 'status');
+            ->withPivot('role','status');
     }
 
     public function users()
     {
-        return $this->hasMany(User::class, 'global_company_user_id', "global_id");
+        return $this->hasMany(User::class, 'global_company_user_id',"global_id");
     }
+
 
     protected static function newFactory(): CompanyUserFactory
     {
@@ -122,7 +91,7 @@ class CompanyUser extends Model implements HasMedia
     {
         try {
             DB::beginTransaction();
-//            $this->companies()->detach();
+            $this->companies()->detach();
             $this->users()->delete();
             parent::delete();
             DB::commit();
@@ -136,59 +105,35 @@ class CompanyUser extends Model implements HasMedia
 
     public function rolesForCompany($companyId)
     {
-        return $this->companies->where('id', $companyId)->sortByDesc('role')->pluck("pivot");
+        return $this->companies->where('id',$companyId)->sortByDesc('role')->pluck("pivot");
     }
-
     public function country()
     {
         return $this->belongsTo(Country::class);
     }
-
     public function timeZone()
     {
         return $this->belongsTo(TimeZone::class);
     }
-
     public function language()
     {
         return $this->belongsTo(Language::class);
     }
-
     public function currency()
     {
-        return $this->belongsTo(Country::class,'currency_id');
+        return $this->belongsTo(Currency::class);
     }
-
     public function jobTitle()
     {
-        return $this->belongsTo(JobTitle::class)->withoutGlobalScope("active");
-    }
-
-    public function bankAccount()
-    {
-        return $this->hasOne(BankAccount::class, 'global_id', 'global_id')
-            ->whereHas('bankTypeAccount', function ($q) {
-                $q->where('code', 'default');
-            });
+        return $this->belongsTo(JobTitle::class);
     }
 
     public function getRelationshipToPrimaryModel(): string
     {
-        return "users";
+      return "users";
     }
-
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl();
-    }
-
-    public function userProfessionalData()
-    {
-        return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_id');
-    }
-
-    public function nationalAddress()
-    {
-        return $this->hasOne(CompanyUserAddress::class,"global_company_user_id","global_id");
     }
 }

@@ -13,26 +13,20 @@
         "ajcastro/eager-load-pivot-relations": "^0.3.0",
         "guzzlehttp/guzzle": "^7.9",
         "ichtrojan/laravel-otp": "^2.0",
-        "intervention/image": "^3.11",
+        "intervention/image": "^3.2",
         "laravel/framework": "^11.31",
-        "laravel/telescope": "^5.7",
         "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.29",
         "m-tech-stack/base-package": "^1.0",
         "m-tech-stack/rabbit-mq": "^1.0",
-        "maatwebsite/excel": "^3.1",
         "nevadskiy/laravel-tree": "^0.6.0",
-        "orangehill/iseed": "^3.1",
         "owen-it/laravel-auditing": "^14.0",
         "php-amqplib/php-amqplib": "^3.7",
         "propaganistas/laravel-phone": "^5.3",
         "ranium/laravel-seedonce": "^1.6",
-        "sentry/sentry-laravel": "^4.13",
         "spatie/laravel-medialibrary": "^11.12",
         "spatie/laravel-permission": "^6.10",
         "stancl/tenancy": "^3.9",
-        "staudenmeir/eloquent-has-many-deep": "^1.7",
-        "stevebauman/location": "^7.5",
         "tymon/jwt-auth": "^2.1",
         "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1"
     },
@@ -51,10 +45,7 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Modules\\": "modules/"
-        },
-        "files": [
-            "app/helpers.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
@@ -84,9 +75,7 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": [
-                "laravel/telescope"
-            ]
+            "dont-discover": []
         }
     },
     "config": {

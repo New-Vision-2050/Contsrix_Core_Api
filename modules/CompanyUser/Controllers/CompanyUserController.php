@@ -18,12 +18,10 @@ use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Presenters\TimeZoneCompanyUserPresenter;
 use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
-use Modules\CompanyUser\Requests\AssignRoleCompanyUserForCurrentCompanyRequest;
 use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserSpecificRoleRequest;
-use Modules\CompanyUser\Requests\ExportCompanyUsersRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
@@ -31,7 +29,6 @@ use Modules\CompanyUser\Requests\UpdateTimeZoneCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\CompanyUserValidationService;
 use Modules\CompanyUser\Services\CompanyUserWidgetsService;
-use Modules\User\Services\UserCRUDService;
 use Ramsey\Uuid\Uuid;
 
 class CompanyUserController extends Controller
@@ -45,12 +42,11 @@ class CompanyUserController extends Controller
         private AssignRoleCompanyUserHandler     $assignRoleCompanyUserHandler,
         private DeleteCompanyUserRoleHandler     $deleteCompanyUserRoleHandler,
         private DeleteCompanyUserHandler         $deleteCompanyUserHandler,
-        private UserCRUDService $userCRUDService
     )
     {
     }
 
-    public function index(GetCompanyUserListRequest $request)
+    public function index(GetCompanyUserListRequest $request): JsonResponse
     {
         $list = $this->companyUserService->list(
             (int)$request->get('page', 1),
@@ -89,7 +85,7 @@ class CompanyUserController extends Controller
         }
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData(),extraItems: ["userInCompany"=>$this->userCRUDService->getUserBy(["email"=>$request->email,"company_id"=>tenant("id")])]);
+        return Json::item($presenter->getData());
 
 
     }
@@ -100,6 +96,7 @@ class CompanyUserController extends Controller
             $request->createCreateCompanyUserDTO(),
             $request->createCreateCompanyUserCompanyRoleDTO()
         );
+
         $presenter = new CompanyUserPresenter($createdItem);
         return Json::item($presenter->getData());
     }
@@ -117,18 +114,6 @@ class CompanyUserController extends Controller
         return Json::item($presenter->getData());
     }
 
- public function assignRoleForCurrentCompany(AssignRoleCompanyUserForCurrentCompanyRequest $request)
-    {
-        $command = $request->createAssignCompanyUserForCurrentCompanyCommand();
-        $this->assignRoleCompanyUserHandler->handle($command);
-
-        $item = $this->companyUserService->get($command->getId());
-
-        $presenter = new CompanyUserPresenter($item);
-
-        return Json::item($presenter->getData());
-    }
-
 
     public function validation()
     {
@@ -136,15 +121,6 @@ class CompanyUserController extends Controller
             ->validateName()
             ->validateEmail()
             ->validatePhone()
-            ->get();
-        return Json::item($validations);
-
-    }
-
-    public function checkEmail()
-    {
-        $validations = $this->companyUserValidationService
-            ->validateEmail()
             ->get();
         return Json::item($validations);
 
@@ -179,7 +155,6 @@ class CompanyUserController extends Controller
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
         $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
-
         return Json::deleted();
     }
 
@@ -198,22 +173,6 @@ class CompanyUserController extends Controller
     {
         return Json::item(CompanyUserRole::array());
     }
-
-
-    public function export(ExportCompanyUsersRequest $request)
-    {
-        $companyUserIds = $request->input('company_user_ids');
-        $csv = $this->companyUserService->export($companyUserIds);
-        $filename = 'users_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
-
-        return response()->streamDownload(function () use ($csv) {
-            echo $csv;
-        }, $filename, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
-    }
-
 
 
 }

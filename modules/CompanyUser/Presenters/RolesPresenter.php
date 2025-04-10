@@ -23,8 +23,8 @@ class RolesPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'role' =>  (int) $this->company->role,
-            'status' => (int) $this->company->status
+            'role' =>  $this->company->role,
+            'status' =>$this->company->status
         ];
     }
 

@@ -11,13 +11,20 @@ use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 
 class UpdateCompanyUserRequest extends FormRequest
 {
-
+    protected function prepareForValidation()
+    {
+        if ($this->has('phone')) {
+            $this->merge([
+                'phone' => preg_replace('/\s+/', '', $this->phone),
+            ]);
+        }
+    }
     public function rules(): array
     {
         return [
             'name' => 'required|string',
             'country_id' => 'required|exists:countries,id',
-            'phone' => 'required',
+            'phone' => 'required|unique:company_users,phone,'.$this->route("id"),
             'email' => 'required|email|unique:company_users,email,'.$this->route("id"),
             'border_number' => 'present|nullable|unique:company_users,border_number,'.$this->route("id"),
             'residence' => 'present|nullable|unique:company_users,residence,'.$this->route("id"),
