@@ -63,6 +63,15 @@ class CompanyUser extends Model implements HasMedia
         "birthdate_gregorian",
         "birthdate_hijri",
         "nationality",
+        "landline_number",
+        "postal_code",
+
+        "whatsapp",
+        "facebook",
+        "telegram",
+        "instagram",
+        "snapchat",
+        "linkedin",
     ];
 
     protected $casts = [
