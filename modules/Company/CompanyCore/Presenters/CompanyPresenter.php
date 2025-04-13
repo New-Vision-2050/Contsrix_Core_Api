@@ -45,7 +45,8 @@ class CompanyPresenter extends AbstractPresenter
             "main_branch" => [
                 "name" => $this->company->mainBranch?->name
             ],
-            "company_legal_data" =>CompanyLegalDataPresenter::collection($this->company->companyLegalData)
+            "company_legal_data" =>CompanyLegalDataPresenter::collection($this->company->companyLegalData),
+            "company_official_documents" =>CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments)
         ];
     }
 }

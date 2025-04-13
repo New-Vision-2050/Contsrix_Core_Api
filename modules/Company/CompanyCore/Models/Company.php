@@ -52,7 +52,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public array $translatable = ["name"];
 
-    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch","companyLegalData.media"];
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch","companyLegalData.media","companyOfficialDocuments.media"];
 
     public $incrementing = false;
     protected $table = 'companies';
@@ -179,6 +179,10 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     public function companyLegalData()
     {
         return $this->hasMany(CompanyLegalData::class, 'company_id');
+    }
+    public function companyOfficialDocuments()
+    {
+        return $this->hasMany(CompanyOfficialDocument::class, 'company_id');
     }
 
 }

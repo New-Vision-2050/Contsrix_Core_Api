@@ -24,20 +24,20 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function createCompanyLegalData(array $data, $file): CompanyOfficialDocument
+    public function createCompanyOfficialDocument(array $data, $file): CompanyOfficialDocument
     {
         try {
             DB::beginTransaction();
-            $companyLegalData = $this->create($data);
-            $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            $companyOfficalDocumen = $this->create($data);
+            $this->fileUploadService->uploadFile($companyOfficalDocumen, $file, "company");
             DB::commit();
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception($e->getMessage(), 409);
+            throw new \Exception(__("validation.create-not-successful"), 409);
 
         }
-        return $companyLegalData;
+        return $companyOfficalDocumen;
     }
 
     public function updateCompanyLegalData(UuidInterface $id, array $data, $file)

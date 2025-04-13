@@ -13,11 +13,13 @@ use Intervention\Image\ImageManager;
 use Modules\AdminRequest\Repositories\AdminRequestRepository;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\AssignLogoToCompanyDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyOfficialDocumentDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
+use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
@@ -30,10 +32,11 @@ use Ramsey\Uuid\UuidInterface;
 class CompanyProfileService
 {
     public function __construct(
-        private AdminRequestRepository     $adminRequestRepository,
-        private FileUploadService          $fileUploadService,
-        private CompanyRepository          $companyRepository,
-        private CompanyLegalDataRepository $companyLegalDataRepository,
+        private AdminRequestRepository            $adminRequestRepository,
+        private FileUploadService                 $fileUploadService,
+        private CompanyRepository                 $companyRepository,
+        private CompanyLegalDataRepository        $companyLegalDataRepository,
+        private CompanyOfficialDocumentRepository $companyOfficialDocumentRepository,
     )
     {
     }
@@ -174,10 +177,10 @@ class CompanyProfileService
     {
         $errors = [];
         // Ensure the image is uploaded
-        if($image == null){
+        if ($image == null) {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 0, 'validate' => 'required']);
-            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0,"validate" => "required"]);
-            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0,"validate" => "required"]);
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0, "validate" => "required"]);
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0, "validate" => "required"]);
             return $errors;
         }
 
@@ -196,17 +199,17 @@ class CompanyProfileService
 
         // Validate dimensions
         if ($width == 1920 && $height == 1080) {
-            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1,"validate" => "required"]);
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1, "validate" => "required"]);
         } else {
-            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0,"validate" => "required"]);
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0, "validate" => "required"]);
         }
 
         $result = $this->checkImage($image);
 
         if ($result === 0) {
-            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0,"validate" => "required"]);
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0, "validate" => "required"]);
         } else {
-            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1,"validate" => "required"]);
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1, "validate" => "required"]);
         }
         return $errors;
     }
@@ -232,7 +235,7 @@ class CompanyProfileService
 
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
             userId: auth()->user()->id,
-            id:$companyDataRequestDTO->getId(),
+            id: $companyDataRequestDTO->getId(),
             data: $companyDataRequestDTO->toArray(),
             requestType: "companyLegalDataUpdate",
             action: ["ar" => "طلب تعديل البيانات القانونيه للشركة", "en" => "Company legal data update request"],
@@ -247,12 +250,17 @@ class CompanyProfileService
 
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
-       return $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+        return $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
     }
 
-    public function getCompanyLegalData(UuidInterface $id ) : CompanyLegalData
+    public function getCompanyLegalData(UuidInterface $id): CompanyLegalData
     {
         return $this->companyLegalDataRepository->find($id);
+    }
+
+    public function createCompanyOfficialDocument(CreateCompanyOfficialDocumentDTO $companyOfficialDocumentDTO)
+    {
+        return $this->companyOfficialDocumentRepository->createCompanyOfficialDocument($companyOfficialDocumentDTO->toArray(), $companyOfficialDocumentDTO->getFile());
     }
 
 }

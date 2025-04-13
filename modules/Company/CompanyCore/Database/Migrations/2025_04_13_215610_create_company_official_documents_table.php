@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('name');
             $table->text('description');
-            $table->text('document_number');
+            $table->string('document_number');
             $table->date("start_date");
             $table->date("end_date");
             $table->date("notification_date");

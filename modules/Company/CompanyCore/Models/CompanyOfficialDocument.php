@@ -8,6 +8,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -55,5 +56,14 @@ class CompanyOfficialDocument extends Model implements HasMedia
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";
+    }
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
+    }
+
+    public function documentType()
+    {
+        return $this->belongsTo(CompanyRegistrationType::class, 'document_type_id', 'id');
     }
 }

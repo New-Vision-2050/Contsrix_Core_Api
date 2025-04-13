@@ -19,6 +19,7 @@ use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 
 class CompanyAddress extends Model
@@ -26,6 +27,7 @@ class CompanyAddress extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use BelongsToPrimaryModel;
 //    use InteractsWithMedia;
 //    use HasTranslations;
 
@@ -61,6 +63,10 @@ class CompanyAddress extends Model
     protected static function newFactory(): CompanyFactory
     {
         return CompanyFactory::new();
+    }
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "company";
     }
 
 

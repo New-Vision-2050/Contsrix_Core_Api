@@ -19,6 +19,7 @@ use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 
 class CompanyLegalData extends Model implements HasMedia
@@ -27,6 +28,8 @@ class CompanyLegalData extends Model implements HasMedia
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use BelongsToPrimaryModel;
+
 //    use HasTranslations;
 
     // use SoftDeletes;
@@ -51,6 +54,7 @@ class CompanyLegalData extends Model implements HasMedia
         'start_date' => 'date',
         'end_date' => 'date'
     ];
+
     public function getMediaUrlsAttribute()
     {
         return $this->media->map(fn($media) => $media->getFullUrl());
@@ -60,9 +64,14 @@ class CompanyLegalData extends Model implements HasMedia
     {
         return $this->belongsTo(CompanyRegistrationType::class);
     }
+
     protected static function newFactory(): CompanyFactory
     {
         return CompanyFactory::new();
     }
 
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "company";
+    }
 }
