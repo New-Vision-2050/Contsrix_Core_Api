@@ -14,6 +14,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserContactInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserDataInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserIdentityDataHandler;
+use Modules\CompanyUser\Presenters\CompanyContactInfoPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserDataInfoPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserImagePresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
@@ -123,6 +124,16 @@ class CompanyUserProfileController extends Controller
     {
         return Json::item(["status" => $this->validateOtpService->validateOtp($request->createValidateOtpDTO())]);
     }
+    public function showContactInformation()
+    {
+        $user = $this->companyUserService->get(
+            Uuid::fromString(auth()->user()->global_company_user_id),
+        );
+
+        $presenter = new CompanyContactInfoPresenter($user);
+
+        return Json::item($presenter->getData());
+    }
     public function updateContactInformation(UpdateCompanyContactInfoUserRequest $request)
     {
         $command = $request->createUpdateCompanyUserCommand();
@@ -152,6 +163,15 @@ class CompanyUserProfileController extends Controller
         return Json::item($presenter->getData());
     }
 
+    public function showidentityData()
+    {
+        $user = $this->companyUserService->get(
+            Uuid::fromString(auth()->user()->global_company_user_id),
+        );
 
+        $presenter = new CompanyidentityDataPresenter($user);
+
+        return Json::item($presenter->getData());
+    }
 
 }

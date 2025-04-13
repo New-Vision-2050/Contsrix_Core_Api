@@ -34,25 +34,25 @@ class IdentityDataService
 
         if ($request->hasFile('file_passport')) {
             $uploadedFiles['file_passport'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_passport'), $path, 'upload_user', $visibility
+                $companyUser, $request->file('file_passport'), $path, 'file_passport', $visibility
             );
         }
 
         if ($request->hasFile('file_identity')) {
             $uploadedFiles['file_identity'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_identity'), $path, 'upload_user', $visibility
+                $companyUser, $request->file('file_identity'), $path, 'file_identity', $visibility
             );
         }
 
         if ($request->hasFile('file_border_number')) {
             $uploadedFiles['file_border_number'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_border_number'), $path, 'upload_user', $visibility
+                $companyUser, $request->file('file_border_number'), $path, 'file_border_number', $visibility
             );
         }
 
         if ($request->hasFile('file_entry_number')) {
             $uploadedFiles['file_entry_number'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_entry_number'), $path, 'upload_user', $visibility
+                $companyUser, $request->file('file_entry_number'), $path, 'file_entry_number', $visibility
             );
         }
 
