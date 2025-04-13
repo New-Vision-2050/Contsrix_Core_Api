@@ -12,7 +12,7 @@ use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
-use Modules\RoleAndPermission\Database\Seeders\BankModulesSeederTableSeeder;
+use Modules\Shared\Bank\Database\Seeders\BankModulesSeederTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTableSeeder;
 use Modules\Shared\Language\Database\Seeders\LanguageSeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
