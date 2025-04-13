@@ -25,7 +25,7 @@ class RequestUpdateLegalCompanyDataRequest extends FormRequest
     {
         return new RequestUpdateLegalCompanyDataRequestDTO(
             id: Uuid::fromString(tenant("id")),
-            data:$this->all()
+            data:$this->data
         );
     }
 }

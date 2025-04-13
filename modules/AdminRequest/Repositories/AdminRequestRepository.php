@@ -75,12 +75,12 @@ class AdminRequestRepository extends BaseRepository
     }
 
 
-    public function createAdminRequestForCompanyLegalData(UuidInterface $userId, array $data, string $requestType, array $action,?string $notes=""): AdminRequest
+    public function createAdminRequestForCompanyLegalData(UuidInterface $userId,UuidInterface $id ,array $data, string $requestType, array $action,?string $notes="")
     {
-        $id = $data['id'];
-        unset($data["id"]);
-        try {
-            DB::beginTransaction();
+//        return $data;
+
+//        try {
+//            DB::beginTransaction();
             $adminRequest = $this->create([
                 'user_id' => $userId,
                 'request_type' => $requestType,
@@ -94,16 +94,16 @@ class AdminRequestRepository extends BaseRepository
                 $adminRequest->adminRequestTransactions()->create([
                     "data" => $item,
                     "action" => "update",
-                    "requestable_id" => $item["id"],
+//                    "requestable_id" => $item->id,
                     "requestable_type" => CompanyLegalData::class,
                 ]);
             }
 
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw new \Exception($e->getMessage(), 409);
-        }
+//            DB::commit();
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            throw new \Exception($e->getMessage(), 409);
+//        }
         return $adminRequest;
     }
 
