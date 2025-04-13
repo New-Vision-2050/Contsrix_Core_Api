@@ -223,6 +223,7 @@ class CompanyProfileService
 
     public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
+
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
             userId: auth()->user()->id,
             data: $companyDataRequestDTO->toArray() + ["id" => $companyDataRequestDTO->getId()],

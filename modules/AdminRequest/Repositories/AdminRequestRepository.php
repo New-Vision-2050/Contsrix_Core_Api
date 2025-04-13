@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Enum\AdminRequestStatus;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Ramsey\Uuid\UuidInterface;
 use Modules\AdminRequest\Models\AdminRequest;
 
@@ -89,12 +90,15 @@ class AdminRequestRepository extends BaseRepository
                 "requestable_type" => Company::class,
                 "notes" => $notes
             ]);
-            $adminRequest->adminRequestTransactions()->create([
-                "data" => $data,
-                "action" => "update",
-                "requestable_id" => $id,
-                "requestable_type" => Company::class,
-            ]);
+            foreach ( $data as $item) {
+                $adminRequest->adminRequestTransactions()->create([
+                    "data" => $item,
+                    "action" => "update",
+                    "requestable_id" => $item["id"],
+                    "requestable_type" => CompanyLegalData::class,
+                ]);
+            }
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();

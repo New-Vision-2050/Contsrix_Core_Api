@@ -89,7 +89,7 @@ class CompanyProfileController extends Controller
 
     }
 
-    public function requestUpdateLegalDataRequest(RequestUpdateLegalCompanyDataRequest $request)
+    public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequest $request)
     {
         $legalDataRequest = $this->companyProfileService->updateLegalDataRequest($request->createUpdateLegalCompanyDataRequestDTO());
         return Json::item((new AdminRequestPresenter($legalDataRequest))->getData());

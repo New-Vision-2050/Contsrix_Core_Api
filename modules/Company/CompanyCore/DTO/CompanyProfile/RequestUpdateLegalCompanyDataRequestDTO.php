@@ -10,11 +10,8 @@ class RequestUpdateLegalCompanyDataRequestDTO
 {
     public function __construct(
         private UuidInterface $id,
-        private UuidInterface $registrationTypeId,
-        private string        $registrationNo,
-        private string        $registrationNoStartDate,
-        private string        $registrationNoEndDate,
-        private               $file
+        private array $data,
+
     )
     {
     }
@@ -24,19 +21,8 @@ class RequestUpdateLegalCompanyDataRequestDTO
         return $this->id;
     }
 
-    public function getFile()
-    {
-        return $this->file;
-    }
-
-
     public function toArray(): array
     {
-        return [
-            "registration_type_id" => $this->registrationTypeId,
-            "registration_no" => $this->registrationNo,
-            "registration_no_start_date" => $this->registrationNoStartDate,
-            "registration_no_end_date" => $this->registrationNoEndDate,
-        ];
+        return $this->data;
     }
 }
