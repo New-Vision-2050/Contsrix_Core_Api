@@ -20,6 +20,7 @@ class UpdateBankAccountRequest extends FormRequest
             'user_name' => 'required|string',
             'iban' => 'required|string',
             'swift_bic' => 'nullable',
+            'type' =>'required|string',
         ];
     }
 
@@ -34,6 +35,7 @@ class UpdateBankAccountRequest extends FormRequest
             account_number: $this->get('account_number'),
             iban: $this->get('iban'),
             swift_bic: $this->get('swift_bic'),
+            type: $this->type('type'),
         );
     }
 }

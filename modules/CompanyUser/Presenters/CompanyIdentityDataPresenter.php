@@ -26,10 +26,10 @@ class CompanyIdentityDataPresenter extends AbstractPresenter
             'border_number' => $this->companyUser->border_number,
             'entry_number' => $this->companyUser->entry_number,
 
-            'file_passport' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-            'file_identity' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-            'file_border_number' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-            'file_entry_number' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
+            'file_passport' => $this->companyUser->getFirstMedia('file_passport')?->getFullUrl(),
+            'file_identity' => $this->companyUser->getFirstMedia('file_identity')?->getFullUrl(),
+            'file_border_number' => $this->companyUser->getFirstMedia('file_border_number')?->getFullUrl(),
+            'file_entry_number' => $this->companyUser->getFirstMedia('file_entry_number')?->getFullUrl(),
         ];
     }
 }

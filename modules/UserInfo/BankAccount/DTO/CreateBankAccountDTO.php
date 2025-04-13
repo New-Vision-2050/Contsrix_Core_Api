@@ -18,6 +18,7 @@ class CreateBankAccountDTO
         public string $account_number,
         public string $iban,
         public string $swift_bic,
+        public string $type
     ) {
     }
 
@@ -33,6 +34,7 @@ class CreateBankAccountDTO
             'account_number' => $this->account_number,
             'iban' => $this->iban,
             'swift_bic' => $this->swift_bic,
+            'type' => $this->type
         ];
     }
 }

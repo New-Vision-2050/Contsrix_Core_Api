@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('bank_accounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('company_id')->index();
-            $table->uuid('user_id')->index();
+            $table->uuid('global_id')->index();
             $table->uuid('country_id')->index();
             $table->uuid('bank_id')->index();
             $table->uuid('currency_id')->index();

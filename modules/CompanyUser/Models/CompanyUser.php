@@ -62,7 +62,6 @@ class CompanyUser extends Model implements HasMedia
         "is_default",
         "birthdate_gregorian",
         "birthdate_hijri",
-        "nationality",
         "landline_number",
         "postal_code",
 
@@ -83,11 +82,6 @@ class CompanyUser extends Model implements HasMedia
     {
         return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
             ->withPivot('role','status');
-    }
-
-    public function nationalityRelation()
-    {
-        return $this->belongsTo(Country::class, 'nationality',"id");
     }
     public function users()
     {

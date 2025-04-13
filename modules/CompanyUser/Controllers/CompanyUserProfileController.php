@@ -15,6 +15,7 @@ use Modules\CompanyUser\Handlers\UpdateCompanyUserContactInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserDataInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserIdentityDataHandler;
 use Modules\CompanyUser\Presenters\CompanyContactInfoPresenter;
+use Modules\CompanyUser\Presenters\CompanyIdentityDataPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserDataInfoPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserImagePresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
@@ -156,7 +157,7 @@ class CompanyUserProfileController extends Controller
 
         $item = $this->companyUserService->getGlobalId($command->global_id);
 
-        $this->identityDataService->uploadFile($request,$command->global_id);
+        return   $this->identityDataService->uploadFile($request,$command->global_id);
 
         $presenter = new CompanyUserPresenter($item);
 
@@ -169,7 +170,7 @@ class CompanyUserProfileController extends Controller
             Uuid::fromString(auth()->user()->global_company_user_id),
         );
 
-        $presenter = new CompanyidentityDataPresenter($user);
+        $presenter = new CompanyIdentityDataPresenter($user);
 
         return Json::item($presenter->getData());
     }

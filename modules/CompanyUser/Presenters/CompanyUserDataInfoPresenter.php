@@ -27,8 +27,8 @@ class CompanyUserDataInfoPresenter extends AbstractPresenter
             'is_default'=> $this->companyUser->is_default,
             'birthdate_gregorian'=> $this->companyUser->birthdate_gregorian,
             "birthdate_hijri"=> $this->companyUser->birthdate_hijri,
-            "nationality"=> $this->companyUser->nationality,
-            "nationalityRelation" =>$this->companyUser->nationalityRelation->name
+            "country_id"=> $this->companyUser->country_id,
+            "country" =>$this->companyUser->country->name
         ];
     }
 }

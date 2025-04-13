@@ -29,6 +29,8 @@ class BankAccountPresenter extends AbstractPresenter
             'account_number' => $this->bankAccount->account_number,
             'iban' => $this->bankAccount->iban,
             'swift_bic' => $this->bankAccount->swift_bic,
+            'type' => $this->bankAccount->type,
         ];
     }
 }
+
