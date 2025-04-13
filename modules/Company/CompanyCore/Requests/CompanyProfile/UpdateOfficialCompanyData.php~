@@ -24,7 +24,7 @@ class UpdateOfficialCompanyData extends FormRequest
     public function createUpdateOfficialCompanyDataCommand(): UpdateOfficialCompanyDataCommand
     {
         return new UpdateOfficialCompanyDataCommand(
-            id: Uuid::fromString(tenant("id")),
+            id: Uuid::fromString($this->route('id')),
             nameEn: $this->get('name_en'),
             email: $this->get('email'),
             phone: $this->get('phone'),

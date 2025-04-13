@@ -14,7 +14,7 @@ use Modules\AdminRequest\Repositories\AdminRequestRepository;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\AssignLogoToCompanyDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
-use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
@@ -221,7 +221,7 @@ class CompanyProfileService
         return $company;
     }
 
-    public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
+    public function updateLegalDataRequest(UpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
             userId: auth()->user()->id,
@@ -232,7 +232,7 @@ class CompanyProfileService
         return $adminRequest;
     }
 
-    public function setAddress(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
+    public function setAddress(UpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
 
     }

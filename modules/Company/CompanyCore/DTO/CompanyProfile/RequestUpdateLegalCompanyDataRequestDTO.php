@@ -6,7 +6,7 @@ namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
 use Ramsey\Uuid\UuidInterface;
 
-class UpdateLegalCompanyDataRequestDTO
+class RequestUpdateLegalCompanyDataRequestDTO
 {
     public function __construct(
         private UuidInterface $id,

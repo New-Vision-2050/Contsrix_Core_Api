@@ -6,7 +6,7 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
-use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Ramsey\Uuid\Uuid;
 

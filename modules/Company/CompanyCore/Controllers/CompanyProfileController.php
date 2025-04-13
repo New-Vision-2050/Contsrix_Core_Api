@@ -18,7 +18,7 @@ use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
-use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateLegalCompanyDataRequest;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\RequestUpdateLegalCompanyDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyData;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
@@ -86,7 +86,7 @@ class CompanyProfileController extends Controller
 
     }
 
-    public function updateLegalDataRequest(UpdateLegalCompanyDataRequest $request)
+    public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequest $request)
     {
         $legalDataRequest = $this->companyProfileService->updateLegalDataRequest($request->createUpdateLegalCompanyDataRequestDTO());
         return Json::item((new AdminRequestPresenter($legalDataRequest))->getData());

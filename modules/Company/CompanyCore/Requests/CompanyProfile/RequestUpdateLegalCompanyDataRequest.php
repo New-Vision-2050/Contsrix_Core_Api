@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateLegalCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Ramsey\Uuid\Uuid;
 
-class UpdateLegalCompanyDataRequest extends FormRequest
+class RequestUpdateLegalCompanyDataRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -22,10 +22,10 @@ class UpdateLegalCompanyDataRequest extends FormRequest
         ];
     }
 
-    public function createUpdateLegalCompanyDataRequestDTO(): UpdateLegalCompanyDataRequestDTO
+    public function createUpdateLegalCompanyDataRequestDTO(): RequestUpdateLegalCompanyDataRequestDTO
     {
-        return new UpdateLegalCompanyDataRequestDTO(
-            id: Uuid::fromString($this->route('id')),
+        return new RequestUpdateLegalCompanyDataRequestDTO(
+            id: Uuid::fromString(tenant("id")),
             registrationTypeId:Uuid::fromString($this->registration_type_id),
             registrationNo: $this->regestration_no,
             registrationNoStartDate: $this->registration_no_start_date,

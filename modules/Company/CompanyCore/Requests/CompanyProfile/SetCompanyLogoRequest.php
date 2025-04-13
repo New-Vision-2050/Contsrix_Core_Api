@@ -21,7 +21,7 @@ class SetCompanyLogoRequest extends FormRequest
     public function createAssignLogoToCompanyDTO(): AssignLogoToCompanyDTO
     {
         return new AssignLogoToCompanyDTO(
-            id: Uuid::fromString($this->route('id')),
+            id: Uuid::fromString(tenant("id")),
             logo: $this->file("logo"),
         );
     }
