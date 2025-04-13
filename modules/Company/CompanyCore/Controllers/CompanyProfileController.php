@@ -13,12 +13,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Modules\AdminRequest\Presenters\AdminRequestPresenter;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
+use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\RequestUpdateLegalCompanyDataRequest;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyData;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
@@ -30,7 +32,8 @@ class CompanyProfileController extends Controller
     public function __construct(
         private UpdateOfficialCompanyDataHandler $updateOfficialCompanyDataHandler,
         private CompanyCRUDService               $companyService,
-        private CompanyProfileService            $companyProfileService
+        private CompanyProfileService            $companyProfileService,
+        private UpdateCompanyLegalDataHandler    $updateCompanyLegalDataHandler
     )
     {
     }
@@ -95,6 +98,11 @@ class CompanyProfileController extends Controller
     public function setAddress()
     {
 
+    }
+
+    public function updateCompanyLegalData(UpdateCompanyLegalDataRequest $request)
+    {
+        $this->updateCompanyLegalDataHandler->handle($request->createUpdateCompanyLegalDataDTO());
     }
 
 }

@@ -10,7 +10,7 @@ use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyData
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Ramsey\Uuid\Uuid;
 
-class UpdateLegalCompanyDataRequest extends FormRequest
+class UpdateCompanyLegalDataRequest extends FormRequest
 {
     public function rules(): array
     {

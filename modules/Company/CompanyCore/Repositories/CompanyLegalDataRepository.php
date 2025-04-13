@@ -27,11 +27,29 @@ class CompanyLegalDataRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function createCompanyLegalData(array $data, $file):CompanyLegalData
+    public function createCompanyLegalData(array $data, $file): CompanyLegalData
     {
         try {
             DB::beginTransaction();
             $companyLegalData = $this->create($data);
+            $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 409);
+
+        }
+        return $companyLegalData;
+    }
+
+    public function updateCompanyLegalData(UuidInterface $id, array $data, $file): CompanyLegalData
+    {
+        try {
+            DB::beginTransaction();
+            $this->find($id)->update($data);
+            $companyLegalData = $this->find($id);
+            $companyLegalData->clearMediaCollection('upload');//for replace with new media
             $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
             DB::commit();
 
