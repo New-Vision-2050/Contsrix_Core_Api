@@ -49,7 +49,7 @@ class CompanyCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
-            ['is_central_company' => 0],
+            ['is_central_company' => 0],//TODO i think it will be like that ["id" ,"<>", tenant("id")] it will not present current comapny put will present other central company
             page: $page,
             perPage: $perPage,
         );

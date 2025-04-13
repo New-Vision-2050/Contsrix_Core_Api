@@ -170,13 +170,17 @@ class CompanyProfileService
 
     }
 
-    public function validateLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
+    public function validateLogo($image)
     {
         $errors = [];
         // Ensure the image is uploaded
-        $image = $assignLogoToCompanyDTO->getLogo();
+        if($image == null){
+            array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 0, 'validate' => 'required']);
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0,"validate" => "required"]);
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0,"validate" => "required"]);
+            return $errors;
+        }
 
-        // Check if the file is an image and is valid
 
         $maxSizeInMB = 5;
         $fileSizeInMB = $image->getSize() / (1024 * 1024); // Convert bytes to MB
@@ -192,17 +196,17 @@ class CompanyProfileService
 
         // Validate dimensions
         if ($width == 1920 && $height == 1080) {
-            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1]);
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1,"validate" => "required"]);
         } else {
-            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين 468x704 و 477x714", "sub_title" => null, "status" => 0]);
+            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0,"validate" => "required"]);
         }
 
         $result = $this->checkImage($image);
 
         if ($result === 0) {
-            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0]);
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0,"validate" => "required"]);
         } else {
-            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1]);
+            array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1,"validate" => "required"]);
         }
         return $errors;
     }
