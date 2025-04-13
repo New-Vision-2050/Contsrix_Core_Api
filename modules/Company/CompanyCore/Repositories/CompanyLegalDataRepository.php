@@ -43,11 +43,12 @@ class CompanyLegalDataRepository extends BaseRepository
         return $companyLegalData;
     }
 
-    public function updateCompanyLegalData(UuidInterface $id, array $data, $file): CompanyLegalData
+    public function updateCompanyLegalData(UuidInterface $id, array $data, $file)
     {
         try {
             DB::beginTransaction();
-            $this->find($id)->update($data);
+            $this->findOneOrFail($id)->update($data);
+
             $companyLegalData = $this->find($id);
             $companyLegalData->clearMediaCollection('upload');//for replace with new media
             $this->fileUploadService->uploadFile($companyLegalData, $file, "company");

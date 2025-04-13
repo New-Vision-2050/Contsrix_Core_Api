@@ -16,8 +16,8 @@ class UpdateCompanyLegalDataRequest extends FormRequest
     {
         return [
 
-            "start_date" => 'required|date|before_or_equal:registration_no_end_date',
-            'end_date' => 'required|date|after_or_equal:registration_no_start_date',
+            "start_date" => 'required|date|before_or_equal:end_date',
+            'end_date' => 'required|date|after_or_equal:start_date',
             "file"=>"required|mimes:pdf,jpeg,jpg,png,doc,docx"
             ];
     }
@@ -25,7 +25,7 @@ class UpdateCompanyLegalDataRequest extends FormRequest
     public function createUpdateLegalCompanyDataCommand(): UpdateCompanyLegalDataCommand
     {
         return new UpdateCompanyLegalDataCommand (
-            id: Uuid::fromString(tenant("id")),
+            id: Uuid::fromString($this->route("id")),
             startDate: $this->start_date,
             endDate: $this->end_date,
             file: $this->file("file"),

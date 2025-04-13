@@ -24,7 +24,7 @@ class UpdateCompanyLegalDataHandler
     public function handle(UpdateCompanyLegalDataCommand $updateCompanyLegalDataCommand)
     {
 
-        $this->repository->updateCompanyLegalData($updateCompanyLegalDataCommand->getId(), $updateCompanyLegalDataCommand->toArray(), $updateCompanyLegalDataCommand->getFile());
+        return $this->repository->updateCompanyLegalData($updateCompanyLegalDataCommand->getId(), $updateCompanyLegalDataCommand->toArray(), $updateCompanyLegalDataCommand->getFile());
 
     }
 }

@@ -91,7 +91,7 @@ class CompanyProfileController extends Controller
 
     public function requestUpdateLegalDataRequest(RequestUpdateLegalCompanyDataRequest $request)
     {
-       return$this->companyProfileService->updateLegalDataRequest($request->createUpdateLegalCompanyDataRequestDTO());
+        $legalDataRequest = $this->companyProfileService->updateLegalDataRequest($request->createUpdateLegalCompanyDataRequestDTO());
         return Json::item((new AdminRequestPresenter($legalDataRequest))->getData());
     }
 
@@ -105,8 +105,8 @@ class CompanyProfileController extends Controller
         $command = $request->createUpdateLegalCompanyDataCommand();
         $this->updateCompanyLegalDataHandler->handle($command);
 
-        $company = $this->companyService->get(tenant("id"));
-        return Json::item($company);
+        $company = $this->companyService->get(Uuid::fromString(tenant("id")));
+        return Json::item((new CompanyPresenter($company))->getData());
     }
 
 }
