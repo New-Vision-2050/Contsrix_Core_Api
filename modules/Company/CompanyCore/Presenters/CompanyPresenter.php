@@ -21,8 +21,8 @@ class CompanyPresenter extends AbstractPresenter
         return [
             'id' => $this->company->id,
             'name' => $this?->company?->name,
-            'name_ar' => $this?->company->getTranslation("name","ar"),
-            'name_en' => $this?->company->getTranslation("name","en"),
+            'name_ar' => $this?->company->getTranslation("name", "ar"),
+            'name_en' => $this?->company->getTranslation("name", "en"),
             'user_name' => $this->company->user_name,
             'email' => $this->company->email,
             'phone' => $this->company->phone,
@@ -37,14 +37,15 @@ class CompanyPresenter extends AbstractPresenter
             'company_type' => $this->company->companyType?->name,
             'company_field' => $this->company->companyField?->name,
             'registration_type' => $this->company->companyRegistrationType?->name,
-            "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
+            "logo" => $this->company->getFirstMedia("logo")?->getFullUrl(),
             'is_active' => $this->company->is_active,
             'complete_data' => $this->company->complete_data,
             'date_activate' => $this->company->date_activate,
             "is_central_company" => $this->company->is_central_company,
-            "main_branch"=>[
+            "main_branch" => [
                 "name" => $this->company->mainBranch?->name
-            ]
+            ],
+            "company_legal_data" =>CompanyLegalDataPresenter::collection($this->company->companyLegalData)
         ];
     }
 }

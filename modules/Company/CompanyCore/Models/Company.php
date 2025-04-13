@@ -176,7 +176,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public function companyLegalData()
     {
-        return $this->hasMany(CompanyLagalData::class, 'company_id');
+        return $this->hasMany(CompanyLegalData::class, 'company_id');
     }
 
 }

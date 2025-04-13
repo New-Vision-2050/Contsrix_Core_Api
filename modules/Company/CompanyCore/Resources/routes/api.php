@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Company\CompanyCore\Controllers\CompanyController;
+use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 Route::get('/company-by-host', [CompanyController::class, 'getCompanyByHost'])->name('companies.company-by-host');
 
@@ -17,7 +18,7 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
     Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show');
     Route::put('/{id}', [CompanyController::class, 'update']);
     Route::delete('/{id}', [CompanyController::class, 'delete'])->name('companies.delete');
-    Route::prefix("{id}/company-profile")->group(function () {
+    Route::group(['prefix' => 'company-profile', 'middleware' => [\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
         Route::prefix("official-data")->group(function () {
             Route::put("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialData"]);
             Route::put("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDataRequest"]);
@@ -25,6 +26,7 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
 
         Route::prefix("legal-data")->group(function () {
             Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateLegalDataRequest"]);
+            Route::post("/create-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createLegalData"]);
         });
 
         Route::post("assign-logo", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "setCompanyLogo"]);

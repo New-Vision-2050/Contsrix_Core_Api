@@ -3,6 +3,7 @@
 namespace Modules\Country\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class StatesTableSeeder extends Seeder
 {

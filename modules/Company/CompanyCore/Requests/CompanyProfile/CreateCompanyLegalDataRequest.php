@@ -17,7 +17,7 @@ class CreateCompanyLegalDataRequest extends FormRequest
         return [
             'registration_type_id' => 'required|exists:company_registration_types,id',
             'regestration_number' => 'required',
-            'start_data' => 'required|date|before_or_equal:end_date',
+            'start_date' => 'required|date|before_or_equal:end_date',
             'end_date' => 'required|date|after_or_equal:start_date',
             "file"=>"required|mimes:pdf,jpeg,jpg,png,doc,docx",
         ];

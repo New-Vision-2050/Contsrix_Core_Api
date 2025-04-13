@@ -7,7 +7,7 @@ namespace Modules\Company\CompanyCore\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Modules\Company\CompanyCore\Models\CompanyLagalData;
+use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -22,12 +22,12 @@ use Carbon\Carbon;
  */
 class CompanyLegalDataRepository extends BaseRepository
 {
-    public function __construct(CompanyLagalData $model, private FileUploadService $fileUploadService)
+    public function __construct(CompanyLegalData $model, private FileUploadService $fileUploadService)
     {
         parent::__construct($model);
     }
 
-    public function createCompanyLegalData(array $data, $file):CompanyLagalData
+    public function createCompanyLegalData(array $data, $file):CompanyLegalData
     {
         try {
             DB::beginTransaction();
@@ -37,6 +37,8 @@ class CompanyLegalDataRepository extends BaseRepository
 
         } catch (\Exception $e) {
             DB::rollBack();
+            throw new \Exception($e->getMessage(), 409);
+
         }
         return $companyLegalData;
     }

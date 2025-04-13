@@ -33,6 +33,7 @@ class CreateCompanyLegalDataDTO
     public function toArray(): array
     {
         return [
+            "company_id" => $this->id,
             "registration_type_id" => $this->registrationTypeId,
             "registration_number" => $this->registrationNumber,
             "start_date" => $this->startDate,

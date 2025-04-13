@@ -21,7 +21,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 
-class CompanyLagalData extends Model implements HasMedia
+class CompanyLegalData extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
@@ -43,7 +43,7 @@ class CompanyLagalData extends Model implements HasMedia
         "registration_type_id",
         "registration_number",
         "start_date",
-        "end_data"
+        "end_date"
 
     ];
     protected $casts = [
@@ -54,6 +54,11 @@ class CompanyLagalData extends Model implements HasMedia
     public function getMediaUrlsAttribute()
     {
         return $this->media->map(fn($media) => $media->getFullUrl());
+    }
+
+    public function registrationType()
+    {
+        return $this->belongsTo(CompanyRegistrationType::class);
     }
     protected static function newFactory(): CompanyFactory
     {
