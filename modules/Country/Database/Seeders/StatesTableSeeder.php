@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 
 class StatesTableSeeder extends Seeder
 {
+    use SeedOnce;
+
 
     /**
      * Auto generated seed file

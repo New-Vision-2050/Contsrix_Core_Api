@@ -12,9 +12,11 @@ use Intervention\Image\Drivers\Imagick\Driver;
 use Intervention\Image\ImageManager;
 use Modules\AdminRequest\Repositories\AdminRequestRepository;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\AssignLogoToCompanyDTO;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
@@ -27,9 +29,10 @@ use Ramsey\Uuid\UuidInterface;
 class CompanyProfileService
 {
     public function __construct(
-        private AdminRequestRepository $adminRequestRepository,
-        private FileUploadService      $fileUploadService,
-        private CompanyRepository      $companyRepository
+        private AdminRequestRepository     $adminRequestRepository,
+        private FileUploadService          $fileUploadService,
+        private CompanyRepository          $companyRepository,
+        private CompanyLegalDataRepository $companyLegalDataRepository,
     )
     {
     }
@@ -232,6 +235,11 @@ class CompanyProfileService
     public function setAddress(UpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
 
+    }
+
+    public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
+    {
+       return $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
     }
 
 }

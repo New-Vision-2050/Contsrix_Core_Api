@@ -105,7 +105,6 @@ class CompanyController extends Controller
         return Json::item($presenter->getData());
 
     }
-    //concarncy in laravel
     public function activate(ActiveCompanyRequest $request): JsonResponse
     {
         $command = $request->createActiveCompanyCommand();

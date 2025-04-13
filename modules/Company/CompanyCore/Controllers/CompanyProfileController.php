@@ -12,8 +12,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Modules\AdminRequest\Presenters\AdminRequestPresenter;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateLegalCompanyDataRequest;
@@ -74,6 +76,14 @@ class CompanyProfileController extends Controller
         $logo = $request->createAssignLogoToCompanyDTO();
         $validations = $this->companyProfileService->validateLogo($logo);
         return Json::item($validations);
+    }
+
+    public function createLegalData(CreateCompanyLegalDataRequest $request)
+    {
+        $companyLegalData = $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
+        $company = $this->companyService->get($companyLegalData->company_id);
+        return Json::item((new CompanyPresenter($company))->getData());
+
     }
 
     public function updateLegalDataRequest(UpdateLegalCompanyDataRequest $request)
