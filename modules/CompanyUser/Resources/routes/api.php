@@ -16,6 +16,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/identity-data', [CompanyUserProfileController::class, 'identityData']);
     Route::post('/send-otp', [CompanyUserProfileController::class, 'sendOtp']);
     Route::post('/validate-otp', [CompanyUserProfileController::class, 'validateOtp']);
+    Route::get('/show-data-info', [CompanyUserProfileController::class, 'showDataInfo']);
 
     Route::get('/show-by-email/{email}', [CompanyUserController::class, 'showByEmail']);
     Route::post('/change-time-zone/{id}', [CompanyUserController::class, 'changeTimeZone']);

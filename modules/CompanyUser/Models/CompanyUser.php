@@ -85,11 +85,14 @@ class CompanyUser extends Model implements HasMedia
             ->withPivot('role','status');
     }
 
+    public function nationalityRelation()
+    {
+        return $this->belongsTo(Country::class, 'nationality',"id");
+    }
     public function users()
     {
         return $this->hasMany(User::class, 'global_company_user_id',"global_id");
     }
-
 
     protected static function newFactory(): CompanyUserFactory
     {

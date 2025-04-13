@@ -14,6 +14,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserContactInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserDataInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserIdentityDataHandler;
+use Modules\CompanyUser\Presenters\CompanyUserDataInfoPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserImagePresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
@@ -80,7 +81,16 @@ class CompanyUserProfileController extends Controller
             ]);
         }
     }
+    public function showDataInfo()
+    {
+        $user = $this->companyUserService->get(
+            Uuid::fromString(auth()->user()->global_company_user_id),
+        );
 
+        $presenter = new CompanyUserDataInfoPresenter($user);
+
+        return Json::item($presenter->getData());
+    }
     public function updateDataInfo(UpdateCompanyDataInfoUserRequest $request)
     {
         $command = $request->createUpdateCompanyUserCommand();
