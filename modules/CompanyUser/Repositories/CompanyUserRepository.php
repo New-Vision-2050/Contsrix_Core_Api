@@ -151,20 +151,20 @@ class CompanyUserRepository extends BaseRepository
         $phoneArray = explode(' ', $phone);
         return [
             'phone_code' => $phoneArray[0],
-            'phone' => $phone,
+            'phone' => str_replace(" ","",$phone),
         ];
     }
 
     public function createCompanyUser(array $companyUserData, array $companyRole): CompanyUser
     {
         try {
-            $phoneInfo = $this->getPhoneNumberInfo($companyUserData['phone']);
+            $phone= $this->getPhoneNumberInfo($companyUserData['phone']);
 
             DB::beginTransaction();
             $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
             if (!$companyUser) {
 
-                $companyUser = $this->create($companyUserData);
+                $companyUser = $this->create(array_merge($companyUserData,$phone));
             }
             $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
             $companyUser = $companyUser->fresh();//get updated data for company user
@@ -175,7 +175,7 @@ class CompanyUserRepository extends BaseRepository
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id
-                ],$phoneInfo));
+                ],$phone));
             }
 
             CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
@@ -183,7 +183,7 @@ class CompanyUserRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 500);
+            throw new \Exception($exception->getMessage(), 500);
         }
 
         return $companyUser;
@@ -231,11 +231,11 @@ class CompanyUserRepository extends BaseRepository
 
 
             $companyUser = $this->findOneBy(["id" => $id]);
-            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id], [
+            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id],array_merge( [
                 "name" => $data["name"],
                 "email" => $data["email"],
                 "global_company_user_id" => $companyUser->global_id
-            ]);
+            ],$phoneInfo));
 
             $this->update($id, array_merge($data,$phoneInfo));
             DB::commit();

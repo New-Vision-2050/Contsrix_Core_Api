@@ -14,7 +14,6 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class DefaultIdentifierSeederTableSeeder extends Seeder
 {
-    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -27,13 +26,14 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
         foreach ($names as $key => $value) {
             $namespace = Uuid::NAMESPACE_DNS;
             $id = Uuid::uuid5($namespace, $key)->toString();
-            IdentifierSetting::updateOrCreate(["id" => $id],
+            $companyId = tenant("id")??Company::query()->first()->id;
+            IdentifierSetting::updateOrCreate(["id" => $id,"company_id"=>$companyId],
                 [
                     "id" => $id,
                     "key" => $key,
                     "name" => $value,
                     "status" => 1,
-                    "company_id"=>tenant("id")??Company::query()->first()->id
+                    "company_id"=>$companyId
                 ]
             );
 
