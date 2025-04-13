@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
+use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -46,6 +47,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     use HasDatabase, HasDomains;
     use UuidTrait;
     use HasScopedValidationRules;
+//    use CustomBelongsToTenant;
 
 
     public array $translatable = ["name"];

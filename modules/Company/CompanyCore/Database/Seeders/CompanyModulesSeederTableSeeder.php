@@ -54,7 +54,6 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
         $companyData = [
             'id' => $id,
-            'name' => ["ar"=>'نيو فيجن', "en" => "new vision"],
             'user_name' => "new-vision",
             'email' => 'test@example.com',
             'phone' => '123456789',
@@ -63,12 +62,13 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'company_field_id' => $companyField->id,
             'registration_type_id' => $registrationType->id,
             'general_manager_id' => $general_manager->id->toString(),
-            'registration_no' => '123456',
             'serial_no' => bin2hex(random_bytes(6)),
             "is_central_company" => 1
         ];
 
-        $company = Company::firstOrCreate(["email" => $companyData['email']],$companyData);
+        $company = Company::insertOrIgnore($companyData);
+        $company = Company::query()->find($id);
+        $company->update(['name' => ["ar" => 'نيو فيجن', "en" => "new vision"]]);
         $path = Storage::disk('public')->path("default_path/new-vision-logo.jpg");
         $file = new \Illuminate\Http\UploadedFile(
             $path,
@@ -83,13 +83,13 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $domain = str_replace("be-", "", env("APP_URL"));
 
         Domain::query()->create([
-            "company_id" => $company->id,
+            "company_id" => $id,
             "domain" => env("NEW_VISION_DOMAIN", $domain)
         ]);
 
         $general_manager->update(['company_id' => $id]);
         CompanyUserCompany::query()->create([
-            'company_id' => $company->id,
+            'company_id' => $id,
             'global_company_user_id' => $general_manager->global_company_user_id,
             'role' => CompanyUserRole::EMPLOYEE->value
         ]);
