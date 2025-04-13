@@ -16,6 +16,7 @@ use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
@@ -243,6 +244,11 @@ class CompanyProfileService
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
        return $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+    }
+
+    public function getCompanyLegalData(UuidInterface $id ) : CompanyLegalData
+    {
+        return $this->companyLegalDataRepository->find($id);
     }
 
 }

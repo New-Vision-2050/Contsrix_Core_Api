@@ -63,6 +63,4 @@ class CompanyLegalDataRepository extends BaseRepository
     }
 
 
-
-
 }

@@ -105,7 +105,8 @@ class CompanyProfileController extends Controller
         $command = $request->createUpdateLegalCompanyDataCommand();
         $this->updateCompanyLegalDataHandler->handle($command);
 
-        $company = $this->companyService->get(Uuid::fromString(tenant("id")));
+        $companyLegalData = $this->companyProfileService->getCompanyLegalData(Uuid::fromString($request->route("id")));
+        $company = $this->companyService->get(Uuid::fromString($companyLegalData->company_id));
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
