@@ -14,6 +14,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserContactInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserDataInfoHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserIdentityDataHandler;
+use Modules\CompanyUser\Presenters\CompanyUserImagePresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\IdentityDataRequest;
@@ -66,15 +67,13 @@ class CompanyUserProfileController extends Controller
         return Json::item($errors);
     }
 
-    public function uploadPhoto(UploadPhotoCompanyUserRequest $request): JsonResponse
+    public function uploadPhoto(UploadPhotoCompanyUserRequest $request)//: JsonResponse
     {
         try {
-            $path = $this->companyUserIUploadImageService->uploadFile($request);
+            $companyUser = $this->companyUserIUploadImageService->uploadFile($request);
+            $presenter = new CompanyUserImagePresenter($companyUser);
+            return Json::item($presenter->getData(), [], "Photo uploaded successfully");
 
-            return Json::success([
-                'message' => 'Photo uploaded successfully',
-                'url' => $path,
-            ]);
         } catch (\Exception $e) {
             return Json::error('Something went wrong, please try again later.', [
                 'error' => $e->getMessage(),

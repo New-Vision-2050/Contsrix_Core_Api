@@ -41,6 +41,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'other_phone'=> $this->companyUser->other_phone??'-',
             'address' => $this->companyUser->address??'-',
             'address_attendance' =>  $this->companyUser->address_attendance??'-',
+            'image_url' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
 
 //            "users"=> UserPresenter::collection($this->companyUser->users)
 
