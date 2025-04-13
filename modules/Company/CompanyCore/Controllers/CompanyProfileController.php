@@ -102,7 +102,11 @@ class CompanyProfileController extends Controller
 
     public function updateCompanyLegalData(UpdateCompanyLegalDataRequest $request)
     {
-        $this->updateCompanyLegalDataHandler->handle($request->createUpdateCompanyLegalDataDTO());
+        $command = $request->createUpdateLegalCompanyDataCommand();
+        $this->updateCompanyLegalDataHandler->handle($command);
+
+        $company = $this->companyService->get(tenant("id"));
+        return Json::item($company);
     }
 
 }
