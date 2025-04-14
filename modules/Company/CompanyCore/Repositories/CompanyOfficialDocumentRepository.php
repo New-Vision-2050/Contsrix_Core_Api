@@ -64,6 +64,12 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         return $companyOfficialDocument;
     }
 
+    public function deleteMedia(UuidInterface $id , $fileId)
+    {
+        $this->find($id)->deleteMedia($fileId);
+        return true;
+    }
+
 
 
 

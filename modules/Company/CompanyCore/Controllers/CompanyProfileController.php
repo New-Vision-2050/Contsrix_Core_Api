@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Http;
 use Modules\AdminRequest\Presenters\AdminRequestPresenter;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyOfficialDocumentHandler;
+use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyOfficialDocumentMediaHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyOfficialDocumentHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
@@ -40,6 +41,7 @@ class CompanyProfileController extends Controller
         private UpdateCompanyLegalDataHandler        $updateCompanyLegalDataHandler,
         private UpdateCompanyOfficialDocumentHandler $updateCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentHandler $deleteCompanyOfficialDocumentHandler,
+        private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler
     )
     {
     }
@@ -138,6 +140,14 @@ class CompanyProfileController extends Controller
         $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument(Uuid::fromString($request->route("id")));
         $company = $this->companyService->get($companyOfficial->company_id);
         $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
+        return Json::item((new CompanyPresenter($company))->getData());
+    }
+
+    public function deleteOfficialDocumentMedia(Request $request)
+    {
+        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument(Uuid::fromString($request->route("id")));
+        $company = $this->companyService->get($companyOfficial->company_id);
+        $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")),Uuid::fromString($request->route("media_id")));
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
