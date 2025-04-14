@@ -23,6 +23,7 @@ class CompanyUserPresenter extends AbstractPresenter
         return [
             'id' => $this->companyUser->id,
             'global_id' => $this->companyUser->global_id,
+            'user_id'=>$this->companyUser->users->first()->id,
             'name' => $this->companyUser->name,
             'email' => $this->companyUser->email,
             "residence" => $this->companyUser->residence,
