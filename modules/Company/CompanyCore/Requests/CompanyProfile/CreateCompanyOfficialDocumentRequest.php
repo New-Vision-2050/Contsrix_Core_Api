@@ -18,13 +18,29 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
     {
         return [
             "name"=>"required",
-            "file"=>"required|file|max:2048",
+            "files"=>"required|array",
+            "files.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
             "document_type_id"=>"required|exists:company_registration_types,id",
             "description"=>"required",
             "document_number"=>"required|numeric",
-            "start_date"=>"required|date|before_or_equal:end_date",
-            "end_date"=>"required|date|after_or_equal:start_date",
-            "notification_date"=>"required|date|after_or_equal:start_date|before:end_date,-7 days",
+            "start_date"=>"required|date|before_or_equal:end_date|date_format:Y-m-d",
+            "end_date"=>"required|date|after_or_equal:start_date|date_format:Y-m-d",
+            "notification_date"=>[
+                "required",
+                "date",
+                "after_or_equal:start_date",
+                "before:end_date",
+                "date_format:Y-m-d",
+                function ($attribute, $value, $fail) {
+                    $endDate = \Carbon\Carbon::parse(request('end_date'));
+                    $notificationDate = \Carbon\Carbon::parse($value);
+
+                    if ($notificationDate->diffInDays($endDate) < 7) {
+                        $fail('The notification date must be at least 7 days before the end date.');
+                    }
+                },
+            ],
+
 
 
 
@@ -42,7 +58,7 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
             endDate: $this->end_date,
             notificationDate: $this->notification_date,
             documentTypeId: Uuid::fromString($this->document_type_id),
-            file: $this->file("file")
+            files: $this->file("files")
         );
     }
 }

@@ -17,7 +17,7 @@ class CreateCompanyOfficialDocumentDTO
         private string        $endDate,
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
-        private               $file
+        private               $files
     )
     {
     }
@@ -27,9 +27,9 @@ class CreateCompanyOfficialDocumentDTO
         return $this->id;
     }
 
-    public function getFile()
+    public function getFiles()
     {
-        return $this->file;
+        return $this->files;
     }
 
 

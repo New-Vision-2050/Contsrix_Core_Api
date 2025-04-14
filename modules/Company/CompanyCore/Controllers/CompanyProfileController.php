@@ -114,6 +114,8 @@ class CompanyProfileController extends Controller
     public function  createOfficialDocument(CreateCompanyOfficialDocumentRequest $request)
     {
         $this-> companyProfileService->createCompanyOfficialDocument($request->createCreateCompanyOfficialDocumentDTO());
+        $company = $this->companyService->get($request->createCreateCompanyOfficialDocumentDTO()->getId());
+        return Json::item((new CompanyPresenter($company))->getData());
     }
 
 }

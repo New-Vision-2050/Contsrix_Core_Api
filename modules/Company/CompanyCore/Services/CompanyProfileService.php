@@ -260,7 +260,7 @@ class CompanyProfileService
 
     public function createCompanyOfficialDocument(CreateCompanyOfficialDocumentDTO $companyOfficialDocumentDTO)
     {
-        return $this->companyOfficialDocumentRepository->createCompanyOfficialDocument($companyOfficialDocumentDTO->toArray(), $companyOfficialDocumentDTO->getFile());
+        return $this->companyOfficialDocumentRepository->createCompanyOfficialDocument($companyOfficialDocumentDTO->toArray(), $companyOfficialDocumentDTO->getFiles());
     }
 
 }

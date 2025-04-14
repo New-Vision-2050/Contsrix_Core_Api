@@ -70,7 +70,7 @@ class CompanyLegalData extends Model implements HasMedia
         return CompanyFactory::new();
     }
 
-    public function company()
+    public function compan()
     {
         return $this->belongsTo(Company::class);
     }
