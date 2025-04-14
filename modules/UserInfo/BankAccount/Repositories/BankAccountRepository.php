@@ -23,8 +23,9 @@ class BankAccountRepository extends BaseRepository
 
     public function getBankAccountList(UuidInterface $companyId, UuidInterface $globalId, ?int $page, ?int $perPage = 10):array
     {
+        //, 'global_id' => $globalId
         return $this->paginated(
-            ['company_id' => $companyId, 'global_id' => $globalId],
+            ['company_id' => $companyId],
             $page,
             $perPage
         );
