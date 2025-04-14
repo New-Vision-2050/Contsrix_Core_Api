@@ -124,6 +124,7 @@ class CompanyUserProfileController extends Controller
     public function validateOtp(ValidateOtpRequest $request)
     {
         try {
+            $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
             return Json::item(["status" => $this->validateOtpService->validateOtp($request->createValidateOtpDTO())]);
         } catch (\Throwable $e) {
             return Json::error(__("validation.invalid-otp"), 401);
@@ -162,7 +163,7 @@ class CompanyUserProfileController extends Controller
 
         $item = $this->companyUserService->getGlobalId($command->global_id);
 
-           $this->identityDataService->uploadFile($request,$command->global_id);
+        $this->identityDataService->uploadFile($request,$command->global_id);
 
         $presenter = new CompanyUserPresenter($item);
 
