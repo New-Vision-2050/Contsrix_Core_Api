@@ -13,7 +13,6 @@ class CreateBankAccountRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'required|string',
             'user_id' => 'required|string',
             'country_id' => 'required|string',
             'bank_id' => 'required|string',
