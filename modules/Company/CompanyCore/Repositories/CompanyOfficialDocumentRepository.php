@@ -39,7 +39,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception($e->getMessage(), 409);
+            throw new \Exception(__("validation.create-not-successful"), 409);
 
         }
         return $companyOfficialDocument;
@@ -57,6 +57,8 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             foreach ($deletedFiles as $fileId) {
                 $companyOfficialDocument->deleteMedia($fileId);
             }
+            $this->activityLogRepository->createActivityLog(["action"=>["ar"=>"قام بالتعديل","en"=>"update"],"date"=>Carbon::now()->format("Y-m-d H:i:s"), "user_id"=>auth()->user()->id,"requestable_id"=>$companyOfficialDocument->id , "requestable_type"=>CompanyOfficialDocument::class]);
+
             DB::commit();
 
         } catch (\Exception $e) {
