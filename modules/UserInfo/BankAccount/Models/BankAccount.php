@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\BankAccount\Database\factories\BankAccountFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Country\Models\Country;
+use Modules\Shared\Bank\Models\Bank;
+use Modules\Shared\Currency\Models\Currency;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class BankAccount extends Model
@@ -35,7 +39,7 @@ class BankAccount extends Model
         'account_number',
         'iban',
         'swift_bic',
-        'type' 
+        'type'
     ];
 
     protected $casts = [
@@ -45,5 +49,18 @@ class BankAccount extends Model
     protected static function newFactory(): BankAccountFactory
     {
         return BankAccountFactory::new();
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
+    }
+    public function bank()
+    {
+        return $this->belongsTo(Bank::class);
     }
 }
