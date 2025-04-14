@@ -32,6 +32,7 @@ class BankAccount extends Model
     protected $fillable = [
         'company_id',
         'global_id',
+        'user_id',
         'country_id',
         'bank_id',
         'currency_id',
