@@ -11,7 +11,11 @@ return new class extends Migration
         Schema::create('user_relatives', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('company_id')->index();
-            $table->uuid('user_id')->index();
+            $table->uuid('global_id')->index();
+            $table->string('name')->nullable();
+            $table->string('marital_status')->nullable();
+            $table->string('relationship')->nullable();
+            $table->string('phone')->nullable();
             $table->timestamps();
         });
     }

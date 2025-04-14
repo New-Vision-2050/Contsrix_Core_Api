@@ -11,6 +11,11 @@ class UpdateUserRelativeCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
+        private string $company_id,
+        private string $global_id,
+        private string $marital_status,
+        private string $relationship,
+        private string $phone,
     ) {
     }
 
@@ -28,6 +33,11 @@ class UpdateUserRelativeCommand
     {
         return array_filter([
             'name' => $this->name,
+            'company_id' => $this->company_id,
+            'global_id' => $this->global_id,
+            'marital_status' => $this->marital_status,
+            'relationship' => $this->relationship,
+            'phone' => $this->phone,
         ]);
     }
 }

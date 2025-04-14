@@ -21,6 +21,11 @@ class UserRelativePresenter extends AbstractPresenter
         return [
             'id' => $this->userRelative->id,
             'name' => $this->userRelative->name,
+            'company_id',
+            'global_id',
+            'marital_status',
+            'relationship',
+            'phone',
         ];
     }
 }

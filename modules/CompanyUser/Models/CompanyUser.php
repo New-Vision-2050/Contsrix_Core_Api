@@ -71,6 +71,17 @@ class CompanyUser extends Model implements HasMedia
         "instagram",
         "snapchat",
         "linkedin",
+
+
+        'passport_start_date',
+        'identity_start_date',
+        'border_number_start_date',
+        'entry_number_start_date',
+
+        'passport_end_date',
+        'identity_end_date',
+        'border_number_end_date',
+        'entry_number_end_date'
     ];
 
     protected $casts = [

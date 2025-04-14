@@ -16,6 +16,17 @@ class IdentityDataRequest extends FormRequest
             'identity' => 'nullable|string',
             'border_number' => 'nullable|string',
             'entry_number' => 'nullable|string',
+
+            'passport_start_date'=>'nullable|',
+            'identity_start_date'=>'nullable|',
+            'border_number_start_date'=>'nullable|',
+            'entry_number_start_date'=>'nullable|',
+
+            'passport_end_date' => 'required_with:passport_start_date|date|after:passport_start_date',
+            'identity_end_date' => 'required_with:identity_start_date|date|after:identity_start_date',
+            'border_number_end_date' => 'required_with:border_number_start_date|date|after:border_number_start_date',
+            'entry_number_end_date' => 'required_with:entry_number_start_date|date|after:entry_number_start_date',
+
             'file_passport' => 'nullable|file',
             'file_identity' => 'nullable|file',
             'file_border_number' => 'nullable|file',
@@ -30,6 +41,15 @@ class IdentityDataRequest extends FormRequest
             identity: $this->get('identity'),
             border_number: $this->get('border_number'),
             entry_number: $this->get('entry_number'),
+            passport_start_date: $this->get('passport_start_date'),
+            identity_start_date: $this->get('identity_start_date'),
+            border_number_start_date: $this->get('border_number_start_date'),
+            entry_number_start_date: $this->get('entry_number_start_date'),
+
+            passport_end_date: $this->get('passport_end_date'),
+            identity_end_date: $this->get('identity_end_date'),
+            border_number_end_date: $this->get('border_number_end_date'),
+            entry_number_end_date: $this->get('entry_number_end_date')
         );
     }
 }

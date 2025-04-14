@@ -15,6 +15,11 @@ class UpdateUserRelativeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            'company_id',
+            'global_id',
+            'marital_status',
+            'relationship',
+            'phone',
         ];
     }
 
@@ -22,7 +27,12 @@ class UpdateUserRelativeRequest extends FormRequest
     {
         return new UpdateUserRelativeCommand(
             id: Uuid::fromString($this->route('id')),
-            name: $this->get('name'),
+            name: $this->get('name'),]
+            'company_id',
+            'global_id',
+            'marital_status',
+            'relationship',
+            'phone',
         );
     }
 }
