@@ -252,8 +252,9 @@ class CompanyUserRepository extends BaseRepository
     {
         $this->updateWhere(["global_id" => $global_id],$data);
 
+        $users = $this->userRepository->updateWhere(["global_company_user_id" => $global_id],$data);
+        
         return true;
-
     }
     public function updateCompanyUserIdentityData(UuidInterface $global_id, array $data): bool
     {
