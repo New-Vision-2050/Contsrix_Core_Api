@@ -81,7 +81,11 @@ class CompanyUser extends Model implements HasMedia
         'passport_end_date',
         'identity_end_date',
         'border_number_end_date',
-        'entry_number_end_date'
+        'entry_number_end_date',
+
+        'Work_permit_start_date',
+        'Work_permit_end_date',
+        'Work_permit',
     ];
 
     protected $casts = [

@@ -54,6 +54,11 @@ class IdentityDataService
                 $companyUser, $request->file('file_entry_number'), $path, 'file_entry_number', $visibility
             );
         }
+        if ($request->hasFile('file_work_permit')) {
+            $uploadedFiles['file_work_permit'] = $this->fileUploadService->uploadFile(
+                $companyUser, $request->file('file_work_permit'), $path, 'file_work_permit', $visibility
+            );
+        }
 
         return $uploadedFiles;
     }

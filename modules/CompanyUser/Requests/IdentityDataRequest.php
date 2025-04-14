@@ -31,6 +31,11 @@ class IdentityDataRequest extends FormRequest
             'file_identity' => 'nullable|file',
             'file_border_number' => 'nullable|file',
             'file_entry_number' => 'nullable|file',
+            'file_work_permit' => 'nullable|file',
+
+            'work_permit_start_date'=>'nullable|string',,
+            'work_permit_end_date' => 'required_with:work_permit_start_date|date|after:work_permit_start_date',
+            'work_permit' => 'nullable',
         ];
     }
 
@@ -49,7 +54,12 @@ class IdentityDataRequest extends FormRequest
             passport_end_date: $this->get('passport_end_date'),
             identity_end_date: $this->get('identity_end_date'),
             border_number_end_date: $this->get('border_number_end_date'),
-            entry_number_end_date: $this->get('entry_number_end_date')
+            entry_number_end_date: $this->get('entry_number_end_date'),
+
+            work_permit_start_date:$this->get('work_permit_start_date'),
+            work_permit_end_date:$this->get('work_permit_end_date'),
+            work_permit:$this->get('work_permit'),
+
         );
     }
 }
