@@ -42,23 +42,23 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         return $companyOfficialDocument;
     }
 
-    public function updateCompanyLegalData(UuidInterface $id, array $data, $file)
+    public function updateCompanyOfficialDocument(UuidInterface $id, array $data, $files)
     {
         try {
             DB::beginTransaction();
-            $this->findOneOrFail($id)->update($data);
-
-            $companyLegalData = $this->find($id);
-            $companyLegalData->clearMediaCollection('upload');//for replace with new media
-            $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            $companyOfficialDocument = $this->find($id);
+            $companyOfficialDocument->update($data);
+            foreach ($files as $file) {
+                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+            }
             DB::commit();
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception($e->getMessage(), 409);
+            throw new \Exception(__("validation.update-not-successful"), 409);
 
         }
-        return $companyLegalData;
+        return $companyOfficialDocument;
     }
 
 

@@ -257,6 +257,10 @@ class CompanyProfileService
     {
         return $this->companyLegalDataRepository->find($id);
     }
+    public function getCompanyOfficialDocument(UuidInterface $id): CompanyLegalData
+    {
+        return $this->companyOfficialDocumentRepository->find($id);
+    }
 
     public function createCompanyOfficialDocument(CreateCompanyOfficialDocumentDTO $companyOfficialDocumentDTO)
     {
