@@ -52,7 +52,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public array $translatable = ["name"];
 
-    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch","companyLegalData.media","companyOfficialDocuments.media"];
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch","companyLegalData.media","companyOfficialDocuments.media","companyOfficialDocuments.activityLogs"];
 
     public $incrementing = false;
     protected $table = 'companies';

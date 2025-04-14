@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
+use http\Client\Curl\User;
 use Illuminate\Support\Facades\DB;
+use Modules\ActivityLog\Repositories\ActivityLogRepository;
 use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
@@ -19,7 +21,7 @@ use Carbon\Carbon;
  */
 class CompanyOfficialDocumentRepository extends BaseRepository
 {
-    public function __construct(CompanyOfficialDocument $model, private FileUploadService $fileUploadService)
+    public function __construct(CompanyOfficialDocument $model, private FileUploadService $fileUploadService,private ActivityLogRepository $activityLogRepository)
     {
         parent::__construct($model);
     }
@@ -32,11 +34,12 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             foreach ($files as $file) {
                 $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
             }
+            $this->activityLogRepository->createActivityLog(["action"=>["ar"=>"إنشاء","en"=>"create"],"date"=>Carbon::now()->format("Y-m-d H:i:s"), "user_id"=>auth()->user()->id,"requestable_id"=>$companyOfficialDocument->id , "requestable_type"=>CompanyOfficialDocument::class]);
             DB::commit();
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 409);
+            throw new \Exception($e->getMessage(), 409);
 
         }
         return $companyOfficialDocument;

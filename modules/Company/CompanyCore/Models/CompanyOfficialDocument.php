@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\ActivityLog\Models\ActivityLog;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Spatie\MediaLibrary\HasMedia;
@@ -65,5 +66,10 @@ class CompanyOfficialDocument extends Model implements HasMedia
     public function documentType()
     {
         return $this->belongsTo(CompanyRegistrationType::class, 'document_type_id', 'id');
+    }
+
+    public function activityLogs()
+    {
+        return $this->morphMany(ActivityLog::class, "requestable");
     }
 }
