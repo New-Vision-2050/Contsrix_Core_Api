@@ -10,7 +10,7 @@ class CreateUserRelativeDTO
 {
     public function __construct(
         public string $name,
-        public string $company_id',
+        public string $company_id,
         public string $global_id,
         public string $marital_status,
         public string $relationship,
@@ -22,11 +22,11 @@ class CreateUserRelativeDTO
     {
         return [
             'name' => $this->name,
-            'company_id',
-            'global_id',
-            'marital_status',
-            'relationship',
-            'phone',
+            'company_id'=> $this->company_id,
+            'global_id'=> $this->global_id,
+            'marital_status'=> $this->marital_status,
+            'relationship'=> $this->relationship,
+            'phone'=> $this->phone,
         ];
     }
 }

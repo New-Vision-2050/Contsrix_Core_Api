@@ -37,14 +37,14 @@ class BankAccountController extends Controller
 
         $user = $this->userRepository->getUser($userId);
 
-         $list = $this->bankAccountService->list(
+       return  $list = $this->bankAccountService->list(
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
 
-        return Json::items(BankAccountPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        //return Json::items(BankAccountPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function show(GetBankAccountRequest $request): JsonResponse

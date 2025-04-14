@@ -27,12 +27,12 @@ class UpdateUserRelativeRequest extends FormRequest
     {
         return new UpdateUserRelativeCommand(
             id: Uuid::fromString($this->route('id')),
-            name: $this->get('name'),]
-            'company_id',
-            'global_id',
-            'marital_status',
-            'relationship',
-            'phone',
+            name: $this->get('name'),
+            company_id:$this->get('company_id'),
+            global_id:$this->get('global_id'),
+            marital_status:$this->get('marital_status'),
+            relationship:$this->get('relationship'),
+            phone:$this->get('phone'),
         );
     }
 }
