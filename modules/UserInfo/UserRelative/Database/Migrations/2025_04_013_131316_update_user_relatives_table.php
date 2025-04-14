@@ -6,16 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
-        Schema::create('user_relatives', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->uuid('company_id')->index();
-            $table->uuid('user_id')->index();
+        Schema::table('user_relatives', function (Blueprint $table) {
             $table->string('marital_status')->nullable();
             $table->string('relationship')->nullable();
             $table->string('phone')->nullable();
-            $table->timestamps();
         });
     }
+
 };
