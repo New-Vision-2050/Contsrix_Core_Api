@@ -18,6 +18,7 @@ use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
+use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
@@ -36,6 +37,7 @@ class CompanyProfileService
         private FileUploadService                 $fileUploadService,
         private CompanyRepository                 $companyRepository,
         private CompanyLegalDataRepository        $companyLegalDataRepository,
+        private CompanyAddressRepository          $companyAddressRepository,
         private CompanyOfficialDocumentRepository $companyOfficialDocumentRepository,
     )
     {
@@ -243,10 +245,6 @@ class CompanyProfileService
         return $adminRequest;
     }
 
-    public function setAddress(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
-    {
-
-    }
 
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
@@ -257,6 +255,12 @@ class CompanyProfileService
     {
         return $this->companyLegalDataRepository->find($id);
     }
+
+    public function getCompanyAddress(UuidInterface $id): CompanyLegalData
+    {
+        return $this->companyAddressRepository->find($id);
+    }
+
     public function getCompanyOfficialDocument(UuidInterface $id): CompanyLegalData
     {
         return $this->companyOfficialDocumentRepository->find($id);

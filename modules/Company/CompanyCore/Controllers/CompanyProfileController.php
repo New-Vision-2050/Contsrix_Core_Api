@@ -17,11 +17,13 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyOfficialDoc
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyOfficialDocumentMediaHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyOfficialDocumentHandler;
+use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanySetAddressHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyOfficialDocumentRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyAddressRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\RequestUpdateLegalCompanyDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateCompanyLegalDataRequest;
@@ -41,7 +43,8 @@ class CompanyProfileController extends Controller
         private UpdateCompanyLegalDataHandler             $updateCompanyLegalDataHandler,
         private UpdateCompanyOfficialDocumentHandler      $updateCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentHandler      $deleteCompanyOfficialDocumentHandler,
-        private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler
+        private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler,
+        private UpdateCompanySetAddressHandler            $updateCompanySetAddressHandler
     )
     {
     }
@@ -103,8 +106,15 @@ class CompanyProfileController extends Controller
         return Json::item((new AdminRequestPresenter($legalDataRequest))->getData());
     }
 
-    public function setAddress()
+    public function setAddress(SetCompanyAddressRequest $request)
     {
+        $command = $request->createSetCompanyAddressCommand();
+        $this->updateCompanySetAddressHandler->handle($command);
+        $companyAddress = $this->companyProfileService->getCompanyAddress($command->getId());
+        $company  = $this->companyService->get($companyAddress->company_id);
+        return Json::item((new CompanyPresenter($company))->getData());
+
+
 
     }
 

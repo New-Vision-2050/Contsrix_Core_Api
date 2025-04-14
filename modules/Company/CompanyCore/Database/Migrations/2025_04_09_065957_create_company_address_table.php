@@ -19,7 +19,6 @@ return new class extends Migration {
             $table->string("building_number");
             $table->string("additional_phone");
             $table->string("postal_code");
-
             $table->timestamps();
         });
     }
