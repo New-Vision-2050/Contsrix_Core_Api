@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserRelative\Database\factories\UserRelativeFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Country\Models\Country;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class UserRelative extends Model
@@ -41,5 +43,9 @@ class UserRelative extends Model
     protected static function newFactory(): UserRelativeFactory
     {
         return UserRelativeFactory::new();
+    }
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
     }
 }

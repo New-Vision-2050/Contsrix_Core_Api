@@ -22,12 +22,10 @@ class UserRelativeCRUDService
          return $this->repository->createUserRelative($createUserRelativeDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+
+    public function list(UuidInterface $companyId,UuidInterface $globalId,int $page = 1, int $perPage = 10): array
     {
-        return $this->repository->paginated(
-            page: $page,
-            perPage: $perPage,
-        );
+        return $this->repository->getUserRelativeList($companyId, $globalId, $page, $perPage);
     }
 
     public function get(UuidInterface $id): UserRelative

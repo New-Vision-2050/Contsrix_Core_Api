@@ -14,8 +14,7 @@ class CreateUserRelativeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'company_id'=> 'required|string',
-            'global_id'=> 'required|string',
+            'user_id'=> 'required|string',
             'marital_status'=> 'required|string',
             'relationship'=> 'required|string',
             'phone'=> 'required|string',
@@ -26,8 +25,8 @@ class CreateUserRelativeRequest extends FormRequest
     {
         return new CreateUserRelativeDTO(
             name: $this->get('name'),
-            company_id:$this->get('company_id'),
-            global_id:$this->get('global_id'),
+            company_id:'',
+            global_id:'',
             marital_status:$this->get('marital_status'),
             relationship:$this->get('relationship'),
             phone:$this->get('phone'),

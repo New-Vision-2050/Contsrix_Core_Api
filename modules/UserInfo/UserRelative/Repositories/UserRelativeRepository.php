@@ -21,11 +21,14 @@ class UserRelativeRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getUserRelativeList(?int $page, ?int $perPage = 10): Collection
+    public function getUserRelativeList(UuidInterface $companyId, UuidInterface $globalId, ?int $page, ?int $perPage = 10):array
     {
-        return $this->paginatedList([], $page, $perPage);
+        return $this->paginated(
+            ['company_id' => $companyId, 'global_id' => $globalId],
+            $page,
+            $perPage
+        );
     }
-
     public function getUserRelative(UuidInterface $id): UserRelative
     {
         return $this->findOneByOrFail([

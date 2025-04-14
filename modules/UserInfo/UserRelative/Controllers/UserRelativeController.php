@@ -7,6 +7,7 @@ namespace Modules\UserInfo\UserRelative\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\UserRelative\Handlers\DeleteUserRelativeHandler;
 use Modules\UserInfo\UserRelative\Handlers\UpdateUserRelativeHandler;
 use Modules\UserInfo\UserRelative\Presenters\UserRelativePresenter;
@@ -24,12 +25,18 @@ class UserRelativeController extends Controller
         private UserRelativeCRUDService $userRelativeService,
         private UpdateUserRelativeHandler $updateUserRelativeHandler,
         private DeleteUserRelativeHandler $deleteUserRelativeHandler,
+        private UserRepository $userRepository,
     ) {
     }
 
     public function index(GetUserRelativeListRequest $request): JsonResponse
     {
+        $userId = Uuid::fromString($request->route('id'));
+        $user = $this->userRepository->getUser($userId);
+
         $list = $this->userRelativeService->list(
+            Uuid::fromString($user->company_id),
+            Uuid::fromString($user->global_company_user_id),
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
@@ -48,7 +55,15 @@ class UserRelativeController extends Controller
 
     public function store(CreateUserRelativeRequest $request): JsonResponse
     {
-        $createdItem = $this->userRelativeService->create($request->createCreateUserRelativeDTO());
+        $createCreateUserRelativeDTO = $request->createCreateUserRelativeDTO();
+        $userId = Uuid::fromString($request->input('user_id'));
+
+        $user = $this->userRepository->getUser($userId);
+        $createCreateUserRelativeDTO->company_id = $user->company_id;
+        $createCreateUserRelativeDTO->global_id = $user->global_company_user_id;
+
+
+        $createdItem = $this->userRelativeService->create($createCreateUserRelativeDTO);
 
         $presenter = new UserRelativePresenter($createdItem);
 
