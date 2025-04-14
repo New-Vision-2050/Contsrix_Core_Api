@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Modules\AdminRequest\Presenters\AdminRequestPresenter;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
+use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyOfficialDocumentHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyOfficialDocumentHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
@@ -37,7 +38,8 @@ class CompanyProfileController extends Controller
         private CompanyCRUDService               $companyService,
         private CompanyProfileService            $companyProfileService,
         private UpdateCompanyLegalDataHandler    $updateCompanyLegalDataHandler,
-        private UpdateCompanyOfficialDocumentHandler    $updateCompanyOfficialDocumentHandler
+        private UpdateCompanyOfficialDocumentHandler    $updateCompanyOfficialDocumentHandler,
+        private DeleteCompanyOfficialDocumentHandler    $deleteCompanyOfficialDocumentHandler
     )
     {
     }
@@ -128,9 +130,15 @@ class CompanyProfileController extends Controller
         $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument($command->getId());
         $company = $this->companyService->get($companyOfficial->company_id);
         return Json::item((new CompanyPresenter($company))->getData());
+    }
 
-
-
+    public function deleteOfficialDocument(Request $request)
+    {
+        $command = $request->createUpdateCompanyOfficialDocumentCommand();
+        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument($command->getId());
+        $company = $this->companyService->get($companyOfficial->company_id);
+        $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
+        return Json::item((new CompanyPresenter($company))->getData());
     }
 
 }

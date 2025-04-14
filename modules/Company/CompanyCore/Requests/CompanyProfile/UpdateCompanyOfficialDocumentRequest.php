@@ -51,7 +51,7 @@ class UpdateCompanyOfficialDocumentRequest extends FormRequest
     public function createUpdateCompanyOfficialDocumentCommand(): UpdateCompanyOfficialDocumentCommand
     {
         return new UpdateCompanyOfficialDocumentCommand(
-            id: Uuid::fromString(tenant("id")),
+            id: Uuid::fromString($this->route("id")),
             name: $this->name,
             description: $this->description,
             documentNumber: $this->document_number,
