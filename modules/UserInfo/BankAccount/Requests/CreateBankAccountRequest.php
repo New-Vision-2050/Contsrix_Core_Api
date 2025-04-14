@@ -14,14 +14,14 @@ class CreateBankAccountRequest extends FormRequest
     {
         return [
             // 'company_id' => 'required|string',
-            'user_id' => 'required|string',
-            'country_id' => 'required|string',
-            'bank_id' => 'required|string',
-            'currency_id' => 'required|string',
-            'user_name' => 'required|string',
-            'iban' => 'required|string',
-            'swift_bic' => 'nullable',
-            'type' => 'required|string',
+            // 'user_id' => 'required|string',
+            // 'country_id' => 'required|string',
+            // 'bank_id' => 'required|string',
+            // 'currency_id' => 'required|string',
+            // 'user_name' => 'required|string',
+            // 'iban' => 'required|string',
+            // 'swift_bic' => 'nullable',
+            // 'type' => 'required|string',
         ];
     }
 

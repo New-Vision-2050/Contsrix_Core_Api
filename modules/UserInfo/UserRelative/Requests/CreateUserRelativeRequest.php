@@ -14,11 +14,11 @@ class CreateUserRelativeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'company_id',
-            'global_id',
-            'marital_status',
-            'relationship',
-            'phone',
+            'company_id'=> 'required|string',
+            'global_id'=> 'required|string',
+            'marital_status'=> 'required|string',
+            'relationship'=> 'required|string',
+            'phone'=> 'required|string',
         ];
     }
 
