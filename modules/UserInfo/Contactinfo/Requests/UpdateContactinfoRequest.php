@@ -15,10 +15,10 @@ class UpdateContactinfoRequest extends FormRequest
     {
         return [
             'email' => 'required|email',
-            'other_phone' => 'required|string',
+            'other_phone' => 'nullable',
             'phone' => 'required|string',
             'phone_code' => 'required|string',
-            'landline_number' => 'required|string',
+            'landline_number' => 'nullable',
         ];
     }
 
