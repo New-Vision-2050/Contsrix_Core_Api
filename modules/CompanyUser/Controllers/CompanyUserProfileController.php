@@ -162,7 +162,7 @@ class CompanyUserProfileController extends Controller
 
         $item = $this->companyUserService->getGlobalId($command->global_id);
 
-        return   $this->identityDataService->uploadFile($request,$command->global_id);
+           $this->identityDataService->uploadFile($request,$command->global_id);
 
         $presenter = new CompanyUserPresenter($item);
 
