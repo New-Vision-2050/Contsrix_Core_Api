@@ -38,6 +38,7 @@ class CreateBankAccountRequest extends FormRequest
             iban: $this->get('iban'),
             swift_bic: $this->get('swift_bic'),
             type: $this->get('type'),
+            user_id:$this->get('user_id'),
         );
     }
 }
