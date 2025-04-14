@@ -12,7 +12,6 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('company_id')->index();
             $table->uuid('global_id')->index();
-            $table->string('name')->nullable();
             $table->string('marital_status')->nullable();
             $table->string('relationship')->nullable();
             $table->string('phone')->nullable();
