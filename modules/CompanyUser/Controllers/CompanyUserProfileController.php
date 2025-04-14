@@ -123,8 +123,13 @@ class CompanyUserProfileController extends Controller
 
     public function validateOtp(ValidateOtpRequest $request)
     {
-        return Json::item(["status" => $this->validateOtpService->validateOtp($request->createValidateOtpDTO())]);
+        try {
+            return Json::item(["status" => $this->validateOtpService->validateOtp($request->createValidateOtpDTO())]);
+        } catch (\Throwable $e) {
+            return Json::error(__("validation.invalid-otp"), 401);
+        }
     }
+
     public function showContactInformation()
     {
         $user = $this->companyUserService->get(
