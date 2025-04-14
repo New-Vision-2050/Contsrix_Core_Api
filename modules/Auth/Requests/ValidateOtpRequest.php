@@ -19,7 +19,7 @@ class ValidateOtpRequest extends FormRequest
         return [
             'otp' => 'required',
             'identifier' => 'required',
-
+            'type' =>'required',
         ];
     }
 
@@ -27,7 +27,6 @@ class ValidateOtpRequest extends FormRequest
     {
         return new ValidateOtpDTO(
             otp: $this->get('otp'),
-
             identifier: $this->get('identifier'),
         );
     }
