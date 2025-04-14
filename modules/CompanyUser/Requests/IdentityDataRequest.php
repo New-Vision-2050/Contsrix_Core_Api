@@ -33,7 +33,7 @@ class IdentityDataRequest extends FormRequest
             'file_entry_number' => 'nullable|file',
             'file_work_permit' => 'nullable|file',
 
-            'work_permit_start_date'=>'file_work_permit|string',
+            'work_permit_start_date'=>'nullable|string',
             'work_permit_end_date' => 'required_with:work_permit_start_date|date|after:work_permit_start_date',
             'work_permit' => 'nullable',
         ];
