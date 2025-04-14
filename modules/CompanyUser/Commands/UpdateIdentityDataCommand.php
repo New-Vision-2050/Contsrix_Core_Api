@@ -48,9 +48,9 @@ class UpdateIdentityDataCommand
             'border_number_end_date' => $this->border_number_end_date,
             'entry_number_end_date' => $this->entry_number_end_date,
 
-            'work_permit_start_date'=>$this->work_permit_start_date,
-            'work_permit_end_date'=>$this->work_permit_end_date,
-            'work_permit'=>$this->work_permit,
+            'work_permit_start_date' => $this->work_permit_start_date,
+            'work_permit_end_date' => $this->work_permit_end_date,
+            'work_permit' => $this->work_permit,
         ];
     }
 }
