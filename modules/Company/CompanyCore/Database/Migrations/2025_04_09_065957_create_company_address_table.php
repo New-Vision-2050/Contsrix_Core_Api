@@ -11,9 +11,9 @@ return new class extends Migration {
 
             $table->uuid('id')->primary();
             $table->uuid("company_id")->index();
-            $table->string("country_name");
-            $table->string("city_name");
-            $table->string("state_name");
+            $table->uuid("country_id")->index();
+            $table->uuid("city_id")->index();
+            $table->uuid("state_id")->index();
             $table->string("neighborhood_name");
             $table->string("street_name");
             $table->string("building_number");

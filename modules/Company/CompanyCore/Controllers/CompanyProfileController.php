@@ -35,12 +35,12 @@ use Ramsey\Uuid\Uuid;
 class CompanyProfileController extends Controller
 {
     public function __construct(
-        private UpdateOfficialCompanyDataHandler     $updateOfficialCompanyDataHandler,
-        private CompanyCRUDService                   $companyService,
-        private CompanyProfileService                $companyProfileService,
-        private UpdateCompanyLegalDataHandler        $updateCompanyLegalDataHandler,
-        private UpdateCompanyOfficialDocumentHandler $updateCompanyOfficialDocumentHandler,
-        private DeleteCompanyOfficialDocumentHandler $deleteCompanyOfficialDocumentHandler,
+        private UpdateOfficialCompanyDataHandler          $updateOfficialCompanyDataHandler,
+        private CompanyCRUDService                        $companyService,
+        private CompanyProfileService                     $companyProfileService,
+        private UpdateCompanyLegalDataHandler             $updateCompanyLegalDataHandler,
+        private UpdateCompanyOfficialDocumentHandler      $updateCompanyOfficialDocumentHandler,
+        private DeleteCompanyOfficialDocumentHandler      $deleteCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler
     )
     {
@@ -147,7 +147,7 @@ class CompanyProfileController extends Controller
     {
         $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument(Uuid::fromString($request->route("id")));
         $company = $this->companyService->get($companyOfficial->company_id);
-        $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")),Uuid::fromString($request->route("media_id")));
+        $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), Uuid::fromString($request->route("media_id")));
         return Json::item((new CompanyPresenter($company))->getData());
     }
 

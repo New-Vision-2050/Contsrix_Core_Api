@@ -42,9 +42,9 @@ class CompanyAddress extends Model
 
     protected $fillable = [
         "company_id",
-        "country_name",
-        "city_name",
-        "state_name",
+        "country_id",
+        "city_id",
+        "state_id",
         "neighborhood_name",
         "street_name",
         "building_number",
