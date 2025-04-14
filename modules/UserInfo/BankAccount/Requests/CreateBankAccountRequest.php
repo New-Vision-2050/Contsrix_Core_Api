@@ -13,15 +13,15 @@ class CreateBankAccountRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'company_id' => 'required|string',
-            // 'user_id' => 'required|string',
-            // 'country_id' => 'required|string',
-            // 'bank_id' => 'required|string',
-            // 'currency_id' => 'required|string',
-            // 'user_name' => 'required|string',
-            // 'iban' => 'required|string',
-            // 'swift_bic' => 'nullable',
-            // 'type' => 'required|string',
+            'company_id' => 'required|string',
+            'user_id' => 'required|string',
+            'country_id' => 'required|string',
+            'bank_id' => 'required|string',
+            'currency_id' => 'required|string',
+            'user_name' => 'required|string',
+            'iban' => 'required|string',
+            'swift_bic' => 'nullable',
+            'type' => 'required|string',
         ];
     }
 
@@ -38,7 +38,6 @@ class CreateBankAccountRequest extends FormRequest
             iban: $this->get('iban'),
             swift_bic: $this->get('swift_bic'),
             type: $this->get('type'),
-            user_id:$this->get('user_id'),
         );
     }
 }
