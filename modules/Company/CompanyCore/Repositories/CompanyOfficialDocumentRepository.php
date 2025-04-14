@@ -42,7 +42,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         return $companyOfficialDocument;
     }
 
-    public function updateCompanyOfficialDocument(UuidInterface $id, array $data, $files)
+    public function updateCompanyOfficialDocument(UuidInterface $id, array $data, $files,$deletedFiles =[]): CompanyOfficialDocument
     {
         try {
             DB::beginTransaction();
@@ -50,6 +50,9 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             $companyOfficialDocument->update($data);
             foreach ($files as $file) {
                 $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+            }
+            foreach ($deletedFiles as $fileId) {
+                $companyOfficialDocument->deleteMedia($fileId);
             }
             DB::commit();
 

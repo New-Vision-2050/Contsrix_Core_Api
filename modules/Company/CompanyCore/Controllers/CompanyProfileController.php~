@@ -132,10 +132,19 @@ class CompanyProfileController extends Controller
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
+    public function deleteOfficialDocumentMedia(Request $request)
+    {
+        $command = $request->createUpdateCompanyOfficialDocumentCommand();
+        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument($command->getId());
+        $company = $this->companyService->get($companyOfficial->company_id);
+        $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
+        return Json::item((new CompanyPresenter($company))->getData());
+    }
 
     public function deleteOfficialDocument(Request $request)
     {
-        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument(Uuid::fromString($request->route("id")));
+        $command = $request->createUpdateCompanyOfficialDocumentCommand();
+        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument($command->getId());
         $company = $this->companyService->get($companyOfficial->company_id);
         $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
         return Json::item((new CompanyPresenter($company))->getData());

@@ -26,7 +26,7 @@ class UpdateCompanyOfficialDocumentHandler
     public function handle(UpdateCompanyOfficialDocumentCommand $companyOfficialDocumentCommand)
     {
 
-        return $this->repository->updateCompanyOfficialDocument($companyOfficialDocumentCommand->getId(), $companyOfficialDocumentCommand->toArray(), $companyOfficialDocumentCommand->getFiles(), $companyOfficialDocumentCommand->getDeletedFilesId());
+        return $this->repository->updateCompanyOfficialDocument($companyOfficialDocumentCommand->getId(), $companyOfficialDocumentCommand->toArray(), $companyOfficialDocumentCommand->getFiles());
 
     }
 }

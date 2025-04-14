@@ -21,6 +21,8 @@ class UpdateCompanyOfficialDocumentRequest extends FormRequest
             "name"=>"required",
             "files"=>"required|array",
             "files.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
+            "files_deleted"=>"nullable|array",
+            "files_deleted.*"=>"required|exists:media,id",
             "document_type_id"=>"required|exists:company_registration_types,id",
             "description"=>"required",
             "document_number"=>"required|numeric",
@@ -59,7 +61,8 @@ class UpdateCompanyOfficialDocumentRequest extends FormRequest
             endDate: $this->end_date,
             notificationDate: $this->notification_date,
             documentTypeId: Uuid::fromString($this->document_type_id),
-            files: $this->file("files")
+            files: $this->file("files"),
+            filesDeleteIds: $this->file("files_deleted"),
         );
     }
 }

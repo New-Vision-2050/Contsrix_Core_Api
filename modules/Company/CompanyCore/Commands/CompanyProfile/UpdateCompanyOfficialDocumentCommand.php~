@@ -17,8 +17,7 @@ class UpdateCompanyOfficialDocumentCommand
         private string        $endDate,
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
-        private               $files,
-        private               $filesDeleteIds,
+        private               $files
     )
     {
     }
@@ -35,10 +34,6 @@ class UpdateCompanyOfficialDocumentCommand
     public function getFiles()
     {
         return $this->files;
-    }
-    public function getDeletedFilesId()
-    {
-        return $this->filesDeleteIds;
     }
 
 

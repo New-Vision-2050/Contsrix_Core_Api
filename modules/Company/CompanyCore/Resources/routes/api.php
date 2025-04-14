@@ -27,6 +27,7 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
         Route::prefix("official-document")->group(function () {
             Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createOfficialDocument"]);
             Route::put("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDocument"]);
+            Route::delete("/media/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteOfficialDocumentMedia"]);
             Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteOfficialDocument"]);
         });
 
