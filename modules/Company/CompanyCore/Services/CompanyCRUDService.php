@@ -19,7 +19,7 @@ use function PHPUnit\Framework\throwException;
 class CompanyCRUDService
 {
     public function __construct(
-        private CompanyRepository $repository,
+        private CompanyRepository        $repository,
         private CompanyAddressRepository $companyAddressRepository,
     )
     {
@@ -37,11 +37,10 @@ class CompanyCRUDService
             $this->companyAddressRepository->createCompanyAddress(["company_id" => $company->id, "country_id" => $company->country_id]);
 
             CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
-            event(new CompanyCreatedEvent($company) );
+            event(new CompanyCreatedEvent($company));
 
             DB::commit();
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 400);
         }

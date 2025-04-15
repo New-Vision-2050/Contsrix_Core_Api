@@ -79,8 +79,7 @@ class CompanyProfileController extends Controller
     public function setCompanyLogo(setCompanyLogoRequest $request)
     {
         $logo = $request->createAssignLogoToCompanyDTO();
-        $this->companyProfileService->assignLogo($logo);
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        $company = $this->companyProfileService->assignLogo($logo);
         $presenter = new CompanyPresenter($company);
 
         return Json::item($presenter->getData());
@@ -111,9 +110,8 @@ class CompanyProfileController extends Controller
     {
         $command = $request->createSetCompanyAddressCommand();
         $this->updateCompanySetAddressHandler->handle($command);
-
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
-
+        $companyAddress = $this->companyProfileService->getCompanyAddress($command->getId());
+        $company  = $this->companyService->get($companyAddress->company_id);
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
@@ -122,15 +120,15 @@ class CompanyProfileController extends Controller
         $command = $request->createUpdateLegalCompanyDataCommand();
         $this->updateCompanyLegalDataHandler->handle($command);
 
-         $this->companyProfileService->getCompanyLegalData(Uuid::fromString($request->route("id")));
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        $companyLegalData = $this->companyProfileService->getCompanyLegalData(Uuid::fromString($request->route("id")));
+        $company = $this->companyService->get(Uuid::fromString($companyLegalData->company_id));
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
     public function createOfficialDocument(CreateCompanyOfficialDocumentRequest $request)
     {
         $this->companyProfileService->createCompanyOfficialDocument($request->createCreateCompanyOfficialDocumentDTO());
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        $company = $this->companyService->get($request->createCreateCompanyOfficialDocumentDTO()->getId());
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
@@ -138,26 +136,25 @@ class CompanyProfileController extends Controller
     {
         $command = $request->createUpdateCompanyOfficialDocumentCommand();
         $this->updateCompanyOfficialDocumentHandler->handle($command);
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument($command->getId());
+        $company = $this->companyService->get($companyOfficial->company_id);
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
 
     public function deleteOfficialDocument(Request $request)
     {
-
+        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument(Uuid::fromString($request->route("id")));
+        $company = $this->companyService->get($companyOfficial->company_id);
         $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
-
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
     public function deleteOfficialDocumentMedia(Request $request)
     {
-
+        $companyOfficial = $this->companyProfileService->getCompanyOfficialDocument(Uuid::fromString($request->route("id")));
+        $company = $this->companyService->get($companyOfficial->company_id);
         $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), Uuid::fromString($request->route("media_id")));
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
-
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
