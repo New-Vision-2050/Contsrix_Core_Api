@@ -28,7 +28,7 @@ class CustomTenantScope implements Scope
             // Don't apply any filtering - this tenant can see all data
             return;
         }
-        if($model instanceof Company) //if model is Company, apply the tenant filtering on id because no have company_id column
+        if($model instanceof Company) //if model is Company and not central , apply the tenant filtering on id because no have company_id column
         {
             $builder->where("id", $tenant->getTenantKey());
             return;

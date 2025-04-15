@@ -47,12 +47,12 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     use HasDatabase, HasDomains;
     use UuidTrait;
     use HasScopedValidationRules;
-//    use CustomBelongsToTenant;
+    use CustomBelongsToTenant;
 
 
     public array $translatable = ["name"];
 
-    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch","companyLegalData.media","companyOfficialDocuments.media","companyOfficialDocuments.activityLogs","companyAddress"];
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress"];
 
     public $incrementing = false;
     protected $table = 'companies';
@@ -173,18 +173,38 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
         return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('parent_id', null)->where('type', 'branch');
     }
 
+    public function branches()
+    {
+        return $this->hasMany(ManagementHierarchy::class, 'company_id')->where('type', 'branch');
+    }
+
+    public function firstBranch()
+    {
+        return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('is_first_branch', true)->where('type', 'branch');
+    }
+
     public function companyAddress()
     {
-        return $this->hasOne(CompanyAddress::class, 'company_id')->where("is_first_branch", true);
+        return $this->hasOne(CompanyAddress::class, 'company_id')->whereHas("branch", function ($query) {
+            $query->where("is_first_branch", true);
+        });
+
     }
 
     public function companyLegalData()
     {
-        return $this->hasMany(CompanyLegalData::class, 'company_id')->where("is_first_branch", true);
+        return $this->hasMany(CompanyLegalData::class, 'company_id')->whereHas("branch", function ($query) {
+            $query->where("is_first_branch", true);
+        });
+
     }
+
     public function companyOfficialDocuments()
     {
-        return $this->hasMany(CompanyOfficialDocument::class, 'company_id')->where("is_first_branch", true);
+        return $this->hasMany(CompanyOfficialDocument::class, 'company_id')->whereHas("branch", function ($query) {
+            $query->where("is_first_branch", true);
+        });
     }
+
 
 }

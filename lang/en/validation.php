@@ -191,6 +191,8 @@ return [
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
+    "branch-not-found"=>"branch not found",
+    "integrity-error"=>"integrity error",
     "login-way-not-found"=>"login way not found",
     "user-not-found"=>"user not found ",
     "identifier-not-found"=>"identifier not found ",

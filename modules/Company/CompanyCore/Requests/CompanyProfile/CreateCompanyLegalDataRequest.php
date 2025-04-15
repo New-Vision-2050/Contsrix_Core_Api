@@ -8,10 +8,13 @@ use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 
 class CreateCompanyLegalDataRequest extends FormRequest
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function rules(): array
     {
         return [
@@ -25,8 +28,9 @@ class CreateCompanyLegalDataRequest extends FormRequest
 
     public function createCreateCompanyLegalDataDTO(): CreateCompanyLegalDataDTO
     {
+      [ $companyId , $branchId]= $this->declareCompanyAndBranchUsingRequest();
         return new CreateCompanyLegalDataDTO(
-            id: Uuid::fromString(tenant("id")),
+            id: Uuid::fromString($branchId),
             registrationTypeId:Uuid::fromString($this->registration_type_id),
             registrationNumber: $this->regestration_number,
             startDate: $this->start_date,

@@ -13,6 +13,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -22,6 +23,7 @@ class ManagementHierarchy extends Model
 //    use UuidTrait;
     use BaseFilterable;
     use AsTree;
+    use BelongsToPrimaryModel;
     //use HasTranslations;
     //use SoftDeletes;
 
@@ -61,5 +63,10 @@ class ManagementHierarchy extends Model
     protected static function newFactory(): ManagementHierarchyFactory
     {
         return ManagementHierarchyFactory::new();
+    }
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+      return "company";
     }
 }

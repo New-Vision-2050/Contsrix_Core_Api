@@ -27,7 +27,7 @@ class CompanyAddress extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-//    use BelongsToPrimaryModel;
+    use BelongsToPrimaryModel;
 //    use InteractsWithMedia;
 //    use HasTranslations;
 
@@ -52,6 +52,7 @@ class CompanyAddress extends Model
         "building_number",
         "additional_phone",
         "postal_code",
+        "management_hierarchy_id"
 
     ];
     protected $casts = [
@@ -71,6 +72,11 @@ class CompanyAddress extends Model
     {
         return $this->belongsTo(Company::class);
     }
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class,"management_hierarchy_id","id");
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";

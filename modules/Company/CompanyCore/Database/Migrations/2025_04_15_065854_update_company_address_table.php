@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::table('company_address', function (Blueprint $table) {
             $table->uuid("management_hierarchy_id")->index()->nullable();
-            $table->boolean("is_first_branch")->index()->default(0);
         });
     }
 };

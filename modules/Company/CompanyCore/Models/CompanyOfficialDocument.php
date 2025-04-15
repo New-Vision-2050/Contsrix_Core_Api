@@ -10,6 +10,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ActivityLog\Models\ActivityLog;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -20,7 +21,7 @@ class CompanyOfficialDocument extends Model implements HasMedia
 {
     use UuidTrait;
     use BaseFilterable;
-//    use BelongsToPrimaryModel;
+    use BelongsToPrimaryModel;
     use InteractsWithMedia;
 
     // use HasTranslations;
@@ -42,7 +43,9 @@ class CompanyOfficialDocument extends Model implements HasMedia
         'document_number',
         'start_date',
         'end_date',
-        'notification_date'
+        'notification_date',
+        "management_hierarchy_id"
+
     ];
 
     protected $casts = [
@@ -52,6 +55,11 @@ class CompanyOfficialDocument extends Model implements HasMedia
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class,"management_hierarchy_id","id");
     }
 
     public function getRelationshipToPrimaryModel(): string
