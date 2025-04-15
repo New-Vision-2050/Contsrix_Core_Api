@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\Qualification\Database\factories\QualificationFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Country\Models\Country;
+use Modules\Shared\AcademicQualification\Models\AcademicQualification;
+use Modules\Shared\AcademicSpecialization\Models\AcademicSpecialization;
+use Modules\Shared\University\Models\University;
 //use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -49,4 +53,21 @@ class Qualification extends Model implements HasMedia
     {
         $media->getFullUrl();
     }
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+    public function university()
+    {
+        return $this->belongsTo(University::class);
+    }
+    public function academicQualification()
+    {
+        return $this->belongsTo(AcademicQualification::class);
+    }
+    public function academicSpecialization()
+    {
+        return $this->belongsTo(AcademicSpecialization::class);
+    }
+
 }
