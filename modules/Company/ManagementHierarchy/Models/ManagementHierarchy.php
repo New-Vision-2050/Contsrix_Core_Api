@@ -30,6 +30,8 @@ class ManagementHierarchy extends Model
     //public array $translatable = [];
     protected $primaryKey = 'id';
 
+    protected $with=["user"];
+
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -50,6 +52,11 @@ class ManagementHierarchy extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class,"manager_id","id");
     }
 
     //example for nested set

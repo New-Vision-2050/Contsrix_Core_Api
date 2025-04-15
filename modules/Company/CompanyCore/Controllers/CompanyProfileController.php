@@ -95,7 +95,7 @@ class CompanyProfileController extends Controller
 
     public function createLegalData(CreateCompanyLegalDataRequest $request)
     {
-        $companyLegalData = $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
+        $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
 
@@ -121,8 +121,7 @@ class CompanyProfileController extends Controller
     {
         $command = $request->createUpdateLegalCompanyDataCommand();
         $this->updateCompanyLegalDataHandler->handle($command);
-
-         $this->companyProfileService->getCompanyLegalData(Uuid::fromString($request->route("id")));
+        $this->companyProfileService->getCompanyLegalData(Uuid::fromString($request->route("id")));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
@@ -148,7 +147,6 @@ class CompanyProfileController extends Controller
 
         $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
-
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
@@ -157,7 +155,6 @@ class CompanyProfileController extends Controller
 
         $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), Uuid::fromString($request->route("media_id")));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
-
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
