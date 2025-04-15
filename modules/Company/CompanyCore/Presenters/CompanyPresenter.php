@@ -28,6 +28,7 @@ class CompanyPresenter extends AbstractPresenter
             'phone' => $this->company->phone,
             'serial_no' => $this->company?->serial_no,
             'country_id' => $this->company->country_id,
+            'country_name' => $this->company->country->name,
             'company_type_id' => $this->company->company_type_id,
             'company_field_id' => $this->company->company_field_id,
             'registration_type_id' => $this->company->registration_type_id,
@@ -51,6 +52,7 @@ class CompanyPresenter extends AbstractPresenter
                 "name" => $this->company->mainBranch?->name
             ],
             "company_legal_data" =>CompanyLegalDataPresenter::collection($this->company->companyLegalData),
+            "company_address" => $this->company->companyAddress,
             "company_official_documents" =>CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments)
         ];
     }
