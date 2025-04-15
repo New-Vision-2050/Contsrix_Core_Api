@@ -88,12 +88,14 @@ class CompanyModulesSeederTableSeeder extends Seeder
             "company_id" => $id,
             "domain" => env("NEW_VISION_DOMAIN", $domain)
         ]);
+        $mainBranch = ManagementHierarchy::query()->create(["id" => Uuid::uuid4()->toString(), "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch","is_first_branch" => 1]);
+
         CompanyAddress::query()->create([
-           "company_id" => $id,
-           "country_id" => $country->id,
+            "company_id" => $id,
+            "country_id" => $country->id,
+            "management_hierarchy_id" => $mainBranch->id
 
         ]);
-        ManagementHierarchy::query()->create(["id" => Uuid::uuid4()->toString(),"company_id"=>$id , "name"=>"الفرع الرئيسي","type"=>"branch"]);
 
         $general_manager->update(['company_id' => $id]);
         CompanyUserCompany::query()->create([
