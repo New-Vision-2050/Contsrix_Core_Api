@@ -19,14 +19,13 @@ class ProfessionalBodie extends Model
     use HasTranslations;
     //use SoftDeletes;
 
-    public array $translatable = [];
+    public array $translatable = ['name'];
 
     public $incrementing = false;
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
     ];
 
     protected $casts = [

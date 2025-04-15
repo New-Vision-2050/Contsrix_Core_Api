@@ -18,6 +18,7 @@ use Modules\Shared\University\Database\Seeders\UniversitySeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BankModulesSeederTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTableSeeder;
 use Modules\Shared\Language\Database\Seeders\LanguageSeederTableSeeder;
+use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodieSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
@@ -29,29 +30,30 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(RolesAndPermissionsSeeder::class);
-        $this->call(CountrySeederTableSeeder::class);
-        $this->call(JobTitleModulesSeederTableSeeder::class);
-        $this->call(TimeZoneSeederTableSeeder::class);
-        $this->call(LanguageSeederTableSeeder::class);
-        $this->call(CurrencySeederTableSeeder::class);
-        $this->call(AdminSeedTableSeeder::class);
+        // $this->call(RolesAndPermissionsSeeder::class);
+        // $this->call(CountrySeederTableSeeder::class);
+        // $this->call(JobTitleModulesSeederTableSeeder::class);
+        // $this->call(TimeZoneSeederTableSeeder::class);
+        // $this->call(LanguageSeederTableSeeder::class);
+        // $this->call(CurrencySeederTableSeeder::class);
+        // $this->call(AdminSeedTableSeeder::class);
 
-        $this->call(CompanyModulesSeederTableSeeder::class);
+        // $this->call(CompanyModulesSeederTableSeeder::class);
 
-        $this->call(SettingSeeder::class);
-        $this->call(DriverTableSeeder::class);
-        $this->call(QuestionSettingTableSeeder::class);
-        $this->call(DefaultIdentifierSeederTableSeeder::class);
+        // $this->call(SettingSeeder::class);
+        // $this->call(DriverTableSeeder::class);
+        // $this->call(QuestionSettingTableSeeder::class);
+        // $this->call(DefaultIdentifierSeederTableSeeder::class);
 
-        $this->call(DefaultLoginWaySeederTableSeeder::class);
+        // $this->call(DefaultLoginWaySeederTableSeeder::class);
 
-        $this->call(BankModulesSeederTableSeeder::class);
+        // $this->call(BankModulesSeederTableSeeder::class);
 
-        $this->call(AcademicQualificationSeederTableSeeder::class);
+        // $this->call(AcademicQualificationSeederTableSeeder::class);
 
-        $this->call(AcademicSpecializationSeederTableSeeder::class);
+        // $this->call(AcademicSpecializationSeederTableSeeder::class);
 
-        $this->call(UniversitySeederTableSeeder::class);
+        // $this->call(UniversitySeederTableSeeder::class);
+        $this->call(ProfessionalBodieSeeder::class);
     }
 }
