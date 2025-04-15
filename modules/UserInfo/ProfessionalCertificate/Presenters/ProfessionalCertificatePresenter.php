@@ -21,7 +21,7 @@ class ProfessionalCertificatePresenter extends AbstractPresenter
         return [
             'id' => $this->professionalCertificate->id,
             'professional_bodie_id' => $this->professionalCertificate->professional_bodie_id,
-            'professional_bodie_name' => $this->professionalCertificate->professional_bodie?->name,
+            'professional_bodie_name' => $this->professionalCertificate->professionalBodie?->name,
             'accreditation_name' => $this->professionalCertificate->accreditation_name,
             'accreditation_number' => $this->professionalCertificate->accreditation_number,
             'accreditation_degree' => $this->professionalCertificate->accreditation_degree,
