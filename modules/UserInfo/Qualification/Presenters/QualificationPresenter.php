@@ -27,13 +27,13 @@ class QualificationPresenter extends AbstractPresenter
             'country_name'=>$this->qualification->country->name,
 
             'university_id' => $this->qualification->university_id,
-            'university_name' => $this->qualification->university->name,
+            'university_name' => $this->qualification->university?->name,
 
             'academic_qualification_id' => $this->qualification->academic_qualification_id,
-            'academic_qualification_name' => $this->qualification->academicQualification->name,
+            'academic_qualification_name' => $this->qualification->academicQualification?->name,
 
             'academic_specialization_id' => $this->qualification->academic_specialization_id,
-            'academic_specialization_name' => $this->qualification->academicSpecialization->name,
+            'academic_specialization_name' => $this->qualification->academicSpecialization?->name,
 
             'study_rate' => $this->qualification->study_rate,
             'graduation_date' => $this->qualification->graduation_date,
