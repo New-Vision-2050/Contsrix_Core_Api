@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\Folder\Requests\UploadFileRequest;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
 use Modules\Company\CompanyField\Models\CompanyField;
@@ -13,6 +14,7 @@ use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Database\Seeders\CompanyRegistrationTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Country\Models\Country;
@@ -86,6 +88,13 @@ class CompanyModulesSeederTableSeeder extends Seeder
             "company_id" => $id,
             "domain" => env("NEW_VISION_DOMAIN", $domain)
         ]);
+        CompanyAddress::query()->create([
+           "company_id" => $id,
+           "country_id" => $country->id,
+           "is_first_branch" => 1
+
+        ]);
+        ManagementHierarchy::query()->create(["company_id"=>$id , "name"=>$company->name,"type"=>"branch"]);
 
         $general_manager->update(['company_id' => $id]);
         CompanyUserCompany::query()->create([

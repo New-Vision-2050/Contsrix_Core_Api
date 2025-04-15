@@ -175,16 +175,16 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public function companyAddress()
     {
-        return $this->hasOne(CompanyAddress::class, 'company_id');
+        return $this->hasOne(CompanyAddress::class, 'company_id')->where("is_first_branch", true);
     }
 
     public function companyLegalData()
     {
-        return $this->hasMany(CompanyLegalData::class, 'company_id');
+        return $this->hasMany(CompanyLegalData::class, 'company_id')->where("is_first_branch", true);
     }
     public function companyOfficialDocuments()
     {
-        return $this->hasMany(CompanyOfficialDocument::class, 'company_id');
+        return $this->hasMany(CompanyOfficialDocument::class, 'company_id')->where("is_first_branch", true);
     }
 
 }
