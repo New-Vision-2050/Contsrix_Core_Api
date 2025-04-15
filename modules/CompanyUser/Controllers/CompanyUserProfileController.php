@@ -170,7 +170,7 @@ class CompanyUserProfileController extends Controller
 
         $this->identityDataService->uploadFile($request,$command->global_id);
 
-        $presenter = new CompanyUserPresenter($item);
+        $presenter = new CompanyIdentityDataPresenter($item);
 
         return Json::item($presenter->getData());
     }

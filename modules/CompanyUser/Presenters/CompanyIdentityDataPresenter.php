@@ -37,32 +37,41 @@ class CompanyIdentityDataPresenter extends AbstractPresenter
             'entry_number_start_date'=> $this->companyUser->entry_number_start_date,
             'entry_number_end_date'=> $this->companyUser->entry_number_end_date,
 
+            'work_permit' => $this->companyUser->work_permit,
+            'work_permit_start_date' => $this->companyUser->work_permit_start_date,
+            'work_permit_end_date' => $this->companyUser->work_permit_end_date,
 
-                'file_passport' => $this->companyUser->getMedia('file_passport')->map(function ($media) {
-                    return [
-                        'id' => $media->id,
-                        'url' => $media->getFullUrl(),
-                    ];
-                }),
-                'file_identity' => $this->companyUser->getMedia('file_identity')->map(function ($media) {
-                    return [
-                        'id' => $media->id,
-                        'url' => $media->getFullUrl(),
-                    ];
-                }),
-                'file_border_number' => $this->companyUser->getMedia('file_border_number')->map(function ($media) {
-                    return [
-                        'id' => $media->id,
-                        'url' => $media->getFullUrl(),
-                    ];
-                }),
-                'file_entry_number' => $this->companyUser->getMedia('file_entry_number')->map(function ($media) {
-                    return [
-                        'id' => $media->id,
-                        'url' => $media->getFullUrl(),
-                    ];
-                }),
-            
+            'file_passport' => $this->companyUser->getMedia('file_passport')->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getFullUrl(),
+                ];
+            }),
+            'file_identity' => $this->companyUser->getMedia('file_identity')->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getFullUrl(),
+                ];
+            }),
+            'file_border_number' => $this->companyUser->getMedia('file_border_number')->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getFullUrl(),
+                ];
+            }),
+            'file_entry_number' => $this->companyUser->getMedia('file_entry_number')->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getFullUrl(),
+                ];
+            }),
+            'file_work_permit' => $this->companyUser->getMedia('file_work_permit')->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getFullUrl(),
+                ];
+            }),
+
 
         ];
     }

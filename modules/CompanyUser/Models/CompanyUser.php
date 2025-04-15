@@ -72,6 +72,9 @@ class CompanyUser extends Model implements HasMedia
         "snapchat",
         "linkedin",
 
+        'work_permit_start_date',
+        'work_permit_end_date',
+        'work_permit',
 
         'passport_start_date',
         'identity_start_date',
@@ -83,9 +86,6 @@ class CompanyUser extends Model implements HasMedia
         'border_number_end_date',
         'entry_number_end_date',
 
-        'Work_permit_start_date',
-        'Work_permit_end_date',
-        'Work_permit',
     ];
 
     protected $casts = [
