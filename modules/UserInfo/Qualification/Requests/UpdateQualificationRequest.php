@@ -14,7 +14,6 @@ class UpdateQualificationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'required|string',
             'country_id' => 'required|string',
             'university_id' => 'required|string',
             'academic_qualification_id' => 'required|string',
