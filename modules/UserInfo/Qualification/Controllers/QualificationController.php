@@ -59,7 +59,7 @@ class QualificationController extends Controller
         $createCreateQualificationDTO = $request->createCreateQualificationDTO();
         $userId = Uuid::fromString($request->input('user_id'));
 
-         $user = $this->userRepository->getUser($userId);
+        $user = $this->userRepository->getUser($userId);
         $createCreateQualificationDTO->global_id = $user->global_company_user_id;
         $createCreateQualificationDTO->company_id = $user->company_id;
 

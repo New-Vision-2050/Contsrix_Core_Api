@@ -45,14 +45,10 @@ class CompanyUserRepository extends BaseRepository
             'pagination' => $paginationArray,
             'data' => $paginatedData,
         ];
-
-
     }
 
     public function getCompanyUserCount(Carbon $date = null)
     {
-
-
         return $this->model->when($date != null, function ($query) use ($date) {
             $query->whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month);
@@ -253,7 +249,7 @@ class CompanyUserRepository extends BaseRepository
         $this->updateWhere(["global_id" => $global_id],$data);
 
         $users = $this->userRepository->updateWhere(["global_company_user_id" => $global_id],$data);
-        
+
         return true;
     }
     public function updateCompanyUserIdentityData(UuidInterface $global_id, array $data): bool
