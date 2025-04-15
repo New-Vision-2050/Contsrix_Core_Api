@@ -16,7 +16,6 @@ use Modules\UserInfo\Biography\Requests\CreateBiographyRequest;
 use Modules\UserInfo\Biography\Requests\DeleteBiographyRequest;
 use Modules\UserInfo\Biography\Requests\GetBiographyListRequest;
 use Modules\UserInfo\Biography\Requests\GetBiographyRequest;
-use Modules\UserInfo\Biography\Requests\UpdateBiographyRequest;
 use Modules\UserInfo\Biography\Services\BiographyCRUDService;
 use Ramsey\Uuid\Uuid;
 
@@ -24,7 +23,6 @@ class BiographyController extends Controller
 {
     public function __construct(
         private BiographyCRUDService $biographyService,
-        private UpdateBiographyHandler $updateBiographyHandler,
         private DeleteBiographyHandler $deleteBiographyHandler,
         private UserRepository $userRepository,
         private CompanyUserCRUDService  $companyUserService,
