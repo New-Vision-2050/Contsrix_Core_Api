@@ -68,7 +68,7 @@ class CompanyCRUDService
     public function getCurrentCompanyLoggedIn()
     {
         try {
-            return $this->repository->findOneOrFail(tenant("id"));
+            return $this->repository->getCurrentCompany();
         } catch (\Exception $e) {
             throw new \Exception(__("validation.company-not-found"), 404);
 

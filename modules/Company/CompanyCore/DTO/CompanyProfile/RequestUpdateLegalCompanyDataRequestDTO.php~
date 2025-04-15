@@ -19,7 +19,7 @@ class RequestUpdateLegalCompanyDataRequestDTO
 
     public function getId() //TODO this would use branch id
     {
-        return $this->managementHierarchy->id;
+        return $this->managementHierarchy->company_id;
     }
 
     public function toArray(): array

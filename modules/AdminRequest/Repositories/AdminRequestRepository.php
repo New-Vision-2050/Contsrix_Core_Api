@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Enum\AdminRequestStatus;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
 use Modules\AdminRequest\Models\AdminRequest;
 
@@ -87,14 +88,14 @@ class AdminRequestRepository extends BaseRepository
                 'action' => $action,
                 'data' =>$data,
                 "requestable_id" => $id,
-                "requestable_type" => Company::class,//TODO use branch
+                "requestable_type" => ManagementHierarchy::class,//TODO use branch
                 "notes" => $notes
             ]);
             foreach ( $data as $item) {
                 $adminRequest->adminRequestTransactions()->create([
                     "data" => $item,
                     "action" => "update",
-//                    "requestable_id" => $item->id,TODO would un comment this
+                    "requestable_id" => $item->id,
                     "requestable_type" => CompanyLegalData::class,
                 ]);
             }
@@ -121,7 +122,6 @@ class AdminRequestRepository extends BaseRepository
                 if($adminRequestTransaction->action == "update"){
                     $model  = new $adminRequestTransaction->requestable_type;
                     $model->find($adminRequestTransaction->requestable_id)->update($adminRequestTransaction->data);
-
                 }
                 $adminRequestTransaction->update(["status"=>$status]);
             }

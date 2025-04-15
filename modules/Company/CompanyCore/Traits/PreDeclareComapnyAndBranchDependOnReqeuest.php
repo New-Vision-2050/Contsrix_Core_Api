@@ -23,26 +23,26 @@ trait PreDeclareComapnyAndBranchDependOnReqeuest
 
         $branchId = $company->firstBranch->id;
         $branch = $company->firstBranch;
-        if ($this->has("company_id")) {
-            $company = Company::query()->where("id", $this->company_id)->first();
+        if (request()->has("company_id")) {
+            $company = Company::query()->where("id", request()->company_id)->first();
             if ($company == null) {
                 throw new \Exception(__("validation.company-not-found"), 404);
             }
 
-            $companyId = $this->company_id;
+            $companyId = request()->company_id;
             $branchId = $company->firstBranch->id;
 
         }
-        if ($this->has("branch_id")) {
-            $branch = ManagementHierarchy::query()->where("id", $this->branch_id)->where("type", "branch")->first();
+        if (request()->has("branch_id")) {
+            $branch = ManagementHierarchy::query()->where("id", request()->branch_id)->where("type", "branch")->first();
             if ($branch == null) {
                 throw new \Exception(__("validation.branch-not-found"), 404);
             }
-            if ($this->has("company_id") && $this->company_id != $branch->company_id) {
+            if (request()->has("company_id") && request()->company_id != $branch->company_id) {
                 throw new \Exception(__("validation.integrity-error"), 404);
             }
             $companyId = $branch->company_id;
-            $branchId = $this->branch_id;
+            $branchId = request()->branch_id;
 
         }
 

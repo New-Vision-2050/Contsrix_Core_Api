@@ -8,6 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Domain;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
@@ -20,6 +21,7 @@ use Carbon\Carbon;
  */
 class CompanyRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(Company $model)
     {
         parent::__construct($model);
@@ -163,5 +165,18 @@ class CompanyRepository extends BaseRepository
     public function get()
     {
         return $this->model->get();
+    }
+
+    public function getCurrentCompany() : Company
+    {
+       [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+        return $this->model->where("id",$company->id)->with(["companyAddress"=>function ($query)use ($branch) {
+            $query->where("management_hierarchy_id",$branch->id);
+        },"companyLegalData"=>function ($query)use ($branch) {
+            $query->where("management_hierarchy_id",$branch->id);
+
+        },"companyOfficialDocuments"=>function ($query)use ($branch) {
+            $query->where("management_hierarchy_id",$branch->id);}
+        ])->first();
     }
 }
