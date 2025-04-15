@@ -33,6 +33,7 @@ trait PreDeclareComapnyAndBranchDependOnReqeuest
             $branchId = $company->firstBranch->id;
 
         }
+
         if (request()->has("branch_id")) {
             $branch = ManagementHierarchy::query()->where("id", request()->branch_id)->where("type", "branch")->first();
             if ($branch == null) {

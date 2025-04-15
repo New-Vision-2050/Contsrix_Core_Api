@@ -128,7 +128,11 @@ class CompanyController extends Controller
     public function getCurrentCompanyLoggedIn()
     {
 
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        try {
+            $company = $this->companyService->getCurrentCompanyLoggedIn();
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(),$e->getCode());
+        }
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
