@@ -1,0 +1,14 @@
+{
+    "name": "ProfessionalCertificate",
+    "alias": "professionalcertificate",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\ProfessionalCertificate\\Providers\\ProfessionalCertificateServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}
