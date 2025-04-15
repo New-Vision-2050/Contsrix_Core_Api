@@ -21,12 +21,7 @@ class BiographyPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->companyUser->id,
-            'files' => $this->companyUser->getMedia('upload_biography')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getFullUrl(),
-                ];
-            }),
+            'files' => $this->companyUser->getFirstMedia('upload_biography')?->getFullUrl(),
         ];
     }
 }

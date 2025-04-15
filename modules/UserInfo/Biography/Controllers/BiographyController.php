@@ -53,7 +53,7 @@ class BiographyController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function store(CreateBiographyRequest $request)//: JsonResponse
+    public function store(CreateBiographyRequest $request): JsonResponse
     {
         $createCreateBiographyDTO = $request->createCreateBiographyDTO();
         $userId = Uuid::fromString($request->input('user_id'));
