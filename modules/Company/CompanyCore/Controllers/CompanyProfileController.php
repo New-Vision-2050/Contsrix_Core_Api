@@ -113,9 +113,6 @@ class CompanyProfileController extends Controller
         $companyAddress = $this->companyProfileService->getCompanyAddress($command->getId());
         $company  = $this->companyService->get($companyAddress->company_id);
         return Json::item((new CompanyPresenter($company))->getData());
-
-
-
     }
 
     public function updateCompanyLegalData(UpdateCompanyLegalDataRequest $request)

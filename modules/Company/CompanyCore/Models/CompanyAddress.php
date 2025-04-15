@@ -27,7 +27,7 @@ class CompanyAddress extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    use BelongsToPrimaryModel;
+//    use BelongsToPrimaryModel;
 //    use InteractsWithMedia;
 //    use HasTranslations;
 
@@ -39,6 +39,8 @@ class CompanyAddress extends Model
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    protected $table = 'company_address';
 
     protected $fillable = [
         "company_id",
@@ -63,6 +65,11 @@ class CompanyAddress extends Model
     protected static function newFactory(): CompanyFactory
     {
         return CompanyFactory::new();
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
     public function getRelationshipToPrimaryModel(): string
     {

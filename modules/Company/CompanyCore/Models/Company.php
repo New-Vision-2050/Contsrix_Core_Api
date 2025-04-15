@@ -47,12 +47,12 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     use HasDatabase, HasDomains;
     use UuidTrait;
     use HasScopedValidationRules;
-    use CustomBelongsToTenant;
+//    use CustomBelongsToTenant;
 
 
     public array $translatable = ["name"];
 
-    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch","companyLegalData.media","companyOfficialDocuments.media","companyOfficialDocuments.activityLogs"];
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch","companyLegalData.media","companyOfficialDocuments.media","companyOfficialDocuments.activityLogs","companyAddress"];
 
     public $incrementing = false;
     protected $table = 'companies';
@@ -100,7 +100,9 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             'image_path',
             "created_at",
             "updated_at",
-            "is_central_company"
+            "is_central_company",
+            "check_activity",
+            "registration_type_id",
         ];
     }
 

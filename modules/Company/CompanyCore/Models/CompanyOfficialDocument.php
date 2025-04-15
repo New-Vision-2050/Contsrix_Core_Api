@@ -20,7 +20,7 @@ class CompanyOfficialDocument extends Model implements HasMedia
 {
     use UuidTrait;
     use BaseFilterable;
-    use BelongsToPrimaryModel;
+//    use BelongsToPrimaryModel;
     use InteractsWithMedia;
 
     // use HasTranslations;

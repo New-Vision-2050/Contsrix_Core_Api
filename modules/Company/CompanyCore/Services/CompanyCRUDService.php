@@ -6,6 +6,7 @@ namespace Modules\Company\CompanyCore\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
@@ -19,6 +20,7 @@ class CompanyCRUDService
 {
     public function __construct(
         private CompanyRepository $repository,
+        private CompanyAddressRepository $companyAddressRepository,
     )
     {
     }
@@ -32,6 +34,7 @@ class CompanyCRUDService
             DB::beginTransaction();
 
             $company = $this->repository->createCompany($requestCompanyDTO);
+            $this->companyAddressRepository->createCompanyAddress(["company_id" => $company->id, "country_id" => $company->country_id]);
 
             CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
             event(new CompanyCreatedEvent($company) );

@@ -12,13 +12,13 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid("company_id")->index();
             $table->uuid("country_id")->index();
-            $table->uuid("city_id")->index();
-            $table->uuid("state_id")->index();
-            $table->string("neighborhood_name");
-            $table->string("street_name");
-            $table->string("building_number");
-            $table->string("additional_phone");
-            $table->string("postal_code");
+            $table->uuid("city_id")->index()->nullable();
+            $table->uuid("state_id")->index()->nullable();
+            $table->string("neighborhood_name")->nullable();
+            $table->string("street_name")->nullable();
+            $table->string("building_number")->nullable();
+            $table->string("additional_phone")->nullable();
+            $table->string("postal_code")->nullable();
             $table->timestamps();
         });
     }

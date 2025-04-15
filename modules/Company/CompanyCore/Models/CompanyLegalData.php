@@ -28,7 +28,7 @@ class CompanyLegalData extends Model implements HasMedia
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
-    use BelongsToPrimaryModel;
+//    use BelongsToPrimaryModel;
 
 //    use HasTranslations;
 

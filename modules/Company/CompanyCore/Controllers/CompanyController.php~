@@ -61,7 +61,7 @@ class CompanyController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function store(CreateCompanyRequest $request)
+    public function store(CreateCompanyRequest $request): JsonResponse
     {
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
         return $createdItem;
