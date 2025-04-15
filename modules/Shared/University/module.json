@@ -1,0 +1,14 @@
+{
+    "name": "University",
+    "alias": "university",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\University\\Providers\\UniversityServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}
