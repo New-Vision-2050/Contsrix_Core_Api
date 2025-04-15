@@ -28,9 +28,9 @@ class CreateCompanyLegalDataRequest extends FormRequest
 
     public function createCreateCompanyLegalDataDTO(): CreateCompanyLegalDataDTO
     {
-      [ $companyId , $branchId]= $this->declareCompanyAndBranchUsingRequest();
+      [ $company , $branch]= $this->declareCompanyAndBranchUsingRequest();
         return new CreateCompanyLegalDataDTO(
-            id: Uuid::fromString($branchId),
+            managementHierarchy: $branch,
             registrationTypeId:Uuid::fromString($this->registration_type_id),
             registrationNumber: $this->regestration_number,
             startDate: $this->start_date,

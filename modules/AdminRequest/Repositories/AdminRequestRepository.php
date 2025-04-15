@@ -87,7 +87,7 @@ class AdminRequestRepository extends BaseRepository
                 'action' => $action,
                 'data' =>$data,
                 "requestable_id" => $id,
-                "requestable_type" => Company::class,
+                "requestable_type" => Company::class,//TODO use branch
                 "notes" => $notes
             ]);
             foreach ( $data as $item) {

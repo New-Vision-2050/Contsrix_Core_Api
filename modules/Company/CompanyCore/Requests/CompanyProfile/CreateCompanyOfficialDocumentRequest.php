@@ -9,10 +9,12 @@ use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyOfficialDocumentDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 
 class CreateCompanyOfficialDocumentRequest extends FormRequest
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
 
     public function rules(): array
     {
@@ -49,8 +51,10 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
 
     public function createCreateCompanyOfficialDocumentDTO(): CreateCompanyOfficialDocumentDTO
     {
+        [ $company , $branch]= $this->declareCompanyAndBranchUsingRequest();
+
         return new CreateCompanyOfficialDocumentDTO(
-            id: Uuid::fromString(tenant("id")),
+            managementHierarchy: $branch,
             name: $this->name,
             description: $this->description,
             documentNumber: $this->document_number,

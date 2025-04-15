@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
 
 class AssignLogoToCompanyDTO
 {
     public function __construct(
-        public UuidInterface $id,
+        public ManagementHierarchy $managementHierarchy,
         public  $logo,
     ) {
     }
@@ -21,7 +22,7 @@ class AssignLogoToCompanyDTO
 
     public function getId()
     {
-        return $this->id;
+        return $this->managementHierarchy->company_id;
     }
 
 }

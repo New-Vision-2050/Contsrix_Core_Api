@@ -22,6 +22,7 @@ trait PreDeclareComapnyAndBranchDependOnReqeuest
         $company = Company::query()->where("id", tenant("id"))->first();
 
         $branchId = $company->firstBranch->id;
+        $branch = $company->firstBranch;
         if ($this->has("company_id")) {
             $company = Company::query()->where("id", $this->company_id)->first();
             if ($company == null) {
@@ -45,6 +46,6 @@ trait PreDeclareComapnyAndBranchDependOnReqeuest
 
         }
 
-        return [$companyId, $branchId];
+        return [$company, $branch];
     }
 }

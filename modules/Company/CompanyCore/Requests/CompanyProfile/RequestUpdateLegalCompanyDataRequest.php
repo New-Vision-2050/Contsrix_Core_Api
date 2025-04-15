@@ -7,10 +7,13 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 
 class RequestUpdateLegalCompanyDataRequest extends FormRequest
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function rules(): array
     {
         return [
@@ -23,8 +26,10 @@ class RequestUpdateLegalCompanyDataRequest extends FormRequest
 
     public function createUpdateLegalCompanyDataRequestDTO(): RequestUpdateLegalCompanyDataRequestDTO
     {
+        [ $company , $branch]= $this->declareCompanyAndBranchUsingRequest();
+
         return new RequestUpdateLegalCompanyDataRequestDTO(
-            id: Uuid::fromString(tenant("id")),
+            managementHierarchy: $branch,
             data:$this->data
         );
     }

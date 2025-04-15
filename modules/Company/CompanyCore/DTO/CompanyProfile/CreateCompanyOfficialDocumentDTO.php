@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
 
 class CreateCompanyOfficialDocumentDTO
 {
     public function __construct(
-        private UuidInterface $id,
+        private ManagementHierarchy $managementHierarchy,
         private string        $name,
         private string        $description,
         private string        $documentNumber,
@@ -24,7 +25,7 @@ class CreateCompanyOfficialDocumentDTO
 
     public function getId()
     {
-        return $this->id;
+        return $this->managementHierarchy->company_id;
     }
 
     public function getFiles()
@@ -36,7 +37,8 @@ class CreateCompanyOfficialDocumentDTO
     public function toArray(): array
     {
         return [
-            "company_id" => $this->id,
+            "company_id" => $this->managementHierarchy->company_id,
+            "management_hierarchy_id" => $this->managementHierarchy->id,
             "name" => $this->name,
             "description" => $this->description,
             "document_number" => $this->documentNumber,
