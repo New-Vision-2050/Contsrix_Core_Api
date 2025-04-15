@@ -33,7 +33,12 @@ class CompanyPresenter extends AbstractPresenter
             'registration_type_id' => $this->company->registration_type_id,
             'general_manager_id' => $this->company->general_manager_id,
             'registration_no' => $this->company?->registration_no,
-            'general_manager_name' => $this->company->generalManager?->name,
+            'general_manager' => [
+                "name"=>$this->company->generalManager?->name,
+                "email"=>$this->company->generalManager?->email,
+                "phone"=>$this->company->generalManager?->phone,
+                "nationality"=>$this->company->generalManager?->companyUser?->country?->name
+            ],
             'company_type' => $this->company->companyType?->name,
             'company_field' => $this->company->companyField?->name,
             'registration_type' => $this->company->companyRegistrationType?->name,

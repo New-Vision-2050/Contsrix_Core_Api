@@ -64,7 +64,6 @@ class CompanyController extends Controller
     public function store(CreateCompanyRequest $request)
     {
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
-        return $createdItem;
 
         $presenter = new CompanyPresenter($createdItem);
 
