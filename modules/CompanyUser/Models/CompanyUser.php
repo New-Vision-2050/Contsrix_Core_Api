@@ -85,7 +85,8 @@ class CompanyUser extends Model implements HasMedia
         'identity_end_date',
         'border_number_end_date',
         'entry_number_end_date',
-
+        'active_type',
+        'active_date_to'
     ];
 
     protected $casts = [

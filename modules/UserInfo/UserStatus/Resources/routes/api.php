@@ -1,0 +1,11 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Modules\UserInfo\UserStatus\Controllers\UserStatusController;
+
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::get('/user/{id}', [UserStatusController::class, 'index']);
+    Route::post('/activation/{id}', [UserStatusController::class, 'updateStatus']);
+    // Route::post('/activation/{id}', [UserStatusController::class, 'updateStatus']);
+    // Route::delete('/{id}', [UserStatusController::class, 'delete']);
+});
