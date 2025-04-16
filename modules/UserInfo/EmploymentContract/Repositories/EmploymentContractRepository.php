@@ -26,7 +26,7 @@ class EmploymentContractRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getEmploymentContract(UuidInterface $companyId, UuidInterface $globalId): EmploymentContract
+    public function getEmploymentContract(UuidInterface $companyId, UuidInterface $globalId): ?EmploymentContract
     {
         return $this->model->where([
             'global_id' => $globalId,

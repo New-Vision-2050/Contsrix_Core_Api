@@ -32,25 +32,19 @@ class EmploymentContractController extends Controller
         $userId = Uuid::fromString($request->route('id'));
 
         $user = $this->userRepository->getUser($userId);
-        
+
         $item = $this->employmentContractService->get(
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
-
+        if (!$item) {
+            return Json::error('Employment contract not found', 404);
+        }
         $presenter = new EmploymentContractPresenter($item);
 
         return Json::item($presenter->getData());
     }
 
-    public function show(GetEmploymentContractRequest $request): JsonResponse
-    {
-        $item = $this->employmentContractService->get(Uuid::fromString($request->route('id')));
-
-        $presenter = new EmploymentContractPresenter($item);
-
-        return Json::item($presenter->getData());
-    }
 
     public function store(CreateEmploymentContractRequest $request): JsonResponse
     {
