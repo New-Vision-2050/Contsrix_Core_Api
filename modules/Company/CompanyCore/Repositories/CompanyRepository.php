@@ -112,9 +112,10 @@ class CompanyRepository extends BaseRepository
 
     public function isRegistrationExists(string $registrationNo, string $registrationTypeId): bool
     {
-        return $this->model->where('registration_no', $registrationNo)
-            ->where('registration_type_id', $registrationTypeId)
-            ->exists();
+        return $this->model->whereHas("companyLegalData",function ($query) use ($registrationNo,$registrationTypeId)
+        {
+            $query->where("registration_number", $registrationNo)->where("registration_type_id", $registrationTypeId);
+        })->exists();
     }
 
     public function isUserNameExists(string $userName): bool

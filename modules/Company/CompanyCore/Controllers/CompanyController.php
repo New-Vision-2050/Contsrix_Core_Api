@@ -19,13 +19,13 @@ use Modules\Company\CompanyCore\Requests\GetCompanyRequest;
 use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyValidateService;
+use Modules\Company\CompanyCore\Services\CompanyValidatedService;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
-use Modules\Company\CompanyCore\Services\CompanyValidatedService;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
 class CompanyController extends Controller
 {
@@ -140,5 +140,32 @@ class CompanyController extends Controller
     {
         $company = $this->companyService->getCompanyByHost($request->header('X-DOMAIN') ?? $request->getHost());
         return Json::item((new CompanyUnAuthPresenter($company))->getData());
+    }
+
+    /**
+     * Get company by name
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getByName(Request $request): JsonResponse
+    {
+        try {
+            $name = $request->query('name');
+            
+            if (!$name) {
+                return Json::error('Company name is required', 400);
+            }
+
+            $company = $this->companyService->getByName($name);
+            
+            if (!$company) {
+                return Json::error('Company not found', 404);
+            }
+
+            return Json::item((new CompanyPresenter($company))->getData());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
     }
 }
