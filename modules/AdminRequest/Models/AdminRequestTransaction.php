@@ -7,12 +7,16 @@ namespace Modules\AdminRequest\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+
 // use BasePackage\Shared\Traits\HasTranslations;
 
-class AdminRequestTransaction extends Model
+class AdminRequestTransaction extends Model implements HasMedia
 {
     use UuidTrait;
     use BaseFilterable;
+    use InteractsWithMedia;
     // use HasTranslations;
     // use SoftDeletes;
 
@@ -30,6 +34,11 @@ class AdminRequestTransaction extends Model
         "data",
         "status",
     ];
+
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
+    }
 
     public function requestable()
     {

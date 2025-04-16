@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\AdminRequest\Models;
 
+use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -13,22 +14,27 @@ use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Database\factories\AdminRequestFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\AdminRequest\Enum\AdminRequestStatus;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class AdminRequest extends Model
+class AdminRequest extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
+    use CustomBelongsToTenant;
+    use InteractsWithMedia;
 
     //use SoftDeletes;
 
     public array $translatable = ["action"];
-    public $with = ["adminRequestTransactions", "user","requestable"];
+    public $with = ["adminRequestTransactions", "user", "requestable"];
 
     public $incrementing = false;
 
@@ -51,7 +57,15 @@ class AdminRequest extends Model
         "data" => "array"
     ];
 
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
+    }
 
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 
     public function adminRequestTransactions()
     {
