@@ -11,6 +11,7 @@ use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandle
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
@@ -51,6 +52,15 @@ class ManagementHierarchyController extends Controller
     public function store(CreateManagementHierarchyRequest $request): JsonResponse
     {
         $createdItem = $this->managementHierarchyService->create($request->createCreateManagementHierarchyDTO());
+
+        $presenter = new ManagementHierarchyPresenter($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function createBranch(CreateBranchRequest $request): JsonResponse
+    {
+        $createdItem = $this->managementHierarchyService->createBranch($request->createCreateBranchDTO());
 
         $presenter = new ManagementHierarchyPresenter($createdItem);
 

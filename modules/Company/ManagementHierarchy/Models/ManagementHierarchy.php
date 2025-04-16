@@ -8,6 +8,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\ManagementHierarchy\Database\factories\ManagementHierarchyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
@@ -42,7 +43,11 @@ class ManagementHierarchy extends Model
         'parent_id',
         'company_id',
         'path',
-        "type"
+        "type",
+        "manager_id",
+        "phone",
+        "phone_code",
+        "email",
     ];
 
     protected $casts = [
@@ -72,6 +77,11 @@ class ManagementHierarchy extends Model
         return ManagementHierarchyFactory::new();
     }
 
+
+    public function address()
+    {
+        return $this->hasOne(CompanyAddress::class, 'management_hierarchy_id');
+    }
     public function getRelationshipToPrimaryModel(): string
     {
       return "company";

@@ -6,6 +6,7 @@ namespace Modules\Company\ManagementHierarchy\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -43,10 +44,21 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function createManagementHierarchy(array $data): ManagementHierarchy
+    public function createManagementHierarchy(array $branchData , array $addressData ): ManagementHierarchy
     {
-        $root = $this->create($data + ["id" => Uuid::uuid4()->toString()]);
-        return $root;
+        try {
+            DB::beginTransaction();
+            $managementHierarchy = $this->create($branchData + ["id" => Uuid::uuid4()->toString()]);
+
+            $managementHierarchy->address()->create($addressData);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.create-not-successful"), 500);
+
+        }
+        return $managementHierarchy;
     }
 
     public function updateManagementHierarchy(UuidInterface $id, array $data): bool
