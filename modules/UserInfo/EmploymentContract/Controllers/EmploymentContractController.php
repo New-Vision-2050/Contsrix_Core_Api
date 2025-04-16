@@ -38,7 +38,11 @@ class EmploymentContractController extends Controller
             Uuid::fromString($user->global_company_user_id),
         );
         if (!$item) {
-            return Json::error('Employment contract not found', 404);
+            return response()->json([
+                'code' => 'SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT',
+                'message' => null,
+                'payload' => null,
+            ]);
         }
         $presenter = new EmploymentContractPresenter($item);
 

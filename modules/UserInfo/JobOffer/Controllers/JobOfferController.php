@@ -39,12 +39,16 @@ class JobOfferController extends Controller
         );
 
         if (!$item) {
-            return Json::error('Job offer not found', 404);
+            return response()->json([
+                'code' => 'SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT',
+                'message' => null,
+                'payload' => null,
+            ]);
         }
 
         $presenter = new JobOfferPresenter($item);
 
-        return Json::item($presenter->getData());
+        return Json::item($item);
     }
 
     public function store(CreateJobOfferRequest $request): JsonResponse
