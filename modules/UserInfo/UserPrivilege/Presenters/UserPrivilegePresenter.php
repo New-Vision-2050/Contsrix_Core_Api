@@ -25,9 +25,9 @@ class UserPrivilegePresenter extends AbstractPresenter
             'type_allowance'=> $this->userPrivilege->type_allowance,
             'rate'=> $this->userPrivilege->rate,
             'description'=> $this->userPrivilege->description,
-            'period',
-            'insurance_company',
-            'insurance_number',
+            'period'=> $this->userPrivilege->period,
+            'insurance_company'=> $this->userPrivilege->insurance_company,
+            'insurance_number'=> $this->userPrivilege->insurance_number,
             'privilege' => $this->userPrivilege->privilege
             ? (new PrivilegePresenter($this->userPrivilege->privilege))->getData()
             : null,
