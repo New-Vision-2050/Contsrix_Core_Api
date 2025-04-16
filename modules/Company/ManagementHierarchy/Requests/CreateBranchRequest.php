@@ -18,6 +18,7 @@ class CreateBranchRequest extends FormRequest
         return [
             'name' => 'required|string',
             'parent_id' => 'nullable|exists:management_hierarchies,id',
+            'manager_id' => 'required|exists:user,id',
             "phone"=>"required|unique:management_hierarchies,phone",
             "phone_code"=>"required",
             "email"=>"required|unique:management_hierarchies,email",
@@ -38,6 +39,7 @@ class CreateBranchRequest extends FormRequest
             name: $this->get('name'),
             companyId: Uuid::fromString($company->id),
             parentId:Uuid::fromString( $this->get('parent_id')),
+            managerId:Uuid::fromString( $this->get('manager_id')),
             phone: $this->get('phone'),
             phoneCode: $this->get('phone_code'),
             email: $this->get('email'),

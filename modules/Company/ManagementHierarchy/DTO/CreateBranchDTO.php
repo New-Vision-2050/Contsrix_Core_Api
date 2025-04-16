@@ -12,6 +12,7 @@ class CreateBranchDTO
         public string $name,
         public UuidInterface $companyId,
         public UuidInterface $parentId,
+        public UuidInterface $managerId,
         public string $phone,
         public string $phoneCode,
         public string $email,
@@ -35,6 +36,7 @@ class CreateBranchDTO
             'email' => $this->email,
             'lattitude' => $this->lattitude,
             'longitude' => $this->longitude,
+            "manager_id" => $this->managerId,
 
             "type" => "branch"
 
