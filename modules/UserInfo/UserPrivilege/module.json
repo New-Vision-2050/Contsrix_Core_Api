@@ -1,0 +1,14 @@
+{
+    "name": "UserPrivilege",
+    "alias": "userprivilege",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserPrivilege\\Providers\\UserPrivilegeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}
