@@ -14,10 +14,13 @@ class UpdateUserPrivilegeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type_privilege'=> 'required|string',
-            'type_allowance'=> 'required|string',
-            'rate'=> 'required|string',
-            'description'=> 'required|string',
+            'type_privilege'=> 'nullable|string',
+            'type_allowance'=> 'nullable|string',
+            'rate'=> 'nullable|string',
+            'description'=> 'nullable|string',
+            'period' => 'nullable|string',
+            'insurance_company'=> 'nullable|string',
+            'insurance_number'=> 'nullable|string',
         ];
     }
 
@@ -29,6 +32,9 @@ class UpdateUserPrivilegeRequest extends FormRequest
             type_allowance: $this->get('type_allowance'),
             rate: $this->get('rate'),
             description: $this->get('description'),
+            period: $this->get('period'),
+            insurance_company: $this->get('insurance_company'),
+            insurance_number: $this->get('insurance_number'),
         );
     }
 }

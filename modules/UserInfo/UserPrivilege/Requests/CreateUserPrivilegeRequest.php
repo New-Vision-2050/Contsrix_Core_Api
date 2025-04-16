@@ -14,11 +14,14 @@ class CreateUserPrivilegeRequest extends FormRequest
     {
         return [
             'user_id'=> 'required|string',
-            'type_privilege'=> 'required|string',
-            'type_allowance'=> 'required|string',
-            'rate'=> 'required|string',
-            'description'=> 'required|string',
+            'type_privilege'=> 'nullable|string',
+            'type_allowance'=> 'nullable|string',
+            'rate'=> 'nullable|string',
+            'description'=> 'nullable|string',
             'privilege_id'=> 'required|string',
+            'period' => 'nullable|string',
+            'insurance_company'=> 'nullable|string',
+            'insurance_number'=> 'nullable|string',
         ];
     }
 
@@ -32,6 +35,9 @@ class CreateUserPrivilegeRequest extends FormRequest
             rate: $this->get('rate'),
             description: $this->get('description'),
             privilege_id:$this->get('privilege_id'),
+            period: $this->get('period'),
+            insurance_company: $this->get('insurance_company'),
+            insurance_number: $this->get('insurance_number'),
         );
     }
 }

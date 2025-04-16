@@ -15,7 +15,10 @@ class CreateUserPrivilegeDTO
         public string $type_allowance,
         public string $rate,
         public string $description,
-        public string $privilege_id
+        public string $privilege_id,
+        public string $period,
+        public string $insurance_company,
+        public string $insurance_number,
     ) {
     }
 
@@ -28,7 +31,10 @@ class CreateUserPrivilegeDTO
             'type_allowance' => $this->type_allowance,
             'rate' => $this->rate,
             'description' => $this->description,
-            'privilege_id' => $this->privilege_id
+            'privilege_id' => $this->privilege_id,
+            'period' => $this->period,
+            'insurance_company' => $this->insurance_company,
+            'insurance_number' => $this->insurance_number,
         ];
     }
 }

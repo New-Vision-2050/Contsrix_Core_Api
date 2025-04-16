@@ -14,6 +14,9 @@ class UpdateUserPrivilegeCommand
         private string $type_allowance,
         private string $rate,
         private string $description,
+        private string $period,
+        private string $insurance_company,
+        private string $insurance_number,
     ) {
     }
 
@@ -30,6 +33,9 @@ class UpdateUserPrivilegeCommand
             'type_allowance' => $this->type_allowance,
             'rate' => $this->rate,
             'description' => $this->description,
+            'period' => $this->period,
+            'insurance_company' => $this->insurance_company,
+            'insurance_number' => $this->insurance_number,
         ]);
     }
 }
