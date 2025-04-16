@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Ramsey\Uuid\UuidInterface;
+use Ramsey\Uuid\Uuid;
 
 class RequestUpdateLegalCompanyDataRequestDTO
 {
@@ -17,9 +17,9 @@ class RequestUpdateLegalCompanyDataRequestDTO
     {
     }
 
-    public function getId() //TODO this would use branch id
+    public function getId()
     {
-        return $this->managementHierarchy->id;
+        return Uuid::fromString($this->managementHierarchy->id);
     }
 
     public function toArray(): array
