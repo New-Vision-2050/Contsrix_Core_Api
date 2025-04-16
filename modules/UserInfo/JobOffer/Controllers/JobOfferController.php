@@ -48,7 +48,7 @@ class JobOfferController extends Controller
 
         $presenter = new JobOfferPresenter($item);
 
-        return Json::item($item);
+        return Json::item($presenter->getData());
     }
 
     public function store(CreateJobOfferRequest $request): JsonResponse
