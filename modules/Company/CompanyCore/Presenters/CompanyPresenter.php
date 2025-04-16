@@ -50,13 +50,15 @@ class CompanyPresenter extends AbstractPresenter
             'complete_data' => $this->company->complete_data,
             'date_activate' => $this->company->date_activate,
             "is_central_company" => $this->company->is_central_company,
+            "branch" =>request("branch_id")?$this->company->branches->where("id",request("branch_id"))->first()->name:$this->company->mainBranch->name,
+
             "main_branch" => [
                 "name" => $this->company->mainBranch?->name
             ],
             "company_legal_data" =>CompanyLegalDataPresenter::collection($this->company->companyLegalData),
             "company_address" => $this->company->companyAddress,
             "company_official_documents" =>CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
-            "branches" =>ManagementHierarchyPresenter::collection($this->company->branches)
+            "branches" =>ManagementHierarchyPresenter::collection($this->company->branches),
         ];
     }
 }
