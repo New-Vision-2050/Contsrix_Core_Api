@@ -7,6 +7,7 @@ namespace Modules\Company\ManagementHierarchy\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Request;
 use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -58,7 +59,7 @@ class ManagementHierarchyController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function createBranch(CreateBranchRequest $request): JsonResponse
+    public function createBranch(CreateBranchRequest $request)
     {
         $createdItem = $this->managementHierarchyService->createBranch($request->createCreateBranchDTO());
 

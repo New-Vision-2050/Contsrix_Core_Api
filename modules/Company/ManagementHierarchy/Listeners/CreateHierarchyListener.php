@@ -17,7 +17,7 @@ class CreateHierarchyListener
      *
      * @return void
      */
-    public function __construct(private ManagementHierarchyRepository $managementHierarchyRepository,private CompanyRepository $companyRepository)
+    public function __construct(private ManagementHierarchyRepository $managementHierarchyRepository)
     {
         //
     }

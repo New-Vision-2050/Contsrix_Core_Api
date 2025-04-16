@@ -17,9 +17,9 @@ class CreateBranchDTO
         public string $email,
         public string $lattitude,
         public string $longitude,
-        public int $countryId,
-        public int $stateId,
-        public int $cityId,
+        public string $countryId,
+        public string $stateId,
+        public string $cityId,
 
     ) {
     }

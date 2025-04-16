@@ -17,10 +17,10 @@ class CreateBranchRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'parent_id' => 'nullable|exists:management_hierarchy,id',
-            "phone"=>"required|unique:management_hierarchy,phone",
+            'parent_id' => 'nullable|exists:management_hierarchies,id',
+            "phone"=>"required|unique:management_hierarchies,phone",
             "phone_code"=>"required",
-            "email"=>"required|unique:management_hierarchy,email",
+            "email"=>"required|unique:management_hierarchies,email",
             "lattitude" => "required|numeric",
             "longitude" => "required|numeric",
             "country_id" => "required|exists:countries,id",
@@ -32,20 +32,20 @@ class CreateBranchRequest extends FormRequest
 
     public function createCreateBranchDTO(): CreateBranchDTO
     {
-        [$company, $branch] = $this->getCompanyAndBranchDependOnReqeuest();
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
         return new CreateBranchDTO(
             name: $this->get('name'),
             companyId: Uuid::fromString($company->id),
-            parentId: $this->get('parent_id'),
+            parentId:Uuid::fromString( $this->get('parent_id')),
             phone: $this->get('phone'),
             phoneCode: $this->get('phone_code'),
             email: $this->get('email'),
             lattitude: $this->get('lattitude'),
             longitude: $this->get('longitude'),
-            countryId: $this->get('country_id'),
-            stateId: $this->get('state_id'),
-            cityId: $this->get('city_id'),
+            countryId: (string)$this->get('country_id'),
+            stateId: (string)$this->get('state_id'),
+            cityId: (string)$this->get('city_id'),
         );
     }
 }

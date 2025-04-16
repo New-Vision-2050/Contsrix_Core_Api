@@ -20,7 +20,7 @@ class ManagementHierarchyCRUDService
 
     public function create(CreateManagementHierarchyDTO $createManagementHierarchyDTO): ManagementHierarchy
     {
-         return $this->repository->createManagementHierarchy($createManagementHierarchyDTO->toArray());
+         return $this->repository->createManagementHierarchy($createManagementHierarchyDTO->toArray(),[""]);
     }
 
     public function createBranch(CreateBranchDTO $createBranchDTO): ManagementHierarchy

@@ -50,7 +50,7 @@ class ManagementHierarchyRepository extends BaseRepository
             DB::beginTransaction();
             $managementHierarchy = $this->create($branchData + ["id" => Uuid::uuid4()->toString()]);
 
-            $managementHierarchy->address()->create($addressData);
+            $managementHierarchy->address()->create($addressData+["company_id" => $managementHierarchy->company_id]);
 
             DB::commit();
         } catch (\Exception $e) {
