@@ -38,6 +38,10 @@ class JobOfferController extends Controller
             Uuid::fromString($user->global_company_user_id),
         );
 
+        if (!$item) {
+            return Json::error('Job offer not found', 404);
+        }
+
         $presenter = new JobOfferPresenter($item);
 
         return Json::item($presenter->getData());
