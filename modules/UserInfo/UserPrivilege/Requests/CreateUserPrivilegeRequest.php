@@ -18,6 +18,7 @@ class CreateUserPrivilegeRequest extends FormRequest
             'type_allowance'=> 'required|string',
             'rate'=> 'required|string',
             'description'=> 'required|string',
+            'privilege_id'=> 'required|string',
         ];
     }
 
@@ -30,6 +31,7 @@ class CreateUserPrivilegeRequest extends FormRequest
             type_allowance: $this->get('type_allowance'),
             rate: $this->get('rate'),
             description: $this->get('description'),
+            privilege_id:$this->get('privilege_id'),
         );
     }
 }

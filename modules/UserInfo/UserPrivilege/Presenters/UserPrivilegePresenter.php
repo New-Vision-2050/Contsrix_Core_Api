@@ -6,6 +6,7 @@ namespace Modules\UserInfo\UserPrivilege\Presenters;
 
 use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Privilege\Presenters\PrivilegePresenter;
 
 class UserPrivilegePresenter extends AbstractPresenter
 {
@@ -24,6 +25,9 @@ class UserPrivilegePresenter extends AbstractPresenter
             'type_allowance'=> $this->userPrivilege->type_allowance,
             'rate'=> $this->userPrivilege->rate,
             'description'=> $this->userPrivilege->description,
+            'privilege' => $this->userPrivilege->privilege
+            ? (new PrivilegePresenter($this->userPrivilege->privilege))->getData()
+            : null,
         ];
     }
 }

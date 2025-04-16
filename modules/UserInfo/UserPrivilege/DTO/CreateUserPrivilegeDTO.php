@@ -15,6 +15,7 @@ class CreateUserPrivilegeDTO
         public string $type_allowance,
         public string $rate,
         public string $description,
+        public string $privilege_id
     ) {
     }
 
@@ -27,6 +28,7 @@ class CreateUserPrivilegeDTO
             'type_allowance' => $this->type_allowance,
             'rate' => $this->rate,
             'description' => $this->description,
+            'privilege_id' => $this->privilege_id
         ];
     }
 }

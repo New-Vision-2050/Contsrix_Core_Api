@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserPrivilege\Database\factories\UserPrivilegeFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Shared\Privilege\Models\Privilege;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class UserPrivilege extends Model
@@ -32,6 +34,7 @@ class UserPrivilege extends Model
         'type_allowance',
         'rate',
         'description',
+        'privilege_id'
     ];
 
     protected $casts = [
@@ -41,5 +44,9 @@ class UserPrivilege extends Model
     protected static function newFactory(): UserPrivilegeFactory
     {
         return UserPrivilegeFactory::new();
+    }
+    public function privilege()
+    {
+        return $this->belongsTo(Privilege::class);
     }
 }
