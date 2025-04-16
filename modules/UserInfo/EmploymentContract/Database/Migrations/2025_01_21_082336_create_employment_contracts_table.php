@@ -13,9 +13,21 @@ return new class extends Migration
             $table->uuid('company_id')->index();
             $table->uuid('global_id')->index();
 
-            $table->string('job_offer_number');
-            $table->date('date_send');
-            $table->date('date_accept');
+            $table->string('contract_number');
+            $table->date('start_date');
+            $table->date('commencement_date');
+            $table->string('contract_duration');
+
+            $table->integer('notice_period');
+            $table->integer('probation_period');
+            $table->string('nature_work');
+            $table->string('type_working_hours');
+
+            $table->integer('working_hours');
+            $table->integer('annual_leave');
+            $table->string('country_id');
+            $table->string('right_terminate');
+            
             $table->timestamps();
         });
     }
