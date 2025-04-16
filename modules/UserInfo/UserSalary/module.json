@@ -1,0 +1,14 @@
+{
+    "name": "UserSalary",
+    "alias": "usersalary",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserSalary\\Providers\\UserSalaryServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}
