@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\AdminRequest\Presenters;
 
+use Carbon\Carbon;
 use Modules\AdminRequest\Enum\AdminRequestStatus;
 use Modules\AdminRequest\Models\AdminRequest;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Stevebauman\Location\Facades\Location;
 
 class AdminRequestPresenter extends AbstractPresenter
 {
@@ -19,6 +21,7 @@ class AdminRequestPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+
         return [
             'id' => $this->adminRequest->id,
             'user_name' => $this->adminRequest->user->name,
@@ -28,7 +31,8 @@ class AdminRequestPresenter extends AbstractPresenter
             "status" => AdminRequestStatus::lang($this->adminRequest->status),
             "notes" => $this->adminRequest->notes,
             "company_name"=> $this->adminRequest->company->name,
-            "attachments"=> $this->adminRequest->mediaUrls
+            "attachments"=> $this->adminRequest->mediaUrls,
+            "created_at" => Carbon::parse($this->adminRequest->created_at)->setTimezone(getTimeZoneByRequest())->format('Y-m-d H:i:s')
 //            "requestable" => $this->adminRequest->requestable,TODO add requestable with specific information dependant on request type
         ];
     }
