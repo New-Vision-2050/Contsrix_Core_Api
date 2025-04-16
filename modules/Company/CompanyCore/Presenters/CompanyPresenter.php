@@ -6,6 +6,8 @@ namespace Modules\Company\CompanyCore\Presenters;
 
 use Modules\Company\CompanyCore\Models\Company;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 
 class CompanyPresenter extends AbstractPresenter
 {
@@ -53,7 +55,8 @@ class CompanyPresenter extends AbstractPresenter
             ],
             "company_legal_data" =>CompanyLegalDataPresenter::collection($this->company->companyLegalData),
             "company_address" => $this->company->companyAddress,
-            "company_official_documents" =>CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments)
+            "company_official_documents" =>CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
+            "branches" =>ManagementHierarchyPresenter::collection($this->company->branches)
         ];
     }
 }

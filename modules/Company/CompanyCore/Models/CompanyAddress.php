@@ -15,7 +15,9 @@ use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Country\Models\City;
 use Modules\Country\Models\Country;
+use Modules\Country\Models\State;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -80,6 +82,21 @@ class CompanyAddress extends Model
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function state()
+    {
+        return $this->belongsTo(State::class);
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 
 
