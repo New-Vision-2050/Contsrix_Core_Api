@@ -50,6 +50,8 @@ class ManagementHierarchy extends Model
         "phone",
         "phone_code",
         "email",
+        "lattitude",
+        "longitude",
     ];
 
     protected $casts = [
