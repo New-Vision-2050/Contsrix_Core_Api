@@ -27,7 +27,7 @@ class UserStatusRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getUserStatus(UuidInterface $companyId, UuidInterface $globalId): ?CompanyUser
+    public function getUserStatus(UuidInterface $globalId): ?CompanyUser
     {
         return $this->model->where([
             'global_id' => $globalId,

@@ -27,8 +27,8 @@ class UserStatusCRUDService
         );
     }
 
-    public function get(UuidInterface $companyId,UuidInterface $globalId)
+    public function get(UuidInterface $globalId)
     {
-        return $this->repository->getUserStatus($companyId, $globalId);
+        return $this->repository->getUserStatus($globalId);
     }
 }

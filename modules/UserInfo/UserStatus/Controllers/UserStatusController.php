@@ -35,7 +35,6 @@ class UserStatusController extends Controller
         $user = $this->userRepository->getUser($userId);
 
         $item = $this->userStatusService->get(
-            Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
 
@@ -55,7 +54,7 @@ class UserStatusController extends Controller
 
         $this->updateUserStatusHandler->handle($command);
 
-        $item = $this->userStatusService->get(Uuid::fromString($companyUser->id));
+        $item = $this->userStatusService->get(Uuid::fromString($companyUser->global_id));
 
         $presenter = new UserStatusPresenter($item);
 
