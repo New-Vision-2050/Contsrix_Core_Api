@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Request;
 use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandler;
+use Modules\Company\ManagementHierarchy\Handlers\MakeBranchMainHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
@@ -17,6 +18,7 @@ use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyReques
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -27,6 +29,7 @@ class ManagementHierarchyController extends Controller
         private ManagementHierarchyCRUDService $managementHierarchyService,
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
+        private MakeBranchMainHandler $makeBranchMainHandler
     ) {
     }
 
@@ -68,6 +71,16 @@ class ManagementHierarchyController extends Controller
         return Json::item($presenter->getData());
     }
 
+
+    public function makeBranchMain(MakeBranchMainRequest $request)
+    {
+        $command = $request->createMakeBranchMainCommand();
+        $this->makeBranchMainHandler->handle($command);
+        $item = $this->managementHierarchyService->get($command->getId());
+        $presenter = new ManagementHierarchyPresenter($item);
+        return Json::item( $presenter->getData());
+
+    }
     public function update(UpdateManagementHierarchyRequest $request): JsonResponse
     {
         $command = $request->createUpdateManagementHierarchyCommand();

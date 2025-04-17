@@ -70,4 +70,21 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function makeMainBranch(UuidInterface $id , UuidInterface $branchId)
+    {
+        $otherMainBranchesCount = $this->model->where('id',"<>", $branchId)->whereNull("parent_id")->count();
+        $mainBranch = $this->find($id);
+        if(!$mainBranch){
+            throw new \Exception(__("validation.branch-not-found"), 404);
+        }
+        if($otherMainBranchesCount)//if found other main branches make branch dub branch to another branch
+        {
+            $mainBranch->update(["parent_id" => $branchId]);
+        }else{//else swap branches
+            $alternativeMainBranch = $this->find($branchId);
+            $mainBranch->update("parent_id",$alternativeMainBranch->parent_id);
+            $alternativeMainBranch->update("parent_id",null);
+        }
+    }
 }

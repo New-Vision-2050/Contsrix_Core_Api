@@ -7,11 +7,10 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Request;
+use Intervention\Image\Image as ResizeImage;;
 use Modules\RoleAndPermission\Models\Permission;
 use Stevebauman\Location\Facades\Location;
 use Vectorface\Whip\Whip;
-use Intervention\Image\Facades\Image as ResizeImage;
-use Intervention\Image\ImageManagerStatic as ImageResize;
 
 
 function validSiteUrl($site_referer, $url)
