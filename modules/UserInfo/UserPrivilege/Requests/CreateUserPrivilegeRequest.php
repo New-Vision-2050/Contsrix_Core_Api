@@ -14,12 +14,12 @@ class CreateUserPrivilegeRequest extends FormRequest
     {
         return [
             'user_id'=> 'required|string',
-            'type_privilege'=> 'required|string',
-            'type_allowance'=> 'required|string',
+            'type_privilege_id'=> 'required|string',
+            'type_allowance_id'=> 'required|string',
             'charge_amount'=> 'required|string',
             'description'=> 'required|string',
             'privilege_id'=> 'required|string',
-            'period' => 'required|string',
+            'period_id' => 'required|string',
         ];
     }
 
@@ -28,12 +28,12 @@ class CreateUserPrivilegeRequest extends FormRequest
         return new CreateUserPrivilegeDTO(
             company_id:'',
             global_id: '',
-            type_privilege: $this->get('type_privilege'),
-            type_allowance: $this->get('type_allowance'),
+            type_privilege_id: $this->get('type_privilege'),
+            type_allowance_id: $this->get('type_allowance'),
             charge_amount: $this->get('charge_amount'),
             description: $this->get('description'),
             privilege_id:$this->get('privilege_id'),
-            period: $this->get('period'),
+            period_id: $this->get('period'),
         );
     }
 }

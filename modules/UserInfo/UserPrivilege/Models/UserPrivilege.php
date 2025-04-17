@@ -30,12 +30,12 @@ class UserPrivilege extends Model
     protected $fillable = [
         'company_id',
         'global_id',
-        'type_privilege',
-        'type_allowance',
+        'type_privilege_id',
+        'type_allowance_id',
         'rate',
         'description',
         'privilege_id',
-        'period',
+        'period_id',
         'insurance_company',
         'insurance_number',
     ];

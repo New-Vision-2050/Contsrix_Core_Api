@@ -14,11 +14,11 @@ class UpdateUserPrivilegeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type_privilege'=> 'nullable|string',
-            'type_allowance'=> 'nullable|string',
+            'type_privilege_id'=> 'nullable|string',
+            'type_allowance_id'=> 'nullable|string',
             'charge_amount'=> 'nullable|string',
             'description'=> 'nullable|string',
-            'period' => 'nullable|string',
+            'period_id' => 'nullable|string',
         ];
     }
 
@@ -26,11 +26,11 @@ class UpdateUserPrivilegeRequest extends FormRequest
     {
         return new UpdateUserPrivilegeCommand(
             id: Uuid::fromString($this->route('id')),
-            type_privilege: $this->get('type_privilege'),
-            type_allowance: $this->get('type_allowance'),
+            type_privilege_id: $this->get('type_privilege_id'),
+            type_allowance_id: $this->get('type_allowance_id'),
             charge_amount: $this->get('charge_amount'),
             description: $this->get('description'),
-            period: $this->get('period'),
+            period_id: $this->get('period_id'),
         );
     }
 }

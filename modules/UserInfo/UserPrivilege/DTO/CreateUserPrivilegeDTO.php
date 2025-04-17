@@ -11,12 +11,12 @@ class CreateUserPrivilegeDTO
     public function __construct(
         public string $company_id,
         public string $global_id,
-        public ?string $type_privilege,
-        public ?string $type_allowance,
+        public ?string $type_privilege_id,
+        public ?string $type_allowance_id,
         public ?string $charge_amount,
         public ?string $description,
         public ?string $privilege_id,
-        public ?string $period,
+        public ?string $period_id,
     ) {
     }
 
@@ -25,12 +25,12 @@ class CreateUserPrivilegeDTO
         return [
             'company_id' => $this->company_id,
             'global_id' => $this->global_id,
-            'type_privilege' => $this->type_privilege,
-            'type_allowance' => $this->type_allowance,
+            'type_privilege_id' => $this->type_privilege_id,
+            'type_allowance_id' => $this->type_allowance_id,
             'charge_amount' => $this->charge_amount,
             'description' => $this->description,
             'privilege_id' => $this->privilege_id,
-            'period' => $this->period,
+            'period_id' => $this->period_id,
         ];
     }
 }
