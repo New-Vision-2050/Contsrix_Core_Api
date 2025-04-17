@@ -12,7 +12,7 @@ class UpdateUserPrivilegeCommand
         private UuidInterface $id,
         private ?string $type_privilege,
         private ?string $type_allowance,
-        private ?string $rate,
+        private ?string $charge_amount,
         private ?string $description,
         private ?string $period,
         private ?string $insurance_company,
@@ -31,7 +31,7 @@ class UpdateUserPrivilegeCommand
         return array_filter([
             'type_privilege' => $this->type_privilege,
             'type_allowance' => $this->type_allowance,
-            'rate' => $this->rate,
+            'charge_amount' => $this->charge_amount,
             'description' => $this->description,
             'period' => $this->period,
             'insurance_company' => $this->insurance_company,
