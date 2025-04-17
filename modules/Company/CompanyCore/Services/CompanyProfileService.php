@@ -119,8 +119,11 @@ class CompanyProfileService
                 $city = $value["address_components"][0]["long_name"];
             }
         }
-        $city = $this->cityRepository->findOneBy(["name" => $city]);
-        return $city;
+        $city = trim(strtolower($city));
+        $name =  preg_replace('/[^a-z0-9\s]/', '', $city);
+
+        return $this->cityRepository->findBySimplifiedWay($name);
+
 
     }
 

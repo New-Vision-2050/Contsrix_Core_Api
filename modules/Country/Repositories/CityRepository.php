@@ -48,4 +48,11 @@ class CityRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function findBySimplifiedWay($simplifiedName):?City
+    {
+        $city = $this->model->whereRaw('LOWER(REGEXP_REPLACE(name, \'[^a-zA-Z0-9\\s]\', \'\')) = ?', [$simplifiedName])->first();
+        return $city;
+
+    }
 }
