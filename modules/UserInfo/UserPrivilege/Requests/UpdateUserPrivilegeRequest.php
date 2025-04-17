@@ -16,11 +16,9 @@ class UpdateUserPrivilegeRequest extends FormRequest
         return [
             'type_privilege'=> 'nullable|string',
             'type_allowance'=> 'nullable|string',
-            'rate'=> 'nullable|string',
+            'charge_amount'=> 'nullable|string',
             'description'=> 'nullable|string',
             'period' => 'nullable|string',
-            'insurance_company'=> 'nullable|string',
-            'insurance_number'=> 'nullable|string',
         ];
     }
 
@@ -30,11 +28,9 @@ class UpdateUserPrivilegeRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             type_privilege: $this->get('type_privilege'),
             type_allowance: $this->get('type_allowance'),
-            rate: $this->get('rate'),
+            charge_amount: $this->get('charge_amount'),
             description: $this->get('description'),
             period: $this->get('period'),
-            insurance_company: $this->get('insurance_company'),
-            insurance_number: $this->get('insurance_number'),
         );
     }
 }
