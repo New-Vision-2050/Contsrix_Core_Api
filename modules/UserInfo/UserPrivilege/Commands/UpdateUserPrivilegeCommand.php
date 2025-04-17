@@ -10,13 +10,13 @@ class UpdateUserPrivilegeCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $type_privilege,
-        private string $type_allowance,
-        private string $rate,
-        private string $description,
-        private string $period,
-        private string $insurance_company,
-        private string $insurance_number,
+        private ?string $type_privilege,
+        private ?string $type_allowance,
+        private ?string $rate,
+        private ?string $description,
+        private ?string $period,
+        private ?string $insurance_company,
+        private ?string $insurance_number,
     ) {
     }
 

@@ -11,14 +11,14 @@ class CreateUserPrivilegeDTO
     public function __construct(
         public string $company_id,
         public string $global_id,
-        public string $type_privilege,
-        public string $type_allowance,
-        public string $rate,
-        public string $description,
-        public string $privilege_id,
-        public string $period,
-        public string $insurance_company,
-        public string $insurance_number,
+        public ?string $type_privilege,
+        public ?string $type_allowance,
+        public ?string $rate,
+        public ?string $description,
+        public ?string $privilege_id,
+        public ?string $period,
+        public ?string $insurance_company,
+        public ?string $insurance_number,
     ) {
     }
 
