@@ -120,7 +120,7 @@ class CompanyProfileService
             }
         }
         $city = trim(strtolower($city));
-        $name =  preg_replace('/[^a-z0-9\s]/', '', $city);
+        $name =  preg_replace('/[^a-z]/', '', $city);
 
         return $this->cityRepository->findBySimplifiedWay($name);
 

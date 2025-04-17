@@ -51,7 +51,7 @@ class CityRepository extends BaseRepository
 
     public function findBySimplifiedWay($simplifiedName):?City
     {
-        $city = $this->model->whereRaw('LOWER(REGEXP_REPLACE(name, \'[^a-zA-Z0-9\\s]\', \'\')) = ?', [$simplifiedName])->first();
+        $city = $this->model->whereRaw('LOWER(REGEXP_REPLACE(name, \'[^a-zA-Z]\', \'\')) = ?', [$simplifiedName])->first();
         return $city;
 
     }
