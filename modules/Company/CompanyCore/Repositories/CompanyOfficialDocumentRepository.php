@@ -21,7 +21,7 @@ use Carbon\Carbon;
  */
 class CompanyOfficialDocumentRepository extends BaseRepository
 {
-    public function __construct(CompanyOfficialDocument $model, private FileUploadService $fileUploadService,private ActivityLogRepository $activityLogRepository)
+    public function __construct(CompanyOfficialDocument $model, private FileUploadService $fileUploadService, private ActivityLogRepository $activityLogRepository)
     {
         parent::__construct($model);
     }
@@ -34,7 +34,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             foreach ($files as $file) {
                 $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
             }
-            $this->activityLogRepository->createActivityLog(["action"=>["ar"=>"إنشاء","en"=>"create"],"date"=>Carbon::now()->format("Y-m-d H:i:s"), "user_id"=>auth()->user()->id,"requestable_id"=>$companyOfficialDocument->id , "requestable_type"=>CompanyOfficialDocument::class]);
+            $this->activityLogRepository->createActivityLog(["action" => ["ar" => "إنشاء", "en" => "create"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
             DB::commit();
 
         } catch (\Exception $e) {
@@ -45,19 +45,25 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         return $companyOfficialDocument;
     }
 
-    public function updateCompanyOfficialDocument(UuidInterface $id, array $data, $files,$deletedFiles =[]): CompanyOfficialDocument
+    public function updateCompanyOfficialDocument(UuidInterface $id, array $data, $files, $deletedFiles = []): CompanyOfficialDocument
     {
         try {
             DB::beginTransaction();
             $companyOfficialDocument = $this->find($id);
             $companyOfficialDocument->update($data);
-            foreach ($files as $file) {
-                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+            if ($files) {
+                foreach ($files as $file) {
+                    $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+                }
             }
-            foreach ($deletedFiles as $fileId) {
-                $companyOfficialDocument->deleteMedia($fileId);
+            if ($deletedFiles) {
+                foreach ($deletedFiles as $fileId) {
+                    $companyOfficialDocument->deleteMedia($fileId);
+                }
             }
-            $this->activityLogRepository->createActivityLog(["action"=>["ar"=>"قام بالتعديل","en"=>"update"],"date"=>Carbon::now()->format("Y-m-d H:i:s"), "user_id"=>auth()->user()->id,"requestable_id"=>$companyOfficialDocument->id , "requestable_type"=>CompanyOfficialDocument::class]);
+
+
+            $this->activityLogRepository->createActivityLog(["action" => ["ar" => "قام بالتعديل", "en" => "update"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
 
             DB::commit();
 
@@ -69,15 +75,11 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         return $companyOfficialDocument;
     }
 
-    public function deleteMedia(UuidInterface $id , $fileId)
+    public function deleteMedia(UuidInterface $id, $fileId)
     {
         $this->find($id)->deleteMedia($fileId);
         return true;
     }
-
-
-
-
 
 
 }

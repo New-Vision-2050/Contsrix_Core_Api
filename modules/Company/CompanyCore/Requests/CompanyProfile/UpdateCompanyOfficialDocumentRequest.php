@@ -19,7 +19,7 @@ class UpdateCompanyOfficialDocumentRequest extends FormRequest
     {
         return [
             "name"=>"required",
-            "files"=>"required|array",
+            "files"=>"nullable|array",
             "files.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
             "files_deleted"=>"nullable|array",
             "files_deleted.*"=>"required|exists:media,id",
