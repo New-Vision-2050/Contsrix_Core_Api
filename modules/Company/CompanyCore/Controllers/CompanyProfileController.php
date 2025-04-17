@@ -32,6 +32,8 @@ use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDat
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyProfileService;
+use Modules\Country\Models\Country;
+use Modules\Country\Presenters\CountryStateCityPresenter;
 use Ramsey\Uuid\Uuid;
 
 class CompanyProfileController extends Controller
@@ -72,8 +74,13 @@ class CompanyProfileController extends Controller
     public function getAddressFromMap(getLocationByLatLongRequest $request)
     {
         $geoCodingDTO = $request->createGeoCodingDTO();
-        $result = $this->companyProfileService->geoCoding($geoCodingDTO);
-        return Json::item($result);
+        [$country,
+            $state,
+            $city,
+            $neighborhood,
+            $postalCode,
+            $route] = $this->companyProfileService->geoCoding($geoCodingDTO);
+        return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route))->getData());
     }
 
     public function setCompanyLogo(setCompanyLogoRequest $request)

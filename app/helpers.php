@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Request;
 use Intervention\Image\Image as ResizeImage;;
+
+use Modules\Country\Models\City;
+use Modules\Country\Models\State;
 use Modules\RoleAndPermission\Models\Permission;
 use Stevebauman\Location\Facades\Location;
 use Vectorface\Whip\Whip;
@@ -2696,6 +2699,64 @@ function size($bytes)
 
     return round($bytes, 2) . ' ' . $units[$pow];
 }
+
+function distanceBetweenLatAndLong($lat1, $lon1, $lat2, $lon2, $unit="K")
+{
+    if (($lat1 == $lat2) && ($lon1 == $lon2)) {
+        return 0;
+    }
+    else {
+        $theta = $lon1 - $lon2;
+        $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+        $dist = acos($dist);
+        $dist = rad2deg($dist);
+        $miles = $dist * 60 * 1.1515;
+        $unit = strtoupper($unit);
+
+        if ($unit == "K") {
+            return ($miles * 1.609344);
+        } else if ($unit == "N") {
+            return ($miles * 0.8684);
+        } else {
+            return $miles;
+        }
+    }
+}
+function getCountryStateAndCityByLatAndLong($lat, $long)
+{
+    $countries = \Modules\Country\Models\Country::get();
+    $states = \Modules\Country\Models\State::get();
+    $cities = \Modules\Country\Models\City::get();
+
+    $lowestDistance = PHP_FLOAT_MAX;
+    $closestLocation = [
+        'country' => null,
+        'state' => null,
+        'city' => null,
+        'distance' => null
+    ];
+
+    foreach ($cities as $city) {
+        if ($city->latitude && $city->longitude) {
+            $distance = distanceBetweenLatAndLong($lat, $long, $city->latitude, $city->longitude);
+            if ($distance < $lowestDistance) {
+                $lowestDistance = $distance;
+                $state = $states->where('id', $city->state_id)->first();
+                $country = $countries->where('id', $state ? $state->country_id : null)->first();
+
+                $closestLocation = [
+                    'country' => $country,
+                    'state' => $state ,
+                    'city' => $city,
+                    'distance' => $distance
+                ];
+            }
+        }
+    }
+
+    return $closestLocation;
+}
+
 
 function ip()
 {

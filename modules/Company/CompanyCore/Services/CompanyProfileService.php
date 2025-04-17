@@ -26,6 +26,8 @@ use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Country\Models\City;
+use Modules\Country\Repositories\CityRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -39,6 +41,7 @@ class CompanyProfileService
         private CompanyLegalDataRepository        $companyLegalDataRepository,
         private CompanyAddressRepository          $companyAddressRepository,
         private CompanyOfficialDocumentRepository $companyOfficialDocumentRepository,
+        private CityRepository                    $cityRepository
     )
     {
     }
@@ -59,23 +62,23 @@ class CompanyProfileService
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=ar&key=" . env('GOOGLE_MAPS_API_KEY'));
-        $poltical = "";
-        $locality = "";
-        $area = "";
+        $neighborhood = "";
+        $city = "";
+        $state = "";
 
         $country = "";
         $postalCode = "";
         $route = "";
         foreach ($response['results'] as $key => $value) {
             if ($value['types'][0] == "political") {
-                $poltical = $value["address_components"][0]["long_name"];
+                $neighborhood = $value["address_components"][0]["long_name"];
             }
             if ($value['types'][0] == "locality") {
-                $locality = $value["address_components"][0]["long_name"];
+                $city = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "administrative_area_level_1") {
-                $area = $value["address_components"][0]["long_name"];
+                $state = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "country") {
@@ -89,14 +92,35 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
+        $cityBySearch = $this->getCity($geoCodingDTO->getLatitude(), $geoCodingDTO->getLongitude());
+        if ($cityBySearch) {
+            $country = $cityBySearch->country;
+            $state = $cityBySearch->state;
+
+            $city = $cityBySearch;
+        }
+
         return [
-            "country" => $country,
-            "state" => $area,
-            "city" => $locality,
-            "neighborhood" => $poltical,
-            "postalCode" => $postalCode,
-            "route" => $route,
+            $country,
+            $state,
+            $city,
+            $neighborhood,
+            $postalCode,
+            $route,
         ];
+
+    }
+
+    private function getCity($lat, $long)
+    {
+        $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$long&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
+        foreach ($response['results'] as $key => $value) {
+            if ($value['types'][0] == "locality") {
+                $city = $value["address_components"][0]["long_name"];
+            }
+        }
+        $city = $this->cityRepository->findOneBy(["name" => $city]);
+        return $city;
 
     }
 

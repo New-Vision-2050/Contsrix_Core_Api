@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
-use http\Client\Curl\User;
 use Illuminate\Support\Facades\DB;
 use Modules\ActivityLog\Repositories\ActivityLogRepository;
 use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
@@ -61,8 +60,6 @@ class CompanyOfficialDocumentRepository extends BaseRepository
                     $companyOfficialDocument->deleteMedia($fileId);
                 }
             }
-
-
             $this->activityLogRepository->createActivityLog(["action" => ["ar" => "قام بالتعديل", "en" => "update"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
 
             DB::commit();
@@ -70,7 +67,6 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception(__("validation.update-not-successful"), 409);
-
         }
         return $companyOfficialDocument;
     }

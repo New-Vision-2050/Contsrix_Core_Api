@@ -38,6 +38,11 @@ class State extends Model
         'id' => 'string',
     ];
 
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
 
 
 
