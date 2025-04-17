@@ -4,7 +4,6 @@ namespace Modules\Shared\Period\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Shared\AcademicQualification\Models\AcademicQualification;
 use Modules\Shared\Period\Models\Period;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
@@ -26,7 +25,7 @@ class PeriodSeederTableSeeder extends Seeder
         ];
 
         foreach ($periods as $index => $item) {
-            Period::firstOrCreate(
+            Period::create(
                 ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
             );
         }

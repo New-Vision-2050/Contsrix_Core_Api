@@ -25,8 +25,7 @@ class TypePrivilegeSeederTableSeeder extends Seeder
         ];
 
         foreach ($typePrivileges as $index => $item) {
-            TypePrivilege::firstOrCreate(
-                ['id' => $index + 1],
+            TypePrivilege::create(
                 ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
             );
         }

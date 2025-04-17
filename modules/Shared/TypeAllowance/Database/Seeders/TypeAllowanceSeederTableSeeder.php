@@ -26,8 +26,7 @@ class TypeAllowanceSeederTableSeeder extends Seeder
         ];
 
         foreach ($typeAllowances as $index => $item) {
-            TypeAllowance::firstOrCreate(
-                ['id' => $index + 1],
+            TypeAllowance::create(
                 ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
             );
         }
