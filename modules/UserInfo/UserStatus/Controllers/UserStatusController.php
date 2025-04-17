@@ -9,9 +9,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\User\Repositories\UserRepository;
+use Modules\UserInfo\UserStatus\Handlers\UpdatePasswordHandler;
 use Modules\UserInfo\UserStatus\Handlers\UpdateUserStatusHandler;
 use Modules\UserInfo\UserStatus\Presenters\UserStatusPresenter;
 use Modules\UserInfo\UserStatus\Requests\GetUserStatusRequest;
+use Modules\UserInfo\UserStatus\Requests\UpdatePasswordRequest;
 use Modules\UserInfo\UserStatus\Requests\UpdateUserStatusRequest;
 use Modules\UserInfo\UserStatus\Services\UserStatusCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -23,6 +25,7 @@ class UserStatusController extends Controller
         private UpdateUserStatusHandler $updateUserStatusHandler,
         private UserRepository $userRepository,
         private CompanyUserRepository $companyUserRepository,
+        private UpdatePasswordHandler $updatePasswordHandler
     ) {
     }
 
@@ -60,5 +63,13 @@ class UserStatusController extends Controller
 
         return Json::item($presenter->getData());
     }
+    public function updatePassword(UpdatePasswordRequest $request)
+    {
 
+        $command = $request->createUpdateUserStatusCommand();
+
+        $this->updatePasswordHandler->handle($command);
+
+        return Json::success("success");
+    }
 }
