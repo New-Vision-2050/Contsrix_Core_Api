@@ -15,7 +15,7 @@ class UpdateOfficialCompanyData extends FormRequest
     {
         return [
             'name_en' => 'required|string',
-            'email' => 'required|email|string|unique:companies,email,' . Uuid::fromString($this->route('id')),
+            'email' => 'required|email|string|unique:companies,email,' . Uuid::fromString(tenant("id")),
             'phone' => 'required|string',
             'branch_name' => 'required|string',
         ];
