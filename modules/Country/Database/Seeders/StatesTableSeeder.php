@@ -9022,7 +9022,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q1808165',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 508,
@@ -18024,7 +18024,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q184445',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 1079,
@@ -27026,7 +27026,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q54171',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 1623,
@@ -36028,7 +36028,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q131384',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 2159,
@@ -45030,7 +45030,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q857122',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 2660,
@@ -54032,7 +54032,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q953657',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 3164,
@@ -63034,7 +63034,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q765984',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 3674,
@@ -72036,7 +72036,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q3259688',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 4182,
@@ -81038,7 +81038,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q650617',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 4775,
@@ -90040,7 +90040,7 @@ class StatesTableSeeder extends Seeder
                 'wikiDataId' => 'Q179730',
             ),
         ));
-        \DB::table('states')->insert(array (
+        \DB::table('states')->insertOrIgnore(array (
             0 =>
             array (
                 'id' => 5302,
