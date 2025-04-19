@@ -252,11 +252,26 @@ class CompanyUserRepository extends BaseRepository
             ["global_company_user_id" => $global_id],
             ['name' => $data['name'] ?? null]
         );
+
         return true;
     }
     public function updateCompanyUserIdentityData(UuidInterface $global_id, array $data): bool
     {
-        $this->updateWhere(["global_id" => $global_id],$data);
+        $this->updateWhere(["global_id" => $global_id], $data);
+
+        if (isset($data['email'])) {
+            $this->userRepository->updateWhere(
+                ["global_company_user_id" => $global_id],
+                ['email' => $data['email']]
+            );
+        }
+
+        if (isset($data['phone'])) {
+            $this->userRepository->updateWhere(
+                ["global_company_user_id" => $global_id],
+                ['phone' => $data['phone']]
+            );
+        }
 
         return true;
     }
