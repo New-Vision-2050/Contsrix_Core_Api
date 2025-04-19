@@ -8,6 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Domain;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
@@ -20,6 +21,7 @@ use Carbon\Carbon;
  */
 class CompanyRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(Company $model)
     {
         parent::__construct($model);
@@ -78,12 +80,15 @@ class CompanyRepository extends BaseRepository
 
     public function updateCompany(UuidInterface $id, array $data): bool
     {
-
         try {
             DB::beginTransaction();
             $this->update($id, $data);
             $company = $this->find($id);
-            Domain::query()->where("company_id", $company->id)->update(["domain" => $this->parseDomain($data["user_name"])]);
+            if(isset($data["user_name"]))
+            {
+                Domain::query()->where("company_id", $company->id)->update(["domain" => $this->parseDomain($data["user_name"])]);
+
+            }
             DB::commit();
             return true;
         } catch (\Exception $e) {
@@ -110,9 +115,10 @@ class CompanyRepository extends BaseRepository
 
     public function isRegistrationExists(string $registrationNo, string $registrationTypeId): bool
     {
-        return $this->model->where('registration_no', $registrationNo)
-            ->where('registration_type_id', $registrationTypeId)
-            ->exists();
+        return $this->model->whereHas("companyLegalData",function ($query) use ($registrationNo,$registrationTypeId)
+        {
+            $query->where("registration_number", $registrationNo)->where("registration_type_id", $registrationTypeId);
+        })->exists();
     }
 
     public function isUserNameExists(string $userName): bool
@@ -163,5 +169,18 @@ class CompanyRepository extends BaseRepository
     public function get()
     {
         return $this->model->get();
+    }
+
+    public function getCurrentCompany() : Company
+    {
+       [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+        return $this->model->where("id",tenant("id"))->with(["companyAddress"=>function ($query)use ($branch) {
+            $query->where("management_hierarchy_id",$branch->id);
+        },"companyLegalData"=>function ($query)use ($branch) {
+            $query->where("management_hierarchy_id",$branch->id);
+
+        },"companyOfficialDocuments"=>function ($query)use ($branch) {
+            $query->where("management_hierarchy_id",$branch->id);}
+        ])->first();
     }
 }

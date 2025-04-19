@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
+use App\Traits\CustomBelongsToTenant;
+use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\AdminRequest\Models\AdminRequest;
 use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
@@ -29,47 +32,48 @@ use Stancl\Tenancy\DatabaseConfig;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
+
 /**
  * @method  __call(string $method, array $parameters)
  * @method  __callStatic(string $method, array $parameters)
  */
-class Company extends BaseTenant implements TenantWithDatabase , HasMedia
+class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 {
     use HasFactory;
     use BaseFilterable;
     use InteractsWithMedia;
+    use HasTranslations;
+
     use HasDatabase, HasDomains;
     use UuidTrait;
     use HasScopedValidationRules;
+    use CustomBelongsToTenant;
 
-    //use HasTranslations;
-    // use SoftDeletes;
 
-    //public array $translatable = [];
+    public array $translatable = ["name"];
+
+    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress"];
 
     public $incrementing = false;
     protected $table = 'companies';
 //    protected $connection = "mysql";
 
 
-
     protected $keyType = 'string';
 
     protected $fillable = [
+        "name",
         "id",
-        'name',
         'user_name',
         'email',
         'phone',
         'country_id',
         'company_type_id',
         'company_field_id',
-        'registration_type_id',
         'general_manager_id',
         'is_active',
         'complete_data',
         'date_activate',
-        'registration_no',
         'serial_no',
         'image_path'
     ];
@@ -82,24 +86,23 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
     {
         return [
             "id",
-            'name',
             'user_name',
             'email',
             'phone',
             'country_id',
             'company_type_id',
             'company_field_id',
-            'registration_type_id',
             'general_manager_id',
             'is_active',
             'complete_data',
             'date_activate',
-            'registration_no',
             'serial_no',
             'image_path',
             "created_at",
             "updated_at",
-            "is_central_company"
+            "is_central_company",
+            "check_activity",
+            "registration_type_id",
         ];
     }
 
@@ -107,6 +110,11 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
     public function domains()
     {
         return $this->hasMany(config('tenancy.domain_model'), 'company_id');
+    }
+
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
     }
 
     protected static function newFactory(): CompanyFactory
@@ -136,8 +144,9 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
 
     public function companyRegistrationType()
     {
-        return $this->belongsTo(CompanyRegistrationType::class,'registration_type_id');
+        return $this->belongsTo(CompanyRegistrationType::class, 'registration_type_id');
     }
+
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl(); // Ensure this is using your custom method
@@ -151,6 +160,44 @@ class Company extends BaseTenant implements TenantWithDatabase , HasMedia
     public function getTenantKey()
     {
         return $this->getAttribute($this->getTenantKeyName());
+    }
+
+
+    public function adminRequestTransaction()
+    {
+        return $this->morphMany(AdminRequest::class, 'requestable');
+    }
+
+    public function mainBranch()
+    {
+        return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('parent_id', null)->where('type', 'branch');
+    }
+
+    public function branches()
+    {
+        return $this->hasMany(ManagementHierarchy::class, 'company_id')->where('type', 'branch');
+    }
+
+    public function firstBranch()
+    {
+        return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('is_first_branch', true)->where('type', 'branch');
+    }
+
+    public function companyAddress()
+    {
+        return $this->hasOne(CompanyAddress::class, 'company_id');
+
+    }
+
+    public function companyLegalData()
+    {
+        return $this->hasMany(CompanyLegalData::class, 'company_id');
+
+    }
+
+    public function companyOfficialDocuments()
+    {
+        return $this->hasMany(CompanyOfficialDocument::class, 'company_id');
     }
 
 

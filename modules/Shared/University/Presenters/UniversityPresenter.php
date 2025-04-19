@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Shared\University\Presenters;
 
-use Modules\Shared\University\Models\University;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\University\Models\University;
 
 class UniversityPresenter extends AbstractPresenter
 {
@@ -21,6 +21,7 @@ class UniversityPresenter extends AbstractPresenter
         return [
             'id' => $this->university->id,
             'name' => $this->university->name,
+            'url' => $this->university->url,
         ];
     }
 }

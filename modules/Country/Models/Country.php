@@ -33,8 +33,6 @@ class Country extends Model
 
     protected $fillable = [
         'name',
-        'shortname',
-        'name_ar',
         'phonecode',
         'status',
         'sms_driver_id',
