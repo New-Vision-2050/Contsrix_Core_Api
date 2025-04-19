@@ -23,7 +23,14 @@ class CompanyOfficialDocumentPresenter extends AbstractPresenter
         return [
             'id' => $this->companyOfficialDocument->id,
             'name' => $this->companyOfficialDocument->name,
-            'file' => $this->companyOfficialDocument->media,
+            'file' => $this->companyOfficialDocument->getMedia("*")->map(function ($media) {
+                return [
+                    'id' => $media->id,
+                    'url' => $media->getFullUrl(),
+                    "name"=>$media->name,
+                    "mime_type" => $media->mime_type,
+                ];
+            }),
             "description" => $this->companyOfficialDocument->description,
             "document_number" => $this->companyOfficialDocument->document_number,
             "start_date" => $this->companyOfficialDocument->start_date,
