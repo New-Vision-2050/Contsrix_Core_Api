@@ -11,18 +11,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Country\Models\Country;
 use Modules\Shared\University\Database\factories\UniversityFactory;
-
-//use BasePackage\Shared\Traits\HasTranslations;
+use BasePackage\Shared\Traits\HasTranslations;
 
 class University extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    //use HasTranslations;
+    use HasTranslations;
     //use SoftDeletes;
 
-    //public array $translatable = [];
+    public array $translatable = ['name'];
 
     public $incrementing = false;
 

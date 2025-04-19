@@ -10,5 +10,5 @@
     "aliases": {},
     "files": [],
     "requires": [],
-    "namespace": "Modules"
+    "namespace": "Modules\\Shared"
 }

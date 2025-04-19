@@ -8,7 +8,6 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Shared\University\Models\University;
 use Ramsey\Uuid\UuidInterface;
-
 /**
  * @property University $model
  * @method University findOneOrFail($id)

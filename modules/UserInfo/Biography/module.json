@@ -1,0 +1,14 @@
+{
+    "name": "Biography",
+    "alias": "biography",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\Biography\\Providers\\BiographyServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

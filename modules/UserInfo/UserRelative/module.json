@@ -1,0 +1,14 @@
+{
+    "name": "UserRelative",
+    "alias": "userrelative",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserRelative\\Providers\\UserRelativeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

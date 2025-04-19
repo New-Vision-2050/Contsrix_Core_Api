@@ -1,0 +1,14 @@
+{
+    "name": "UserAbout",
+    "alias": "userabout",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserAbout\\Providers\\UserAboutServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\UserInfo\UserPrivilege\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Ramsey\Uuid\Uuid;
+use Modules\UserInfo\UserPrivilege\DTO\CreateUserPrivilegeDTO;
+
+class CreateUserPrivilegeRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'user_id'=> 'required|string',
+            'type_privilege_id'=> 'required|string',
+            'type_allowance_id'=> 'required|string',
+            'charge_amount'=> 'required|string',
+            'description'=> 'required|string',
+            'privilege_id'=> 'required|string',
+            'period_id' => 'required|string',
+        ];
+    }
+
+    public function createCreateUserPrivilegeDTO(): CreateUserPrivilegeDTO
+    {
+        return new CreateUserPrivilegeDTO(
+            company_id:'',
+            global_id: '',
+            type_privilege_id: $this->get('type_privilege'),
+            type_allowance_id: $this->get('type_allowance'),
+            charge_amount: $this->get('charge_amount'),
+            description: $this->get('description'),
+            privilege_id:$this->get('privilege_id'),
+            period_id: $this->get('period'),
+        );
+    }
+}

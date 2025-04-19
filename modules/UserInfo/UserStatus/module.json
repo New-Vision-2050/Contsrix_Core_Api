@@ -1,0 +1,14 @@
+{
+    "name": "UserStatus",
+    "alias": "userstatus",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserStatus\\Providers\\UserStatusServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}
