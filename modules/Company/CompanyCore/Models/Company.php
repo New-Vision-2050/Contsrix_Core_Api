@@ -47,7 +47,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     use HasDatabase, HasDomains;
     use UuidTrait;
     use HasScopedValidationRules;
-    use CustomBelongsToTenant;
+//    use CustomBelongsToTenant;
 
 
     public array $translatable = ["name"];
