@@ -13,8 +13,12 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/upload-photo', [CompanyUserProfileController::class, 'uploadPhoto']);
     Route::put('/data-info', [CompanyUserProfileController::class, 'updateDataInfo']);
     Route::put('/contact-info', [CompanyUserProfileController::class, 'updateContactInformation']);
+    Route::post('/identity-data', [CompanyUserProfileController::class, 'identityData']);
     Route::post('/send-otp', [CompanyUserProfileController::class, 'sendOtp']);
     Route::post('/validate-otp', [CompanyUserProfileController::class, 'validateOtp']);
+    Route::get('/show-data-info', [CompanyUserProfileController::class, 'showDataInfo']);
+    Route::get('/show-contact-information', [CompanyUserProfileController::class, 'showContactInformation']);
+    Route::get('/show-identity-data', [CompanyUserProfileController::class, 'showidentityData']);
 
     Route::get('/show-by-email/{email}', [CompanyUserController::class, 'showByEmail']);
     Route::post('/change-time-zone/{id}', [CompanyUserController::class, 'changeTimeZone']);

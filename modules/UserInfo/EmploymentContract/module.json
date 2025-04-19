@@ -1,0 +1,14 @@
+{
+    "name": "EmploymentContract",
+    "alias": "employmentcontract",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\EmploymentContract\\Providers\\EmploymentContractServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}
