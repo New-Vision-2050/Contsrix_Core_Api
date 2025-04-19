@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
+use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesTableSeeder;
 use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
 use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
@@ -18,8 +19,6 @@ use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationS
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitySeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BankModulesSeederTableSeeder;
-use Modules\Shared\Currency\Database\Seeders\CurrencySeederTableSeeder;
-use Modules\Shared\Language\Database\Seeders\LanguageSeederTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodieSeeder;
