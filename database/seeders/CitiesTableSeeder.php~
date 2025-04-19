@@ -7,12 +7,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Modules\Country\Models\Country;
-use Ranium\SeedOnce\Traits\SeedOnce;
 
 
 class CitiesTableSeeder extends Seeder
 {
-    use SeedOnce;
     public function run(): void
     {
         try {
