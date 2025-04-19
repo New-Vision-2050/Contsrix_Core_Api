@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Shared\University\Providers;
 
-use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Illuminate\Support\Facades\Route;
 
 class UniversityServiceProvider extends ModuleServiceProvider
 {

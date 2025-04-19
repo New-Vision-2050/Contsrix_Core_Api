@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Services;
 
 use Illuminate\Support\Collection;
-use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
+use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Ramsey\Uuid\UuidInterface;
 use function PHPUnit\Framework\throwException;
 
 class CompanyCRUDService
 {
     public function __construct(
-        private CompanyRepository $repository,
+        private CompanyRepository        $repository,
     )
     {
     }
@@ -24,10 +26,16 @@ class CompanyCRUDService
     public function create(CreateCompanyDTO $createCompanyDTO): Company
     {
         $requestCompanyDTO = $createCompanyDTO->toArray();
-
-        $company = $this->repository->createCompany($requestCompanyDTO);
-
-//        CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));TODO un comment this put queue connection has issue
+        try {
+            DB::beginTransaction();
+            $company = $this->repository->createCompany($requestCompanyDTO);
+            CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
+            event(new CompanyCreatedEvent($company));
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 400);
+        }
 
         return $company;
     }
@@ -35,7 +43,7 @@ class CompanyCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
-            ['is_central_company' => 0],
+            ['is_central_company' => 0],//TODO i think it will be like that ["id" ,"<>", tenant("id")] it will not present current company put will present other central company
             page: $page,
             perPage: $perPage,
         );
@@ -51,7 +59,7 @@ class CompanyCRUDService
     public function getCurrentCompanyLoggedIn()
     {
         try {
-            return $this->repository->findOneOrFail(tenant("id"));
+            return $this->repository->getCurrentCompany();
         } catch (\Exception $e) {
             throw new \Exception(__("validation.company-not-found"), 404);
 

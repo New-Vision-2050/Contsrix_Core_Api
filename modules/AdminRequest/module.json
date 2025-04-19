@@ -1,0 +1,14 @@
+{
+    "name": "AdminRequest",
+    "alias": "adminrequest",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\AdminRequest\\Providers\\AdminRequestServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

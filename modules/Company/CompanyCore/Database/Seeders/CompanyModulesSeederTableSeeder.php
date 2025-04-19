@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\Folder\Requests\UploadFileRequest;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
 use Modules\Company\CompanyField\Models\CompanyField;
@@ -13,6 +14,7 @@ use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Database\Seeders\CompanyRegistrationTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Country\Models\Country;
@@ -54,7 +56,6 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
         $companyData = [
             'id' => $id,
-            'name' => 'new vision',
             'user_name' => "new-vision",
             'email' => 'test@example.com',
             'phone' => '123456789',
@@ -72,14 +73,17 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $company = Company::query()->find($id);
         $company->update(['name' => ["ar" => 'نيو فيجن', "en" => "new vision"]]);
         $path = resource_path()."/images/new-vision-logo.jpg";
-        $file = new \Illuminate\Http\UploadedFile(
-            $path,
-            'new-vision-logo.jpg',
-            null,
-            null,
-            true
-        );
-        $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
+
+            $file = new \Illuminate\Http\UploadedFile(
+                $path,
+                'new-vision-logo.jpg',
+                null,
+                null,
+                true
+            );
+
+            $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
+
 
 
         $domain = str_replace("be-", "", env("APP_URL"));
@@ -88,9 +92,26 @@ class CompanyModulesSeederTableSeeder extends Seeder
             "company_id" => $id,
             "domain" => env("NEW_VISION_DOMAIN", $domain)
         ]);
+        $branchId = Uuid::uuid5($namespace, "new-vision-branch")->toString();
+
+         ManagementHierarchy::query()->insertOrIgnore(["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch","is_first_branch" => 1]);
+        $mainBranch = ManagementHierarchy::query()->find($branchId);
+        $companyAddressId = Uuid::uuid5($namespace, "new-vision-address")->toString();
+
+        CompanyAddress::query()->create([
+            "id"=>$companyAddressId,
+            "company_id" => $id,
+            "country_id" => $country->id,
+            "management_hierarchy_id" => $mainBranch->id
+
+        ]);
 
         $general_manager->update(['company_id' => $id]);
-        CompanyUserCompany::query()->create([
+
+        $companyUserCompanyId = Uuid::uuid5($namespace, "new-vision-user-company")->toString();
+
+        CompanyUserCompany::query()->insertOrIgnore([
+            "id"=>$companyUserCompanyId,
             'company_id' => $id,
             'global_company_user_id' => $general_manager->global_company_user_id,
             'role' => CompanyUserRole::EMPLOYEE->value

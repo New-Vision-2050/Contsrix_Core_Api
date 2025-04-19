@@ -14,8 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->string('registration_no')->after('user_name');
-            $table->string('serial_no')->unique()->after('registration_no');
+            $table->string('serial_no')->unique()->after('user_name');
         });
     }
 
