@@ -1,0 +1,14 @@
+{
+    "name": "AcademicQualification",
+    "alias": "academicqualification",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\AcademicQualification\\Providers\\AcademicQualificationServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

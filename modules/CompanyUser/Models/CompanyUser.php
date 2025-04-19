@@ -62,7 +62,31 @@ class CompanyUser extends Model implements HasMedia
         "is_default",
         "birthdate_gregorian",
         "birthdate_hijri",
-        "nationality",
+        "landline_number",
+        "postal_code",
+
+        "whatsapp",
+        "facebook",
+        "telegram",
+        "instagram",
+        "snapchat",
+        "linkedin",
+
+        'work_permit_start_date',
+        'work_permit_end_date',
+        'work_permit',
+
+        'passport_start_date',
+        'identity_start_date',
+        'border_number_start_date',
+        'entry_number_start_date',
+
+        'passport_end_date',
+        'identity_end_date',
+        'border_number_end_date',
+        'entry_number_end_date',
+        'active_type',
+        'active_date_to'
     ];
 
     protected $casts = [
@@ -75,12 +99,10 @@ class CompanyUser extends Model implements HasMedia
         return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
             ->withPivot('role','status');
     }
-
     public function users()
     {
         return $this->hasMany(User::class, 'global_company_user_id',"global_id");
     }
-
 
     protected static function newFactory(): CompanyUserFactory
     {

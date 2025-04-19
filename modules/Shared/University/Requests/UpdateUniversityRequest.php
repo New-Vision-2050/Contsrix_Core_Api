@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\Shared\University\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Shared\University\Commands\UpdateUniversityCommand;
 use Ramsey\Uuid\Uuid;
+use Modules\Shared\University\Commands\UpdateUniversityCommand;
 
 class UpdateUniversityRequest extends FormRequest
 {

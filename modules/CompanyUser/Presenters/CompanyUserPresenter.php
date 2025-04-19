@@ -23,6 +23,7 @@ class CompanyUserPresenter extends AbstractPresenter
         return [
             'id' => $this->companyUser->id,
             'global_id' => $this->companyUser->global_id,
+            'user_id'=>$this->companyUser->users->first()->id,
             'name' => $this->companyUser->name,
             'email' => $this->companyUser->email,
             "residence" => $this->companyUser->residence,
@@ -34,13 +35,17 @@ class CompanyUserPresenter extends AbstractPresenter
             "job_title" => $this->companyUser?->jobTitle?->name,
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
             'data_status' => 0,
-            "company" => CompanyWithRolesPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
+            "company" => (new CompanyWithRolesPresenter(
+                $this->companyUser->companies->unique('id')->first(),
+                $this->companyUser
+            ))->getData(),
             'Job_role' => '-',
             'date_appointment' => '-',
             'branch'=>'-',
             'other_phone'=> $this->companyUser->other_phone??'-',
             'address' => $this->companyUser->address??'-',
             'address_attendance' =>  $this->companyUser->address_attendance??'-',
+            'image_url' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
 
 //            "users"=> UserPresenter::collection($this->companyUser->users)
 

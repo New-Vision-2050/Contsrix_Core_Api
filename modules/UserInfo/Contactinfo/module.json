@@ -1,0 +1,14 @@
+{
+    "name": "Contactinfo",
+    "alias": "contactinfo",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\Contactinfo\\Providers\\ContactinfoServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

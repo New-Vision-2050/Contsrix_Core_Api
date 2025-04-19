@@ -15,10 +15,6 @@ class CompanyUserValidationService
 {
 
     private $errors = [];
-
-
-
-
     public function __construct(
         private CompanyUserRepository $repository,
     )

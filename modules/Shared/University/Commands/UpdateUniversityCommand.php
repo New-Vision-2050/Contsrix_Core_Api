@@ -21,7 +21,10 @@ class UpdateUniversityCommand
         return $this->id;
     }
 
-
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
 
     public function toArray(): array
     {
