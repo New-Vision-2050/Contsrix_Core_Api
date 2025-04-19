@@ -159,7 +159,7 @@ class CompanyProfileController extends Controller
     public function deleteOfficialDocumentMedia(Request $request)
     {
 
-        $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), Uuid::fromString($request->route("media_id")));
+        $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), $request->route("media_id"));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
