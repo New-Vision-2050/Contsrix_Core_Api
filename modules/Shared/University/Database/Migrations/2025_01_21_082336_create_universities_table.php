@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up()
     {
-//        if (!Schema::hasTable('universities')) {
-//            Schema::create('universities', function (Blueprint $table) {
-//                $table->uuid('id')->primary();
-//                $table->unsignedBigInteger('country_id');
-//                $table->string('link')->nullable();
-//                $table->timestamps();
-//
-//            });
-//        }
+        if (!Schema::hasTable('universities')) {
+            Schema::create('universities', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->unsignedBigInteger('country_id');
+                $table->string('link')->nullable();
+                $table->timestamps();
+
+            });
+        }
     }
 
 };
