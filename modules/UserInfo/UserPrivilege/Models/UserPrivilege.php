@@ -39,8 +39,6 @@ class UserPrivilege extends Model
         'description',
         'privilege_id',
         'period_id',
-        'insurance_company',
-        'insurance_number',
     ];
 
     protected $casts = [
