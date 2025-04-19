@@ -12,12 +12,12 @@ class CreateCompanyDTO
         // private string $email,
         // private string $serialNo,
         // private string $phone,
-        private string $countryId,
-        // private string $companyTypeId,
-        private array|string $companyFieldId,
-        // private string $registrationTypeId,
-        // private string $registrationNo,
-        private string $generalManagerId,
+        public string $countryId,
+        // public string $companyTypeId,
+        public array $companyFieldId,
+        // public string $registrationTypeId,
+        // public string $registrationNo,
+        public string $generalManagerId,
     ) {
     }
 
@@ -27,7 +27,7 @@ class CreateCompanyDTO
             'name' => $this->name,
             'user_name' => $this->userName,
             'country_id' => $this->countryId,
-            'company_field_id' => $this->companyFieldId,//TODO Fix this
+            // 'company_field_id' => $this->companyFieldId,//TODO Fix this
             'general_manager_id' => $this->generalManagerId
         ];
     }
