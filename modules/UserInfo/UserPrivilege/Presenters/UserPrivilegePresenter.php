@@ -23,7 +23,7 @@ class UserPrivilegePresenter extends AbstractPresenter
             'id' => $this->userPrivilege->id,
             'type_privilege'=> $this->userPrivilege->type_privilege,
             'type_allowance'=> $this->userPrivilege->type_allowance,
-            'rate'=> $this->userPrivilege->rate,
+            'charge_amount'=> $this->userPrivilege->charge_amount,
             'description'=> $this->userPrivilege->description,
             'period'=> $this->userPrivilege->period,
             'insurance_company'=> $this->userPrivilege->insurance_company,
