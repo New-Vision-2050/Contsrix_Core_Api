@@ -14,6 +14,7 @@ class CompanyFilter extends SearchModelFilter
     {
         return $this->whereTranslatable('name',$name);
     }
+
     public function country($countryId)
     {
         return $this->where('country_id', $countryId);

@@ -19,6 +19,8 @@ use Modules\CompanyUser\Presenters\CompanyIdentityDataPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserDataInfoPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserImagePresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
+use Modules\CompanyUser\Presenters\WidgetCompanyUserProfilePresenter;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\IdentityDataRequest;
 use Modules\CompanyUser\Requests\SendEmailOtpRequest;
@@ -26,13 +28,16 @@ use Modules\CompanyUser\Requests\UpdateCompanyContactInfoUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyDataInfoUserRequest;
 use Modules\CompanyUser\Requests\UploadPhotoCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Modules\CompanyUser\Services\CompanyUserDatatatusService;
 use Modules\CompanyUser\Services\CompanyUserImageValidationService;
 use Modules\CompanyUser\Services\CompanyUserIUploadmageService;
+use Modules\CompanyUser\Services\CompanyUserWidgetService;
 use Modules\CompanyUser\Services\IdentityDataService;
 use Modules\CompanyUser\Services\SendOtpService;
 use Modules\CompanyUser\Services\ValidateOtpService;
 use Modules\CompanyUser\Services\VerifyCompanyUserContactInfoService;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
 
 class CompanyUserProfileController extends Controller
@@ -47,7 +52,10 @@ class CompanyUserProfileController extends Controller
         private VerifyCompanyUserContactInfoService  $verifyCompanyUserContactInfoService,
         private SendOtpService                       $sendOtpService,
         private ValidateOtpService                   $validateOtpService,
-        private IdentityDataService                  $identityDataService
+        private IdentityDataService                  $identityDataService,
+        private CompanyUserWidgetService $companyUserWidgetService,
+        private CompanyUserDatatatusService $companyUserDatatatusService,
+        private UserRepository $userRepository
     )
     {
     }
@@ -184,6 +192,32 @@ class CompanyUserProfileController extends Controller
         $presenter = new CompanyIdentityDataPresenter($user);
 
         return Json::item($presenter->getData());
+    }
+    public function widget(GetCompanyUserRequest $request): JsonResponse
+    {
+        $userId = Uuid::fromString($request->route('id'));
+
+        $user = $this->userRepository->getUser($userId);
+
+        $getCompanyStatistics = $this->companyUserWidgetService->getCompanyStatistics(
+            Uuid::fromString($user->company_id),
+            Uuid::fromString($user->global_company_user_id),
+        );
+        $presenter = new WidgetCompanyUserProfilePresenter(
+            $getCompanyStatistics->toArray()
+        );
+        return Json::item($presenter->getData());
+    }
+    public function dataStatus(GetCompanyUserRequest $request)//: JsonResponse
+    {
+        $userId = Uuid::fromString($request->route('id'));
+
+        $user = $this->userRepository->getUser($userId);
+
+        return  $getCompanyStatistics = $this->companyUserDatatatusService->getDatatatus(
+            Uuid::fromString($user->company_id),
+            Uuid::fromString($user->global_company_user_id),
+        );
     }
 
 }

@@ -91,7 +91,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             'phone',
             'country_id',
             'company_type_id',
-            'company_field_id',
+            // 'company_field_id',
             'general_manager_id',
             'is_active',
             'complete_data',
@@ -199,6 +199,8 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     {
         return $this->hasMany(CompanyOfficialDocument::class, 'company_id');
     }
-
-
+    public function companyFields()
+    {
+        return $this->belongsToMany(CompanyField::class, 'company_company_fields', 'company_id', 'company_field_id');
+    }
 }
