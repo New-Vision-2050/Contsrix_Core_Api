@@ -3,12 +3,11 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Modules\Company\CompanyCore\Models\Company;
-use Modules\Setting\Models\Setting;
-use Ranium\SeedOnce\Traits\SeedOnce;
+use Illuminate\Support\Facades\Schema;
+use Modules\Country\Models\Country;
+
 
 class CitiesTableSeeder extends Seeder
 {
@@ -16,6 +15,13 @@ class CitiesTableSeeder extends Seeder
     {
         $sql = File::get(database_path('sql/countries.sql'));
         DB::unprepared($sql);
+        Schema::table('countries',function($table){
+            $table->boolean('status',0);
+        });
+        Country::query()
+            ->where("name", "Egypt")
+            ->orWhere("name", "Saudi Arabia")
+            ->update(["status" => 1]);
         $sql = File::get(database_path('sql/states.sql'));
         DB::unprepared($sql);
         $sql = File::get(database_path('sql/cities.sql'));

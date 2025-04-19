@@ -71,7 +71,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $company = Company::insertOrIgnore($companyData);
         $company = Company::query()->find($id);
         $company->update(['name' => ["ar" => 'نيو فيجن', "en" => "new vision"]]);
-        $path = Storage::disk('public')->path("default_path/new-vision-logo.jpg");
+        $path = resource_path()."/images/new-vision-logo.jpg";
         $file = new \Illuminate\Http\UploadedFile(
             $path,
             'new-vision-logo.jpg',
