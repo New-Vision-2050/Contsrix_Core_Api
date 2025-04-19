@@ -19,6 +19,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/show-data-info', [CompanyUserProfileController::class, 'showDataInfo']);
     Route::get('/show-contact-information', [CompanyUserProfileController::class, 'showContactInformation']);
     Route::get('/show-identity-data', [CompanyUserProfileController::class, 'showidentityData']);
+    Route::get('/widget/user/{id}', [CompanyUserProfileController::class, 'widget']);
 
     Route::get('/show-by-email/{email}', [CompanyUserController::class, 'showByEmail']);
     Route::post('/change-time-zone/{id}', [CompanyUserController::class, 'changeTimeZone']);

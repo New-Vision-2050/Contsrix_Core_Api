@@ -39,8 +39,6 @@ class UserPrivilege extends Model
         'description',
         'privilege_id',
         'period_id',
-        'insurance_company',
-        'insurance_number',
     ];
 
     protected $casts = [
@@ -65,7 +63,7 @@ class UserPrivilege extends Model
     public function typeAllowance()
     {
         return $this->belongsTo(TypeAllowance::class);
-    }
+    }  
 
     public function period()
     {
