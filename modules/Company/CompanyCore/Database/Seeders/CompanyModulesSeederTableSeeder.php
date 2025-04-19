@@ -64,7 +64,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'company_field_id' => $companyField->id,
             'registration_type_id' => $registrationType->id,
             'general_manager_id' => $general_manager->id->toString(),
-            'registration_no' => '123456',
+            // 'registration_no' => '123456',
             'serial_no' => bin2hex(random_bytes(6)),
             "is_central_company" => 1
         ];

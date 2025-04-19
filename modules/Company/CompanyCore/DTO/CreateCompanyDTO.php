@@ -24,7 +24,7 @@ class CreateCompanyDTO
     public function toArray(): array
     {
         return [
-            'name' => ["ar"=>$this->name],
+            'name' => $this->name,
             'user_name' => $this->userName,
             'country_id' => $this->countryId,
             'company_field_id' => $this->companyFieldId,//TODO Fix this
