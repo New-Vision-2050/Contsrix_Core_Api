@@ -4,11 +4,11 @@ FROM mabou7agar/custom-nginx-php8-2
 # RUN docker-php-ext-install sockets \
 #     && docker-php-ext-enable sockets
 
-RUN apt-get update && apt-get install -y \
-        libmagickwand-dev --no-install-recommends \
-    && pecl install imagick \
-    && docker-php-ext-install sockets \
-    && docker-php-ext-enable imagick sockets
+#RUN apt-get update && apt-get install -y \
+#        libmagickwand-dev --no-install-recommends \
+#    && pecl install imagick \
+#    && docker-php-ext-install sockets \
+#    && docker-php-ext-enable imagick sockets
 
 ARG CACHEBUST=1
 ## Set working directory
