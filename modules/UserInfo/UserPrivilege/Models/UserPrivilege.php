@@ -63,7 +63,7 @@ class UserPrivilege extends Model
     public function typeAllowance()
     {
         return $this->belongsTo(TypeAllowance::class);
-    }
+    }  
 
     public function period()
     {
