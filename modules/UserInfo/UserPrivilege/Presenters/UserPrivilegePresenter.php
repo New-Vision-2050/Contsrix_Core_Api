@@ -6,7 +6,10 @@ namespace Modules\UserInfo\UserPrivilege\Presenters;
 
 use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Period\Presenters\PeriodPresenter;
 use Modules\Shared\Privilege\Presenters\PrivilegePresenter;
+use Modules\Shared\TypeAllowance\Presenters\TypeAllowancePresenter;
+use Modules\Shared\TypePrivilege\Presenters\TypePrivilegePresenter;
 
 class UserPrivilegePresenter extends AbstractPresenter
 {
@@ -21,16 +24,12 @@ class UserPrivilegePresenter extends AbstractPresenter
     {
         return [
             'id' => $this->userPrivilege->id,
-            'type_privilege'=> $this->userPrivilege->type_privilege,
-            'type_allowance'=> $this->userPrivilege->type_allowance,
-            'charge_amount'=> $this->userPrivilege->charge_amount,
+            'type_privilege'=> $this->userPrivilege->typePrivilege? (new TypePrivilegePresenter($this->userPrivilege->typePrivilege))->getData() : null,
+            'type_allowance'=> $this->userPrivilege->typeAllowance ? (new TypeAllowancePresenter($this->userPrivilege->typeAllowance))->getData(): null,
+            'charge_amount'=> $this->userPrivilege->chargeAmount,
             'description'=> $this->userPrivilege->description,
-            'period'=> $this->userPrivilege->period,
-            'insurance_company'=> $this->userPrivilege->insurance_company,
-            'insurance_number'=> $this->userPrivilege->insurance_number,
-            'privilege' => $this->userPrivilege->privilege
-            ? (new PrivilegePresenter($this->userPrivilege->privilege))->getData()
-            : null,
+            'period'=> $this->userPrivilege->period ? (new PeriodPresenter($this->userPrivilege->period))->getData() : null,
+            'privilege' => $this->userPrivilege->privilege ? (new PrivilegePresenter($this->userPrivilege->privilege))->getData(): null,
         ];
     }
 }

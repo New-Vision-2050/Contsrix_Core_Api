@@ -9,7 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserPrivilege\Database\factories\UserPrivilegeFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Shared\Period\Models\Period;
 use Modules\Shared\Privilege\Models\Privilege;
+use Modules\Shared\TypeAllowance\Models\TypeAllowance;
+use Modules\Shared\TypePrivilege\Models\TypePrivilege;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -52,4 +55,26 @@ class UserPrivilege extends Model
     {
         return $this->belongsTo(Privilege::class);
     }
+
+    public function typePrivilege()
+    {
+        return $this->belongsTo(TypePrivilege::class);
+    }
+
+
+    public function typeAllowance()
+    {
+        return $this->belongsTo(TypeAllowance::class);
+    }
+
+    public function period()
+    {
+        return $this->belongsTo(Period::class);
+    }
+
+
+
+
+
+
 }
