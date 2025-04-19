@@ -28,6 +28,7 @@ use Modules\CompanyUser\Requests\UpdateCompanyContactInfoUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyDataInfoUserRequest;
 use Modules\CompanyUser\Requests\UploadPhotoCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Modules\CompanyUser\Services\CompanyUserDatatatusService;
 use Modules\CompanyUser\Services\CompanyUserImageValidationService;
 use Modules\CompanyUser\Services\CompanyUserIUploadmageService;
 use Modules\CompanyUser\Services\CompanyUserWidgetService;
@@ -53,6 +54,7 @@ class CompanyUserProfileController extends Controller
         private ValidateOtpService                   $validateOtpService,
         private IdentityDataService                  $identityDataService,
         private CompanyUserWidgetService $companyUserWidgetService,
+        private CompanyUserDatatatusService $companyUserDatatatusService,
         private UserRepository $userRepository
     )
     {
@@ -191,7 +193,7 @@ class CompanyUserProfileController extends Controller
 
         return Json::item($presenter->getData());
     }
-    public function widget(GetCompanyUserRequest $request)//: JsonResponse
+    public function widget(GetCompanyUserRequest $request): JsonResponse
     {
         $userId = Uuid::fromString($request->route('id'));
 
@@ -205,8 +207,17 @@ class CompanyUserProfileController extends Controller
             $getCompanyStatistics->toArray()
         );
         return Json::item($presenter->getData());
-
     }
+    public function dataStatus(GetCompanyUserRequest $request)//: JsonResponse
+    {
+        $userId = Uuid::fromString($request->route('id'));
 
+        $user = $this->userRepository->getUser($userId);
+
+        return  $getCompanyStatistics = $this->companyUserDatatatusService->getDatatatus(
+            Uuid::fromString($user->company_id),
+            Uuid::fromString($user->global_company_user_id),
+        );
+    }
 
 }
