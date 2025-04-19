@@ -6,7 +6,6 @@ namespace Modules\Auth\Controllers;
 
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
-use http\Env\Request;
 use Modules\Auth\Handlers\ChangeEmailHandler;
 use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ChangeEmailRequest;

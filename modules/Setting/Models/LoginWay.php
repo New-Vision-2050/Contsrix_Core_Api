@@ -29,8 +29,6 @@ class LoginWay extends Model
     ];
     protected $casts = [
         'id' => "string",
-
-
     ];
 
     public function loginWaySteps()

@@ -7,7 +7,6 @@ namespace Modules\Shared\University\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
 use Modules\Shared\University\Commands\UpdateUniversityCommand;
-use Modules\Shared\University\Handlers\UpdateUniversityHandler;
 
 class UpdateUniversityRequest extends FormRequest
 {
@@ -15,6 +14,8 @@ class UpdateUniversityRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            'country_iso2' => 'required|string',
+            'url' => 'nullable|string',
         ];
     }
 
@@ -22,7 +23,9 @@ class UpdateUniversityRequest extends FormRequest
     {
         return new UpdateUniversityCommand(
             id: Uuid::fromString($this->route('id')),
+            countryIso2: $this->get('country_iso2'),
             name: $this->get('name'),
+            url: $this->get('url'),
         );
     }
 }

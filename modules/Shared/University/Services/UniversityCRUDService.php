@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Shared\University\Services;
 
-use Illuminate\Support\Collection;
 use Modules\Shared\University\DTO\CreateUniversityDTO;
 use Modules\Shared\University\Models\University;
 use Modules\Shared\University\Repositories\UniversityRepository;
@@ -27,6 +26,8 @@ class UniversityCRUDService
         return $this->repository->paginated(
             page: $page,
             perPage: $perPage,
+            orderBy: "id",
+            sortBy: "asc",
         );
     }
 

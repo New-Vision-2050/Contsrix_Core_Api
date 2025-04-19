@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Shared\University\Controllers;
 
-use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use Modules\Shared\University\Handlers\DeleteUniversityHandler;
 use Modules\Shared\University\Handlers\UpdateUniversityHandler;
 use Modules\Shared\University\Presenters\UniversityPresenter;

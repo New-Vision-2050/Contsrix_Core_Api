@@ -167,6 +167,8 @@ return [
     "identity-or-passport-required" => "يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required" => "يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found" => "الشركة غير موجودة",
+    "branch-not-found" => "الفرع غير موجود",
+    "integrity-error" => "البيانات غير موحدة ",
     "login-way-not-found" => "طريقة الدخول غير موجودة",
     "user-not-found" => "المستخدم غير موجود",
     "identifier-not-found" => "المعرف غير موجود",
@@ -189,7 +191,13 @@ return [
     'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
     'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
     'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
+    "action-took-before" => "تم اتخاذ الاجراء من قبل",
+    "logo-not-valid" => "الصورة غير صحيحة",
+
+
+
     "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',

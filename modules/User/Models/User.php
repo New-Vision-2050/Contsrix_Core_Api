@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\CompanyUser\Models\CompanyUser;
 use Modules\Setting\Models\LoginWay;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -97,5 +98,10 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function companyUser()
+    {
+        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
     }
 }
