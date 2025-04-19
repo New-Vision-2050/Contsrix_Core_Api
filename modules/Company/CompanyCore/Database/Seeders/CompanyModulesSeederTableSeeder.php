@@ -72,14 +72,20 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $company = Company::query()->find($id);
         $company->update(['name' => ["ar" => 'نيو فيجن', "en" => "new vision"]]);
         $path = resource_path()."/images/new-vision-logo.jpg";
-        $file = new \Illuminate\Http\UploadedFile(
-            $path,
-            'new-vision-logo.jpg',
-            null,
-            null,
-            true
-        );
-        $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
+        try {
+            $file = new \Illuminate\Http\UploadedFile(
+                $path,
+                'new-vision-logo.jpg',
+                null,
+                null,
+                true
+            );
+
+            $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
+
+        }catch (Exception $exception){
+
+        }
 
 
         $domain = str_replace("be-", "", env("APP_URL"));
