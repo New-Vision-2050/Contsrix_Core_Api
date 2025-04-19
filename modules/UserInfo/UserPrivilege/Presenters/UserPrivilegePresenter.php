@@ -32,4 +32,4 @@ class UserPrivilegePresenter extends AbstractPresenter
             'privilege' => $this->userPrivilege->privilege ? (new PrivilegePresenter($this->userPrivilege->privilege))->getData(): null,
         ];
     }
-}
+}                   
