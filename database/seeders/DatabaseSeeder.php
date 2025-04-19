@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(AcademicSpecializationSeederTableSeeder::class);
 
-        $this->call(UniversitySeederTableSeeder::class);
+//        $this->call(UniversitySeederTableSeeder::class);
         $this->call(ProfessionalBodieSeeder::class);
         $this->call(PrivilegeModulesSeederTableSeeder::class);
 
