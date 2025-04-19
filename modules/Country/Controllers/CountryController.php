@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace Modules\Country\Controllers;
 
 use App\Http\Controllers\Controller;
+use AWS\CRT\HTTP\Request;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Country\Handlers\DeleteCountryHandler;
 use Modules\Country\Handlers\UpdateCountryHandler;
 use Modules\Country\Presenters\CountryPresenter;
+use Modules\Country\Presenters\CountryStateCityPresenter;
+use Modules\Country\Presenters\MixedPresenter;
 use Modules\Country\Requests\CreateCountryRequest;
 use Modules\Country\Requests\DeleteCountryRequest;
+use Modules\Country\Requests\GetCountryAndStateAndCityRequest;
 use Modules\Country\Requests\GetCountryListRequest;
 use Modules\Country\Requests\GetCountryRequest;
 use Modules\Country\Requests\UpdateCountryRequest;
@@ -73,4 +77,14 @@ class CountryController extends Controller
 
         return Json::deleted();
     }
+
+
+    public function getCountryWithStateWithCity( GetCountryAndStateAndCityRequest $request)
+    {
+        $data = $this->countryService->getCountryWithStateWithCity();
+        return Json::item(MixedPresenter::collection($data));
+
+    }
+
+
 }
