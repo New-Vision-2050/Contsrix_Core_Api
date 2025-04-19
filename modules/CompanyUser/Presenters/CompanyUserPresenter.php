@@ -39,6 +39,7 @@ class CompanyUserPresenter extends AbstractPresenter
                 $this->companyUser->companies->unique('id')->first(),
                 $this->companyUser
             ))->getData(),
+            "companies" => CompanyWithRolesPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
             'Job_role' => '-',
             'date_appointment' => '-',
             'branch'=>'-',
