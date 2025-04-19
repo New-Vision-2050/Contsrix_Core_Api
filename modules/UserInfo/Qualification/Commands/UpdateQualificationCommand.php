@@ -15,7 +15,7 @@ class UpdateQualificationCommand
         private string $university_id,
         private string $academic_qualification_id,
         private string $academic_specialization_id,
-        private int $study_rate,
+        private string $study_rate,
         private string $graduation_date,
     ) {
     }
