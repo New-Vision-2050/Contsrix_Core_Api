@@ -80,12 +80,15 @@ class CompanyRepository extends BaseRepository
 
     public function updateCompany(UuidInterface $id, array $data): bool
     {
-
         try {
             DB::beginTransaction();
             $this->update($id, $data);
             $company = $this->find($id);
-            Domain::query()->where("company_id", $company->id)->update(["domain" => $this->parseDomain($data["user_name"])]);
+            if(isset($data["user_name"]))
+            {
+                Domain::query()->where("company_id", $company->id)->update(["domain" => $this->parseDomain($data["user_name"])]);
+
+            }
             DB::commit();
             return true;
         } catch (\Exception $e) {

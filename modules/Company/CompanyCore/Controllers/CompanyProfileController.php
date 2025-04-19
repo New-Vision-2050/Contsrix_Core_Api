@@ -52,7 +52,7 @@ class CompanyProfileController extends Controller
     }
 
 
-    public function updateOfficialData(UpdateOfficialCompanyData $request): JsonResponse
+    public function updateOfficialData(UpdateOfficialCompanyData $request)
     {
         $command = $request->createUpdateOfficialCompanyDataCommand();
         $this->updateOfficialCompanyDataHandler->handle($command);
