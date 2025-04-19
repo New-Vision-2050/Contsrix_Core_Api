@@ -1,0 +1,14 @@
+{
+    "name": "UserExperience",
+    "alias": "userexperience",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserExperience\\Providers\\UserExperienceServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

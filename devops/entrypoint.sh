@@ -23,5 +23,11 @@ php artisan storage:link
 yes | php artisan migrate --force
 yes | php artisan db:seed --force
 
+# Ensure storage/logs directory exists and has correct permissions
+echo "Setting up log directory permissions..."
+mkdir -p /var/www/storage/logs
+chmod -R 775 /var/www/storage/logs
+chown -R www-data:www-data /var/www/storage/logs
+
 # Start Supervisor
 exec "$@"

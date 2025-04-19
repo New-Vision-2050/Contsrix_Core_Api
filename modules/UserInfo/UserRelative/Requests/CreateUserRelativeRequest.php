@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\UserInfo\UserRelative\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Ramsey\Uuid\Uuid;
+use Modules\UserInfo\UserRelative\DTO\CreateUserRelativeDTO;
+
+class CreateUserRelativeRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'name' => 'required|string',
+            'user_id'=> 'required|string',
+            'marital_status'=> 'required|string',
+            'relationship'=> 'required|string',
+            'phone'=> 'required|string',
+        ];
+    }
+
+    public function createCreateUserRelativeDTO(): CreateUserRelativeDTO
+    {
+        return new CreateUserRelativeDTO(
+            name: $this->get('name'),
+            company_id:'',
+            global_id:'',
+            marital_status:$this->get('marital_status'),
+            relationship:$this->get('relationship'),
+            phone:$this->get('phone'),
+        );
+    }
+}

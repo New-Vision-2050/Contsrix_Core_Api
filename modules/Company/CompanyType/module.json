@@ -1,0 +1,14 @@
+{
+    "name": "CompanyType",
+    "alias": "companytype",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Company\\CompanyType\\Providers\\CompanyTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Company"
+}

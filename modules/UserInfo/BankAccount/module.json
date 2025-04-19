@@ -1,0 +1,14 @@
+{
+    "name": "BankAccount",
+    "alias": "bankaccount",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\BankAccount\\Providers\\BankAccountServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

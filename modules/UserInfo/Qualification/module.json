@@ -1,0 +1,14 @@
+{
+    "name": "Qualification",
+    "alias": "qualification",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\Qualification\\Providers\\QualificationServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

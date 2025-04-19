@@ -1,0 +1,14 @@
+{
+    "name": "Period",
+    "alias": "period",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\Period\\Providers\\PeriodServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

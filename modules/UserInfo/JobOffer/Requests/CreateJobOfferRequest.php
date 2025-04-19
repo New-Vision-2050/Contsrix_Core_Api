@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\UserInfo\JobOffer\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Ramsey\Uuid\Uuid;
+use Modules\UserInfo\JobOffer\DTO\CreateJobOfferDTO;
+
+class CreateJobOfferRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'user_id' => 'required|string',
+            'job_offer_number' => 'required|string',
+            'date_send' => 'required|string',
+            'date_accept' => 'required|string',
+            'file' => 'nullable|file'
+        ];
+    }
+
+    public function createCreateJobOfferDTO(): CreateJobOfferDTO
+    {
+        return new CreateJobOfferDTO(
+            company_id: '',
+            global_id: '',
+            job_offer_number: $this->get('job_offer_number'),
+            date_send: $this->get('date_send'),
+            date_accept: $this->get('date_accept'),
+            file: $this->file('file'),
+        );
+    }
+}
