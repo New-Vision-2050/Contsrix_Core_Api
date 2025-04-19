@@ -19,7 +19,7 @@ class CreateCompanyLegalDataRequest extends FormRequest
     {
         return [
             'registration_type_id' => 'required|exists:company_registration_types,id',
-            'registration_number' => 'required',
+            'regestration_number' => 'required',
             'start_date' => 'required|date|before_or_equal:end_date',
             'end_date' => 'required|date|after_or_equal:start_date',
             "file"=>"required|mimes:pdf,jpeg,jpg,png,doc,docx",
@@ -32,7 +32,7 @@ class CreateCompanyLegalDataRequest extends FormRequest
         return new CreateCompanyLegalDataDTO(
             managementHierarchy: $branch,
             registrationTypeId:Uuid::fromString($this->registration_type_id),
-            registrationNumber: $this->registration_number,
+            registrationNumber: $this->regestration_number,
             startDate: $this->start_date,
             endDate: $this->end_date,
             file: $this->file("file"),
