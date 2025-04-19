@@ -50,7 +50,7 @@ class CompanyPresenter extends AbstractPresenter
             'complete_data' => $this->company->complete_data,
             'date_activate' => $this->company->date_activate,
             "is_central_company" => $this->company->is_central_company,
-            "branch" =>request("branch_id")?$this->company->branches->where("id",request("branch_id"))->first()->name:$this->company->mainBranch->name,
+            "branch" =>request("branch_id")?$this->company->branches->where("id",request("branch_id"))->first()?->name:$this->company->mainBranch?->name,
 
             "main_branch" => [
                 "name" => $this->company->mainBranch?->name

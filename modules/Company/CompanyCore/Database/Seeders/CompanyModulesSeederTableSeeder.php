@@ -88,9 +88,14 @@ class CompanyModulesSeederTableSeeder extends Seeder
             "company_id" => $id,
             "domain" => env("NEW_VISION_DOMAIN", $domain)
         ]);
-        $mainBranch = ManagementHierarchy::query()->create(["id" => Uuid::uuid4()->toString(), "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch","is_first_branch" => 1]);
+        $branchId = Uuid::uuid5($namespace, "new-vision-branch")->toString();
+
+         ManagementHierarchy::query()->insertOrIgnore(["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch","is_first_branch" => 1]);
+        $mainBranch = ManagementHierarchy::query()->find($branchId);
+        $companyAddressId = Uuid::uuid5($namespace, "new-vision-address")->toString();
 
         CompanyAddress::query()->create([
+            "id"=>$companyAddressId,
             "company_id" => $id,
             "country_id" => $country->id,
             "management_hierarchy_id" => $mainBranch->id
@@ -98,7 +103,11 @@ class CompanyModulesSeederTableSeeder extends Seeder
         ]);
 
         $general_manager->update(['company_id' => $id]);
-        CompanyUserCompany::query()->create([
+
+        $companyUserCompanyId = Uuid::uuid5($namespace, "new-vision-user-company")->toString();
+
+        CompanyUserCompany::query()->insertOrIgnore([
+            "id"=>$companyUserCompanyId,
             'company_id' => $id,
             'global_company_user_id' => $general_manager->global_company_user_id,
             'role' => CompanyUserRole::EMPLOYEE->value
