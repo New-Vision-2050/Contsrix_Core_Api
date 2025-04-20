@@ -204,7 +204,7 @@ class CompanyUserProfileController extends Controller
             Uuid::fromString($user->global_company_user_id),
         );
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData()); 
     }
     public function dataStatus(GetCompanyUserRequest $request): JsonResponse
     {
