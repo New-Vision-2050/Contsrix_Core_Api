@@ -45,7 +45,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $this->call(CompanyTypeSeederTableSeeder::class);
         $this->call(CompanyRegistrationTypeSeederTableSeeder::class);
 
-        $country = Country::first();
+        $country = Country::query()->where("iso2","SA")->first();
         $companyType = CompanyType::first();
         $companyField = CompanyField::first();
         $registrationType = CompanyRegistrationType::first();
