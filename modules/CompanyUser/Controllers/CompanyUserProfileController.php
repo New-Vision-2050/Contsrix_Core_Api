@@ -193,19 +193,17 @@ class CompanyUserProfileController extends Controller
 
         return Json::item($presenter->getData());
     }
-    public function widget(GetCompanyUserRequest $request): JsonResponse
+    public function widget(GetCompanyUserRequest $request)//: JsonResponse
     {
         $userId = Uuid::fromString($request->route('id'));
 
         $user = $this->userRepository->getUser($userId);
 
-        $getCompanyStatistics = $this->companyUserWidgetService->getCompanyStatistics(
+        $presenter = $this->companyUserWidgetService->getCompanyStatistics(
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
-        $presenter = new WidgetCompanyUserProfilePresenter(
-            $getCompanyStatistics->toArray()
-        );
+
         return Json::item($presenter->getData());
     }
     public function dataStatus(GetCompanyUserRequest $request)//: JsonResponse
@@ -214,10 +212,12 @@ class CompanyUserProfileController extends Controller
 
         $user = $this->userRepository->getUser($userId);
 
-        return  $getCompanyStatistics = $this->companyUserDatatatusService->getDatatatus(
+          $getCompanyStatistics = $this->companyUserDatatatusService->getDatatatus(
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
+
+        return Json::item($getCompanyStatistics);
     }
 
 }

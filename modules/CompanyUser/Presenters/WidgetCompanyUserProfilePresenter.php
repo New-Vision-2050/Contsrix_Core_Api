@@ -7,27 +7,29 @@ namespace Modules\CompanyUser\Presenters;
 use Modules\CompanyUser\Models\CompanyUser;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Carbon\Carbon;
-
 class WidgetCompanyUserProfilePresenter extends AbstractPresenter
 {
-    private array $getCompanyStatistics;
+    private  $employmentContract;
+    private $userSalary;
 
-    public function __construct(array $getCompanyStatistics)
+    public function __construct( $employmentContract, $userSalary)
     {
-        $this->getCompanyStatistics = $getCompanyStatistics;
+        $this->employmentContract = $employmentContract;
+        $this->userSalary = $userSalary;
     }
 
     protected function present(bool $isListing = false): array
     {
-        $startDate = Carbon::parse($this->getCompanyStatistics['start_date']);
-        $contractDuration = (int) $this->getCompanyStatistics['contract_duration'];
+        $startDate = Carbon::parse($this->employmentContract['start_date']);
+        $contractDuration = (int) $this->employmentContract['contract_duration'];
 
         $endDate = $startDate->copy()->addYears($contractDuration);
 
         return [
             'contract' => [
-                'start_date' => $startDate->toDateString(),
-                'end_date'   => $endDate->toDateString(),
+                'start_date'   => $startDate->toDateString(),
+                'end_date'     => $endDate->toDateString(),
+                'user_salary'  => $this->userSalary->salary
             ]
         ];
     }
