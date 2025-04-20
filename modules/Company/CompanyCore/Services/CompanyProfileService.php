@@ -114,6 +114,7 @@ class CompanyProfileService
     private function getCity($lat, $long)
     {
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$long&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
+        $city = "";
         foreach ($response['results'] as $key => $value) {
             if ($value['types'][0] == "locality") {
                 $city = $value["address_components"][0]["long_name"];
