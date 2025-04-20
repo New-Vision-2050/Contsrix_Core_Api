@@ -18,7 +18,7 @@ class UpdateCompanyOfficialDocumentCommand
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
         private ?array         $files,
-        private array         $filesDeleteIds,
+        private ?array         $filesDeleteIds,
     )
     {
     }
