@@ -17,7 +17,7 @@ class ValidateOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'otp' => 'required',
+            // 'otp' => 'required',
             'identifier' => 'required',
             'type' =>'required',
         ];
