@@ -26,9 +26,10 @@ class CreateCompanyRequest extends FormRequest
             // 'phone' => 'required',
             'country_id' => 'required|exists:countries,id',
             // 'company_type_id' => 'required|exists:company_types,id',
-            'company_field_id' => 'required|exists:company_fields,id',
+            'company_field_id' => 'required|array',
+            'company_field_id.*' => 'required|uuid|exists:company_fields,id',
             // 'registration_type_id' => 'required|exists:company_registration_types,id',
-            'general_manager_id' => 'required',
+            'general_manager_id' => 'required|uuid|exists:users,id',
             // 'registration_type' => 'required|integer',
             // 'registration_no' => [
             //     'nullable',

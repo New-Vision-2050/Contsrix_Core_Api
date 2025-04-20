@@ -31,35 +31,25 @@ class IdentityDataService
 
         $uploadedFiles = [];
 
-        if ($request->hasFile('file_passport')) {
-            $uploadedFiles['file_passport'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_passport'), $path, 'file_passport', $visibility
-            );
-        }
 
-        if ($request->hasFile('file_identity')) {
-            $uploadedFiles['file_identity'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_identity'), $path, 'file_identity', $visibility
-            );
-        }
+        $fields = [
+            'file_passport',
+            'file_identity',
+            'file_border_number',
+            'file_entry_number',
+            'file_work_permit',
+        ];
 
-        if ($request->hasFile('file_border_number')) {
-            $uploadedFiles['file_border_number'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_border_number'), $path, 'file_border_number', $visibility
-            );
+        foreach ($fields as $field) {
+            if ($request->hasFile($field)) {
+                foreach ($request->file($field) as $file) {
+                    $uploadedFiles[$field][] = $this->fileUploadService->uploadFile(
+                        $companyUser, $file, $path, $field, $visibility
+                    );
+                }
+            }
         }
-
-        if ($request->hasFile('file_entry_number')) {
-            $uploadedFiles['file_entry_number'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_entry_number'), $path, 'file_entry_number', $visibility
-            );
-        }
-        if ($request->hasFile('file_work_permit')) {
-            $uploadedFiles['file_work_permit'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_work_permit'), $path, 'file_work_permit', $visibility
-            );
-        }
-
+        
         return $uploadedFiles;
     }
 

@@ -19,7 +19,7 @@ class ValidateOtpRequest extends FormRequest
         return [
             'otp' => 'required',
             'identifier' => 'required',
-            'type' =>'required',
+            // 'type' =>'required',
         ];
     }
 

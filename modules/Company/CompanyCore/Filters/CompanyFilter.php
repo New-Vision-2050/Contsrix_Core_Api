@@ -12,8 +12,9 @@ class CompanyFilter extends SearchModelFilter
 
     public function name($name)
     {
-        return $this->where('name', 'like', '%'.$name .'%');
+        return $this->whereTranslatable('name',$name);
     }
+
     public function country($countryId)
     {
         return $this->where('country_id', $countryId);

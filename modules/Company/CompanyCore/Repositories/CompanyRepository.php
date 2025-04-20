@@ -128,7 +128,7 @@ class CompanyRepository extends BaseRepository
 
     public function isNameExists(string $name): bool
     {
-        return $this->model->where('name', $name)->exists();
+        return $this->model->whereTranslatable('name', $name)->exists();
     }
 
     public function getInactiveCompanyIds(int $hours = 24, $companyId = null)

@@ -28,12 +28,12 @@ class CreateUserPrivilegeRequest extends FormRequest
         return new CreateUserPrivilegeDTO(
             company_id:'',
             global_id: '',
-            type_privilege_id: $this->get('type_privilege'),
-            type_allowance_id: $this->get('type_allowance'),
+            type_privilege_id: $this->get('type_privilege_id'),
+            type_allowance_id: $this->get('type_allowance_id'),
             charge_amount: $this->get('charge_amount'),
             description: $this->get('description'),
             privilege_id:$this->get('privilege_id'),
-            period_id: $this->get('period'),
+            period_id: $this->get('period_id'),
         );
     }
 }
