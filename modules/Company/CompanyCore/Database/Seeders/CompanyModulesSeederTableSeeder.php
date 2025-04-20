@@ -83,7 +83,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
             $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
 
-        }catch (Exception $exception){
+        }catch (\Exception $exception){
 
         }
 
