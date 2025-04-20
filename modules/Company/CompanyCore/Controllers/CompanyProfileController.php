@@ -22,7 +22,7 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDat
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyOfficialDocumentRequest;
-use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\GetLocationByLatLongRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyAddressRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\RequestUpdateLegalCompanyDataRequest;
