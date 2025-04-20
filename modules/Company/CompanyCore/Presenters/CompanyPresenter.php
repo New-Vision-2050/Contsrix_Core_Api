@@ -70,6 +70,7 @@ class CompanyPresenter extends AbstractPresenter
             "company_address" => $this->appendDateToAddress($this->company->companyAddress),
             "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
             "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
+            "created_at" => $this->company->created_at->format("Y-m-d),
         ];
     }
 }
