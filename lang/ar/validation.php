@@ -194,6 +194,7 @@ return [
     "action-took-before" => "تم اتخاذ الاجراء من قبل",
     "logo-not-valid" => "الصورة غير صحيحة",
     "pick-another-location"=> "يرجى اختيار موقع آخر",
+    'you-must-change-location-or-update-country'=> "يجب اختيار موقع آخر أو تحديث الدولة",
 
 
 

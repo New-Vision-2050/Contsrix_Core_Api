@@ -11,6 +11,7 @@ class GeoCodingDTO
     public function __construct(
         private string $latitude,
         private string $longitude,
+        private $branch
     ) {
     }
 
@@ -20,6 +21,11 @@ class GeoCodingDTO
     public function getLatitude()
     {
         return $this->latitude;
+    }
+
+    public function getBranch()
+    {
+        return $this->branch;
     }
 
 
