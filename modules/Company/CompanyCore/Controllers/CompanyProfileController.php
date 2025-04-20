@@ -74,10 +74,7 @@ class CompanyProfileController extends Controller
     {
         try {
             $geoCodingDTO = $request->createGeoCodingDTO();
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), $e->getCode());
 
-        }
 
         [$country,
             $state,
@@ -85,6 +82,10 @@ class CompanyProfileController extends Controller
             $neighborhood,
             $postalCode,
             $route] = $this->companyProfileService->geoCoding($geoCodingDTO);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(),httpStatus:  $e->getCode());
+
+        }
         return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route))->getData());
     }
 
