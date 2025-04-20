@@ -102,10 +102,10 @@ class CompanyProfileService
             throw new \Exception(__("validation.pick-another-location"), 422);
         }
 
-//        if($country->id != $geoCodingDTO->getBranch()->address->country_id){
-//            throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
-//
-//        }
+        if($country->id != $geoCodingDTO->getBranch()->address->country_id){
+            throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
+
+        }
 
         return [
             $country,

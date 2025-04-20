@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Enum\AdminRequestStatus;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
@@ -46,9 +47,10 @@ class AdminRequestRepository extends BaseRepository
      * @return AdminRequest
      */
 
-    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action,?string $notes=""): AdminRequest
+    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action, ?string $notes = ""): AdminRequest
     {
         $id = $data['id'];
+        $company = Company::query()->where('id', $id)->first();
         unset($data["id"]);
         try {
             DB::beginTransaction();
@@ -67,6 +69,12 @@ class AdminRequestRepository extends BaseRepository
                 "requestable_id" => $id,
                 "requestable_type" => Company::class,
             ]);
+            $adminRequest->adminRequestTransactions()->create([
+                "data" => ["country_id" => $data["country_id"]],
+                "action" => "update",
+                "requestable_id" => $company->mainBranch->address->id,
+                "requestable_type" => CompanyAddress::class,
+            ]);
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -76,7 +84,7 @@ class AdminRequestRepository extends BaseRepository
     }
 
 
-    public function createAdminRequestForCompanyLegalData(UuidInterface $userId,UuidInterface $id ,array $data, string $requestType, array $action,?string $notes="")
+    public function createAdminRequestForCompanyLegalData(UuidInterface $userId, UuidInterface $id, array $data, string $requestType, array $action, ?string $notes = "")
     {
 
         try {
@@ -85,12 +93,12 @@ class AdminRequestRepository extends BaseRepository
                 'user_id' => $userId,
                 'request_type' => $requestType,
                 'action' => $action,
-                'data' =>$data,
+                'data' => $data,
                 "requestable_id" => $id,
                 "requestable_type" => ManagementHierarchy::class,//TODO use branch
                 "notes" => $notes
             ]);
-            foreach ( $data as $item) {
+            foreach ($data as $item) {
                 $adminRequest->adminRequestTransactions()->create([
                     "data" => $item,
                     "action" => "update",
@@ -106,24 +114,24 @@ class AdminRequestRepository extends BaseRepository
         return $adminRequest;
     }
 
-    public function acceptActionOnAdminRequest( UuidInterface $id , $status): AdminRequest
+    public function acceptActionOnAdminRequest(UuidInterface $id, $status): AdminRequest
     {
         try {
-           $adminRequest =  $this->findOneByOrFail(["id"=>$id]);
+            $adminRequest = $this->findOneByOrFail(["id" => $id]);
 
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             throw new \Exception(__("validation.not-found"), 404);
         }
         try {
             DB::beginTransaction();
-            foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction){
-                if($adminRequestTransaction->action == "update"){
-                    $model  = new $adminRequestTransaction->requestable_type;
+            foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction) {
+                if ($adminRequestTransaction->action == "update") {
+                    $model = new $adminRequestTransaction->requestable_type;
                     $model->find($adminRequestTransaction->requestable_id)->update($adminRequestTransaction->data);
                 }
-                $adminRequestTransaction->update(["status"=>$status]);
+                $adminRequestTransaction->update(["status" => $status]);
             }
-            $adminRequest->update(["status"=>$status]);
+            $adminRequest->update(["status" => $status]);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -134,21 +142,21 @@ class AdminRequestRepository extends BaseRepository
         return $adminRequest->fresh();
     }
 
-    public function rejectActionOnAdminRequest( UuidInterface $id , $status): AdminRequest
+    public function rejectActionOnAdminRequest(UuidInterface $id, $status): AdminRequest
     {
         try {
-           $adminRequest =  $this->findOneByOrFail(["id"=>$id]);
+            $adminRequest = $this->findOneByOrFail(["id" => $id]);
 
-        }catch (\Exception $e) {
+        } catch (\Exception $e) {
             throw new \Exception(__("validation.not-found"), 404);
         }
         try {
             DB::beginTransaction();
-            foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction){
+            foreach ($adminRequest->adminRequestTransactions as $adminRequestTransaction) {
 
-                $adminRequestTransaction->update(["status"=>$status]);
+                $adminRequestTransaction->update(["status" => $status]);
             }
-            $adminRequest->update(["status"=>$status]);
+            $adminRequest->update(["status" => $status]);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -159,7 +167,7 @@ class AdminRequestRepository extends BaseRepository
         return $adminRequest->fresh();
     }
 
-    public function setAddress(UuidInterface $id ,array $array)
+    public function setAddress(UuidInterface $id, array $array)
     {
 
     }

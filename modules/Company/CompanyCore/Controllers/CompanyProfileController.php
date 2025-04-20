@@ -76,7 +76,8 @@ class CompanyProfileController extends Controller
             $geoCodingDTO = $request->createGeoCodingDTO();
 
 
-        [$country,
+
+            [$country,
             $state,
             $city,
             $neighborhood,
