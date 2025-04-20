@@ -27,11 +27,11 @@ class IdentityDataRequest extends FormRequest
             'border_number_end_date' => 'required_with:border_number_start_date|date|after:border_number_start_date',
             'entry_number_end_date' => 'required_with:entry_number_start_date|date|after:entry_number_start_date',
 
-            'file_passport' => 'nullable|file',
-            'file_identity' => 'nullable|file',
-            'file_border_number' => 'nullable|file',
-            'file_entry_number' => 'nullable|file',
-            'file_work_permit' => 'nullable|file',
+            'file_passport.*' => 'nullable|file',
+            'file_identity.*' => 'nullable|file',
+            'file_border_number.*' => 'nullable|file',
+            'file_entry_number.*' => 'nullable|file',
+            'file_work_permit.*' => 'nullable|file',
 
             'work_permit_start_date'=>'nullable|string',
             'work_permit_end_date' => 'required_with:work_permit_start_date|date|after:work_permit_start_date',
