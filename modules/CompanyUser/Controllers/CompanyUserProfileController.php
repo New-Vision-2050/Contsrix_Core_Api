@@ -193,7 +193,7 @@ class CompanyUserProfileController extends Controller
 
         return Json::item($presenter->getData());
     }
-    public function widget(GetCompanyUserRequest $request)//: JsonResponse
+    public function widget(GetCompanyUserRequest $request): JsonResponse
     {
         $userId = Uuid::fromString($request->route('id'));
 
@@ -206,7 +206,7 @@ class CompanyUserProfileController extends Controller
 
         return Json::item($presenter->getData());
     }
-    public function dataStatus(GetCompanyUserRequest $request)//: JsonResponse
+    public function dataStatus(GetCompanyUserRequest $request): JsonResponse
     {
         $userId = Uuid::fromString($request->route('id'));
 
