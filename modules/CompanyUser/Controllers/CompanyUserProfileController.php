@@ -217,7 +217,7 @@ class CompanyUserProfileController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function showidentityData()
+    public function showidentityData(GetCompanyUserRequest $request)
     {
         $userId = $request->route('id') ?? auth()->user()->id;
 
