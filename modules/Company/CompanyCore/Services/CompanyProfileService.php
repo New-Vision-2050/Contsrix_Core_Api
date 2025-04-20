@@ -99,7 +99,7 @@ class CompanyProfileService
 
             $city = $cityBySearch;
         }else{
-            throw new \Exception("validation.pick-another-location", 400);
+            throw new \Exception(__("validation.pick-another-location"), 400);
         }
 
         if($country->id != $geoCodingDTO->getBranch()->address->country_id){

@@ -72,7 +72,12 @@ class CompanyProfileController extends Controller
 
     public function getAddressFromMap(getLocationByLatLongRequest $request)
     {
-        $geoCodingDTO = $request->createGeoCodingDTO();
+        try {
+            $geoCodingDTO = $request->createGeoCodingDTO();
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), $e->getCode());
+
+        }
 
         [$country,
             $state,
