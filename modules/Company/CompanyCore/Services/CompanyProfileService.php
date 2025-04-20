@@ -61,6 +61,7 @@ class CompanyProfileService
 
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
+
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=ar&key=" . env('GOOGLE_MAPS_API_KEY'));
         $neighborhood = "";
         $city = "";
@@ -128,7 +129,8 @@ class CompanyProfileService
             }
         }
         $city = trim(strtolower($city));
-        $name =  preg_replace('/[^a-z]/', '', $city);
+        $name = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~]/', '', $city);
+//        return $city;
 
         return $this->cityRepository->findBySimplifiedWay($name);
 
