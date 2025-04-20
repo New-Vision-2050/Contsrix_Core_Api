@@ -23,6 +23,9 @@ class CompanyPresenter extends AbstractPresenter
         $address->country_name = $address->country?->name;
         $address->state_name = $address->state?->name;
         $address->city_name = $address->city?->name;
+        $address->country_lat = $address->country?->latitude;
+        $address->country_long = $address->country?->longitude;
+        $address->country_iso2 = $address->country?->iso2;
         unset($address->country);
         unset($address->state);
         unset($address->city);
