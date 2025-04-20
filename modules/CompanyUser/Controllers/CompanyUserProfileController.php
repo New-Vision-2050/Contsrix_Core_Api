@@ -60,10 +60,14 @@ class CompanyUserProfileController extends Controller
     {
     }
 
-    public function profile(): JsonResponse
+    public function profile(GetCompanyUserRequest $request): JsonResponse
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $userData = $this->userRepository->getUser($userId);
+
         $user = $this->companyUserService->get(
-            Uuid::fromString(auth()->user()->global_company_user_id) ,
+            Uuid::fromString($userData->global_company_user_id) ,
         );
 
         $presenter = new CompanyUserPresenter($user);
@@ -81,7 +85,10 @@ class CompanyUserProfileController extends Controller
     public function uploadPhoto(UploadPhotoCompanyUserRequest $request)//: JsonResponse
     {
         try {
-            $companyUser = $this->companyUserIUploadImageService->uploadFile($request);
+            $userId = $request->route('id') ?? auth()->user()->id;
+
+            $companyUser = $this->companyUserIUploadImageService->uploadFile($request,$userId );
+
             $presenter = new CompanyUserImagePresenter($companyUser);
             return Json::item($presenter->getData(), [], "Photo uploaded successfully");
 
@@ -91,10 +98,14 @@ class CompanyUserProfileController extends Controller
             ]);
         }
     }
-    public function showDataInfo()
+    public function showDataInfo(GetCompanyUserRequest $request)
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $userData = $this->userRepository->getUser($userId);
+
         $user = $this->companyUserService->get(
-            Uuid::fromString(auth()->user()->global_company_user_id),
+            Uuid::fromString($userData->global_company_user_id),
         );
 
         $presenter = new CompanyUserDataInfoPresenter($user);
@@ -103,8 +114,12 @@ class CompanyUserProfileController extends Controller
     }
     public function updateDataInfo(UpdateCompanyDataInfoUserRequest $request)
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $user = $this->userRepository->getUser($userId);
+
         $command = $request->createUpdateCompanyUserCommand();
-        $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
+        $command->global_id = Uuid::fromString($user->global_company_user_id);
 
         $this->updateCompanyUserDataInfoHandler->handle($command);
 
@@ -117,10 +132,13 @@ class CompanyUserProfileController extends Controller
 
     public function sendOtp(SendEmailOtpRequest $request)
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $user = $this->userRepository->getUser($userId);
+
         $command = $request->updateEmailOtpCommand();
-        $command->name = auth()->user()->name;
-        $user_id = auth()->user()->id;
-        $otpData = $this->sendOtpService->sendOtp($command,$user_id);
+        $command->name = $user->name;
+        $otpData = $this->sendOtpService->sendOtp($command,$userId);
 
         return response()->json([
             'success' => true,
@@ -132,7 +150,11 @@ class CompanyUserProfileController extends Controller
     public function validateOtp(ValidateOtpRequest $request)
     {
         try {
-            $global_id = Uuid::fromString(auth()->user()->global_company_user_id);
+            $userId = $request->route('id') ?? auth()->user()->id;
+
+            $user = $this->userRepository->getUser($userId);
+
+            $global_id = Uuid::fromString($user->global_company_user_id);
             $createValidateOtpDTO = $request->createValidateOtpDTO();
 
             $status = $this->validateOtpService->validateOtp($createValidateOtpDTO, $global_id, $request->get('type'));
@@ -144,10 +166,14 @@ class CompanyUserProfileController extends Controller
         }
     }
 
-    public function showContactInformation()
+    public function showContactInformation(GetCompanyUserRequest $request)
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $userData = $this->userRepository->getUser($userId);
+
         $user = $this->companyUserService->get(
-            Uuid::fromString(auth()->user()->global_company_user_id),
+            Uuid::fromString($userData->global_company_user_id),
         );
 
         $presenter = new CompanyContactInfoPresenter($user);
@@ -156,8 +182,12 @@ class CompanyUserProfileController extends Controller
     }
     public function updateContactInformation(UpdateCompanyContactInfoUserRequest $request)
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $user = $this->userRepository->getUser($userId);
+
         $command = $request->createUpdateCompanyUserCommand();
-        $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
+        $command->global_id = Uuid::fromString($user->global_company_user_id);
 
         $this->updateCompanyUserContactInfoHandler->handle($command);
 
@@ -169,8 +199,12 @@ class CompanyUserProfileController extends Controller
     }
     public function identityData(IdentityDataRequest $request)
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $user = $this->userRepository->getUser($userId);
+
         $command = $request->updateIdentityDataCommand();
-        $command->global_id = Uuid::fromString(auth()->user()->global_company_user_id);
+        $command->global_id = Uuid::fromString($user->global_company_user_id);
 
         $this->updateCompanyUserIdentityDataHandler->handle($command);
 
@@ -183,10 +217,14 @@ class CompanyUserProfileController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function showidentityData()
+    public function showidentityData(GetCompanyUserRequest $request)
     {
+        $userId = $request->route('id') ?? auth()->user()->id;
+
+        $userData = $this->userRepository->getUser($userId);
+
         $user = $this->companyUserService->get(
-            Uuid::fromString(auth()->user()->global_company_user_id),
+            Uuid::fromString($userData->global_company_user_id),
         );
 
         $presenter = new CompanyIdentityDataPresenter($user);
@@ -199,25 +237,25 @@ class CompanyUserProfileController extends Controller
 
         $user = $this->userRepository->getUser($userId);
 
-        $getCompanyStatistics = $this->companyUserWidgetService->getCompanyStatistics(
+        $presenter = $this->companyUserWidgetService->getCompanyStatistics(
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
-        $presenter = new WidgetCompanyUserProfilePresenter(
-            $getCompanyStatistics->toArray()
-        );
+
         return Json::item($presenter->getData());
     }
-    public function dataStatus(GetCompanyUserRequest $request)//: JsonResponse
+    public function dataStatus(GetCompanyUserRequest $request): JsonResponse
     {
         $userId = Uuid::fromString($request->route('id'));
 
         $user = $this->userRepository->getUser($userId);
 
-        return  $getCompanyStatistics = $this->companyUserDatatatusService->getDatatatus(
+          $getCompanyStatistics = $this->companyUserDatatatusService->getDatatatus(
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
+
+        return Json::item($getCompanyStatistics);
     }
 
 }
