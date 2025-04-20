@@ -22,7 +22,7 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDat
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyOfficialDocumentRequest;
-use Modules\Company\CompanyCore\Requests\CompanyProfile\getLocationByLatLongRequest;
+use Modules\Company\CompanyCore\Requests\CompanyProfile\GetLocationByLatLongRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyAddressRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\SetCompanyLogoRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\RequestUpdateLegalCompanyDataRequest;
@@ -32,7 +32,6 @@ use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDat
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyProfileService;
-use Modules\Country\Models\Country;
 use Modules\Country\Presenters\CountryStateCityPresenter;
 use Ramsey\Uuid\Uuid;
 
@@ -73,14 +72,18 @@ class CompanyProfileController extends Controller
 
     public function getAddressFromMap(getLocationByLatLongRequest $request)
     {
-        $geoCodingDTO = $request->createGeoCodingDTO();
-
-        [$country,
+        try {
+            $geoCodingDTO = $request->createGeoCodingDTO();
+            [$country,
             $state,
             $city,
             $neighborhood,
             $postalCode,
             $route] = $this->companyProfileService->geoCoding($geoCodingDTO);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(),httpStatus:  $e->getCode());
+
+        }
         return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route))->getData());
     }
 
@@ -129,7 +132,6 @@ class CompanyProfileController extends Controller
     {
         $command = $request->createUpdateLegalCompanyDataCommand();
         $this->updateCompanyLegalDataHandler->handle($command);
-        $this->companyProfileService->getCompanyLegalData(Uuid::fromString($request->route("id")));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
@@ -161,7 +163,7 @@ class CompanyProfileController extends Controller
     public function deleteOfficialDocumentMedia(Request $request)
     {
 
-        $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), Uuid::fromString($request->route("media_id")));
+        $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), $request->route("media_id"));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }

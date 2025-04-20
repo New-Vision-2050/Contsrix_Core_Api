@@ -10,9 +10,9 @@ class SetCompanyAddressCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private int           $countryId,
-        private int           $stateId,
-        private int           $cityId,
+        private string        $countryId,
+        private string        $stateId,
+        private string        $cityId,
         private string        $neighborhoodName,
         private string        $streetName,
         private string        $buildingNumber,

@@ -7,10 +7,12 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 
 class GetLocationByLatLongRequest extends FormRequest
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function rules(): array
     {
         return [
@@ -22,9 +24,11 @@ class GetLocationByLatLongRequest extends FormRequest
 
     public function createGeoCodingDTO(): GeoCodingDTO
     {
+       [$company , $branch] = $this->declareCompanyAndBranchUsingRequest();
         return new GeoCodingDTO(
             latitude: (string)$this->get('lat'),
             longitude: (string)$this->get('long'),
+            branch: $branch
 
         );
     }

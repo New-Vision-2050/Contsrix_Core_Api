@@ -28,6 +28,8 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Country\Models\City;
 use Modules\Country\Repositories\CityRepository;
+use Modules\Country\Repositories\CountryRepository;
+use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -41,7 +43,10 @@ class CompanyProfileService
         private CompanyLegalDataRepository        $companyLegalDataRepository,
         private CompanyAddressRepository          $companyAddressRepository,
         private CompanyOfficialDocumentRepository $companyOfficialDocumentRepository,
-        private CityRepository                    $cityRepository
+        private CityRepository                    $cityRepository,
+        private StateRepository                   $stateRepository,
+        private CountryRepository                 $countryRepository,
+
     )
     {
     }
@@ -59,9 +64,28 @@ class CompanyProfileService
 
     }
 
+    public function getTranslatedNighborhoodAndRoute($lat , $long)
+    {
+        $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$long}&language=ar&key=" . env('GOOGLE_MAPS_API_KEY'));
+        $neighborhood = "";
+
+        $route = "";
+        foreach ($response['results'] as $key => $value) {
+            if ($value['types'][0] == "political") {
+                $neighborhood = $value["address_components"][0]["long_name"];
+            }
+
+            if ($value['types'][0] == "route") {
+                $route = $value["address_components"][0]["long_name"];
+            }
+        }
+        return [$neighborhood,$route];
+    }
+
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
-        $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=ar&key=" . env('GOOGLE_MAPS_API_KEY'));
+
+        $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
         $neighborhood = "";
         $city = "";
         $state = "";
@@ -92,13 +116,31 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
-        $cityBySearch = $this->getCity($geoCodingDTO->getLatitude(), $geoCodingDTO->getLongitude());
-        if ($cityBySearch) {
-            $country = $cityBySearch->country;
-            $state = $cityBySearch->state;
+        [$countryFromDB, $stateFromDB, $cityByDB] = $this->getFromDB($country, $city, $state);
+        if ($cityByDB) {
+            $country = $cityByDB->country;
+            $state = $cityByDB->state;
 
-            $city = $cityBySearch;
+            $city = $cityByDB;
+        } elseif ($stateFromDB) {
+            $city = null;
+            $country = $stateFromDB->country;
+            $state = $stateFromDB;
+
+        } elseif ($countryFromDB) {
+            $city = null;
+            $state = null;
+            $country = $countryFromDB;
+            if ($country->id != $geoCodingDTO->getBranch()->address->country_id) {
+                throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
+
+            }
+        } else {
+            $country = null;
+            $state = null;
+            $city = null;
         }
+[$neighborhood,$route] = $this->getTranslatedNighborhoodAndRoute($geoCodingDTO->getLatitude(),$geoCodingDTO->getLongitude());
 
         return [
             $country,
@@ -111,18 +153,23 @@ class CompanyProfileService
 
     }
 
-    private function getCity($lat, $long)
+    private function getFromDB($country, $city, $state)
     {
-        $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$long&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
-        foreach ($response['results'] as $key => $value) {
-            if ($value['types'][0] == "locality") {
-                $city = $value["address_components"][0]["long_name"];
-            }
-        }
-        $city = trim(strtolower($city));
-        $name =  preg_replace('/[^a-z]/', '', $city);
 
-        return $this->cityRepository->findBySimplifiedWay($name);
+        $city = trim(strtolower($city));
+        $cityName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $city);
+
+        $state = trim(strtolower($state));
+        $stateName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $state);
+
+        $country = trim(strtolower($country));
+        $countryName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $country);
+
+        $city = $this->cityRepository->findBySimplifiedWay($cityName);
+        $state = $this->stateRepository->findBySimplifiedWay($stateName);
+        $country = $this->countryRepository->findBySimplifiedWay($countryName);
+
+        return [$country, $state, $city];
 
 
     }

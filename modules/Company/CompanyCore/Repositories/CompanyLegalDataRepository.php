@@ -43,15 +43,21 @@ class CompanyLegalDataRepository extends BaseRepository
         return $companyLegalData;
     }
 
-    public function updateCompanyLegalData(UuidInterface $id, array $data, $file)
+    public function updateCompanyLegalData( array $data)
     {
         try {
             DB::beginTransaction();
-            $this->findOneOrFail($id)->update($data);
+            foreach ($data as $item) {
+               $legalData =  $this->findOneOrFail($item["id"]);
+               $legalData->update(["start_date"=>$item["start_date"],"end_date"=>$item["end_date"]]);
+               if(array_key_exists("file",$item) && !is_string($item["file"]))
+               {
+                   $legalData->clearMediaCollection('upload');//for replace with new media
+                   $this->fileUploadService->uploadFile($legalData, $item["file"], "company");
+               }
 
-            $companyLegalData = $this->find($id);
-            $companyLegalData->clearMediaCollection('upload');//for replace with new media
-            $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            }
+
             DB::commit();
 
         } catch (\Exception $e) {
@@ -59,7 +65,7 @@ class CompanyLegalDataRepository extends BaseRepository
             throw new \Exception($e->getMessage(), 409);
 
         }
-        return $companyLegalData;
+        return true;
     }
 
 

@@ -37,4 +37,10 @@ class CountryCRUDService
             id: $id,
         );
     }
+
+    public function getCountryWithStateWithCity()
+    {
+        return $this->repository->getCountryWithSatesWithCities(request()->country_id,request()->state_id);
+
+    }
 }

@@ -45,7 +45,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $this->call(CompanyTypeSeederTableSeeder::class);
         $this->call(CompanyRegistrationTypeSeederTableSeeder::class);
 
-        $country = Country::first();
+        $country = Country::query()->where("iso2","SA")->first();
         $companyType = CompanyType::first();
         $companyField = CompanyField::first();
         $registrationType = CompanyRegistrationType::first();
@@ -64,7 +64,6 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'company_field_id' => $companyField->id,
             'registration_type_id' => $registrationType->id,
             'general_manager_id' => $general_manager->id->toString(),
-            // 'registration_no' => '123456',
             'serial_no' => bin2hex(random_bytes(6)),
             "is_central_company" => 1
         ];
@@ -73,6 +72,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $company = Company::query()->find($id);
         $company->update(['name' => ["ar" => 'نيو فيجن', "en" => "new vision"]]);
         $path = resource_path()."/images/new-vision-logo.jpg";
+        try {
             $file = new \Illuminate\Http\UploadedFile(
                 $path,
                 'new-vision-logo.jpg',
@@ -83,6 +83,9 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
             $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
 
+        }catch (\Exception $exception){
+
+        }
 
 
         $domain = str_replace("be-", "", env("APP_URL"));

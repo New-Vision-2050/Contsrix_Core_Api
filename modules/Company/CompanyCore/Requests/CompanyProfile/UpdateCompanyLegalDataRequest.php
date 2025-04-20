@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\Commands\CompanyProfile\UpdateCompanyLegalDataCommand;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 
 class UpdateCompanyLegalDataRequest extends FormRequest
@@ -15,20 +16,20 @@ class UpdateCompanyLegalDataRequest extends FormRequest
     public function rules(): array
     {
         return [
-
-            "start_date" => 'required|date|before_or_equal:end_date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            "file"=>"required|mimes:pdf,jpeg,jpg,png,doc,docx"
+            "data" => 'required|array',
+            "data.*.id" => 'required|exists:company_legal_data,id',
+            "data.*.start_date" => 'required|date|before_or_equal:data.*.end_date',
+            'data.*.end_date' => 'required|date|after_or_equal:data.*.start_date',
+            "data.*.file"=>"mimes:pdf,jpeg,jpg,png,doc,docx"
             ];
     }
 
     public function createUpdateLegalCompanyDataCommand(): UpdateCompanyLegalDataCommand
     {
+
         return new UpdateCompanyLegalDataCommand (
-            id: Uuid::fromString($this->route("id")),
-            startDate: $this->start_date,
-            endDate: $this->end_date,
-            file: $this->file("file"),
+            data: $this->data
+
         );
     }
 }

@@ -19,7 +19,7 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "name"=>"required",
+            "name"=>"nullable",
             "files"=>"required|array",
             "files.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
             "document_type_id"=>"required|exists:company_registration_types,id",

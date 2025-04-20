@@ -26,7 +26,7 @@ class SetCompanyAddressRequest extends FormRequest
             ];
     }
 
-    public function createAssignLogoToCompanyDTO(): SetCompanyAddressCommand
+    public function createSetCompanyAddressCommand(): SetCompanyAddressCommand
     {
         return new SetCompanyAddressCommand(
             id: Uuid::fromString($this->route("id")),

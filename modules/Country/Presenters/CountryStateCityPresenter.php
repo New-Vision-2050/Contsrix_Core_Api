@@ -11,15 +11,15 @@ use Modules\Country\Models\State;
 
 class CountryStateCityPresenter extends AbstractPresenter
 {
-    private Country $country;
-    private State $state;
-    private City $city;
+    private $country;
+    private $state;
+    private $city;
     private $neighborhood;
     private $postalCode;
     private $route;
 
 
-    public function __construct(Country $country, State $state, City $city, $neighborhood, $postalCode, $route)
+    public function __construct( $country = null, $state = null, $city = null,$neighborhood=null, $postalCode=null, $route=null)
     {
         $this->country = $country;
         $this->state = $state;
@@ -33,19 +33,19 @@ class CountryStateCityPresenter extends AbstractPresenter
     {
         return [
             "country" => [
-                'id' => $this->country->id,
-                'name' => $this->country->name,
-                "status" => $this->country->status,
+                'id' => $this->country?->id,
+                'name' => $this->country?->name,
+                "status" => $this->country?->status,
             ],
             "state" => [
-                'id' => $this->state->id,
-                'name' => $this->state->name,
+                'id' => $this->state?->id,
+                'name' => $this->state?->name,
             ],
             "city" => [
-                'id' => $this->city->id,
-                'name' => $this->city->name,
+                'id' => $this->city?->id,
+                'name' => $this->city?->name,
             ],
-            "neighborhood" =>$this->neighborhood ,
+            "neighborhood" => $this->neighborhood,
             "postal_code" => $this->postalCode,
             "route" => $this->route,
 
