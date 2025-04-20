@@ -7,17 +7,18 @@ namespace Modules\Country\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Country\Models\City;
+use Modules\Country\Models\State;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Country\Models\Country;
 
 /**
- * @property City $model
- * @method City findOneOrFail($id)
- * @method City findOneByOrFail(array $data)
+ * @property State $model
+ * @method State findOneOrFail($id)
+ * @method State findOneByOrFail(array $data)
  */
-class CityRepository extends BaseRepository
+class StateRepository extends BaseRepository
 {
-    public function __construct(City $model)
+    public function __construct(State $model)
     {
         parent::__construct($model);
     }
@@ -27,14 +28,14 @@ class CityRepository extends BaseRepository
         return $this->paginatedList(['status' => 1], $page, $perPage);
     }
 
-    public function getCity(UuidInterface $id): City
+    public function getCity(UuidInterface $id): State
     {
         return $this->findOneByOrFail([
             'id' => $id->toString(),
         ]);
     }
 
-    public function createCountry(array $data): City
+    public function createCountry(array $data): State
     {
         return $this->create($data);
     }
@@ -49,10 +50,10 @@ class CityRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function findBySimplifiedWay($simplifiedName):?City
+    public function findBySimplifiedWay($simplifiedName):?State
     {
-        $city = $this->model->whereRaw('LOWER(REGEXP_REPLACE(name, \'[^a-zA-Z]\', \'\')) = ?', [$simplifiedName])->first();
-        return $city;
+        $state = $this->model->whereRaw('LOWER(REGEXP_REPLACE(name, \'[^a-zA-Z]\', \'\')) = ?', [$simplifiedName])->first();
+        return $state;
 
     }
 }

@@ -74,7 +74,6 @@ class CompanyProfileController extends Controller
     {
         try {
             $geoCodingDTO = $request->createGeoCodingDTO();
-
             [$country,
             $state,
             $city,

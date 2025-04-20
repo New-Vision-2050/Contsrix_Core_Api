@@ -67,7 +67,12 @@ class CountryRepository extends BaseRepository
        }
 
         return $data;
+    }
 
+    public function findBySimplifiedWay($simplifiedName):?Country
+    {
+        $country = $this->model->whereRaw('LOWER(REGEXP_REPLACE(name, \'[^a-zA-Z]\', \'\')) = ?', [$simplifiedName])->first();
+        return $country;
 
     }
 }
