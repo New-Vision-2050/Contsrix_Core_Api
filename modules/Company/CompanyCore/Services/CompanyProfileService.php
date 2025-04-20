@@ -98,6 +98,8 @@ class CompanyProfileService
             $state = $cityBySearch->state;
 
             $city = $cityBySearch;
+        }else{
+            throw new \Exception("validation.pick-another-location", 400);
         }
 
         return [
