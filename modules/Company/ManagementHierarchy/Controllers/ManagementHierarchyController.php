@@ -26,18 +26,19 @@ use Ramsey\Uuid\Uuid;
 class ManagementHierarchyController extends Controller
 {
     public function __construct(
-        private ManagementHierarchyCRUDService $managementHierarchyService,
+        private ManagementHierarchyCRUDService   $managementHierarchyService,
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
-        private MakeBranchMainHandler $makeBranchMainHandler
-    ) {
+        private MakeBranchMainHandler            $makeBranchMainHandler
+    )
+    {
     }
 
     public function index(GetManagementHierarchyListRequest $request): JsonResponse
     {
         $list = $this->managementHierarchyService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
         );
 
 
@@ -78,9 +79,10 @@ class ManagementHierarchyController extends Controller
         $this->makeBranchMainHandler->handle($command);
         $item = $this->managementHierarchyService->get($command->getId());
         $presenter = new ManagementHierarchyPresenter($item);
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
 
     }
+
     public function update(UpdateManagementHierarchyRequest $request): JsonResponse
     {
         $command = $request->createUpdateManagementHierarchyCommand();
@@ -90,7 +92,7 @@ class ManagementHierarchyController extends Controller
 
         $presenter = new ManagementHierarchyPresenter($item);
 
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteManagementHierarchyRequest $request): JsonResponse
