@@ -6,6 +6,7 @@ namespace Modules\UserInfo\JobOffer\Presenters;
 
 use Modules\UserInfo\JobOffer\Models\JobOffer;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class JobOfferPresenter extends AbstractPresenter
 {
@@ -18,13 +19,13 @@ class JobOfferPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $firstMedia = $this->jobOffer->getFirstMedia('upload_offerjob');
         return [
             'id' => $this->jobOffer->id,
             'job_offer_number' => $this->jobOffer->job_offer_number,
             'date_send' => $this->jobOffer->date_send,
             'date_accept' => $this->jobOffer->date_accept,
-            'file_url' => $this->jobOffer->getFirstMedia('upload_offerjob')?->getFullUrl(),
-
+            'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
         ];
     }
 }

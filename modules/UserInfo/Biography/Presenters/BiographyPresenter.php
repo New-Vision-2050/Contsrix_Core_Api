@@ -7,6 +7,7 @@ namespace Modules\UserInfo\Biography\Presenters;
 use Modules\UserInfo\Biography\Models\Biography;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\CompanyUser\Models\CompanyUser;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class BiographyPresenter extends AbstractPresenter
 {
@@ -19,9 +20,12 @@ class BiographyPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $firstMedia = $this->companyUser->getFirstMedia('upload_biography');
+
         return [
             'id' => $this->companyUser->id,
-            'files' => $this->companyUser->getFirstMedia('upload_biography')?->getFullUrl(),
+            'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+
         ];
     }
 }

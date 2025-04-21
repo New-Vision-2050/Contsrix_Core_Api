@@ -35,7 +35,7 @@ class UserPrivilege extends Model
         'global_id',
         'type_privilege_id',
         'type_allowance_id',
-        'rate',
+        'charge_amount',
         'description',
         'privilege_id',
         'period_id',
@@ -63,7 +63,7 @@ class UserPrivilege extends Model
     public function typeAllowance()
     {
         return $this->belongsTo(TypeAllowance::class);
-    }  
+    }
 
     public function period()
     {
