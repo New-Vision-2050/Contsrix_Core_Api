@@ -178,7 +178,7 @@ class CompanyUserRepository extends BaseRepository
                 CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
 
             }else{
-                throw new \Exception(__("validation.user-already-exists"), 500);
+                throw new \Exception(__("validation.user-already-exists"), 422);
             }
 
 
