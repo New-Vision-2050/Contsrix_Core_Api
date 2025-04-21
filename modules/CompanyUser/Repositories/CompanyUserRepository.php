@@ -174,7 +174,13 @@ class CompanyUserRepository extends BaseRepository
                 ],$phone));
             }
 
-            CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+            if(CompanyUserCompany::query()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->count() == 0){
+                CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+
+            }else{
+                throw new \Exception(__("validation.user-already-exists"), 500);
+            }
+
 
             DB::commit();
         } catch (\Exception $exception) {

@@ -63,6 +63,7 @@ class CompanyController extends Controller
 
     public function store(CreateCompanyRequest $request)
     {
+        return Company::query()->create($request->createCreateCompanyDTO()->toArray());
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
 
         $presenter = new CompanyPresenter($createdItem);
@@ -152,13 +153,13 @@ class CompanyController extends Controller
     {
         try {
             $name = $request->query('name');
-            
+
             if (!$name) {
                 return Json::error('Company name is required', 400);
             }
 
             $company = $this->companyService->getByName($name);
-            
+
             if (!$company) {
                 return Json::error('Company not found', 404);
             }

@@ -23,7 +23,7 @@ class CompanyCRUDService
     {
     }
 
-    public function create(CreateCompanyDTO $createCompanyDTO): Company
+    public function create(CreateCompanyDTO $createCompanyDTO)
     {
         $requestCompanyDTO = $createCompanyDTO->toArray();
         try {
