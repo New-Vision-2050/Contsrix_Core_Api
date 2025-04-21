@@ -16,7 +16,7 @@ class CreateUserPrivilegeRequest extends FormRequest
             'user_id'=> 'required|string',
             'type_privilege_id'=> 'required|string',
             'type_allowance_id'=> 'required|string',
-            'charge_amount'=> 'required|string',
+            'charge_amount'=> 'nullable|string',
             'description'=> 'required|string',
             'privilege_id'=> 'required|string',
             'period_id' => 'required|string',
