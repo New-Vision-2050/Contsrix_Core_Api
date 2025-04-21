@@ -21,7 +21,6 @@ trait CustomBelongsToTenant
             if (! $model->getAttribute(\Stancl\Tenancy\Database\Concerns\BelongsToTenant::$tenantIdColumn) && ! $model->relationLoaded('tenant')) {
                 if (tenancy()->initialized) {
                     if(!($model instanceof Company))
-
                     {
                         $model->setAttribute(\Stancl\Tenancy\Database\Concerns\BelongsToTenant::$tenantIdColumn, tenant()->getTenantKey());
                         $model->setRelation('tenant', tenant());
