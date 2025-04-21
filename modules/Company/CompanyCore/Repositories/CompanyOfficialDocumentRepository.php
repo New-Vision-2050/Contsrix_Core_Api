@@ -66,7 +66,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.update-not-successful"), 409);
+            throw new \Exception($e->getMessage(), 409);
         }
         return $companyOfficialDocument;
     }

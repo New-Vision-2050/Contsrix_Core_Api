@@ -18,6 +18,20 @@ class CompanyPresenter extends AbstractPresenter
         $this->company = $company;
     }
 
+    public function appendDateToAddress($address)
+    {
+        $address->country_name = $address->country?->name;
+        $address->state_name = $address->state?->name;
+        $address->city_name = $address->city?->name;
+        $address->country_lat = $address->country?->latitude;
+        $address->country_long = $address->country?->longitude;
+        $address->country_iso2 = $address->country?->iso2;
+        unset($address->country);
+        unset($address->state);
+        unset($address->city);
+        return $address;
+    }
+
     protected function present(bool $isListing = false): array
     {
         return [
@@ -31,16 +45,19 @@ class CompanyPresenter extends AbstractPresenter
             'serial_no' => $this->company?->serial_no,
             'country_id' => $this->company->country_id,
             'country_name' => $this->company->country->name,
+            'country_lat' => $this->company->country->latitude,
+            'country_long' => $this->company->country->longitude,
+            'country_iso2' => $this->company->country->iso2,
             'company_type_id' => $this->company->company_type_id,
             'company_field_id' => $this->company->company_field_id,
             'registration_type_id' => $this->company->registration_type_id,
             'general_manager_id' => $this->company->general_manager_id,
             'registration_no' => $this->company?->registration_no,
             'general_manager' => [
-                "name"=>$this->company->generalManager?->name,
-                "email"=>$this->company->generalManager?->email,
-                "phone"=>$this->company->generalManager?->phone,
-                "nationality"=>$this->company->generalManager?->companyUser?->country?->name
+                "name" => $this->company->generalManager?->name,
+                "email" => $this->company->generalManager?->email,
+                "phone" => $this->company->generalManager?->phone,
+                "nationality" => $this->company->generalManager?->companyUser?->country?->name
             ],
             'company_type' => $this->company->companyType?->name,
             'company_field' => $this->company->companyField?->name,
@@ -50,15 +67,16 @@ class CompanyPresenter extends AbstractPresenter
             'complete_data' => $this->company->complete_data,
             'date_activate' => $this->company->date_activate,
             "is_central_company" => $this->company->is_central_company,
-            "branch" =>request("branch_id")?$this->company->branches->where("id",request("branch_id"))->first()?->name:$this->company->mainBranch?->name,
+            "branch" => request("branch_id") ? $this->company->branches->where("id", request("branch_id"))->first()?->name : $this->company->mainBranch?->name,
 
             "main_branch" => [
                 "name" => $this->company->mainBranch?->name
             ],
-            "company_legal_data" =>CompanyLegalDataPresenter::collection($this->company->companyLegalData),
-            "company_address" => $this->company->companyAddress,
-            "company_official_documents" =>CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
-            "branches" =>ManagementHierarchyPresenter::collection($this->company->branches),
+            "company_legal_data" => CompanyLegalDataPresenter::collection($this->company->companyLegalData),
+            "company_address" => $this->appendDateToAddress($this->company->companyAddress),
+            "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
+            "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
+            "created_at" => $this->company->created_at,
         ];
     }
 }

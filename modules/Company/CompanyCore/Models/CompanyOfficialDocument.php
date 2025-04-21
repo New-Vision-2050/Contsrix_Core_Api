@@ -34,6 +34,7 @@ class CompanyOfficialDocument extends Model implements HasMedia
     public $incrementing = false;
 
     protected $keyType = 'string';
+    protected $with = ["media"];
 
     protected $fillable = [
         'name',

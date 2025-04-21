@@ -26,14 +26,14 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
 
         Route::prefix("official-document")->group(function () {
             Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createOfficialDocument"]);
-            Route::put("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDocument"]);
+            Route::post("/update/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDocument"]);
             Route::delete("/media/{id}/{media_id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteOfficialDocumentMedia"]);
             Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteOfficialDocument"]);
         });
 
         Route::prefix("legal-data")->group(function () {
             Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "requestUpdateLegalDataRequest"]);
-            Route::post("/update/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateCompanyLegalData"]);
+            Route::post("/update", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateCompanyLegalData"]);
             Route::post("/create-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createLegalData"]);
         });
 

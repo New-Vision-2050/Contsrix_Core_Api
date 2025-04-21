@@ -62,7 +62,7 @@ class UpdateCompanyOfficialDocumentRequest extends FormRequest
             notificationDate: $this->notification_date,
             documentTypeId: Uuid::fromString($this->document_type_id),
             files: $this->file("files"),
-            filesDeleteIds: $this->file("files_deleted"),
+            filesDeleteIds: $this->files_deleted,
         );
     }
 }
