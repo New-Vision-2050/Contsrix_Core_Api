@@ -7,6 +7,7 @@ namespace Modules\CompanyUser\Presenters;
 use Modules\CompanyUser\Models\CompanyUser;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Country\Presenters\CountryPresenter;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 use Modules\User\Presenters\UserPresenter;
 
 class CompanyIdentityDataPresenter extends AbstractPresenter
@@ -41,37 +42,11 @@ class CompanyIdentityDataPresenter extends AbstractPresenter
             'work_permit_start_date' => $this->companyUser->work_permit_start_date,
             'work_permit_end_date' => $this->companyUser->work_permit_end_date,
 
-            'file_passport' => $this->companyUser->getMedia('file_passport')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getFullUrl(),
-                ];
-            }),
-            'file_identity' => $this->companyUser->getMedia('file_identity')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getFullUrl(),
-                ];
-            }),
-            'file_border_number' => $this->companyUser->getMedia('file_border_number')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getFullUrl(),
-                ];
-            }),
-            'file_entry_number' => $this->companyUser->getMedia('file_entry_number')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getFullUrl(),
-                ];
-            }),
-            'file_work_permit' => $this->companyUser->getMedia('file_work_permit')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getFullUrl(),
-                ];
-            }),
-
+            'file_passport' => MediaPresenter::collection($this->companyUser->getMedia('file_passport')),
+            'file_identity' => MediaPresenter::collection($this->companyUser->getMedia('file_identity')),
+            'file_border_number' => MediaPresenter::collection($this->companyUser->getMedia('file_border_number')),
+            'file_entry_number' => MediaPresenter::collection($this->companyUser->getMedia('file_entry_number')),
+            'file_work_permit' => MediaPresenter::collection($this->companyUser->getMedia('file_work_permit')),
 
         ];
     }
