@@ -6,6 +6,7 @@ use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyControlle
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [ManagementHierarchyController::class, 'index']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
+    Route::post('/update-branch/{id}', [ManagementHierarchyController::class, 'updateBranch']);
     Route::post('/make-branch-main/{id}', [ManagementHierarchyController::class, 'makeBranchMain']);
     Route::post('/', [ManagementHierarchyController::class, 'store']);
     Route::get('/{id}', [ManagementHierarchyController::class, 'show']);

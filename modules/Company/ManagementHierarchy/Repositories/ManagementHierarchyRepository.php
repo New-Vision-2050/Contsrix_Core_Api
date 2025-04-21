@@ -44,13 +44,13 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function createManagementHierarchy(array $branchData , array $addressData ): ManagementHierarchy
+    public function createManagementHierarchy(array $branchData, array $addressData): ManagementHierarchy
     {
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($branchData + ["id" => Uuid::uuid4()->toString()]);
 
-            $managementHierarchy->address()->create($addressData+["company_id" => $managementHierarchy->company_id]);
+            $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -61,9 +61,23 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function updateManagementHierarchy(UuidInterface $id, array $data): bool
+    public function updateManagementHierarchy(UuidInterface $id, array $branchData ,array $addressData): bool
     {
-        return $this->update($id, $data);
+        try {
+            DB::beginTransaction();
+            $managementHierarchy = $this->find($id);
+            $managementHierarchy->update($branchData);
+            $managementHierarchy->fresh();
+
+            $managementHierarchy->address()->update($addressData );
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+
+        }
+        return true;
     }
 
     public function deleteManagementHierarchy(UuidInterface $id): bool
@@ -71,20 +85,20 @@ class ManagementHierarchyRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function makeMainBranch(UuidInterface $id , UuidInterface $branchId)
+    public function makeMainBranch(UuidInterface $id, UuidInterface $branchId)
     {
-        $otherMainBranchesCount = $this->model->where('id',"<>", $id)->whereNull("parent_id")->count();
+        $otherMainBranchesCount = $this->model->where('id', "<>", $id)->whereNull("parent_id")->count();
         $mainBranch = $this->find($id);
-        if(!$mainBranch){
+        if (!$mainBranch) {
             throw new \Exception(__("validation.branch-not-found"), 404);
         }
-        if($otherMainBranchesCount)//if found other main branches make branch dub branch to another branch
+        if ($otherMainBranchesCount)//if found other main branches make branch dub branch to another branch
         {
             $mainBranch->update(["parent_id" => $branchId]);
-        }else{//else swap branches
+        } else {//else swap branches
             $alternativeMainBranch = $this->find($branchId);
-            $mainBranch->update("parent_id",$alternativeMainBranch->parent_id);
-            $alternativeMainBranch->update("parent_id",null);
+            $mainBranch->update("parent_id", $alternativeMainBranch->parent_id);
+            $alternativeMainBranch->update("parent_id", null);
         }
     }
 }
