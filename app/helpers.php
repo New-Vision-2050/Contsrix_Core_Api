@@ -32,15 +32,6 @@ function getTagsID($type = "job_grades")
     return $array;
 }
 
-function getPhoneNumberInfo(string $phone): array
-{
-    $phoneArray = explode(' ', $phone);
-    return [
-        'phone_code' => $phoneArray[0],
-        'phone' => str_replace(" ","",$phone),
-    ];
-}
-
 function splitName($name)
 {
     $name = trim($name);

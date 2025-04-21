@@ -11,9 +11,10 @@ class CreateBranchDTO
     public function __construct(
         public string $name,
         public UuidInterface $companyId,
-        public ?UuidInterface $parentId,
+        public UuidInterface $parentId,
         public UuidInterface $managerId,
         public string $phone,
+        public string $phoneCode,
         public string $email,
         public string $lattitude,
         public string $longitude,
@@ -26,12 +27,12 @@ class CreateBranchDTO
 
     public function branchToArray(): array
     {
-        $phone =getPhoneNumberInfo($this->phone);
-        return array_merge([
+        return [
             'name' => $this->name,
             'company_id' => $this->companyId,
             'parent_id' => $this->parentId,
-
+            'phone' => $this->phone,
+            'phone_code' => $this->phoneCode,
             'email' => $this->email,
             'lattitude' => $this->lattitude,
             'longitude' => $this->longitude,
@@ -39,7 +40,7 @@ class CreateBranchDTO
 
             "type" => "branch"
 
-        ],$phone);
+        ];
     }
 
     public function AddressToArray()

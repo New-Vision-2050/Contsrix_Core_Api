@@ -18,7 +18,7 @@ class UpdateCompanyOfficialDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "name"=>"nullable",
+            "name"=>"required",
             "files"=>"nullable|array",
             "files.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
             "files_deleted"=>"nullable|array",
