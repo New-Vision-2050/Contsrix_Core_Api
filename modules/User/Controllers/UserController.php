@@ -176,9 +176,6 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items([
-            'data' => UserPresenter::collection($list['data']),
-            'pagination' => $list['pagination']
-        ]);
+        return Json::items(UserPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 }
