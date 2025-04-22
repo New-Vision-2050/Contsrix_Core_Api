@@ -167,4 +167,14 @@ class UserController extends Controller
 
         return Json::items(CompanyPresenter::collection($this->userService->getAvailableTenantForUser(auth()->user()->id)));
     }
+
+    public function getAdminUsers(GetAdminUsersRequest $request): JsonResponse
+    {
+        $list = $this->userService->getAdminUsersFromCentralCompanies(
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
+        );
+
+        return Json::items(UserPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
 }
