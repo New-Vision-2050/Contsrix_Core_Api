@@ -176,7 +176,7 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::success(__("validation.created_successfully"), [
+        return Json::items([
             'data' => UserPresenter::collection($list['data']),
             'pagination' => $list['pagination']
         ]);
