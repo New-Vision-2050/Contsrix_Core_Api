@@ -178,9 +178,7 @@ class UserController extends Controller
 
         return Json::success(__("validation.created_successfully"), [
             'data' => UserPresenter::collection($list['data']),
-            'pagination' => $list['pagination'],
-            'closeSheet' => true,
-            'reloadTable' => true
+            'pagination' => $list['pagination']
         ]);
     }
 }
