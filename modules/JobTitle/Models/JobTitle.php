@@ -26,7 +26,7 @@ class JobTitle extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        // 'name',
+        'type'
     ];
     public array $translatable = ['name'];
     protected $casts = [
