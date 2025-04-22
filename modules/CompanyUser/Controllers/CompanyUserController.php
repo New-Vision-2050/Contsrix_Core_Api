@@ -126,6 +126,15 @@ class CompanyUserController extends Controller
 
     }
 
+    public function checkEmail()
+    {
+        $validations = $this->companyUserValidationService
+            ->validateEmail()
+            ->get();
+        return Json::item($validations);
+
+    }
+
     public function update(UpdateCompanyUserRequest $request)//: JsonResponse
     {
         $command = $request->createUpdateCompanyUserCommand();
