@@ -6,6 +6,7 @@ namespace Modules\UserInfo\EmploymentContract\Presenters;
 
 use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class EmploymentContractPresenter extends AbstractPresenter
 {
@@ -18,6 +19,8 @@ class EmploymentContractPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $firstMedia = $this->employmentContract->getFirstMedia('upload_employment_contracts');
+
         return [
             'id' => $this->employmentContract->id,
             'company_id' => $this->employmentContract->company_id,
@@ -35,7 +38,7 @@ class EmploymentContractPresenter extends AbstractPresenter
             'country_id' => $this->employmentContract->country_id,
             'country_name' => $this->employmentContract->country->name,
             'right_terminate' => $this->employmentContract->right_terminate,
-            'file_url' => $this->employmentContract->getFirstMedia('upload_employment_contracts')?->getFullUrl(),
+            'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
         ];
     }
 }

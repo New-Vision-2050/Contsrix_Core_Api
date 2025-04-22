@@ -61,12 +61,12 @@ class CompanyCRUDService
 
     public function getCurrentCompanyLoggedIn()
     {
-        try {
+        //try {
             return $this->repository->getCurrentCompany();
-        } catch (\Exception $e) {
-            throw new \Exception(__("validation.company-not-found"), 404);
-
-        }
+        //} catch (\Exception $e) {
+        //    throw new \Exception(__("validation.company-not-found"), 404);
+        //
+        //}
     }
 
     public function getCompanyByHost($host)

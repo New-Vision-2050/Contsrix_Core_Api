@@ -40,6 +40,7 @@ class Country extends Model
 
     protected $casts = [
         'id' => 'string',
+        "timezones"=>"array"
     ];
 
     public function smsDriver()

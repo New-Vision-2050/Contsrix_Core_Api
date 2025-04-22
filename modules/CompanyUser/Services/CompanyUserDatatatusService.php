@@ -66,7 +66,6 @@ class CompanyUserDatatatusService
         if(isset($userRelative['data']) && count($userRelative['data']) > 0){
             $infoFields = [
                 'name', 'email', 'phone', 'other_phone', 'address',
-                'whatsapp', 'facebook', 'telegram', 'instagram', 'snapchat', 'linkedin'
             ];
             $hasInfo = false;
 
@@ -82,7 +81,8 @@ class CompanyUserDatatatusService
 
         $hasContacts = false;
         $infoContacts = [
-            'email', 'phone', 'other_phone'
+            'email', 'phone', 'other_phone',
+            'whatsapp', 'facebook', 'telegram', 'instagram', 'snapchat', 'linkedin'
         ];
         $hasContacts = false;
 
@@ -116,9 +116,9 @@ class CompanyUserDatatatusService
             "passport",
             "passport_start_date",
             "passport_end_date",
-            "identity",
-            "identity_start_date",
-            "identity_end_date",
+            // "identity",
+            // "identity_start_date",
+            // "identity_end_date",
             "border_number",
             "border_number_start_date",
             "border_number_end_date",

@@ -7,7 +7,7 @@ namespace Modules\Country\Presenters;
 use Modules\Country\Models\Country;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class CountryPresenter extends AbstractPresenter
+class CountryCurrencyPresenter extends AbstractPresenter
 {
     private Country $country;
 
@@ -20,11 +20,8 @@ class CountryPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->country->id,
-            'name' => $this->country->name ,
-            "status"=> $this->country->status,
-            "sms_driver" => $this->country->smsDriver?->name,
-             "currency_name" => $this->country->currency_name,
-            "currency_symbol"=> $this->country->currency_symbol
+            'currency_name' => $this->country->currency_name ,
+            "currency_symbol"=> $this->country->currency_symbol,
         ];
     }
 }

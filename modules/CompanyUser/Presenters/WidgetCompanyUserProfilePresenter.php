@@ -20,9 +20,19 @@ class WidgetCompanyUserProfilePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        if (!$this->employmentContract || !$this->userSalary) {
+            return [
+                'contract' => [
+                    'start_date'   => null,
+                    'end_date'     => null,
+                    'user_salary'  => null,
+                ],
+                'message' => 'Some user data is missing.'
+            ];
+        }
+
         $startDate = Carbon::parse($this->employmentContract['start_date']);
         $contractDuration = (int) $this->employmentContract['contract_duration'];
-
         $endDate = $startDate->copy()->addYears($contractDuration);
 
         return [
