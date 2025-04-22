@@ -34,7 +34,7 @@ class Language extends Model
         'is_active',
         'is_rtl',
         'is_default',
-
+        'status'
     ];
 
 
