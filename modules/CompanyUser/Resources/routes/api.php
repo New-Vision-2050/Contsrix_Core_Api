@@ -28,6 +28,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/change-time-zone/{id}', [CompanyUserController::class, 'changeTimeZone']);
     Route::post('/', [CompanyUserController::class, 'store']);
     Route::post('/validations', [CompanyUserController::class, 'validation']);
+    Route::post('/check-email', [CompanyUserController::class, 'checkEmail']);
+
     Route::get('/{id}', [CompanyUserController::class, 'show']);
     Route::put('/{id}', [CompanyUserController::class, 'update']);
     Route::post('/{id}/assign-role', [CompanyUserController::class, 'assignRoleForCompanies']);
