@@ -183,4 +183,16 @@ class CompanyRepository extends BaseRepository
             $query->where("management_hierarchy_id",$branch->id);}
         ])->first();
     }
+
+    public function getAllWithRelations(array $relations = []): Collection
+    {
+        return $this->model->with($relations)->get();
+    }
+
+    public function getCompaniesByIdsWithRelations(array $ids, array $relations = []): Collection
+    {
+        return $this->model->whereIn('id', $ids)
+            ->with($relations)
+            ->get();
+    }
 }
