@@ -19,6 +19,7 @@ use Modules\User\Presenters\UserWithLoginWayPresenter;
 use Modules\User\Requests\AssignRolesForUserRequest;
 use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
+use Modules\User\Requests\GetAdminUsersRequest;
 use Modules\User\Requests\GetUserAuditListRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
@@ -175,6 +176,11 @@ class UserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items(UserPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        return Json::success(__("validation.created_successfully"), [
+            'data' => UserPresenter::collection($list['data']),
+            'pagination' => $list['pagination'],
+            'closeSheet' => true,
+            'reloadTable' => true
+        ]);
     }
 }
