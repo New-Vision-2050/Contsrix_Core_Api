@@ -17,6 +17,7 @@ class JobTitle extends Model
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
+
     //use SoftDeletes;
 
     //public array $translatable = [];
@@ -32,6 +33,18 @@ class JobTitle extends Model
     protected $casts = [
         'id' => 'string',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope(function ($query) {
+            if (!tenancy()->initialized) {
+                return;
+            }
+            $query->when(tenant("is_central_company")== 1, function ($q) {
+                $q->where("for_central_company",1);
+            });
+        });
+    }
 
     protected static function newFactory(): JobTitleFactory
     {
