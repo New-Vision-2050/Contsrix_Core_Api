@@ -56,19 +56,6 @@ class UserCRUDService
     }
     public function getAdminUsersFromCentralCompanies(int $page = 1, int $perPage = 10): array
     {
-        $query= $this->repository->model
-            ->whereHas('companyUser.companies', function ($query) {
-                $query->where('is_central_company', true);
-            });
-
-        $count = $query->count();
-        $paginatedData = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();
-        $paginationArray = $this->repository->getPaginationInformation($page, $perPage, $count);
-
-        return [
-            'pagination' => $paginationArray['pagination'],
-            'data' => $paginatedData,
-        ];
-
+       return $this->repository->getAdminUsersFromCentralCompanies($page,$perPage);
     }
 }
