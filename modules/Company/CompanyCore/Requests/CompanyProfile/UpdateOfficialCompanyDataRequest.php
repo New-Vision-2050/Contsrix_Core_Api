@@ -6,10 +6,12 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 
 class UpdateOfficialCompanyDataRequest extends FormRequest
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function rules(): array
     {
         return [
@@ -23,8 +25,9 @@ class UpdateOfficialCompanyDataRequest extends FormRequest
 
     public function createUpdateOfficialCompanyDataRequestDTO(): UpdateOfficialCompanyDataRequestDTO
     {
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
         return new UpdateOfficialCompanyDataRequestDTO(
-            id: Uuid::fromString(tenant("id")),
+            id: Uuid::fromString($company->id),
             name: $this->get('name'),
             countryId: (string)$this->get('country_id'),
             companyTypeId: (string)$this->get('company_type_id'),
