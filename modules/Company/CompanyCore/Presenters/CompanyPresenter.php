@@ -6,6 +6,7 @@ namespace Modules\Company\CompanyCore\Presenters;
 
 use Modules\Company\CompanyCore\Models\Company;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Company\CompanyField\Presenters\CompanyFieldPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 
@@ -49,7 +50,6 @@ class CompanyPresenter extends AbstractPresenter
             'country_long' => $this->company->country->longitude,
             'country_iso2' => $this->company->country->iso2,
             'company_type_id' => $this->company->company_type_id,
-            'company_field_id' => $this->company->company_field_id,
             'registration_type_id' => $this->company->registration_type_id,
             'general_manager_id' => $this->company->general_manager_id,
             'registration_no' => $this->company?->registration_no,
@@ -60,7 +60,7 @@ class CompanyPresenter extends AbstractPresenter
                 "nationality" => $this->company->generalManager?->companyUser?->country?->name
             ],
             'company_type' => $this->company->companyType?->name,
-            'company_field' => $this->company->companyField?->name,
+            'company_field' => $this->company->companyFields ? CompanyFieldPresenter::collection($this->company->companyFields) : [],
             'registration_type' => $this->company->companyRegistrationType?->name,
             "logo" => $this->company->getFirstMedia("logo")?->getFullUrl(),
             'is_active' => $this->company->is_active,
