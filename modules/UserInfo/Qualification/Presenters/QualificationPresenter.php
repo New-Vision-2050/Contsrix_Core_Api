@@ -6,6 +6,7 @@ namespace Modules\UserInfo\Qualification\Presenters;
 
 use Modules\UserInfo\Qualification\Models\Qualification;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class QualificationPresenter extends AbstractPresenter
 {
@@ -18,6 +19,8 @@ class QualificationPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        // $firstMedia = $this->qualification->getFirstMedia('upload_Qualification');
+
         return [
             'id' => $this->qualification->id,
             'company_id' => $this->qualification->company_id,
@@ -37,13 +40,9 @@ class QualificationPresenter extends AbstractPresenter
 
             'study_rate' => $this->qualification->study_rate,
             'graduation_date' => $this->qualification->graduation_date,
+            'files' => MediaPresenter::collection($this->qualification->getMedia('upload_Qualification')),
+            // 'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
 
-            'files' => $this->qualification->getMedia('upload_Qualification')->map(function ($media) {
-                return [
-                    'id' => $media->id,
-                    'url' => $media->getFullUrl(),
-                ];
-            }),
         ];
     }
 }

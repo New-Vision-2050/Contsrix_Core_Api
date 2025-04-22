@@ -18,6 +18,7 @@ use Modules\Shared\Currency\Models\Currency;
 use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
 use Modules\User\Models\User;
+use Modules\UserInfo\BankAccount\Models\BankAccount;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -148,6 +149,11 @@ class CompanyUser extends Model implements HasMedia
     public function jobTitle()
     {
         return $this->belongsTo(JobTitle::class);
+    }
+    public function bankAccount()
+    {
+        return $this->hasOne(BankAccount::class, 'global_id', 'global_id')
+                    ->where('type', 'default');
     }
 
     public function getRelationshipToPrimaryModel(): string

@@ -22,7 +22,7 @@ class LanguagePresenter extends AbstractPresenter
             'id' => $this->language->id,
             'name' =>app()->getLocale() == 'ar' ? $this->language->lang_ar : $this->language->lang,
             'short_name'=> $this->language->iso_code,
-            "status" => $this->language->is_active,
+            "is_active" => $this->language->is_active,
             "is_rtl" => $this->language->is_rtl
         ];
     }

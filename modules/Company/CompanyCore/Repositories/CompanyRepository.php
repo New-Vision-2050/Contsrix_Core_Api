@@ -152,7 +152,7 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->selectRaw("
             COUNT(*) as total,
-            SUM(CASE WHEN is_active = 'active' THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
             SUM(CASE WHEN complete_data IS NOT NULL THEN 1 ELSE 0 END) as complete_data,
             SUM(CASE WHEN date_activate IS NOT NULL THEN 1 ELSE 0 END) as data_activate
         ")

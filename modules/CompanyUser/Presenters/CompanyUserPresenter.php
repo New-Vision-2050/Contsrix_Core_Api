@@ -8,6 +8,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Country\Presenters\CountryPresenter;
 use Modules\User\Presenters\UserPresenter;
+use Modules\UserInfo\BankAccount\Presenters\BankAccountPresenter;
 
 class CompanyUserPresenter extends AbstractPresenter
 {
@@ -49,7 +50,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'address' => $this->companyUser->address??'-',
             'address_attendance' =>  $this->companyUser->address_attendance??'-',
             'image_url' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-
+            'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,
 //            "users"=> UserPresenter::collection($this->companyUser->users)
 
         ];
