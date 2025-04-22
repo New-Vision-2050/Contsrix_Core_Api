@@ -49,7 +49,8 @@ class CompanyUserValidationService
                 'sentence' => __("validation.user-email-error",["name"=>$user->name]),
                 'sub_title' => 'email',
                 'status' => 0,
-                'validate' => 'required'
+                'validate' => 'required',
+                'id' =>$user->id
             ];
         }else{
             $this->errors[] = [
