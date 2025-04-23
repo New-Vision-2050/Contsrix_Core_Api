@@ -175,17 +175,17 @@ class CompanyController extends Controller
      *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
-    public function export(ExportCompaniesRequest $request)
-    {
-        $companyIds = $request->input('company_ids');
-        $csv = $this->companyService->export($companyIds);
-        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
-
-        return response()->streamDownload(function () use ($csv) {
-            echo $csv;
-        }, $filename, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
-    }
+//    public function export(ExportCompaniesRequest $request)
+//    {
+//        $companyIds = $request->input('company_ids');
+//        $csv = $this->companyService->export($companyIds);
+//        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+//
+//        return response()->streamDownload(function () use ($csv) {
+//            echo $csv;
+//        }, $filename, [
+//            'Content-Type' => 'text/csv',
+//            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+//        ]);
+//    }
 }
