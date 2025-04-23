@@ -8,6 +8,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/', [CompanyUserController::class, 'index']);
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
     Route::get('/roles', [CompanyUserController::class, 'roles']);
+    Route::post('/export', [CompanyUserController::class, 'export'])->name('company-users.export');
+
     Route::get('/profile/{id?}', [CompanyUserProfileController::class, 'profile']);
     Route::post('/validate-photo/{id?}', [CompanyUserProfileController::class, 'validatePhoto']);
     Route::post('/upload-photo/{id?}', [CompanyUserProfileController::class, 'uploadPhoto']);

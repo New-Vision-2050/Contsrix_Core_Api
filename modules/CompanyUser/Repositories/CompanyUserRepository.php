@@ -286,4 +286,16 @@ class CompanyUserRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function getIdsWithRelations($ids= [],$relations = [])
+    {
+        return $this->model->with($relations)->whereIn("id", $ids)->get();
+    }
+
+    public function getAllWithRelations($relations = [])
+    {
+        return $this->model->with($relations)->get();
+    }
+
+
 }

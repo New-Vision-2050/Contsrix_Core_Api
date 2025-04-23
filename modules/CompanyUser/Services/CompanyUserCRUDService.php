@@ -79,6 +79,51 @@ class CompanyUserCRUDService
         );
     }
 
+    public function export(?array $companyUserIds = null):string
+    {
+        $users = $companyUserIds
+            ? $this->repository->getIdsWithRelations($companyUserIds, ["users.company","country"])
+            : $this->repository->getAllWithRelations(["users.company","country"]);
+
+        $csvHeader = [
+            'ID',
+            'Name',
+            'Phone',
+            "Nationality",
+            "Companies"
+        ];
+
+        $csvData = [];
+        $csvData[] = $csvHeader;
+
+        foreach ($users as $companyUser) {
+            $companies = [];
+            foreach ($companyUser->users as $user) {
+                if ($user->company?->name) {
+                    $companies[] = $user->company->name;
+                }
+            }
+
+            $csvData[] = [
+                $companyUser->id,
+                $companyUser->name,
+                $companyUser->phone,
+                $companyUser->country?->nationality ?? '',
+                implode("\n", $companies)
+            ];
+        }
+
+        $output = fopen('php://temp', 'r+');
+        foreach ($csvData as $row) {
+            fputcsv($output, $row);
+        }
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        return $csv;
+    }
+
 
 
 }
