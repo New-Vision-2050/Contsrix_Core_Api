@@ -141,13 +141,13 @@ class CompanyProfileService
     {
 
         $city = trim(strtolower($city));
-        $cityName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $city);
+        $cityName = $city;
 
         $state = trim(strtolower($state));
-        $stateName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $state);
+        $stateName = $state;
 
         $country = trim(strtolower($country));
-        $countryName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $country);
+        $countryName = $country;
 
         $city = $this->cityRepository->findBySimplifiedWay($cityName);
         $state = $this->stateRepository->findBySimplifiedWay($stateName);
