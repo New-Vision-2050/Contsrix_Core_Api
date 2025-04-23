@@ -92,18 +92,6 @@ class CountryController extends Controller
 
     }
 
-    public function timeZone(GetCountryListRequest $request): JsonResponse
-    {
-        $countryId = $request->get('country_id');
-        $list = $this->countryService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
-        );
-
-        $timezones = $this->countryDataService->timeZone($list,$countryId);
-        return Json::items($timezones, paginationSettings: $list['pagination']);
-    }
-
     public function currency(GetCountryListRequest $request): JsonResponse
     {
         $countryId = $request->get('country_id');
