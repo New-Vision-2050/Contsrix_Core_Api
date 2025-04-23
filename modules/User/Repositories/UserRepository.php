@@ -133,11 +133,11 @@ class UserRepository extends BaseRepository
     public function getUsersWithRelations(array $userIds = null, array $relations = []): Collection
     {
         $query = $this->model->with($relations);
-        
+
         if ($userIds) {
-            $query->whereIn('id', $userIds);
+            $query->whereIn('global_company_user_id', $userIds);
         }
-        
+
         return $query->get();
     }
 }

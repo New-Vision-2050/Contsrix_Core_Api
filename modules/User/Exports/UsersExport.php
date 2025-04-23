@@ -23,7 +23,6 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
     public function collection()
     {
         return $this->users ?? User::with([
-            'loginWay',
             'company',
             'companyUser',
             'roles',
@@ -37,12 +36,10 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             'ID',
             'Name',
             'Email',
-            'Phone',
             'Phone Code',
-            'Login Method',
+            'Phone',
             'Company',
             'Roles',
-            'Permissions',
             'Created At',
             'Last Updated'
         ];
@@ -54,12 +51,11 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             $user->id,
             $user->name,
             $user->email,
-            $user->phone,
             $user->phone_code,
-            $user->loginWay?->name ?? '',
+            $user->phone,
             $user->company?->name ?? '',
             $user->roles->pluck('name')->implode(', '),
-            $user->permissions->pluck('name')->implode(', '),
+            //$user->permissions->pluck('name')->implode(', '),
             $user->created_at?->format('Y-m-d H:i:s'),
             $user->updated_at?->format('Y-m-d H:i:s')
         ];

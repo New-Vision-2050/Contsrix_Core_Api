@@ -62,7 +62,6 @@ class UserCRUDService
     public function export(?array $userIds = null, string $format = 'xlsx')
     {
         $relations = [
-            'loginWay',
             'company',
             'companyUser',
             'roles',
