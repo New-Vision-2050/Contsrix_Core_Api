@@ -170,6 +170,7 @@ class CompanyUserRepository extends BaseRepository
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
+                    "is_owner"=>1,
                     "global_company_user_id" => $companyUser->global_id
                 ],$phone));
             }
