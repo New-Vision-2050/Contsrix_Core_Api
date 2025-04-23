@@ -50,7 +50,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'address' => $this->companyUser->address??'-',
             'address_attendance' =>  $this->companyUser->address_attendance??'-',
             'image_url' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
-            'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,
+            'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,   
 //            "users"=> UserPresenter::collection($this->companyUser->users)
 
         ];

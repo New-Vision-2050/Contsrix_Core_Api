@@ -21,8 +21,6 @@ use Modules\Country\Requests\GetCountryListRequest;
 use Modules\Country\Requests\GetCountryRequest;
 use Modules\Country\Requests\UpdateCountryRequest;
 use Modules\Country\Services\CountryCRUDService;
-use Modules\Country\Services\CountryService;
-use Modules\Country\Services\TimeZoneService;
 use Ramsey\Uuid\Uuid;
 
 class CountryController extends Controller
@@ -31,7 +29,6 @@ class CountryController extends Controller
         private CountryCRUDService $countryService,
         private UpdateCountryHandler $updateCountryHandler,
         private DeleteCountryHandler $deleteCountryHandler,
-        private CountryService $countryDataService
     ) {
     }
 
@@ -90,18 +87,6 @@ class CountryController extends Controller
         $data = $this->countryService->getCountryWithStateWithCity();
         return Json::item(MixedPresenter::collection($data));
 
-    }
-
-    public function timeZone(GetCountryListRequest $request): JsonResponse
-    {
-        $countryId = $request->get('country_id');
-        $list = $this->countryService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
-        );
-
-        $timezones = $this->countryDataService->timeZone($list,$countryId);
-        return Json::items($timezones, paginationSettings: $list['pagination']);
     }
 
     public function currency(GetCountryListRequest $request): JsonResponse
