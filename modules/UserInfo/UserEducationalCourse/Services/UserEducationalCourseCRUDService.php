@@ -22,7 +22,7 @@ class UserEducationalCourseCRUDService
          return $this->repository->createUserEducationalCourse($createUserEducationalCourseDTO->toArray());
     }
 
-    public function list(UuidInterface $companyId,UuidInterface $globalId,int $page = 1, int $perPage = 10)//: array
+    public function list(UuidInterface $companyId,UuidInterface $globalId,int $page = 1, int $perPage = 10): array
     {
         return $this->repository->getUserEducationalCourseList($companyId, $globalId, $page, $perPage);
     }

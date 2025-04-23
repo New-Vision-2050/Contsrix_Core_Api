@@ -1,0 +1,14 @@
+{
+    "name": "UserProfessionalData",
+    "alias": "userprofessionaldata",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserProfessionalData\\Providers\\UserProfessionalDataServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

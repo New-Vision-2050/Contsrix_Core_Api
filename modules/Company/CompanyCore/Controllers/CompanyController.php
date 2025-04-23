@@ -28,6 +28,9 @@ use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\User\Repositories\UserRepository;
+
 class CompanyController extends Controller
 {
     public function __construct(
@@ -38,6 +41,7 @@ class CompanyController extends Controller
         private CompanyValidatedService $validatedCompanyService,
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
+        private UserRepository $userRepository
         // private TransformImgsService  $transformImgsService
     ) {
     }
@@ -153,13 +157,13 @@ class CompanyController extends Controller
     {
         try {
             $name = $request->query('name');
-            
+
             if (!$name) {
                 return Json::error('Company name is required', 400);
             }
 
             $company = $this->companyService->getByName($name);
-            
+
             if (!$company) {
                 return Json::error('Company not found', 404);
             }
@@ -180,7 +184,7 @@ class CompanyController extends Controller
         $companyIds = $request->input('company_ids');
         $csv = $this->companyService->export($companyIds);
         $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
-        
+
         return response()->streamDownload(function () use ($csv) {
             echo $csv;
         }, $filename, [
