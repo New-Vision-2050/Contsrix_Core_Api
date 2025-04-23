@@ -25,7 +25,7 @@ class CompanyUserCRUDService
 
     public function __construct(
         private CompanyUserRepository $repository,
-        private UserRepository $userRepository,
+        private UserRepository        $userRepository,
     )
     {
     }
@@ -36,9 +36,9 @@ class CompanyUserCRUDService
         $user = $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
         $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id, "company_id" => $companyRoleDTO->getCompanyId()]);
         $data = [
-            "name"=>$userInCompany->name,
-            "company_name"=>$userInCompany->company?->name,
-            "domain_name"=>$userInCompany->company?->domains()->first()?->domain
+            "name" => $userInCompany->name,
+            "company_name" => $userInCompany->company?->name,
+            "domain_name" => $userInCompany->company?->domains()->first()?->domain
         ];
         $userInCompany->notify(new SendDomainForUser($data));
 
@@ -63,13 +63,14 @@ class CompanyUserCRUDService
     public function get(UuidInterface $id): CompanyUser
     {
         return $this->repository->getCompanyUser(
-            id:$id,
+            id: $id,
         );
     }
+
     public function getGlobalId(UuidInterface $global_id): CompanyUser
     {
         return $this->repository->getCompanyUserGlobalId(
-            global_id:$global_id,
+            global_id: $global_id,
         );
     }
 
@@ -80,11 +81,11 @@ class CompanyUserCRUDService
         );
     }
 
-    public function export(?array $companyUserIds = null):string
+    public function export(?array $companyUserIds = null): string
     {
         $users = $companyUserIds
-            ? $this->repository->getIdsWithRelations($companyUserIds, ["companies","users.company","country"])
-            : $this->repository->getAllWithRelations(["companies","users.company","country"]);
+            ? $this->repository->getIdsWithRelations($companyUserIds, ["companies", "users.company", "country"])
+            : $this->repository->getAllWithRelations(["companies", "users.company", "country"]);
 
         $csvHeader = [
             'ID',
@@ -105,16 +106,14 @@ class CompanyUserCRUDService
             foreach ($companyUser->users as $user) {
                 if ($user->company?->name) {
                     $companies[] = $user->company->name;
-                    $companyWithRoles= $companyUser->companies()->where("companies.id", $user->company->id)->get();
-                    $tempRoles ="";
-                    foreach ($companyWithRoles as $item)
-                    {
-                        $tempRoles.= CompanyUserRole::lang($item->pivot->role)." ";
+                    $companyWithRoles = $companyUser->companies()->where("companies.id", $user->company->id)->get();
+                    $tempRoles = "";
+                    foreach ($companyWithRoles as $item) {
+                        $tempRoles .= CompanyUserRole::lang($item->pivot->role) . " ";
                     }
-                    $roles []= $tempRoles;
+                    $roles [] = $tempRoles;
                 }
             }
-
 
 
             $csvData[] = [
@@ -129,17 +128,9 @@ class CompanyUserCRUDService
             ];
         }
 
-        $output = fopen('php://temp', 'r+');
-        foreach ($csvData as $row) {
-            fputcsv($output, $row);
-        }
-        rewind($output);
-        $csv = stream_get_contents($output);
-        fclose($output);
+        return createCSV($csvData);
 
-        return $csv;
     }
-
 
 
 }

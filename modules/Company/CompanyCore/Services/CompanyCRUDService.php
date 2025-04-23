@@ -139,14 +139,8 @@ class CompanyCRUDService
             ];
         }
 
-        $output = fopen('php://temp', 'r+');
-        foreach ($csvData as $row) {
-            fputcsv($output, $row);
-        }
-        rewind($output);
-        $csv = stream_get_contents($output);
-        fclose($output);
 
-        return $csv;
+
+        return createCSV($csvData);
     }
 }
