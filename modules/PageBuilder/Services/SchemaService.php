@@ -33,8 +33,8 @@ class SchemaService implements SchemaServiceInterface
         $excludedTables = Config::get('page-builder.excluded_tables', []);
         $tables = DB::select('SHOW TABLES');
         return collect($tables)
-            ->filter(fn ($table) => !in_array($table->Tables_in_central_db, $excludedTables))
-            ->map(fn ($table) => $table->Tables_in_central_db)
+            ->filter(fn ($table) => !in_array($table->{"Tables_in_".env('DB_DATABASE')}, $excludedTables))
+            ->map(fn ($table) => $table->{"Tables_in_".env('DB_DATABASE')})
             ->values()
             ->toArray();
     }
