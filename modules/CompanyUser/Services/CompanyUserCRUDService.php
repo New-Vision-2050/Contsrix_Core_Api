@@ -105,9 +105,9 @@ class CompanyUserCRUDService
             foreach ($companyUser->users as $user) {
                 if ($user->company?->name) {
                     $companies[] = $user->company->name;
-                    $r= $companyUser->companies()->where("companies.id", $user->company->id)->get();
+                    $companyWithRoles= $companyUser->companies()->where("companies.id", $user->company->id)->get();
                     $tempRoles ="";
-                    foreach ($r as $item)
+                    foreach ($companyWithRoles as $item)
                     {
                         $tempRoles.= CompanyUserRole::lang($item->pivot->role)." ";
                     }
