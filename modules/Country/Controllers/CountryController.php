@@ -21,8 +21,6 @@ use Modules\Country\Requests\GetCountryListRequest;
 use Modules\Country\Requests\GetCountryRequest;
 use Modules\Country\Requests\UpdateCountryRequest;
 use Modules\Country\Services\CountryCRUDService;
-use Modules\Country\Services\CountryService;
-use Modules\Country\Services\TimeZoneService;
 use Ramsey\Uuid\Uuid;
 
 class CountryController extends Controller
@@ -31,7 +29,6 @@ class CountryController extends Controller
         private CountryCRUDService $countryService,
         private UpdateCountryHandler $updateCountryHandler,
         private DeleteCountryHandler $deleteCountryHandler,
-        private CountryService $countryDataService
     ) {
     }
 
