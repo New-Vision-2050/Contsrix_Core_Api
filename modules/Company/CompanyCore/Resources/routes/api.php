@@ -6,10 +6,17 @@ use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 Route::get('/company-by-host', [CompanyController::class, 'getCompanyByHost'])->name('companies.company-by-host');
 
+Route::middleware(['auth:api'])->group(function () {
+    Route::get('branches/user/{id}', [CompanyController::class, 'branches']);
+    Route::get('managements/user/{id}', [CompanyController::class, 'managements']);
+
+});
+
+
 Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(function () {
     Route::get('/', [CompanyController::class, 'index'])->name('companies.index');
     Route::get('/current-auth-company', [CompanyController::class, 'getCurrentCompanyLoggedIn'])->name('companies.current-auth-company');
-    Route::post('/export', [CompanyController::class, 'export'])->name('companies.export');
+//    Route::post('/export', [CompanyController::class, 'export'])->name('companies.export');
     Route::get('/widget', [CompanyController::class, 'widget']);
     Route::post('/', [CompanyController::class, 'store'])->name('companies.store');
     Route::post('/validated', [CompanyController::class, 'validated']);

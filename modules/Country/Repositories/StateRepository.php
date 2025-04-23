@@ -52,7 +52,7 @@ class StateRepository extends BaseRepository
 
     public function findBySimplifiedWay($simplifiedName):?State
     {
-        $state = $this->model->whereRaw('LOWER(REGEXP_REPLACE(name, \'[^a-zA-Z]\', \'\')) = ?', [$simplifiedName])->first();
+        $state = $this->model->whereRaw('LOWER(name) = ?', [$simplifiedName])->first();
         return $state;
 
     }
