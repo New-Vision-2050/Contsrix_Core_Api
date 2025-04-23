@@ -62,7 +62,7 @@ class CompanyUserProfileController extends Controller
 
     public function profile(GetCompanyUserRequest $request): JsonResponse
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $userData = $this->userRepository->getUser($userId);
 
@@ -85,7 +85,7 @@ class CompanyUserProfileController extends Controller
     public function uploadPhoto(UploadPhotoCompanyUserRequest $request)//: JsonResponse
     {
         try {
-            $userId = $request->route('id') ?? auth()->user()->id;
+            $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
             $companyUser = $this->companyUserIUploadImageService->uploadFile($request,$userId );
 
@@ -100,7 +100,7 @@ class CompanyUserProfileController extends Controller
     }
     public function showDataInfo(GetCompanyUserRequest $request)
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $userData = $this->userRepository->getUser($userId);
 
@@ -114,7 +114,7 @@ class CompanyUserProfileController extends Controller
     }
     public function updateDataInfo(UpdateCompanyDataInfoUserRequest $request)
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $user = $this->userRepository->getUser($userId);
 
@@ -132,7 +132,7 @@ class CompanyUserProfileController extends Controller
 
     public function sendOtp(SendEmailOtpRequest $request)
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $user = $this->userRepository->getUser($userId);
 
@@ -150,7 +150,7 @@ class CompanyUserProfileController extends Controller
     public function validateOtp(ValidateOtpRequest $request)
     {
         try {
-            $userId = $request->route('id') ?? auth()->user()->id;
+            $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
             $user = $this->userRepository->getUser($userId);
 
@@ -168,7 +168,7 @@ class CompanyUserProfileController extends Controller
 
     public function showContactInformation(GetCompanyUserRequest $request)
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $userData = $this->userRepository->getUser($userId);
 
@@ -182,7 +182,7 @@ class CompanyUserProfileController extends Controller
     }
     public function updateContactInformation(UpdateCompanyContactInfoUserRequest $request)
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $user = $this->userRepository->getUser($userId);
 
@@ -199,7 +199,7 @@ class CompanyUserProfileController extends Controller
     }
     public function identityData(IdentityDataRequest $request)
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $user = $this->userRepository->getUser($userId);
 
@@ -219,7 +219,7 @@ class CompanyUserProfileController extends Controller
 
     public function showidentityData(GetCompanyUserRequest $request)
     {
-        $userId = $request->route('id') ?? auth()->user()->id;
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
         $userData = $this->userRepository->getUser($userId);
 
