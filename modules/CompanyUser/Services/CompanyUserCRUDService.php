@@ -88,6 +88,7 @@ class CompanyUserCRUDService
         $csvHeader = [
             'ID',
             'Name',
+            'Email',
             'Phone',
             "Nationality",
             "Companies"
@@ -107,6 +108,7 @@ class CompanyUserCRUDService
             $csvData[] = [
                 $companyUser->id,
                 $companyUser->name,
+                $companyUser->email,
                 $companyUser->phone,
                 $companyUser->country?->nationality ?? '',
                 implode("\n", $companies)
