@@ -18,22 +18,16 @@ trait CustomBelongsToTenant
         static::addGlobalScope(new CustomTenantScope);
 
         static::creating(function ($model) {
-            if (! $model->getAttribute(\Stancl\Tenancy\Database\Concerns\BelongsToTenant::$tenantIdColumn) && ! $model->relationLoaded('tenant')) {
+            if (!($model instanceof Company) && !$model->getAttribute(\Stancl\Tenancy\Database\Concerns\BelongsToTenant::$tenantIdColumn) && !$model->relationLoaded('tenant')) {
                 if (tenancy()->initialized) {
-                    if(!($model instanceof Company))
 
-                    {
-                        $model->setAttribute(\Stancl\Tenancy\Database\Concerns\BelongsToTenant::$tenantIdColumn, tenant()->getTenantKey());
-                        $model->setRelation('tenant', tenant());
-                    }
+                    $model->setAttribute(\Stancl\Tenancy\Database\Concerns\BelongsToTenant::$tenantIdColumn, tenant()->getTenantKey());
+                    $model->setRelation('tenant', tenant());
 
                 }
             }
         });
     }
 
-    public function tenant()
-    {
-        return $this->belongsTo(config('tenancy.tenant_model'), \Stancl\Tenancy\Database\Concerns\BelongsToTenant::$tenantIdColumn);
-    }
+
 }

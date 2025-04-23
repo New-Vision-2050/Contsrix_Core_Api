@@ -64,7 +64,7 @@ class CompanyProfileService
 
     }
 
-    public function getTranslatedNighborhoodAndRoute($lat , $long)
+    public function getTranslatedNighborhoodAndRoute($lat, $long)
     {
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$long}&language=ar&key=" . env('GOOGLE_MAPS_API_KEY'));
         $neighborhood = "";
@@ -79,7 +79,7 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
-        return [$neighborhood,$route];
+        return [$neighborhood, $route];
     }
 
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
@@ -116,31 +116,15 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
-        [$countryFromDB, $stateFromDB, $cityByDB] = $this->getFromDB($country, $city, $state);
-        if ($cityByDB) {
-            $country = $cityByDB->country;
-            $state = $cityByDB->state;
+        [$country, $state, $city] = $this->getFromDB($country, $city, $state);
+        if ($country) {
 
-            $city = $cityByDB;
-        } elseif ($stateFromDB) {
-            $city = null;
-            $country = $stateFromDB->country;
-            $state = $stateFromDB;
-
-        } elseif ($countryFromDB) {
-            $city = null;
-            $state = null;
-            $country = $countryFromDB;
             if ($country->id != $geoCodingDTO->getBranch()->address->country_id) {
                 throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
 
             }
-        } else {
-            $country = null;
-            $state = null;
-            $city = null;
         }
-[$neighborhood,$route] = $this->getTranslatedNighborhoodAndRoute($geoCodingDTO->getLatitude(),$geoCodingDTO->getLongitude());
+        [$neighborhood, $route] = $this->getTranslatedNighborhoodAndRoute($geoCodingDTO->getLatitude(), $geoCodingDTO->getLongitude());
 
         return [
             $country,
@@ -157,13 +141,13 @@ class CompanyProfileService
     {
 
         $city = trim(strtolower($city));
-        $cityName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $city);
+        $cityName = $city;
 
         $state = trim(strtolower($state));
-        $stateName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $state);
+        $stateName = $state;
 
         $country = trim(strtolower($country));
-        $countryName = preg_replace('/[,\.!"\'\/\*\-\+\(\)\~\s]/', '', $country);
+        $countryName = $country;
 
         $city = $this->cityRepository->findBySimplifiedWay($cityName);
         $state = $this->stateRepository->findBySimplifiedWay($stateName);

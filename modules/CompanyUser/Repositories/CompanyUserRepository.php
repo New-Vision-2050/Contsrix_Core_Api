@@ -170,11 +170,18 @@ class CompanyUserRepository extends BaseRepository
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
+                    "is_owner"=>1,
                     "global_company_user_id" => $companyUser->global_id
                 ],$phone));
             }
 
-            CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+            if(CompanyUserCompany::query()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->count() == 0){
+                CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+
+            }else{
+                throw new \Exception(__("validation.user-already-exists"), 422);
+            }
+
 
             DB::commit();
         } catch (\Exception $exception) {
@@ -280,4 +287,16 @@ class CompanyUserRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function getIdsWithRelations($ids= [],$relations = [])
+    {
+        return $this->model->with($relations)->whereIn("id", $ids)->get();
+    }
+
+    public function getAllWithRelations($relations = [])
+    {
+        return $this->model->with($relations)->get();
+    }
+
+
 }
