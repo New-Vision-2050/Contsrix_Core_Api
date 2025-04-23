@@ -13,7 +13,7 @@ FROM mabou7agar/custom-nginx-php8-2
 # Install zip extension
 RUN apt-get update && apt-get install -y \
     libzip-dev zip unzip \
-    && docker-php-ext-install zip \
+    && docker-php-ext-install zip
 
 ARG CACHEBUST=1
 ## Set working directory
