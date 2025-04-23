@@ -12,13 +12,17 @@ use Ramsey\Uuid\UuidInterface;
 
 class CountryService
 {
-    public function timeZone($list,$countryId): array
+    public function timeZone($list, $countryId): array
     {
         $selectedCountryTimezones = [];
         $allTimezones = [];
 
         foreach ($list['data'] as $country) {
             $tzList = $country->timezones ?? [];
+            foreach ($tzList as &$tz) {
+                $tz['id'] = $country->id; // Attach country id to each timezone
+            }
+
             if ($country->id == $countryId) {
                 $selectedCountryTimezones = $tzList;
             } else {
@@ -26,7 +30,7 @@ class CountryService
             }
         }
 
-       return $combinedTimezones = array_merge($selectedCountryTimezones, $allTimezones);
+        return array_merge($selectedCountryTimezones, $allTimezones);
     }
 
 }
