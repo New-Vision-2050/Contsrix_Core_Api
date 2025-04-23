@@ -36,7 +36,7 @@ class Currency extends Model
     ];
 
     public function country(){
-        return $this->belongsTo(Country::class,'currency','short_name');
+        return $this->belongsTo(Country::class,'short_name','currency');
     }
 
     protected static function newFactory(): CurrencyFactory
