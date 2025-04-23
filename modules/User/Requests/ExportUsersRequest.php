@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Company\CompanyCore\Requests;
+namespace Modules\User\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ExportCompaniesRequest extends FormRequest
+class ExportUsersRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,8 +16,8 @@ class ExportCompaniesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_ids' => 'nullable|array',
-            'company_ids.*' => 'string|exists:companies,id',
+            'user_ids' => 'nullable|array',
+            'user_ids.*' => 'string|exists:users,id',
             'format' => 'nullable|string|in:xlsx,csv'
         ];
     }

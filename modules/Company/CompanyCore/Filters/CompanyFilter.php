@@ -35,7 +35,7 @@ class CompanyFilter extends SearchModelFilter
 
         $query->when($search, function ($q) use ($search) {
             $q->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
+                $q->whereTranslatable('name',$search)
                     ->orWhere('user_name', 'like', '%' . $search . '%')
                     ->orWhere('phone', 'like', '%' . $search . '%')
                     ->orWhere('email', 'like', '%' . $search . '%')

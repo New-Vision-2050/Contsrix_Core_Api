@@ -23,7 +23,7 @@ class CompanyCRUDService
     {
     }
 
-    public function create(CreateCompanyDTO $createCompanyDTO)
+    public function create(CreateCompanyDTO $createCompanyDTO): Company
     {
         $requestCompanyDTO = $createCompanyDTO->toArray();
         try {
@@ -143,4 +143,26 @@ class CompanyCRUDService
 //
 //        return createCSV($csvData);
 //    }
+    public function export(?array $companyIds = null, string $format = 'xlsx')
+    {
+        $relations = [
+            'country',
+            'companyType',
+            'companyField',
+            'companyRegistrationType',
+            'generalManager',
+            'mainBranch',
+            'companyLegalData',
+            'companyOfficialDocuments',
+            'companyAddress',
+            'branches',
+            'companyFields'
+        ];
+
+        $companies = $companyIds
+            ? $this->repository->getCompaniesByIdsWithRelations($companyIds, $relations)
+            : $this->repository->getAllWithRelations($relations);
+
+        return new \Modules\Company\CompanyCore\Exports\CompaniesExport($companies);
+    }
 }

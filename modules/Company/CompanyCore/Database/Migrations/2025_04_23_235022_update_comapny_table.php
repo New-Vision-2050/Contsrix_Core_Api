@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->tinyInteger('is_active')->default(1)->change();
+            $table->string('time_zone')->nullable();
         });
     }
 
@@ -21,7 +21,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->tinyInteger('is_active')->default(0)->change();
+            $table->dropColumn('time_zone');
         });
     }
 };

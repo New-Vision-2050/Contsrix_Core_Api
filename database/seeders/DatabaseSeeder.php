@@ -22,6 +22,7 @@ use Modules\Shared\Bank\Database\Seeders\BankModulesSeederTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodieSeeder;
+use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowanceSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
@@ -65,7 +66,7 @@ class DatabaseSeeder extends Seeder
         $this->call(TypeAllowanceSeederTableSeeder::class);
         $this->call(TypePrivilegeSeederTableSeeder::class);
 
-
+        $this->call(TimeZoneCountrySeederTableSeeder::class);
 
 
     }

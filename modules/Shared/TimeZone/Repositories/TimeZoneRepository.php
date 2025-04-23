@@ -21,9 +21,32 @@ class TimeZoneRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getTimeZoneList(?int $page, ?int $perPage = 10): Collection
-    {
-        return $this->paginatedList([], $page, $perPage);
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc',
+        ?\Closure $customQuery = null
+    ) {
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all())->where($conditions);
+        } else {
+            $query = $this->model->where($conditions);
+        }
+
+        if ($customQuery) {
+            $customQuery($query);
+        }
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->orderBy($orderBy, $sortBy)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
     }
 
     public function getTimeZone(UuidInterface $id): TimeZone
