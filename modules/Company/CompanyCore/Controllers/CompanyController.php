@@ -22,13 +22,13 @@ use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyValidateService;
 use Modules\Company\CompanyCore\Services\CompanyValidatedService;
-use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
-use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
 class CompanyController extends Controller
 {
     public function __construct(
@@ -174,7 +174,7 @@ class CompanyController extends Controller
     /**
      * Export companies data as CSV
      *
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     * @return BinaryFileResponse
      */
     public function export(ExportCompaniesRequest $request)
     {

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\CompanyUser\Controllers\CompanyUserController;
 use Modules\CompanyUser\Controllers\CompanyUserProfileController;
+use Modules\User\Controllers\UserController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [CompanyUserController::class, 'index']);
@@ -35,4 +36,5 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/{id}/assign-role', [CompanyUserController::class, 'assignRoleForCompanies']);
     Route::delete('/{id}', [CompanyUserController::class, 'delete']);
     Route::delete('/{id}/specific-role', [CompanyUserController::class, 'deleteForSpecificRole']);
+    Route::post('/export', [UserController::class, 'export'])->middleware("permission:user.list")->name("users.export");
 });
