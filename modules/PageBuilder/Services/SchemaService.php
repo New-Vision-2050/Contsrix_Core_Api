@@ -34,7 +34,7 @@ class SchemaService implements SchemaServiceInterface
         $tables = DB::select('SHOW TABLES');
         return collect($tables)
             ->filter(fn ($table) => !in_array($table->{"Tables_in_".env('DB_DATABASE')}, $excludedTables))
-            ->map(fn ($table) => $table->{"Tables_in_".env('DB_DATABASE')})
+            ->map(fn ($table) => ['name'=> $table->{"Tables_in_".env('DB_DATABASE')}])
             ->values()
             ->toArray();
     }
