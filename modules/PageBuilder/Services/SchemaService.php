@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Modules\PageBuilder\Services\Contracts\SchemaServiceInterface;
+use Modules\PageBuilder\DTO\TableSchemaDTO;
 use Modules\PageBuilder\DTO\ColumnDTO;
 use Modules\PageBuilder\DTO\ForeignKeyDTO;
 use Modules\PageBuilder\DTO\RelationshipDTO;
-use Modules\PageBuilder\DTO\TableSchemaDTO;
-use Modules\PageBuilder\Services\Contracts\SchemaServiceInterface;
 
 class SchemaService implements SchemaServiceInterface
 {
@@ -18,8 +18,8 @@ class SchemaService implements SchemaServiceInterface
     {
         $cacheKey = 'page-builder:tables';
         $cacheTtl = Config::get('page-builder.cache.ttl', 3600);
-        
-        if (Config::get('page-builder.cache.enabled', true)) {
+
+        if (false && Config::get('page-builder.cache.enabled', true)) {
             return Cache::remember($cacheKey, $cacheTtl, function () {
                 return $this->fetchTables();
             });
@@ -31,10 +31,10 @@ class SchemaService implements SchemaServiceInterface
     private function fetchTables(): array
     {
         $excludedTables = Config::get('page-builder.excluded_tables', []);
-        
-        return Schema::getAllTables()
-            ->map(fn ($table) => $table->name)
-            ->filter(fn ($table) => !in_array($table, $excludedTables))
+        $tables = DB::select('SHOW TABLES');
+        return collect($tables)
+            ->filter(fn ($table) => !in_array($table->Tables_in_central_db, $excludedTables))
+            ->map(fn ($table) => $table->Tables_in_central_db)
             ->values()
             ->toArray();
     }
@@ -77,7 +77,7 @@ class SchemaService implements SchemaServiceInterface
     public function getTableRelationships(string $tableName): array
     {
         $relationships = [];
-        
+
         // Get foreign key constraints
         $foreignKeys = Schema::getConnection()
             ->getDoctrineSchemaManager()

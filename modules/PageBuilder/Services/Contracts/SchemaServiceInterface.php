@@ -7,9 +7,9 @@ use Modules\PageBuilder\DTO\TableSchemaDTO;
 interface SchemaServiceInterface
 {
     /**
-     * Get list of all available tables
+     * Get all available tables
      *
-     * @return array<string>
+     * @return array
      */
     public function getTables(): array;
 
@@ -18,22 +18,15 @@ interface SchemaServiceInterface
      *
      * @param string $tableName
      * @return TableSchemaDTO
+     * @throws \InvalidArgumentException
      */
     public function getTableSchema(string $tableName): TableSchemaDTO;
 
     /**
-     * Check if table exists
+     * Check if a table exists
      *
      * @param string $tableName
      * @return bool
      */
     public function tableExists(string $tableName): bool;
-
-    /**
-     * Get foreign key relationships for a table
-     *
-     * @param string $tableName
-     * @return array
-     */
-    public function getTableRelationships(string $tableName): array;
 }

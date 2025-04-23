@@ -3,87 +3,36 @@
 namespace Modules\PageBuilder\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Database\Eloquent\Factory;
+use Modules\PageBuilder\Services\Contracts\SchemaServiceInterface;
+use Modules\PageBuilder\Services\SchemaService;
 
 class PageBuilderServiceProvider extends ServiceProvider
 {
-    /**
-     * @var string $moduleName
-     */
-    protected $moduleName = 'PageBuilder';
+    protected string $moduleName = 'PageBuilder';
+    protected string $moduleNameLower = 'pagebuilder';
 
-    /**
-     * @var string $moduleNameLower
-     */
-    protected $moduleNameLower = 'page-builder';
-
-    /**
-     * Boot the application events.
-     *
-     * @return void
-     */
-    public function boot()
+    public function boot(): void
     {
         $this->registerConfig();
-        $this->registerRoutes();
-        $this->registerBindings();
+        $this->loadMigrationsFrom(module_path($this->moduleName, 'Database/Migrations'));
     }
 
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
+    public function register(): void
     {
         $this->app->register(RouteServiceProvider::class);
+        
+        // Bind SchemaService to its interface
+        $this->app->bind(SchemaServiceInterface::class, SchemaService::class);
     }
 
-    /**
-     * Register service bindings
-     *
-     * @return void
-     */
-    private function registerBindings()
-    {
-        $this->app->singleton(
-            \Modules\PageBuilder\Services\Contracts\SchemaServiceInterface::class,
-            \Modules\PageBuilder\Services\SchemaService::class
-        );
-    }
-
-    /**
-     * Register config.
-     *
-     * @return void
-     */
-    protected function registerConfig()
+    protected function registerConfig(): void
     {
         $this->publishes([
             module_path($this->moduleName, 'Config/config.php') => config_path($this->moduleNameLower . '.php'),
         ], 'config');
+        
         $this->mergeConfigFrom(
             module_path($this->moduleName, 'Config/config.php'), $this->moduleNameLower
         );
-    }
-
-    /**
-     * Register routes.
-     *
-     * @return void
-     */
-    protected function registerRoutes()
-    {
-        $this->loadRoutesFrom(module_path($this->moduleName, 'Resources/routes/api.php'));
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [];
     }
 }
