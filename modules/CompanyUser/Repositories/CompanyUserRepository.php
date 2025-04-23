@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\User\Models\User;
@@ -166,13 +167,16 @@ class CompanyUserRepository extends BaseRepository
             $companyUser = $companyUser->fresh();//get updated data for company user
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
+                $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
+
                 $this->userRepository->createUser(array_merge([
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
-                    "is_owner"=>1,
-                    "global_company_user_id" => $companyUser->global_id
+                    "global_company_user_id" => $companyUser->global_id,
+                    "is_owner" => $usersInCompanyCount == 0 ?1:0
                 ],$phone));
+
             }
 
             if(CompanyUserCompany::query()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->count() == 0){

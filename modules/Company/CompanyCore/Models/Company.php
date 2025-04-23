@@ -208,4 +208,9 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     {
         return $this->hasOne(User::class)->where("is_owner",1);
     }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }
