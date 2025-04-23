@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\UserProfessionalData\Presenters;
 
+use Modules\Shared\JobType\Models\JobType;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\JobTitle\Presenters\JobTitlePresenter;
+use Modules\Shared\JobType\Presenters\JobTypePresenter;
 
 class UserProfessionalDataPresenter extends AbstractPresenter
 {
@@ -22,11 +26,12 @@ class UserProfessionalDataPresenter extends AbstractPresenter
             'id' => $this->userProfessionalData->id,
             'company_id' => $this->userProfessionalData->company_id,
             'global_id' => $this->userProfessionalData->global_id,
-            'branch_id' => $this->userProfessionalData->branch_id,
-            'management_id' => $this->userProfessionalData->management_id,
-            'department_id' => $this->userProfessionalData->department_id,
-            'job_type_id' => $this->userProfessionalData->job_type_id,
-            'job_title_id' => $this->userProfessionalData->job_title_id,
+
+            'branch' => $this->userProfessionalData->branch ? (new ManagementHierarchyPresenter($this->userProfessionalData->branch))->getData():null,
+            'management' => $this->userProfessionalData->management? (new ManagementHierarchyPresenter($this->userProfessionalData->management))->getData():null,
+            'department' => $this->userProfessionalData->department? (new ManagementHierarchyPresenter($this->userProfessionalData->department))->getData():null,
+            'job_type' => $this->userProfessionalData->jobType ? (new JobTypePresenter($this->userProfessionalData->jobType))->getData():null,
+            'job_title' => $this->userProfessionalData->jobTitle ? (new JobTitlePresenter($this->userProfessionalData->jobTitle))->getData():null,
             'job_code' => $this->userProfessionalData->job_code,
         ];
     }

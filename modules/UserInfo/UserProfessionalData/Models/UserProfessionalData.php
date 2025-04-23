@@ -7,8 +7,12 @@ namespace Modules\UserInfo\UserProfessionalData\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\UserInfo\UserProfessionalData\Database\factories\UserProfessionalDataFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Country\Models\Country;
+use Modules\Shared\JobType\Models\JobType;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class UserProfessionalData extends Model
@@ -43,5 +47,35 @@ class UserProfessionalData extends Model
     protected static function newFactory(): UserProfessionalDataFactory
     {
         return UserProfessionalDataFactory::new();
+    }
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class,'branch_id');
+    }
+
+    public function management()
+    {
+        return $this->belongsTo(ManagementHierarchy::class,'management_id');
+    }
+
+
+    public function department()
+    {
+        return $this->belongsTo(ManagementHierarchy::class,'department_id');
+    }
+
+    public function jobType()
+    {
+        return $this->belongsTo(JobType::class);
+    }
+
+    public function jobTitle()
+    {
+        return $this->belongsTo(JobType::class);
     }
 }

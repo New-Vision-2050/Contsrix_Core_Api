@@ -13,21 +13,22 @@ class CreateUserProfessionalDataRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|string',
-            'branch_id' => 'required|string',
-            'management_id' => 'required|string',
-            'department_id' => 'required|string',
-            'job_type_id' => 'required|string',
-            'job_title_id' => 'required|string',
+            'user_id' => 'required|exists:users,id',
+            'branch_id' => 'required|exists:management_hierarchies,id',
+            'management_id' => 'required|exists:management_hierarchies,id',
+            'department_id' => 'required|exists:management_hierarchies,id',
+            'job_type_id' => 'required|exists:job_types,id',
+            'job_title_id' => 'required|exists:job_titles,id',
             'job_code' => 'required|string',
         ];
     }
 
+
     public function createCreateUserProfessionalDataDTO(): CreateUserProfessionalDataDTO
     {
         return new CreateUserProfessionalDataDTO(
-            company_id: $this->get('company_id'),
-            global_id: $this->get('global_id'),
+            company_id: '',
+            global_id: '',
             branch_id: $this->get('branch_id'),
             management_id: $this->get('management_id'),
             department_id: $this->get('department_id'),
