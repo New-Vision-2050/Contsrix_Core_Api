@@ -10,6 +10,11 @@ FROM mabou7agar/custom-nginx-php8-2
 #    && docker-php-ext-install sockets \
 #    && docker-php-ext-enable imagick sockets
 
+# Install zip extension
+RUN apt-get update && apt-get install -y \
+    libzip-dev zip unzip \
+    && docker-php-ext-install zip \
+
 ARG CACHEBUST=1
 ## Set working directory
 WORKDIR /var/www
