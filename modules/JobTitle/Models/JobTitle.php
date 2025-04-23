@@ -34,17 +34,6 @@ class JobTitle extends Model
         'id' => 'string',
     ];
 
-    protected static function booted()
-    {
-        static::addGlobalScope(function ($query) {
-            if (!tenancy()->initialized) {
-                return;
-            }
-            $query->when(tenant("is_central_company")== 1, function ($q) {
-                $q->where("for_central_company",1);
-            });
-        });
-    }
 
     protected static function newFactory(): JobTitleFactory
     {
