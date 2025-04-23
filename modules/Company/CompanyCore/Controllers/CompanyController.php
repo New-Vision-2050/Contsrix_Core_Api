@@ -64,7 +64,6 @@ class CompanyController extends Controller
 
     public function store(CreateCompanyRequest $request)
     {
-        return Company::query()->create($request->createCreateCompanyDTO()->toArray());
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
 
         $presenter = new CompanyPresenter($createdItem);
@@ -181,7 +180,7 @@ class CompanyController extends Controller
         $companyIds = $request->input('company_ids');
         $csv = $this->companyService->export($companyIds);
         $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
-        
+
         return response()->streamDownload(function () use ($csv) {
             echo $csv;
         }, $filename, [
