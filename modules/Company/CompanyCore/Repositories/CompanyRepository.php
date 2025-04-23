@@ -74,7 +74,7 @@ class CompanyRepository extends BaseRepository
         } catch (\Exception $e) {
 
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 500);
+            throw new \Exception($e->getMessage(), 500);
         }
     }
 

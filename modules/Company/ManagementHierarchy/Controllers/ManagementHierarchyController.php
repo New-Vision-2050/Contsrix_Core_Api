@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Request;
 use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Handlers\MakeBranchMainHandler;
+use Modules\Company\ManagementHierarchy\Handlers\UpdateBranchHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
@@ -19,6 +20,7 @@ use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyReques
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
+use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
 use Modules\User\Repositories\UserRepository;
@@ -31,7 +33,8 @@ class ManagementHierarchyController extends Controller
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
-        private UserRepository $userRepository
+        private UserRepository                   $userRepository,
+        private UpdateBranchHandler              $updateBranchHandler
     )
     {
     }
@@ -89,6 +92,18 @@ class ManagementHierarchyController extends Controller
     {
         $command = $request->createUpdateManagementHierarchyCommand();
         $this->updateManagementHierarchyHandler->handle($command);
+
+        $item = $this->managementHierarchyService->get($command->getId());
+
+        $presenter = new ManagementHierarchyPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function updateBranch(UpdateBranchRequest $request): JsonResponse
+    {
+        $command = $request->createUpdateBranchCommand();
+        $this->updateBranchHandler->handle($command);
 
         $item = $this->managementHierarchyService->get($command->getId());
 

@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Controllers;
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
 use Modules\Company\CompanyCore\Requests\ExportCompaniesRequest;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
@@ -21,15 +22,15 @@ use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyValidateService;
 use Modules\Company\CompanyCore\Services\CompanyValidatedService;
-use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
-use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\User\Repositories\UserRepository;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
 
 class CompanyController extends Controller
 {
@@ -177,19 +178,33 @@ class CompanyController extends Controller
     /**
      * Export companies data as CSV
      *
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     * @return BinaryFileResponse
      */
+//    public function export(ExportCompaniesRequest $request)
+//    {
+//        $companyIds = $request->input('company_ids');
+//        $csv = $this->companyService->export($companyIds);
+//        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+//
+//        return response()->streamDownload(function () use ($csv) {
+//            echo $csv;
+//        }, $filename, [
+//            'Content-Type' => 'text/csv',
+//            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+//        ]);
+//    }
     public function export(ExportCompaniesRequest $request)
     {
-        $companyIds = $request->input('company_ids');
-        $csv = $this->companyService->export($companyIds);
-        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $companyIds = $request->input('ids');
+        $format = strtolower($request->input('format', 'csv'));
 
-        return response()->streamDownload(function () use ($csv) {
-            echo $csv;
-        }, $filename, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        if (!in_array($format, ['xlsx', 'csv'])) {
+            return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
+        }
+
+        $export = $this->companyService->export($companyIds, $format);
+        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s');
+
+        return Excel::download($export, $filename . '.' . $format);
     }
 }
