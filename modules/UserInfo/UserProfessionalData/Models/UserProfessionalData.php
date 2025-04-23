@@ -78,4 +78,6 @@ class UserProfessionalData extends Model
     {
         return $this->belongsTo(JobType::class);
     }
+
+
 }

@@ -19,6 +19,7 @@ use Modules\Shared\Language\Models\Language;
 use Modules\Shared\TimeZone\Models\TimeZone;
 use Modules\User\Models\User;
 use Modules\UserInfo\BankAccount\Models\BankAccount;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -87,7 +88,10 @@ class CompanyUser extends Model implements HasMedia
         'border_number_end_date',
         'entry_number_end_date',
         'active_type',
-        'active_date_to'
+        'active_date_to',
+        'currency_id',
+        'time_zone_id',
+        'language_id',
     ];
 
     protected $casts = [
@@ -156,6 +160,8 @@ class CompanyUser extends Model implements HasMedia
                     ->where('type', 'default');
     }
 
+
+
     public function getRelationshipToPrimaryModel(): string
     {
       return "users";
@@ -163,5 +169,10 @@ class CompanyUser extends Model implements HasMedia
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl();
+    }
+
+    public function userProfessionalData()
+    {
+        return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_id');
     }
 }
