@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Controllers;
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\Company\CompanyCore\Requests\ExportCompaniesRequest;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
 use Modules\Company\CompanyCore\Models\Company;
@@ -168,5 +169,24 @@ class CompanyController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Export companies data as CSV
+     *
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function export(ExportCompaniesRequest $request)
+    {
+        $companyIds = $request->input('company_ids');
+        $csv = $this->companyService->export($companyIds);
+        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        
+        return response()->streamDownload(function () use ($csv) {
+            echo $csv;
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 }

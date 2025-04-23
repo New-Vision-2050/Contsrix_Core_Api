@@ -19,6 +19,7 @@ use Modules\User\Presenters\UserWithLoginWayPresenter;
 use Modules\User\Requests\AssignRolesForUserRequest;
 use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
+use Modules\User\Requests\GetAdminUsersRequest;
 use Modules\User\Requests\GetUserAuditListRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
@@ -166,5 +167,15 @@ class UserController extends Controller
     {
 
         return Json::items(CompanyPresenter::collection($this->userService->getAvailableTenantForUser(auth()->user()->id)));
+    }
+
+    public function getAdminUsers(GetAdminUsersRequest $request): JsonResponse
+    {
+        $list = $this->userService->getAdminUsersFromCentralCompanies(
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
+        );
+
+        return Json::items(UserPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 }

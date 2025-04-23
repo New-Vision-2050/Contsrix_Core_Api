@@ -20,14 +20,16 @@ class JobTitleModulesSeederTableSeeder extends Seeder
     {
         Model::unguard();
         $data = [
-            ['en' => 'General Manager', 'ar' => 'مدير عام',"for_central_company" => true],
-            ['en' => 'Head of Department', 'ar' => 'تصنيف', 'رئيس قسم',"for_central_company" => false],
-            ['en' => 'hr manager', 'ar' => 'مدير الموارد البشرية',"for_central_company" => false],
+
+            ['en' => 'General Manager', 'ar' => 'مدير عام','type'=>'general_manager'],
+            ['en' => 'Head of Department', 'ar' => 'تصنيف', 'رئيس قسم','type'=>'head_department'],
+            ['en' => 'hr manager', 'ar' => 'مدير الموارد البشرية','type'=>'hr_manager'],
         ];
 
         foreach ($data as $item) {
             JobTitle::Create(
-                ['name' => ['en' => $item['en'], 'ar' => $item['ar']],"for_central_company" => $item['for_central_company'] ]
+
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type']]
             );
         }
 
