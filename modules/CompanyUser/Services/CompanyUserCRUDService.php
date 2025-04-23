@@ -9,6 +9,7 @@ use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
@@ -82,8 +83,8 @@ class CompanyUserCRUDService
     public function export(?array $companyUserIds = null):string
     {
         $users = $companyUserIds
-            ? $this->repository->getIdsWithRelations($companyUserIds, ["users.company","country"])
-            : $this->repository->getAllWithRelations(["users.company","country"]);
+            ? $this->repository->getIdsWithRelations($companyUserIds, ["companies","users.company","country"])
+            : $this->repository->getAllWithRelations(["companies","users.company","country"]);
 
         $csvHeader = [
             'ID',
@@ -91,7 +92,8 @@ class CompanyUserCRUDService
             'Email',
             'Phone',
             "Nationality",
-            "Companies"
+            "Companies",
+            "Roles"
         ];
 
         $csvData = [];
@@ -99,11 +101,21 @@ class CompanyUserCRUDService
 
         foreach ($users as $companyUser) {
             $companies = [];
+            $roles = [];
             foreach ($companyUser->users as $user) {
                 if ($user->company?->name) {
                     $companies[] = $user->company->name;
+                    $r= $companyUser->companies()->where("companies.id", $user->company->id)->get();
+                    $tempRoles ="";
+                    foreach ($r as $item)
+                    {
+                        $tempRoles.= CompanyUserRole::lang($item->pivot->role)." ";
+                    }
+                    $roles []= $tempRoles;
                 }
             }
+
+
 
             $csvData[] = [
                 $companyUser->id,
@@ -111,7 +123,9 @@ class CompanyUserCRUDService
                 $companyUser->email,
                 $companyUser->phone,
                 $companyUser->country?->nationality ?? '',
-                implode("\n", $companies)
+                implode("\n", $companies),
+                implode("\n", $roles)
+
             ];
         }
 
