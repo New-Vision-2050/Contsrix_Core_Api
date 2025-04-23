@@ -1,0 +1,8 @@
+{
+    "name": "PageBuilder",
+    "alias": "page-builder",
+    "description": "Dynamic form and table builder from database schema",
+    "providers": [
+        "Modules\\PageBuilder\\Providers\\PageBuilderServiceProvider"
+    ]
+}
