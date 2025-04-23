@@ -189,9 +189,9 @@ class UserController extends Controller
      */
     public function export(ExportUsersRequest $request)
     {
-        $userIds = $request->input('user_ids');
-        $format = strtolower($request->input('format', 'xlsx'));
-        
+        $userIds = $request->input('ids');
+        $format = strtolower($request->input('format', 'csv'));
+
         if (!in_array($format, ['xlsx', 'csv'])) {
             return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
         }

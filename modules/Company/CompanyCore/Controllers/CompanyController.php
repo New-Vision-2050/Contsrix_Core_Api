@@ -154,13 +154,13 @@ class CompanyController extends Controller
     {
         try {
             $name = $request->query('name');
-            
+
             if (!$name) {
                 return Json::error('Company name is required', 400);
             }
 
             $company = $this->companyService->getByName($name);
-            
+
             if (!$company) {
                 return Json::error('Company not found', 404);
             }
@@ -178,9 +178,9 @@ class CompanyController extends Controller
      */
     public function export(ExportCompaniesRequest $request)
     {
-        $companyIds = $request->input('company_ids');
-        $format = strtolower($request->input('format', 'xlsx'));
-        
+        $companyIds = $request->input('ids');
+        $format = strtolower($request->input('format', 'csv'));
+
         if (!in_array($format, ['xlsx', 'csv'])) {
             return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
         }
