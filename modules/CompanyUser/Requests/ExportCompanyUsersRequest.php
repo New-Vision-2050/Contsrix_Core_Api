@@ -15,8 +15,8 @@ class ExportCompanyUsersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "company_user_ids" => "required|array",
-            "company_user_ids.*" => "required|exists:company_users,id",
+            "company_user_ids" => "nullable|array",
+            "company_user_ids.*" => "string|exists:company_users,id",
         ];
     }
 
