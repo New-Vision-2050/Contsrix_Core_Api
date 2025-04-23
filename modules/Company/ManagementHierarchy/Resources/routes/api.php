@@ -4,6 +4,10 @@ use Illuminate\Support\Facades\Route;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
+    Route::get('/user/{id}', [ManagementHierarchyController::class, 'hierarchies']);
+});
+
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [ManagementHierarchyController::class, 'index']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/update-branch/{id}', [ManagementHierarchyController::class, 'updateBranch']);

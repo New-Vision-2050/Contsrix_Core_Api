@@ -178,6 +178,11 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
         return $this->hasMany(ManagementHierarchy::class, 'company_id')->where('type', 'branch');
     }
 
+    public function managements()
+    {
+        return $this->hasMany(ManagementHierarchy::class, 'company_id')->where('type', 'management');
+    }
+
     public function firstBranch()
     {
         return $this->hasOne(ManagementHierarchy::class, 'company_id')->where('is_first_branch', true)->where('type', 'branch');

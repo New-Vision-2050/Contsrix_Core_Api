@@ -23,6 +23,7 @@ use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
+use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
 
 class ManagementHierarchyController extends Controller
@@ -32,6 +33,7 @@ class ManagementHierarchyController extends Controller
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
+        private UserRepository                   $userRepository,
         private UpdateBranchHandler              $updateBranchHandler
     )
     {
@@ -116,4 +118,21 @@ class ManagementHierarchyController extends Controller
 
         return Json::deleted();
     }
+
+    public function hierarchies(GetManagementHierarchyListRequest $request)
+    {
+        $userId = Uuid::fromString($request->route('id'));
+
+        $user = $this->userRepository->getUser($userId);
+        $type = $request->get('type', 'branch');
+        $list = $this->managementHierarchyService->listCompany(
+        Uuid::fromString($user->company_id),
+        $type,
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
+        );
+
+        return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
 }

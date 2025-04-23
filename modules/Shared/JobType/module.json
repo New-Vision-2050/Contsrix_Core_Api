@@ -1,0 +1,14 @@
+{
+    "name": "JobType",
+    "alias": "jobtype",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\JobType\\Providers\\JobTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}
