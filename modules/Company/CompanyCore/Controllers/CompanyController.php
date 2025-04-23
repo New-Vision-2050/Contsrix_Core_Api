@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Controllers;
 use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
 use Modules\Company\CompanyCore\Requests\ExportCompaniesRequest;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
@@ -178,14 +179,15 @@ class CompanyController extends Controller
     public function export(ExportCompaniesRequest $request)
     {
         $companyIds = $request->input('company_ids');
-        $csv = $this->companyService->export($companyIds);
-        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $format = strtolower($request->input('format', 'xlsx'));
         
-        return response()->streamDownload(function () use ($csv) {
-            echo $csv;
-        }, $filename, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        if (!in_array($format, ['xlsx', 'csv'])) {
+            return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
+        }
+
+        $export = $this->companyService->export($companyIds, $format);
+        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s');
+
+        return Excel::download($export, $filename . '.' . $format);
     }
 }

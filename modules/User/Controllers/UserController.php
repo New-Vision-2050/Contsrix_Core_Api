@@ -7,6 +7,8 @@ namespace Modules\User\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\User\Requests\ExportUsersRequest;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
@@ -177,5 +179,26 @@ class UserController extends Controller
         );
 
         return Json::items(UserPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    /**
+     * Export users data as Excel/CSV
+     *
+     * @param ExportUsersRequest $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function export(ExportUsersRequest $request)
+    {
+        $userIds = $request->input('user_ids');
+        $format = strtolower($request->input('format', 'xlsx'));
+        
+        if (!in_array($format, ['xlsx', 'csv'])) {
+            return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
+        }
+
+        $export = $this->userService->export($userIds, $format);
+        $filename = 'users_export_' . now()->format('Y-m-d_H-i-s');
+
+        return Excel::download($export, $filename . '.' . $format);
     }
 }

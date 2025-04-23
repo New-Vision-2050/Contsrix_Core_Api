@@ -129,4 +129,15 @@ class UserRepository extends BaseRepository
             'data' => $paginatedData,
         ];
     }
+
+    public function getUsersWithRelations(array $userIds = null, array $relations = []): Collection
+    {
+        $query = $this->model->with($relations);
+        
+        if ($userIds) {
+            $query->whereIn('id', $userIds);
+        }
+        
+        return $query->get();
+    }
 }

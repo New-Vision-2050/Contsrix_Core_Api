@@ -58,4 +58,21 @@ class UserCRUDService
     {
        return $this->repository->getAdminUsersFromCentralCompanies($page,$perPage);
     }
+
+    public function export(?array $userIds = null, string $format = 'xlsx')
+    {
+        $relations = [
+            'loginWay',
+            'company',
+            'companyUser',
+            'roles',
+            'permissions'
+        ];
+
+        $users = $userIds
+            ? $this->repository->getUsersWithRelations($userIds, $relations)
+            : $this->repository->getUsersWithRelations(null, $relations);
+
+        return new \Modules\User\Exports\UsersExport($users);
+    }
 }
