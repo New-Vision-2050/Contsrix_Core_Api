@@ -113,5 +113,20 @@ class UserRepository extends BaseRepository
         return $this->model->where($conditions)->pluck($pluck)->toArray();
     }
 
+    public function getAdminUsersFromCentralCompanies($page, $perPage)
+    {
+        $query = $this->model
+            ->whereHas('company', function ($query) {
+                $query->where('is_central_company', true);
+            });
 
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
 }

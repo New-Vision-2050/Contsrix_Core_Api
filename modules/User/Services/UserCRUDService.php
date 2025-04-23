@@ -54,4 +54,8 @@ class UserCRUDService
          $company_ids =  $this->repository->getWithoutTenancy()->getWherePluck(["global_company_user_id"=>$user->global_company_user_id],"company_id");
          return $this->companyRepository->whereIn("id", $company_ids)->get();
     }
+    public function getAdminUsersFromCentralCompanies(int $page = 1, int $perPage = 10): array
+    {
+       return $this->repository->getAdminUsersFromCentralCompanies($page,$perPage);
+    }
 }
