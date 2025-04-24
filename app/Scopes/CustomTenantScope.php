@@ -38,4 +38,10 @@ class CustomTenantScope implements Scope
         // For all other tenants, apply the normal tenant filtering
         $builder->where($model->qualifyColumn(BelongsToTenant::$tenantIdColumn), $tenant->getTenantKey());
     }
+    public function extend(Builder $builder)
+    {
+        $builder->macro('withoutTenancy', function (Builder $builder) {
+            return $builder->withoutGlobalScope($this);
+        });
+    }
 }

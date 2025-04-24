@@ -19,7 +19,7 @@ use Modules\User\Models\User;
 class UserRepository extends BaseRepository
 {
     public function __construct(
-        User                                $model,
+        User                              $model,
         private AuditRepository             $auditRepository,
         private IdentifierSettingRepository $identifierSettingRepository)
     {
@@ -50,8 +50,8 @@ class UserRepository extends BaseRepository
         $identifierSettings = $this->identifierSettingRepository->list();
         $isEmailActive = $identifierSettings->where('key', 'email')->first()->status;
         $isPhoneActive = $identifierSettings->where('key', 'phone')->first()->status;
-        return $this->model->query()->where(function ($query) use ($identifier,$isEmailActive,$isPhoneActive) {
-            $query ->when($isEmailActive == 1, function ($query) use ($identifier) {
+        return $this->model->query()->where(function ($query) use ($identifier, $isEmailActive, $isPhoneActive) {
+            $query->when($isEmailActive == 1, function ($query) use ($identifier) {
                 return $query->where('email', $identifier);
             })->when($isPhoneActive == 1, function ($query) use ($identifier) {
                 return $query->orWhere('phone', $identifier);

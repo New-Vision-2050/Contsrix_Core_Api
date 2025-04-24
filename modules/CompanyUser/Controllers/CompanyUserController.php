@@ -97,7 +97,6 @@ class CompanyUserController extends Controller
             $request->createCreateCompanyUserDTO(),
             $request->createCreateCompanyUserCompanyRoleDTO()
         );
-
         $presenter = new CompanyUserPresenter($createdItem);
         return Json::item($presenter->getData());
     }
