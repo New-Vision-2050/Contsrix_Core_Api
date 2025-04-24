@@ -1,0 +1,14 @@
+{
+    "name": "ProfessionalBodie",
+    "alias": "professionalbodie",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\ProfessionalBodie\\Providers\\ProfessionalBodieServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

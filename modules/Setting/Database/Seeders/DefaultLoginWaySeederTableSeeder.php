@@ -1,0 +1,35 @@
+<?php
+
+namespace Modules\Setting\Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\App;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Setting\Models\LoginWay;
+use Modules\Setting\Models\Setting;
+use Ranium\SeedOnce\Traits\SeedOnce;
+
+class DefaultLoginWaySeederTableSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     *
+     * @return void
+     */
+    public function run()
+    {
+        Model::unguard();
+        $loginWay = LoginWay::firstOrCreate(
+            ["name" => "password","company_id"=>tenant("id")??Company::query()->first()->id],
+            [
+                "name" => "password",
+                "default" => 1,
+                "company_id"=>tenant("id")??Company::query()->first()->id
+            ]
+        );
+        $loginWay->loginWaySteps()->delete();
+        $loginWay->loginWaySteps()->create(["login_option" => "password", "order" => 1]);
+    }
+
+}

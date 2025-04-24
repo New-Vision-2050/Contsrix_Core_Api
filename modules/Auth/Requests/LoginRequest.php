@@ -6,11 +6,11 @@ namespace Modules\Auth\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Auth\DTO\LoginDTO;
-use Ramsey\Uuid\Uuid;
-use Modules\Auth\DTO\CreateAuthDTO;
+use Modules\Setting\Models\Setting;
 
 class LoginRequest extends FormRequest
 {
+
     public function rules(): array
     {
         return [
@@ -22,8 +22,8 @@ class LoginRequest extends FormRequest
     public function createLoginDTO(): LoginDTO
     {
         return new LoginDTO(
-            email: $this->get('email'),
-            password: $this->get('password'),
+            email:             $this->get('email'),
+            password:          $this->get('password')
         );
     }
 }

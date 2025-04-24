@@ -3,6 +3,7 @@
 namespace Modules\Auth\Handlers;
 
 use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class LogoutHandler
 {
@@ -13,6 +14,6 @@ class LogoutHandler
 
     public function handle( )
     {
-        Auth::logout();
+        JWTAuth::invalidate(JWTAuth::getToken());
     }
 }

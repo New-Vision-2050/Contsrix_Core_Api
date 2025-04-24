@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Company\ManagementHierarchy\Filters;
+
+use BasePackage\Shared\Filters\SearchModelFilter;
+
+class ManagementHierarchyFilter extends SearchModelFilter
+{
+       public $relations = [];
+
+    public function name($name)
+    {
+        return $this->where('name', $name);
+    }
+
+    public function parentId($parentId)
+    {
+        return $this->where('parent_id', $parentId);
+    }
+}

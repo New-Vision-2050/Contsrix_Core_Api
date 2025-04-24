@@ -11,6 +11,9 @@ class CreateUserDTO
     public function __construct(
         public string $name,
         public string $email,
+//        public string $password,
+        public string $phone,
+        public string $phoneCode
     ) {
     }
 
@@ -19,6 +22,9 @@ class CreateUserDTO
         return [
             'name' => $this->name,
             'email' => $this->email,
+//            'password' => $this->password,
+            'phone' => $this->phone,
+            'phone_code' => $this->phoneCode,
         ];
     }
 }

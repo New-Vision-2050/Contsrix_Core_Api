@@ -23,19 +23,42 @@ cd $DEPLOY_DIR
 
 
 if [ "$APP_ENV" == "production" ]; then
-    EMAIL_HOST="smtp.yourmailprovider.com"
-    EMAIL_HOST_USER="your-email@example.com"
-    EMAIL_HOST_PASSWORD="your-secure-password"
-    EMAIL_PORT=587
+     EMAIL_HOST=vision-dashbord.com
+     EMAIL_PORT=465
+     EMAIL_HOST_USER=info@vision-dashbord.com
+     EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+     EMAIL_ENCRYPTION=tls
+     EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+elif [ "$APP_ENV" == "stage" ]; then
+    EMAIL_HOST=vision-dashbord.com
+    EMAIL_PORT=465
+    EMAIL_HOST_USER=info@vision-dashbord.com
+    EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+    EMAIL_ENCRYPTION=tls
+    EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 else
-    EMAIL_HOST="mailcatcher"
-    EMAIL_HOST_USER=""
-    EMAIL_HOST_PASSWORD=""
-    EMAIL_PORT=1025
+   # EMAIL_HOST="mailcatcher"
+   # EMAIL_HOST_USER=""
+   # EMAIL_HOST_PASSWORD=""
+   # EMAIL_PORT=1025
+   # EMAIL_ENCRYPTION=
+   # EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+    EMAIL_HOST=vision-dashbord.com
+    EMAIL_PORT=465
+    EMAIL_HOST_USER=info@vision-dashbord.com
+    EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+    EMAIL_ENCRYPTION=tls
+    EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
 fi
 
 APP_NAME="Constrix"
 APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
+
+if [[ "$DEPLOYMENT_ID" == *"pr"* ]]; then
+  DB_NAME="$DB_NAME-pr"
+else
+  DB_NAME="$DB_NAME-$DEPLOYMENT_ID"
+fi
 
 # Create .env file
 cat <<EOF > .env
@@ -48,7 +71,7 @@ DB_HOST=$DB_HOST
 DB_PORT=$DB_PORT
 DB_USERNAME=$DB_USERNAME
 DB_PASSWORD=$DB_PASSWORD
-DB_DATABASE=$DB_NAME-$DEPLOYMENT_ID
+DB_DATABASE=$DB_NAME
 QUEUE_CONNECTION=redis
 SESSION_DRIVER=redis
 CACHE_STORE=redis
@@ -61,8 +84,16 @@ MAIL_HOST=$EMAIL_HOST
 MAIL_PORT=$EMAIL_PORT
 MAIL_USERNAME=$EMAIL_HOST_USER
 MAIL_PASSWORD=$EMAIL_HOST_PASSWORD
-MAIL_FROM_ADDRESS=no-reply@constrix-nv.com
+MAIL_ENCRYPTION=$EMAIL_ENCRYPTION
+MAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
 MAIL_FROM_NAME=$APP_NAME
+AWS_ACCESS_KEY_ID=$AWS_KEY
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET
+AWS_DEFAULT_REGION=us-east-1
+AWS_ENDPOINT=https://constrix.fra1.digitaloceanspaces.com
+AWS_USE_PATH_STYLE_ENDPOINT=true
+MINIO_PUBLIC_BUCKET=contrix
+MINIO_PRIVATE_BUCKET=contrix-archive-private
 EOF
 
 echo "APP_ENV: $APP_ENV"

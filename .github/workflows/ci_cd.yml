@@ -93,8 +93,13 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           APP_KEY: ${{ secrets.APP_KEY }}
+          AWS_KEY: ${{ secrets.AWS_KEY }}
+          AWS_SECRET: ${{ secrets.AWS_SECRET }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           DEPLOYMENT_ID: ${{env.DEPLOYMENT_ID}}
+          SMS_MORA_KEY: ${{ secrets.SMS_MORA_KEY }}
+          SMS_MORA_SENDER: ${{ secrets.SMS_MORA_SENDER }}
+          SMS_MORA_USER: ${{ secrets.SMS_MORA_USER }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -112,6 +117,8 @@ jobs:
             export DB_PASSWORD=${{env.DB_PASSWORD}}
             export DB_NAME=${{env.DB_NAME}}
             export APP_KEY=${{env.APP_KEY}}
+            export AWS_KEY=${{env.AWS_KEY}}
+            export AWS_SECRET=${{env.AWS_SECRET}}
             export JWT_SECRET=${{env.JWT_SECRET}}
             export DEPLOYMENT_ID=${{env.DEPLOYMENT_ID}}
             DEPLOY_DIR=/home/deployer/laravel/deployments/${{env.DEPLOYMENT_ID}}/code

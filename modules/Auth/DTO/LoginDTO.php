@@ -18,4 +18,8 @@ class LoginDTO
         ];
     }
 
+    public function getEmail()
+    {
+        return $this->email;
+    }
 }

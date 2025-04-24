@@ -12,6 +12,8 @@ class UpdateUserCommand
         private UuidInterface $id,
         private string $name,
         private string $email,
+        private string $phone,
+        private string $phoneCode
     ) {
     }
 
@@ -34,6 +36,8 @@ class UpdateUserCommand
         return array_filter([
             'name' => $this->name,
             'email' => $this->email,
+            'phone' => $this->phone,
+            'phone_code' => $this->phoneCode,
         ]);
     }
 }
