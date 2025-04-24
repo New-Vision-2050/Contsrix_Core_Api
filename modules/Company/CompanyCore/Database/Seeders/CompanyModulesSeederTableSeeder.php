@@ -71,11 +71,11 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $company = Company::insertOrIgnore($companyData);
         $company = Company::query()->find($id);
         $company->update(['name' => ["ar" => 'نيو فيجن', "en" => "new vision"]]);
-        $path = resource_path()."/images/new-vision-logo.jpg";
+        $path = resource_path()."/images/new-vision-logo.png";
         try {
             $file = new \Illuminate\Http\UploadedFile(
                 $path,
-                'new-vision-logo.jpg',
+                'new-vision-logo.png',
                 null,
                 null,
                 true
@@ -88,7 +88,8 @@ class CompanyModulesSeederTableSeeder extends Seeder
         }
 
 
-        $domain = str_replace("be-", "", env("APP_URL"));
+        $domain = str_replace("core-be-master.", "", env("APP_URL"));
+        $domain = str_replace("be-", "", $domain);
 
         Domain::query()->create([
             "company_id" => $id,
