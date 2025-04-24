@@ -28,7 +28,7 @@ class AdminSeedTableSeeder extends Seeder
     public function run()
     {
 
-        if (App::environment('production') == false) {
+        //if (App::environment('production') == false) {
 
             $companyUser = CompanyUser::firstOrCreate(['email' =>'admin@constrix-nv.com'],
                 [
@@ -59,5 +59,5 @@ class AdminSeedTableSeeder extends Seeder
             );
             $user->assignRole('super-admin');
         }
-    }
+    //}
 }
