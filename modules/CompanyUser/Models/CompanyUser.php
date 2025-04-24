@@ -23,6 +23,7 @@ use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class CompanyUser extends Model implements HasMedia
@@ -38,7 +39,7 @@ class CompanyUser extends Model implements HasMedia
     //use SoftDeletes;
 
     //public array $translatable = [];
-
+    protected $with = ["users"];
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -102,11 +103,12 @@ class CompanyUser extends Model implements HasMedia
     public function companies()
     {
         return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
-            ->withPivot('role','status');
+            ->withPivot('role', 'status');
     }
+
     public function users()
     {
-        return $this->hasMany(User::class, 'global_company_user_id',"global_id");
+        return $this->hasMany(User::class, 'global_company_user_id', "global_id");
     }
 
     protected static function newFactory(): CompanyUserFactory
@@ -132,40 +134,46 @@ class CompanyUser extends Model implements HasMedia
 
     public function rolesForCompany($companyId)
     {
-        return $this->companies->where('id',$companyId)->sortByDesc('role')->pluck("pivot");
+        return $this->companies->where('id', $companyId)->sortByDesc('role')->pluck("pivot");
     }
+
     public function country()
     {
         return $this->belongsTo(Country::class);
     }
+
     public function timeZone()
     {
         return $this->belongsTo(TimeZone::class);
     }
+
     public function language()
     {
         return $this->belongsTo(Language::class);
     }
+
     public function currency()
     {
         return $this->belongsTo(Currency::class);
     }
+
     public function jobTitle()
     {
         return $this->belongsTo(JobTitle::class);
     }
+
     public function bankAccount()
     {
         return $this->hasOne(BankAccount::class, 'global_id', 'global_id')
-                    ->where('type', 'default');
+            ->where('type', 'default');
     }
-
 
 
     public function getRelationshipToPrimaryModel(): string
     {
-      return "users";
+        return "users";
     }
+
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl();
