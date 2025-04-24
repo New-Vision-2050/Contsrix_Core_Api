@@ -119,16 +119,4 @@ class ManagementHierarchyController extends Controller
         return Json::deleted();
     }
 
-    public function hierarchies(GetManagementHierarchyListRequest $request)
-    {
-        $type = $request->get('type', 'branch');
-        $list = $this->managementHierarchyService->listCompany(
-        $type,
-            (int)$request->get('page', 1),
-            (int)$request->get('per_page', 10)
-        );
-
-        return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
-    }
-
 }
