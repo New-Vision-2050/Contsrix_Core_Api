@@ -22,6 +22,7 @@ class UserPresenter extends AbstractPresenter
             'id' => $this->user->id,
             'name' => $this->user->name,
             'email' => $this->user->email,
+            'phone' => $this->user->phone,
         ];
     }
 }

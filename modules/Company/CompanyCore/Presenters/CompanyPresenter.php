@@ -42,7 +42,7 @@ class CompanyPresenter extends AbstractPresenter
             'name_en' => $this?->company->getTranslation("name", "en"),
             'user_name' => $this->company->user_name,
             'email' => $this->company->owner?->email,
-            'phone' => $this->company->phone,
+            'phone' => $this->company->owner?->phone,
             'serial_no' => $this->company?->serial_no,
             'country_id' => $this->company->country_id,
             'country_name' => $this->company->country?->name,
