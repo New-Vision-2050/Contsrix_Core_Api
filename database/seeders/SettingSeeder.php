@@ -12,8 +12,8 @@ class SettingSeeder extends Seeder
 {
     public function run(): void
     {
-        if (App::environment('production') == false) {
+        //if (App::environment('production') == false) {
             Setting::firstOrCreate(["key" => "continue_with_otp","company_id"=>tenant("id")??Company::query()->first()->id], ["key" => "continue_with_otp", "value" => 0,"company_id"=>tenant("id")??Company::query()->first()->id]);
-        }
+        //}
     }
 }

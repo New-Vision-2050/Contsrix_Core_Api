@@ -25,7 +25,7 @@ class CompanyFilter extends SearchModelFilter
     }
     public function companyField($companyFieldId)
     {
-        return $this->whereHas('companyField',function($q) use ($companyFieldId) {$q->where('id',$companyFieldId);});
+        return $this->whereHas('companyFields',function($q) use ($companyFieldId) {$q->where('id',$companyFieldId);});
     }
 
 
@@ -39,8 +39,7 @@ class CompanyFilter extends SearchModelFilter
                     ->orWhere('user_name', 'like', '%' . $search . '%')
                     ->orWhere('phone', 'like', '%' . $search . '%')
                     ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('serial_no', 'like', '%' . $search . '%')
-                    ->orWhere('registration_no', 'like', '%' . $search . '%');
+                    ->orWhere('serial_no', 'like', '%' . $search . '%');
             });
         });
 

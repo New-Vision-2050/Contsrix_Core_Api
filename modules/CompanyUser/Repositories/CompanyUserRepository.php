@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\User\Models\User;
@@ -110,12 +111,14 @@ class CompanyUserRepository extends BaseRepository
     {
         return $this->paginatedList([], $page, $perPage);
     }
+
     public function getCompanyUser(UuidInterface $id): CompanyUser
     {
         return $this->findOneByOrFail([
             'id' => $id->toString(),
         ]);
     }
+
     public function getCompanyUserGlobalId(UuidInterface $global_id): CompanyUser
     {
         return $this->findOneByOrFail([
@@ -147,34 +150,44 @@ class CompanyUserRepository extends BaseRepository
         $phoneArray = explode(' ', $phone);
         return [
             'phone_code' => $phoneArray[0],
-            'phone' => str_replace(" ","",$phone),
+            'phone' => str_replace(" ", "", $phone),
         ];
     }
 
     public function createCompanyUser(array $companyUserData, array $companyRole): CompanyUser
     {
         try {
-            $phone= $this->getPhoneNumberInfo($companyUserData['phone']);
+            $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
 
             DB::beginTransaction();
             $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
             if (!$companyUser) {
 
-                $companyUser = $this->create(array_merge($companyUserData,$phone));
+                $companyUser = $this->create(array_merge($companyUserData, $phone));
             }
             $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
             $companyUser = $companyUser->fresh();//get updated data for company user
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
+                $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
+
                 $this->userRepository->createUser(array_merge([
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
-                    "global_company_user_id" => $companyUser->global_id
-                ],$phone));
+                    "global_company_user_id" => $companyUser->global_id,
+                    "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
+                ], $phone));
+
             }
 
-            CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+            if (CompanyUserCompany::query()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->count() == 0) {
+                CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+
+            } else {
+                throw new \Exception(__("validation.user-already-exists"), 422);
+            }
+
 
             DB::commit();
         } catch (\Exception $exception) {
@@ -227,13 +240,13 @@ class CompanyUserRepository extends BaseRepository
 
 
             $companyUser = $this->findOneBy(["id" => $id]);
-            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id],array_merge( [
+            $users = $this->userRepository->updateWhere(["global_company_user_id" => $companyUser->global_id], array_merge([
                 "name" => $data["name"],
                 "email" => $data["email"],
                 "global_company_user_id" => $companyUser->global_id
-            ],$phoneInfo));
+            ], $phoneInfo));
 
-            $this->update($id, array_merge($data,$phoneInfo));
+            $this->update($id, array_merge($data, $phoneInfo));
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -246,7 +259,7 @@ class CompanyUserRepository extends BaseRepository
 
     public function updateCompanyUserDataInfo(UuidInterface $global_id, array $data): bool
     {
-        $this->updateWhere(["global_id" => $global_id],$data);
+        $this->updateWhere(["global_id" => $global_id], $data);
 
         $users = $this->userRepository->updateWhere(
             ["global_company_user_id" => $global_id],
@@ -255,6 +268,7 @@ class CompanyUserRepository extends BaseRepository
 
         return true;
     }
+
     public function updateCompanyUserIdentityData(UuidInterface $global_id, array $data): bool
     {
         $this->updateWhere(["global_id" => $global_id], $data);
@@ -280,4 +294,16 @@ class CompanyUserRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function getIdsWithRelations($ids = [], $relations = [])
+    {
+        return $this->model->with($relations)->whereIn("id", $ids)->get();
+    }
+
+    public function getAllWithRelations($relations = [])
+    {
+        return $this->model->with($relations)->get();
+    }
+
+
 }

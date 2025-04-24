@@ -207,6 +207,11 @@ return [
     "logo-not-valid"=>"logo not valid",
     "pick-another-location"=>"pick another location",
     "you-must-change-location-or-update-country"=>"you must change location or update country",
+    "user-already-exists"=>"user already exists",
+    "phone-exists"=>"phone exists",
+    "phone_email_consistency-error"=>"phone and email consistency error",
+
+
 
 
 

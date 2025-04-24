@@ -195,6 +195,10 @@ return [
     "logo-not-valid" => "الصورة غير صحيحة",
     "pick-another-location"=> "يرجى اختيار موقع آخر",
     'you-must-change-location-or-update-country'=> "يجب اختيار موقع آخر أو تحديث الدولة",
+    "user-already-exists"=>"المستخدم موجود بالفعل",
+    "phone-exists"=>"رقم الهاتف موجود بالفعل",
+    "phone_email_consistency-error"=>"الرقم مسجل لدي مستخدم اخر ",
+
 
 
 

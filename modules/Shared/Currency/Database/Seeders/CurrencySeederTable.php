@@ -5,9 +5,10 @@ namespace Modules\Shared\Currency\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Shared\Currency\Models\Currency;
-
+use Ranium\SeedOnce\Traits\SeedOnce;
 class CurrencySeederTable extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *

@@ -32,6 +32,17 @@ function getTagsID($type = "job_grades")
     return $array;
 }
 
+function createCSV($csvData)
+{
+    $output = fopen('php://temp', 'r+');
+    foreach ($csvData as $row) {
+        fputcsv($output, $row);
+    }
+    rewind($output);
+    $csv = stream_get_contents($output);
+    fclose($output);
+    return $csv;
+}
 function getPhoneNumberInfo(string $phone): array
 {
     $phoneArray = explode(' ', $phone);

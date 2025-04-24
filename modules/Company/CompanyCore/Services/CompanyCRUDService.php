@@ -74,6 +74,75 @@ class CompanyCRUDService
         return $this->repository->getByHost($host);
     }
 
+//    public function export(?array $companyIds = null): string
+//    {
+//        $relations = [
+//            'country',
+//            'companyType',
+//            'companyField',
+//            'companyRegistrationType',
+//            'generalManager',
+//            'mainBranch',
+//            'companyLegalData',
+//            'companyOfficialDocuments',
+//            'companyAddress',
+//            'branches',
+//            'companyFields'
+//        ];
+//
+//        $companies = $companyIds
+//            ? $this->repository->getCompaniesByIdsWithRelations($companyIds, $relations)
+//            : $this->repository->getAllWithRelations($relations);
+//
+//        $csvHeader = [
+//            'ID',
+//            'Name',
+//            'Username',
+//            'Email',
+//            'Phone',
+//            'Country',
+//            'Company Type',
+//            'Company Field',
+//            'Registration Type',
+//            'General Manager',
+//            'Is Active',
+//            'Complete Data',
+//            'Date Activated',
+//            'Serial Number',
+//            'Address',
+//            'Legal Registration Number',
+//            'Number of Branches'
+//        ];
+//
+//        $csvData = [];
+//        $csvData[] = $csvHeader;
+//
+//        foreach ($companies as $company) {
+//            $csvData[] = [
+//                $company->id,
+//                $company->name,
+//                $company->user_name,
+//                $company->email,
+//                $company->phone,
+//                $company->country?->name ?? '',
+//                $company->companyType?->name ?? '',
+//                $company->companyField?->name ?? '',
+//                $company->companyRegistrationType?->name ?? '',
+//                $company->generalManager?->name ?? '',
+//                $company->is_active ? 'Yes' : 'No',
+//                $company->complete_data ? 'Yes' : 'No',
+//                $company->date_activate,
+//                $company->serial_no,
+//                $company->companyAddress?->full_address ?? '',
+//                $company->companyLegalData?->first()?->registration_number ?? '',
+//                $company->branches?->count() ?? 0
+//            ];
+//        }
+//
+//
+//
+//        return createCSV($csvData);
+//    }
     public function export(?array $companyIds = null, string $format = 'xlsx')
     {
         $relations = [

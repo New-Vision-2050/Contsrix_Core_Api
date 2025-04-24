@@ -14,7 +14,7 @@ class ActiveCompanyRequest extends FormRequest
     {
         return [
             "is_active" => "required|in:0,1",
-            "date_activate" => "nullable|required_if:is_active,1|date|after_or_equal:today"
+            'date_activate' => 'nullable|required_if:is_active,1|date|after_or_equal:today',
         ];
     }
 

@@ -27,7 +27,10 @@ use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\User\Repositories\UserRepository;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
 
 class CompanyController extends Controller
 {
@@ -39,6 +42,7 @@ class CompanyController extends Controller
         private CompanyValidatedService $validatedCompanyService,
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
+        private UserRepository $userRepository
         // private TransformImgsService  $transformImgsService
     ) {
     }
@@ -176,10 +180,23 @@ class CompanyController extends Controller
      *
      * @return BinaryFileResponse
      */
+//    public function export(ExportCompaniesRequest $request)
+//    {
+//        $companyIds = $request->input('company_ids');
+//        $csv = $this->companyService->export($companyIds);
+//        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+//
+//        return response()->streamDownload(function () use ($csv) {
+//            echo $csv;
+//        }, $filename, [
+//            'Content-Type' => 'text/csv',
+//            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+//        ]);
+//    }
     public function export(ExportCompaniesRequest $request)
     {
         $companyIds = $request->input('ids');
-        $format = strtolower($request->input('format', 'csv'));
+        $format = strtolower($request->input('format', 'xlsx'));
 
         if (!in_array($format, ['xlsx', 'csv'])) {
             return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
