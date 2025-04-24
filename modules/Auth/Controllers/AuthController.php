@@ -120,11 +120,11 @@ class AuthController extends Controller
 
     public function getLoginWays(GetLoginWaysRequest $request)
     {
-//        try {
+        try {
             [$loginWayId, $token, $step, $canSetPass] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
-//        } catch (\Exception $e) {
-//            return Json::error($e->getMessage(), httpStatus:400);
-//        }
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), httpStatus:400);
+        }
         $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
         return Json::item([
