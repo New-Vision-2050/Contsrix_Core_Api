@@ -94,6 +94,10 @@ AWS_ENDPOINT=https://constrix.fra1.digitaloceanspaces.com
 AWS_USE_PATH_STYLE_ENDPOINT=true
 MINIO_PUBLIC_BUCKET=contrix
 MINIO_PRIVATE_BUCKET=contrix-archive-private
+GOOGLE_MAPS_API_KEY=AIzaSyD5izq7FZI-nHdrt6mx5UeKRkUSjvagS5g
+SMS_MORA_KEY=9d036169a982498edbdcd92d99a838112546a986
+SMS_MORA_USER=saadmashal
+SMS_MORA_SENDER="Vision Dim"
 EOF
 
 echo "APP_ENV: $APP_ENV"
