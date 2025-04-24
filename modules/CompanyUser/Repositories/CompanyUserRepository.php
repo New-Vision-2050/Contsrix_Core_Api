@@ -163,7 +163,7 @@ class CompanyUserRepository extends BaseRepository
             $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
             if (!$companyUser) {
 
-                $companyUser = $this->create(array_merge($companyUserData, $phone));
+                $companyUser = $this->create($companyUserData);
             }
             $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
             $companyUser = $companyUser->fresh();//get updated data for company user
