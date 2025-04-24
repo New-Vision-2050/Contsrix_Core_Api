@@ -35,7 +35,7 @@ class CreateCompanyUserRequest extends FormRequest
             'currency_id' => 'nullable|exists:currencies,id',
 
             'phone' => 'required',
-            'email' => 'required|email',
+            'email' => 'required|email|unique:company_users,email',
             'job_title_id' => 'required|exists:job_titles,id',
             'border_number' => 'nullable|unique:company_users,border_number',
             'residence' => 'nullable|unique:company_users,residence',
