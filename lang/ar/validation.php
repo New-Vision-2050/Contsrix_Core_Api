@@ -196,6 +196,7 @@ return [
     "pick-another-location"=> "يرجى اختيار موقع آخر",
     'you-must-change-location-or-update-country'=> "يجب اختيار موقع آخر أو تحديث الدولة",
     "user-already-exists"=>"المستخدم موجود بالفعل",
+    "phone-exists"=>"رقم الهاتف موجود بالفعل",
 
 
 
