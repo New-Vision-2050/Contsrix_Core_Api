@@ -7,6 +7,7 @@ namespace Modules\CompanyUser\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\Rules\CompanyUserValidation;
+use Modules\CompanyUser\Rules\PhoneEmailConsistencyRule;
 use Modules\CompanyUser\Rules\UserNameValidation;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
@@ -34,8 +35,16 @@ class CreateCompanyUserRequest extends FormRequest
             'language_id' => 'nullable|exists:languages,id',
             'currency_id' => 'nullable|exists:currencies,id',
 
-            'phone' => 'required',
-            'email' => 'required|email',
+            'phone' => [
+                'required',
+
+                     new PhoneEmailConsistencyRule($this->input('email'))
+
+            ],
+            'email' => [
+                'required',
+                'email'
+            ],
             'job_title_id' => 'required|exists:job_titles,id',
             'border_number' => 'nullable|unique:company_users,border_number',
             'residence' => 'nullable|unique:company_users,residence',

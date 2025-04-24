@@ -162,10 +162,7 @@ class CompanyUserRepository extends BaseRepository
             DB::beginTransaction();
             $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
             if (!$companyUser) {
-                $companyUserByPhone = $this->findOneBy(["phone" => $companyUserData['phone']]);
-                if ($companyUserByPhone) {
-                    throw new \Exception(__("validation.phone-exist"), 422);
-                }
+
                 $companyUser = $this->create(array_merge($companyUserData, $phone));
             }
             $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
