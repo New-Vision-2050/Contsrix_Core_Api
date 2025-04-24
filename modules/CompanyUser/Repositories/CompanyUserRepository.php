@@ -219,9 +219,12 @@ class CompanyUserRepository extends BaseRepository
             if (!$user) {
                 $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
                 if ($user) {
+                    $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
                     $newUser = $user->replicate();
                     $newUser->password = null; // make password null
                     $newUser->company_id = $companyUserRoleData["company_id"];
+                    $newUser->is_owner = $usersInCompanyCount == 0 ? 1 : 0;
+
                     $newUser->save();
                 } else {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
@@ -234,7 +237,6 @@ class CompanyUserRepository extends BaseRepository
                         "phone_code" => $companyUser->phone_code,
                         "global_company_user_id" => $companyUser->global_id,
                         "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
-
                     ]);
                 }
 
