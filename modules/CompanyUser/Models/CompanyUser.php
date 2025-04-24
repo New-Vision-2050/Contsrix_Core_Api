@@ -114,7 +114,7 @@ class CompanyUser extends Model implements HasMedia
     {
         try {
             DB::beginTransaction();
-            $this->companies()->detach();
+//            $this->companies()->detach();
             $this->users()->delete();
             parent::delete();
             DB::commit();
