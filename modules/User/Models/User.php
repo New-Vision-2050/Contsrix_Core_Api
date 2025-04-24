@@ -11,6 +11,7 @@ use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\Company\CompanyCore\Models\Company;
@@ -37,7 +38,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use CustomBelongsToTenant;
 
 
-    //use SoftDeletes;
+    use SoftDeletes;
 
 //    public array $translatable = [];
     protected $primaryKey = "id";

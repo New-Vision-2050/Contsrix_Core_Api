@@ -29,7 +29,8 @@ class CreateCompanyUserRequest extends FormRequest
             'currency_id' => 'nullable|exists:currencies,id',
 
             'phone' => [
-                'required', new PhoneEmailConsistencyRule($this->input('email'))
+                'required'
+//                , new PhoneEmailConsistencyRule($this->input('email'))
             ],
             'email' => [
                 'required',

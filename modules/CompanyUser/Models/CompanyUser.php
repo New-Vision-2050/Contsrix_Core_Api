@@ -8,6 +8,7 @@ use AjCastro\EagerLoadPivotRelations\EagerLoadPivotTrait;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
@@ -35,7 +36,7 @@ class CompanyUser extends Model implements HasMedia
     use InteractsWithMedia;
 
     //use HasTranslations;
-    //use SoftDeletes;
+    use SoftDeletes;
 
     //public array $translatable = [];
 
@@ -47,8 +48,7 @@ class CompanyUser extends Model implements HasMedia
     protected $fillable = [
         'name',
         "email",
-        "phone",
-        "phone_code",
+
         "country_id",
         "border_number",
         "residence",
@@ -118,7 +118,7 @@ class CompanyUser extends Model implements HasMedia
     {
         try {
             DB::beginTransaction();
-            $this->companies()->detach();
+//            $this->companies()->detach();
             $this->users()->delete();
             parent::delete();
             DB::commit();
