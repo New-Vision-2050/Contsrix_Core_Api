@@ -14,14 +14,7 @@ use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
 class CreateCompanyUserRequest extends FormRequest
 {
-    protected function prepareForValidation()
-    {
-        if ($this->has('phone')) {
-            $this->merge([
-                'phone' => preg_replace('/\s+/', '', $this->phone),
-            ]);
-        }
-    }
+
 
     public function rules(): array
     {
@@ -36,10 +29,7 @@ class CreateCompanyUserRequest extends FormRequest
             'currency_id' => 'nullable|exists:currencies,id',
 
             'phone' => [
-                'required',
-
-                     new PhoneEmailConsistencyRule($this->input('email'))
-
+                'required', new PhoneEmailConsistencyRule($this->input('email'))
             ],
             'email' => [
                 'required',
