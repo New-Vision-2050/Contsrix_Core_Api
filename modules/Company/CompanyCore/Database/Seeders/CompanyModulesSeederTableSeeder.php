@@ -3,6 +3,7 @@
 namespace Modules\Company\CompanyCore\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\Folder\Requests\UploadFileRequest;
 use Modules\Company\CompanyCore\Models\Company;
@@ -95,6 +96,11 @@ class CompanyModulesSeederTableSeeder extends Seeder
             "company_id" => $id,
             "domain" => env("NEW_VISION_DOMAIN", $domain)
         ]);
+
+        if (App::environment('production') == false) {
+            Domain::query()->create(["company_id" => $id,"domain" => 'localhost']);
+            Domain::query()->create(["company_id" => $id,"domain" => 'localhost:3000']);
+        }
         $branchId = Uuid::uuid5($namespace, "new-vision-branch")->toString();
 
          ManagementHierarchy::query()->insertOrIgnore(["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch","is_first_branch" => 1]);
