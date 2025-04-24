@@ -16,6 +16,7 @@ use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\CompanyUser\Models\CompanyUser;
+use function Laravel\Prompts\table;
 
 /**
  * @property CompanyUser $model
@@ -160,14 +161,17 @@ class CompanyUserRepository extends BaseRepository
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
 
             DB::beginTransaction();
-            $companyUser = $this->findOneBy(["email" => $companyUserData['email']]);
+            $companyUser = $this->model->withTrashed()->withoutParentModel()->where("email", $companyUserData['email'])->first();
             if (!$companyUser) {
 
-                $companyUser = $this->create(array_merge($companyUserData, $phone));
+                $companyUser = $this->create($companyUserData);
             }
+            $companyUser->restore();
+
             $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
             $companyUser = $companyUser->fresh();//get updated data for company user
-            $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']]);
+            $user = $this->userRepository->model->withTrashed()->withoutTenancy()->where(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']])->first();
+
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
                 $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
 
@@ -179,13 +183,20 @@ class CompanyUserRepository extends BaseRepository
                     "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
                 ], $phone));
 
-            }
+            } else {
+                $user->restore();
+                $user->fresh();
 
-            if (CompanyUserCompany::query()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->count() == 0) {
+            }
+            $companyUserCompany = CompanyUserCompany::query()->withTrashed()->withoutTenancy()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->first();
+            if (!$companyUserCompany) {
                 CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
 
             } else {
-                throw new \Exception(__("validation.user-already-exists"), 422);
+                if($companyUserCompany->deleted_at==null){
+                    throw new \Exception(__("validation.user-already-exists"), 422);
+                }
+                $companyUserCompany->restore();
             }
 
 
@@ -208,9 +219,12 @@ class CompanyUserRepository extends BaseRepository
             if (!$user) {
                 $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
                 if ($user) {
+                    $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
                     $newUser = $user->replicate();
                     $newUser->password = null; // make password null
                     $newUser->company_id = $companyUserRoleData["company_id"];
+                    $newUser->is_owner = $usersInCompanyCount == 0 ? 1 : 0;
+
                     $newUser->save();
                 } else {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
@@ -223,7 +237,6 @@ class CompanyUserRepository extends BaseRepository
                         "phone_code" => $companyUser->phone_code,
                         "global_company_user_id" => $companyUser->global_id,
                         "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
-
                     ]);
                 }
 
@@ -296,7 +309,18 @@ class CompanyUserRepository extends BaseRepository
 
     public function deleteCompanyUser(UuidInterface $id): bool
     {
-        return $this->delete($id);
+        try {
+            DB::beginTransaction();
+            $companyUser =$this->findOneBy(["id" => $id]);
+            CompanyUserCompany::query()->where(["global_company_user_id" => $companyUser->global_id])->delete();
+            $this->delete($id);
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.delete-not-successful"), 500);
+        }
+        return true;
     }
 
     public function getIdsWithRelations($ids = [], $relations = [])

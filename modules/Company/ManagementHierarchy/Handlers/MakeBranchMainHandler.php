@@ -17,6 +17,6 @@ class MakeBranchMainHandler
 
     public function handle(MakeBranchMainCommand $makeBranchMainCommand)
     {
-        $this->repository->makeMainBranch($makeBranchMainCommand->getId(), $makeBranchMainCommand->getBranchAlternativeId());
+        return$this->repository->makeMainBranch($makeBranchMainCommand->getId(), $makeBranchMainCommand->getBranchAlternativeId());
     }
 }
