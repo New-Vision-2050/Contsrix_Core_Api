@@ -23,7 +23,7 @@ class ManagementHierarchy extends Model
     use HasFactory;
 //    use UuidTrait;
     use BaseFilterable;
-    use AsTree;
+//    use AsTree;
     use BelongsToPrimaryModel;
     //use HasTranslations;
     //use SoftDeletes;
