@@ -9,6 +9,7 @@ use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\AdminRequest\Models\AdminRequest;
 use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -48,6 +49,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     use UuidTrait;
     use HasScopedValidationRules;
     use CustomBelongsToTenant;
+    use softDeletes;
 
 
     public array $translatable = ["name"];

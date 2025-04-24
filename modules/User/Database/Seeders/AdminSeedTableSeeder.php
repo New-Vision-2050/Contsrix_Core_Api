@@ -39,7 +39,7 @@ class AdminSeedTableSeeder extends Seeder
                     "currency_id"=> Currency::query()->first()->id,
                     "job_title_id"=>jobTitle::query()->first()->id,
                     "country_id"=>Country::query()->first()->id,
-                    "time_zone_id"=>TimeZone::query()->first()->id,
+                    "time_zone_id"=>Country::query()->first()->id,
                     "language_id"=>Language::query()->first()->id,
                 ]
             );
