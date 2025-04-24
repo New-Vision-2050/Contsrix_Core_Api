@@ -39,7 +39,7 @@ class ManagementHierarchyCRUDService
     public function listCompany($companyId,$type,int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
-            ['company_id'=>$companyId ,'type'=>$type],
+            ['type'=>$type],
             page: $page,
             perPage: $perPage,
         );

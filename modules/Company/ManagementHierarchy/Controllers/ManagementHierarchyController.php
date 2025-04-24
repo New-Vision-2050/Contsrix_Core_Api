@@ -121,12 +121,8 @@ class ManagementHierarchyController extends Controller
 
     public function hierarchies(GetManagementHierarchyListRequest $request)
     {
-        $userId = Uuid::fromString($request->route('id'));
-
-        $user = $this->userRepository->getUser($userId);
         $type = $request->get('type', 'branch');
         $list = $this->managementHierarchyService->listCompany(
-        Uuid::fromString($user->company_id),
         $type,
             (int)$request->get('page', 1),
             (int)$request->get('per_page', 10)
