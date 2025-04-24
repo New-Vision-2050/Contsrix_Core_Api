@@ -87,8 +87,9 @@ class ManagementHierarchyRepository extends BaseRepository
 
     public function makeMainBranch(UuidInterface $id, UuidInterface $branchId)
     {
-        $otherMainBranchesCount = $this->model->where('id', "<>", $id)->whereNull("parent_id")->count();
         $mainBranch = $this->find($id);
+
+        $otherMainBranchesCount = $this->model->where('id', "<>", $id)->where("company_id", $mainBranch->company_id)->where("type", "branch")->whereNull("parent_id")->count();
         if (!$mainBranch) {
             throw new \Exception(__("validation.branch-not-found"), 404);
         }
