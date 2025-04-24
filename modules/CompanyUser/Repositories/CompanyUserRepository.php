@@ -213,13 +213,17 @@ class CompanyUserRepository extends BaseRepository
                     $newUser->company_id = $companyUserRoleData["company_id"];
                     $newUser->save();
                 } else {
+                    $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
+
                     $this->userRepository->createUser([
                         'name' => $companyUser->first_name . ' ' . $companyUser->last_name,
                         'email' => $companyUser->email,
                         'company_id' => $companyUserRoleData["company_id"],
                         "phone" => $companyUser->phone,
                         "phone_code" => $companyUser->phone_code,
-                        "global_company_user_id" => $companyUser->global_id
+                        "global_company_user_id" => $companyUser->global_id,
+                        "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
+
                     ]);
                 }
 

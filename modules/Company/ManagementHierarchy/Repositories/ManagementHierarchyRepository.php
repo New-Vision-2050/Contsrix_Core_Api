@@ -97,8 +97,8 @@ class ManagementHierarchyRepository extends BaseRepository
             $mainBranch->update(["parent_id" => $branchId]);
         } else {//else swap branches
             $alternativeMainBranch = $this->find($branchId);
-            $mainBranch->update("parent_id", $alternativeMainBranch->parent_id);
-            $alternativeMainBranch->update("parent_id", null);
+            $mainBranch->update(["parent_id"=> $alternativeMainBranch->parent_id]);
+            $alternativeMainBranch->update(["parent_id"=>null]);
         }
     }
 }

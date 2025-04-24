@@ -119,7 +119,7 @@ class CompanyProfileService
         [$country, $state, $city] = $this->getFromDB($country, $city, $state);
         if ($country) {
 
-            if ($country->id != $geoCodingDTO->getBranch()->address->country_id) {
+            if ((!request()->has("in_general")|| request()->in_general == 0) &&($country->id != $geoCodingDTO->getBranch()->address->country_id)) {
                 throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
 
             }
