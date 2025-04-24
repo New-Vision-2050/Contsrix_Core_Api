@@ -14,4 +14,10 @@ class CurrencyFilter extends SearchModelFilter
         {
             return $this->where('name', $name);
         }
+
+        public function country($id){
+            return $this->whereHas('country',function($q) use ($id){
+                $q->where('id',$id);
+            });
+        }
 }

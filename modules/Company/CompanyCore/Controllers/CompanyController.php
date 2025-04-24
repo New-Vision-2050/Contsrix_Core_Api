@@ -196,7 +196,7 @@ class CompanyController extends Controller
     public function export(ExportCompaniesRequest $request)
     {
         $companyIds = $request->input('ids');
-        $format = strtolower($request->input('format', 'csv'));
+        $format = strtolower($request->input('format', 'xlsx'));
 
         if (!in_array($format, ['xlsx', 'csv'])) {
             return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);

@@ -25,7 +25,7 @@ class CompanyFilter extends SearchModelFilter
     }
     public function companyField($companyFieldId)
     {
-        return $this->whereHas('companyField',function($q) use ($companyFieldId) {$q->where('id',$companyFieldId);});
+        return $this->whereHas('companyFields',function($q) use ($companyFieldId) {$q->where('id',$companyFieldId);});
     }
 
 
