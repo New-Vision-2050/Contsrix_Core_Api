@@ -100,8 +100,13 @@ class CompanyProfileController extends Controller
     public function validateCompanyLogo(Request $request)
     {
         $logo = $request->logo;
-        $validations = $this->companyProfileService->validateLogo($logo);
-        return Json::item($validations);
+        [$validations,$flag] = $this->companyProfileService->validateLogo($logo);
+        if($flag)
+        {
+            return Json::item($validations);
+        }else{
+            return Json::error("Invalid Logo",httpStatus: 422,data: $validations);
+        }
     }
 
     public function createLegalData(CreateCompanyLegalDataRequest $request)

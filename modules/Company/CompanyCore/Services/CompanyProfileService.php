@@ -236,6 +236,7 @@ class CompanyProfileService
     public function validateLogo($image)
     {
         $errors = [];
+        $flag = 1;
         // Ensure the image is uploaded
         if ($image == null) {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 0, 'validate' => 'required']);
@@ -250,6 +251,7 @@ class CompanyProfileService
 
         if ($fileSizeInMB > $maxSizeInMB) {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 0, "validate" => "required"]);
+            $flag=0;
         } else {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 1, 'validate' => 'required']);
         }
@@ -262,16 +264,18 @@ class CompanyProfileService
             array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1, "validate" => "required"]);
         } else {
             array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0, "validate" => "required"]);
+            $flag=0;
         }
 
         $result = $this->checkImage($image);
 
         if ($result === 0) {
             array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0, "validate" => "required"]);
+            $flag=0;
         } else {
             array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1, "validate" => "required"]);
         }
-        return $errors;
+        return [$errors,$flag];
     }
 
 
