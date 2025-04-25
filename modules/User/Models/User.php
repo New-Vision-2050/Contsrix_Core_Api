@@ -6,6 +6,7 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
+use App\Scopes\CustomTenantScope;
 use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
@@ -104,6 +105,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
     public function companyUser()
     {
-        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
+        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' )->withoutGlobalScope(CustomTenantScope::class);
     }
 }
