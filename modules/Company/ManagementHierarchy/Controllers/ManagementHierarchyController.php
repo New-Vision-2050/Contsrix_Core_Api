@@ -13,9 +13,11 @@ use Modules\Company\ManagementHierarchy\Handlers\MakeBranchMainHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateBranchHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
+use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementRequest;
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
@@ -85,6 +87,15 @@ class ManagementHierarchyController extends Controller
         $createdItem = $this->managementHierarchyService->createManagement($request->createCreateManagementDTO());
 
         $presenter = new ManagementPresenter($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function createDepartment(CreateDepartmentRequest $request)
+    {
+        $createdItem = $this->managementHierarchyService->createDepartment($request->createCreateDepartmentDTO());
+
+        $presenter = new DepartmentPresenter($createdItem);
 
         return Json::item($presenter->getData());
     }

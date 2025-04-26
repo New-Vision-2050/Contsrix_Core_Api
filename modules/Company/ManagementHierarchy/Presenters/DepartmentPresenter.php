@@ -7,7 +7,7 @@ namespace Modules\Company\ManagementHierarchy\Presenters;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class ManagementPresenter extends AbstractPresenter
+class DepartmentPresenter extends AbstractPresenter
 {
     private ManagementHierarchy $managementHierarchy;
 

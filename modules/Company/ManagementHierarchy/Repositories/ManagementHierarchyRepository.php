@@ -85,6 +85,23 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
+
+    public function createDepartment(array $departmentData,array $departmentDetail): ManagementHierarchy
+    {
+
+        try {
+            DB::beginTransaction();
+            $managementHierarchy = $this->create($departmentData + ["id" => Uuid::uuid4()->toString(),"manager_id" => User::query()->where("is_owner",1)->first()?->id]);
+            $managementHierarchy->detail()->create($departmentDetail);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+
+        }
+        return $managementHierarchy;
+    }
+
     public function updateManagementHierarchy(UuidInterface $id, array $branchData, array $addressData): bool
     {
         try {

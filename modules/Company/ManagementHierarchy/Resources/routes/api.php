@@ -9,6 +9,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/user', [ManagementHierarchyController::class, 'hierarchies']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
+    Route::post('/create-department', [ManagementHierarchyController::class, 'createDepartment']);
     Route::post('/update-branch/{id}', [ManagementHierarchyController::class, 'updateBranch']);
     Route::post('/make-branch-main/{id}', [ManagementHierarchyController::class, 'makeBranchMain']);
     Route::post('/', [ManagementHierarchyController::class, 'store']);
