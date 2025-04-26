@@ -105,6 +105,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
     public function companyUser()
     {
-        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' )->withoutGlobalScope(CustomTenantScope::class);
+        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
     }
 }
