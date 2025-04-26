@@ -22,6 +22,7 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             'id' => $this->managementHierarchy->id,
             'parent_id' => $this->managementHierarchy->parent_id,
             'name' => $this->managementHierarchy->name,
+            'type' => $this->managementHierarchy->type,
             'phone' => $this->managementHierarchy->phone,
             'phone_code' => $this->managementHierarchy->phone_code,
             'email' => $this->managementHierarchy->email,
@@ -30,9 +31,9 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             'country_id' => $this->managementHierarchy->address?->country_id,
             'state_id' => $this->managementHierarchy->address?->state_id,
             'city_id' => $this->managementHierarchy->address?->city_id,
-            'country_name' => $this->managementHierarchy->address->country?->name,
-            'state_name' => $this->managementHierarchy->address->state?->name,
-            'city_name' => $this->managementHierarchy->address->city?->name,
+            'country_name' => $this->managementHierarchy->address?->country?->name,
+            'state_name' => $this->managementHierarchy->address?->state?->name,
+            'city_name' => $this->managementHierarchy->address?->city?->name,
 
             //example of nested structure
 //            'user' => $this->managementHierarchy->users,
