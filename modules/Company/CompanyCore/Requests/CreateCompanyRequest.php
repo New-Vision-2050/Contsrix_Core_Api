@@ -39,6 +39,16 @@ class CreateCompanyRequest extends FormRequest
         ];
     }
 
+
+    public function messages(): array
+    {
+        return [
+            'user_name.required' => __('validation.username_required'),
+            'user_name.unique' => __('validation.username_unique'),
+            'user_name.regex' => __('validation.username_regex'),
+        ];
+    }
+
     public function createCreateCompanyDTO(): CreateCompanyDTO
     {
         return new CreateCompanyDTO(
