@@ -13,11 +13,16 @@ use Modules\Company\ManagementHierarchy\Handlers\MakeBranchMainHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateBranchHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
+use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\CreateManagementRequest;
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
+use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyLookupRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
@@ -45,9 +50,13 @@ class ManagementHierarchyController extends Controller
             (int)$request->get('page', 1),
             (int)$request->get('per_page', 10)
         );
-
-
         return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request): JsonResponse
+    {
+
+        return Json::items(ManagementHierarchyPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
     }
 
     public function show(GetManagementHierarchyRequest $request): JsonResponse
@@ -73,6 +82,25 @@ class ManagementHierarchyController extends Controller
         $createdItem = $this->managementHierarchyService->createBranch($request->createCreateBranchDTO());
 
         $presenter = new ManagementHierarchyPresenter($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+
+
+    public function createManagement(CreateManagementRequest $request)
+    {
+        $createdItem = $this->managementHierarchyService->createManagement($request->createCreateManagementDTO());
+
+        $presenter = new ManagementPresenter($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function createDepartment(CreateDepartmentRequest $request)
+    {
+        $createdItem = $this->managementHierarchyService->createDepartment($request->createCreateDepartmentDTO());
+
+        $presenter = new DepartmentPresenter($createdItem);
 
         return Json::item($presenter->getData());
     }

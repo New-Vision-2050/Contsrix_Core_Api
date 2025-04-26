@@ -7,6 +7,7 @@ namespace Modules\Company\ManagementHierarchy\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -28,6 +29,11 @@ class ManagementHierarchyRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getAll()
+    {
+       return $this->model->filter(request()->all())->get();
+    }
+
     public function getManagementHierarchy(UuidInterface $id): ManagementHierarchy
     {
         return $this->findOneByOrFail([
@@ -44,7 +50,7 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function createManagementHierarchy(array $branchData, array $addressData): ManagementHierarchy
+    public function createBranch(array $branchData, array $addressData): ManagementHierarchy
     {
         try {
             DB::beginTransaction();
@@ -61,7 +67,47 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function updateManagementHierarchy(UuidInterface $id, array $branchData ,array $addressData): bool
+    public function createManagementHierarchy(array $managementHierarchyData): ManagementHierarchy
+    {
+
+        $managementHierarchy = $this->create($managementHierarchyData + ["id" => Uuid::uuid4()->toString()]);
+        return $managementHierarchy;
+    }
+
+    public function createManagement(array $managementData,array $managementDetail): ManagementHierarchy
+    {
+
+        try {
+            DB::beginTransaction();
+            $managementHierarchy = $this->create($managementData + ["id" => Uuid::uuid4()->toString(),"manager_id" => User::query()->where("is_owner",1)->first()?->id]);
+            $managementHierarchy->detail()->create($managementDetail);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+
+        }
+        return $managementHierarchy;
+    }
+
+
+    public function createDepartment(array $departmentData,array $departmentDetail): ManagementHierarchy
+    {
+
+        try {
+            DB::beginTransaction();
+            $managementHierarchy = $this->create($departmentData + ["id" => Uuid::uuid4()->toString(),"manager_id" => User::query()->where("is_owner",1)->first()?->id]);
+            $managementHierarchy->detail()->create($departmentDetail);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+
+        }
+        return $managementHierarchy;
+    }
+
+    public function updateManagementHierarchy(UuidInterface $id, array $branchData, array $addressData): bool
     {
         try {
             DB::beginTransaction();
@@ -69,7 +115,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy->update($branchData);
             $managementHierarchy->fresh();
 
-            $managementHierarchy->address()->update($addressData );
+            $managementHierarchy->address()->update($addressData);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -98,8 +144,8 @@ class ManagementHierarchyRepository extends BaseRepository
             $mainBranch->update(["parent_id" => $branchId]);
         } else {//else swap branches
             $alternativeMainBranch = $this->find($branchId);
-            $mainBranch->update(["parent_id"=> $alternativeMainBranch->parent_id]);
-            $alternativeMainBranch->update(["parent_id"=>null]);
+            $mainBranch->update(["parent_id" => $alternativeMainBranch->parent_id]);
+            $alternativeMainBranch->update(["parent_id" => null]);
         }
     }
 }

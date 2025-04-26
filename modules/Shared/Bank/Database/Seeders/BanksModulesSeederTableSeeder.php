@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Modules\Shared\Bank\Models\Bank;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class BankModulesSeederTableSeeder extends Seeder
+class BanksModulesSeederTableSeeder extends Seeder
 {
     use SeedOnce;
     /**
@@ -20,85 +20,85 @@ class BankModulesSeederTableSeeder extends Seeder
             // Egypt Banks
             [
                 'name' => ['en' => 'National Bank of Egypt', 'ar' => 'البنك الأهلي المصري'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Banque Misr', 'ar' => 'بنك مصر'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Banque du Caire', 'ar' => 'بنك القاهرة'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Bank of Alexandria', 'ar' => 'بنك الإسكندرية'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Agricultural Bank of Egypt', 'ar' => 'البنك الزراعي المصري'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Industrial Development Bank of Egypt', 'ar' => 'بنك التنمية الصناعية'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'The United Bank', 'ar' => 'المصرف المتحد'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Housing and Development Bank', 'ar' => 'بنك التعمير والإسكان'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Export Development Bank of Egypt', 'ar' => 'البنك المصري لتنمية الصادرات'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
             [
                 'name' => ['en' => 'Commercial International Bank (CIB)', 'ar' => 'البنك التجاري الدولي'],
-                'country_id' => 64,
+                'country_id' => 65,
             ],
 
             // Saudi Arabia Banks
             [
                 'name' => ['en' => 'Saudi National Bank (SNB)', 'ar' => 'البنك الأهلي السعودي'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Saudi Awwal Bank (SAB)', 'ar' => 'البنك السعودي الأول'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'The Saudi Investment Bank (SAIB)', 'ar' => 'البنك السعودي للاستثمار'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Alinma Bank', 'ar' => 'مصرف الإنماء'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Banque Saudi Fransi (BSF)', 'ar' => 'البنك السعودي الفرنسي'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Riyad Bank', 'ar' => 'بنك الرياض'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Alrajhi Bank', 'ar' => 'مصرف الراجحي'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Arab National Bank (ANB)', 'ar' => 'البنك العربي الوطني'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Bank AlBilad', 'ar' => 'بنك البلاد'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
             [
                 'name' => ['en' => 'Bank Aljazira', 'ar' => 'بنك الجزيرة'],
-                'country_id' => 191,
+                'country_id' => 194,
             ],
         ];
 

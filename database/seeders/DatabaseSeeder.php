@@ -18,7 +18,7 @@ use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitySeederTableSeeder;
-use Modules\Shared\Bank\Database\Seeders\BankModulesSeederTableSeeder;
+use Modules\Shared\Bank\Database\Seeders\BanksModulesSeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
@@ -53,7 +53,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(DefaultLoginWaySeederTableSeeder::class);
 
-        $this->call(BankModulesSeederTableSeeder::class);
+        $this->call(BanksModulesSeederTableSeeder::class);
 
         $this->call(AcademicQualificationSeederTableSeeder::class);
 
