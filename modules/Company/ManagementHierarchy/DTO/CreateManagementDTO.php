@@ -26,7 +26,7 @@ class CreateManagementDTO
         return [
             'name' => $this->name,
             'parent_id' => $this->managementId ?? $this->branchId,
-            'is_main' => $this->managementId == null  ? 0 : 1,
+            'is_main' => $this->managementId == null  ? 1 : 0,
             'company_id' => $this->companyId,
             'is_active' => $this->isActive,
             "type" => "management"
