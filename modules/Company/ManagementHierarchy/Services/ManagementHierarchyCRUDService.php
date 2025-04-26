@@ -6,6 +6,7 @@ namespace Modules\Company\ManagementHierarchy\Services;
 
 use Illuminate\Support\Collection;
 use Modules\Company\ManagementHierarchy\DTO\CreateBranchDTO;
+use Modules\Company\ManagementHierarchy\DTO\CreateManagementDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
@@ -20,12 +21,19 @@ class ManagementHierarchyCRUDService
 
     public function create(CreateManagementHierarchyDTO $createManagementHierarchyDTO): ManagementHierarchy
     {
-         return $this->repository->createManagementHierarchy($createManagementHierarchyDTO->toArray(),[""]);
+         return $this->repository->createManagementHierarchy($createManagementHierarchyDTO->toArray());
     }
 
     public function createBranch(CreateBranchDTO $createBranchDTO): ManagementHierarchy
     {
-         return $this->repository->createManagementHierarchy($createBranchDTO->branchToArray(), $createBranchDTO->AddressToArray());
+         return $this->repository->createBranch($createBranchDTO->branchToArray(), $createBranchDTO->AddressToArray());
+    }
+
+
+
+    public function createManagement(CreateManagementDTO $createManagementDTO): ManagementHierarchy
+    {
+         return $this->repository->createManagement($createManagementDTO->managementToArray(),$createManagementDTO->managementDetailToArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array
