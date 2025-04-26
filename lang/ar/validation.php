@@ -181,7 +181,7 @@ return [
     "invalid-token" => "الرمز غير صحيح",
     "can-not-resend-otp"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة",
     'company_name' => 'اسم الشركه غير صحيح',
-    'company_user_name' => 'اسم الشركه غير صحيح',
+    'company_user_name' => 'اسم النطاق غير صحيح',
     'classification_number_already_in_use' => 'رقم التصنيف مستخدم بالفعل',
     'classification_ number_available' => 'رقم التصنيف متاح',
     'commercial_registration_number' => 'رقم السجل التجاري صحيح',

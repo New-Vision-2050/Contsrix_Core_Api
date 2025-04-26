@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Controllers;
 
-use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Company\CompanyCore\Requests\ExportCompaniesRequest;
