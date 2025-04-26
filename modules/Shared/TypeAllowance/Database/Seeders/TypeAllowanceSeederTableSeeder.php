@@ -20,9 +20,9 @@ class TypeAllowanceSeederTableSeeder extends Seeder
         Model::unguard();
 
         $typeAllowances = [
-            ['ar' => 'نسبة', 'en' => 'Ratio'],
-            ['ar' => 'ثابت', 'en' => 'Constant'],
-            ['ar' => 'توفير', 'en' => 'Savings'],
+            ['ar' => 'نسبة', 'en' => 'Ratio','code'=>'percentage'],
+            ['ar' => 'ثابت', 'en' => 'Constant','code'=>'constant'],
+            ['ar' => 'توفير', 'en' => 'Savings','code'=>'saving'],
         ];
 
         foreach ($typeAllowances as $index => $item) {

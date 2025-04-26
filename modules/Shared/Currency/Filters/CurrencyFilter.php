@@ -20,4 +20,8 @@ class CurrencyFilter extends SearchModelFilter
                 $q->where('id',$id);
             });
         }
+
+        public function orderCountry($id){
+            $this->orderByRaw('country_id = ? DESC', [$id]);
+        }
 }
