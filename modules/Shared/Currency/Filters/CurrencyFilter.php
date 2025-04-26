@@ -23,6 +23,7 @@ class CurrencyFilter extends SearchModelFilter
 
         public function orderCountry($id){
             $this->join('countries','countries.currency','currencies.short_name')
+                ->select('currencies.*')
                 ->orderByRaw('countries.id = ? DESC', [$id]);
         }
 }
