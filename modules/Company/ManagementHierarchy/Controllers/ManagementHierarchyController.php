@@ -22,6 +22,7 @@ use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyReques
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementRequest;
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
+use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyLookupRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
@@ -49,9 +50,13 @@ class ManagementHierarchyController extends Controller
             (int)$request->get('page', 1),
             (int)$request->get('per_page', 10)
         );
-
-
         return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request): JsonResponse
+    {
+
+        return Json::items(ManagementHierarchyPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
     }
 
     public function show(GetManagementHierarchyRequest $request): JsonResponse

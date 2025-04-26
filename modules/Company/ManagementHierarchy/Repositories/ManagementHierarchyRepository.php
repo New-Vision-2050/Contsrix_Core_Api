@@ -29,6 +29,11 @@ class ManagementHierarchyRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getAll()
+    {
+       return $this->model->filter(request()->all())->get();
+    }
+
     public function getManagementHierarchy(UuidInterface $id): ManagementHierarchy
     {
         return $this->findOneByOrFail([

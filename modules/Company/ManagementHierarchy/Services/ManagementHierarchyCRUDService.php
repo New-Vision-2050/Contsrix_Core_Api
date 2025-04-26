@@ -49,6 +49,10 @@ class ManagementHierarchyCRUDService
             perPage: $perPage,
         );
     }
+    public function listWithoutPagination()
+    {
+        return $this->repository->getAll();
+    }
 
     public function listCompany($type,int $page = 1, int $perPage = 10): array
     {
