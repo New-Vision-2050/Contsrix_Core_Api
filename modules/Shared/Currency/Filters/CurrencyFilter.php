@@ -22,6 +22,7 @@ class CurrencyFilter extends SearchModelFilter
         }
 
         public function orderCountry($id){
-            $this->orderByRaw('country_id = ? DESC', [$id]);
+            $this->join('countries','countries.currency','currencies.short_name')
+                ->orderByRaw('country_id = ? DESC', [$id]);
         }
 }
