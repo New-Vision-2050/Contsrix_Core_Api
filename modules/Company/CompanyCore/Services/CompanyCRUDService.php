@@ -12,6 +12,7 @@ use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use function PHPUnit\Framework\throwException;
 
@@ -164,5 +165,14 @@ class CompanyCRUDService
             : $this->repository->getAllWithRelations($relations);
 
         return new \Modules\Company\CompanyCore\Exports\CompaniesExport($companies);
+    }
+
+    public function deleteLastCreated(): void
+    {
+        $lastCompany = $this->repository->getLastCreatedCompany();
+        if (!$lastCompany) {
+            throw new \Exception(__('No companies found'), 404);
+        }
+        $this->repository->deleteCompany(Uuid::fromString($lastCompany->id));
     }
 }

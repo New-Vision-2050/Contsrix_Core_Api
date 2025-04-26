@@ -195,4 +195,9 @@ class CompanyRepository extends BaseRepository
             ->with($relations)
             ->get();
     }
+
+    public function getLastCreatedCompany(): ?Company
+    {
+        return $this->model->latest('created_at')->first();
+    }
 }

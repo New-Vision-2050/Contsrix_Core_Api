@@ -207,4 +207,10 @@ class CompanyController extends Controller
 
         return Excel::download($export, $filename . '.' . $format);
     }
+
+    public function deleteLastCreated(): JsonResponse
+    {
+        $this->companyService->deleteLastCreated();
+        return Json::deleted();
+    }
 }
