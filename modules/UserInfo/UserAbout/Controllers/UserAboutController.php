@@ -38,7 +38,7 @@ class UserAboutController extends Controller
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
-        $presenter = new UserAboutPresenter($item ?? []);
+        $presenter = new UserAboutPresenter($item);
 
         return Json::item($presenter->getData());
     }
@@ -47,7 +47,7 @@ class UserAboutController extends Controller
     {
         $item = $this->userAboutService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new UserAboutPresenter($item ?? []);
+        $presenter = new UserAboutPresenter($item);
 
         return Json::item($presenter->getData());
     }
