@@ -174,7 +174,7 @@ class CompanyRepository extends BaseRepository
     public function getCurrentCompany() : Company
     {
        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
-        return $this->model->where("id",tenant("id"))->with(["companyAddress"=>function ($query)use ($branch) {
+        return $this->model->where("id",$company->id)->with(["companyAddress"=>function ($query)use ($branch) {
             $query->where("management_hierarchy_id",$branch->id);
         },"companyLegalData"=>function ($query)use ($branch) {
             $query->where("management_hierarchy_id",$branch->id);
