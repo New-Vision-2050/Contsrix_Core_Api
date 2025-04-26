@@ -23,20 +23,22 @@ class CreateManagementDTO
 
     public function managementToArray(): array
     {
-       return [
-           'name' => $this->name,
-           'parent_id' => $this->managementId??$this->branchId,
-           'company_id' => $this->companyId,
-           'is_active' => $this->isActive,
-           "type" => "management"
-       ];
+        return [
+            'name' => $this->name,
+            'parent_id' => $this->managementId ?? $this->branchId,
+            'is_main' => $this->managementId == null  ? 0 : 1,
+            'company_id' => $this->companyId,
+            'is_active' => $this->isActive,
+            "type" => "management"
+        ];
     }
- public function managementDetailToArray(): array
-    {
-       return [
-           'description' => $this->description,
 
-       ];
+    public function managementDetailToArray(): array
+    {
+        return [
+            'description' => $this->description,
+
+        ];
     }
 
 

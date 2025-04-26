@@ -7,6 +7,7 @@ namespace Modules\Company\ManagementHierarchy\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -73,7 +74,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($managementData + ["id" => Uuid::uuid4()->toString()]);
+            $managementHierarchy = $this->create($managementData + ["id" => Uuid::uuid4()->toString(),"manager_id" => User::query()->where("is_owner",1)->first()?->id]);
             $managementHierarchy->detail()->create($managementDetail);
             DB::commit();
         } catch (\Exception $e) {
