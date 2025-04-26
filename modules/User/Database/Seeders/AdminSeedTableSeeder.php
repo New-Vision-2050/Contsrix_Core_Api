@@ -34,8 +34,8 @@ class AdminSeedTableSeeder extends Seeder
                 [
                     'name' => 'Admin',
                     'email' => 'admin@constrix-nv.com',
-                    "phone"=>"966542138116",
-                    "phone_code"=>"966",
+                    "phone"=>"542138116",
+                    "phone_code"=>"+966",
                     "currency_id"=> Currency::query()->first()->id,
                     "job_title_id"=>jobTitle::query()->first()->id,
                     "country_id"=>Country::query()->first()->id,
