@@ -61,9 +61,4 @@ class UserSalaryController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function delete()
-    {
-        UserSalary::query()->delete(); // soft delete all if soft deletes enabled
-        return 'done';
-    }
 }
