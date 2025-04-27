@@ -166,7 +166,7 @@ class ManagementHierarchyRepository extends BaseRepository
                     DB::commit();
                 }
 
-                $mainBranch->parent_id = $originalParentId;
+                $mainBranch->parent_id = $originalParentId;//will not work if we use package tree
                 $mainBranch->save();
                 DB::commit();
             } catch (\Exception $e) {
