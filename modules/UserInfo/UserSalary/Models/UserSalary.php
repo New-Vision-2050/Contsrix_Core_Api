@@ -32,7 +32,7 @@ class UserSalary extends Model
         'global_id',
         'hour_rate',
         'salary',
-        'type',
+        'period_id',
         'description',
         'salary_type_code'
     ];

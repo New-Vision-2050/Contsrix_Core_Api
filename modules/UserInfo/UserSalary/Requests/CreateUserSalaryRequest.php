@@ -16,7 +16,7 @@ class CreateUserSalaryRequest extends FormRequest
             'user_id'=> 'required|string',
             'hour_rate'=> 'nullable',
             'salary'=> 'required|string',
-            'type'=> 'required|string',
+            'period_id'=> 'required|string',
             'description'=> 'nullable|string',
             'salary_type_code'=> 'required|string',
         ];
@@ -29,7 +29,7 @@ class CreateUserSalaryRequest extends FormRequest
             global_id: '',
             hour_rate: $this->get('hour_rate'),
             salary: $this->get('salary'),
-            type: $this->get('type'),
+            period_id: $this->get('period_id'),
             description: $this->get('description'),
             salary_type_code: $this->get('salary_type_code'),
         );
