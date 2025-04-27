@@ -21,6 +21,7 @@ class TypeAllowancePresenter extends AbstractPresenter
         return [
             'id' => $this->typeAllowance->id,
             'name' => $this->typeAllowance->name,
+            'code' => $this->typeAllowance->code,
         ];
     }
 }
