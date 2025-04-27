@@ -15,6 +15,7 @@ class CreateUserSalaryDTO
         public string $salary,
         public string $type,
         public string $description,
+        public string $salary_type_code
     ) {
     }
 
@@ -27,6 +28,7 @@ class CreateUserSalaryDTO
             'salary' => $this->salary,
             'type' => $this->type,
             'description' => $this->description,
+            'salary_type_code'=> $this->salary_type_code
         ];
     }
 }

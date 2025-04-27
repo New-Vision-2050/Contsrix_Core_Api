@@ -23,6 +23,7 @@ use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodieSeeder;
+use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
@@ -71,6 +72,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(JobTypeSeederTable::class);
 
+        $this->call(SalaryTypeSeederTableSeeder::class);
 
     }
 }

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserSalary\Database\factories\UserSalaryFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Shared\SalaryType\Models\SalaryType;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class UserSalary extends Model
@@ -32,6 +34,7 @@ class UserSalary extends Model
         'salary',
         'type',
         'description',
+        'salary_type_code'
     ];
 
     protected $casts = [
@@ -41,5 +44,9 @@ class UserSalary extends Model
     protected static function newFactory(): UserSalaryFactory
     {
         return UserSalaryFactory::new();
+    }
+    public function salaryType()
+    {
+        return $this->belongsTo(SalaryType::class,'salary_type_code','code');
     }
 }

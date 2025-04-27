@@ -6,6 +6,7 @@ namespace Modules\UserInfo\UserSalary\Presenters;
 
 use Modules\UserInfo\UserSalary\Models\UserSalary;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\SalaryType\Presenters\SalaryTypePresenter;
 
 class UserSalaryPresenter extends AbstractPresenter
 {
@@ -24,6 +25,7 @@ class UserSalaryPresenter extends AbstractPresenter
             'salary' => $this->userSalary->salary,
             'type' => $this->userSalary->type,
             'description' => $this->userSalary->description,
+            'salary_type'=> $this->userSalary->salaryTtype ? (new SalaryTypePresenter($this->userSalary->salaryTtype))->getData(): null,
         ];
     }
 }

@@ -18,6 +18,7 @@ class CreateUserSalaryRequest extends FormRequest
             'salary'=> 'required|string',
             'type'=> 'required|string',
             'description'=> 'required|string',
+            'salary_type_code'=> 'required|string',
         ];
     }
 
@@ -30,6 +31,7 @@ class CreateUserSalaryRequest extends FormRequest
             salary: $this->get('salary'),
             type: $this->get('type'),
             description: $this->get('description'),
+            salary_type_code: $this->get('salary_type_code'),
         );
     }
 }
