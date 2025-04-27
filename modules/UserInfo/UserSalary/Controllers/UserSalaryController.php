@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\User\Repositories\UserRepository;
+use Modules\UserInfo\UserSalary\Models\UserSalary;
 use Modules\UserInfo\UserSalary\Presenters\UserSalaryPresenter;
 use Modules\UserInfo\UserSalary\Requests\CreateUserSalaryRequest;
 use Modules\UserInfo\UserSalary\Requests\GetUserSalaryRequest;
@@ -60,4 +61,11 @@ class UserSalaryController extends Controller
         return Json::item($presenter->getData());
     }
 
+    public function delete(CreateUserSalaryRequest $request)
+    {
+        $UserSalary = UserSalary::get();
+
+        $UserSalary::truncate();
+        return 'done';
+    }
 }
