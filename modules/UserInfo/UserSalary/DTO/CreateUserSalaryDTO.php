@@ -11,7 +11,7 @@ class CreateUserSalaryDTO
     public function __construct(
         public string $company_id,
         public string $global_id,
-        public string $basic,
+        public string $hour_rate,
         public string $salary,
         public string $type,
         public string $description,
@@ -24,7 +24,7 @@ class CreateUserSalaryDTO
         return [
             'company_id' => $this->company_id,
             'global_id' => $this->global_id,
-            'basic' => $this->basic,
+            'hour_rate' => $this->hour_rate,
             'salary' => $this->salary,
             'type' => $this->type,
             'description' => $this->description,

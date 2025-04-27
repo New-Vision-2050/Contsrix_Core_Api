@@ -30,7 +30,7 @@ class UserSalary extends Model
     protected $fillable = [
         'company_id',
         'global_id',
-        'basic',
+        'hour_rate',
         'salary',
         'type',
         'description',

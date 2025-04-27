@@ -21,7 +21,7 @@ class UserSalaryPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->userSalary->id,
-            'basic' => $this->userSalary->basic,
+            'hour_rate' => $this->userSalary->hour_rate,
             'salary' => $this->userSalary->salary,
             'type' => $this->userSalary->type,
             'description' => $this->userSalary->description,
