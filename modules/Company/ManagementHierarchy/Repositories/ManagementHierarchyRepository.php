@@ -134,18 +134,47 @@ class ManagementHierarchyRepository extends BaseRepository
     public function makeMainBranch(UuidInterface $id, UuidInterface $branchId)
     {
         $mainBranch = $this->find($id);
-
         $otherMainBranchesCount = $this->model->where('id', "<>", $id)->where("company_id", $mainBranch->company_id)->where("type", "branch")->whereNull("parent_id")->count();
-        if (!$mainBranch) {
-            throw new \Exception(__("validation.branch-not-found"), 404);
-        }
-        if ($otherMainBranchesCount)//if found other main branches make branch dub branch to another branch
-        {
+
+
+        $mainBranch->update(["is_main" => false]);
+
+        $newMainBranch = $this->find($branchId);
+        $newMainBranch->update(["is_main" => true]);
+
+        if ($otherMainBranchesCount) {
+            // If there are other main branches, simply update the parent_id of the old main branch
             $mainBranch->update(["parent_id" => $branchId]);
-        } else {//else swap branches
-            $alternativeMainBranch = $this->find($branchId);
-            $mainBranch->update(["parent_id" => $alternativeMainBranch->parent_id]);
-            $alternativeMainBranch->update(["parent_id" => null]);
+        } else {
+            try {
+                DB::beginTransaction();
+                // If this is a swap operation
+                $newMainBranch = $this->find($branchId);
+
+                // Store the original parent of the new main branch
+                $originalParentId = $newMainBranch->parent_id;
+
+                // First, detach the new main branch from its parent
+                $newMainBranch->parent()->dissociate();
+                $newMainBranch->save();
+
+                // Then update the old main branch's parent to be the original parent of the new main branch
+                if($originalParentId == $mainBranch->id){
+                    $mainBranch->update(["parent_id" => $branchId]);
+                    DB::commit();
+                    return;
+                }
+
+                $mainBranch->update(["parent_id" => $branchId]);
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                throw new \Exception($e->getMessage(), 500);
+            }
+
+
+
         }
     }
 }
