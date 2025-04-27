@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\EmploymentContract\DTO;
 
-use Ramsey\Uuid\UuidInterface;
 use Illuminate\Http\UploadedFile;
 
 class CreateEmploymentContractDTO
@@ -20,14 +19,14 @@ class CreateEmploymentContractDTO
 
         public string $notice_period,
         public string $probation_period,
-        public string $nature_work,
-        public string $type_working_hours,
+        public string $nature_work_id,
+        public string $type_working_hour_id,
 
         public string $working_hours,
         public string $annual_leave,
         public string $country_id,
-        public string $right_terminate,
-        public ? UploadedFile $file,
+        public string $right_terminate_id,
+        public ?UploadedFile $file,
 
         public string $contract_duration_unit,
         public string $notice_period_unit,
@@ -48,18 +47,18 @@ class CreateEmploymentContractDTO
 
             'notice_period' => $this->notice_period,
             'probation_period' => $this->probation_period,
-            'nature_work' => $this->nature_work,
-            'type_working_hours' => $this->type_working_hours,
+            'nature_work_id' => $this->nature_work_id,
+            'type_working_hour_id' => $this->type_working_hour_id,
 
             'working_hours' => $this->working_hours,
             'annual_leave' => $this->annual_leave,
             'country_id' => $this->country_id,
-            'right_terminate' => $this->right_terminate,
+            'right_terminate_id' => $this->right_terminate_id,
             'file' => $this->file?->getClientOriginalName(),
 
-            'contract_duration_unit'=> $this->contract_duration_unit,
-            'notice_period_unit'=> $this->notice_period_unit,
-            'probation_period_unit'=> $this->probation_period_unit,
+            'contract_duration_unit' => $this->contract_duration_unit,
+            'notice_period_unit' => $this->notice_period_unit,
+            'probation_period_unit' => $this->probation_period_unit,
         ];
     }
 }
