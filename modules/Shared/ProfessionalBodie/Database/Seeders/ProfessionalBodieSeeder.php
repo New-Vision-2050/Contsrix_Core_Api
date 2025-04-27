@@ -22,8 +22,8 @@ class ProfessionalBodieSeeder extends Seeder
 
 
         $specializations = [
-            ['ar' => 'الهيئة السعودية للمهندسين', 'en' => 'Saudi Council of Engineers'],
-            ['ar' => 'نقابة المهندسين', 'en' => 'Engineers Syndicate'],
+            ['ar' => 'الهيئة السعودية للمهندسين', 'en' => 'Saudi Council of Engineers','code'=>'engineering'],
+            ['ar' => 'نقابة المهندسين', 'en' => 'Engineers Syndicate','code'=>'engineering'],
         ];
 
         foreach ($specializations as $index => $item) {
