@@ -109,7 +109,7 @@ class ManagementHierarchyController extends Controller
     public function makeBranchMain(MakeBranchMainRequest $request)
     {
         $command = $request->createMakeBranchMainCommand();
-       return $this->makeBranchMainHandler->handle($command);
+        $this->makeBranchMainHandler->handle($command);
         $item = $this->managementHierarchyService->get($command->getId());
         $presenter = new ManagementHierarchyPresenter($item);
         return Json::item($presenter->getData());

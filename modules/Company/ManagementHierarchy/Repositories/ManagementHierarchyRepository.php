@@ -31,7 +31,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
     public function getAll()
     {
-       return $this->model->filter(request()->all())->get();
+        return $this->model->filter(request()->all())->get();
     }
 
     public function getManagementHierarchy(UuidInterface $id): ManagementHierarchy
@@ -74,12 +74,12 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function createManagement(array $managementData,array $managementDetail): ManagementHierarchy
+    public function createManagement(array $managementData, array $managementDetail): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($managementData + ["id" => Uuid::uuid4()->toString(),"manager_id" => User::query()->where("is_owner",1)->first()?->id]);
+            $managementHierarchy = $this->create($managementData + ["id" => Uuid::uuid4()->toString(), "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
             $managementHierarchy->detail()->create($managementDetail);
             DB::commit();
         } catch (\Exception $e) {
@@ -91,12 +91,12 @@ class ManagementHierarchyRepository extends BaseRepository
     }
 
 
-    public function createDepartment(array $departmentData,array $departmentDetail): ManagementHierarchy
+    public function createDepartment(array $departmentData, array $departmentDetail): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($departmentData + ["id" => Uuid::uuid4()->toString(),"manager_id" => User::query()->where("is_owner",1)->first()?->id]);
+            $managementHierarchy = $this->create($departmentData + ["id" => Uuid::uuid4()->toString(), "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
             $managementHierarchy->detail()->create($departmentDetail);
             DB::commit();
         } catch (\Exception $e) {
@@ -153,26 +153,27 @@ class ManagementHierarchyRepository extends BaseRepository
 
                 // Store the original parent of the new main branch
                 $originalParentId = $newMainBranch->parent_id;
+                $newParent = $this->find($originalParentId);
 
                 // First, detach the new main branch from its parent
-                $newMainBranch->parent()->dissociate();
+                $newMainBranch->parent_id = null;
                 $newMainBranch->save();
 
+
                 // Then update the old main branch's parent to be the original parent of the new main branch
-                if($originalParentId == $mainBranch->id){
+                if ($originalParentId == $mainBranch->id) {
                     $mainBranch->update(["parent_id" => $branchId]);
                     DB::commit();
-                    return;
                 }
 
-                $mainBranch->update(["parent_id" => $branchId]);
+                $mainBranch->parent_id = $originalParentId;
+                $mainBranch->save();
                 DB::commit();
             } catch (\Exception $e) {
                 DB::rollBack();
 
                 throw new \Exception($e->getMessage(), 500);
             }
-
 
 
         }
