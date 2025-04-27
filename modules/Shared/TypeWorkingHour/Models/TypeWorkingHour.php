@@ -9,24 +9,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Shared\TypeWorkingHour\Database\factories\TypeWorkingHourFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-//use BasePackage\Shared\Traits\HasTranslations;
+use BasePackage\Shared\Traits\HasTranslations;
 
 class TypeWorkingHour extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    //use HasTranslations;
+    use HasTranslations;
     //use SoftDeletes;
 
-    //public array $translatable = [];
+    public array $translatable = ['name'];
 
     public $incrementing = false;
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
     ];
 
     protected $casts = [
