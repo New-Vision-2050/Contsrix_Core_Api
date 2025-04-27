@@ -6,6 +6,7 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
+use App\Scopes\CustomTenantScope;
 use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;

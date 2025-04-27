@@ -41,7 +41,7 @@ class University extends Model
      */
     public function country(): BelongsTo
     {
-        return $this->belongsTo(Country::class, 'country_iso2', 'iso2');
+        return $this->belongsTo(Country::class);
     }
 
     protected static function newFactory(): UniversityFactory

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Models;
 
-use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,15 +18,15 @@ use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class ManagementHierarchy extends Model
+class ManagementHierarchyDetail extends Model
 {
     use HasFactory;
 
-//    use UuidTrait;
+    use UuidTrait;
     use BaseFilterable;
 
 //    use AsTree;
-    use CustomBelongsToTenant;
+    use BelongsToPrimaryModel;
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -35,9 +34,8 @@ class ManagementHierarchy extends Model
     //public array $translatable = [];
     protected $primaryKey = 'id';
 
-    protected $table = "management_hierarchies";
+    protected $table = "management_hierarchy_details";
 
-    protected $with = ["user"];
 
     public $incrementing = false;
 
@@ -45,34 +43,18 @@ class ManagementHierarchy extends Model
 
     protected $fillable = [
         "id",
-        'name',
-        'parent_id',
-        'company_id',
-        'path',
-        "type",
-        "manager_id",
-        "phone",
-        "phone_code",
-        "email",
-        "latitude",
-        "longitude",
-        "is_first_branch",
-        "is_main"
+        "description",
+        "deputy_manager_id",
+        "reference_user_id",
+        "management_hierarchy_id"
     ];
 
     protected $casts = [
         'id' => 'string',
+        'deputy_manager_id' => 'string',
+        'reference_user_id' => 'string',
     ];
 
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, "manager_id", "id");
-    }
 
     //example for nested set
 
@@ -81,25 +63,20 @@ class ManagementHierarchy extends Model
 //        return HasManyDeep::between($this , User::class,"management_hierarchy_id","id");
 //    }
 
-    public function detail()
-    {
-        return $this->hasOne(ManagementHierarchyDetail::class, 'management_hierarchy_id');
-    }
-
 
     protected static function newFactory(): ManagementHierarchyFactory
     {
         return ManagementHierarchyFactory::new();
     }
 
-
-    public function address()
+    public function managementHierarchy()
     {
-        return $this->hasOne(CompanyAddress::class, 'management_hierarchy_id');
+        return $this->belongsTo(ManagementHierarchy::class , "management_hierarchy_id");
     }
+
 
     public function getRelationshipToPrimaryModel(): string
     {
-        return "company";
+        return "managementHierarchy";
     }
 }

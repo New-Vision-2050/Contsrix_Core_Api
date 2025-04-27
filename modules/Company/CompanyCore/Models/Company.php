@@ -131,7 +131,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public function generalManager()
     {
-        return $this->belongsTo(User::class, 'general_manager_id', 'id');
+        return $this->belongsTo(User::class, 'general_manager_id', 'id')->withoutTenancy();
     }
 
     public function companyType()

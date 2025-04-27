@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Controllers;
 
-use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Company\CompanyCore\Requests\ExportCompaniesRequest;
@@ -206,5 +206,11 @@ class CompanyController extends Controller
         $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s');
 
         return Excel::download($export, $filename . '.' . $format);
+    }
+
+    public function deleteLastCreated(): JsonResponse
+    {
+        $this->companyService->deleteLastCreated();
+        return Json::deleted();
     }
 }
