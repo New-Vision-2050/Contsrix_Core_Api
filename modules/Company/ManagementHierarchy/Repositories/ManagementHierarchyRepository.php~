@@ -153,6 +153,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
                 // Store the original parent of the new main branch
                 $originalParentId = $newMainBranch->parent_id;
+                $newParent = $this->find($originalParentId);
 
                 // First, detach the new main branch from its parent
                 $newMainBranch->parent_id = null;
@@ -160,8 +161,9 @@ class ManagementHierarchyRepository extends BaseRepository
 
 
                 // Then update the old main branch's parent to be the original parent of the new main branch
-                $mainBranch->update(["parent_id" => $branchId]);
-                DB::commit();
+//                if ($originalParentId == $mainBranch->id) {
+                    $mainBranch->update(["parent_id" => $branchId]);
+                    DB::commit();
 
             } catch (\Exception $e) {
                 DB::rollBack();

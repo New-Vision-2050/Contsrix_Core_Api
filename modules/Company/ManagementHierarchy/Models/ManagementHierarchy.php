@@ -26,7 +26,7 @@ class ManagementHierarchy extends Model
 //    use UuidTrait;
     use BaseFilterable;
 
-//    use AsTree;
+    use AsTree;
     use CustomBelongsToTenant;
 
     //use HasTranslations;
