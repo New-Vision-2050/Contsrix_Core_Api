@@ -39,13 +39,13 @@ class EmploymentContractPresenter extends AbstractPresenter
             'country_name' => $this->employmentContract->country->name,
             'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
 
-            'type_working_hour'  => $this->employmentContract->typeWorkingHour ?(new TypeWorkingHourPresenter($this->employmentContract->typeWorkingHour)) : null,
-            'right_terminate'  => $this->employmentContract->rightTerminate ?(new TypeWorkingHourPresenter($this->employmentContract->rightTerminate)) : null,
-            'nature_work'  => $this->employmentContract->natureWork ?(new TypeWorkingHourPresenter($this->employmentContract->natureWork)) : null,
+            'type_working_hour'  => $this->employmentContract->typeWorkingHour ?(new TypeWorkingHourPresenter($this->employmentContract->typeWorkingHour))->getData() : null,
+            'right_terminate'  => $this->employmentContract->rightTerminate ?(new TypeWorkingHourPresenter($this->employmentContract->rightTerminate))->getData() : null,
+            'nature_work'  => $this->employmentContract->natureWork ?(new TypeWorkingHourPresenter($this->employmentContract->natureWork))->getData() : null,
 
-            'contract_duration_unit'=> $this->employmentContract->contractDurationUnit ?(new TimeUnitPresenter($this->employmentContract->contractDurationUnit)) : null,
-            'notice_period_unit'=> $this->employmentContract->noticePeriodUnit ?(new TimeUnitPresenter($this->employmentContract->noticePeriodUnit)) : null,
-            'probation_period_unit' => $this->employmentContract->probationPeriodUnit ?(new TimeUnitPresenter($this->employmentContract->probationPeriodUnit)) : null,
+            'contract_duration_unit'=> $this->employmentContract->contractDurationUnit ?(new TimeUnitPresenter($this->employmentContract->contractDurationUnit))->getData() : null,
+            'notice_period_unit'=> $this->employmentContract->noticePeriodUnit ?(new TimeUnitPresenter($this->employmentContract->noticePeriodUnit))->getData() : null,
+            'probation_period_unit' => $this->employmentContract->probationPeriodUnit ?(new TimeUnitPresenter($this->employmentContract->probationPeriodUnit))->getData() : null,
 
         ];
     }
