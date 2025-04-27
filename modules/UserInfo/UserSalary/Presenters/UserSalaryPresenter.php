@@ -25,6 +25,7 @@ class UserSalaryPresenter extends AbstractPresenter
             'salary' => $this->userSalary->salary,
             'type' => $this->userSalary->type,
             'description' => $this->userSalary->description,
+            'salary_type_code' => $this->userSalary->salary_type_code,
             'salary_type'=> $this->userSalary->salaryTtype ? (new SalaryTypePresenter($this->userSalary->salaryTtype))->getData(): null,
         ];
     }
