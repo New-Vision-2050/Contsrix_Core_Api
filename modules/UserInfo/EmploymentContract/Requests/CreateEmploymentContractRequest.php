@@ -25,14 +25,14 @@ class CreateEmploymentContractRequest extends FormRequest
             'probation_period' => 'required|numeric',
             'probation_period_unit' => 'required|string',
 
-            'nature_work' => 'required|string',
-            'type_working_hours' => 'required|string',
+            'nature_work_id' => 'required|string',
+            'type_working_hour_id' => 'required|string',
 
             'working_hours' => 'required|numeric',
             'annual_leave' => 'required|numeric',
             'country_id' => 'required|string',
             'right_terminate' => 'required|string',
-            'right_terminate_unit' => 'required|string',
+            'right_terminate_id' => 'required|string',
         ];
     }
 
