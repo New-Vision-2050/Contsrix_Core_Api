@@ -38,7 +38,9 @@ class UserProfessionalDataController extends Controller
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
-
+        if (!$item) {
+            return Json::item(null);
+        }
         return Json::item((new UserProfessionalDataPresenter($item))->getData());
     }
     public function store(CreateUserProfessionalDataRequest $request): JsonResponse
