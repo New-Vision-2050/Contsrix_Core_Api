@@ -7,6 +7,8 @@ namespace Modules\UserInfo\EmploymentContract\Presenters;
 use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
+use Modules\Shared\NatureWork\Presenters\NatureWorkPresenter;
+use Modules\Shared\RightTerminate\Presenters\RightTerminatePresenter;
 use Modules\Shared\TimeUnit\Presenters\TimeUnitPresenter;
 use Modules\Shared\TypeWorkingHour\Presenters\TypeWorkingHourPresenter;
 
@@ -40,8 +42,8 @@ class EmploymentContractPresenter extends AbstractPresenter
             'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
 
             'type_working_hour'  => $this->employmentContract->typeWorkingHour ?(new TypeWorkingHourPresenter($this->employmentContract->typeWorkingHour))->getData() : null,
-            'right_terminate'  => $this->employmentContract->rightTerminate ?(new TypeWorkingHourPresenter($this->employmentContract->rightTerminate))->getData() : null,
-            'nature_work'  => $this->employmentContract->natureWork ?(new TypeWorkingHourPresenter($this->employmentContract->natureWork))->getData() : null,
+            'right_terminate'  => $this->employmentContract->rightTerminate ?(new RightTerminatePresenter($this->employmentContract->rightTerminate))->getData() : null,
+            'nature_work'  => $this->employmentContract->natureWork ?(new NatureWorkPresenter($this->employmentContract->natureWork))->getData() : null,
 
             'contract_duration_unit'=> $this->employmentContract->contractDurationUnit ?(new TimeUnitPresenter($this->employmentContract->contractDurationUnit))->getData() : null,
             'notice_period_unit'=> $this->employmentContract->noticePeriodUnit ?(new TimeUnitPresenter($this->employmentContract->noticePeriodUnit))->getData() : null,
