@@ -1,0 +1,14 @@
+{
+    "name": "TimeUnit",
+    "alias": "timeunit",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\TimeUnit\\Providers\\TimeUnitServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}
