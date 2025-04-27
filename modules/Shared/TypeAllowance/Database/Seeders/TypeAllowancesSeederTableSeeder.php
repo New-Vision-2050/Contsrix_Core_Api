@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Shared\TypeAllowance\Models\TypeAllowance;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class TypeAllowanceSeederTableSeeder extends Seeder
+class TypeAllowancesSeederTableSeeder extends Seeder
 {
     use SeedOnce;
     /**

@@ -25,7 +25,7 @@ use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodieSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
-use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowanceSeederTableSeeder;
+use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 class DatabaseSeeder extends Seeder
@@ -64,7 +64,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PrivilegeModulesSeederTableSeeder::class);
 
         $this->call(PeriodSeederTableSeeder::class);
-        $this->call(TypeAllowanceSeederTableSeeder::class);
+        $this->call(TypeAllowancesSeederTableSeeder::class);
         $this->call(TypePrivilegeSeederTableSeeder::class);
 
         $this->call(TimeZoneCountrySeederTableSeeder::class);
