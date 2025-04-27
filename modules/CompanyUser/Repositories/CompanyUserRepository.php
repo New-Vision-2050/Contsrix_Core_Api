@@ -42,11 +42,9 @@ class CompanyUserRepository extends BaseRepository
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-
-        return [
-            'pagination' => $paginationArray,
-            'data' => $paginatedData,
-        ];
+        return array_merge($paginationArray,[
+            'data' => $paginatedData
+        ]);
     }
 
     public function getCompanyUserCount(Carbon $date = null)
