@@ -19,9 +19,13 @@ class CreateEmploymentContractRequest extends FormRequest
             'start_date' => 'required|string',
             'commencement_date' => 'required|string',
             'contract_duration' => 'required|string',
+            'contract_duration_unit' => 'required|string',
 
             'notice_period' => 'required|numeric',
+            'notice_period_unit' => 'required|string',
             'probation_period' => 'required|numeric',
+            'probation_period_unit' => 'required|string',
+
             'nature_work' => 'required|string',
             'type_working_hours' => 'required|string',
 
@@ -53,6 +57,11 @@ class CreateEmploymentContractRequest extends FormRequest
             country_id: $this->get('country_id'),
             right_terminate: $this->get('right_terminate'),
             file: $this->file('file'),
+
+            contract_duration_unit: $this->get('contract_duration_unit'),
+            notice_period_unit: $this->get('notice_period_unit'),
+            probation_period_unit: $this->get('probation_period_uni'),
+
         );
     }
 }

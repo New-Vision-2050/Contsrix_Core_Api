@@ -34,15 +34,20 @@ class CompanyValidatedService
         }
 
         if (isset($data['name'])) {
-            if ($this->repository->isNameExists($data['name']) || ! preg_match('/^[\p{Arabic}\s]+$/u', $data['name'])) {
+            if (! preg_match('/^[\p{Arabic}\s]+$/u', $data['name'])) {
                 return [
                     'sentence' => __("validation.company_name"),
+                    'status' => 0,
+                ];
+            } else if ($this->repository->isNameExists($data['name'])) {
+                return [
+                    'sentence' => __("validation.company_name_unique"),
                     'status' => 0,
                 ];
             }
         }
 
-        return $errors; 
+        return $errors;
 
     }
 }

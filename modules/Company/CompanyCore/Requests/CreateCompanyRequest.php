@@ -15,7 +15,7 @@ class CreateCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|regex:/^[\p{Arabic}\s]+$/u',
+            'name' => ['required','regex:/^[\p{Arabic}\s]+$/u'],//,'unique:companies,name'
             'user_name' => [
                 'required',
                 'unique:companies,user_name',
@@ -36,6 +36,16 @@ class CreateCompanyRequest extends FormRequest
             //     'required_if:registration_type,1,2',
             //     new RegistrationNoRule($this->input('registration_type'), $this->input('registration_type_id')),
             // ],
+        ];
+    }
+
+
+    public function messages(): array
+    {
+        return [
+            'user_name.required' => __('validation.username_required'),
+            'user_name.unique' => __('validation.username_unique'),
+            'user_name.regex' => __('validation.username_regex'),
         ];
     }
 

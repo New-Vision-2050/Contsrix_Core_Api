@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Presenters;
 
 use Modules\CompanyUser\Models\CompanyUser;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Country\Presenters\CountryCurrencyPresenter;
 use Modules\Country\Presenters\CountryPresenter;
 use Modules\User\Presenters\UserPresenter;
 use Modules\UserInfo\BankAccount\Presenters\BankAccountPresenter;
@@ -54,7 +55,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'image_url' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
             'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,
             'user_professional_data' => $this->companyUser->userProfessionalData ? (new UserProfessionalDataPresenter($this->companyUser->userProfessionalData))->getData():null,
-//            "users"=> UserPresenter::collection($this->companyUser->users)
+            // "currency"=> $this->companyUser->currency ?(new CountryCurrencyPresenter($this->companyUser->currency))->getData():null,
 
         ];
     }

@@ -1,0 +1,14 @@
+{
+    "name": "NatureWork",
+    "alias": "naturework",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\NatureWork\\Providers\\NatureWorkServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

@@ -1,0 +1,14 @@
+{
+    "name": "TypeWorkingHour",
+    "alias": "typeworkinghour",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\TypeWorkingHour\\Providers\\TypeWorkingHourServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

@@ -26,7 +26,7 @@ class TypeAllowance extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
+        'code',
     ];
 
     protected $casts = [
