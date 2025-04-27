@@ -51,7 +51,7 @@ class UserSalaryController extends Controller
 
         $user = $this->userRepository->getUser($userId);
         $createCreateUserSalaryDTO->global_id = $user->global_company_user_id;
-        $createCreateUserSalaryDTO->company_id = $user->company_id;
+        $createCreateUserSalaryDTO->company_id = $user->company_id ;
 
         $createdItem = $this->userSalaryService->create($createCreateUserSalaryDTO);
 

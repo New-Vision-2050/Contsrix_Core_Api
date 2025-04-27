@@ -22,15 +22,16 @@ class UserSalaryPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->userSalary->id,
+            'company_id' => $this->userSalary->company_id,
+            'global_id' => $this->userSalary->global_id,
+
             'hour_rate' => $this->userSalary->hour_rate,
             'salary' => $this->userSalary->salary,
             'period_id' => $this->userSalary->period_id,
             'description' => $this->userSalary->description,
             'salary_type_code' => $this->userSalary->salary_type_code,
             'salary_type'=> $this->userSalary->salaryType ? (new SalaryTypePresenter($this->userSalary->salaryType))->getData(): null,
-
             'period'=> $this->userSalary->period ? (new PeriodPresenter($this->userSalary->period))->getData(): null,
-
         ];
 
     }
