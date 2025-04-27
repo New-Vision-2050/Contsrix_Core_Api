@@ -23,7 +23,7 @@ class UserSalaryPresenter extends AbstractPresenter
             'id' => $this->userSalary->id,
             'hour_rate' => $this->userSalary->hour_rate,
             'salary' => $this->userSalary->salary,
-            'type' => $this->userSalary->type,
+            'period_id' => $this->userSalary->period_id,
             'description' => $this->userSalary->description,
             'salary_type_code' => $this->userSalary->salary_type_code,
             'salary_type'=> $this->userSalary->salaryType ? (new SalaryTypePresenter($this->userSalary->salaryType))->getData(): null,
