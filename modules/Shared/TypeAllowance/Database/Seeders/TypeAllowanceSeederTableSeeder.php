@@ -29,7 +29,7 @@ class TypeAllowanceSeederTableSeeder extends Seeder
             TypeAllowance::create(
                 [
                     'name' => ['en' => $item['en'], 'ar' => $item['ar']],
-                    'type' => $item['type']
+                    'code' => $item['code']
                 ]
             );
         }

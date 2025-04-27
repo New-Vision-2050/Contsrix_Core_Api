@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('type_allowances', function (Blueprint $table) {
-            $table->string('type')->index();
+            $table->string('code')->index();
         });
 
     }
