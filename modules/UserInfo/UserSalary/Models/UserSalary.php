@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserSalary\Database\factories\UserSalaryFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Shared\Period\Models\Period;
 use Modules\Shared\SalaryType\Models\SalaryType;
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -49,4 +50,11 @@ class UserSalary extends Model
     {
         return $this->belongsTo(SalaryType::class,'salary_type_code','code');
     }
+
+    public function period()
+    {
+        return $this->belongsTo(Period::class);
+    }
+
+
 }

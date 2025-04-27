@@ -11,10 +11,10 @@ class CreateUserSalaryDTO
     public function __construct(
         public string $company_id,
         public string $global_id,
-        public string $hour_rate,
+        public ? string $hour_rate,
         public string $salary,
         public string $period_id,
-        public string $description,
+        public ? string $description,
         public string $salary_type_code
     ) {
     }
