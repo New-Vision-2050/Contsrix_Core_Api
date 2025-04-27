@@ -19,7 +19,6 @@ class CreateEmploymentContractRequest extends FormRequest
             'start_date' => 'required|string',
             'commencement_date' => 'required|string',
             'contract_duration' => 'required|string',
-            'contract_duration_unit' => 'required|string',
 
             'notice_period' => 'required|numeric',
             'notice_period_unit' => 'required|string',
@@ -33,6 +32,7 @@ class CreateEmploymentContractRequest extends FormRequest
             'annual_leave' => 'required|numeric',
             'country_id' => 'required|string',
             'right_terminate' => 'required|string',
+            'right_terminate_unit' => 'required|string',
         ];
     }
 
@@ -60,7 +60,7 @@ class CreateEmploymentContractRequest extends FormRequest
 
             contract_duration_unit: $this->get('contract_duration_unit'),
             notice_period_unit: $this->get('notice_period_unit'),
-            probation_period_unit: $this->get('probation_period_uni'),
+            right_terminate_unit: $this->get('right_terminate_unit'),
 
         );
     }

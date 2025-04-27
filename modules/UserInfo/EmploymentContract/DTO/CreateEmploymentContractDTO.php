@@ -28,6 +28,10 @@ class CreateEmploymentContractDTO
         public string $country_id,
         public string $right_terminate,
         public ? UploadedFile $file,
+
+        public string $contract_duration_unit,
+        public string $notice_period_unit,
+        public string $probation_period_unit,
     ) {
     }
 
@@ -52,6 +56,10 @@ class CreateEmploymentContractDTO
             'country_id' => $this->country_id,
             'right_terminate' => $this->right_terminate,
             'file' => $this->file?->getClientOriginalName(),
+
+            'contract_duration_unit'=> $this->contract_duration_unit,
+            'notice_period_unit'=> $this->notice_period_unit,
+            'probation_period_unit'=> $this->probation_period_unit,
         ];
     }
 }
