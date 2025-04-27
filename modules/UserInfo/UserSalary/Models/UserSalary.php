@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserSalary\Database\factories\UserSalaryFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Shared\Period\Models\Period;
+use Modules\Shared\SalaryType\Models\SalaryType;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class UserSalary extends Model
@@ -28,10 +31,11 @@ class UserSalary extends Model
     protected $fillable = [
         'company_id',
         'global_id',
-        'basic',
+        'hour_rate',
         'salary',
-        'type',
+        'period_id',
         'description',
+        'salary_type_code'
     ];
 
     protected $casts = [
@@ -42,4 +46,15 @@ class UserSalary extends Model
     {
         return UserSalaryFactory::new();
     }
+    public function salaryType()
+    {
+        return $this->belongsTo(SalaryType::class,'salary_type_code','code');
+    }
+
+    public function period()
+    {
+        return $this->belongsTo(Period::class);
+    }
+
+
 }

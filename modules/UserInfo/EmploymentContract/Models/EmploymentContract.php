@@ -47,6 +47,10 @@ class EmploymentContract extends Model implements HasMedia
         'annual_leave',
         'country_id',
         'right_terminate',
+
+        'contract_duration_unit',
+        'notice_period_unit',
+        'probation_period_unit',
     ];
 
     protected $casts = [

@@ -11,6 +11,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\UserInfo\UserProfessionalData\Database\factories\UserProfessionalDataFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Country\Models\Country;
+use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\JobType\Models\JobType;
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -76,7 +77,7 @@ class UserProfessionalData extends Model
 
     public function jobTitle()
     {
-        return $this->belongsTo(JobType::class);
+        return $this->belongsTo(JobTitle::class);
     }
 
 

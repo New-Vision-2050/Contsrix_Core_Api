@@ -15,7 +15,7 @@ class UpdateUserPrivilegeRequest extends FormRequest
     {
         return [
             'type_privilege_id'=> 'nullable|string',
-            'type_allowance_id'=> 'nullable|string',
+            'type_allowance_code'=> 'nullable|string',
             'charge_amount'=> 'nullable|string',
             'description'=> 'nullable|string',
             'period_id' => 'nullable|string',
@@ -27,7 +27,7 @@ class UpdateUserPrivilegeRequest extends FormRequest
         return new UpdateUserPrivilegeCommand(
             id: Uuid::fromString($this->route('id')),
             type_privilege_id: $this->get('type_privilege_id'),
-            type_allowance_id: $this->get('type_allowance_id'),
+            type_allowance_code: $this->get('type_allowance_code'),
             charge_amount: $this->get('charge_amount'),
             description: $this->get('description'),
             period_id: $this->get('period_id'),

@@ -21,6 +21,7 @@ class BankPresenter extends AbstractPresenter
         return [
             'id' => $this->bank->id,
             'name' => $this->bank->name,
+            'country_id' => $this->bank->country_id,
         ];
     }
 }
