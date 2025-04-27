@@ -29,7 +29,7 @@ class ProfessionalBodiesSeeder extends Seeder
         foreach ($specializations as $index => $item) {
             ProfessionalBodie::firstOrCreate(
                 ['id' => $index + 1],
-                ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']],'code'=>$item['code']]
             );
         }
     }
