@@ -20,15 +20,18 @@ use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializatio
 use Modules\Shared\University\Database\Seeders\UniversitySeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksModulesSeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
+use Modules\Shared\NatureWork\Database\Seeders\NatureWorkSeederTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodieSeeder;
+use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
 use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitSeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
+use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 class DatabaseSeeder extends Seeder
 {
@@ -76,5 +79,8 @@ class DatabaseSeeder extends Seeder
         $this->call(SalaryTypeSeederTableSeeder::class);
         $this->call(TimeUnitSeederTableSeeder::class);
 
+        $this->call(NatureWorkSeederTableSeeder::class);
+        $this->call(RightTerminateSeederTableSeeder::class);
+        $this->call(TypeWorkingHourSeederTableSeeder::class);
     }
 }
