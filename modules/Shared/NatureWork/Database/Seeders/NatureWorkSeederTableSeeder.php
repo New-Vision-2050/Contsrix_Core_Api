@@ -17,7 +17,7 @@ class NatureWorkSeederTableSeeder extends Seeder
      * @return void
      */
     public function run()
-    {
+    {    
         Model::unguard();
 
         $typeAllowances = [
