@@ -14,10 +14,10 @@ class CreateUserSalaryRequest extends FormRequest
     {
         return [
             'user_id'=> 'required|string',
-            'basic'=> 'required|string',
+            'hour_rate'=> 'nullable',
             'salary'=> 'required|string',
             'type'=> 'required|string',
-            'description'=> 'required|string',
+            'description'=> 'nullable|string',
             'salary_type_code'=> 'required|string',
         ];
     }
@@ -27,7 +27,7 @@ class CreateUserSalaryRequest extends FormRequest
         return new CreateUserSalaryDTO(
             company_id: '',
             global_id: '',
-            basic: $this->get('basic'),
+            hour_rate: $this->get('hour_rate'),
             salary: $this->get('salary'),
             type: $this->get('type'),
             description: $this->get('description'),
