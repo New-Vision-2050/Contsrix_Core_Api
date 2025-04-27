@@ -6,6 +6,7 @@ namespace Modules\UserInfo\UserSalary\Presenters;
 
 use Modules\UserInfo\UserSalary\Models\UserSalary;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Period\Presenters\PeriodPresenter;
 use Modules\Shared\SalaryType\Presenters\SalaryTypePresenter;
 
 class UserSalaryPresenter extends AbstractPresenter
@@ -27,6 +28,10 @@ class UserSalaryPresenter extends AbstractPresenter
             'description' => $this->userSalary->description,
             'salary_type_code' => $this->userSalary->salary_type_code,
             'salary_type'=> $this->userSalary->salaryType ? (new SalaryTypePresenter($this->userSalary->salaryType))->getData(): null,
+
+            'period'=> $this->userSalary->period ? (new PeriodPresenter($this->userSalary->period))->getData(): null,
+
         ];
+
     }
 }
