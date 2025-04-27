@@ -8,7 +8,7 @@ use Modules\Shared\Language\Models\Language;
 use Modules\Shared\ProfessionalBodie\Models\ProfessionalBodie;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class ProfessionalBodieSeeder extends Seeder
+class ProfessionalBodiesSeeder extends Seeder
 {
     use SeedOnce;
     /**
