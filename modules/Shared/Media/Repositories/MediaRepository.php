@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Modules\CompanyUser\Repositories;
+namespace Modules\Shared\Media\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Ramsey\Uuid\UuidInterface;

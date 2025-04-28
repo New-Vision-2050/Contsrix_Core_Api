@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Shared\Media\Handlers;
 
-use Modules\CompanyUser\Repositories\MediaRepository;
+use Modules\Shared\Media\Repositories\MediaRepository;
 use Ramsey\Uuid\UuidInterface;
 
 class DeleteMediaHandler
