@@ -9,12 +9,12 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateManagementHierarchyCommand
 {
     public function __construct(
-        private UuidInterface $id,
+        private int $id,
         private string $name,
     ) {
     }
 
-    public function getId(): UuidInterface
+    public function getId(): int
     {
         return $this->id;
     }

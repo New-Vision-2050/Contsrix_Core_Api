@@ -32,8 +32,8 @@ class CreateManagementRequest extends FormRequest
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
         return new CreateManagementDTO(
             name: $this->get('name'),
-            managementId: $this->get('management_id')?Uuid::fromString($this->get('management_id')):null,
-            branchId: Uuid::fromString($this->get('branch_id')),
+            managementId: $this->get('management_id')?(int)$this->get('management_id'):null,
+            branchId: (int)$this->get('branch_id'),
             companyId:Uuid::fromString( $company->id),
             description: $this->get('description'),
             isActive: (int)$this->get('is_active')

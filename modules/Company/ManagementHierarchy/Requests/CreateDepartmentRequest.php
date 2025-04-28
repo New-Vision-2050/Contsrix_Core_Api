@@ -33,8 +33,8 @@ class CreateDepartmentRequest extends FormRequest
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
         return new CreateDepartmentDTO(
             name: $this->get('name'),
-            managementId: Uuid::fromString($this->get('management_id')),
-            departmentId: $this->get('department_id')?Uuid::fromString($this->get('department_id')):null,
+            managementId: (int)$this->get('management_id'),
+            departmentId: $this->get('department_id')?(int)$this->get('department_id'):null,
             companyId: Uuid::fromString( $company->id),
             description: $this->get('description'),
             isActive: (int)$this->get('is_active')

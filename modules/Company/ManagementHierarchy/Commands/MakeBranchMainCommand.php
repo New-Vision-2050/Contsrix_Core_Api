@@ -9,18 +9,18 @@ use Ramsey\Uuid\UuidInterface;
 class MakeBranchMainCommand
 {
     public function __construct(
-        private UuidInterface $id,
-        private UuidInterface $branchId,
+        private int $id,
+        private int $branchId,
     )
     {
     }
 
-    public function getId(): UuidInterface
+    public function getId(): int
     {
         return $this->id;
     }
 
-    public function getBranchAlternativeId(): UuidInterface
+    public function getBranchAlternativeId(): int
     {
         return $this->branchId;
     }

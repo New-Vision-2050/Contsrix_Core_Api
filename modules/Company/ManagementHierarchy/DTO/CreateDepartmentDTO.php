@@ -10,8 +10,8 @@ class CreateDepartmentDTO
 {
     public function __construct(
         public string        $name,
-        public UuidInterface $managementId,
-        public ?UuidInterface $departmentId,
+        public int $managementId,
+        public ?int $departmentId,
         public UuidInterface $companyId,
         public string        $description,
         public int           $isActive,
