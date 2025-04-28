@@ -16,9 +16,8 @@ class DeleteMediaHandler
 
     public function handle($ids)
     {
-        // If a single UUID is passed, make it an array
         $ids = is_array($ids) ? $ids : [$ids];
 
-        $this->repository->delete($ids);
+        return  $this->repository->delete($ids);
     }
 }

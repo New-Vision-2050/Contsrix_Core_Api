@@ -24,7 +24,7 @@ class MediaController extends Controller
 
     public function delete(GetMediaRequest $request): JsonResponse
     {
-        $this->deleteMediaHandler->handle(Uuid::fromString($request->route('id')));
+        $this->deleteMediaHandler->handle($request->route('id'));
 
         return Json::deleted();
     }
