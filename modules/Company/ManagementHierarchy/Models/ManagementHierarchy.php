@@ -39,8 +39,6 @@ class ManagementHierarchy extends Model
 
     protected $with = ["user"];//,"users"
 
-    public $incrementing = false;
-
 
     protected $fillable = [
         "id",
@@ -97,10 +95,5 @@ class ManagementHierarchy extends Model
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";
-    }
-
-    protected static function assignPathOnEvent(): string
-    {
-          return 'created';
     }
 }
