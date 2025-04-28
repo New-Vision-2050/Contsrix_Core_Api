@@ -20,7 +20,7 @@ class MediaRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function delete($ids): bool
+    public function delete($ids)
     {
         return $this->model->whereIn('id',$ids)->delete();
     }
