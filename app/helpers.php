@@ -47,7 +47,7 @@ function getPhoneNumberInfo(string $phone): array
 {
     $phoneArray = explode(' ', $phone);
     return [
-        'phone_code' => $phoneArray[0],
+        'phone_code' => str_replace("+", "", $phoneArray[0]),
         'phone' => str_replace(" ","",$phone),
     ];
 }

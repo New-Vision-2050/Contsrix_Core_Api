@@ -7,6 +7,7 @@ namespace Modules\Company\ManagementHierarchy\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -19,6 +20,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
  */
 class ManagementHierarchyRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
@@ -31,7 +33,9 @@ class ManagementHierarchyRepository extends BaseRepository
 
     public function getAll()
     {
-        return $this->model->filter(request()->all())->get();
+        [$company ,$branch]=$this->declareCompanyAndBranchUsingRequest();
+
+        return $this->model->filter(request()->all())->where("company_id", $company->id)->get();
     }
 
     public function getManagementHierarchy(UuidInterface $id): ManagementHierarchy

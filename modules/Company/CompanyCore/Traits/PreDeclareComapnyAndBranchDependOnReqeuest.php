@@ -31,6 +31,7 @@ trait PreDeclareComapnyAndBranchDependOnReqeuest
 
             $companyId = request()->company_id;
             $branchId = $company->firstBranch->id;
+            $branch = $company->firstBranch;
 
         }
 
