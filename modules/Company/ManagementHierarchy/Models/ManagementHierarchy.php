@@ -98,4 +98,9 @@ class ManagementHierarchy extends Model
     {
         return "company";
     }
+
+    protected static function assignPathOnEvent(): string
+    {
+          return 'created';
+    }
 }
