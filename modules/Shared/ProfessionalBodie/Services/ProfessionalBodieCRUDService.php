@@ -48,10 +48,31 @@ class ProfessionalBodieCRUDService
        $qualification =  $this->qualificationRepository->getUserQualification($company_id,$global_id);
 
        if($qualification){
-           $academicSpecialization =  $this->academicSpecializationRepository->getAcademicSpecialization(Uuid::fromString($qualification->academic_specialization_id));
-           return $academicSpecialization->code;
+             $academicSpecialization =  $this->academicSpecializationRepository->getAcademicSpecialization(Uuid::fromString($qualification->academic_specialization_id));
+           return $academicSpecialization?->code;
        }
        return null;
+    }
+
+    public function getCodes(UuidInterface $company_id, UuidInterface $global_id)//: array
+    {
+        $qualifications = $this->qualificationRepository->getQualificationList($company_id, $global_id,1,200);
+
+        $codes = [];
+
+        foreach ($qualifications['data'] as $qualification) {
+            if (!empty($qualification->academic_specialization_id)) {
+                $academicSpecialization = $this->academicSpecializationRepository->getAcademicSpecialization(
+                    Uuid::fromString($qualification->academic_specialization_id)
+                );
+
+                if ($academicSpecialization) {
+                    $codes[] = $academicSpecialization->code;
+                }
+            }
+        }
+
+        return $codes;
     }
 
 }

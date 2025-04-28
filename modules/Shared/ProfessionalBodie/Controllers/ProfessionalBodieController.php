@@ -31,10 +31,11 @@ class ProfessionalBodieController extends Controller
 
     public function index(GetProfessionalBodieListRequest $request)//: JsonResponse
     {
-        $userId = Uuid::fromString($request->route('id'));
+        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
+
         $user = $this->userRepository->getUser($userId);
 
-       $getCode = $this->professionalBodieService->getCode(
+        $getCode = $this->professionalBodieService->getCodes(
         Uuid::fromString($user->company_id),
         Uuid::fromString($user->global_company_user_id),
         );

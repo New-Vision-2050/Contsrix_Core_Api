@@ -26,10 +26,10 @@ class AcademicSpecializationRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getAcademicSpecialization(UuidInterface $id): AcademicSpecialization
+    public function getAcademicSpecialization(UuidInterface $id): ?AcademicSpecialization
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
+        return $this->findOneBy([
+            'id' => $id,
         ]);
     }
 
