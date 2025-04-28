@@ -16,7 +16,7 @@ use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
-use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsSeederTableSeeder;
+use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksModulesSeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
@@ -62,7 +62,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(AcademicQualificationSeederTableSeeder::class);
 
-        $this->call(AcademicSpecializationsSeederTableSeeder::class);
+        $this->call(AcademicSpecializationssSeederTableSeeder::class);
 
         $this->call(UniversitiesSeederTableSeeder::class);
         $this->call(ProfessionalBodiessSeeder::class);
