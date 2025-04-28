@@ -37,7 +37,7 @@ class ManagementHierarchy extends Model
 
     protected $table = "management_hierarchies";
 
-    protected $with = ["user","users"];
+    protected $with = ["user"];//,"users"
 
     public $incrementing = false;
 
@@ -75,10 +75,10 @@ class ManagementHierarchy extends Model
     }
 
 
-    public function users()//get all users under hierarchy not in company
-    {
-        return HasManyDeep::between($this , User::class,"management_hierarchy_id","id");
-    }
+//    public function users()//get all users under hierarchy not in company
+//    {
+//        return HasManyDeep::between($this , User::class,"management_hierarchy_id","id");
+//    }
 
     public function detail()
     {
