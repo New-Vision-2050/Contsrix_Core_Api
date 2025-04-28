@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->unsignedBigInteger("management_hierarchy_id")->nullable()->index();
+            $table->uuid("management_hierarchy_id")->nullable()->index();
         });
     }
 };
