@@ -45,6 +45,7 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             "department_count"=>$descendants->where("type","department")->count(),
             "management_count"=>$descendants->where("type","management")->count(),
             "branch_count"=>$descendants->where("type","branch")->count()-1,//because it counts him self
+            "descendants"=>$descendants
 
 
             //example of nested structure
