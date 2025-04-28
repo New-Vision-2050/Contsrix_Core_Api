@@ -101,7 +101,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
             Domain::query()->create(["company_id" => $id,"domain" => 'localhost']);
             Domain::query()->create(["company_id" => $id,"domain" => 'localhost:3000']);
         }
-        $branchId = Uuid::uuid5($namespace, "new-vision-branch")->toString();
+        $branchId = 1;
 
          ManagementHierarchy::query()->firstOrCreate(["id"=> $branchId],["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch","is_first_branch" => 1,"is_main"=>1]);
         $mainBranch = ManagementHierarchy::query()->find($branchId);
