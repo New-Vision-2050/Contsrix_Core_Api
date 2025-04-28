@@ -18,6 +18,7 @@ class ManagementHierarchyPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $descendants=ManagementHierarchy::query()->whereSelfOrDescendantOf($this->managementHierarchy)->get();
         return [
             'id' => $this->managementHierarchy->id,
             'parent_id' => $this->managementHierarchy->parent_id,
@@ -41,6 +42,9 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             'country_name' => $this->managementHierarchy->address?->country?->name,
             'state_name' => $this->managementHierarchy->address?->state?->name,
             'city_name' => $this->managementHierarchy->address?->city?->name,
+            "department_count"=>$descendants->where("type","department")->count(),
+            "management_count"=>$descendants->where("type","management")->count(),
+            "branch_count"=>$descendants->where("type","branch")->count()-1,//because it counts him self
 
 
             //example of nested structure
