@@ -99,6 +99,12 @@ class UniversitiesSeederTableSeeder extends Seeder
         // Insert data into the database
         // Option 1: Using DB Facade (simple and direct)
         // Make sure your table name is correct (e.g., 'universities')
-        DB::table('universities')->insert($all_universities);
+        // DB::table('universities')->insert($all_universities);
+
+        foreach ($all_universities as $university) {
+            University::create(
+                ['name' => ['en' => $university['en'], 'ar' => $university['ar']], 'country_id' => $university['country_id']]
+            );
+        }
     }
 }
