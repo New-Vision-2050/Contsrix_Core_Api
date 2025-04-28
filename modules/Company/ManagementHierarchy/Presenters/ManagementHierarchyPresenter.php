@@ -26,6 +26,13 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             'phone' => $this->managementHierarchy->phone,
             'phone_code' => $this->managementHierarchy->phone_code,
             'email' => $this->managementHierarchy->email,
+            "manager"=>[
+                "id"=>$this->managementHierarchy->user?->id,
+                "name"=>$this->managementHierarchy->user?->name,
+                "email"=>$this->managementHierarchy->user?->email,
+                "phone"=>$this->managementHierarchy->user?->phone,
+
+            ],
             'latitude' => $this->managementHierarchy->lattitude,
             'longitude' => $this->managementHierarchy->longitude,
             'country_id' => $this->managementHierarchy->address?->country_id,
@@ -34,6 +41,7 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             'country_name' => $this->managementHierarchy->address?->country?->name,
             'state_name' => $this->managementHierarchy->address?->state?->name,
             'city_name' => $this->managementHierarchy->address?->city?->name,
+
 
             //example of nested structure
 //            'user' => $this->managementHierarchy->users,
