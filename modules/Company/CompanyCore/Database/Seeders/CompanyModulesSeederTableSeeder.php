@@ -46,7 +46,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $this->call(CompanyTypeSeederTableSeeder::class);
         $this->call(CompanyRegistrationTypeSeederTableSeeder::class);
 
-        $country = Country::query()->where("iso2","SA")->first();
+        $country = Country::query()->where("iso2", "SA")->first();
         $companyType = CompanyType::first();
         $companyField = CompanyField::first();
         $registrationType = CompanyRegistrationType::first();
@@ -72,7 +72,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $company = Company::insertOrIgnore($companyData);
         $company = Company::query()->find($id);
         $company->update(['name' => ["ar" => 'نيو فيجن', "en" => "new vision"]]);
-        $path = resource_path()."/images/new-vision-logo.png";
+        $path = resource_path() . "/images/new-vision-logo.png";
         try {
             $file = new \Illuminate\Http\UploadedFile(
                 $path,
@@ -84,7 +84,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
             $this->fileUploadService->uploadFile($company, $file, 'company', "logo");
 
-        }catch (\Exception $exception){
+        } catch (\Exception $exception) {
 
         }
 
@@ -98,17 +98,17 @@ class CompanyModulesSeederTableSeeder extends Seeder
         ]);
 
         if (App::environment('production') == false) {
-            Domain::query()->create(["company_id" => $id,"domain" => 'localhost']);
-            Domain::query()->create(["company_id" => $id,"domain" => 'localhost:3000']);
+            Domain::query()->create(["company_id" => $id, "domain" => 'localhost']);
+            Domain::query()->create(["company_id" => $id, "domain" => 'localhost:3000']);
         }
         $branchId = Uuid::uuid5($namespace, "new-vision-branch")->toString();
 
-         ManagementHierarchy::query()->firstOrCreate(["id"=> $branchId],["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch","is_first_branch" => 1,"is_main"=>1]);
+        ManagementHierarchy::query()->firstOrCreate(["id" => $branchId], ["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch", "is_first_branch" => 1, "is_main" => 1]);
         $mainBranch = ManagementHierarchy::query()->find($branchId);
         $companyAddressId = Uuid::uuid5($namespace, "new-vision-address")->toString();
 
         CompanyAddress::query()->create([
-            "id"=>$companyAddressId,
+            "id" => $companyAddressId,
             "company_id" => $id,
             "country_id" => $country->id,
             "management_hierarchy_id" => $mainBranch->id
@@ -120,7 +120,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $companyUserCompanyId = Uuid::uuid5($namespace, "new-vision-user-company")->toString();
 
         CompanyUserCompany::query()->insertOrIgnore([
-            "id"=>$companyUserCompanyId,
+            "id" => $companyUserCompanyId,
             'company_id' => $id,
             'global_company_user_id' => $general_manager->global_company_user_id,
             'role' => CompanyUserRole::EMPLOYEE->value
