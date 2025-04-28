@@ -21,7 +21,7 @@ class UpdateManagementHierarchyRequest extends FormRequest
     public function createUpdateManagementHierarchyCommand(): UpdateManagementHierarchyCommand
     {
         return new UpdateManagementHierarchyCommand(
-            id: Uuid::fromString($this->route('id')),
+            id: (int)$this->route('id'),
             name: $this->get('name'),
         );
     }

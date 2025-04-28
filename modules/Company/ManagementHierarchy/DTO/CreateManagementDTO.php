@@ -10,8 +10,8 @@ class CreateManagementDTO
 {
     public function __construct(
         public string         $name,
-        public ?UuidInterface $managementId,
-        public UuidInterface  $branchId,
+        public ?int $managementId,
+        public int  $branchId,
         public UuidInterface  $companyId,
         public string         $description,
         public int            $isActive,
