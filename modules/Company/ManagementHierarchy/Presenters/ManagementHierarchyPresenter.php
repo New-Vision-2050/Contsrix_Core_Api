@@ -26,12 +26,12 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             'phone' => $this->managementHierarchy->phone,
             'phone_code' => $this->managementHierarchy->phone_code,
             'email' => $this->managementHierarchy->email,
+            "manager_id" => $this->managementHierarchy->manager_id,
             "manager"=>[
                 "id"=>$this->managementHierarchy->user?->id,
                 "name"=>$this->managementHierarchy->user?->name,
                 "email"=>$this->managementHierarchy->user?->email,
                 "phone"=>$this->managementHierarchy->user?->phone,
-
             ],
             'latitude' => $this->managementHierarchy->lattitude,
             'longitude' => $this->managementHierarchy->longitude,
