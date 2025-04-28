@@ -38,6 +38,9 @@ class UserAboutController extends Controller
             Uuid::fromString($user->company_id),
             Uuid::fromString($user->global_company_user_id),
         );
+        if(!$item){
+            return Json::item(null);
+        }
         $presenter = new UserAboutPresenter($item);
 
         return Json::item($presenter->getData());
