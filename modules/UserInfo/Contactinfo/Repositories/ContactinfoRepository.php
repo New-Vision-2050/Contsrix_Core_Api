@@ -7,7 +7,9 @@ namespace Modules\UserInfo\Contactinfo\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Models\CompanyUser;
+use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
+
 /**
  * @property CompanyUser $model
  * @method Contactinfo findOneOrFail($id)
@@ -15,7 +17,7 @@ use Ramsey\Uuid\UuidInterface;
  */
 class ContactinfoRepository extends BaseRepository
 {
-    public function __construct(CompanyUser $model)
+    public function __construct(CompanyUser $model, private UserRepository $userRepository)
     {
         parent::__construct($model);
     }
@@ -39,7 +41,15 @@ class ContactinfoRepository extends BaseRepository
 
     public function updateContactinfo(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        $company = $this->findOneByOrFail([
+            'id' => $id->toString(),
+        ]);
+        $this->update($id, $data);
+
+       return $users = $this->userRepository->updateWhere(
+            ["global_company_user_id" => $company->global_id],
+            ['phone' => $data['phone'] ?? null]
+        );
     }
 
     public function deleteContactinfo(UuidInterface $id): bool
