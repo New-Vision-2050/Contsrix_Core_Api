@@ -39,6 +39,8 @@ class ManagementHierarchy extends Model
 
     protected $with = ["user"];//,"users"
 
+    public $incrementing = false;
+
 
     protected $fillable = [
         "id",

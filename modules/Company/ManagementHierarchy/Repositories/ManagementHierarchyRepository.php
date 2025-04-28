@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Repositories;
 
+use App\Scopes\CustomTenantScope;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -21,12 +22,11 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 class ManagementHierarchyRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
-    public $nextId ;
+
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
-        $this->nextId = $model->query()->orderBy("id","desc")->first()->id+1;
-
+        $this->nextId = $model->query()->orderBy("id","desc")->withoutGlobalScope(CustomTenantScope::class)->first()->id+1;
     }
 
     public function getManagementHierarchyList(?int $page, ?int $perPage = 10): Collection
