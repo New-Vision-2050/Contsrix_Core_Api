@@ -14,9 +14,9 @@ class CreateUserProfessionalDataRequest extends FormRequest
     {
         return [
             'user_id' => 'required|exists:users,id',
-            'branch_id' => 'required|exists:management_hierarchies,id',
-            'management_id' => 'required|exists:management_hierarchies,id',
-            'department_id' => 'required|exists:management_hierarchies,id',
+            'branch_id' => 'required|exists:management_hierarchies,id,type,branch',
+            'management_id' => 'required|exists:management_hierarchies,id,type,management',
+            'department_id' => 'required|exists:management_hierarchies,id,type,department',
             'job_type_id' => 'required|exists:job_types,id',
             'job_title_id' => 'required|exists:job_titles,id',
             'job_code' => 'required|string',
