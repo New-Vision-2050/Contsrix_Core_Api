@@ -23,7 +23,7 @@ use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\Shared\NatureWork\Database\Seeders\NatureWorkSeederTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
-use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiesSeeder;
+use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
 use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitSeederTableSeeder;
@@ -65,7 +65,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicSpecializationsSeederTableSeeder::class);
 
         $this->call(UniversitiesSeederTableSeeder::class);
-        $this->call(ProfessionalBodiesSeeder::class);
+        $this->call(ProfessionalBodiessSeeder::class);
         $this->call(PrivilegeModulesSeederTableSeeder::class);
 
         $this->call(PeriodSeederTableSeeder::class);

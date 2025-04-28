@@ -96,11 +96,6 @@ class UniversitiesSeederTableSeeder extends Seeder
         // Combine all universities
         $all_universities = array_merge($egypt_universities, $saudi_universities);
 
-        // Insert data into the database
-        // Option 1: Using DB Facade (simple and direct)
-        // Make sure your table name is correct (e.g., 'universities')
-        // DB::table('universities')->insert($all_universities);
-
         foreach ($all_universities as $university) {
             University::create(
                 ['name' => ['en' => $university['en'], 'ar' => $university['ar']], 'country_id' => $university['country_id']]
