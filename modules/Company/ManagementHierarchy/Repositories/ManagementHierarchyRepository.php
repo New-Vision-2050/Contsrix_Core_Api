@@ -25,7 +25,7 @@ class ManagementHierarchyRepository extends BaseRepository
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
-        $this->nextId = $model->query()->latest()->first()->id+1;
+        $this->nextId = $model->query()->orderBy("id","desc")->first()->id+1;
 
     }
 
