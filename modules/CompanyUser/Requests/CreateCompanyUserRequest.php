@@ -26,7 +26,7 @@ class CreateCompanyUserRequest extends FormRequest
             'country_id' => 'nullable|exists:countries,id',
             'time_zone_id' => 'nullable|exists:time_zones,id',
             'language_id' => 'nullable|exists:languages,id',
-            'currency_id' => 'nullable|exists:currencies,id',
+            'currency_id' => 'nullable|exists:countries,id',
 
             'phone' => [
                 'required'

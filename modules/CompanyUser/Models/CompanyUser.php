@@ -154,7 +154,7 @@ class CompanyUser extends Model implements HasMedia
 
     public function currency()
     {
-        return $this->belongsTo(Currency::class);
+        return $this->belongsTo(Country::class,'currency_id');
     }
 
     public function jobTitle()
