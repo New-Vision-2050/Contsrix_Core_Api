@@ -34,7 +34,7 @@ class EmploymentContractCRUDService
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
         if ($file) {
-            $user->clearMediaCollection('upload_employment_contracts');
+            $employmentContract->clearMediaCollection('upload_employment_contracts');
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
