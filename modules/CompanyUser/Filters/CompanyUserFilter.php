@@ -17,11 +17,9 @@ class CompanyUserFilter extends SearchModelFilter
 
     public function emailOrPhone($value)
     {
-        return $this->where(function ($q) use ($value) {
-            $q->where('email', 'like', '%' . $value . '%')
-                ->OrWhereHas('users', function ($q) use ($value) {
-                    $q->where('phone', 'like', '%' . $value . '%');
-                });
+        return $this->whereHas(function ($q) use ($value) {
+                $q->where('phone', 'like', '%' . $value . '%');
+                $q->orWhere('email', 'like', '%' . $value . '%');
         });
     }
 
