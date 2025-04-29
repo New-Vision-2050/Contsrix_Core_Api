@@ -23,8 +23,8 @@ class ContactinfoPresenter extends AbstractPresenter
             'id' => $this->companyUser->id,
             "email"=> $this->companyUser->email,
             "other_phone"=> $this->companyUser->other_phone,
-            "phone"=> $this->companyUser->phone ,
-            "phone_code"=> $this->companyUser->phone_code,
+            "phone"=> $this->companyUser->users->first()->phone,
+            "phone_code"=> $this->companyUser->users->first()->phone_code,
             "landline_number"=> $this->companyUser->landline_number,
             "address" => $this->companyUser->address,
             "postal_code" => $this->companyUser->postal_code

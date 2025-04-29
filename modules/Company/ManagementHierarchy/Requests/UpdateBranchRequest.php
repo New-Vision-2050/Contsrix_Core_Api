@@ -40,7 +40,7 @@ class UpdateBranchRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
             companyId: Uuid::fromString($company->id),
-            parentId: $this->get('parent_id') !== null ? Uuid::fromString($this->get('parent_id')) : $this->get("parent_id"),
+            parentId: $this->get('parent_id') !== null ?(int) $this->get('parent_id') : $this->get("parent_id"),
             managerId: Uuid::fromString($this->get('manager_id')),
             phone: $this->get('phone'),
             email: $this->get('email'),

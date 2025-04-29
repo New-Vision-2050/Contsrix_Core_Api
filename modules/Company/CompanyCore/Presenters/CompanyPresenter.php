@@ -19,8 +19,10 @@ class CompanyPresenter extends AbstractPresenter
         $this->company = $company;
     }
 
-    public function appendDateToAddress($address)
+    public function appendDateToAddress($address = null)
     {
+        if($address ==null) return $address;
+
         $address->country_name = $address?->country?->name;
         $address->state_name = $address?->state?->name;
         $address->city_name = $address?->city?->name;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\UserInfo\EmploymentContract\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Ramsey\Uuid\Uuid;
 use Modules\UserInfo\EmploymentContract\DTO\CreateEmploymentContractDTO;
 
 class CreateEmploymentContractRequest extends FormRequest
@@ -26,13 +25,15 @@ class CreateEmploymentContractRequest extends FormRequest
             'probation_period' => 'required|numeric',
             'probation_period_unit' => 'required|string',
 
-            'nature_work' => 'required|string',
-            'type_working_hours' => 'required|string',
+            'nature_work_id' => 'required|string',
+            'type_working_hour_id' => 'required|string',
 
             'working_hours' => 'required|numeric',
             'annual_leave' => 'required|numeric',
             'country_id' => 'required|string',
-            'right_terminate' => 'required|string',
+            'right_terminate_id' => 'required|string',
+
+            'file' => 'nullable|file',
         ];
     }
 
@@ -49,19 +50,18 @@ class CreateEmploymentContractRequest extends FormRequest
 
             notice_period: $this->get('notice_period'),
             probation_period: $this->get('probation_period'),
-            nature_work: $this->get('nature_work'),
-            type_working_hours: $this->get('type_working_hours'),
+            nature_work_id: $this->get('nature_work_id'),
+            type_working_hour_id: $this->get('type_working_hour_id'),
 
             working_hours: $this->get('working_hours'),
             annual_leave: $this->get('annual_leave'),
             country_id: $this->get('country_id'),
-            right_terminate: $this->get('right_terminate'),
+            right_terminate_id: $this->get('right_terminate_id'),
             file: $this->file('file'),
 
             contract_duration_unit: $this->get('contract_duration_unit'),
             notice_period_unit: $this->get('notice_period_unit'),
-            probation_period_unit: $this->get('probation_period_uni'),
-
+            probation_period_unit: $this->get('probation_period_unit'),
         );
     }
 }

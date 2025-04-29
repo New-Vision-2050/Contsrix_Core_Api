@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\UserInfo\Qualification\Controllers\QualificationController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/user/{id}', [QualificationController::class, 'index']);
     Route::post('/', [QualificationController::class, 'store']);
     Route::get('/{id}', [QualificationController::class, 'show']);

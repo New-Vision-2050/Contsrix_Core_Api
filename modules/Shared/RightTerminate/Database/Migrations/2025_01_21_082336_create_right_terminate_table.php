@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('right_Terminates', function (Blueprint $table) {
+        Schema::create('right_terminates', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->timestamps();
         });
     }
     public function down(): void
     {
-        Schema::dropIfExists('right_Terminates');
+        Schema::dropIfExists('right_terminates');
     }
 };

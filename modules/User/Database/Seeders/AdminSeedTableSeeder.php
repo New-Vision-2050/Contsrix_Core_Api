@@ -35,7 +35,7 @@ class AdminSeedTableSeeder extends Seeder
                     'name' => 'Admin',
                     'email' => 'admin@constrix-nv.com',
 
-                    "currency_id"=> Currency::query()->first()->id,
+                    "currency_id"=> Country::query()->first()->id,
                     "job_title_id"=>jobTitle::query()->first()->id,
                     "country_id"=>Country::query()->first()->id,
                     "time_zone_id"=>Country::query()->first()->id,

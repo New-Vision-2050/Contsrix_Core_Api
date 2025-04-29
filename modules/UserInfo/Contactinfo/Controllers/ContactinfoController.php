@@ -42,7 +42,7 @@ class ContactinfoController extends Controller
 
         return Json::item($presenter->getData());
     }
-    
+
     public function update(UpdateContactinfoRequest $request)//: JsonResponse
     {
         $user = $this->userRepository->getUser(Uuid::fromString($request->route('id')));
@@ -51,6 +51,7 @@ class ContactinfoController extends Controller
 
         $command = $request->createUpdateContactinfoCommand();
         $command->companyUserId = Uuid::fromString($companyUser->id) ;
+        $command->userId = $user->id;
 
         $this->updateContactinfoHandler->handle($command);
         $item = $this->contactinfoService->get($command->companyUserId);
@@ -69,7 +70,7 @@ class ContactinfoController extends Controller
         $command = $request->createUpdateAddressCommand();
         $command->companyUserId = Uuid::fromString($companyUser->id) ;
 
-        $this->updateAddressHandler->handle($command);
+      return  $this->updateAddressHandler->handle($command);
         $item = $this->contactinfoService->get($command->companyUserId);
 
         $presenter = new ContactinfoPresenter($item);

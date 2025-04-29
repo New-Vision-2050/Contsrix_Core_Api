@@ -35,7 +35,7 @@ class JobOfferCRUDService
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
         if ($file) {
-            $user->clearMediaCollection('upload_offerjob');
+            $jobOffer->clearMediaCollection('upload_offerjob');
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 

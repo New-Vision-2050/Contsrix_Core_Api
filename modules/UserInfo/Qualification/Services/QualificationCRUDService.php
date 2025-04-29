@@ -42,15 +42,17 @@ class QualificationCRUDService
 
     public function uploadFile($qualification,$request)//: array
     {
-        $file = $request->file('file');
+        $files = $request->file('file');
 
         $visibility = 'public';
-        if($file){
-            $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($qualification->global_id) );
+        if($files){
+            foreach ($files as $file) {
+                $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($qualification->global_id));
+                $path = Company::find($qualification->company_id)->name . '/' . $user->name;
 
-             $path = Company::find($qualification->company_id)->name . '/' . $user->name;
-
-             $media = $this->fileUploadService->uploadFile($qualification, $file, $path, 'upload_Qualification', $visibility );
+                $media = $this->fileUploadService->uploadFile($qualification, $file, $path, 'upload_Qualification', $visibility);
+                $uploadedFiles[] = $media;
+            }
         }
 
         return $qualification->fresh()->load('media');

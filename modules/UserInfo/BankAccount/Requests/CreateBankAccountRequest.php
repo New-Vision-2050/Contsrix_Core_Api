@@ -27,7 +27,7 @@ class CreateBankAccountRequest extends FormRequest
     public function createCreateBankAccountDTO(): CreateBankAccountDTO
     {
         return new CreateBankAccountDTO(
-            company_id: '',//get from controller
+            company_id: '',
             global_id: '',
             country_id: $this->get('country_id'),
             bank_id: $this->get('bank_id'),

@@ -36,6 +36,13 @@ class QualificationRepository extends BaseRepository
         ]);
     }
 
+    public function getUserQualification(UuidInterface $companyId, UuidInterface $globalId): ?Qualification
+    {
+        return $this->findOneBy([
+            'company_id' => $companyId, 'global_id' => $globalId
+        ]);
+    }
+
     public function createQualification(array $data): Qualification
     {
         return $this->create($data);

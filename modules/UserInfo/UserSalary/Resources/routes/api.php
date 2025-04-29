@@ -8,5 +8,5 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/', [UserSalaryController::class, 'store']);
     Route::get('/{id}', [UserSalaryController::class, 'show']);
     Route::put('/{id}', [UserSalaryController::class, 'update']);
-    Route::delete('/{id}', [UserSalaryController::class, 'delete']);
+    // Route::delete('/', [UserSalaryController::class, 'delete']);
 });

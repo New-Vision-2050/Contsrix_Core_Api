@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Repositories;
 
+use App\Scopes\CustomTenantScope;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +22,13 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 class ManagementHierarchyRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
+
+    private $nextId;
+
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
+        $this->nextId = $model->query()->orderBy("id", "desc")->withoutGlobalScope(CustomTenantScope::class)->first()->id + 1;
     }
 
     public function getManagementHierarchyList(?int $page, ?int $perPage = 10): Collection
@@ -33,16 +38,16 @@ class ManagementHierarchyRepository extends BaseRepository
 
     public function getAll()
     {
-        [$company ,$branch]=$this->declareCompanyAndBranchUsingRequest();
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
         return $this->model->filter(request()->all())->where("company_id", $company->id)->get();
     }
 
     public function getBranchTree()
     {
-        [$company ,$branch]=$this->declareCompanyAndBranchUsingRequest();
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
-        return $this->model->where("company_id",$company->id)->where("type", "branch")->get()->tree();
+        return $this->model->where("company_id", $company->id)->where("type", "branch")->get()->tree();
     }
 
     public function getManagementHierarchy(UuidInterface $id): ManagementHierarchy
@@ -65,14 +70,14 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($branchData + ["id" => Uuid::uuid4()->toString()]);
+            $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.create-not-successful"), 500);
+            throw new \Exception($e->getMessage(), 500);
 
         }
         return $managementHierarchy;
@@ -81,7 +86,7 @@ class ManagementHierarchyRepository extends BaseRepository
     public function createManagementHierarchy(array $managementHierarchyData): ManagementHierarchy
     {
 
-        $managementHierarchy = $this->create($managementHierarchyData + ["id" => Uuid::uuid4()->toString()]);
+        $managementHierarchy = $this->create($managementHierarchyData + ["id" => $this->nextId]);
         return $managementHierarchy;
     }
 
@@ -90,7 +95,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($managementData + ["id" => Uuid::uuid4()->toString(), "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
+            $managementHierarchy = $this->create($managementData + ["id" => $this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
             $managementHierarchy->detail()->create($managementDetail);
             DB::commit();
         } catch (\Exception $e) {
@@ -107,7 +112,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($departmentData + ["id" => Uuid::uuid4()->toString(), "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
+            $managementHierarchy = $this->create($departmentData + ["id" => $this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
             $managementHierarchy->detail()->create($departmentDetail);
             DB::commit();
         } catch (\Exception $e) {

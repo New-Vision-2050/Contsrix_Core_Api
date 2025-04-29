@@ -7,6 +7,10 @@ namespace Modules\UserInfo\EmploymentContract\Presenters;
 use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
+use Modules\Shared\NatureWork\Presenters\NatureWorkPresenter;
+use Modules\Shared\RightTerminate\Presenters\RightTerminatePresenter;
+use Modules\Shared\TimeUnit\Presenters\TimeUnitPresenter;
+use Modules\Shared\TypeWorkingHour\Presenters\TypeWorkingHourPresenter;
 
 class EmploymentContractPresenter extends AbstractPresenter
 {
@@ -31,14 +35,20 @@ class EmploymentContractPresenter extends AbstractPresenter
             'contract_duration' => $this->employmentContract->contract_duration,
             'notice_period' => $this->employmentContract->notice_period,
             'probation_period' => $this->employmentContract->probation_period,
-            'nature_work' => $this->employmentContract->nature_work,
-            'type_working_hours' => $this->employmentContract->type_working_hours,
             'working_hours' => $this->employmentContract->working_hours,
             'annual_leave' => $this->employmentContract->annual_leave,
             'country_id' => $this->employmentContract->country_id,
             'country_name' => $this->employmentContract->country->name,
-            'right_terminate' => $this->employmentContract->right_terminate,
             'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+
+            'type_working_hour'  => $this->employmentContract->typeWorkingHour ?(new TypeWorkingHourPresenter($this->employmentContract->typeWorkingHour))->getData() : null,
+            'right_terminate'  => $this->employmentContract->rightTerminate ?(new RightTerminatePresenter($this->employmentContract->rightTerminate))->getData() : null,
+            'nature_work'  => $this->employmentContract->natureWork ?(new NatureWorkPresenter($this->employmentContract->natureWork))->getData() : null,
+
+            'contract_duration_unit'=> $this->employmentContract->contractDurationUnit ?(new TimeUnitPresenter($this->employmentContract->contractDurationUnit))->getData() : null,
+            'notice_period_unit'=> $this->employmentContract->noticePeriodUnit ?(new TimeUnitPresenter($this->employmentContract->noticePeriodUnit))->getData() : null,
+            'probation_period_unit' => $this->employmentContract->probationPeriodUnit ?(new TimeUnitPresenter($this->employmentContract->probationPeriodUnit))->getData() : null,
+
         ];
     }
 }

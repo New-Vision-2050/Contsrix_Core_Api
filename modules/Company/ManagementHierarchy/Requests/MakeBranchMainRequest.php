@@ -27,8 +27,8 @@ class MakeBranchMainRequest extends FormRequest
     {
 
         return new MakeBranchMainCommand(
-            id: Uuid::fromString($this->route('id')),
-            branchId: Uuid::fromString($this->branch_id),
+            id: (int)$this->route('id'),
+            branchId: (int)$this->branch_id,
         );
     }
 }
