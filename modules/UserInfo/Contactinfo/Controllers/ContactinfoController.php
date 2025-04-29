@@ -42,8 +42,7 @@ class ContactinfoController extends Controller
 
         return Json::item($presenter->getData());
     }
-
-    public function update(UpdateContactinfoRequest $request)//: JsonResponse
+public function update(UpdateContactinfoRequest $request): JsonResponse
     {
         $user = $this->userRepository->getUser(Uuid::fromString($request->route('id')));
 

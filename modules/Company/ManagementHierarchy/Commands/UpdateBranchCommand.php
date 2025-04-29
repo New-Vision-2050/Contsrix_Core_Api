@@ -9,7 +9,7 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateBranchCommand
 {
     public function __construct(
-        private UuidInterface $id,
+        private int $id,
         public string $name,
         public UuidInterface $companyId,
         public ?UuidInterface $parentId,
@@ -24,7 +24,7 @@ class UpdateBranchCommand
     ) {
     }
 
-    public function getId(): UuidInterface
+    public function getId(): int
     {
         return $this->id;
     }

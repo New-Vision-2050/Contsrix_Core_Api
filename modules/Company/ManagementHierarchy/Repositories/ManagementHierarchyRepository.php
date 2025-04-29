@@ -10,8 +10,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\User\Models\User;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidInterface;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 
 /**
@@ -50,14 +48,14 @@ class ManagementHierarchyRepository extends BaseRepository
         return $this->model->where("company_id", $company->id)->filter(request()->all())->get()->tree();
     }
 
-    public function getManagementHierarchy(UuidInterface $id): ManagementHierarchy
+    public function getManagementHierarchy(int $id): ManagementHierarchy
     {
         return $this->findOneByOrFail([
-            'id' => $id->toString(),
+            'id' => $id,
         ]);
     }
 
-    public function getMainBranchForCompany(UuidInterface $id): ManagementHierarchy
+    public function getMainBranchForCompany(int $id): ManagementHierarchy
     {
         return $this->findOneBy([
             "company_id" => $id,
@@ -123,7 +121,7 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function updateManagementHierarchy(UuidInterface $id, array $branchData, array $addressData): bool
+    public function updateManagementHierarchy(int $id, array $branchData, array $addressData): bool
     {
         try {
             DB::beginTransaction();
@@ -142,12 +140,12 @@ class ManagementHierarchyRepository extends BaseRepository
         return true;
     }
 
-    public function deleteManagementHierarchy(UuidInterface $id): bool
+    public function deleteManagementHierarchy(int $id): bool
     {
         return $this->delete($id);
     }
 
-    public function makeMainBranch(UuidInterface $id, UuidInterface $branchId)
+    public function makeMainBranch(int $id, int $branchId)
     {
         $mainBranch = $this->find($id);
         $otherMainBranchesCount = $this->model->where('id', "<>", $id)->where("company_id", $mainBranch->company_id)->where("type", "branch")->whereNull("parent_id")->count();

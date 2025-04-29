@@ -81,7 +81,7 @@ class CompanyUserDatatatusService
 
         $hasContacts = false;
         $infoContacts = [
-            'email', 'phone', 'other_phone',
+            'email', 'phone', 'other_phone','code_other_phone',
             'whatsapp', 'facebook', 'telegram', 'instagram', 'snapchat', 'linkedin'
         ];
         $hasContacts = false;

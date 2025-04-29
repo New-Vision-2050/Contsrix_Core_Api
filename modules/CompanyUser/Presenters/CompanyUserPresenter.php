@@ -50,6 +50,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'date_appointment' => '-',
             'branch'=>'-',
             'other_phone'=> $this->companyUser->other_phone??'-',
+            'code_other_phone' => $this->companyUser->code_other_phone,
             'address' => $this->companyUser->address??'-',
             'address_attendance' =>  $this->companyUser->address_attendance??'-',
             'image_url' => $this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),

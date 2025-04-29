@@ -12,6 +12,7 @@ class UpdateContactinfoCommand
         private UuidInterface $id,
         private string $email,
         private string $other_phone,
+        private string $code_other_phone,
         private string $phone,
         private string $phone_code,
         private string $landline_number,
@@ -29,6 +30,7 @@ class UpdateContactinfoCommand
         return array_filter([
             'email'=> $this->email,
             'other_phone'=> $this->other_phone,
+            'code_other_phone' => $this->code_other_phone,
             'phone'=> $this->phone,
             'phone_code'=> $this->phone_code,
             'landline_number'=> $this->landline_number,
