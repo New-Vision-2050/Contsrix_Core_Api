@@ -159,7 +159,7 @@ class CompanyUserProfileController extends Controller
             return Json::item(["status" => $status]);
 
         } catch (\Throwable $e) {
-            return Json::error(__("validation.invalid-otp"), 401,httpStatus:401);
+            return Json::error(__("validation.invalid-otp"), 421,httpStatus:421);
         }
     }
 
