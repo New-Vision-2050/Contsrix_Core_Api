@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Services;
 
-use Illuminate\Support\Collection;
 use Modules\Company\ManagementHierarchy\DTO\CreateBranchDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateDepartmentDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
-use Ramsey\Uuid\UuidInterface;
 
 class ManagementHierarchyCRUDService
 {
@@ -63,7 +61,7 @@ class ManagementHierarchyCRUDService
         );
     }
 
-    public function get(UuidInterface $id): ManagementHierarchy
+    public function get(int $id): ManagementHierarchy
     {
         return $this->repository->getManagementHierarchy(
             id: $id,

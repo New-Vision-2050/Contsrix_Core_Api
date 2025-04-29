@@ -38,7 +38,6 @@ class ManagementHierarchyController extends Controller
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
-        private UserRepository                   $userRepository,
         private UpdateBranchHandler              $updateBranchHandler
     )
     {
@@ -61,7 +60,7 @@ class ManagementHierarchyController extends Controller
 
     public function show(GetManagementHierarchyRequest $request): JsonResponse
     {
-        $item = $this->managementHierarchyService->get(Uuid::fromString($request->route('id')));
+        $item = $this->managementHierarchyService->get((int) ($request->route('id')));
 
         $presenter = new ManagementHierarchyPresenter($item);
 
@@ -142,7 +141,7 @@ class ManagementHierarchyController extends Controller
 
     public function delete(DeleteManagementHierarchyRequest $request): JsonResponse
     {
-        $this->deleteManagementHierarchyHandler->handle(Uuid::fromString($request->route('id')));
+        $this->deleteManagementHierarchyHandler->handle((int)($request->route('id')));
 
         return Json::deleted();
     }
