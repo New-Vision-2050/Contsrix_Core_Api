@@ -15,6 +15,7 @@
         "ichtrojan/laravel-otp": "^2.0",
         "intervention/image": "^3.11",
         "laravel/framework": "^11.31",
+        "laravel/telescope": "^5.7",
         "laravel/tinker": "^2.9",
         "league/flysystem-aws-s3-v3": "^3.29",
         "m-tech-stack/base-package": "^1.0",
