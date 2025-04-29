@@ -56,12 +56,13 @@ class CompanyUserDatatatusService
         $userPrivileges = $this->userPrivilegeRepository->getUserPrivilegeList($companyId, $globalId, 1);
 
         $hasIdentity = $this->hasIdentityInfo($companyUser, $company->country_id);
+        $hasIdentityInfoUser = $this->hasIdentityInfoUser($companyUser, $company->country_id);
         $hasBasicInfo = $this->hasBasicUserInfo($companyUser);
         $hasContactInfo = $this->hasContactInfo($companyUser, $userRelatives);
         $hasAddressInfo = $this->hasFilledFields($companyUser, ['address', 'postal_code']);
 
         return [
-            'info_company_user' => $hasBasicInfo && $hasIdentity,
+            'info_company_user' => $hasBasicInfo && $hasIdentityInfoUser,
             'bank_account' => $this->hasData($bankAccounts),
             'user_about' => !empty($userAbout),
             'contact_info' => $hasContactInfo,
@@ -96,13 +97,24 @@ class CompanyUserDatatatusService
 
     private function hasIdentityInfo(object $companyUser, $companyCountryId): bool
     {
-        $identityFields = $companyUser->country_id === $companyCountryId
+        $identityFields = $companyUser->country_id == $companyCountryId
             ? ['identity', 'identity_start_date', 'identity_end_date']
             : [
                 'passport', 'passport_start_date', 'passport_end_date',
                 'border_number', 'border_number_start_date', 'border_number_end_date',
                 'entry_number', 'entry_number_start_date', 'entry_number_end_date',
                 'work_permit', 'work_permit_start_date', 'work_permit_end_date',
+            ];
+
+        return $this->hasFilledFields($companyUser, $identityFields);
+    }
+
+    private function hasIdentityInfoUser(object $companyUser, $companyCountryId): bool
+    {
+        $identityFields = $companyUser->country_id == $companyCountryId
+            ? ['identity', 'identity_start_date', 'identity_end_date']
+            : [
+                'passport', 'passport_start_date', 'passport_end_date',
             ];
 
         return $this->hasFilledFields($companyUser, $identityFields);
