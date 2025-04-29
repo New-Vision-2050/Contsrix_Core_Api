@@ -30,6 +30,6 @@ class ValidateOtpService
             return true;
         }
 
-        throw new \ErrorException(__("validation.invalid-otp"), 401);
+        return false;
     }
 }
