@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Services;
 
-use Illuminate\Support\Facades\Validator;
-use Modules\Company\CompanyCore\Models\Company;
-use Modules\Company\CompanyCore\Repositories\CompanyRepository;
-use Carbon\Carbon;
-use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\UserInfo\BankAccount\Repositories\BankAccountRepository;
 use Modules\UserInfo\Biography\Repositories\BiographyRepository;
@@ -21,154 +16,151 @@ use Modules\UserInfo\UserEducationalCourse\Repositories\UserEducationalCourseRep
 use Modules\UserInfo\UserExperience\Repositories\UserExperienceRepository;
 use Modules\UserInfo\UserPrivilege\Repositories\UserPrivilegeRepository;
 use Modules\UserInfo\UserRelative\Repositories\UserRelativeRepository;
-use Modules\UserInfo\UserSalary\Models\UserSalary;
 use Modules\UserInfo\UserSalary\Repositories\UserSalaryRepository;
+use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 
 class CompanyUserDatatatusService
 {
-    protected $repository;
-
     public function __construct(
-       private CompanyUserRepository $companyUserRepository,
-       private EmploymentContractRepository $employmentContractRepository,
-       private BankAccountRepository $bankAccountRepository,
-       private UserSalaryRepository $userSalaryRepository,
-       private UserAboutRepository $userAboutRepository,
-       private UserRelativeRepository $userRelativeRepository,
-       private QualificationRepository $qualificationRepository,
-       private UserExperienceRepository $userExperienceRepository,
-       private UserEducationalCourseRepository $userEducationalCourseRepository,
-       private ProfessionalCertificateRepository $professionalCertificateRepository,
-       private JobOfferRepository $jobOfferRepository,
-       private UserPrivilegeRepository $userPrivilegeRepository
-    )
-    {
-    }
+        private CompanyUserRepository $companyUserRepository,
+        private EmploymentContractRepository $employmentContractRepository,
+        private BankAccountRepository $bankAccountRepository,
+        private UserSalaryRepository $userSalaryRepository,
+        private UserAboutRepository $userAboutRepository,
+        private UserRelativeRepository $userRelativeRepository,
+        private QualificationRepository $qualificationRepository,
+        private UserExperienceRepository $userExperienceRepository,
+        private UserEducationalCourseRepository $userEducationalCourseRepository,
+        private ProfessionalCertificateRepository $professionalCertificateRepository,
+        private JobOfferRepository $jobOfferRepository,
+        private UserPrivilegeRepository $userPrivilegeRepository,
+        private CompanyRepository $companyRepository
+    ) {}
 
-
-    public function getDatatatus($companyId, $globalId)//: array
+    public function getDatatatus($companyId, $globalId): array
     {
         $companyUser = $this->companyUserRepository->getCompanyUserGlobalId($globalId);
+        $company = $this->companyRepository->getCompany($companyId);
+
         $employmentContract = $this->employmentContractRepository->getEmploymentContract($companyId, $globalId);
         $userSalary = $this->userSalaryRepository->getUserSalary($companyId, $globalId);
         $bankAccounts = $this->bankAccountRepository->getBankAccountList($companyId, $globalId, 1);
         $userAbout = $this->userAboutRepository->getUserAbout($companyId, $globalId);
-        $userRelative = $this->userRelativeRepository->getUserRelativeList($companyId, $globalId, 1);
-        $qualification = $this->qualificationRepository->getQualificationList($companyId, $globalId, 1);
-        $userExperience = $this->userExperienceRepository->getUserExperienceList($companyId, $globalId, 1);
-        $UserEducationalCourse = $this->userEducationalCourseRepository->getUserEducationalCourseList($companyId, $globalId, 1);
-        $professionalCertificate = $this->professionalCertificateRepository->getProfessionalCertificateList($companyId, $globalId, 1);
+        $userRelatives = $this->userRelativeRepository->getUserRelativeList($companyId, $globalId, 1);
+        $qualifications = $this->qualificationRepository->getQualificationList($companyId, $globalId, 1);
+        $experiences = $this->userExperienceRepository->getUserExperienceList($companyId, $globalId, 1);
+        $courses = $this->userEducationalCourseRepository->getUserEducationalCourseList($companyId, $globalId, 1);
+        $certificates = $this->professionalCertificateRepository->getProfessionalCertificateList($companyId, $globalId, 1);
         $media = $companyUser->getFirstMedia('upload_biography');
         $jobOffer = $this->jobOfferRepository->getJobOffer($companyId, $globalId);
-        $userPrivilege = $this->userPrivilegeRepository->getUserPrivilegeList($companyId, $globalId,1);
+        $userPrivileges = $this->userPrivilegeRepository->getUserPrivilegeList($companyId, $globalId, 1);
 
-        $hasInfo = false;
-        if(isset($userRelative['data']) && count($userRelative['data']) > 0){
-            $infoFields = [
-                'name', 'email', 'phone',
-            ];
-            $hasInfo = false;
-
-            foreach ($infoFields as $field) {
-                if (!empty($companyUser->{$field})) {
-                    $hasInfo = true;
-                }else{
-                    if($field =='phone'){
-                        if ($companyUser->users->first()->phone) {
-                            $hasInfo = true;
-                        }else{
-                            $hasInfo = false;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        $hasContacts = false;
-        $infoContacts = [
-            'email', 'phone', 'other_phone','code_other_phone',
-            'whatsapp', 'facebook', 'telegram', 'instagram', 'snapchat', 'linkedin'
-        ];
-        $hasContacts = false;
-
-        foreach ($infoContacts as $field) {
-            if (!empty($companyUser->{$field})) {
-                $hasContacts = true;
-            }else{
-                if($field =='phone'){
-                    if ($companyUser->users->first()->phone) {
-                        $hasInfo = true;
-                    }else{
-                        $hasInfo = false;
-                        break;
-                    }
-                }
-            }
-        }
-
-        $hasAddress = false;
-        $infoAddress = [
-            'address', 'postal_code',
-        ];
-        $hasAddress = false;
-
-        foreach ($infoAddress as $field) {
-            if (!empty($companyUser->{$field})) {
-                $hasAddress = true;
-            }else{
-                $hasAddress = false;
-                break;
-            }
-        }
-
-
-        $hasIdentity = false;
-        $infoIdentity = [
-            "passport",
-            "passport_start_date",
-            "passport_end_date",
-            // "identity",
-            // "identity_start_date",
-            // "identity_end_date",
-            "border_number",
-            "border_number_start_date",
-            "border_number_end_date",
-            "entry_number",
-            "entry_number_start_date",
-            "entry_number_end_date",
-            "work_permit",
-            "work_permit_start_date",
-            "work_permit_end_date",
-        ];
-        $hasIdentity = false;
-
-        foreach ($infoIdentity as $field) {
-            if (!empty($companyUser->{$field})) {
-                $hasIdentity = true;
-            }else{
-                $hasIdentity = false;
-                break;
-            }
-        }
-
+        $hasIdentity = $this->hasIdentityInfo($companyUser, $company->country_id);
+        $hasIdentityInfoUser = $this->hasIdentityInfoUser($companyUser, $company->country_id);
+        $hasBasicInfo = $this->hasBasicUserInfo($companyUser);
+        $hasContactInfo = $this->hasContactInfo($companyUser, $userRelatives);
+        $hasAddressInfo = $this->hasFilledFields($companyUser, ['address', 'postal_code']);
 
         return [
-            'info_company_user' => $hasInfo,
-            'bank_account' => isset($bankAccounts['data']) && count($bankAccounts['data']) > 0,
+            'info_company_user' => $hasBasicInfo && $hasIdentityInfoUser,
+            'bank_account' => $this->hasData($bankAccounts),
             'user_about' => !empty($userAbout),
-            'contact_info' => $hasContacts,
-            'address_info' => $hasAddress,
+            'contact_info' => $hasContactInfo,
+            'address_info' => $hasAddressInfo,
             'identity_info' => $hasIdentity,
-            'qualification' => isset($qualification['data']) && count($qualification['data']) > 0,
-            'experience'  => isset($userExperience['data']) && count($userExperience['data']) > 0,
-            'educational_course' => isset($UserEducationalCourse['data']) && count($UserEducationalCourse['data']) > 0,
-            'professional_certificate' => isset($professionalCertificate['data']) && count($professionalCertificate['data']) > 0,
-            'biography' => $media ? true : false,
+            'qualification' => $this->hasData($qualifications),
+            'experience' => $this->hasData($experiences),
+            'educational_course' => $this->hasData($courses),
+            'professional_certificate' => $this->hasData($certificates),
+            'biography' => !empty($media),
             'jobOffer' => !empty($jobOffer),
             'employment_contract' => !empty($employmentContract),
-            'user_salary' =>  !empty($userSalary),
-            'userPrivilege' => isset($userPrivilege['data']) && count($userPrivilege['data']) > 0,
+            'user_salary' => !empty($userSalary),
+            'userPrivilege' => $this->hasData($userPrivileges),
         ];
     }
 
+    private function hasData($response): bool
+    {
+        return isset($response['data']) && count($response['data']) > 0;
+    }
+
+    private function hasFilledFields(object $object, array $fields): bool
+    {
+        foreach ($fields as $field) {
+            if (empty($object->{$field})) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function hasIdentityInfo(object $companyUser, $companyCountryId): bool
+    {
+        $identityFields = $companyUser->country_id == $companyCountryId
+            ? ['identity', 'identity_start_date', 'identity_end_date']
+            : [
+                'passport', 'passport_start_date', 'passport_end_date',
+                'border_number', 'border_number_start_date', 'border_number_end_date',
+                'entry_number', 'entry_number_start_date', 'entry_number_end_date',
+                'work_permit', 'work_permit_start_date', 'work_permit_end_date',
+            ];
+
+        return $this->hasFilledFields($companyUser, $identityFields);
+    }
+
+    private function hasIdentityInfoUser(object $companyUser, $companyCountryId): bool
+    {
+        $identityFields = $companyUser->country_id == $companyCountryId
+            ? ['identity', 'identity_start_date', 'identity_end_date']
+            : [
+                'passport', 'passport_start_date', 'passport_end_date',
+            ];
+
+        return $this->hasFilledFields($companyUser, $identityFields);
+    }
+
+    private function hasBasicUserInfo(object $companyUser): bool
+    {
+        $fields = ['name', 'email', 'phone', 'gender', 'country_id', 'birthdate_gregorian', 'birthdate_hijri'];
+
+        foreach ($fields as $field) {
+            if (!empty($companyUser->{$field})) {
+                continue;
+            }
+
+            if ($field === 'phone' && $companyUser->users->first()?->phone) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function hasContactInfo(object $companyUser, array $userRelatives): bool
+    {
+        if (!isset($userRelatives['data']) || count($userRelatives['data']) === 0) {
+            return false;
+        }
+
+        $contactFields = [
+            'email', 'phone', 'other_phone', 'code_other_phone',
+            'address', 'postal_code', 'whatsapp', 'facebook',
+            'telegram', 'instagram', 'snapchat', 'linkedin'
+        ];
+
+        foreach ($contactFields as $field) {
+            if (!empty($companyUser->{$field})) {
+                return true;
+            }
+
+            if ($field === 'phone' && $companyUser->users->first()?->phone) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
