@@ -147,4 +147,9 @@ class ManagementHierarchyController extends Controller
         return Json::deleted();
     }
 
+    public function presentBranchTree()
+    {
+
+    }
+
 }
