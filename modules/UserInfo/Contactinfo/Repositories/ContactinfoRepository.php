@@ -41,10 +41,10 @@ class ContactinfoRepository extends BaseRepository
         return $this->create($data);
     }
 
-    public function updateContactinfo(UuidInterface $id, array $data,UuidInterface $userId = null)//: bool
+    public function updateContactinfo(UuidInterface $id, array $data, UuidInterface $userId = null)
     {
-        if($data['phone']){
-            $this->userRepository->update($userId,$data);
+        if (isset($data['phone'])) {
+            $this->userRepository->update($userId, $data);
         }
         return $this->update($id, $data);
     }
