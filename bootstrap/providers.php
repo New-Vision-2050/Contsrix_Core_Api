@@ -2,6 +2,7 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    OwenIt\Auditing\AuditingServiceProvider::class,
+    App\Providers\TelescopeServiceProvider::class,
     App\Providers\TenancyServiceProvider::class,
+    OwenIt\Auditing\AuditingServiceProvider::class,
 ];

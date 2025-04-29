@@ -20,7 +20,7 @@ class ManagementHierarchyPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         //Theta(n+1)
-        $descendants=ManagementHierarchy::query()->whereSelfOrDescendantOf($this->managementHierarchy)->where("company_id",$this->managementHierarchy->company_id)->get();
+        $descendants=ManagementHierarchy::query()->whereSelfOrDescendantOf($this->managementHierarchy)->where("company_id",$this->managementHierarchy->company_id)->get();//q(n+1)
         $users = $this->managementHierarchy->users?->where("company_id",$this->managementHierarchy->company_id);//theta (1)
         return [
             'id' => $this->managementHierarchy->id,
