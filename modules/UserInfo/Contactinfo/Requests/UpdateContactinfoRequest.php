@@ -16,6 +16,7 @@ class UpdateContactinfoRequest extends FormRequest
         return [
             'email' => 'required|email',
             'other_phone' => 'nullable',
+            'code_other_phone' => 'nullable',
             'phone' => 'required|string',
             'phone_code' => 'required|string',
             'landline_number' => 'nullable',
@@ -28,6 +29,7 @@ class UpdateContactinfoRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             email: $this->get('email'),
             other_phone: $this->get('other_phone'),
+            code_other_phone: $this->get('code_other_phone'),
             phone: $this->get('phone'),
             phone_code: $this->get('phone_code'),
             landline_number: $this->get('landline_number'),

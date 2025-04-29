@@ -59,6 +59,7 @@ class CompanyUser extends Model implements HasMedia
         "global_id",
 
         "other_phone",
+        "code_other_phone",
         "address",
         "address_attendance",
         "nickname",
