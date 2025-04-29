@@ -43,11 +43,11 @@ class ManagementHierarchyRepository extends BaseRepository
         return $this->model->filter(request()->all())->where("company_id", $company->id)->get();
     }
 
-    public function getBranchTree()
+    public function getTree()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
-        return $this->model->where("company_id", $company->id)->where("type", "branch")->get()->tree();
+        return $this->model->where("company_id", $company->id)->filter(request()->all())->get()->tree();
     }
 
     public function getManagementHierarchy(UuidInterface $id): ManagementHierarchy

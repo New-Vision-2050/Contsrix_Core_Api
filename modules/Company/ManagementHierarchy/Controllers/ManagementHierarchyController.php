@@ -148,9 +148,9 @@ class ManagementHierarchyController extends Controller
         return Json::deleted();
     }
 
-    public function presentBranchTree()
+    public function presentTree(GetManagementHierarchyLookupRequest $request)
     {
-        return Json::item(ManagementHierarchyTreePresenter::collection($this->managementHierarchyService->getBranchTree()));
+        return Json::item(ManagementHierarchyTreePresenter::collection($this->managementHierarchyService->getTree()));
     }
 
 }

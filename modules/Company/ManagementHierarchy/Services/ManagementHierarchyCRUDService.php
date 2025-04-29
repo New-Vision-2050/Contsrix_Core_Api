@@ -70,9 +70,9 @@ class ManagementHierarchyCRUDService
         );
     }
 
-    public function getBranchTree()
+    public function getTree()
     {
-        return $this->repository->getBranchTree();
+        return $this->repository->getTree();
     }
 
 }

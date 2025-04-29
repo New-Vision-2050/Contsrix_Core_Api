@@ -35,9 +35,9 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
                 "email"=>$this->managementHierarchy->user?->email,
                 "phone"=>$this->managementHierarchy->user?->phone,
             ],
-            "department_count"=>$descendants?->where("type","department")?->count(),
-            "management_count"=>$descendants?->where("type","management")?->count(),
-            "branch_count"=>$descendants?->where("type","branch")?->count()-1,//because it counts him self
+            "department_count"=>$this->managementHierarchy->type == "department"? $descendants?->where("type","department")?->count()-1:$descendants?->where("type","department")?->count(),//because it counts him self,
+            "management_count"=>$this->managementHierarchy->type == "management"? $descendants?->where("type","management")?->count()-1 : $descendants?->where("type","management")?->count(),//because it counts him self
+            "branch_count"=>$this->managementHierarchy->type == "branch"? $descendants?->where("type","branch")?->count()-1:$descendants?->where("type","branch")?->count(),//because it counts him self
             "user_count"=>$users?->count(),
             "children"=>ManagementHierarchyTreePresenter::collection($this->managementHierarchy->children)
 
