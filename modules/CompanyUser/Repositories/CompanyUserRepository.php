@@ -305,6 +305,26 @@ class CompanyUserRepository extends BaseRepository
         return true;
     }
 
+
+    public function updateUserData(UuidInterface $userId, array $data){
+        if (isset($data['email'])) {
+            $this->userRepository->updateWhere(
+                ["id" => $userId],
+                ['email' => $data['email']]
+            );
+        }
+
+        if (isset($data['phone'])) {
+            $this->userRepository->updateWhere(
+                ["id" => $userId],
+                ['phone' => $data['phone']]
+            );
+        }
+
+        return true;
+    }
+
+
     public function deleteCompanyUser(UuidInterface $id): bool
     {
         try {

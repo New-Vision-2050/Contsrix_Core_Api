@@ -152,12 +152,9 @@ class CompanyUserProfileController extends Controller
         try {
             $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
-            $user = $this->userRepository->getUser($userId);
-
-            $global_id = Uuid::fromString($user->global_company_user_id);
             $createValidateOtpDTO = $request->createValidateOtpDTO();
 
-            $status = $this->validateOtpService->validateOtp($createValidateOtpDTO, $global_id, $request->get('type'));
+            $status = $this->validateOtpService->validateOtp($createValidateOtpDTO,$userId, $request->get('type'));
 
             return Json::item(["status" => $status]);
 
