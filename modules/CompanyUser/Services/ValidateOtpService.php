@@ -23,7 +23,7 @@ class ValidateOtpService
 
             $field = $type === 'email' ? 'email' : 'phone';
 
-            $this->companyUserRepository->updateUserData($userId, [
+          return  $this->companyUserRepository->updateUserData($userId, [
                 $field => $identifier,
             ]);
 
