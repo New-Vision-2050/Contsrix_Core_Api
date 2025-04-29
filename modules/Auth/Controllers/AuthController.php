@@ -138,12 +138,9 @@ class AuthController extends Controller
     {
         $loginDTO = $request->createLoginStepDTO();
 
-        try {
             [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
-        } catch (\Exception $e) {
-            return Json::error($e->getMessage(), httpStatus: 401,code: "unauthorized_login");
-        }
+
         $userPresenter = (new UserPresenter($user))->getData();
         if ($nextStep == null) {
             return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep, $user))->getData(), "token" => $token, "user" => $userPresenter]);
