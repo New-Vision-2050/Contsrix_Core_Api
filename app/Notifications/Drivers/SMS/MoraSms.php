@@ -80,7 +80,7 @@ class MoraSms
             "username" => $this->username,
             "sender" => $this->from,
             "numbers" => $this->to,
-            "message" => $this->line,
+            "message" => $this->message?? $this->line,
         );
 
         $response = Http::post($url, $push_payload);

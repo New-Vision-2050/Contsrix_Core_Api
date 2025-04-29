@@ -305,6 +305,17 @@ class CompanyUserRepository extends BaseRepository
         return true;
     }
 
+
+    public function updateUserData(UuidInterface $userId, array $data){
+        return $userId;
+        $this->userRepository->updateWhere(
+                ["id" => $userId],$data
+            );
+
+        return true;
+    }
+
+
     public function deleteCompanyUser(UuidInterface $id): bool
     {
         try {
