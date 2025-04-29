@@ -65,7 +65,7 @@ class CompanyUserDatatatusService
         $hasInfo = false;
         if(isset($userRelative['data']) && count($userRelative['data']) > 0){
             $infoFields = [
-                'name', 'email', 'phone', 'other_phone', 'address',
+                'name', 'email', 'phone',
             ];
             $hasInfo = false;
 
@@ -73,12 +73,17 @@ class CompanyUserDatatatusService
                 if (!empty($companyUser->{$field})) {
                     $hasInfo = true;
                 }else{
-                    $hasInfo = false;
-                    break;
+                    if($field =='phone'){
+                        if ($companyUser->users->first()->phone) {
+                            $hasInfo = true;
+                        }else{
+                            $hasInfo = false;
+                            break;
+                        }
+                    }
                 }
             }
         }
-
         $hasContacts = false;
         $infoContacts = [
             'email', 'phone', 'other_phone','code_other_phone',
@@ -90,8 +95,14 @@ class CompanyUserDatatatusService
             if (!empty($companyUser->{$field})) {
                 $hasContacts = true;
             }else{
-                $hasContacts = false;
-                break;
+                if($field =='phone'){
+                    if ($companyUser->users->first()->phone) {
+                        $hasInfo = true;
+                    }else{
+                        $hasInfo = false;
+                        break;
+                    }
+                }
             }
         }
 
