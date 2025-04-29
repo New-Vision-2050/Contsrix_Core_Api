@@ -63,7 +63,7 @@ class ManagementHierarchyCRUDService
         );
     }
 
-    public function get(UuidInterface $id): ManagementHierarchy
+    public function get( $id): ManagementHierarchy
     {
         return $this->repository->getManagementHierarchy(
             id: $id,

@@ -15,6 +15,7 @@ use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandle
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
@@ -149,7 +150,7 @@ class ManagementHierarchyController extends Controller
 
     public function presentBranchTree()
     {
-
+        return Json::item(ManagementHierarchyTreePresenter::collection($this->managementHierarchyService->getBranchTree()));
     }
 
 }
