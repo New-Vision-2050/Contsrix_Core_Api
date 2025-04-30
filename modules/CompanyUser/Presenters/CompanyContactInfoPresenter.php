@@ -20,9 +20,10 @@ class CompanyContactInfoPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $user = $this->companyUser->users->first();
         return [
-            'email' => $this->companyUser->email,
-            'phone' => $this->companyUser->phone,
+            'email' => $user->email,
+            'phone' => $user->phone,
         ];
     }
 }

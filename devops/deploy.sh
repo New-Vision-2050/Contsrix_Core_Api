@@ -114,3 +114,5 @@ docker compose build --no-cache
 
 # Start the containers and remove any orphaned containers
 docker compose -p $DEPLOYMENT_ID up --force-recreate --remove-orphans -d
+
+docker image prune -f --filter "until=24h"
