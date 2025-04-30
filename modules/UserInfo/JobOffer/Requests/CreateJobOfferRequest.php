@@ -17,7 +17,7 @@ class CreateJobOfferRequest extends FormRequest
             'job_offer_number' => 'required|string',
             'date_send' => 'required|string',
             'date_accept' => 'required|string',
-            'file' => 'nullable|file'
+            'file' => 'nullable'
         ];
     }
 
