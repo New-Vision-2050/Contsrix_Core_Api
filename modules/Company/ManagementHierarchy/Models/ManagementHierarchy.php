@@ -37,7 +37,7 @@ class ManagementHierarchy extends Model
 
     protected $table = "management_hierarchies";
 
-    protected $with = ["user","users"];
+    protected $with = ["user","users","directUserChildren"];
 
     public $incrementing = false;
 
@@ -69,6 +69,11 @@ class ManagementHierarchy extends Model
     public function user()
     {
         return $this->belongsTo(User::class, "manager_id", "id");
+    }
+
+    public function directUserChildren()
+    {
+        return $this->hasMany(User::class,"management_hierarchy_id","id");
     }
 
 

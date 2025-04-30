@@ -45,7 +45,8 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
             "management_count" =>$managementCount,//because it counts him self
             "branch_count" =>$branchCount,//because it counts him self
             "user_count" => $users?->count(),
-            "children" => ManagementHierarchyTreePresenter::collection($this->managementHierarchy->children)
+            "children" => ManagementHierarchyTreePresenter::collection($this->managementHierarchy->children),
+//            "direct_users"=> $this->managementHierarchy->directUserChildren
 
         ];
     }
