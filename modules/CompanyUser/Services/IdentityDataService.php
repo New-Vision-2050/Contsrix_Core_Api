@@ -41,8 +41,9 @@ class IdentityDataService
         ];
 
         foreach ($fields as $field) {
+
         $fieldIds = collect($request->input($field))
-            // ->pluck('id')
+            ->pluck('id')
             ->filter()
             ->toArray();
 
