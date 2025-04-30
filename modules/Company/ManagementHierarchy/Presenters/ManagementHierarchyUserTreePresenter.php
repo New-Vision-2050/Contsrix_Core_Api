@@ -25,8 +25,8 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
 
-        return  [
-            "users"=>UserPresenter::collection($this->managementHierarchy->directUserChildren),
+        return [
+            "users" => UserPresenter::collection($this->managementHierarchy->directUserChildren),
             "children" => ManagementHierarchyUserTreePresenter::collection($this->managementHierarchy->children),
 
         ];

@@ -37,7 +37,7 @@ class ManagementHierarchy extends Model
 
     protected $table = "management_hierarchies";
 
-    protected $with = ["user","users","directUserChildren"];
+    protected $with = ["user"];
 
     public $incrementing = false;
 
