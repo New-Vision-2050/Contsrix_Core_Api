@@ -32,15 +32,29 @@ class WidgetCompanyUserProfilePresenter extends AbstractPresenter
         }
 
         $startDate = Carbon::parse($this->employmentContract['start_date']);
-        $contractDuration = (int) $this->employmentContract['contract_duration'];
-        $endDate = $startDate->copy()->addYears($contractDuration);
+        $period = (int) $this->employmentContract['notice_period'];
+        $unit = $this->employmentContract['contractDurationUnit']['code'];
+
+        switch ($unit) {
+            case 'day':
+                $endDate = $startDate->copy()->addDays($period);
+                break;
+            case 'month':
+                $endDate = $startDate->copy()->addMonths($period);
+                break;
+            case 'year':
+            default:
+                $endDate = $startDate->copy()->addYears($period);
+                break;
+        }
 
         return [
             'contract' => [
                 'start_date'   => $startDate->toDateString(),
                 'end_date'     => $endDate->toDateString(),
-                'user_salary'  => $this->userSalary->salary
+                'user_salary'  => $this->userSalary->salary,
             ]
         ];
     }
+
 }
