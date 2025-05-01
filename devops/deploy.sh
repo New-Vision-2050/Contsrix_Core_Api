@@ -55,7 +55,7 @@ fi
 APP_NAME="Constrix"
 APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
 
-if [[ "$DEPLOYMENT_ID" == *"pr"* ]]; then
+if [[ "$DEPLOYMENT_ID" == *"pr"* && "$APP_ENV" != "production" ]]; then
   DB_NAME="$DB_NAME-pr"
 else
   DB_NAME="$DB_NAME-$DEPLOYMENT_ID"
