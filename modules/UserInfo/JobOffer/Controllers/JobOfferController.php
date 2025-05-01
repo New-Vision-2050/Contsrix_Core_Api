@@ -60,7 +60,7 @@ class JobOfferController extends Controller
         $createCreateJobOfferDTO->global_id = $user->global_company_user_id;
         $createCreateJobOfferDTO->company_id = $user->company_id;
 
-        $createdItem = $this->jobOfferService->create($createCreateJobOfferDTO);
+        $createdItem = $this->jobOfferService->create($createCreateJobOfferDTO,$request);
         $presenter = new JobOfferPresenter($createdItem);
 
         return Json::item($presenter->getData());

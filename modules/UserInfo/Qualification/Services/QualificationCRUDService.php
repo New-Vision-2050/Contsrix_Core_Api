@@ -42,11 +42,23 @@ class QualificationCRUDService
 
     public function uploadFile($qualification,$request)//: array
     {
-        $files = $request->file('file');
+        $files = $request->file;
 
         $visibility = 'public';
         if($files){
             foreach ($files as $file) {
+
+            $fieldIds = collect($request->input('file'))
+                ->pluck('id')
+                ->filter()
+                ->toArray();
+
+            $existingMedia = $qualification->getMedia('upload_Qualification');
+                foreach ($existingMedia as $media) {
+                    if (!in_array($media->id, $fieldIds)) {
+                        $media->delete();
+                    }
+                }
                 $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($qualification->global_id));
                 $path = Company::find($qualification->company_id)->name . '/' . $user->name;
 

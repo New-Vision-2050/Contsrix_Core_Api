@@ -33,7 +33,7 @@ class CreateEmploymentContractRequest extends FormRequest
             'country_id' => 'required|string',
             'right_terminate_id' => 'required|string',
 
-            'file' => 'nullable|file',
+            'file' => 'nullable',
         ];
     }
 
@@ -57,7 +57,6 @@ class CreateEmploymentContractRequest extends FormRequest
             annual_leave: $this->get('annual_leave'),
             country_id: $this->get('country_id'),
             right_terminate_id: $this->get('right_terminate_id'),
-            file: $this->file('file'),
 
             contract_duration_unit: $this->get('contract_duration_unit'),
             notice_period_unit: $this->get('notice_period_unit'),

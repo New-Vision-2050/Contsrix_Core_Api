@@ -47,16 +47,12 @@ class IdentityDataService
             ->filter()
             ->toArray();
 
-        // Get the existing media associated with the field
         $existingMedia = $companyUser->getMedia($field);
         foreach ($existingMedia as $media) {
-            // Delete media that are no longer in the new input
             if (!in_array($media->id, $fieldIds)) {
                 $media->delete();
             }
         }
-
-            // ✅ Upload new files if any
             if ($request->hasFile($field)) {
                 foreach ($request->file($field) as $file) {
                     $uploadedFiles[$field][] = $this->fileUploadService->uploadFile(

@@ -59,7 +59,7 @@ class EmploymentContractController extends Controller
         $createCreateEmploymentContractDTO->global_id = $user->global_company_user_id;
         $createCreateEmploymentContractDTO->company_id = $user->company_id;
 
-        $createdItem = $this->employmentContractService->create($createCreateEmploymentContractDTO);
+        $createdItem = $this->employmentContractService->create($createCreateEmploymentContractDTO,$request);
 
         $presenter = new EmploymentContractPresenter($createdItem);
 

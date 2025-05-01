@@ -29,7 +29,6 @@ class CreateJobOfferRequest extends FormRequest
             job_offer_number: $this->get('job_offer_number'),
             date_send: $this->get('date_send'),
             date_accept: $this->get('date_accept'),
-            file: $this->file('file'),
         );
     }
 }
