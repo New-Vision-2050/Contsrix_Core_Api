@@ -16,10 +16,11 @@ use Modules\UserInfo\UserProfessionalData\Presenters\UserProfessionalDataPresent
 class CompanyUserPresenter extends AbstractPresenter
 {
     private CompanyUser $companyUser;
-
-    public function __construct(CompanyUser $companyUser)
+    private string $userId;
+    public function __construct(CompanyUser $companyUser, string $userId)
     {
         $this->companyUser = $companyUser;
+        $this->userId = $userId;
     }
 
     protected function present(bool $isListing = false): array
@@ -27,7 +28,7 @@ class CompanyUserPresenter extends AbstractPresenter
         return [
             'id' => $this->companyUser->id,
             'global_id' => $this->companyUser->global_id,
-            'user_id'=>$this->companyUser->users()->first()?->id,
+            'user_id' => $this->userId,
             'name' => $this->companyUser->name,
             'email' => $this->companyUser->email,
             "residence" => $this->companyUser->residence,
