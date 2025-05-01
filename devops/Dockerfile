@@ -43,7 +43,7 @@ RUN mkdir -p bootstrap/cache && \
    chmod -R 775 bootstrap/cache
 
 ## Install Laravel dependencies
-RUN composer install
+RUN composer install --optimize-autoloader --no-scripts
 
 EXPOSE 80
 
