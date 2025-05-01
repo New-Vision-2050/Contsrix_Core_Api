@@ -3,16 +3,15 @@ name: Backend CI/CD Pipeline
 on:
   push:
     branches:
-      - main
-      - master
+      - production
       - dev
       - stage
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - closed
+#  pull_request:
+#    types:
+#      - opened
+#      - synchronize
+#      - reopened
+#      - closed
 
 jobs:
   deploy:
