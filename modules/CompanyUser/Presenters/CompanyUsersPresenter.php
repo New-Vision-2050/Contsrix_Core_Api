@@ -30,7 +30,7 @@ class CompanyUsersPresenter extends AbstractPresenter
             'roles' => RolesPresenter::collection($this->companyUser->rolesForCompany($this->company->id)),
             "phone"=>$this->companyUser->users()->where("company_id", $this->company->id)->first()?->phone,
             "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
-            'users' => $this->companyUser->users,
+            'users' => $this->companyUser->users->where('company_id', $this->company->id)->values(),
         ];
     }
 
