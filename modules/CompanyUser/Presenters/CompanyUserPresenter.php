@@ -16,8 +16,8 @@ use Modules\UserInfo\UserProfessionalData\Presenters\UserProfessionalDataPresent
 class CompanyUserPresenter extends AbstractPresenter
 {
     private CompanyUser $companyUser;
-    private string $userId;
-    public function __construct(CompanyUser $companyUser, string $userId)
+    private ?string $userId;
+    public function __construct(CompanyUser $companyUser, string $userId = null)
     {
         $this->companyUser = $companyUser;
         $this->userId = $userId;
