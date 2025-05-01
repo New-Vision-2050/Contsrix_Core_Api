@@ -12,6 +12,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\CompanyUser\Requests\IdentityDataRequest;
 use Modules\Shared\Media\Services\FileUploadService;
+use PhpParser\Node\Stmt\Return_;
 
 class IdentityDataService
 {
@@ -23,14 +24,13 @@ class IdentityDataService
     {
 
     }
-    public function uploadFile($request,$globalId): array
+    public function uploadFile($request, $globalId)//: array
     {
         $visibility = 'public';
         $companyUser = $this->repository->getCompanyUserGlobalId($globalId);
         $path = Company::find(auth()->user()->company_id)->name . '/' . $companyUser->name;
 
         $uploadedFiles = [];
-
 
         $fields = [
             'file_passport',
@@ -41,6 +41,22 @@ class IdentityDataService
         ];
 
         foreach ($fields as $field) {
+
+        $fieldIds = collect($request->input($field))
+            ->pluck('id')
+            ->filter()
+            ->toArray();
+
+        // Get the existing media associated with the field
+        $existingMedia = $companyUser->getMedia($field);
+        foreach ($existingMedia as $media) {
+            // Delete media that are no longer in the new input
+            if (!in_array($media->id, $fieldIds)) {
+                $media->delete();
+            }
+        }
+
+            // ✅ Upload new files if any
             if ($request->hasFile($field)) {
                 foreach ($request->file($field) as $file) {
                     $uploadedFiles[$field][] = $this->fileUploadService->uploadFile(
@@ -49,8 +65,7 @@ class IdentityDataService
                 }
             }
         }
-        
+
         return $uploadedFiles;
     }
-
 }

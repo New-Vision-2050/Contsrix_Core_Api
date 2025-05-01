@@ -26,7 +26,7 @@ use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
-use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitSeederTableSeeder;
+use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitsSeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
         $this->call(JobTypeSeederTable::class);
 
         $this->call(SalaryTypeSeederTableSeeder::class);
-        $this->call(TimeUnitSeederTableSeeder::class);
+        $this->call(TimeUnitsSeederTableSeeder::class);
 
         $this->call(NatureWorkSeederTableSeeder::class);
         $this->call(RightTerminateSeederTableSeeder::class);
