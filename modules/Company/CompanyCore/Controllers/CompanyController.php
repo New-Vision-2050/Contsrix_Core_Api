@@ -30,6 +30,7 @@ use Modules\Company\CompanyCore\Services\CompanyWidgetService;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\User\Repositories\UserRepository;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\Cache;
 
 
 class CompanyController extends Controller
@@ -71,6 +72,9 @@ class CompanyController extends Controller
     {
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
 
+        // Clear widget cache when a new company is created
+        $this->companyWidgetService->clearWidgetCache();
+
         $presenter = new CompanyPresenter($createdItem);
 
         return Json::item($presenter->getData());
@@ -81,6 +85,9 @@ class CompanyController extends Controller
 
         $command = $request->createUpdateCompanyCommand();
         $this->updateCompanyHandler->handle($command);
+
+        // Clear widget cache when a company is updated
+        $this->companyWidgetService->clearWidgetCache();
 
         $item = $this->companyService->get($command->getId());
 
@@ -93,6 +100,9 @@ class CompanyController extends Controller
     {
         $this->deleteCompanyHandler->handle(Uuid::fromString($request->route('id')));
 
+        // Clear widget cache when a company is deleted
+        $this->companyWidgetService->clearWidgetCache();
+
         return Json::deleted();
     }
     public function validate(Request $request)//: JsonResponse
@@ -104,17 +114,36 @@ class CompanyController extends Controller
             'data' => $validationResult,
         ]);
     }
+    /**
+     * Get company statistics widget with caching
+     *
+     * @return JsonResponse
+     */
     public function widget(): JsonResponse
     {
-        $presenter = $this->companyWidgetService->getCompanyStatistics();
+        // Cache key for company widget statistics
+        $cacheKey = 'company_widget_statistics';
 
-        return Json::item($presenter->getData());
+        // Get data from cache or compute if not available
+        $widgetData = Cache::remember($cacheKey, now()->addHours(1), function () {
+            $presenter = $this->companyWidgetService->getCompanyStatistics();
+            return $presenter->getData();
+        });
 
+        return Json::item($widgetData);
     }
+
+    /**
+     * Clear the widget cache
+     */
+
     public function activate(ActiveCompanyRequest $request): JsonResponse
     {
         $command = $request->createActiveCompanyCommand();
         $this->activateCompanyCommand->handle($command);
+
+        // Clear widget cache when a company is activated/deactivated
+        $this->companyWidgetService->clearWidgetCache();
 
         $item = $this->companyService->get($command->getId());
 
@@ -210,6 +239,10 @@ class CompanyController extends Controller
     public function deleteLastCreated(): JsonResponse
     {
         $this->companyService->deleteLastCreated();
+
+        // Clear widget cache when the last created company is deleted
+        $this->companyWidgetService->clearWidgetCache();
+
         return Json::deleted();
     }
 }
