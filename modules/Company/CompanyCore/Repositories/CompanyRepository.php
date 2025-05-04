@@ -21,7 +21,7 @@ use Carbon\Carbon;
  */
 class CompanyRepository extends BaseRepository
 {
-    private $relations= ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner"];
+    private $relations= ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner","branches.address"];
     use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(Company $model)
     {
