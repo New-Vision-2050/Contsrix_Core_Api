@@ -19,9 +19,12 @@ class ManagementHierarchyPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        //Theta(n+1)
-        $descendants=ManagementHierarchy::query()->whereSelfOrDescendantOf($this->managementHierarchy)->where("company_id",$this->managementHierarchy->company_id)->get();//q(n+1)
-        $users = $this->managementHierarchy->users?->where("company_id",$this->managementHierarchy->company_id);//theta (1)
+        // Get users efficiently without n+1 query
+        $users = $this->managementHierarchy->users?->where("company_id", $this->managementHierarchy->company_id);
+
+        // Get cached hierarchy counts or calculate and cache them if not available
+        $hierarchyCounts = $this->managementHierarchy->getCachedHierarchyCounts()
+            ?? $this->managementHierarchy->cacheHierarchyCounts();
         return [
             'id' => $this->managementHierarchy->id,
             'parent_id' => $this->managementHierarchy->parent_id,
@@ -45,9 +48,9 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             'country_name' => $this->managementHierarchy->address?->country?->name,
             'state_name' => $this->managementHierarchy->address?->state?->name,
             'city_name' => $this->managementHierarchy->address?->city?->name,
-            "department_count"=>$this->managementHierarchy->type == "department"? $descendants?->where("type","department")?->count()-1:$descendants?->where("type","department")?->count(),//because it counts him self,
-            "management_count"=>$this->managementHierarchy->type == "management"? $descendants?->where("type","management")?->count()-1 : $descendants?->where("type","management")?->count(),//because it counts him self,
-            "branch_count"=>$this->managementHierarchy->type == "branch"? $descendants?->where("type","branch")?->count()-1:$descendants?->where("type","branch")?->count(),//because it counts him self
+            "department_count" => $hierarchyCounts['department_count'],
+            "management_count" => $hierarchyCounts['management_count'],
+            "branch_count" => $hierarchyCounts['branch_count'],
             "user_count"=>$users?->count()
         ];
     }

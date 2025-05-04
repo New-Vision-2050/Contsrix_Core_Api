@@ -178,7 +178,6 @@ class CompanyController extends Controller
     /**
      * Export companies data as CSV
      *
-     * @return BinaryFileResponse
      */
 //    public function export(ExportCompaniesRequest $request)
 //    {
