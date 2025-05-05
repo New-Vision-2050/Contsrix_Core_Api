@@ -110,6 +110,8 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
         ManagementHierarchy::query()->firstOrCreate(["id" => $managementId], ["id" => $managementId, "company_id" => $id, "name" => "الادارة الرئيسييه", "type" => "management", "is_first_branch" => 0, "is_main" => 1,"parent_id"=>$branchId]);
         $management = ManagementHierarchy::query()->find($managementId);
+        $management->detail()->create(["description"=>"الادارة الرئيسييه"]);
+
 
         $companyAddressId = Uuid::uuid5($namespace, "new-vision-address")->toString();
 
