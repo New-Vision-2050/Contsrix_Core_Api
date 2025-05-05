@@ -103,7 +103,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         }
         $branchId = 1;
 
-        ManagementHierarchy::query()->firstOrCreate(["id" => $branchId], ["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch", "is_first_branch" => 1, "is_main" => 1]);
+        ManagementHierarchy::query()->firstOrCreate(["id" => $branchId], ["id" => $branchId,"manager_id"=>$general_manager->id->toString(), "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch", "is_first_branch" => 1, "is_main" => 1]);
         $mainBranch = ManagementHierarchy::query()->find($branchId);
 
         $managementId = 2;
