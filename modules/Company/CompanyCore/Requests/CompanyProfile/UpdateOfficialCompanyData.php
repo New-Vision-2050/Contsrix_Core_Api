@@ -20,7 +20,7 @@ class UpdateOfficialCompanyData extends FormRequest
             'email' => 'required|email|string|unique:companies,email,' . Uuid::fromString(tenant("id")),
             'phone' => 'required|string',
             'branch_name' => 'required|string',
-            'company_type_id' => 'required|string',
+            'company_type' => 'required|string',
         ];
     }
 
@@ -34,7 +34,7 @@ class UpdateOfficialCompanyData extends FormRequest
             email: $this->get('email'),
             phone: $this->get('phone'),
             branchName: $this->get('branch_name'),
-            companyTypeId: $this->get('company_type_id'),
+            companyType: $this->get('company_type'),
         );
     }
 }

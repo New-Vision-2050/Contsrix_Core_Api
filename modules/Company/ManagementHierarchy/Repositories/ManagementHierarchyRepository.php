@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Ramsey\Uuid\UuidInterface;
 
 /**
  * @property ManagementHierarchy $model
@@ -71,7 +72,7 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function getMainBranchForCompany(int $id): ManagementHierarchy
+    public function getMainBranchForCompany(UuidInterface $id): ManagementHierarchy
     {
         return $this->findOneBy([
             "company_id" => $id,
