@@ -47,7 +47,7 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
                 "name" => $this->managementHierarchy->detail?->user?->name,
                 "email" => $this->managementHierarchy->detail?->user?->email,
                 "phone" => $this->managementHierarchy->detail?->user?->phone,
-                "photo"=>$this->managementHierarchy->user?->companyUser->getFirstMedia('upload_user')?->getFullUrl()
+                "photo"=>$this->managementHierarchy->detail?->user?->companyUser->getFirstMedia('upload_user')?->getFullUrl()
             ],
             "department_count" => $hierarchyCounts['department_count'],
             "management_count" => $hierarchyCounts['management_count'],
