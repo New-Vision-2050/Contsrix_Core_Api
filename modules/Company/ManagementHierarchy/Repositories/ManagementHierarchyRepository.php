@@ -46,7 +46,7 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function getMainBranchForCompany(int $id): ManagementHierarchy
+    public function getMainBranchForCompany($id): ManagementHierarchy
     {
         return $this->findOneBy([
             "company_id" => $id,
