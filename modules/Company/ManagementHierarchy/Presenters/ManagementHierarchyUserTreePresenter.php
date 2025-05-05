@@ -29,7 +29,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 
         return [
             // Include the user data if available
-            "user" => $user ? new UserPresenter($user) : null,
+//            "user" => $user ? new UserPresenter($user) : null,
 
             // Include direct user children
             "directUserChildren" => UserPresenter::collection($this->managementHierarchy->directUserChildren),
@@ -38,7 +38,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
             "children" => ManagementHierarchyUserTreePresenter::collection($this->managementHierarchy->children),
 
             // Merged collection of all users (main user + direct children)
-            "allUsers" => $this->getMergedUsers(),
+            "users" => $this->getMergedUsers(),
         ];
     }
 
@@ -47,18 +47,18 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
      *
      * @return array
      */
-    private function getMergedUsers()
+    private function getMergedUsers($users= [])
     {
-        $users = [];
+
 
         // Add the main user if available
         if (isset($this->managementHierarchy->user)) {
-            $users[] = new UserPresenter($this->managementHierarchy->user);
+            $users[] = (new UserPresenter($this->managementHierarchy->user))->getData();
         }
 
         // Add all direct user children
         foreach ($this->managementHierarchy->directUserChildren as $directChild) {
-            $users[] = new UserPresenter($directChild);
+            $users[] = (new UserPresenter($directChild))->getData();
         }
         if (isset($users[0]->name))
             return $users;
