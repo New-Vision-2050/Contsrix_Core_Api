@@ -21,7 +21,7 @@ class ManagementHierarchyRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
 
-    private $nextId;
+    public $nextId;
 
     public function __construct(ManagementHierarchy $model)
     {
