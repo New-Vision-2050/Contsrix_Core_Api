@@ -41,6 +41,12 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
                 "email" => $this->managementHierarchy->user?->email,
                 "phone" => $this->managementHierarchy->user?->phone,
             ],
+            "deputy_manager" => [
+                "id" => $this->managementHierarchy->detail?->user?->id,
+                "name" => $this->managementHierarchy->detail?->user?->name,
+                "email" => $this->managementHierarchy->detail?->user?->email,
+                "phone" => $this->managementHierarchy->detail?->user?->phone,
+            ],
             "department_count" => $hierarchyCounts['department_count'],
             "management_count" => $hierarchyCounts['management_count'],
             "branch_count" => $hierarchyCounts['branch_count'],
