@@ -105,6 +105,12 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
         ManagementHierarchy::query()->firstOrCreate(["id" => $branchId], ["id" => $branchId, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch", "is_first_branch" => 1, "is_main" => 1]);
         $mainBranch = ManagementHierarchy::query()->find($branchId);
+
+        $managementId = 2;
+
+        ManagementHierarchy::query()->firstOrCreate(["id" => $managementId], ["id" => $managementId, "company_id" => $id, "name" => "الادارة الرئيسييه", "type" => "management", "is_first_branch" => 0, "is_main" => 1,"parent_id"=>$branchId]);
+        $management = ManagementHierarchy::query()->find($managementId);
+
         $companyAddressId = Uuid::uuid5($namespace, "new-vision-address")->toString();
 
         CompanyAddress::query()->create([
