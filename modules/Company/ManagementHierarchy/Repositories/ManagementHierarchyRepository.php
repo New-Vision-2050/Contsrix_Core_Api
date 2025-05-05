@@ -46,7 +46,7 @@ class ManagementHierarchyRepository extends BaseRepository
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
         $managementHierarchy = null;
         if (request()->has("id")) {
-            $managementHierarchy = ManagementHierarchy::query()->where("id", request()->id)->where("company_id", $company->id)->first();
+            $managementHierarchy = $this->model->where("id", request()->id)->where("company_id", $company->id)->first();
 
         }
 
