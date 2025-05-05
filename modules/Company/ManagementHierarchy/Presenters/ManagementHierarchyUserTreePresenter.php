@@ -29,16 +29,16 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 
         return [
             // Include the user data if available
-//            "user" => $user ? new UserPresenter($user) : null,
+            "user" => $user ? new UserPresenter($user) : null,
 
             // Include direct user children
-            "directUserChildren" => $this->getMergedUsers(),
+            "directUserChildren" => UserPresenter::collection($this->managementHierarchy->directUserChildren),
 
             // Include hierarchical children
             "children" => ManagementHierarchyUserTreePresenter::collection($this->managementHierarchy->children),
 
             // Merged collection of all users (main user + direct children)
-//            "allUsers" => $this->getMergedUsers(),
+            "allUsers" => $this->getMergedUsers(),
         ];
     }
 
