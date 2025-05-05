@@ -145,4 +145,22 @@ class ManagementHierarchy extends Model
     {
         return "management_hierarchy_{$this->id}_counts";
     }
+
+    /**
+     * Get merged users from different related collections
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getAllUsersAttribute()
+    {
+        $directUsers = $this->user ? collect([$this->user]) : collect([]);
+
+        if ($this->users) {
+            $directUsers = $directUsers->merge($this->users);
+        }
+
+        $childrenUsers = $this->directUserChildren ?? collect([]);
+
+        return $directUsers->merge($childrenUsers)->unique('id');
+    }
 }
