@@ -31,11 +31,17 @@ class UpdateOfficialCompanyDataHandler
             $this->repository->updateCompany($updateOfficialCompanyDataCommand->getId(), $updateOfficialCompanyDataCommand->toArray());
             if(request()->has("branch_id"))
             {
-                $this->managementHierarchyRepository->updateWhere(["id"=>request()->branch_id],["name" => $updateOfficialCompanyDataCommand->getBranchName()]);
-
-
+                $this->managementHierarchyRepository->updateWhere(["id"=>request()->branch_id],[
+                    "name" => $updateOfficialCompanyDataCommand->getBranchName()
+                ]);
             }else{
-                $this->managementHierarchyRepository->getMainBranchForCompany($updateOfficialCompanyDataCommand->getId())->update(["name" => $updateOfficialCompanyDataCommand->getBranchName()]);
+                $this->managementHierarchyRepository->getMainBranchForCompany(
+                    $updateOfficialCompanyDataCommand->getId())->update(
+                        ["name" => $updateOfficialCompanyDataCommand->getBranchName(),
+                                    "phone"=> $updateOfficialCompanyDataCommand->getPhone(),
+                                    "email"=> $updateOfficialCompanyDataCommand->getEmail(),
+                                    
+                                ]);
 
             }
             DB::commit();

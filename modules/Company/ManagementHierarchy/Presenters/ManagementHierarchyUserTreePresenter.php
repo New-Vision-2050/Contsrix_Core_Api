@@ -24,11 +24,20 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        // Get the user associated with this hierarchy node (if any)
+        $user = $this->managementHierarchy->user ?? null;
 
         return [
-            "users" => UserPresenter::collection($this->managementHierarchy->directUserChildren),
+
+
+            // Include direct user children
+            "users" => UserPresenter::collection($this->managementHierarchy->allUsers),
+
+            // Include hierarchical children
             "children" => ManagementHierarchyUserTreePresenter::collection($this->managementHierarchy->children),
 
         ];
     }
+
+
 }

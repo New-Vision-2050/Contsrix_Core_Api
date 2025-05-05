@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Ramsey\Uuid\UuidInterface;
 
 /**
  * @property ManagementHierarchy $model
@@ -21,7 +22,7 @@ class ManagementHierarchyRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
 
-    private $nextId;
+    public $nextId;
 
     public function __construct(ManagementHierarchy $model)
     {
@@ -44,8 +45,24 @@ class ManagementHierarchyRepository extends BaseRepository
     public function getTree()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        $managementHierarchy = null;
+        if (request()->has("id")) {
+            $managementHierarchy = $this->model->where("id", request()->id)->where("company_id", $company->id)->first();
 
-        return $this->model->where("company_id", $company->id)->with(["user","users","directUserChildren"])->get()->tree();
+        }
+
+        return $this->model->where("company_id", $company->id)->with(["user", "users", "directUserChildren","detail.user.companyUser"])
+            ->when(request()->has("type"), function ($query) {
+                if (request()->type == "management") {
+                    $query->where("type", "management")->orWhere("type", "department");
+                } elseif (request()->type == "department") {
+
+                    $query->where("type", "department");
+                }
+            })->when(request()->has("id")&& $managementHierarchy, function ($query) use ($managementHierarchy) {
+                $query->whereSelfOrDescendantOf($managementHierarchy);
+
+            })->get()->tree();
     }
 
     public function getManagementHierarchy(int $id): ManagementHierarchy
