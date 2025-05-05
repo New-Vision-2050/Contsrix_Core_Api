@@ -24,8 +24,8 @@ mkdir -p $DEPLOY_DIR
 cd $DEPLOY_DIR
 
 # Find containers and images related to the existing deployment
-OLD_CONTAINERS=$(docker ps -a --filter "name=${DEPLOYMENT_ID}" --format "{{.ID}}" | tr '\n' ' ')
-OLD_IMAGES=$(docker images --filter "reference=*${DEPLOYMENT_ID}*" --format "{{.ID}}" | tr '\n' ' ')
+OLD_CONTAINERS=$(docker ps -a --filter "name=${DEPLOYMENT_ID}-" --format "{{.ID}}" | tr '\n' ' ')
+OLD_IMAGES=$(docker images --filter "reference=*${DEPLOYMENT_ID}-*" --format "{{.ID}}" | tr '\n' ' ')
 echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
