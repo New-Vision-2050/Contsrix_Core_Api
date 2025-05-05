@@ -15,7 +15,10 @@ use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandle
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
+use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyRequest;
@@ -38,7 +41,8 @@ class ManagementHierarchyController extends Controller
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
-        private UpdateBranchHandler              $updateBranchHandler
+        private UpdateBranchHandler              $updateBranchHandler,
+        private ManagementHierarchyRepository    $managementHierarchyRepository,
     )
     {
     }
@@ -60,7 +64,7 @@ class ManagementHierarchyController extends Controller
 
     public function show(GetManagementHierarchyRequest $request): JsonResponse
     {
-        $item = $this->managementHierarchyService->get((int) ($request->route('id')));
+        $item = $this->managementHierarchyService->get((int)($request->route('id')));
 
         $presenter = new ManagementHierarchyPresenter($item);
 
@@ -146,4 +150,13 @@ class ManagementHierarchyController extends Controller
         return Json::deleted();
     }
 
+    public function presentTree(GetManagementHierarchyLookupRequest $request)
+    {
+        return Json::item(ManagementHierarchyTreePresenter::collection($this->managementHierarchyService->getTree()));
+    }
+
+    public function directChildrenTree()
+    {
+        return Json::item(ManagementHierarchyUserTreePresenter::collection($this->managementHierarchyService->getTree()));
+    }
 }

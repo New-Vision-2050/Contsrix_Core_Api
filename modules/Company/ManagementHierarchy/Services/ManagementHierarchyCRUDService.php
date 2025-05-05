@@ -67,4 +67,10 @@ class ManagementHierarchyCRUDService
             id: $id,
         );
     }
+
+    public function getTree()
+    {
+        return $this->repository->getTree();
+    }
+
 }
