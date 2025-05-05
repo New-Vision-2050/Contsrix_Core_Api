@@ -21,7 +21,7 @@ class ManagementHierarchyRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
 
-    private $nextId;
+    public $nextId;
 
     public function __construct(ManagementHierarchy $model)
     {
@@ -45,7 +45,7 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
-        return $this->model->where("company_id", $company->id)->with(["user","users","directUserChildren"])->get()->tree();
+        return $this->model->filter(request()->all())->where("company_id", $company->id)->with(["user","users","directUserChildren"])->get()->tree();
     }
 
     public function getManagementHierarchy(int $id): ManagementHierarchy
