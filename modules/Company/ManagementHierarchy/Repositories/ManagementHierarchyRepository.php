@@ -45,21 +45,20 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
         $managementHierarchy = null;
-        if (request()->has("id"))
-        {
-            $managementHierarchy = $this->model->where("id",request()->id)->where("company_id", $company->id)->first();
+        if (request()->has("id")) {
+            $managementHierarchy = ManagementHierarchy::query()->where("id", request()->id)->where("company_id", $company->id)->first();
 
         }
 
-        return $this->model->where("company_id", $company->id)->with(["user","users","directUserChildren"])
-            ->when(request()->has("type"),function ($query){
-                if(request()->type == "management"){
+        return $this->model->where("company_id", $company->id)->with(["user", "users", "directUserChildren"])
+            ->when(request()->has("type"), function ($query) {
+                if (request()->type == "management") {
                     $query->where("type", "management")->orWhere("type", "department");
-                }elseif (request()->type == "department"){
+                } elseif (request()->type == "department") {
 
                     $query->where("type", "department");
                 }
-            })->when(request()->has("id"),function ($query)use ($managementHierarchy){
+            })->when(request()->has("id")&& $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
 
             })->get()->tree();
