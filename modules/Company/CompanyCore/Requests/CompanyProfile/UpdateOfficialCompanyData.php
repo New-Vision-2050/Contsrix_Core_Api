@@ -20,7 +20,7 @@ class UpdateOfficialCompanyData extends FormRequest
             'email' => 'required|email|string|unique:companies,email,' . Uuid::fromString(tenant("id")),
             'phone' => 'required|string',
             'branch_name' => 'required|string',
-            'company_type' => 'required|string',
+            'company_type_id' => 'required|exists:company_types,id',
         ];
     }
 
