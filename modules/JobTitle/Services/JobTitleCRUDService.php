@@ -30,6 +30,11 @@ class JobTitleCRUDService
         );
     }
 
+    public function listAll(): Collection
+    {
+        return $this->repository->getAllJobTitles();
+    }
+
     public function get(UuidInterface $id): JobTitle
     {
         return $this->repository->getJobTitle(

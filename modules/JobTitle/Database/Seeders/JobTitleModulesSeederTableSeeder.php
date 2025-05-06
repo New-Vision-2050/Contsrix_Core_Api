@@ -4,13 +4,13 @@ namespace Modules\JobTitle\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\JobTitle\Models\JobTitle;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Ramsey\Uuid\Uuid;
 
 class JobTitleModulesSeederTableSeeder extends Seeder
 {
-    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -29,7 +29,7 @@ class JobTitleModulesSeederTableSeeder extends Seeder
         foreach ($data as $item) {
             JobTitle::Create(
 
-                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type']]
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type'],"company_id"=>tenant("id")??Company::query()->first()->id]
             );
         }
 

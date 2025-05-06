@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Ramsey\Uuid\UuidInterface;
 
 /**
  * @property ManagementHierarchy $model
@@ -21,10 +22,12 @@ class ManagementHierarchyRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
 
+    public $nextId;
+
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
-        $this->nextId = $model->query()->orderBy("id","desc")->withoutGlobalScope(CustomTenantScope::class)->first()->id+1;
+        $this->nextId = $model->query()->orderBy("id", "desc")->withoutGlobalScope(CustomTenantScope::class)->first()->id + 1;
     }
 
     public function getManagementHierarchyList(?int $page, ?int $perPage = 10): Collection
@@ -34,9 +37,32 @@ class ManagementHierarchyRepository extends BaseRepository
 
     public function getAll()
     {
-        [$company ,$branch]=$this->declareCompanyAndBranchUsingRequest();
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
         return $this->model->filter(request()->all())->where("company_id", $company->id)->get();
+    }
+
+    public function getTree()
+    {
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        $managementHierarchy = null;
+        if (request()->has("id")) {
+            $managementHierarchy = $this->model->where("id", request()->id)->where("company_id", $company->id)->first();
+
+        }
+
+        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren","detail.user.companyUser.media"])
+            ->when(request()->has("type"), function ($query) {
+                if (request()->type == "management") {
+                    $query->where("type", "management")->orWhere("type", "department");
+                } elseif (request()->type == "department") {
+
+                    $query->where("type", "department");
+                }
+            })->when(request()->has("id")&& $managementHierarchy, function ($query) use ($managementHierarchy) {
+                $query->whereSelfOrDescendantOf($managementHierarchy);
+
+            })->get()->tree();
     }
 
     public function getManagementHierarchy(int $id): ManagementHierarchy
@@ -59,7 +85,7 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($branchData+["id"=>$this->nextId]);
+            $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
@@ -75,7 +101,7 @@ class ManagementHierarchyRepository extends BaseRepository
     public function createManagementHierarchy(array $managementHierarchyData): ManagementHierarchy
     {
 
-        $managementHierarchy = $this->create($managementHierarchyData+["id"=>$this->nextId] );
+        $managementHierarchy = $this->create($managementHierarchyData + ["id" => $this->nextId]);
         return $managementHierarchy;
     }
 
@@ -84,7 +110,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($managementData + ["id"=>$this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
+            $managementHierarchy = $this->create($managementData + ["id" => $this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
             $managementHierarchy->detail()->create($managementDetail);
             DB::commit();
         } catch (\Exception $e) {
@@ -176,5 +202,37 @@ class ManagementHierarchyRepository extends BaseRepository
 
 
         }
+    }
+
+    /**
+     * Get count statistics for hierarchies by type
+     * 
+     * @param string $type The hierarchy type (branch, management, department)
+     * @param mixed $companyId The company ID
+     * @return array
+     */
+    public function getHierarchyCountStatistics(string $type, $companyId): array
+    {
+        // Total count of the hierarchy type
+        $totalCount = $this->model
+            ->where('company_id', $companyId)
+            ->where('type', $type)
+            ->count();
+        
+        // Count of hierarchy items used in user records
+        $usedCount = $this->model
+            ->where('company_id', $companyId)
+            ->where('type', $type)
+            ->whereHas('directUserChildren')
+            ->count();
+        
+        // Count of hierarchy items not used in user records
+        $unusedCount = $totalCount - $usedCount;
+        
+        return [
+            'total_count' => $totalCount,
+            'used_count' => $usedCount,
+            'unused_count' => $unusedCount
+        ];
     }
 }

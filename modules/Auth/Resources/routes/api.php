@@ -20,7 +20,8 @@ Route::group(['middleware' => ['throttle:35,1',\Stancl\Tenancy\Middleware\Initia
 });
 
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:api']
+], function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 

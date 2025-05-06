@@ -17,21 +17,17 @@ use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyOfficialDocument
 use Modules\Company\CompanyCore\DTO\CompanyProfile\GeoCodingDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Events\CompanyLegalDataCreated;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
-use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
-use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
-use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
-use Modules\Country\Models\City;
 use Modules\Country\Repositories\CityRepository;
 use Modules\Country\Repositories\CountryRepository;
 use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
-use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 class CompanyProfileService
@@ -310,7 +306,9 @@ class CompanyProfileService
 
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
-        return $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+        $companyData =  $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+        event(new CompanyLegalDataCreated($companyData));
+        return $companyData;
     }
 
     public function getCompanyLegalData(UuidInterface $id): CompanyLegalData
@@ -332,5 +330,6 @@ class CompanyProfileService
     {
         return $this->companyOfficialDocumentRepository->createCompanyOfficialDocument($companyOfficialDocumentDTO->toArray(), $companyOfficialDocumentDTO->getFiles());
     }
+
 
 }

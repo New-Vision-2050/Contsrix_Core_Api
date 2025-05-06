@@ -14,6 +14,7 @@ class UpdateOfficialCompanyDataCommand
         private string        $email,
         private string        $phone,
         private string        $branchName,
+        private string        $companyTypeId
     )
     {
     }
@@ -48,7 +49,8 @@ class UpdateOfficialCompanyDataCommand
         return [
             'name' => ["en" => $this->nameEn],
             'email' => $this->email,
-            'phone' => $this->phone
+            'phone' => $this->phone,
+            'company_type_id' => $this->companyTypeId,
 
         ];
     }

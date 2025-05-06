@@ -74,6 +74,11 @@ class ManagementHierarchyDetail extends Model
         return $this->belongsTo(ManagementHierarchy::class , "management_hierarchy_id");
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class ,"deputy_manager_id","id");
+    }
+
 
     public function getRelationshipToPrimaryModel(): string
     {

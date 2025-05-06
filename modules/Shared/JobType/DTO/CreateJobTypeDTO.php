@@ -10,15 +10,16 @@ class CreateJobTypeDTO
 {
     public function __construct(
         public string $name,
-        public string $company_id
+        public int $status
     ) {
     }
 
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
-            'company_id' => $this->company_id
+            'name' => ["ar"=>$this->name,"en"=>$this->name],
+            'company_id' => tenant("id"),
+            'status' => $this->status
         ];
     }
 }

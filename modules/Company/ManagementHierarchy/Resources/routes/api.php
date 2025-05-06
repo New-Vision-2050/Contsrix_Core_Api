@@ -2,11 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyController;
+use Modules\Company\ManagementHierarchy\Controllers\WidgetsController;
 
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [ManagementHierarchyController::class, 'index']);
+    Route::get('/widgets', [WidgetsController::class, 'getAllWidgets']);
+
     Route::get('/list', [ManagementHierarchyController::class, 'listWithoutPagination']);
+    Route::get('/tree', [ManagementHierarchyController::class, 'presentTree']);
+    Route::get('/tree-direct-children', [ManagementHierarchyController::class, 'directChildrenTree']);
     Route::get('/user', [ManagementHierarchyController::class, 'hierarchies']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
@@ -17,4 +22,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/{id}', [ManagementHierarchyController::class, 'show']);
     Route::put('/{id}', [ManagementHierarchyController::class, 'update']);
     Route::delete('/{id}', [ManagementHierarchyController::class, 'delete']);
+
+    // Widgets API - single endpoint for all widgets
 });

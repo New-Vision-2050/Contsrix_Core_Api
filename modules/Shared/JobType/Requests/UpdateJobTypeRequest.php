@@ -15,7 +15,7 @@ class UpdateJobTypeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'company_id' => 'required|string',
+            'status' => 'required|in:0,1',
         ];
     }
 
@@ -24,7 +24,7 @@ class UpdateJobTypeRequest extends FormRequest
         return new UpdateJobTypeCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
-            company_id: $this->get('company_id')
+            status: (int)$this->get("status")
         );
     }
 }

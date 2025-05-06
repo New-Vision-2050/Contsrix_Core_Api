@@ -4,10 +4,18 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\CompanyLegalData;
+use Modules\Company\CompanyCore\Events\CompanyLegalDataCreated;
+use Modules\Company\CompanyCore\Events\CompanyLegalDataUpdated;
+use Modules\Company\CompanyCore\Events\CompanyLegalDataDeleted;
+use Modules\Company\CompanyCore\Listeners\CreateOfficialDocumentFromLegalData;
+use Modules\Company\CompanyCore\Listeners\UpdateOfficialDocumentFromLegalData;
+use Modules\Company\CompanyCore\Listeners\DeleteOfficialDocumentFromLegalData;
 
 class CompanyServiceProvider extends ModuleServiceProvider
 {
@@ -23,6 +31,7 @@ class CompanyServiceProvider extends ModuleServiceProvider
         $this->registerMigrations();
         $this->registerCommands();
         $this->registerSchedules();
+        $this->registerEventListeners();
     }
 
     public function register(): void
@@ -51,5 +60,28 @@ class CompanyServiceProvider extends ModuleServiceProvider
                 \Modules\Company\CompanyCore\Console\CheckCompanyActivityCommand::class,
             ]);
         }
+    }
+    
+    /**
+     * Register event listeners.
+     *
+     * @return void
+     */
+    protected function registerEventListeners(): void
+    {
+        Event::listen(
+            CompanyLegalDataCreated::class,
+            CreateOfficialDocumentFromLegalData::class
+        );
+        
+        Event::listen(
+            CompanyLegalDataUpdated::class,
+            UpdateOfficialDocumentFromLegalData::class
+        );
+        
+        Event::listen(
+            CompanyLegalDataDeleted::class,
+            DeleteOfficialDocumentFromLegalData::class
+        );
     }
 }

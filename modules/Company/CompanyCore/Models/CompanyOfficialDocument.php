@@ -45,8 +45,8 @@ class CompanyOfficialDocument extends Model implements HasMedia
         'start_date',
         'end_date',
         'notification_date',
-        "management_hierarchy_id"
-
+        "management_hierarchy_id",
+        "company_legal_data_id"
     ];
 
     protected $casts = [
