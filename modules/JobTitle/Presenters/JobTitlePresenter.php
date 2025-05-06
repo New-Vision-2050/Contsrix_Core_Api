@@ -27,6 +27,7 @@ class JobTitlePresenter extends AbstractPresenter
             'description' => $this->jobTitle->description,
             "status"=>$this->jobTitle->status,
             "job_type"=>$this->jobTitle->jobType?(new JobTypePresenter($this->jobTitle->jobType))->getData():null,
+            "user_count"=>$this->jobTitle->userProfissional()->count(),
         ];
     }
 }
