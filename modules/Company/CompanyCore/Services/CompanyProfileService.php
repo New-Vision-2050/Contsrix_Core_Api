@@ -347,7 +347,7 @@ class CompanyProfileService
             endDate: $companyLegalDataDTO->getEndDate(),
             notificationDate: Carbon::parse($companyLegalDataDTO->getEndDate())->subDays(7)->toDateString(),
             documentTypeId: $companyLegalDataDTO->getRegistrationTypeId(),
-            files: [$companyLegalDataDTO->getFile()],
+            files: $companyLegalDataDTO->getFile(),
         );
 
         $officialDocument = $this->createCompanyOfficialDocument($companyOfficialDocumentDTO);
