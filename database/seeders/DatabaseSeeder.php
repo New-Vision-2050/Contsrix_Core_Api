@@ -8,6 +8,7 @@ use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesTableSeeder;
 use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
+use Modules\Program\Database\Seeders\ProgramDatabaseSeeder;
 use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
@@ -82,5 +83,7 @@ class DatabaseSeeder extends Seeder
         $this->call(NatureWorkSeederTableSeeder::class);
         $this->call(RightTerminateSeederTableSeeder::class);
         $this->call(TypeWorkingHourSeederTableSeeder::class);
+
+        $this->call(ProgramDatabaseSeeder::class);
     }
 }
