@@ -11,6 +11,7 @@ use Modules\JobTitle\Database\factories\JobTitleFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\Shared\JobType\Models\JobType;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class JobTitle extends Model
@@ -50,5 +51,10 @@ class JobTitle extends Model
     public function jobType()
     {
         return $this->belongsTo(JobType::class);
+    }
+
+    public function userProfissional()
+    {
+        return $this->hasMany(UserProfessionalData::class);
     }
 }
