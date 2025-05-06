@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\JobTitle\Database\factories\JobTitleFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
+use Modules\Shared\JobType\Models\JobType;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class JobTitle extends Model
 {
@@ -17,6 +19,7 @@ class JobTitle extends Model
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
+    use BelongsToTenant;
 
     //use SoftDeletes;
 
@@ -27,7 +30,11 @@ class JobTitle extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'type'
+        'type',
+        "name",
+        "job_type_id",
+        "description",
+        "status"
     ];
     public array $translatable = ['name'];
     protected $casts = [
@@ -38,5 +45,10 @@ class JobTitle extends Model
     protected static function newFactory(): JobTitleFactory
     {
         return JobTitleFactory::new();
+    }
+
+    public function jobType()
+    {
+        return $this->belongsTo(JobType::class);
     }
 }
