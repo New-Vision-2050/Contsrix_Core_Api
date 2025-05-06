@@ -6,11 +6,10 @@ namespace Modules\Shared\JobType\Commands;
 
 use Ramsey\Uuid\UuidInterface;
 
-class UpdateJobTypeCommand
+class ChangeJobTypeStatusCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
         private int $status
     ) {
     }
@@ -18,11 +17,6 @@ class UpdateJobTypeCommand
     public function getId(): UuidInterface
     {
         return $this->id;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
     }
 
     public function getStatus(): int
@@ -33,8 +27,6 @@ class UpdateJobTypeCommand
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
-            'company_id' => tenant("id"),
             'status' => $this->status
         ];
     }
