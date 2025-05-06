@@ -21,6 +21,20 @@ class SubEntityPresenter extends AbstractPresenter
         return [
             'id' => $this->subEntity->id,
             'name' => $this->subEntity->name,
+            'icon' => $this->subEntity->icon,
+            'super_entity' => $this->subEntity->super_entity,
+            'is_active' => $this->subEntity->is_active,
+            'is_registrable' => $this->subEntity->is_registrable,
+            'main_program' => $this->subEntity->mainProgram->name ?? null,
+            'main_program_id' => $this->subEntity->main_program_id,
+            'default_attributes' => $this->subEntity->default_attributes
+                ? json_decode($this->subEntity->default_attributes, true)
+                : [],
+            'optional_attributes' => $this->subEntity->optional_attributes
+                ? json_decode($this->subEntity->optional_attributes, true)
+                : null,
+            'created_at' => $this->subEntity->created_at?->toIso8601String(),
+            'updated_at' => $this->subEntity->updated_at?->toIso8601String(),
         ];
     }
 }
