@@ -14,7 +14,7 @@ class CreateJobTypeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'status' => 'sometimes|boolean',
+            'status' => 'required|in:1,0',
         ];
     }
 
@@ -22,7 +22,7 @@ class CreateJobTypeRequest extends FormRequest
     {
         return new CreateJobTypeDTO(
             name: $this->get('name'),
-            status: $this->get('status', true)
+            status: (int)$this->get('status')
         );
     }
 }

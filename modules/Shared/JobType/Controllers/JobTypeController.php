@@ -7,10 +7,12 @@ namespace Modules\Shared\JobType\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\Shared\JobType\Handlers\ChangeJobTypeStatusHandler;
 use Modules\Shared\JobType\Handlers\DeleteJobTypeHandler;
 use Modules\Shared\JobType\Handlers\UpdateJobTypeHandler;
 use Modules\Shared\JobType\Presenters\JobTypePresenter;
 use Modules\Shared\JobType\Presenters\JobTypeSimplePresenter;
+use Modules\Shared\JobType\Requests\ChangeJobTypeStatusRequest;
 use Modules\Shared\JobType\Requests\CreateJobTypeRequest;
 use Modules\Shared\JobType\Requests\DeleteJobTypeRequest;
 use Modules\Shared\JobType\Requests\GetJobTypeListRequest;
@@ -26,6 +28,7 @@ class JobTypeController extends Controller
         private JobTypeCRUDService $jobTypeService,
         private UpdateJobTypeHandler $updateJobTypeHandler,
         private DeleteJobTypeHandler $deleteJobTypeHandler,
+        private ChangeJobTypeStatusHandler $changeJobTypeStatusHandler,
     ) {
     }
 
@@ -55,7 +58,7 @@ class JobTypeController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function store(CreateJobTypeRequest $request): JsonResponse
+    public function store(CreateJobTypeRequest $request)
     {
         $createdItem = $this->jobTypeService->create($request->createCreateJobTypeDTO());
 
@@ -81,5 +84,17 @@ class JobTypeController extends Controller
         $this->deleteJobTypeHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+    
+    public function changeStatus(ChangeJobTypeStatusRequest $request): JsonResponse
+    {
+        $command = $request->createChangeJobTypeStatusCommand();
+        $this->changeJobTypeStatusHandler->handle($command);
+
+        $item = $this->jobTypeService->get($command->getId());
+
+        $presenter = new JobTypePresenter($item);
+
+        return Json::item($presenter->getData());
     }
 }
