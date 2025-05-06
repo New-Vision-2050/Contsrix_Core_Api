@@ -87,9 +87,10 @@ class CompanyLegalData extends Model implements HasMedia
     {
         return "company";
     }
+
     public function officialDocument()
-    {
-        return $this->hasOne(CompanyOfficialDocument::class);
-    }
+{
+    return $this->hasOne(CompanyOfficialDocument::class, 'company_legal_data_id', 'id');
+}
 
 }

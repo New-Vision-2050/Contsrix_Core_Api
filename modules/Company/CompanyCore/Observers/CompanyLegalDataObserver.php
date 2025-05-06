@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Observers;
 
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Ramsey\Uuid\Uuid;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -23,6 +24,7 @@ class CompanyLegalDataObserver
 
         if ($officialDocument) {
             $officialDocument->update([
+                'name' => $legalData->registrationType->name,
                 'document_type_id' => $legalData->registration_type_id,
                 'document_number' => $legalData->registration_number,
                 'start_date' => $legalData->start_date,
@@ -47,13 +49,13 @@ class CompanyLegalDataObserver
     protected function createOfficialDocument(CompanyLegalData $legalData): void
     {
         $officialDocument = CompanyOfficialDocument::create([
-            'name' => 'Auto-generated Document',
+            'name' => $legalData->registrationType->name,
+            'description' => '-',
             'document_type_id' => $legalData->registration_type_id,
-            'description' => 'Auto created from Legal Data',
             'document_number' => $legalData->registration_number,
             'start_date' => $legalData->start_date,
             'end_date' => $legalData->end_date,
-            'notification_date' => now()->addDays(7),
+            'notification_date' => \Carbon\Carbon::parse($legalData->end_date)->subDays(7),
             'company_legal_data_id' => $legalData->id,
             'company_id' => $legalData->company_id,
             'management_hierarchy_id' => $legalData->management_hierarchy_id,
@@ -64,28 +66,26 @@ class CompanyLegalDataObserver
 
     protected function syncMediaToDocument(CompanyLegalData $legalData, CompanyOfficialDocument $officialDocument): void
     {
-        $originalMedia = Media::where('model_id', Uuid::fromString($legalData->id))
-            ->where('model_type', CompanyLegalData::class)
-            ->first();
+        // Clear existing media on the official document
+        $officialDocument->clearMediaCollection('official_document');
 
-        if ($originalMedia) {
-            Media::create([
-                'model_id' => $officialDocument->id,
-                'model_type' => CompanyOfficialDocument::class,
-                'uuid' => Str::uuid(),
-                'collection_name' => 'official_document',
-                'name' => $originalMedia->name,
-                'file_name' => $originalMedia->file_name,
-                'mime_type' => $originalMedia->mime_type,
-                'disk' => $originalMedia->disk,
-                'conversions_disk' => $originalMedia->conversions_disk,
-                'size' => $originalMedia->size,
-                'manipulations' => $originalMedia->manipulations,
-                'custom_properties' => $originalMedia->custom_properties,
-                'responsive_images' => $originalMedia->responsive_images,
-                'order_column' => $originalMedia->order_column,
-                'generated_conversions' => $originalMedia->generated_conversions,
-            ]);
+        // Get all media for the legal data (in case of multiple)
+        $mediaItems = Media::where('model_id', Uuid::fromString($legalData->id))
+            ->where('model_type', CompanyLegalData::class)
+            ->get();
+
+        foreach ($mediaItems as $mediaItem) {
+            // Get the full S3 URL or relative path
+            $s3Path = $mediaItem->getPath(); // local fallback
+            $s3Stream = Storage::disk($mediaItem->disk)->readStream($mediaItem->getPath());
+
+            if ($s3Stream) {
+                $officialDocument
+                    ->addMediaFromStream($s3Stream)
+                    ->usingFileName($mediaItem->file_name)
+                    ->withCustomProperties($mediaItem->custom_properties)
+                    ->toMediaCollection('official_document', $mediaItem->disk);
+            }
         }
     }
 }
