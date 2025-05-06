@@ -23,7 +23,7 @@ class JobTypePresenter extends AbstractPresenter
             'id' => $this->jobType->id,
             'name' => $this->jobType->name,
             'status' => $this->jobType->status,
-//            "job_titles"=>JobTitlePresenter::collection($this->jobType->jobTitles),
+//            "job_titlesp"=>JobTitlePresenter::collection($this->jobType->jobTitles),
             'job_titles' => $this->jobType->jobTitles,
             "user_count"=>$this->jobType->userProfissional()->count(),
         ];

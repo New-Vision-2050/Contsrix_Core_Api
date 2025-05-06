@@ -159,4 +159,6 @@ class ManagementHierarchyController extends Controller
     {
         return Json::item(ManagementHierarchyUserTreePresenter::collection($this->managementHierarchyService->getTree()));
     }
+
+
 }
