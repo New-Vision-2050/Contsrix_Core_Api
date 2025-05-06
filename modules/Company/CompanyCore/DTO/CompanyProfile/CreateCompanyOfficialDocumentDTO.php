@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 
 class CreateCompanyOfficialDocumentDTO
@@ -18,7 +19,7 @@ class CreateCompanyOfficialDocumentDTO
         private string        $endDate,
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
-        private               $files,
+        public      FileUploadService         $files,
     )
     {
     }
