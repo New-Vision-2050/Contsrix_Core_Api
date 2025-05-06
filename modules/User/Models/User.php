@@ -23,6 +23,8 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Modules\SubEntity\Models\SubEntity;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -79,7 +81,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
         ];
     }
 
-    /**
+     /**
      * Get attributes available for sub-entities excluding sensitive fields (like password).
      *
      * @return array
@@ -98,6 +100,17 @@ class User extends Authenticatable implements JWTSubject, Auditable
             "is_owner",
             "management_hierarchy_id"
        ];
+    }
+
+
+    /**
+     * List Sub entities the use belongs to
+     * @return MorphToMany<SubEntity, User>
+     * @todo create an interface & trait
+     */
+    public function subEntities(): MorphToMany
+    {
+        return $this->morphToMany(SubEntity::class, 'super_entity');
     }
 
     protected static function newFactory(): UserFactory
