@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
-use Illuminate\Http\UploadedFile; // Add this import
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-// Remove: use Modules\Shared\Media\Services\FileUploadService; // No longer needed here
 use Ramsey\Uuid\UuidInterface;
 
 class CreateCompanyOfficialDocumentDTO
@@ -20,9 +18,9 @@ class CreateCompanyOfficialDocumentDTO
         private string        $endDate,
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
-        /** @var UploadedFile|UploadedFile[]|null */ // PHPDoc for clarity if mixed
-        private $files, // Changed: Expect UploadedFile or array of UploadedFile or null
-    ) {
+        private               $files
+    )
+    {
     }
 
     public function getId()
@@ -30,12 +28,6 @@ class CreateCompanyOfficialDocumentDTO
         return $this->managementHierarchy->company_id;
     }
 
-    /**
-     * Returns the file(s) to be uploaded.
-     * Could be a single UploadedFile or an array of UploadedFile objects.
-     *
-     * @return UploadedFile|UploadedFile[]|null
-     */
     public function getFiles()
     {
         return $this->files;
@@ -53,7 +45,8 @@ class CreateCompanyOfficialDocumentDTO
             "start_date" => $this->startDate,
             "end_date" => $this->endDate,
             "notification_date" => $this->notificationDate,
-            "document_type_id" => $this->documentTypeId,
-        ];
+            "document_type_id" => $this->documentTypeId
+
+                  ];
     }
 }

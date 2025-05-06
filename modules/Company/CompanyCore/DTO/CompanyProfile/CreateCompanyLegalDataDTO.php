@@ -31,38 +31,6 @@ class CreateCompanyLegalDataDTO
     }
 
 
-    public function getFiles()
-    {
-        return $this->file;
-    }
-
-
-    public function getManagementHierarchy(): ManagementHierarchy
-    {
-        return $this->managementHierarchy;
-    }
-
-    public function getRegistrationTypeId(): UuidInterface
-    {
-        return $this->registrationTypeId;
-    }
-
-    public function getRegistrationNumber(): string
-    {
-        return $this->registrationNumber;
-    }
-
-    public function getStartDate(): string
-    {
-        return $this->startDate;
-    }
-
-    public function getEndDate(): string
-    {
-        return $this->endDate;
-    }
-
-
     public function toArray(): array
     {
         return [

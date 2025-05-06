@@ -68,10 +68,7 @@ class CompanyLegalDataRepository extends BaseRepository
         return true;
     }
 
-    public function updateLegalData(UuidInterface $id ,array $data)
-    {
-        return $this->update($id, $data);
-    }
+
 
 
 }
