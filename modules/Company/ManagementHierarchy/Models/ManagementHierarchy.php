@@ -155,10 +155,6 @@ class ManagementHierarchy extends Model
     {
         $directUsers = $this->user ? collect([$this->user]) : collect([]);
 
-        if ($this->users) {
-            $directUsers = $directUsers->merge($this->users);
-        }
-
         $childrenUsers = $this->directUserChildren ?? collect([]);
 
         return $directUsers->merge($childrenUsers)->unique('id');
