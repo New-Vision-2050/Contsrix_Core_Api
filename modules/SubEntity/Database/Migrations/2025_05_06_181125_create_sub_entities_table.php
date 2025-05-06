@@ -18,7 +18,7 @@ return new class extends Migration {
 
             $table->string('name');
 
-            $table->string('icon', 50);
+            $table->unsignedTinyInteger('icon');
 
             // Program relation (required, UUID)
             $table->uuid('main_program_id');
@@ -35,6 +35,8 @@ return new class extends Migration {
 
             // Unique constraint on name within super entity scope
             $table->unique(['name', 'super_entity'], 'unique_name_per_super_entity');
+
+            $table->uuid("company_id")->index();
         });
     }
 
