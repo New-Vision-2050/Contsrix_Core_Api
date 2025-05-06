@@ -7,9 +7,11 @@ namespace Modules\JobTitle\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\JobTitle\Handlers\ChangeJobTitleStatusHandler;
 use Modules\JobTitle\Handlers\DeleteJobTitleHandler;
 use Modules\JobTitle\Handlers\UpdateJobTitleHandler;
 use Modules\JobTitle\Presenters\JobTitlePresenter;
+use Modules\JobTitle\Requests\ChangeJobTitleStatusRequest;
 use Modules\JobTitle\Requests\CreateJobTitleRequest;
 use Modules\JobTitle\Requests\DeleteJobTitleRequest;
 use Modules\JobTitle\Requests\GetJobTitleListRequest;
@@ -25,6 +27,7 @@ class JobTitleController extends Controller
         private JobTitleCRUDService $jobTitleService,
         private UpdateJobTitleHandler $updateJobTitleHandler,
         private DeleteJobTitleHandler $deleteJobTitleHandler,
+        private ChangeJobTitleStatusHandler $changeJobTitleStatusHandler,
     ) {
     }
 
@@ -73,5 +76,17 @@ class JobTitleController extends Controller
         $this->deleteJobTitleHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+    
+    public function changeStatus(ChangeJobTitleStatusRequest $request): JsonResponse
+    {
+        $command = $request->createChangeJobTitleStatusCommand();
+        $this->changeJobTitleStatusHandler->handle($command);
+
+        $item = $this->jobTitleService->get($command->getId());
+
+        $presenter = new JobTitlePresenter($item);
+
+        return Json::item($presenter->getData());
     }
 }
