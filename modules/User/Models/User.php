@@ -102,17 +102,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
        ];
     }
 
-
-    /**
-     * List Sub entities the use belongs to
-     * @return MorphToMany<SubEntity, User>
-     * @todo create an interface & trait
-     */
-    public function subEntities(): MorphToMany
-    {
-        return $this->morphToMany(SubEntity::class, 'super_entity');
-    }
-
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
