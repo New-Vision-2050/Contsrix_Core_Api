@@ -8,11 +8,11 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Modules\AdminRequest\Presenters\AdminRequestPresenter;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
+use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyLegalDataHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyOfficialDocumentHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\DeleteCompanyOfficialDocumentMediaHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHandler;
@@ -45,7 +45,8 @@ class CompanyProfileController extends Controller
         private UpdateCompanyOfficialDocumentHandler      $updateCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentHandler      $deleteCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler,
-        private UpdateCompanySetAddressHandler            $updateCompanySetAddressHandler
+        private UpdateCompanySetAddressHandler            $updateCompanySetAddressHandler,
+        private DeleteCompanyLegalDataHandler             $deleteCompanyLegalDataHandler
     )
     {
     }
@@ -173,4 +174,10 @@ class CompanyProfileController extends Controller
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
+    public function deleteLegalData(Request $request)
+    {
+        $this->deleteCompanyLegalDataHandler->handle(Uuid::fromString($request->route("id")));
+        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        return Json::item((new CompanyPresenter($company))->getData());
+    }
 }
