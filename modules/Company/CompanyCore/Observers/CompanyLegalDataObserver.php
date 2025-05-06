@@ -66,6 +66,7 @@ class CompanyLegalDataObserver
 
     protected function syncMediaToDocument(CompanyLegalData $legalData, CompanyOfficialDocument $officialDocument): void
     {
+        $legalData = $legalData->refresh();
         // Clear existing media on the official document
         $officialDocument->clearMediaCollection('official_document');
 
@@ -74,18 +75,13 @@ class CompanyLegalDataObserver
             ->where('model_type', CompanyLegalData::class)
             ->get();
 
+        /** @var Media $mediaItem $mediaItem */
         foreach ($mediaItems as $mediaItem) {
             // Get the full S3 URL or relative path
-            $s3Path = $mediaItem->getPath(); // local fallback
-            $s3Stream = Storage::disk($mediaItem->disk)->readStream($mediaItem->getPath());
-
-            if ($s3Stream) {
-                $officialDocument
-                    ->addMediaFromStream($s3Stream)
-                    ->usingFileName($mediaItem->file_name)
-                    ->withCustomProperties($mediaItem->custom_properties)
-                    ->toMediaCollection('official_document', $mediaItem->disk);
-            }
+            $item = $mediaItem->replicate(['uuid']); // local fallback
+            $item->model_id = $officialDocument->id;
+            $item->model_type= $officialDocument->getMediaModel();
+            $item->save();
         }
     }
 }
