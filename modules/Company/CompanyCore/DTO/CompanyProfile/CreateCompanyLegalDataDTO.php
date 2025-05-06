@@ -31,6 +31,12 @@ class CreateCompanyLegalDataDTO
     }
 
 
+    public function getFiles()
+    {
+        return $this->file;
+    }
+
+
     public function getManagementHierarchy(): ManagementHierarchy
     {
         return $this->managementHierarchy;

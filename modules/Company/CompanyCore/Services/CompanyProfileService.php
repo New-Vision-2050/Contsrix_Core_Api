@@ -338,7 +338,7 @@ class CompanyProfileService
 
     public function createOfficialDocumentUsingLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO, $id)
     {
-        $singleFile = $companyLegalDataDTO->getFile();
+        $singleFile = $companyLegalDataDTO->getFiles();
         $filesToPass = []; // Default to an empty array
 
         if ($singleFile instanceof UploadedFile) {
