@@ -12,7 +12,7 @@ use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
-
+use Illuminate\Http\UploadedFile;
 /**
  * @property Company $model
  * @method Company findOneOrFail($id)
@@ -25,15 +25,17 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function createCompanyOfficialDocument(array $data, $files): CompanyOfficialDocument
+    public function createCompanyOfficialDocument(array $data,  ?array $files): CompanyOfficialDocument
     {
         try {
             DB::beginTransaction();
             $companyOfficialDocument = $this->create($data);
-            $files = is_array($files) ? $files : [$files];
-
-            foreach ($files as $file) {
-                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+            if (!empty($files)) {
+                foreach ($files as $file) {
+                    if ($file instanceof UploadedFile) {
+                        $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+                    }
+                }
             }
             $this->activityLogRepository->createActivityLog(["action" => ["ar" => "إنشاء", "en" => "create"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
             DB::commit();

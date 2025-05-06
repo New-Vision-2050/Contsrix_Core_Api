@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
+use Illuminate\Http\UploadedFile; // Add this import
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\Shared\Media\Services\FileUploadService;
+// Remove: use Modules\Shared\Media\Services\FileUploadService; // No longer needed here
 use Ramsey\Uuid\UuidInterface;
-use Illuminate\Http\UploadedFile;
+
 class CreateCompanyOfficialDocumentDTO
 {
     public function __construct(
@@ -19,9 +20,9 @@ class CreateCompanyOfficialDocumentDTO
         private string        $endDate,
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
-        public ?UploadedFile $files
-    )
-    {
+        /** @var UploadedFile|UploadedFile[]|null */ // PHPDoc for clarity if mixed
+        private $files, // Changed: Expect UploadedFile or array of UploadedFile or null
+    ) {
     }
 
     public function getId()
@@ -29,9 +30,15 @@ class CreateCompanyOfficialDocumentDTO
         return $this->managementHierarchy->company_id;
     }
 
-    public function getFiles(): array
+    /**
+     * Returns the file(s) to be uploaded.
+     * Could be a single UploadedFile or an array of UploadedFile objects.
+     *
+     * @return UploadedFile|UploadedFile[]|null
+     */
+    public function getFiles()
     {
-        return is_array($this->files) ? $this->files : [$this->files];
+        return $this->files;
     }
 
 
@@ -47,7 +54,6 @@ class CreateCompanyOfficialDocumentDTO
             "end_date" => $this->endDate,
             "notification_date" => $this->notificationDate,
             "document_type_id" => $this->documentTypeId,
-
-                  ];
+        ];
     }
 }

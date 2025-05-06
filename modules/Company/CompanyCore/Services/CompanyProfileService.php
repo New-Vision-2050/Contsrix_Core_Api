@@ -36,7 +36,7 @@ use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
-
+use Illuminate\Http\UploadedFile;
 class CompanyProfileService
 {
     public function __construct(
@@ -336,8 +336,18 @@ class CompanyProfileService
         return $this->companyOfficialDocumentRepository->createCompanyOfficialDocument($companyOfficialDocumentDTO->toArray(), $companyOfficialDocumentDTO->getFiles());
     }
 
-    public function createOfficialDocumentUsingLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO,$id )
+    public function createOfficialDocumentUsingLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO, $id)
     {
+        $singleFile = $companyLegalDataDTO->getFile();
+        $filesToPass = []; // Default to an empty array
+
+        if ($singleFile instanceof UploadedFile) {
+            $filesToPass = [$singleFile];
+        } elseif (is_array($singleFile)) {
+            $filesToPass = $singleFile;
+        }
+
+
         $companyOfficialDocumentDTO = new CreateCompanyOfficialDocumentDTO(
             managementHierarchy: $companyLegalDataDTO->getManagementHierarchy(),
             name: "Legal Document",
@@ -347,16 +357,17 @@ class CompanyProfileService
             endDate: $companyLegalDataDTO->getEndDate(),
             notificationDate: Carbon::parse($companyLegalDataDTO->getEndDate())->subDays(7)->toDateString(),
             documentTypeId: $companyLegalDataDTO->getRegistrationTypeId(),
-            files: $companyLegalDataDTO->getFile(),
+            files: $filesToPass, // Pass the array of files (or an empty array if no file)
         );
 
         $officialDocument = $this->createCompanyOfficialDocument($companyOfficialDocumentDTO);
 
-
-        $this->companyLegalDataRepository->updateLegalData(
-        Uuid::fromString($id),
-            ['official_document_id' => Uuid::fromString( $officialDocument->id)]
-        );
+        if ($officialDocument) { // Ensure document was created
+            $this->companyLegalDataRepository->updateLegalData(
+                \Ramsey\Uuid\Uuid::fromString($id), // Make sure to use Uuid::fromString
+                ['official_document_id' => \Ramsey\Uuid\Uuid::fromString($officialDocument->id)]
+            );
+        }
     }
 
 }
