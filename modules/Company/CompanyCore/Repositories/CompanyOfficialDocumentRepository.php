@@ -30,6 +30,8 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $companyOfficialDocument = $this->create($data);
+            $files = is_array($files) ? $files : [$files];
+
             foreach ($files as $file) {
                 $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
             }

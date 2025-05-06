@@ -29,9 +29,9 @@ class CreateCompanyOfficialDocumentDTO
         return $this->managementHierarchy->company_id;
     }
 
-    public function getFiles()
+    public function getFiles(): array
     {
-        return $this->files;
+        return is_array($this->files) ? $this->files : [$this->files];
     }
 
 
