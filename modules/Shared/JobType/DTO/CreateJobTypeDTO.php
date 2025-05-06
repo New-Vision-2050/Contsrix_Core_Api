@@ -10,7 +10,8 @@ class CreateJobTypeDTO
 {
     public function __construct(
         public string $name,
-        public string $company_id
+//        public string $company_id,
+        public bool $status = true
     ) {
     }
 
@@ -18,7 +19,8 @@ class CreateJobTypeDTO
     {
         return [
             'name' => $this->name,
-            'company_id' => $this->company_id
+            'company_id' => tenant("id"),
+            'status' => $this->status
         ];
     }
 }
