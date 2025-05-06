@@ -7,7 +7,7 @@ namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
-
+use Illuminate\Http\UploadedFile;
 class CreateCompanyOfficialDocumentDTO
 {
     public function __construct(
@@ -19,7 +19,7 @@ class CreateCompanyOfficialDocumentDTO
         private string        $endDate,
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
-        public      FileUploadService         $files,
+        public ?UploadedFile $files
     )
     {
     }
