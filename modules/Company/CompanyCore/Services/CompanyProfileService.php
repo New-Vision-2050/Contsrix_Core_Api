@@ -358,26 +358,5 @@ class CompanyProfileService
             ['official_document_id' => Uuid::fromString( $officialDocument->id)]
         );
     }
-    // public function updateOfficialDocumentUsingLegalData(UpdateCompanyLegalDataCommand $dto, $officialDocumentId): void
-    // {
-    //     if (!$officialDocumentId) {
-    //         return;
-    //     }
-
-    //     $updateCommand = new UpdateCompanyOfficialDocumentCommand(
-    //         id: $officialDocumentId,
-    //         name: "Legal Document",
-    //         description: "Auto-updated from legal data",
-    //         documentNumber: $dto->getRegistrationNumber(),
-    //         startDate: $dto->getStartDate(),
-    //         endDate: $dto->getEndDate(),
-    //         notificationDate: Carbon::parse($dto->getEndDate())->subDays(7)->toDateString(),
-    //         documentTypeId: $dto->getRegistrationTypeId(),
-    //         files: [$dto->getFile()],
-    //         filesDeleteIds: []
-    //     );
-
-    //     $this->updateCompanyOfficialDocumentHandler->handle($updateCommand);
-    // }
 
 }
