@@ -78,9 +78,9 @@ class CompanyLegalDataObserver
         /** @var Media $mediaItem $mediaItem */
         foreach ($mediaItems as $mediaItem) {
             // Get the full S3 URL or relative path
-            $item = $mediaItem->replicate(['uuid']); // local fallback
+            $item = $mediaItem->replicate(['id','uuid']); // local fallback
             $item->model_id = $officialDocument->id;
-            $item->model_type= $officialDocument->getMediaModel();
+            $item->model_type= CompanyOfficialDocument::class;
             $item->save();
         }
     }
