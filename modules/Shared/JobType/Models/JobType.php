@@ -7,9 +7,11 @@ namespace Modules\Shared\JobType\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\JobType\Database\factories\JobTypeFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class JobType extends Model
@@ -40,5 +42,15 @@ class JobType extends Model
     protected static function newFactory(): JobTypeFactory
     {
         return JobTypeFactory::new();
+    }
+
+    public function jobTitles()
+    {
+        return $this->hasMany(JobTitle::class, 'job_type_id');
+    }
+
+    public function userProfissional()
+    {
+        return $this->hasMany(UserProfessionalData::class);
     }
 }
