@@ -19,7 +19,7 @@ class CreateJobTitleDTO
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
+            'name' => ["ar"=>$this->name,"en"=>$this->name],
             'job_type_id' => $this->job_type_id,
             'description' => $this->description,
             'company_id' => tenant("id"),
