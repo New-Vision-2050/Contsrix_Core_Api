@@ -307,7 +307,7 @@ class CompanyProfileService
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
         $companyData =  $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
-        event(CompanyLegalDataCreated::class);
+        event(new CompanyLegalDataCreated($companyData));
         return $companyData;
     }
 
