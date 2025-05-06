@@ -17,7 +17,9 @@ class ProgramDatabaseSeeder extends Seeder
     {
         Model::unguard();
 
-        $programs = ['human resources', 'companies', 'settings', 'users'];
+        // $programs = ['human resources', 'companies', 'settings', 'users'];
+        $programs = ['users'];
+
 
         foreach ($programs as $programName) {
             Program::firstOrCreate(['name' => $programName]);
