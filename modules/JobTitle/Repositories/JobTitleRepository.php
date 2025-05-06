@@ -26,6 +26,11 @@ class JobTitleRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getAllJobTitles(): Collection
+    {
+        return $this->model->all();
+    }
+
     public function getJobTitle(UuidInterface $id): JobTitle
     {
         return $this->findOneByOrFail([

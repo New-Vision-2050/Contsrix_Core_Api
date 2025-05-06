@@ -11,11 +11,13 @@ use Modules\JobTitle\Handlers\ChangeJobTitleStatusHandler;
 use Modules\JobTitle\Handlers\DeleteJobTitleHandler;
 use Modules\JobTitle\Handlers\UpdateJobTitleHandler;
 use Modules\JobTitle\Presenters\JobTitlePresenter;
+use Modules\JobTitle\Presenters\JobTitleSimplePresenter;
 use Modules\JobTitle\Requests\ChangeJobTitleStatusRequest;
 use Modules\JobTitle\Requests\CreateJobTitleRequest;
 use Modules\JobTitle\Requests\DeleteJobTitleRequest;
 use Modules\JobTitle\Requests\GetJobTitleListRequest;
 use Modules\JobTitle\Requests\GetJobTitleRequest;
+use Modules\JobTitle\Requests\GetJobTitleSimpleListRequest;
 use Modules\JobTitle\Requests\UpdateJobTitleRequest;
 use Modules\JobTitle\Services\JobTitleCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -39,6 +41,13 @@ class JobTitleController extends Controller
         );
 
         return Json::items(JobTitlePresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function listSimple(GetJobTitleSimpleListRequest $request): JsonResponse
+    {
+        $list = $this->jobTitleService->listAll();
+
+        return Json::items(JobTitleSimplePresenter::collection($list));
     }
 
     public function show(GetJobTitleRequest $request): JsonResponse
