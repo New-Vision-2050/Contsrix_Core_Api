@@ -1,0 +1,20 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Modules\SubEntity\Controllers\SubEntityController;
+use Modules\SubEntity\Controllers\SuperEntityController;
+
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::get('/', [SubEntityController::class, 'index']);
+    Route::post('/', [SubEntityController::class, 'store']);
+    Route::get('/{id}', [SubEntityController::class, 'show']);
+    Route::put('/{id}', [SubEntityController::class, 'update']);
+    Route::delete('/{id}', [SubEntityController::class, 'delete']);
+
+    Route::get('/programs/sub_tables', [SubEntityController::class, 'getByProgram']);
+
+    // super entity attributes
+    Route::get('/super_entities/list', [SuperEntityController::class, 'index']);
+
+    Route::get('/super_entities/{superEntityName}/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
+});
