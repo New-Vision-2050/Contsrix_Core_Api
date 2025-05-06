@@ -21,6 +21,7 @@ class JobTypePresenter extends AbstractPresenter
         return [
             'id' => $this->jobType->id,
             'name' => $this->jobType->name,
+            'status' => $this->jobType->status,
         ];
     }
 }

@@ -11,7 +11,7 @@ class UpdateJobTypeCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
-        private string $company_id
+        private ?bool $status = null
     ) {
     }
 
@@ -25,11 +25,19 @@ class UpdateJobTypeCommand
         return $this->name;
     }
 
+    public function getStatus(): ?bool
+    {
+        return $this->status;
+    }
+
     public function toArray(): array
     {
         return array_filter([
             'name' => $this->name,
-            'company_id' => $this->company_id
-        ]);
+            'company_id' => tenant("id"),
+            'status' => $this->status
+        ], function ($value) {
+            return $value !== null;
+        });
     }
 }
