@@ -68,7 +68,7 @@ class CompanyLegalDataObserver
     {
         $legalData = $legalData->refresh();
         // Clear existing media on the official document
-        $officialDocument->clearMediaCollection('official_document');
+        //$officialDocument->clearMediaCollection('official_document');
 
         // Get all media for the legal data (in case of multiple)
         $mediaItems = Media::where('model_id', Uuid::fromString($legalData->id))
