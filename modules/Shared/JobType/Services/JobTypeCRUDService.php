@@ -30,6 +30,11 @@ class JobTypeCRUDService
         );
     }
 
+    public function listAll(): Collection
+    {
+        return $this->repository->getAllJobTypes();
+    }
+
     public function get(UuidInterface $id): JobType
     {
         return $this->repository->getJobType(

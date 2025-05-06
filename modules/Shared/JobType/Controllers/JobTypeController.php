@@ -10,10 +10,12 @@ use Illuminate\Http\JsonResponse;
 use Modules\Shared\JobType\Handlers\DeleteJobTypeHandler;
 use Modules\Shared\JobType\Handlers\UpdateJobTypeHandler;
 use Modules\Shared\JobType\Presenters\JobTypePresenter;
+use Modules\Shared\JobType\Presenters\JobTypeSimplePresenter;
 use Modules\Shared\JobType\Requests\CreateJobTypeRequest;
 use Modules\Shared\JobType\Requests\DeleteJobTypeRequest;
 use Modules\Shared\JobType\Requests\GetJobTypeListRequest;
 use Modules\Shared\JobType\Requests\GetJobTypeRequest;
+use Modules\Shared\JobType\Requests\GetJobTypeSimpleListRequest;
 use Modules\Shared\JobType\Requests\UpdateJobTypeRequest;
 use Modules\Shared\JobType\Services\JobTypeCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -35,6 +37,13 @@ class JobTypeController extends Controller
         );
 
         return Json::items(JobTypePresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function listSimple(GetJobTypeSimpleListRequest $request): JsonResponse
+    {
+        $list = $this->jobTypeService->listAll();
+
+        return Json::items(JobTypeSimplePresenter::collection($list));
     }
 
     public function show(GetJobTypeRequest $request): JsonResponse
