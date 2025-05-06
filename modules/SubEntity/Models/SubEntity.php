@@ -24,8 +24,6 @@ class SubEntity extends Model
         'name',
         'icon',
         'is_active',
-        'sub_entityable_type',
-        'sub_entityable_id',
         'main_program_id',
         'default_attributes',
         'optional_attributes',
