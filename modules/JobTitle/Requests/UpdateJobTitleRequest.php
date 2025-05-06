@@ -15,6 +15,8 @@ class UpdateJobTitleRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            'job_type_id' => 'required|exists:job_types,id',
+            'description' => 'required|string',
         ];
     }
 
@@ -23,6 +25,8 @@ class UpdateJobTitleRequest extends FormRequest
         return new UpdateJobTitleCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
+            job_type_id: uuid::fromString($this->get('job_type_id')),
+            description: $this->get('description'),
         );
     }
 }

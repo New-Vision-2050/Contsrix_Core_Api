@@ -24,8 +24,8 @@ mkdir -p $DEPLOY_DIR
 cd $DEPLOY_DIR
 
 # Find containers and images related to the existing deployment
-OLD_CONTAINERS=$(docker ps -a --filter "name=${DEPLOYMENT_ID}" --format "{{.ID}}" | tr '\n' ' ')
-OLD_IMAGES=$(docker images --filter "reference=*${DEPLOYMENT_ID}*" --format "{{.ID}}" | tr '\n' ' ')
+OLD_CONTAINERS=$(docker ps -a --filter "name=${DEPLOYMENT_ID}-" --format "{{.ID}}" | tr '\n' ' ')
+OLD_IMAGES=$(docker images --filter "reference=*${DEPLOYMENT_ID}-*" --format "{{.ID}}" | tr '\n' ' ')
 echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
@@ -55,7 +55,7 @@ fi
 APP_NAME="Constrix"
 APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
 
-if [[ "$DEPLOYMENT_ID" == *"pr"* ]]; then
+if [[ "$DEPLOYMENT_ID" == *"pr"* && "$APP_ENV" != "production" ]]; then
   DB_NAME="$DB_NAME-pr"
 else
   DB_NAME="$DB_NAME-$DEPLOYMENT_ID"

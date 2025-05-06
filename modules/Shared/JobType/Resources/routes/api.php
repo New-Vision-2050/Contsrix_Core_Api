@@ -5,6 +5,7 @@ use Modules\Shared\JobType\Controllers\JobTypeController;
 
 Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [JobTypeController::class, 'index']);
+    Route::get('/list', [JobTypeController::class, 'listSimple']);
     Route::post('/', [JobTypeController::class, 'store']);
     Route::get('/{id}', [JobTypeController::class, 'show']);
     Route::put('/{id}', [JobTypeController::class, 'update']);

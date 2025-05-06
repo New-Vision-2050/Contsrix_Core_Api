@@ -26,6 +26,11 @@ class JobTypeRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getAllJobTypes(): Collection
+    {
+        return $this->model->all();
+    }
+
     public function getJobType(UuidInterface $id): JobType
     {
         return $this->findOneByOrFail([

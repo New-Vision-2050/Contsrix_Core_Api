@@ -27,11 +27,13 @@ class JobType extends Model
 
     protected $fillable = [
         'name',
-        'company_id'
+        'company_id',
+        'status'
     ];
 
     protected $casts = [
         'id' => 'string',
+        'status' => 'boolean'
     ];
 
     protected static function newFactory(): JobTypeFactory
