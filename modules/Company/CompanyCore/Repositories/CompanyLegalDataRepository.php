@@ -40,6 +40,7 @@ class CompanyLegalDataRepository extends BaseRepository
             throw new \Exception($e->getMessage(), 409);
 
         }
+        $companyLegalData->touch();
         return $companyLegalData;
     }
 

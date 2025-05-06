@@ -19,6 +19,7 @@ use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 
@@ -48,7 +49,6 @@ class CompanyLegalData extends Model implements HasMedia
         "start_date",
         "end_date",
         "management_hierarchy_id",
-        "official_document_id"
 
     ];
     protected $casts = [
@@ -87,4 +87,9 @@ class CompanyLegalData extends Model implements HasMedia
     {
         return "company";
     }
+    public function officialDocument()
+    {
+        return $this->hasOne(CompanyOfficialDocument::class);
+    }
+
 }
