@@ -338,7 +338,7 @@ class CompanyProfileService
 
     public function createOfficialDocumentUsingLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO,$id )
     {
-        $officialDocumentDTO = new CreateCompanyOfficialDocumentDTO(
+        $companyOfficialDocumentDTO = new CreateCompanyOfficialDocumentDTO(
             managementHierarchy: $companyLegalDataDTO->getManagementHierarchy(),
             name: "Legal Document",
             description: "Auto-generated from legal data",
@@ -350,7 +350,7 @@ class CompanyProfileService
             files: [$companyLegalDataDTO->getFile()],
         );
 
-        $officialDocument = $this->createCompanyOfficialDocument($officialDocumentDTO);
+        $officialDocument = $this->createCompanyOfficialDocument($companyOfficialDocumentDTO);
 
 
         $this->companyLegalDataRepository->updateLegalData(
