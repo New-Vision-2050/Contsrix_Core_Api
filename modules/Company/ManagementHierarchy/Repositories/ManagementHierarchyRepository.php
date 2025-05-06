@@ -202,4 +202,36 @@ class ManagementHierarchyRepository extends BaseRepository
 
         }
     }
+
+    /**
+     * Get count statistics for hierarchies by type
+     * 
+     * @param string $type The hierarchy type (branch, management, department)
+     * @param mixed $companyId The company ID
+     * @return array
+     */
+    public function getHierarchyCountStatistics(string $type, $companyId): array
+    {
+        // Total count of the hierarchy type
+        $totalCount = $this->model
+            ->where('company_id', $companyId)
+            ->where('type', $type)
+            ->count();
+        
+        // Count of hierarchy items used in user records
+        $usedCount = $this->model
+            ->where('company_id', $companyId)
+            ->where('type', $type)
+            ->whereHas('directUserChildren')
+            ->count();
+        
+        // Count of hierarchy items not used in user records
+        $unusedCount = $totalCount - $usedCount;
+        
+        return [
+            'total_count' => $totalCount,
+            'used_count' => $usedCount,
+            'unused_count' => $unusedCount
+        ];
+    }
 }
