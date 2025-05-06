@@ -153,10 +153,13 @@ class ManagementHierarchy extends Model
      */
     public function getAllUsersAttribute()
     {
+        //get manager if found
         $directUsers = $this->user ? collect([$this->user]) : collect([]);
 
+        //get direct user Children
         $childrenUsers = $this->directUserChildren ?? collect([]);
 
+        //merging are put unique id
         return $directUsers->merge($childrenUsers)->unique('id');
     }
 }
