@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Services;
 
 use App\Http\Controllers\Api\V1\Admin\Tenant\TenantServiceClass;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Intervention\Image\Drivers\Imagick\Driver;
 use Intervention\Image\ImageManager;
 use Modules\AdminRequest\Repositories\AdminRequestRepository;
+use Modules\Company\CompanyCore\Commands\CompanyProfile\UpdateCompanyLegalDataCommand;
+use Modules\Company\CompanyCore\Commands\CompanyProfile\UpdateCompanyOfficialDocumentCommand;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\AssignLogoToCompanyDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyOfficialDocumentDTO;
@@ -332,5 +335,49 @@ class CompanyProfileService
     {
         return $this->companyOfficialDocumentRepository->createCompanyOfficialDocument($companyOfficialDocumentDTO->toArray(), $companyOfficialDocumentDTO->getFiles());
     }
+
+    public function createOfficialDocumentUsingLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO,$id )
+    {
+        $officialDocumentDTO = new CreateCompanyOfficialDocumentDTO(
+            managementHierarchy: $companyLegalDataDTO->getManagementHierarchy(),
+            name: "Legal Document",
+            description: "Auto-generated from legal data",
+            documentNumber: $companyLegalDataDTO->getRegistrationNumber(),
+            startDate: $companyLegalDataDTO->getStartDate(),
+            endDate: $companyLegalDataDTO->getEndDate(),
+            notificationDate: Carbon::parse($companyLegalDataDTO->getEndDate())->subDays(7)->toDateString(),
+            documentTypeId: $companyLegalDataDTO->getRegistrationTypeId(),
+            files: [$companyLegalDataDTO->getFile()],
+        );
+
+        $officialDocument = $this->createCompanyOfficialDocument($officialDocumentDTO);
+
+
+        $this->companyLegalDataRepository->updateLegalData(
+        Uuid::fromString($id),
+            ['official_document_id' => Uuid::fromString( $officialDocument->id)]
+        );
+    }
+    // public function updateOfficialDocumentUsingLegalData(UpdateCompanyLegalDataCommand $dto, $officialDocumentId): void
+    // {
+    //     if (!$officialDocumentId) {
+    //         return;
+    //     }
+
+    //     $updateCommand = new UpdateCompanyOfficialDocumentCommand(
+    //         id: $officialDocumentId,
+    //         name: "Legal Document",
+    //         description: "Auto-updated from legal data",
+    //         documentNumber: $dto->getRegistrationNumber(),
+    //         startDate: $dto->getStartDate(),
+    //         endDate: $dto->getEndDate(),
+    //         notificationDate: Carbon::parse($dto->getEndDate())->subDays(7)->toDateString(),
+    //         documentTypeId: $dto->getRegistrationTypeId(),
+    //         files: [$dto->getFile()],
+    //         filesDeleteIds: []
+    //     );
+
+    //     $this->updateCompanyOfficialDocumentHandler->handle($updateCommand);
+    // }
 
 }

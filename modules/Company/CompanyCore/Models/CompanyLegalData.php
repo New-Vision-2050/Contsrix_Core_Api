@@ -47,8 +47,8 @@ class CompanyLegalData extends Model implements HasMedia
         "registration_number",
         "start_date",
         "end_date",
-        "management_hierarchy_id"
-
+        "management_hierarchy_id",
+        "official_document_id"
 
     ];
     protected $casts = [

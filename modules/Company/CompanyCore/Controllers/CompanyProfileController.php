@@ -111,16 +111,11 @@ class CompanyProfileController extends Controller
 
     public function createLegalData(CreateCompanyLegalDataRequest $request)
     {
-        $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
+        $legalData =$this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
+        $this->companyProfileService->createOfficialDocumentUsingLegalData($request->createCreateCompanyLegalDataDTO(),$legalData->id);
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
 
-    }
-
-    public function requestUpdateLegalDataRequest(RequestUpdateLegalCompanyDataRequest $request)
-    {
-        $legalDataRequest = $this->companyProfileService->updateLegalDataRequest($request->createUpdateLegalCompanyDataRequestDTO());
-        return Json::item((new AdminRequestPresenter($legalDataRequest))->getData());
     }
 
     public function setAddress(SetCompanyAddressRequest $request)
@@ -136,10 +131,15 @@ class CompanyProfileController extends Controller
     public function updateCompanyLegalData(UpdateCompanyLegalDataRequest $request)
     {
         $command = $request->createUpdateLegalCompanyDataCommand();
+
         $this->updateCompanyLegalDataHandler->handle($command);
+
+        // $this->companyProfileService->updateOfficialDocumentUsingLegalData($command, $command->getId());
+
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
+
 
     public function createOfficialDocument(CreateCompanyOfficialDocumentRequest $request)
     {

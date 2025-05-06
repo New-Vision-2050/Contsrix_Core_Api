@@ -18,7 +18,7 @@ class CreateCompanyOfficialDocumentDTO
         private string        $endDate,
         private string        $notificationDate,
         private UuidInterface $documentTypeId,
-        private               $files
+        private               $files,
     )
     {
     }
@@ -45,7 +45,7 @@ class CreateCompanyOfficialDocumentDTO
             "start_date" => $this->startDate,
             "end_date" => $this->endDate,
             "notification_date" => $this->notificationDate,
-            "document_type_id" => $this->documentTypeId
+            "document_type_id" => $this->documentTypeId,
 
                   ];
     }
