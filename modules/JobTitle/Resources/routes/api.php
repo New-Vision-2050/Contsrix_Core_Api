@@ -9,5 +9,5 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/{id}', [JobTitleController::class, 'show']);
     Route::put('/{id}', [JobTitleController::class, 'update']);
     Route::delete('/{id}', [JobTitleController::class, 'delete']);
-
+    Route::patch('/{id}/status', [JobTitleController::class, 'changeStatus']);
 });
