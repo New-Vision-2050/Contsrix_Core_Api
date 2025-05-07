@@ -271,4 +271,9 @@ return [
         'passport_unique' => 'Passport must be unique.',
         'identity_unique' => 'Identity must be unique.',
     ],
+
+    'validation_failed'   => 'Validation failed',
+    'unauthenticated'     => 'Unauthenticated',
+    'unauthorized'        => 'Unauthorized',
+    'resource_not_found'  => 'Resource not found',
 ];

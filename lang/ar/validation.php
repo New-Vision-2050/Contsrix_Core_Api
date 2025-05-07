@@ -235,5 +235,8 @@ return [
             'passport_unique' => 'رقم الجواز يجب أن يكون فريدًا.',
             'identity_unique' => 'رقم الهوية يجب أن يكون فريدًا.',
         ],
-
+        'validation_failed'   => 'فشل التحقق من الصحة',
+        'unauthenticated'     => 'غير مصادق عليه',
+        'unauthorized'        => 'غير مصرح به',
+        'resource_not_found'  => 'المورد غير موجود',
 ];
