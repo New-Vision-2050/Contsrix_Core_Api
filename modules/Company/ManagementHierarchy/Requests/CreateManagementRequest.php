@@ -23,6 +23,9 @@ class CreateManagementRequest extends FormRequest
             'branch_id' => 'required|exists:management_hierarchies,id,type,branch',
             'description' => 'required|string',
             'is_active' => 'required|in:1,0',
+            "deputy_manager_ids"=>"required|array",
+            "deputy_manager_ids.*"=>"required|exists:users,id",
+            "reference_user_id"=>"required|exists:users,id",
 
         ];
     }
@@ -36,7 +39,9 @@ class CreateManagementRequest extends FormRequest
             branchId: (int)$this->get('branch_id'),
             companyId:Uuid::fromString( $company->id),
             description: $this->get('description'),
-            isActive: (int)$this->get('is_active')
+            isActive: (int)$this->get('is_active'),
+            deputyManagerIds: $this->get('deputy_manager_ids'),
+            referenceUserId: Uuid::fromString($this->get('reference_user_id'))
         );
 
     }

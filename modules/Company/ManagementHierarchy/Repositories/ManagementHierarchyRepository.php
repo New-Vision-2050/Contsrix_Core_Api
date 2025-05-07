@@ -9,6 +9,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
@@ -51,7 +52,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         }
 
-        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren","detail.user.companyUser.media"])
+        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren","detail"])
             ->when(request()->has("type"), function ($query) {
                 if (request()->type == "management") {
                     $query->where("type", "management")->orWhere("type", "department");
@@ -105,13 +106,20 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function createManagement(array $managementData, array $managementDetail): ManagementHierarchy
+    public function createManagement(array $managementData, array $managementDetail,array $deputyManagers): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
-            $managementHierarchy->detail()->create($managementDetail);
+            $detail =$managementHierarchy->detail()->create($managementDetail);
+            if(count($deputyManagers)>0){
+                foreach ($deputyManagers as $deputyManager){
+                    ManagementHierarchyDetailManager::create( ["deputy_manager_id"=>$deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
+
+                }
+
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -206,7 +214,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
     /**
      * Get count statistics for hierarchies by type
-     * 
+     *
      * @param string $type The hierarchy type (branch, management, department)
      * @param mixed $companyId The company ID
      * @return array
@@ -218,17 +226,17 @@ class ManagementHierarchyRepository extends BaseRepository
             ->where('company_id', $companyId)
             ->where('type', $type)
             ->count();
-        
+
         // Count of hierarchy items used in user records
         $usedCount = $this->model
             ->where('company_id', $companyId)
             ->where('type', $type)
             ->whereHas('directUserChildren')
             ->count();
-        
+
         // Count of hierarchy items not used in user records
         $unusedCount = $totalCount - $usedCount;
-        
+
         return [
             'total_count' => $totalCount,
             'used_count' => $usedCount,

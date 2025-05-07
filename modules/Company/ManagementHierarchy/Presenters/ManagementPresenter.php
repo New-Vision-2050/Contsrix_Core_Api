@@ -23,6 +23,8 @@ class ManagementPresenter extends AbstractPresenter
             'parent_id' => $this->managementHierarchy->parent_id,
             'name' => $this->managementHierarchy->name,
             'description' => $this->managementHierarchy->detail?->decription,
+            'reference_user_id' => $this->managementHierarchy->detail?->reference_user_id,
+            'deputy_managers' => $this->managementHierarchy->detail?->deputyManagers()->pluck("id")->toArray(),
             "active" => $this->managementHierarchy->is_active,
                         //example of nested structure
 //            'user' => $this->managementHierarchy->users,

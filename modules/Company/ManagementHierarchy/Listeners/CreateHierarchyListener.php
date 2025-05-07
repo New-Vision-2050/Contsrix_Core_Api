@@ -50,7 +50,7 @@ class CreateHierarchyListener
                 "country_id" => $event->data->country_id
             ]);
             $this->managementHierarchyRepository->nextId = $branch->id+1;
-            $this->managementHierarchyRepository->createManagement(["company_id" => $event->data->id,"parent_id"=>$branch->id, "name" => "الادارة العامة", "type" => "management"], ["description"=>"الادارة العامة"]);
+            $this->managementHierarchyRepository->createManagement(["company_id" => $event->data->id,"parent_id"=>$branch->id, "name" => "الادارة العامة", "type" => "management"], ["description"=>"الادارة العامة"],[]);
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
