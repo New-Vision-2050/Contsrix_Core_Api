@@ -8,6 +8,7 @@ use App\Traits\CalculateTreeManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\User\Models\User;
+use Modules\User\Presenters\UserPresenter;
 
 class ManagementHierarchyTreePresenter extends AbstractPresenter
 {
@@ -33,6 +34,11 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
             'parent_id' => $this->managementHierarchy->parent_id,
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
+            'deputy_managers' => $this->managementHierarchy->detail?->deputyManagers&&count($this->managementHierarchy->detail?->deputyManagers)>0?DeputyManagerPresenter::collection($this->managementHierarchy->detail?->deputyManagers):[],
+            'description' => $this->managementHierarchy->detail?->decription,
+            'reference_user_id' => $this->managementHierarchy->detail?->reference_user_id,
+            'reference_user' => $this->managementHierarchy->detail?->referanceUser ? (new UserPresenter($this->managementHierarchy->detail?->referanceUser))->getData():null,
+
 
             "manager_id" => $this->managementHierarchy->manager_id,
             "manager" => [
