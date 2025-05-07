@@ -186,14 +186,22 @@ class CompanyRepository extends BaseRepository
 
     public function getAllWithRelations(array $relations = []): Collection
     {
-        return $this->model->with($relations)->get();
+        $query = $this->model->with($relations);
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+        return $query->get();
     }
 
     public function getCompaniesByIdsWithRelations(array $ids, array $relations = []): Collection
     {
-        return $this->model->whereIn('id', $ids)
-            ->with($relations)
-            ->get();
+        $query =  $this->model->whereIn('id', $ids)->with($relations);
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+
+        return $query->get();
     }
 
     public function getLastCreatedCompany(): ?Company
