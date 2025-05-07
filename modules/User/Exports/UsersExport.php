@@ -40,8 +40,8 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             'Phone',
             'Company',
             'Roles',
-            'Created At',
-            'Last Updated'
+            // 'Created At',
+            // 'Last Updated'
         ];
     }
 
