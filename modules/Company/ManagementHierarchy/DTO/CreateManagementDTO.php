@@ -18,6 +18,7 @@ class CreateManagementDTO
         public int           $isActive,
         public array         $deputyManagerIds,
         public UuidInterface $referenceUserId,
+        public UuidInterface $managerId,
 
 
     )
@@ -32,7 +33,8 @@ class CreateManagementDTO
             'is_main' => $this->managementId == null ? 1 : 0,
             'company_id' => $this->companyId,
             'is_active' => $this->isActive,
-            "type" => "management"
+            "type" => "management",
+            "manager_id" => $this->managerId
         ];
     }
 

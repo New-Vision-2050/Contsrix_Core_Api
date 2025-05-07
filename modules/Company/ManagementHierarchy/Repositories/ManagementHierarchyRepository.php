@@ -111,7 +111,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($managementData + ["id" => $this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
+            $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
             $detail =$managementHierarchy->detail()->create($managementDetail);
             if(count($deputyManagers)>0){
                 foreach ($deputyManagers as $deputyManager){
