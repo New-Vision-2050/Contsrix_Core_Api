@@ -42,4 +42,17 @@ class SubEntityPresenter extends AbstractPresenter
     {
         return $this->present($isListing);
     }
+
+    public function getAttributes(bool $isListing = false): ?array
+    {
+        return [
+            'id' => $this->subEntity->id,
+            'default_attributes' => $this->subEntity->default_attributes
+                ? json_decode($this->subEntity->default_attributes, true)
+                : [],
+            'optional_attributes' => $this->subEntity->optional_attributes
+                ? json_decode($this->subEntity->optional_attributes, true)
+                : null,
+        ];
+    }
 }

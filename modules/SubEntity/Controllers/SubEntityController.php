@@ -47,6 +47,15 @@ class SubEntityController extends Controller
         return Json::item($presenter->getData());
     }
 
+    public function showAttributes(GetSubEntityRequest $request): JsonResponse
+    {
+        $item = $this->subEntityService->get(Uuid::fromString($request->route('id')));
+
+        $presenter = new SubEntityPresenter($item);
+
+        return Json::item($presenter->getAttributes());
+    }
+
     public function store(CreateSubEntityRequest $request): JsonResponse
     {
         $createdItem = $this->subEntityService->create($request->createCreateSubEntityDTO());

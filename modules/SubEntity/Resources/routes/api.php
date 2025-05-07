@@ -10,6 +10,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{id}', [SubEntityController::class, 'show']);
     Route::put('/{id}', [SubEntityController::class, 'update']);
     Route::delete('/{id}', [SubEntityController::class, 'delete']);
+    Route::get('/{id}/show/attributes', [SubEntityController::class, 'showAttributes']);
+
 
     Route::get('/programs/sub_tables', [SubEntityController::class, 'getByProgram']);
 
