@@ -30,7 +30,6 @@ use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Uuid;
-
 class CompanyProfileService
 {
     public function __construct(
@@ -295,8 +294,8 @@ class CompanyProfileService
 //        return
 
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
-            userId: Uuid::fromString(auth()->user()->id),
-            id: $companyDataRequestDTO->getId(),
+            userId: Uuid::fromString((string) auth()->user()->id),
+            id: (string) $companyDataRequestDTO->getId(),
             data: $companyDataRequestDTO->toArray(),
             requestType: "companyLegalDataUpdate",
             action: ["ar" => "طلب تعديل البيانات القانونيه للشركة", "en" => "Company legal data update request"],
