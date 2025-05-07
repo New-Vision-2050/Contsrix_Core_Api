@@ -186,7 +186,7 @@ class CompanyRepository extends BaseRepository
 
     public function getAllWithRelations(array $relations = []): Collection
     {
-        $query = $this->model->with($relations);
+        $query = $this->model->with($relations)->where(['is_central_company' => 0]);
         if (method_exists($this->model, 'scopeFilter')) {
             $query->filter(request()->all());
         }
@@ -195,7 +195,7 @@ class CompanyRepository extends BaseRepository
 
     public function getCompaniesByIdsWithRelations(array $ids, array $relations = []): Collection
     {
-        $query =  $this->model->whereIn('id', $ids)->with($relations);
+        $query =  $this->model->whereIn('id', $ids)->where(['is_central_company' => 0])->with($relations);
 
         if (method_exists($this->model, 'scopeFilter')) {
             $query->filter(request()->all());
