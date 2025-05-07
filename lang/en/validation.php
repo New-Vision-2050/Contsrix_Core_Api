@@ -252,4 +252,23 @@ return [
 
     'attributes' => [],
 
+    'company_user' => [
+        'first_name_required' => 'First name is required.',
+        'last_name_required' => 'Last name is required.',
+        'company_id_required' => 'Company is required.',
+        'company_id_exists' => 'Selected company does not exist.',
+        'country_id_exists' => 'Selected country does not exist.',
+        'time_zone_id_exists' => 'Selected time zone does not exist.',
+        'language_id_exists' => 'Selected language does not exist.',
+        'currency_id_exists' => 'Selected currency does not exist.',
+        'phone_required' => 'Phone is required.',
+        'email_required' => 'Email is required.',
+        'email_invalid' => 'Email must be a valid email address.',
+        'job_title_required' => 'Job title is required.',
+        'job_title_exists' => 'Selected job title does not exist.',
+        'border_number_unique' => 'Border number must be unique.',
+        'residence_unique' => 'Residence must be unique.',
+        'passport_unique' => 'Passport must be unique.',
+        'identity_unique' => 'Identity must be unique.',
+    ],
 ];

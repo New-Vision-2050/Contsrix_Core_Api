@@ -214,4 +214,26 @@ return [
     'username_required'=>'الاسم المختصر ألرامي',
     'username_unique'=>'الاسم المختصر مستخدم بالفعل',
     'username_regex'=>'الاسم المختصر غير صحيح',
+
+
+        'company_user' => [
+            'first_name_required' => 'الاسم الأول مطلوب.',
+            'last_name_required' => 'الاسم الأخير مطلوب.',
+            'company_id_required' => 'الشركة مطلوبة.',
+            'company_id_exists' => 'الشركة المحددة غير موجودة.',
+            'country_id_exists' => 'الدولة المحددة غير موجودة.',
+            'time_zone_id_exists' => 'المنطقة الزمنية المحددة غير موجودة.',
+            'language_id_exists' => 'اللغة المحددة غير موجودة.',
+            'currency_id_exists' => 'العملة المحددة غير موجودة.',
+            'phone_required' => 'رقم الهاتف مطلوب.',
+            'email_required' => 'البريد الإلكتروني مطلوب.',
+            'email_invalid' => 'يجب أن يكون البريد الإلكتروني صالحًا.',
+            'job_title_required' => 'المسمى الوظيفي مطلوب.',
+            'job_title_exists' => 'المسمى الوظيفي المحدد غير موجود.',
+            'border_number_unique' => 'رقم الحدود يجب أن يكون فريدًا.',
+            'residence_unique' => 'رقم الإقامة يجب أن يكون فريدًا.',
+            'passport_unique' => 'رقم الجواز يجب أن يكون فريدًا.',
+            'identity_unique' => 'رقم الهوية يجب أن يكون فريدًا.',
+        ],
+
 ];

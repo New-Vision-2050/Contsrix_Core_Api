@@ -80,7 +80,7 @@ class CompanyController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function update(UpdateCompanyRequest $request)//: JsonResponse
+    public function update(UpdateCompanyRequest $request): JsonResponse
     {
 
         $command = $request->createUpdateCompanyCommand();
