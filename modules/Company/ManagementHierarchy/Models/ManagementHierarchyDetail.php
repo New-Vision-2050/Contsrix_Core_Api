@@ -77,6 +77,11 @@ class ManagementHierarchyDetail extends Model
         return $this->hasMany(ManagementHierarchyDetailManager::class);
     }
 
+    public function referanceUser()
+    {
+        return $this->belongsTo(User::class , "reference_user_id");
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "managementHierarchy";
