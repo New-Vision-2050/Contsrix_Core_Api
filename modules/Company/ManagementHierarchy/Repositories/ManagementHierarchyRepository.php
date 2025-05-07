@@ -51,7 +51,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         }
 
-        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren","detail.user.companyUser.media"])
+        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren","detail"])
             ->when(request()->has("type"), function ($query) {
                 if (request()->type == "management") {
                     $query->where("type", "management")->orWhere("type", "department");
