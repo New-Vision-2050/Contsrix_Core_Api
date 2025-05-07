@@ -26,6 +26,7 @@ class CreateManagementRequest extends FormRequest
             "deputy_manager_ids"=>"required|array",
             "deputy_manager_ids.*"=>"required|exists:users,id",
             "reference_user_id"=>"required|exists:users,id",
+            "manager_id"=>"required|exists:users,id"
 
         ];
     }
@@ -41,7 +42,8 @@ class CreateManagementRequest extends FormRequest
             description: $this->get('description'),
             isActive: (int)$this->get('is_active'),
             deputyManagerIds: $this->get('deputy_manager_ids'),
-            referenceUserId: Uuid::fromString($this->get('reference_user_id'))
+            referenceUserId: Uuid::fromString($this->get('reference_user_id')),
+            managerId:Uuid::fromString($this->get('manager_id'))
         );
 
     }
