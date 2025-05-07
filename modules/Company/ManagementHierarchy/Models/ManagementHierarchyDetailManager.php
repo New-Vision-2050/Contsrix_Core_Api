@@ -18,15 +18,14 @@ use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class ManagementHierarchyDetail extends Model
+class ManagementHierarchyDetailManager extends Model
 {
     use HasFactory;
 
-//    use UuidTrait;
+    use UuidTrait;
     use BaseFilterable;
 
 //    use AsTree;
-    use BelongsToPrimaryModel;
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -34,7 +33,7 @@ class ManagementHierarchyDetail extends Model
     //public array $translatable = [];
     protected $primaryKey = 'id';
 
-    protected $table = "management_hierarchy_details";
+    protected $table = "management_hierarchy_deputy_managers";
 
 
     public $incrementing = false;
@@ -42,24 +41,17 @@ class ManagementHierarchyDetail extends Model
 //    protected $keyType = 'string';
 
     protected $fillable = [
-//        "id",
-        "description",
-        "reference_user_id",
-        "management_hierarchy_id"
+        "id",
+        "deputy_manager_id",
+        "management_hierarchy_detail_id"
     ];
 
     protected $casts = [
-//        'id' => 'string',
-        'reference_user_id' => 'string',
+        "id" => 'string',
+        'deputy_manager_id' => 'string',
     ];
 
 
-    //example for nested set
-
-//    public function users()
-//    {
-//        return HasManyDeep::between($this , User::class,"management_hierarchy_id","id");
-//    }
 
 
     protected static function newFactory(): ManagementHierarchyFactory
@@ -67,18 +59,15 @@ class ManagementHierarchyDetail extends Model
         return ManagementHierarchyFactory::new();
     }
 
-    public function managementHierarchy()
+    public function managementHierarchyDetail()
     {
-        return $this->belongsTo(ManagementHierarchy::class , "management_hierarchy_id");
+        return $this->belongsTo(ManagementHierarchyDetail::class, "management_hierarchy_detail_id");
     }
 
-    public function deputyManagers()
+    public function user()
     {
-        return $this->hasMany(ManagementHierarchyDetailManager::class);
+        return $this->belongsTo(User::class, 'deputy_manager_id', 'id');
     }
 
-    public function getRelationshipToPrimaryModel(): string
-    {
-        return "managementHierarchy";
-    }
+
 }

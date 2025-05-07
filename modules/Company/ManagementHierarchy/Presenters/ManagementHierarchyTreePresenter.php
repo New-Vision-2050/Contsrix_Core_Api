@@ -42,7 +42,7 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
                 "phone" => $this->managementHierarchy->user?->phone,
                 "photo"=>$this->managementHierarchy->user?->companyUser->getFirstMedia('upload_user')?->getFullUrl()
             ],
-            "deputy_manager" => [
+            "deputy_manager" => [//TODO those are multiple users
                 "id" => $this->managementHierarchy->detail?->user?->id,
                 "name" => $this->managementHierarchy->detail?->user?->name,
                 "email" => $this->managementHierarchy->detail?->user?->email,
