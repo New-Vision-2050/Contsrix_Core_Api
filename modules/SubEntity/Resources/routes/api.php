@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\SubEntity\Controllers\SubEntityController;
 use Modules\SubEntity\Controllers\SuperEntityController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [SubEntityController::class, 'index']);
     Route::post('/', [SubEntityController::class, 'store']);
     Route::get('/{id}', [SubEntityController::class, 'show']);

@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\DTO;
 
-use Ramsey\Uuid\UuidInterface;
-
 class CreateSubEntityDTO
 {
     public function __construct(
         public string $name,
+        public string $super_entity,
+        public int $icon,
+        public string $main_program_id,
+        public bool $is_active,
+        public bool $is_registrable,
+        public string $default_attributes,
+        public ?string $optional_attributes,
     ) {
     }
 
@@ -17,6 +22,13 @@ class CreateSubEntityDTO
     {
         return [
             'name' => $this->name,
+            'super_entity' => $this->super_entity,
+            'icon' => $this->icon,
+            'main_program_id' => $this->main_program_id,
+            'is_active' => $this->is_active,
+            'is_registrable' => $this->is_registrable,
+            'default_attributes' => $this->default_attributes,
+            'optional_attributes' => $this->optional_attributes,
         ];
     }
 }

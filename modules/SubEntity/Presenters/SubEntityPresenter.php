@@ -37,4 +37,9 @@ class SubEntityPresenter extends AbstractPresenter
             'updated_at' => $this->subEntity->updated_at?->toIso8601String(),
         ];
     }
+
+    public function getData(bool $isListing = false): ?array
+    {
+        return $this->present($isListing);
+    }
 }
