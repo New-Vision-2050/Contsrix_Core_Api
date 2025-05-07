@@ -17,6 +17,8 @@ use Modules\SubEntity\Requests\CreateSubEntityRequest;
 use Modules\SubEntity\Requests\DeleteSubEntityRequest;
 use Modules\SubEntity\Requests\UpdateSubEntityRequest;
 use Modules\SubEntity\Requests\GetSubEntityListRequest;
+use Modules\SubEntity\Handlers\UpdateSubEntityAttributesHandler;
+use Modules\SubEntity\Requests\UpdateSubEntityAttributesRequest;
 use Modules\SubEntity\Requests\GetSubEntityListByProgramNameRequest;
 
 class SubEntityController extends Controller
@@ -25,6 +27,7 @@ class SubEntityController extends Controller
         private SubEntityCRUDService $subEntityService,
         private UpdateSubEntityHandler $updateSubEntityHandler,
         private DeleteSubEntityHandler $deleteSubEntityHandler,
+        private UpdateSubEntityAttributesHandler $updateSubEntityAttributesHandler,
     ) {
     }
 
@@ -75,6 +78,18 @@ class SubEntityController extends Controller
         $presenter = new SubEntityPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    public function updateAttributes(UpdateSubEntityAttributesRequest $request): JsonResponse
+    {
+        $command = $request->createUpdateSubEntityAttributesCommand();
+        $this->updateSubEntityAttributesHandler->handle($command);
+
+        $item = $this->subEntityService->get($command->getId());
+
+        $presenter = new SubEntityPresenter($item);
+
+        return Json::item($presenter->getAttributes());
     }
 
     public function delete(DeleteSubEntityRequest $request): JsonResponse

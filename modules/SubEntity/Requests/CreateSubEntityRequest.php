@@ -28,8 +28,8 @@ class CreateSubEntityRequest extends FormRequest
             'main_program_id' => 'required|uuid|exists:programs,id',
             'is_active' => 'sometimes|boolean',
             'is_registrable' => 'sometimes|boolean', //TODO registration form is required when this value is true
-            'default_attributes' => 'required|array',
-            'optional_attributes' => 'sometimes|nullable|array',
+            'default_attributes' => 'required|array', //ToDo Validate against super entity attributes
+            'optional_attributes' => 'sometimes|nullable|array', //Validate against super entity attributes
         ];
     }
 

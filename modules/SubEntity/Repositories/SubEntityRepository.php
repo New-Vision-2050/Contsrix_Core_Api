@@ -43,6 +43,11 @@ class SubEntityRepository extends BaseRepository
         return $this->update($id, $data);
     }
 
+    public function updateSubEntityAttributes(UuidInterface $id, array $data): bool
+    {
+        return $this->update($id, $data);
+    }
+
     public function deleteSubEntity(UuidInterface $id): bool
     {
         return $this->delete($id);
