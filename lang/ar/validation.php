@@ -199,6 +199,7 @@ return [
     "user-already-exists"=>"المستخدم موجود بالفعل",
     "phone-exists"=>"رقم الهاتف موجود بالفعل",
     "phone_email_consistency-error"=>"الرقم مسجل لدي مستخدم اخر ",
+    "can-not-delete-has-children"=>"لا يمكن مسح اذا متفرع منه هيكل اداري اخر او مستخدمين ",
 
 
 

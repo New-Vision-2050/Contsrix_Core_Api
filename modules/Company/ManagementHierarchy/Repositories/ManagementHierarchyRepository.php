@@ -168,23 +168,23 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            
+
             // Update management hierarchy
             $managementHierarchy = $this->findOneOrFail($id);
             $managementHierarchy->update($managementData);
-            
+
             // Update management detail
             if ($managementHierarchy->detail) {
                 $managementHierarchy->detail->update($managementDetail);
             } else {
                 $managementHierarchy->detail()->create($managementDetail);
             }
-            
+
             // Delete existing deputy managers and create new ones
             if ($managementHierarchy->detail) {
                 $detailId = $managementHierarchy->detail->id;
                 ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
-                
+
                 // Create new deputy managers
                 if (count($deputyManagers) > 0) {
                     foreach ($deputyManagers as $deputyManager) {
@@ -195,13 +195,34 @@ class ManagementHierarchyRepository extends BaseRepository
                     }
                 }
             }
-            
+
             DB::commit();
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Check if a management hierarchy has any children
+     *
+     * @param int $id The ID of the management hierarchy to check
+     * @return bool True if it has children, false otherwise
+     */
+    public function hasChildren(int $id): bool
+    {
+        $managementHierarchy = $this->findOneOrFail($id);
+
+        // Check for direct management hierarchy children
+        $childrenCount = $this->model->where('parent_id', $id)->count();
+        if ($childrenCount > 0) {
+            return true;
+        }
+
+        // Check for user children/employees
+        $userChildrenCount = $managementHierarchy->directUserChildren()->count();
+        return $userChildrenCount > 0;
     }
 
     public function deleteManagementHierarchy(int $id): bool

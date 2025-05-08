@@ -51,7 +51,7 @@ class UserController extends Controller
     {
         $list = $this->userService->list(
             (int)$request->get('page', 1),
-            (int)$request->get('per_page', 10)
+            (int)$request->get('per_page', 10000)
         );
 
         return Json::items(UserPresenter::collection($list['data']),paginationSettings: $list['pagination']);

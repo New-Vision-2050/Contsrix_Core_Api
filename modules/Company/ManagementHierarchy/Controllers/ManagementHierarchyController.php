@@ -6,6 +6,7 @@ namespace Modules\Company\ManagementHierarchy\Controllers;
 
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Request;
 use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandler;
@@ -148,9 +149,20 @@ class ManagementHierarchyController extends Controller
 
     public function delete(DeleteManagementHierarchyRequest $request): JsonResponse
     {
-        $this->deleteManagementHierarchyHandler->handle((int)($request->route('id')));
+        try {
+            $this->deleteManagementHierarchyHandler->handle((int)($request->route('id')));
+            return Json::deleted();
+        } catch (Exception $e) {
+            if ($e->getCode() === 422) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 422);
+            }
 
-        return Json::deleted();
+            // For any other exceptions, rethrow
+            throw $e;
+        }
     }
 
     public function updateManagement(UpdateManagementRequest $request): JsonResponse
