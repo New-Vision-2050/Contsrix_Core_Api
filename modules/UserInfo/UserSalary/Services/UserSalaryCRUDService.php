@@ -19,7 +19,7 @@ class UserSalaryCRUDService
 
     public function create(CreateUserSalaryDTO $createUserSalaryDTO): UserSalary
     {
-         return $this->repository->createUserSalary($createUserSalaryDTO->toArray());
+         return $this->repository->createOrUpdateUserSalary($createUserSalaryDTO->toArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array

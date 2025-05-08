@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Shared\University\Controllers;
 
-use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use Modules\Shared\University\Handlers\DeleteUniversityHandler;
 use Modules\Shared\University\Handlers\UpdateUniversityHandler;
 use Modules\Shared\University\Presenters\UniversityPresenter;
@@ -17,7 +15,8 @@ use Modules\Shared\University\Requests\GetUniversityRequest;
 use Modules\Shared\University\Requests\UpdateUniversityRequest;
 use Modules\Shared\University\Services\UniversityCRUDService;
 use Ramsey\Uuid\Uuid;
-
+use BasePackage\Shared\Presenters\Json;
+use Illuminate\Http\JsonResponse;
 class UniversityController extends Controller
 {
     public function __construct(

@@ -12,6 +12,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\CompanyUser\Requests\IdentityDataRequest;
 use Modules\Shared\Media\Services\FileUploadService;
+use PhpParser\Node\Stmt\Return_;
 
 class IdentityDataService
 {
@@ -23,7 +24,7 @@ class IdentityDataService
     {
 
     }
-    public function uploadFile($request,$globalId): array
+    public function uploadFile($request, $globalId)//: array
     {
         $visibility = 'public';
         $companyUser = $this->repository->getCompanyUserGlobalId($globalId);
@@ -31,36 +32,36 @@ class IdentityDataService
 
         $uploadedFiles = [];
 
-        if ($request->hasFile('file_passport')) {
-            $uploadedFiles['file_passport'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_passport'), $path, 'file_passport', $visibility
-            );
-        }
+        $fields = [
+            'file_passport',
+            'file_identity',
+            'file_border_number',
+            'file_entry_number',
+            'file_work_permit',
+        ];
 
-        if ($request->hasFile('file_identity')) {
-            $uploadedFiles['file_identity'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_identity'), $path, 'file_identity', $visibility
-            );
-        }
+        foreach ($fields as $field) {
 
-        if ($request->hasFile('file_border_number')) {
-            $uploadedFiles['file_border_number'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_border_number'), $path, 'file_border_number', $visibility
-            );
-        }
+        $fieldIds = collect($request->input($field))
+            ->pluck('id')
+            ->filter()
+            ->toArray();
 
-        if ($request->hasFile('file_entry_number')) {
-            $uploadedFiles['file_entry_number'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_entry_number'), $path, 'file_entry_number', $visibility
-            );
+        $existingMedia = $companyUser->getMedia($field);
+        foreach ($existingMedia as $media) {
+            if (!in_array($media->id, $fieldIds)) {
+                $media->delete();
+            }
         }
-        if ($request->hasFile('file_work_permit')) {
-            $uploadedFiles['file_work_permit'] = $this->fileUploadService->uploadFile(
-                $companyUser, $request->file('file_work_permit'), $path, 'file_work_permit', $visibility
-            );
+            if ($request->hasFile($field)) {
+                foreach ($request->file($field) as $file) {
+                    $uploadedFiles[$field][] = $this->fileUploadService->uploadFile(
+                        $companyUser, $file, $path, $field, $visibility
+                    );
+                }
+            }
         }
 
         return $uploadedFiles;
     }
-
 }

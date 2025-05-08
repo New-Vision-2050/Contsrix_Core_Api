@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\User\Repositories\UserRepository;
+use Modules\UserInfo\UserSalary\Models\UserSalary;
 use Modules\UserInfo\UserSalary\Presenters\UserSalaryPresenter;
 use Modules\UserInfo\UserSalary\Requests\CreateUserSalaryRequest;
 use Modules\UserInfo\UserSalary\Requests\GetUserSalaryRequest;
@@ -51,7 +52,7 @@ class UserSalaryController extends Controller
 
         $user = $this->userRepository->getUser($userId);
         $createCreateUserSalaryDTO->global_id = $user->global_company_user_id;
-        $createCreateUserSalaryDTO->company_id = $user->company_id;
+        $createCreateUserSalaryDTO->company_id = $user->company_id ;
 
         $createdItem = $this->userSalaryService->create($createCreateUserSalaryDTO);
 

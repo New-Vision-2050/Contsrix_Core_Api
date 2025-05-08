@@ -78,7 +78,7 @@ class QualificationController extends Controller
        $this->updateQualificationHandler->handle($command);
         $item = $this->qualificationService->get($command->getId());
 
-        $this->qualificationService->uploadFile($item,$request);
+   return     $this->qualificationService->uploadFile($item,$request);
 
         $presenter = new QualificationPresenter($item);
 

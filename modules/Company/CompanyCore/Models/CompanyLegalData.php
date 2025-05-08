@@ -1,0 +1,96 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Company\CompanyCore\Models;
+
+use BasePackage\Shared\Traits\HasTranslations;
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\AdminRequest\Models\AdminRequest;
+use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
+use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Company\CompanyField\Models\CompanyField;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Country\Models\Country;
+use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
+
+
+class CompanyLegalData extends Model implements HasMedia
+{
+    use HasFactory;
+    use UuidTrait;
+    use BaseFilterable;
+    use InteractsWithMedia;
+    use BelongsToPrimaryModel;
+
+//    use HasTranslations;
+
+    // use SoftDeletes;
+
+//    public array $translatable = ["name"];
+
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        "company_id",
+        "registration_type_id",
+        "registration_number",
+        "start_date",
+        "end_date",
+        "management_hierarchy_id",
+
+    ];
+    protected $casts = [
+        'id' => 'string',
+        'start_date' => 'date',
+        'end_date' => 'date'
+    ];
+
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
+    }
+
+    public function registrationType()
+    {
+        return $this->belongsTo(CompanyRegistrationType::class);
+    }
+
+    protected static function newFactory(): CompanyFactory
+    {
+        return CompanyFactory::new();
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class,"management_hierarchy_id","id");
+    }
+
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "company";
+    }
+
+    public function officialDocument()
+{
+    return $this->hasOne(CompanyOfficialDocument::class, 'company_legal_data_id', 'id');
+}
+
+}

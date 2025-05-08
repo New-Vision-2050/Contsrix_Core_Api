@@ -19,7 +19,7 @@ use Modules\User\Models\User;
 class UserRepository extends BaseRepository
 {
     public function __construct(
-        User                                $model,
+        User                              $model,
         private AuditRepository             $auditRepository,
         private IdentifierSettingRepository $identifierSettingRepository)
     {
@@ -50,8 +50,8 @@ class UserRepository extends BaseRepository
         $identifierSettings = $this->identifierSettingRepository->list();
         $isEmailActive = $identifierSettings->where('key', 'email')->first()->status;
         $isPhoneActive = $identifierSettings->where('key', 'phone')->first()->status;
-        return $this->model->query()->where(function ($query) use ($identifier,$isEmailActive,$isPhoneActive) {
-            $query ->when($isEmailActive == 1, function ($query) use ($identifier) {
+        return $this->model->query()->where(function ($query) use ($identifier, $isEmailActive, $isPhoneActive) {
+            $query->when($isEmailActive == 1, function ($query) use ($identifier) {
                 return $query->where('email', $identifier);
             })->when($isPhoneActive == 1, function ($query) use ($identifier) {
                 return $query->orWhere('phone', $identifier);
@@ -113,5 +113,63 @@ class UserRepository extends BaseRepository
         return $this->model->where($conditions)->pluck($pluck)->toArray();
     }
 
+    public function getAdminUsersFromCentralCompanies($page, $perPage)
+    {
+        $query = $this->model
+            ->whereHas('company', function ($query) {
+                $query->where('is_central_company', true);
+            });
 
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
+
+    public function getUsersWithRelations(array $userIds = null, array $relations = []): Collection
+    {
+        $query = $this->model->with($relations);
+
+        if ($userIds) {
+            $query->whereIn('global_company_user_id', $userIds);
+        }
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get user count statistics for a company
+     *
+     * @param string|int $companyId
+     * @return array
+     */
+    public function getUserCountStatistics($companyId): array
+    {
+        // Total users in the company
+        $totalUsers = $this->model->where('company_id', $companyId)->count();
+
+        // Users with hierarchy ID
+        $usersWithHierarchy = $this->model->where('company_id', $companyId)
+            ->whereNotNull('management_hierarchy_id')
+            ->count();
+
+        // Users without hierarchy ID
+        $usersWithoutHierarchy = $this->model->where('company_id', $companyId)
+            ->whereNull('management_hierarchy_id')
+            ->count();
+
+        return [
+            'total_users' => $totalUsers,
+            'users_with_hierarchy' => $usersWithHierarchy,
+            'users_without_hierarchy' => $usersWithoutHierarchy
+        ];
+    }
 }

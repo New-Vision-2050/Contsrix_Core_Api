@@ -14,7 +14,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 class Language extends Model
 {
     use HasFactory;
-    use UuidTrait;
+//    use UuidTrait;
     use BaseFilterable;
     //use HasTranslations;
     //use SoftDeletes;
@@ -26,13 +26,18 @@ class Language extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
-        'short_name'
+        "id",
+        'lang',
+        'lang_ar',
+        'native',
+        'iso_code',
+        'is_active',
+        'is_rtl',
+        'is_default',
+        'status'
     ];
 
-    protected $casts = [
-        'id' => 'string',
-    ];
+
 
     protected static function newFactory(): LanguageFactory
     {

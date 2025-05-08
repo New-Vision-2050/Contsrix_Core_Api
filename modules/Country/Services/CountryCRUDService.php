@@ -30,11 +30,24 @@ class CountryCRUDService
             perPage: $perPage,
         );
     }
+    public function getList(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->paginated(
+            page: $page,
+            perPage: $perPage,
+        );
+    }
 
     public function get(UuidInterface $id): Country
     {
         return $this->repository->getCountry(
             id: $id,
         );
+    }
+
+    public function getCountryWithStateWithCity()
+    {
+        return $this->repository->getCountryWithSatesWithCities(request()->country_id,request()->state_id);
+
     }
 }

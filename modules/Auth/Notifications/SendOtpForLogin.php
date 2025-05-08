@@ -40,8 +40,16 @@ class SendOtpForLogin extends Notification
 
     private function setDriverSMS($notifiable):void
     {
-        $driverName = Country::query()->where("phonecode",$notifiable->phone_code)->first()->smsDriver->name;
-        if($driverName == "mora"){
+        $driverName = Country::query()->where("phonecode", str_replace("+","",$notifiable->phone_code))->first();
+        if ($driverName && $driverName->smsDriver) {
+            if ($driverName?->smsDriver?->name == "mora") {
+                $this->smsDriver = new MoraSms();
+            } else {
+                //TODO if there is many sms provider choose default one
+                $this->smsDriver = $driverName->smsDriver->name;
+            }
+        } else {
+            //TODO if there is many sms provider choose default one
             $this->smsDriver = new MoraSms();
         }
     }

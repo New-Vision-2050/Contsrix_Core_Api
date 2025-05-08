@@ -7,6 +7,7 @@ namespace Modules\UserInfo\Contactinfo\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Models\CompanyUser;
+use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 /**
  * @property CompanyUser $model
@@ -15,7 +16,10 @@ use Ramsey\Uuid\UuidInterface;
  */
 class ContactinfoRepository extends BaseRepository
 {
-    public function __construct(CompanyUser $model)
+    public function __construct(
+        CompanyUser $model,
+        private UserRepository $userRepository,
+        )
     {
         parent::__construct($model);
     }
@@ -37,8 +41,11 @@ class ContactinfoRepository extends BaseRepository
         return $this->create($data);
     }
 
-    public function updateContactinfo(UuidInterface $id, array $data): bool
+    public function updateContactinfo(UuidInterface $id, array $data, UuidInterface $userId = null)
     {
+        if (isset($data['phone'])) {
+            $this->userRepository->update($userId, $data);
+        }
         return $this->update($id, $data);
     }
 

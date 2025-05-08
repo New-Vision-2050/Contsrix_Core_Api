@@ -11,7 +11,7 @@ class UpdateUserPrivilegeCommand
     public function __construct(
         private UuidInterface $id,
         private ?string $type_privilege_id,
-        private ?string $type_allowance_id,
+        private ?string $type_allowance_code,
         private ?string $charge_amount,
         private ?string $description,
         private ?string $period_id,
@@ -27,11 +27,11 @@ class UpdateUserPrivilegeCommand
     public function toArray(): array
     {
         return array_filter([
-            'type_privilege' => $this->type_privilege_id,
-            'type_allowance' => $this->type_allowance_id,
+            'type_privilege_id' => $this->type_privilege_id,
+            'type_allowance_code' => $this->type_allowance_code,
             'charge_amount' => $this->charge_amount,
             'description' => $this->description,
-            'period' => $this->period_id
+            'period_id' => $this->period_id
         ]);
     }
 }

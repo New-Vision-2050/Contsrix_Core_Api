@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace Modules\Country\Controllers;
 
 use App\Http\Controllers\Controller;
+use AWS\CRT\HTTP\Request;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Country\Handlers\DeleteCountryHandler;
 use Modules\Country\Handlers\UpdateCountryHandler;
+use Modules\Country\Presenters\CountryCurrencyPresenter;
 use Modules\Country\Presenters\CountryPresenter;
+use Modules\Country\Presenters\CountryStateCityPresenter;
+use Modules\Country\Presenters\MixedPresenter;
 use Modules\Country\Requests\CreateCountryRequest;
 use Modules\Country\Requests\DeleteCountryRequest;
+use Modules\Country\Requests\GetCountryAndStateAndCityRequest;
 use Modules\Country\Requests\GetCountryListRequest;
 use Modules\Country\Requests\GetCountryRequest;
 use Modules\Country\Requests\UpdateCountryRequest;
@@ -36,6 +41,8 @@ class CountryController extends Controller
 
         return Json::items(CountryPresenter::collection($list['data']),paginationSettings:$list['pagination']);
     }
+
+
 
     public function show(GetCountryRequest $request): JsonResponse
     {
@@ -73,4 +80,24 @@ class CountryController extends Controller
 
         return Json::deleted();
     }
+
+
+    public function getCountryWithStateWithCity( GetCountryAndStateAndCityRequest $request)
+    {
+        $data = $this->countryService->getCountryWithStateWithCity();
+        return Json::item(MixedPresenter::collection($data));
+
+    }
+
+    public function currency(GetCountryListRequest $request): JsonResponse
+    {
+        $countryId = $request->get('country_id');
+        $list = $this->countryService->list(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(CountryCurrencyPresenter::collection($list['data']),paginationSettings:$list['pagination']);
+    }
+
 }

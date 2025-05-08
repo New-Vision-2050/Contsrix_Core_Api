@@ -15,7 +15,7 @@ class ValidateOtpService
     )
     {
     }
-    public function validateOtp(ValidateOtpDTO $validateOtpDTO, $global_id, string $type)
+    public function validateOtp(ValidateOtpDTO $validateOtpDTO, $userId, string $type)
     {
         if ((new Otp)->validate($validateOtpDTO->getIdentifier(), $validateOtpDTO->getOtp())->status === true) {
 
@@ -23,13 +23,12 @@ class ValidateOtpService
 
             $field = $type === 'email' ? 'email' : 'phone';
 
-            $this->companyUserRepository->updateCompanyUserDataInfo($global_id, [
+          return  $this->companyUserRepository->updateUserData($userId, [
                 $field => $identifier,
             ]);
 
             return true;
         }
-
         throw new \ErrorException(__("validation.invalid-otp"), 401);
     }
 }

@@ -20,8 +20,11 @@ class TimeZonePresenter extends AbstractPresenter
     {
         return [
             'id' => $this->timeZone->id,
-            'time_zone' => $this->timeZone->time_zone,
-            'country'=> $this->timeZone->country->name,
+            'zone_name' => $this->timeZone->zone_name,
+            'gmt_offset'=> $this->timeZone->gmt_offset,
+            'gmt_offset_name'=> $this->timeZone->gmt_offset_name,
+            'abbreviation'=> $this->timeZone->abbreviation,
+            'tz_name'=> $this->timeZone->tz_name,
         ];
     }
 }

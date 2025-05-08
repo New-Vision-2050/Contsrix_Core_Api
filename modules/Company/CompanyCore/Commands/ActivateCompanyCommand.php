@@ -32,9 +32,9 @@ class ActivateCompanyCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'is_active' => $this->is_active,
             'date_activate' => $this->date_activate,
-        ], fn($value) => $value !== null);
+        ];
     }
 }

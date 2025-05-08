@@ -4,11 +4,16 @@ FROM mabou7agar/custom-nginx-php8-2
 # RUN docker-php-ext-install sockets \
 #     && docker-php-ext-enable sockets
 
+#RUN apt-get update && apt-get install -y \
+#        libmagickwand-dev --no-install-recommends \
+#    && pecl install imagick \
+#    && docker-php-ext-install sockets \
+#    && docker-php-ext-enable imagick sockets
+
+# Install zip extension
 RUN apt-get update && apt-get install -y \
-        libmagickwand-dev --no-install-recommends \
-    && pecl install imagick \
-    && docker-php-ext-install sockets \
-    && docker-php-ext-enable imagick sockets
+    libzip-dev zip unzip \
+    && docker-php-ext-install zip
 
 ARG CACHEBUST=1
 ## Set working directory
@@ -24,6 +29,9 @@ COPY devops/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY devops/nginx/sites-enabled/default.conf /etc/nginx/sites-enabled/default.conf
 COPY devops/supervisord.conf /etc/supervisord.conf
 
+RUN echo "upload_max_filesize=200M" > /usr/local/etc/php/conf.d/uploads.ini
+RUN echo "post_max_size=200M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 RUN mkdir -p storage/framework/sessions && \
     mkdir -p storage/framework/views && \
     mkdir -p storage/framework/cache && \
@@ -35,7 +43,7 @@ RUN mkdir -p bootstrap/cache && \
    chmod -R 775 bootstrap/cache
 
 ## Install Laravel dependencies
-RUN composer install --optimize-autoloader --no-scripts
+RUN composer install --no-scripts
 
 EXPOSE 80
 

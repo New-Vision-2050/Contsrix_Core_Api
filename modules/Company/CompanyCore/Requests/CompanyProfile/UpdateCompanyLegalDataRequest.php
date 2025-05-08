@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Modules\Company\CompanyCore\Commands\CompanyProfile\UpdateCompanyLegalDataCommand;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Ramsey\Uuid\Uuid;
+
+class UpdateCompanyLegalDataRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            "data" => 'required|array',
+            "data.*.id" => 'required|exists:company_legal_data,id',
+            "data.*.start_date" => 'required|date|before_or_equal:data.*.end_date',
+            'data.*.end_date' => 'required|date|after_or_equal:data.*.start_date',
+            "data.*.file"=>"mimes:pdf,jpeg,jpg,png,doc,docx"
+            ];
+    }
+
+    public function createUpdateLegalCompanyDataCommand(): UpdateCompanyLegalDataCommand
+    {
+
+        return new UpdateCompanyLegalDataCommand (
+            data: $this->data
+
+        );
+    }
+}
+

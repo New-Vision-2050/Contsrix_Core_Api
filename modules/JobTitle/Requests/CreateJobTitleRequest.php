@@ -14,6 +14,8 @@ class CreateJobTitleRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
+            'job_type_id' => 'required|uuid|exists:job_types,id',
+            'description' => 'required|string',
         ];
     }
 
@@ -21,6 +23,8 @@ class CreateJobTitleRequest extends FormRequest
     {
         return new CreateJobTitleDTO(
             name: $this->get('name'),
+            job_type_id: Uuid::fromString($this->get('job_type_id')),
+            description: $this->get('description'),
         );
     }
 }

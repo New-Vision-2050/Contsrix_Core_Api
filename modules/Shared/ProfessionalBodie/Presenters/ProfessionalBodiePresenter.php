@@ -21,6 +21,7 @@ class ProfessionalBodiePresenter extends AbstractPresenter
         return [
             'id' => $this->professionalBodie->id,
             'name' => $this->professionalBodie->name,
+            'code' =>$this->professionalBodie->code,
         ];
     }
 }

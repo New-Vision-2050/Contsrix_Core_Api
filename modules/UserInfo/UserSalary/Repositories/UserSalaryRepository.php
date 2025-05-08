@@ -39,6 +39,21 @@ class UserSalaryRepository extends BaseRepository
         return $this->create($data);
     }
 
+    public function createOrUpdateUserSalary(array $data): UserSalary
+    {
+        $userSalary = $this->model->where([
+            'global_id' => $data['global_id'],
+            'company_id' => $data['company_id'],
+        ])->first();
+
+        if ($userSalary) {
+            $userSalary->update($data);
+            return $userSalary;
+        }
+
+        return $this->model->create($data);
+    }
+
     public function updateUserSalary(UuidInterface $id, array $data): bool
     {
         return $this->update($id, $data);

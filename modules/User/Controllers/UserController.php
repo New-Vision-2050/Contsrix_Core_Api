@@ -7,6 +7,8 @@ namespace Modules\User\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\User\Requests\ExportUsersRequest;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
@@ -19,6 +21,7 @@ use Modules\User\Presenters\UserWithLoginWayPresenter;
 use Modules\User\Requests\AssignRolesForUserRequest;
 use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
+use Modules\User\Requests\GetAdminUsersRequest;
 use Modules\User\Requests\GetUserAuditListRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
@@ -48,7 +51,7 @@ class UserController extends Controller
     {
         $list = $this->userService->list(
             (int)$request->get('page', 1),
-            (int)$request->get('per_page', 10)
+            (int)$request->get('per_page', 10000)
         );
 
         return Json::items(UserPresenter::collection($list['data']),paginationSettings: $list['pagination']);
@@ -166,5 +169,36 @@ class UserController extends Controller
     {
 
         return Json::items(CompanyPresenter::collection($this->userService->getAvailableTenantForUser(auth()->user()->id)));
+    }
+
+    public function getAdminUsers(GetAdminUsersRequest $request): JsonResponse
+    {
+        $list = $this->userService->getAdminUsersFromCentralCompanies(
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
+        );
+
+        return Json::items(UserPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    /**
+     * Export users data as Excel/CSV
+     *
+     * @param ExportUsersRequest $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function export(ExportUsersRequest $request)
+    {
+        $userIds = $request->input('ids');
+        $format = strtolower($request->input('format', 'xlsx'));
+
+        if (!in_array($format, ['xlsx', 'csv'])) {
+            return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
+        }
+
+        $export = $this->userService->export($userIds, $format);
+        $filename = 'users_export_' . now()->format('Y-m-d_H-i-s');
+
+        return Excel::download($export, $filename . '.' . $format);
     }
 }

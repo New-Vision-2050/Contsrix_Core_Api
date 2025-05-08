@@ -6,20 +6,25 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
+use App\Scopes\CustomTenantScope;
 use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\CompanyUser\Models\CompanyUser;
 use Modules\Setting\Models\LoginWay;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Modules\SubEntity\Models\SubEntity;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -36,7 +41,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use CustomBelongsToTenant;
 
 
-    //use SoftDeletes;
+    use SoftDeletes;
 
 //    public array $translatable = [];
     protected $primaryKey = "id";
@@ -52,7 +57,9 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "phone_code",
         "login_way_id",
         "global_company_user_id",
-        "company_id"
+        "company_id",
+        "is_owner",
+        "management_hierarchy_id"
     ];
 
     protected $casts = [
@@ -72,6 +79,27 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+     /**
+     * Get attributes available for sub-entities excluding sensitive fields (like password).
+     *
+     * @return array
+     * @todo create an interface & trait
+     */
+    public static function getSubEntitiesAvailableAttributes()
+    {
+       return [
+            'name',
+            'email',
+            'phone',
+            "phone_code",
+            "login_way_id",
+            "global_company_user_id",
+            "company_id",
+            "is_owner",
+            "management_hierarchy_id"
+       ];
     }
 
     protected static function newFactory(): UserFactory
@@ -97,5 +125,10 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function companyUser()
+    {
+        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
     }
 }

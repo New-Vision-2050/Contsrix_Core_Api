@@ -6,9 +6,8 @@ namespace Modules\Shared\University\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-use Ramsey\Uuid\UuidInterface;
 use Modules\Shared\University\Models\University;
-
+use Ramsey\Uuid\UuidInterface;
 /**
  * @property University $model
  * @method University findOneOrFail($id)

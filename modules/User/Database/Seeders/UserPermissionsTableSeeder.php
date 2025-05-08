@@ -22,8 +22,8 @@ class UserPermissionsTableSeeder extends Seeder
         Model::unguard();
         $operations  = ["create","update","delete","list","show"];
         $modules  = ["user"];
-        if (App::environment('production') == false)
-        {
+        //if (App::environment('production') == false)
+        //{
 
             foreach ($operations as $operation)
             {
@@ -37,5 +37,5 @@ class UserPermissionsTableSeeder extends Seeder
         }
 
         // $this->call("OthersTableSeeder");
-    }
+    //}
 }

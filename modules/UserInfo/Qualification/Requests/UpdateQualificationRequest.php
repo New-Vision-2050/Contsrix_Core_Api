@@ -31,7 +31,7 @@ class UpdateQualificationRequest extends FormRequest
             university_id:$this->get('university_id'),
             academic_qualification_id:$this->get('academic_qualification_id'),
             academic_specialization_id:$this->get('academic_specialization_id'),
-            study_rate:(int) $this->get('study_rate'),
+            study_rate:$this->get('study_rate'),
             graduation_date:$this->get('graduation_date'),
         );
     }

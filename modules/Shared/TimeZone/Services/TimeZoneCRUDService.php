@@ -24,9 +24,22 @@ class TimeZoneCRUDService
 
     public function list(int $page = 1, int $perPage = 10): array
     {
+        $countryId = request('country_id');
+
         return $this->repository->paginated(
-            page: $page,
-            perPage: $perPage,
+            [],
+            $page,
+            $perPage,
+            'created_at',
+            'desc',
+            function ($query) use ($countryId) {
+                // Ensure the country is active
+                $query->whereHas('country', fn($q) => $q->where('status', 1));
+
+                if ($countryId) {
+                    $query->orderByRaw('country_id = ? DESC', [$countryId]);
+                }
+            }
         );
     }
 

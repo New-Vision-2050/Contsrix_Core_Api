@@ -9,9 +9,14 @@ return new class extends Migration
     public function up()
     {
         Schema::create('languages', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('name')->nullable();
-            $table->string('short_name')->nullable();
+            $table->id()->primary();
+            $table->string('lang');
+            $table->string('lang_ar');
+            $table->string('native');
+            $table->string('iso_code')->nullable();
+            $table->tinyInteger('is_active');
+            $table->tinyInteger('is_rtl');
+            $table->tinyInteger('is_default');
             $table->timestamps();
         });
     }

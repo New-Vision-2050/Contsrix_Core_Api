@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
@@ -52,5 +53,10 @@ class CompanyWidgetService
             $completeDataCalculate,
             $dataActivateCalculate
         );
+    }
+
+    public function clearWidgetCache(): void
+    {
+        Cache::forget('company_widget_statistics');
     }
 }

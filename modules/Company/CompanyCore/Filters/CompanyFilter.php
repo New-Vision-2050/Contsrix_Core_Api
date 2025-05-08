@@ -12,8 +12,9 @@ class CompanyFilter extends SearchModelFilter
 
     public function name($name)
     {
-        return $this->where('name', 'like', '%'.$name .'%');
+        return $this->whereTranslatable('name',$name);
     }
+
     public function country($countryId)
     {
         return $this->where('country_id', $countryId);
@@ -24,7 +25,7 @@ class CompanyFilter extends SearchModelFilter
     }
     public function companyField($companyFieldId)
     {
-        return $this->where('company_field_id', $companyFieldId);
+        return $this->whereHas('companyFields',function($q) use ($companyFieldId) {$q->where('id',$companyFieldId);});
     }
 
 
@@ -34,12 +35,11 @@ class CompanyFilter extends SearchModelFilter
 
         $query->when($search, function ($q) use ($search) {
             $q->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
+                $q->whereTranslatable('name',$search)
                     ->orWhere('user_name', 'like', '%' . $search . '%')
                     ->orWhere('phone', 'like', '%' . $search . '%')
                     ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('serial_no', 'like', '%' . $search . '%')
-                    ->orWhere('registration_no', 'like', '%' . $search . '%');
+                    ->orWhere('serial_no', 'like', '%' . $search . '%');
             });
         });
 

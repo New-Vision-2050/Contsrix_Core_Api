@@ -23,11 +23,13 @@ class JobOfferCRUDService
     ) {
     }
 
-    public function create(CreateJobOfferDTO $createJobOfferDTO)//: JobOffer
+    public function create(CreateJobOfferDTO $createJobOfferDTO,$request): JobOffer
     {
         $jobOffer = $this->repository->createOrUpdateJobOffer($createJobOfferDTO->toArray());
 
-        $file = $createJobOfferDTO->file;
+        $inputFile = $request->input('file');
+        $file = $$request->file('file');
+
         $company_id = $createJobOfferDTO->company_id;
         $global_id = $createJobOfferDTO->global_id;
 
@@ -35,7 +37,7 @@ class JobOfferCRUDService
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
         if ($file) {
-            $user->clearMediaCollection('upload_offerjob');
+            $jobOffer->clearMediaCollection('upload_offerjob');
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
@@ -46,6 +48,10 @@ class JobOfferCRUDService
                 'upload_offerjob',
                 $visibility
             );
+        }else{
+            if (!isset($inputFile['id'])) {
+                $jobOffer->clearMediaCollection('upload_offerjob');
+            }
         }
         return $jobOffer;
     }

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Services;
 
-use Illuminate\Support\Collection;
+use Faker\Core\Uuid;
+use Modules\Company\ManagementHierarchy\DTO\CreateBranchDTO;
+use Modules\Company\ManagementHierarchy\DTO\CreateDepartmentDTO;
+use Modules\Company\ManagementHierarchy\DTO\CreateManagementDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
@@ -22,6 +25,23 @@ class ManagementHierarchyCRUDService
          return $this->repository->createManagementHierarchy($createManagementHierarchyDTO->toArray());
     }
 
+    public function createBranch(CreateBranchDTO $createBranchDTO): ManagementHierarchy
+    {
+         return $this->repository->createBranch($createBranchDTO->branchToArray(), $createBranchDTO->AddressToArray());
+    }
+
+
+
+    public function createManagement(CreateManagementDTO $createManagementDTO): ManagementHierarchy
+    {
+         return $this->repository->createManagement($createManagementDTO->managementToArray(),$createManagementDTO->managementDetailToArray(),$createManagementDTO->getDeputyManagerIds());
+    }
+
+    public function createDepartment(CreateDepartmentDTO $createDepartmentDTO): ManagementHierarchy
+    {
+         return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray());
+    }
+
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
@@ -29,11 +49,35 @@ class ManagementHierarchyCRUDService
             perPage: $perPage,
         );
     }
+    public function listWithoutPagination()
+    {
+        return $this->repository->getAll();
+    }
 
-    public function get(UuidInterface $id): ManagementHierarchy
+    public function listCompany($type,int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->paginated(
+            ['type'=>$type],
+            page: $page,
+            perPage: $perPage,
+        );
+    }
+
+    public function get(int $id): ManagementHierarchy
     {
         return $this->repository->getManagementHierarchy(
             id: $id,
         );
     }
+
+    public function getTree()
+    {
+        return $this->repository->getTree();
+    }
+
+    public function getLowerUsers(UuidInterface $id)
+    {
+        return $this->repository->getUserLowerLevels($id);
+    }
+
 }

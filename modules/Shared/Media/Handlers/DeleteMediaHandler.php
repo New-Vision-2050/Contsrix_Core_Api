@@ -14,8 +14,10 @@ class DeleteMediaHandler
     ) {
     }
 
-    public function handle(UuidInterface $id)
+    public function handle($ids)
     {
-        $this->repository->deleteMedia($id);
+        $ids = is_array($ids) ? $ids : [$ids];
+
+        return  $this->repository->delete($ids);
     }
 }

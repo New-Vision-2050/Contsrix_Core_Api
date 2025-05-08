@@ -3,19 +3,12 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
-use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
-use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
-use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
+use Modules\SubEntity\Database\Seeders\SubEntityDatabaseSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
-use Modules\User\Database\Seeders\AdminSeedTableSeeder;
-use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
+use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
-use Modules\Shared\Currency\Database\Seeders\CurrencySeederTableSeeder;
-use Modules\Shared\Language\Database\Seeders\LanguageSeederTableSeeder;
-use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
-use Ranium\SeedOnce\Traits\SeedOnce;
+use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -26,7 +19,6 @@ class TenantDatabaseSeeder extends Seeder
     {
 //        $this->call(RolesAndPermissionsSeeder::class);
 //        $this->call(CountrySeederTableSeeder::class);
-//        $this->call(JobTitleModulesSeederTableSeeder::class);
 //        $this->call(TimeZoneSeederTableSeeder::class);
 //        $this->call(LanguageSeederTableSeeder::class);
 //        $this->call(CurrencySeederTableSeeder::class);
@@ -34,6 +26,7 @@ class TenantDatabaseSeeder extends Seeder
 
 //        $this->call(CompanyModulesSeederTableSeeder::class);
 
+        $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
         $this->call(QuestionSettingTableSeeder::class);
@@ -41,6 +34,6 @@ class TenantDatabaseSeeder extends Seeder
 
         $this->call(DefaultLoginWaySeederTableSeeder::class);
 
-
+        $this->call(SubEntityDatabaseSeeder::class);
     }
 }

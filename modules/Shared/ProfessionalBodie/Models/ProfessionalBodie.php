@@ -26,6 +26,7 @@ class ProfessionalBodie extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'code'
     ];
 
     protected $casts = [

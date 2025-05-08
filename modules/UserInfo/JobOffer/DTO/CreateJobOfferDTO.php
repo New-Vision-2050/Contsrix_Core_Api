@@ -15,7 +15,6 @@ class CreateJobOfferDTO
         public string $job_offer_number,
         public string $date_send,
         public string $date_accept,
-        public ? UploadedFile $file,
 
     ) {
     }
@@ -28,7 +27,6 @@ class CreateJobOfferDTO
             'job_offer_number'=> $this->job_offer_number,
             'date_send'=> $this->date_send,
             'date_accept'=> $this->date_accept,
-            'file' => $this->file?->getClientOriginalName(),
         ];
     }
 }

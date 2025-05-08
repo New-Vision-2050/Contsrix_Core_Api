@@ -21,6 +21,7 @@ class AcademicSpecializationPresenter extends AbstractPresenter
         return [
             'id' => $this->academicSpecialization->id,
             'name' => $this->academicSpecialization->name,
+            'code' =>$this->academicSpecialization->code,
         ];
     }
 }

@@ -29,10 +29,9 @@ class ChangeEmailHandler
                 throw new \ErrorException(__("validation.invalid-token"), 403);
             }
 
-            $this->userRepository->updateWhere(['email' => $changeEmailCommand->getEmail()], ["email" => $changeEmailCommand->getNewEmail()]);
+            $this->userRepository->updateWhere(['id' => $verficationData->user_id], ["email" => $changeEmailCommand->getNewEmail()]);
             $this->sendOtpEmail->sendOtpForEmailChange($verficationData->user_id);
 
-            //TODO: fire event to update user authentication in auth project
 
             DB::commit();
         }

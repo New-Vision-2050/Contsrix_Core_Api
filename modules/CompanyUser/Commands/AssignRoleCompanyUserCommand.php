@@ -21,6 +21,12 @@ class AssignRoleCompanyUserCommand
     }
 
 
+    public function getCompanyId()
+    {
+        return $this->company_id;
+    }
+
+
 
     public function toArray(): array
     {

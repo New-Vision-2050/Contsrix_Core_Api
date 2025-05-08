@@ -34,13 +34,11 @@ class UserPrivilege extends Model
         'company_id',
         'global_id',
         'type_privilege_id',
-        'type_allowance_id',
-        'rate',
+        'type_allowance_code',
+        'charge_amount',
         'description',
         'privilege_id',
         'period_id',
-        'insurance_company',
-        'insurance_number',
     ];
 
     protected $casts = [
@@ -64,7 +62,7 @@ class UserPrivilege extends Model
 
     public function typeAllowance()
     {
-        return $this->belongsTo(TypeAllowance::class);
+        return $this->belongsTo(TypeAllowance::class,'type_allowance_code','code');
     }
 
     public function period()

@@ -25,6 +25,7 @@ class LanguageCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
+            ['is_active' => 1],
             page: $page,
             perPage: $perPage,
         );

@@ -18,7 +18,7 @@ class JobOfferRepository extends BaseRepository
 {
     public function __construct(JobOffer $model)
     {
-        parent::__construct($model);
+        parent::__construct(model: $model);
     }
 
     public function getJobOfferList(?int $page, ?int $perPage = 10): Collection

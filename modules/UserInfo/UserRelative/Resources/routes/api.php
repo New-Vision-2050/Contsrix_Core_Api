@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\UserInfo\UserRelative\Controllers\UserRelativeController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/user/{id}', [UserRelativeController::class, 'index']);
     Route::post('/', [UserRelativeController::class, 'store']);
     Route::get('/{id}', [UserRelativeController::class, 'show']);
