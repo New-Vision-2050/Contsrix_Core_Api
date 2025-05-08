@@ -1,0 +1,14 @@
+{
+    "name": "Program",
+    "alias": "program",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Program\\Providers\\ProgramServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

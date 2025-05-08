@@ -22,11 +22,12 @@ class EmploymentContractCRUDService
     ) {
     }
 
-    public function create(CreateEmploymentContractDTO $createEmploymentContractDTO): EmploymentContract
+    public function create(CreateEmploymentContractDTO $createEmploymentContractDTO ,$request): EmploymentContract
     {
         $employmentContract = $this->repository->createEmploymentContract($createEmploymentContractDTO->toArray());
 
-        $file = $createEmploymentContractDTO->file;
+        $inputFile = $request->input('file');
+        $file = $request->file('file');
         $company_id = $createEmploymentContractDTO->company_id;
         $global_id = $createEmploymentContractDTO->global_id;
 
@@ -34,7 +35,6 @@ class EmploymentContractCRUDService
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
         if ($file) {
-            $employmentContract->clearMediaCollection('upload_employment_contracts');
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
@@ -45,6 +45,11 @@ class EmploymentContractCRUDService
                 'upload_employment_contracts',
                 $visibility
             );
+        }else{
+            if (!isset($inputFile['id'])) {
+                $employmentContract->clearMediaCollection('upload_employment_contracts');
+            }
+
         }
 
         return $employmentContract;

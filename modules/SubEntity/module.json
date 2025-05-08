@@ -1,0 +1,14 @@
+{
+    "name": "SubEntity",
+    "alias": "subentity",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\SubEntity\\Providers\\SubEntityServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

@@ -138,6 +138,10 @@ class UserRepository extends BaseRepository
             $query->whereIn('global_company_user_id', $userIds);
         }
 
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+
         return $query->get();
     }
 

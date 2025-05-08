@@ -3,16 +3,15 @@ name: Backend CI/CD Pipeline
 on:
   push:
     branches:
-      - main
-      - master
+      - production
       - dev
       - stage
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - closed
+#  pull_request:
+#    types:
+#      - opened
+#      - synchronize
+#      - reopened
+#      - closed
 
 jobs:
   deploy:
@@ -60,7 +59,7 @@ jobs:
       - name: Set Environment Variables Based on Branch
         id: set_env
         run: |
-          if [[ "${GITHUB_REF}" == "refs/heads/main" || "${GITHUB_REF}" == "refs/heads/master" ]]; then
+          if [[ "${GITHUB_REF}" == "refs/heads/main" || "${GITHUB_REF}" == "refs/heads/production" ]]; then
             echo "APP_ENV=production" >> $GITHUB_ENV
             echo "APP_DEBUG=false" >> $GITHUB_ENV
           elif [[ "${GITHUB_REF}" == "refs/heads/dev" ]]; then

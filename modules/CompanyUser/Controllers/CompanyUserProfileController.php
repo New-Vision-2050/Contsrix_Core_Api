@@ -70,7 +70,7 @@ class CompanyUserProfileController extends Controller
             Uuid::fromString($userData->global_company_user_id) ,
         );
 
-        $presenter = new CompanyUserPresenter($user);
+        $presenter = new CompanyUserPresenter($user, (string) $userId);
 
         return Json::item($presenter->getData());
     }

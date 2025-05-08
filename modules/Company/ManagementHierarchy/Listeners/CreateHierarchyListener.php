@@ -37,7 +37,18 @@ class CreateHierarchyListener
 
         try {
             DB::beginTransaction();
-            $branch = $this->managementHierarchyRepository->createBranch(["company_id" => $event->data->id, "name" => $event->data->name, "type" => "branch", "is_first_branch" => 1], ["company_id" => $event->data->id, "country_id" => $event->data->country_id]);
+            $branch = $this->managementHierarchyRepository->createBranch([
+                "company_id" => $event->data->id,
+                "name" => $event->data->name,
+                'manager_id' =>$event->data->general_manager_id ,
+                "phone" =>$event->data->phone ,
+                "email" =>$event->data->email ,
+                "type" => "branch",
+                "is_first_branch" => 1
+            ], [
+                "company_id" => $event->data->id,
+                "country_id" => $event->data->country_id
+            ]);
             $this->managementHierarchyRepository->nextId = $branch->id+1;
             $this->managementHierarchyRepository->createManagement(["company_id" => $event->data->id,"parent_id"=>$branch->id, "name" => "الادارة العامة", "type" => "management"], ["description"=>"الادارة العامة"],[]);
             DB::commit();

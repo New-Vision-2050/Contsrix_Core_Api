@@ -40,8 +40,8 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             'Phone',
             'Company',
             'Roles',
-            'Created At',
-            'Last Updated'
+            // 'Created At',
+            // 'Last Updated'
         ];
     }
 
@@ -56,8 +56,8 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             $user->company?->name ?? '',
             $user->roles->pluck('name')->implode(', '),
             //$user->permissions->pluck('name')->implode(', '),
-            $user->created_at?->format('Y-m-d H:i:s'),
-            $user->updated_at?->format('Y-m-d H:i:s')
+            // $user->created_at?->format('Y-m-d H:i:s'),
+            // $user->updated_at?->format('Y-m-d H:i:s')
         ];
     }
 

@@ -26,7 +26,6 @@ class CreateEmploymentContractDTO
         public string $annual_leave,
         public string $country_id,
         public string $right_terminate_id,
-        public ?UploadedFile $file,
 
         public string $contract_duration_unit,
         public string $notice_period_unit,
@@ -54,7 +53,6 @@ class CreateEmploymentContractDTO
             'annual_leave' => $this->annual_leave,
             'country_id' => $this->country_id,
             'right_terminate_id' => $this->right_terminate_id,
-            'file' => $this->file?->getClientOriginalName(),
 
             'contract_duration_unit' => $this->contract_duration_unit,
             'notice_period_unit' => $this->notice_period_unit,
