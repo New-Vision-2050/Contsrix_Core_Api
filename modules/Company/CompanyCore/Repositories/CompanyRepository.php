@@ -181,6 +181,7 @@ class CompanyRepository extends BaseRepository
 
         },"companyOfficialDocuments"=>function ($query)use ($branch) {
             $query->where("management_hierarchy_id",$branch->id);}
+
         ]))->first();
     }
 
