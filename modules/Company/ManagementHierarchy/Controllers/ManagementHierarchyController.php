@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Request;
 use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Handlers\MakeBranchMainHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateBranchHandler;
+use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
@@ -30,6 +31,7 @@ use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
@@ -43,6 +45,7 @@ class ManagementHierarchyController extends Controller
         private MakeBranchMainHandler            $makeBranchMainHandler,
         private UpdateBranchHandler              $updateBranchHandler,
         private ManagementHierarchyRepository    $managementHierarchyRepository,
+        private UpdateManagementHandler          $updateManagementHandler
     )
     {
     }
@@ -148,6 +151,18 @@ class ManagementHierarchyController extends Controller
         $this->deleteManagementHierarchyHandler->handle((int)($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function updateManagement(UpdateManagementRequest $request): JsonResponse
+    {
+        $command = $request->createUpdateManagementCommand();
+        $this->updateManagementHandler->handle($command);
+
+        $item = $this->managementHierarchyService->get($command->getId());
+
+        $presenter = new ManagementPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 
     public function presentTree(GetManagementHierarchyLookupRequest $request)
