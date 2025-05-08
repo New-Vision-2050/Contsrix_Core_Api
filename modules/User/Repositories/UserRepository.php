@@ -140,10 +140,10 @@ class UserRepository extends BaseRepository
 
         return $query->get();
     }
-    
+
     /**
      * Get user count statistics for a company
-     * 
+     *
      * @param string|int $companyId
      * @return array
      */
@@ -151,17 +151,17 @@ class UserRepository extends BaseRepository
     {
         // Total users in the company
         $totalUsers = $this->model->where('company_id', $companyId)->count();
-        
+
         // Users with hierarchy ID
         $usersWithHierarchy = $this->model->where('company_id', $companyId)
             ->whereNotNull('management_hierarchy_id')
             ->count();
-        
+
         // Users without hierarchy ID
         $usersWithoutHierarchy = $this->model->where('company_id', $companyId)
             ->whereNull('management_hierarchy_id')
             ->count();
-        
+
         return [
             'total_users' => $totalUsers,
             'users_with_hierarchy' => $usersWithHierarchy,

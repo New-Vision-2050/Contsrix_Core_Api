@@ -62,11 +62,11 @@ trait CalculateTreeManagementHierarchy
             $managementCount = $descendants->where('type', 'management')->count();
             $departmentCount = $descendants->where('type', 'department')->count();
 
-            // Adjust counts if the current node is of the same type (to avoid counting itself)
-            if ($this->type == 'branch') $branchCount--;
-            if ($this->type == 'management') $managementCount--;
-            if ($this->type == 'department') $departmentCount--;
-
+//            // Adjust counts if the current node is of the same type (to avoid counting itself)
+//            if ($this->type == 'branch') $branchCount--;
+//            if ($this->type == 'management') $managementCount--;
+//            if ($this->type == 'department') $departmentCount--;
+//
             // Ensure no negative counts
             $branchCount = max(0, $branchCount);
             $managementCount = max(0, $managementCount);

@@ -59,7 +59,8 @@ class ManagementHierarchyRepository extends BaseRepository
 
                     $query->where("type", "department");
                 }
-            })->when(request()->has("id")&& $managementHierarchy, function ($query) use ($managementHierarchy) {
+            })
+            ->when(request()->has("id")&& $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
 
             })->get()->tree();
