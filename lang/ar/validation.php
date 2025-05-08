@@ -235,6 +235,22 @@ return [
             'passport_unique' => 'رقم الجواز يجب أن يكون فريدًا.',
             'identity_unique' => 'رقم الهوية يجب أن يكون فريدًا.',
         ],
+
+        'company_legal' => [
+        'registration_type_required' => 'نوع التسجيل مطلوب.',
+        'registration_type_exists' => 'نوع التسجيل المحدد غير موجود.',
+        'registration_number_required' => 'رقم التسجيل مطلوب.',
+        'start_date_required' => 'تاريخ البدء مطلوب.',
+        'start_date_invalid' => 'تاريخ البدء غير صالح.',
+        'start_date_before_end' => 'تاريخ البدء يجب أن يكون قبل أو يساوي تاريخ الانتهاء.',
+        'end_date_required' => 'تاريخ الانتهاء مطلوب.',
+        'end_date_invalid' => 'تاريخ الانتهاء غير صالح.',
+        'end_date_after_start' => 'تاريخ الانتهاء يجب أن يكون بعد أو يساوي تاريخ البدء.',
+        'file_required' => 'الملف مطلوب.',
+        'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
+    ],
+
+
         'validation_failed'   => 'فشل التحقق من الصحة',
         'unauthenticated'     => 'غير مصادق عليه',
         'unauthorized'        => 'غير مصرح به',
