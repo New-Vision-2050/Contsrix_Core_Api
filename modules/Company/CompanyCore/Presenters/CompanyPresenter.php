@@ -45,6 +45,10 @@ class CompanyPresenter extends AbstractPresenter
             'user_name' => $this->company->user_name,
             'email' => $this->company->owner?->email,
             'phone' => $this->company->owner?->phone,
+
+            'owner_id' => $this->company->owner?->id,
+            'owner_name' => $this->company->owner?->name,
+
             'serial_no' => $this->company?->serial_no,
             'country_id' => $this->company->country_id,
             'country_name' => $this->company->country?->name,
@@ -74,10 +78,19 @@ class CompanyPresenter extends AbstractPresenter
             "main_branch" => [
                 "name" => $this->company->mainBranch?->name
             ],
+
+            //TODO we will separate in new api
             "company_legal_data" => CompanyLegalDataPresenter::collection($this->company->companyLegalData),
+
+            //TODO we will separate in new api
             "company_address" => $this->appendDateToAddress($this->company?->companyAddress),
+
+            //TODO we will separate in new api
             "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
+
+            //TODO we will separate in new api
             "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
+
             "created_at" => $this->company->created_at,
         ];
     }

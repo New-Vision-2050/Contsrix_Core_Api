@@ -12,6 +12,7 @@ use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeues
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Ramsey\Uuid\UuidInterface;
 
 /**
  * @property ManagementHierarchy $model
@@ -303,5 +304,93 @@ class ManagementHierarchyRepository extends BaseRepository
             'used_count' => $usedCount,
             'unused_count' => $unusedCount
         ];
+    }
+
+    /**
+     * Get all lower level users in the management hierarchy tree for a specific user
+     * First checks if the user is a manager or deputy manager of any hierarchy
+     * get user in all hirarchy recuservly and make it unique to omit redduncey
+     *
+     * @param int $userId The ID of the user
+     */
+    public function getUserLowerLevels(UuidInterface $userId)
+    {
+        // Get the user
+        $user = User::findOrFail($userId);
+        $lowerUsers = collect();
+        $managementHierarchies = collect();
+        $lowerUsers->push($user);// Add the user as an option
+
+        // Check if the user is a manager of any hierarchy
+        $managerHierarchies = $this->model->where('manager_id', $userId)->get();
+
+        // Check if the user is a deputy manager in any hierarchy
+        $deputyManagerDetails = ManagementHierarchyDetailManager::where('deputy_manager_id', $userId)
+            ->with('managementHierarchyDetail.managementHierarchy')
+            ->get();
+
+        $deputyManagerHierarchies = collect();
+        foreach ($deputyManagerDetails as $deputyDetail) {
+            if ($deputyDetail->managementHierarchyDetail && $deputyDetail->managementHierarchyDetail->managementHierarchy) {
+                $deputyManagerHierarchies->push($deputyDetail->managementHierarchyDetail->managementHierarchy);
+            }
+        }
+
+        // Combine all hierarchies where the user is in a management position
+        $managementHierarchies = $managerHierarchies->merge($deputyManagerHierarchies);
+
+        // If user is not a manager or deputy manager anywhere, use their assigned hierarchy
+        if ( $user->management_hierarchy_id) {
+            $userHierarchy = $this->model
+                ->where('id', $user->management_hierarchy_id)
+                ->first();
+
+            if ($userHierarchy) {
+                $managementHierarchies->push($userHierarchy);
+            }
+        }
+
+        // For each hierarchy where the user has a management role, get all descendants
+        foreach ($managementHierarchies as $hierarchy) {
+            // Get all descendants of this hierarchy
+            $descendants = $hierarchy->descendants()->with(['user', 'detail.deputyManagers', 'directUserChildren'])->get();
+
+            // Collect all users from descendants
+            foreach ($descendants as $descendant) {
+                // Add the main manager if exists and it's not the current user
+                if ($descendant->user && $descendant->user->id !== $userId) {
+                    $lowerUsers->push($descendant->user);
+                }
+
+                // Add deputy managers if they exist and not the current user
+                if ($descendant->detail && $descendant->detail->deputyManagers) {
+                    foreach ($descendant->detail->deputyManagers as $deputy) {
+                        if ($deputy->id !== $userId) {
+                            $lowerUsers->push($deputy);
+                        }
+                    }
+                }
+
+                // Add direct user children assigned to this management hierarchy
+                if ($descendant->directUserChildren) {
+                    foreach ($descendant->directUserChildren as $directUser) {
+                        if ($directUser->id !== $userId) {
+                            $lowerUsers->push($directUser);
+                        }
+                    }
+                }
+            }
+
+            // Also add direct user children from the current hierarchy (if not the original user)
+            if ($hierarchy->directUserChildren) {
+                foreach ($hierarchy->directUserChildren as $directUser) {
+                    if ($directUser->id !== $userId) {
+                        $lowerUsers->push($directUser);
+                    }
+                }
+            }
+        }
+
+        return $lowerUsers->unique('id');
     }
 }

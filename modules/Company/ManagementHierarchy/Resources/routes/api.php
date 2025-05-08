@@ -13,6 +13,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/tree', [ManagementHierarchyController::class, 'presentTree']);
     Route::get('/tree-direct-children', [ManagementHierarchyController::class, 'directChildrenTree']);
     Route::get('/user', [ManagementHierarchyController::class, 'hierarchies']);
+    Route::get('/user-lower-levels', [ManagementHierarchyController::class, 'getUserLowerLevels']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
     Route::post('/create-department', [ManagementHierarchyController::class, 'createDepartment']);

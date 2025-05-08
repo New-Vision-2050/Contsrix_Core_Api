@@ -22,7 +22,7 @@ class ManagementHierarchyDetail extends Model
 {
     use HasFactory;
 
-//    use UuidTrait;
+    use UuidTrait;
     use BaseFilterable;
 
 //    use AsTree;
@@ -39,17 +39,17 @@ class ManagementHierarchyDetail extends Model
 
     public $incrementing = false;
 
-//    protected $keyType = 'string';
+    protected $keyType = 'string';
 
     protected $fillable = [
-//        "id",
+        "id",
         "description",
         "reference_user_id",
         "management_hierarchy_id"
     ];
 
     protected $casts = [
-//        'id' => 'string',
+        'id' => 'string',
         'reference_user_id' => 'string',
     ];
 
@@ -67,14 +67,35 @@ class ManagementHierarchyDetail extends Model
         return ManagementHierarchyFactory::new();
     }
 
+    /**
+     * Get the management hierarchy this detail belongs to
+     */
     public function managementHierarchy()
     {
-        return $this->belongsTo(ManagementHierarchy::class , "management_hierarchy_id");
+        return $this->belongsTo(ManagementHierarchy::class, "management_hierarchy_id");
     }
 
+    /**
+     * Get the deputy manager relationships for this management hierarchy detail
+     */
+    public function deputyManagerRelations()
+    {
+        return $this->hasMany(ManagementHierarchyDetailManager::class, 'management_hierarchy_detail_id');
+    }
+
+    /**
+     * Get the deputy managers for this management hierarchy detail
+     */
     public function deputyManagers()
     {
-        return $this->hasMany(ManagementHierarchyDetailManager::class);
+        return $this->hasManyThrough(
+            User::class,
+            ManagementHierarchyDetailManager::class,
+            'management_hierarchy_detail_id',
+            'id',
+            'id',
+            'deputy_manager_id'
+        );
     }
 
     public function referanceUser()
