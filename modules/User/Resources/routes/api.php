@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use Modules\User\Controllers\UserController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [UserController::class, 'index'])->name("users.list");
     //  ->middleware("permission:user.list") Ignore User List For Testing
 
     Route::get('/available-tenants-for-auth-user', [UserController::class, 'getAvailableTenantsForAuthUser'])->name("tenants-for-user");
@@ -25,3 +24,4 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::delete('/{id}', [UserController::class, 'delete'])->middleware("permission:user.delete");
 });
+Route::get('/', [UserController::class, 'index'])->name("users.list");
