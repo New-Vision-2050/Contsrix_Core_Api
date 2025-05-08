@@ -28,6 +28,7 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
 //        $descendants = ManagementHierarchy::query()->whereSelfOrDescendantOf($this->managementHierarchy)->where("company_id", $this->managementHierarchy->company_id)->get();
         $hierarchyCounts = $this->managementHierarchy->getCachedHierarchyCounts()
             ?? $this->managementHierarchy->cacheHierarchyCounts();
+
         $users = $this->managementHierarchy->users?->where("company_id", $this->managementHierarchy->company_id);//theta (1)
         return [
             'id' => $this->managementHierarchy->id,
