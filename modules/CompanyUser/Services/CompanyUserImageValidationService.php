@@ -72,14 +72,32 @@ class CompanyUserImageValidationService
         $img = $manager->read($image);
         $width = $img->width();
         $height = $img->height();
+
         $white = 0;
         $color = 0;
 
-        // Scan first 2 rows
-        for ($x = 0; $x < 2 && $x < $height; $x++) {
-            for ($y = 0; $y < $width; $y++) {
-                $rgb = $img->pickColor($y, $x)->toArray();
-                if ($rgb[0] == 255 && $rgb[1] == 255 && $rgb[2] == 255) {
+        // Coordinates of the 4 corners
+        $corners = [
+            [0, 0],                    // top-left
+            [$width - 1, 0],           // top-right
+            [0, $height - 1],          // bottom-left
+            [$width - 1, $height - 1], // bottom-right
+        ];
+
+        foreach ($corners as [$x, $y]) {
+            $rgb = $img->pickColor($x, $y)->toArray();
+            if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) { // allow slight variation
+                $white++;
+            } else {
+                $color++;
+            }
+        }
+
+        // Sample horizontal and vertical edges (skip corners)
+        for ($i = 10; $i < $width - 10; $i += 20) {
+            foreach ([0, $height - 1] as $y) {
+                $rgb = $img->pickColor($i, $y)->toArray();
+                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
                     $white++;
                 } else {
                     $color++;
@@ -87,17 +105,13 @@ class CompanyUserImageValidationService
             }
         }
 
-        // Scan first 2 columns
-        for ($x = 0; $x < 2 && $x < $width; $x++) {
-            for ($y = 0; $y < $height; $y++) {
-                // Avoid counting the same pixels twice
-                if ($x >= 2 || $y >= 2) {
-                    $rgb = $img->pickColor($x, $y)->toArray();
-                    if ($rgb[0] == 255 && $rgb[1] == 255 && $rgb[2] == 255) {
-                        $white++;
-                    } else {
-                        $color++;
-                    }
+        for ($i = 10; $i < $height - 10; $i += 20) {
+            foreach ([0, $width - 1] as $x) {
+                $rgb = $img->pickColor($x, $i)->toArray();
+                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
+                    $white++;
+                } else {
+                    $color++;
                 }
             }
         }
