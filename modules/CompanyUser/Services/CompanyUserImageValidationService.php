@@ -66,7 +66,7 @@ class CompanyUserImageValidationService
             return $errors;
         }
     }
-    public function checkImageTenant( $image): int
+    public function checkImageTenant($image): int
     {
         $manager = new ImageManager(new Driver());
         $img = $manager->read($image);
@@ -75,12 +75,11 @@ class CompanyUserImageValidationService
         $white = 0;
         $color = 0;
 
-// Iterate over each pixel
-        for ($x = 0; $x < 2; $x++) {
+        // Scan first 2 rows
+        for ($x = 0; $x < 2 && $x < $height; $x++) {
             for ($y = 0; $y < $width; $y++) {
-                $rgb = $img->pickColor($x, $y)->toArray();
-                // Check if the pixel color is white (255, 255, 255)
-                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
+                $rgb = $img->pickColor($y, $x)->toArray();
+                if ($rgb[0] == 255 && $rgb[1] == 255 && $rgb[2] == 255) {
                     $white++;
                 } else {
                     $color++;
@@ -88,28 +87,25 @@ class CompanyUserImageValidationService
             }
         }
 
-        for ($x = 0; $x < 2; $x++) {
+        // Scan first 2 columns
+        for ($x = 0; $x < 2 && $x < $width; $x++) {
             for ($y = 0; $y < $height; $y++) {
-                $rgb = $img->pickColor($y, $x)->toArray();
-                // Check if the pixel color is white (255, 255, 255)
-                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
-                    $white++;
-                } else {
-                    $color++;
+                // Avoid counting the same pixels twice
+                if ($x >= 2 || $y >= 2) {
+                    $rgb = $img->pickColor($x, $y)->toArray();
+                    if ($rgb[0] == 255 && $rgb[1] == 255 && $rgb[2] == 255) {
+                        $white++;
+                    } else {
+                        $color++;
+                    }
                 }
             }
         }
 
         $percentage = ($white / ($white + $color)) * 100;
-//        return response(['kk' => $percentage]);
 
-
-        if ($percentage > 70) {
-            return 1;
-        } else {
-            return 0;
-        }
-
+        return $percentage > 70 ? 1 : 0;
     }
+
 
 }
