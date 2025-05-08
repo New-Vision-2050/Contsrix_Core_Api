@@ -164,6 +164,46 @@ class ManagementHierarchyRepository extends BaseRepository
         return true;
     }
 
+    public function updateManagement(int $id, array $managementData, array $managementDetail, array $deputyManagers): bool
+    {
+        try {
+            DB::beginTransaction();
+            
+            // Update management hierarchy
+            $managementHierarchy = $this->findOneOrFail($id);
+            $managementHierarchy->update($managementData);
+            
+            // Update management detail
+            if ($managementHierarchy->detail) {
+                $managementHierarchy->detail->update($managementDetail);
+            } else {
+                $managementHierarchy->detail()->create($managementDetail);
+            }
+            
+            // Delete existing deputy managers and create new ones
+            if ($managementHierarchy->detail) {
+                $detailId = $managementHierarchy->detail->id;
+                ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
+                
+                // Create new deputy managers
+                if (count($deputyManagers) > 0) {
+                    foreach ($deputyManagers as $deputyManager) {
+                        ManagementHierarchyDetailManager::create([
+                            'deputy_manager_id' => $deputyManager,
+                            'management_hierarchy_detail_id' => $detailId
+                        ]);
+                    }
+                }
+            }
+            
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+        }
+    }
+
     public function deleteManagementHierarchy(int $id): bool
     {
         return $this->delete($id);
