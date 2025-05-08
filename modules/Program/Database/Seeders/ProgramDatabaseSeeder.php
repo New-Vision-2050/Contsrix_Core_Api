@@ -17,12 +17,17 @@ class ProgramDatabaseSeeder extends Seeder
     {
         Model::unguard();
 
-        // $programs = ['human resources', 'companies', 'settings', 'users'];
-        $programs = ['users'];
-
+        $programs = [
+            ['en' => 'companies', 'ar' => 'الشركات'],
+            ['en' => 'human-resources', 'ar' => 'الموارد البشرية'],
+            ['en' => 'settings', 'ar' => 'الإعدادت'],
+            ['en' => 'users', 'ar' => 'المستخدمين'],
+        ];
 
         foreach ($programs as $programName) {
-            Program::firstOrCreate(['name' => $programName]);
+            Program::firstOrCreate (
+                ['name' => $programName]
+            );
         }
     }
 }

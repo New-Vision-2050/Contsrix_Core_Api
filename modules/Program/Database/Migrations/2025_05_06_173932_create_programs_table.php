@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('programs', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name')->unique();
+            $table->json('name');
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();

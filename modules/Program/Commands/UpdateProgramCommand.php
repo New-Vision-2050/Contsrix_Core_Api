@@ -10,7 +10,7 @@ class UpdateProgramCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
+        private array $name,
     ) {
     }
 
@@ -19,7 +19,7 @@ class UpdateProgramCommand
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getName(): ?array
     {
         return $this->name;
     }

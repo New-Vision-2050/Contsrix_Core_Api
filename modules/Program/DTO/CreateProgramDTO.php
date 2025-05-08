@@ -9,7 +9,7 @@ use Ramsey\Uuid\UuidInterface;
 class CreateProgramDTO
 {
     public function __construct(
-        public string $name,
+        public array $name,
     ) {
     }
 
