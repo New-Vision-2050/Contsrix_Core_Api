@@ -38,7 +38,12 @@ class JobType extends Model
     protected $casts = [
         'id' => 'string',
     ];
-
+    protected static function booted()
+    {
+        static::addGlobalScope("active",function ($query) {
+            $query->where('status', 1);
+        });
+    }
     protected static function newFactory(): JobTypeFactory
     {
         return JobTypeFactory::new();

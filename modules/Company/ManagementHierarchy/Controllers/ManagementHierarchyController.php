@@ -34,6 +34,9 @@ use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
+use Modules\Shared\Currency\Requests\GetUsersLowLevelRequest;
+use Modules\User\Models\User;
+use Modules\User\Presenters\UserPresenter;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
 
@@ -45,7 +48,6 @@ class ManagementHierarchyController extends Controller
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
         private UpdateBranchHandler              $updateBranchHandler,
-        private ManagementHierarchyRepository    $managementHierarchyRepository,
         private UpdateManagementHandler          $updateManagementHandler
     )
     {
@@ -187,5 +189,24 @@ class ManagementHierarchyController extends Controller
         return Json::item(ManagementHierarchyUserTreePresenter::collection($this->managementHierarchyService->getTree()));
     }
 
+    /**
+     * Get all lower level users in the management hierarchy tree for a specific user
+     *
+     * @param GetUsersLowLevelRequest $request
+     * @return JsonResponse
+     */
+    public function getUserLowerLevels(GetUsersLowLevelRequest $request)
+    {
+        try {
+            $userId = uuid::fromString($request->input('user_id'));
+            $lowerUsers = $this->managementHierarchyService->getLowerUsers($userId);
+
+            return Json::items(
+                UserPresenter::collection($lowerUsers)
+            );
+        } catch (Exception $e) {
+            return Json::error($e->getMessage(),400);
+        }
+    }
 
 }
