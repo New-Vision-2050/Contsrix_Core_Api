@@ -46,6 +46,22 @@ class CreateCompanyRequest extends FormRequest
             'user_name.required' => __('validation.username_required'),
             'user_name.unique' => __('validation.username_unique'),
             'user_name.regex' => __('validation.username_regex'),
+
+            'name.required' => __('validation.company.name_required'),
+            'name.regex' => __('validation.company.name_arabic'),
+
+            'country_id.required' => __('validation.company.country_required'),
+            'country_id.exists' => __('validation.company.country_exists'),
+
+            'company_field_id.required' => __('validation.company.field_required'),
+            'company_field_id.array' => __('validation.company.field_array'),
+            'company_field_id.*.required' => __('validation.company.field_id_required'),
+            'company_field_id.*.uuid' => __('validation.company.field_id_uuid'),
+            'company_field_id.*.exists' => __('validation.company.field_id_exists'),
+
+            'general_manager_id.required' => __('validation.company.manager_required'),
+            'general_manager_id.uuid' => __('validation.company.manager_uuid'),
+            'general_manager_id.exists' => __('validation.company.manager_exists'),
         ];
     }
 
