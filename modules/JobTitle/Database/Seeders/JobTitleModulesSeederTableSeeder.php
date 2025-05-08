@@ -26,10 +26,11 @@ class JobTitleModulesSeederTableSeeder extends Seeder
             ['en' => 'hr manager', 'ar' => 'مدير الموارد البشرية','type'=>'hr_manager'],
         ];
 
+        $namespace = Uuid::NAMESPACE_DNS;
+        $companyId = Uuid::uuid5($namespace, "new-vision")->toString();
         foreach ($data as $item) {
             JobTitle::Create(
-
-                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type'],"company_id"=>tenant("id")??Company::query()->first()->id]
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type'],"company_id"=>$companyId]
             );
         }
 

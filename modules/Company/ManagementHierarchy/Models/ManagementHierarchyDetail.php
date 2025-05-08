@@ -22,7 +22,7 @@ class ManagementHierarchyDetail extends Model
 {
     use HasFactory;
 
-    use UuidTrait;
+
     use BaseFilterable;
 
 //    use AsTree;
@@ -37,10 +37,6 @@ class ManagementHierarchyDetail extends Model
     protected $table = "management_hierarchy_details";
 
 
-    public $incrementing = false;
-
-    protected $keyType = 'string';
-
     protected $fillable = [
         "id",
         "description",
@@ -49,7 +45,6 @@ class ManagementHierarchyDetail extends Model
     ];
 
     protected $casts = [
-        'id' => 'string',
         'reference_user_id' => 'string',
     ];
 
