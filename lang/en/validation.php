@@ -210,6 +210,8 @@ return [
     "user-already-exists"=>"user already exists",
     "phone-exists"=>"phone exists",
     "phone_email_consistency-error"=>"phone and email consistency error",
+    "can-not-delete-has-children"=>"can not delete has children",
+
 
 
 
