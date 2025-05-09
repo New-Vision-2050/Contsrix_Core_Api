@@ -8,9 +8,9 @@ use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\SubEntity\Database\factories\SubEntityFactory;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class SubEntity extends Model
 {
@@ -37,6 +37,8 @@ class SubEntity extends Model
 
     protected $casts = [
         'id' => 'string',
+        'default_attributes' => 'json',
+        'optional_attributes' => 'json',
     ];
 
     public function mainProgram()

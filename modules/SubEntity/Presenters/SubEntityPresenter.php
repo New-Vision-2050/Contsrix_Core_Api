@@ -6,6 +6,7 @@ namespace Modules\SubEntity\Presenters;
 
 use Modules\SubEntity\Models\SubEntity;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\SubEntity\Services\AttributesTranslationService;
 
 class SubEntityPresenter extends AbstractPresenter
 {
@@ -27,12 +28,8 @@ class SubEntityPresenter extends AbstractPresenter
             'is_registrable' => $this->subEntity->is_registrable,
             'main_program' => $this->subEntity->mainProgram->name ?? null,
             'main_program_id' => $this->subEntity->main_program_id,
-            'default_attributes' => $this->subEntity->default_attributes
-                ? json_decode($this->subEntity->default_attributes, true)
-                : [],
-            'optional_attributes' => $this->subEntity->optional_attributes
-                ? json_decode($this->subEntity->optional_attributes, true)
-                : null,
+            'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
+            'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
             'created_at' => $this->subEntity->created_at?->toIso8601String(),
             'updated_at' => $this->subEntity->updated_at?->toIso8601String(),
         ];
@@ -47,12 +44,23 @@ class SubEntityPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->subEntity->id,
-            'default_attributes' => $this->subEntity->default_attributes
-                ? json_decode($this->subEntity->default_attributes, true)
-                : [],
-            'optional_attributes' => $this->subEntity->optional_attributes
-                ? json_decode($this->subEntity->optional_attributes, true)
-                : null,
+            'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
+            'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
         ];
+    }
+
+    protected function formatAttributes(array|string|null $attributes)
+    {
+        if(empty($attributes)) {
+            return [];
+        }
+
+        if (!is_array($attributes)) {
+            $attributes = json_decode($attributes);
+        }
+
+        return array_map(function($name) {
+            return AttributesTranslationService::getTranslations($name);
+        }, $attributes);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Repositories;
 
+use Illuminate\Database\Eloquent\Model;
+
 class SuperEntityRepository
 {
     public function __construct(protected array $availableSuperEntities = [])
@@ -14,16 +16,16 @@ class SuperEntityRepository
     public function list(): array
     {
         return collect($this->availableSuperEntities)
-            ->pluck('name')
+            ->select('id', 'name')
             ->toArray();
     }
 
-    public function getAvailableAttributes(string $superEntityName): array
+    public function getAvailableAttributes(string $superEntityId): array
     {
-        $entity = collect($this->availableSuperEntities)->firstWhere('name', $superEntityName);
+        $entity = collect($this->availableSuperEntities)->firstWhere('id', $superEntityId);
 
         if (!$entity) {
-            abort(404, "Super entity '{$superEntityName}' not found.");
+            abort(404, "Super entity '{$superEntityId}' not found.");
         }
 
         $modelClass = $entity['model'];
@@ -37,5 +39,20 @@ class SuperEntityRepository
         }
 
         return $modelClass::getSubEntitiesAvailableAttributes();
+    }
+
+    public function getIds(): array
+    {
+        return collect($this->availableSuperEntities)
+            ->pluck('id')
+            ->toArray();
+    }
+
+    public function getModelForId(string $id): ?string
+    {
+        return collect($this->availableSuperEntities)
+            ->where('id', $id)
+            ->pluck('model')
+            ->first();
     }
 }
