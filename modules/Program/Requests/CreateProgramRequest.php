@@ -15,6 +15,7 @@ class CreateProgramRequest extends FormRequest
         return [
             'name_en' => 'required|string|unique:programs,name->en',
             'name_ar' => 'required|string|unique:programs,name->ar',
+            'parent_id' => 'sometimes|exists:programs,id'
         ];
     }
 

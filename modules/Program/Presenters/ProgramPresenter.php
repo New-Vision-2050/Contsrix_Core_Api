@@ -21,6 +21,7 @@ class ProgramPresenter extends AbstractPresenter
         return [
             'id' => $this->program->id,
             'name' => $this->program->name[app()->getLocale()],
+            'slug' => $this->program->slug,
         ];
     }
 }

@@ -6,6 +6,7 @@ namespace Modules\SubEntity\Presenters;
 
 use Modules\SubEntity\Models\SubEntity;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Program\Presenters\ProgramPresenter;
 use Modules\SubEntity\Services\AttributesTranslationService;
 use Modules\SubEntity\Services\SuperEntityService;
 
@@ -30,7 +31,7 @@ class SubEntityPresenter extends AbstractPresenter
             'super_entity' => $this->getSuperEntity($this->subEntity->super_entity),
             'is_active' => $this->subEntity->is_active,
             'is_registrable' => $this->subEntity->is_registrable,
-            'main_program' => ['id' => $this->subEntity->main_program_id, 'name' => $this->subEntity->mainProgram?->name[app()->getLocale()] ?? null],
+            'main_program' => $this->getMainProgram(),
             'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
             'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
             'attributes_count' => $this->subEntity->attributes_count,
@@ -74,6 +75,13 @@ class SubEntityPresenter extends AbstractPresenter
         $superEntity = $this->superEntityService->getById($id);
 
         $presenter = new SuperEntityPresenter($superEntity);
+
+        return $presenter->getData();
+    }
+
+    public function getMainProgram(): ?array
+    {
+        $presenter = new ProgramPresenter($this->subEntity->mainProgram);
 
         return $presenter->getData();
     }
