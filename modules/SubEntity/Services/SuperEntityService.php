@@ -14,9 +14,9 @@ class SuperEntityService
     ) {
     }
 
-    public function list(): array
+    public function list(?string $search = ''): array
     {
-        return $this->repository->list();
+        return $this->repository->list($search);
     }
 
     public function getAvailableAttributes(string $superEntityId): array

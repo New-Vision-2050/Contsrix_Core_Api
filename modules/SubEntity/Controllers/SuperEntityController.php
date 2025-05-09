@@ -19,7 +19,7 @@ class SuperEntityController extends Controller
 
     public function index(): JsonResponse
     {
-        $list = $this->superEntityService->list();
+        $list = $this->superEntityService->list(request()->get('search'));
 
         return Json::items(SuperEntityPresenter::collection($list));
     }
