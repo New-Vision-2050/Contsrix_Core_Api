@@ -30,6 +30,7 @@ class SubEntityPresenter extends AbstractPresenter
             'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
             'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
             'attributes_count' => $this->subEntity->attributes_count,
+            'usage_count' => 0,
             'created_at' => $this->subEntity->created_at?->toIso8601String(),
             'updated_at' => $this->subEntity->updated_at?->toIso8601String(),
         ];
