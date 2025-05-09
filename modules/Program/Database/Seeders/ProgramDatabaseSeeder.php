@@ -4,10 +4,13 @@ namespace Modules\Program\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Program\Models\Program;
+use Ranium\SeedOnce\Traits\SeedOnce;
 use Illuminate\Database\Eloquent\Model;
 
 class ProgramDatabaseSeeder extends Seeder
 {
+    use SeedOnce;
+
     /**
      * Run the database seeds.
      *
