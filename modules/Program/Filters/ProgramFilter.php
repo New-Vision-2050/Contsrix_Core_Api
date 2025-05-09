@@ -12,6 +12,7 @@ class ProgramFilter extends SearchModelFilter
 
         public function name($name)
         {
-            return $this->where('name', $name);
+            $locale = app()->getLocale();
+            return $this->whereLike("name->{$locale}",  "%$name%");
         }
 }
