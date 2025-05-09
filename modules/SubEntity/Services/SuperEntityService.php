@@ -35,4 +35,9 @@ class SuperEntityService
     {
         return $this->repository->getModelForId($id);
     }
+
+    public function getById(string $id): ?array
+    {
+        return $this->repository->getById($id);
+    }
 }

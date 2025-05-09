@@ -55,4 +55,12 @@ class SuperEntityRepository
             ->pluck('model')
             ->first();
     }
+
+    public function getById(string $id): ?array
+    {
+        return collect($this->availableSuperEntities)
+            ->where('id', $id)
+            ->select('id', 'name')
+            ->first();
+    }
 }

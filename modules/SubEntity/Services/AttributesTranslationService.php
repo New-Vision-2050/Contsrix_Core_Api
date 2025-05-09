@@ -10,10 +10,7 @@ class AttributesTranslationService
     {
         return [
             'id' => $key,
-            'name' => [
-                'en' => __($key, [], 'en'),
-                'ar' => __($key, [], 'ar')
-            ]
+            'name' => __($key, [], app()->getLocale()),
         ];
     }
 }

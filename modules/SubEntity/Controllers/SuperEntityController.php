@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Modules\SubEntity\Services\SuperEntityService;
+use Modules\SubEntity\Presenters\SuperEntityPresenter;
 
 class SuperEntityController extends Controller
 {
@@ -20,7 +21,7 @@ class SuperEntityController extends Controller
     {
         $list = $this->superEntityService->list();
 
-        return Json::items($list);
+        return Json::items(SuperEntityPresenter::collection($list));
     }
 
     public function getAvailableAttributes(string $superEntity): JsonResponse
