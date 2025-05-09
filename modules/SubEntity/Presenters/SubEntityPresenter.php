@@ -26,10 +26,11 @@ class SubEntityPresenter extends AbstractPresenter
             'super_entity' => $this->subEntity->super_entity,
             'is_active' => $this->subEntity->is_active,
             'is_registrable' => $this->subEntity->is_registrable,
-            'main_program' => $this->subEntity->mainProgram->name ?? null,
+            'main_program' => $this->subEntity->mainProgram?->name ?? null,
             'main_program_id' => $this->subEntity->main_program_id,
             'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
             'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
+            'attributes_count' => $this->subEntity->attributes_count,
             'created_at' => $this->subEntity->created_at?->toIso8601String(),
             'updated_at' => $this->subEntity->updated_at?->toIso8601String(),
         ];
