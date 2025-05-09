@@ -37,10 +37,10 @@ class SubEntityCRUDService
         );
     }
 
-    public function paginatedByProgramName(string $programName, int $page = 1, int $perPage = 10): array
+    public function paginatedByProgramId(string $programId, int $page = 1, int $perPage = 10): array
     {
-        return $this->repository->getPaginatedByProgramName(
-            programName: $programName,
+        return $this->repository->getPaginatedByProgramId(
+            programId: $programId,
             page: $page,
             perPage: $perPage
         );

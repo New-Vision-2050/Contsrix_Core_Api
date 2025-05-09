@@ -20,5 +20,5 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // super entity attributes
     Route::get('/super_entities/list', [SuperEntityController::class, 'index']);
 
-    Route::get('/super_entities/{superEntityName}/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
+    Route::get('/super_entities/{id}/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
 });

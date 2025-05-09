@@ -6,11 +6,9 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
-use App\Scopes\CustomTenantScope;
 use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -23,8 +21,6 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-use Modules\SubEntity\Models\SubEntity;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -94,11 +90,9 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'email',
             'phone',
             "phone_code",
-            "login_way_id",
-            "global_company_user_id",
-            "company_id",
-            "is_owner",
-            "management_hierarchy_id"
+            "company",
+            'updated_at',
+            'created_at'
        ];
     }
 

@@ -10,8 +10,8 @@ class UpdateSubEntityAttributesCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $default_attributes,
-        private ?string $optional_attributes,
+        private array $default_attributes,
+        private ?array $optional_attributes,
     ) {
     }
 
@@ -19,12 +19,12 @@ class UpdateSubEntityAttributesCommand
     {
         return $this->id;
     }
-    public function getDefaultAttributes(): string
+    public function getDefaultAttributes(): array
     {
         return $this->default_attributes;
     }
 
-    public function getOptionalAttributes(): ?string
+    public function getOptionalAttributes(): ?array
     {
         return $this->optional_attributes;
     }

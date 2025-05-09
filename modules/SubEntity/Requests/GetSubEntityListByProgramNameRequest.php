@@ -12,7 +12,7 @@ class GetSubEntityListByProgramNameRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'program_name' => ['required', 'string'],
+            'program_id' => ['required', 'string', 'exists:programs,id'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];

@@ -13,8 +13,8 @@ class CreateSubEntityDTO
         public string $main_program_id,
         public bool $is_active,
         public bool $is_registrable,
-        public string $default_attributes,
-        public ?string $optional_attributes,
+        public array $default_attributes,
+        public ?array $optional_attributes,
     ) {
     }
 

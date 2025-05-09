@@ -13,14 +13,19 @@ class CreateProgramRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name_en' => 'required|string|unique:programs,name->en',
+            'name_ar' => 'required|string|unique:programs,name->ar',
         ];
     }
 
     public function createCreateProgramDTO(): CreateProgramDTO
     {
         return new CreateProgramDTO(
-            name: $this->get('name'),
+            name: [
+                'en' => $this->get('name_en'),
+                'ar' => $this->get('name_ar'),
+            ]
         );
+
     }
 }

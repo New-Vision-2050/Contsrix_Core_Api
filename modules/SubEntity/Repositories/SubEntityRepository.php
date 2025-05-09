@@ -53,11 +53,11 @@ class SubEntityRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getPaginatedByProgramName(string $programName, int $page = 1, int $perPage = 15): array
+    public function getPaginatedByProgramId(string $programId, int $page = 1, int $perPage = 15): array
     {
         $query = $this->model->newQuery()
-            ->whereHas('mainProgram', function ($q) use ($programName): void {
-                $q->where('name', $programName);
+            ->whereHas('mainProgram', function ($q) use ($programId): void {
+                $q->where('id', $programId);
             });
 
         $count = $query->count();

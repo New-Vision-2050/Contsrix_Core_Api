@@ -6,14 +6,19 @@ namespace Modules\SubEntity\Presenters;
 
 use Modules\SubEntity\Models\SubEntity;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\SubEntity\Services\AttributesTranslationService;
+use Modules\SubEntity\Services\SuperEntityService;
 
 class SubEntityPresenter extends AbstractPresenter
 {
     private SubEntity $subEntity;
+    private SuperEntityService $superEntityService;
 
     public function __construct(SubEntity $subEntity)
     {
         $this->subEntity = $subEntity;
+
+        $this->superEntityService = app(SuperEntityService::class);
     }
 
     protected function present(bool $isListing = false): array
@@ -22,17 +27,14 @@ class SubEntityPresenter extends AbstractPresenter
             'id' => $this->subEntity->id,
             'name' => $this->subEntity->name,
             'icon' => $this->subEntity->icon,
-            'super_entity' => $this->subEntity->super_entity,
+            'super_entity' => $this->getSuperEntity($this->subEntity->super_entity),
             'is_active' => $this->subEntity->is_active,
             'is_registrable' => $this->subEntity->is_registrable,
-            'main_program' => $this->subEntity->mainProgram->name ?? null,
-            'main_program_id' => $this->subEntity->main_program_id,
-            'default_attributes' => $this->subEntity->default_attributes
-                ? json_decode($this->subEntity->default_attributes, true)
-                : [],
-            'optional_attributes' => $this->subEntity->optional_attributes
-                ? json_decode($this->subEntity->optional_attributes, true)
-                : null,
+            'main_program' => ['id' => $this->subEntity->main_program_id, 'name' => $this->subEntity->mainProgram?->name[app()->getLocale()] ?? null],
+            'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
+            'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
+            'attributes_count' => $this->subEntity->attributes_count,
+            'usage_count' => 0,
             'created_at' => $this->subEntity->created_at?->toIso8601String(),
             'updated_at' => $this->subEntity->updated_at?->toIso8601String(),
         ];
@@ -47,12 +49,32 @@ class SubEntityPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->subEntity->id,
-            'default_attributes' => $this->subEntity->default_attributes
-                ? json_decode($this->subEntity->default_attributes, true)
-                : [],
-            'optional_attributes' => $this->subEntity->optional_attributes
-                ? json_decode($this->subEntity->optional_attributes, true)
-                : null,
+            'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
+            'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
         ];
+    }
+
+    protected function formatAttributes(array|string|null $attributes)
+    {
+        if(empty($attributes)) {
+            return [];
+        }
+
+        if (!is_array($attributes)) {
+            $attributes = json_decode($attributes);
+        }
+
+        return array_map(function($name) {
+            return AttributesTranslationService::getTranslations($name);
+        }, $attributes);
+    }
+
+    public function getSuperEntity(string $id): ?array
+    {
+        $superEntity = $this->superEntityService->getById($id);
+
+        $presenter = new SuperEntityPresenter($superEntity);
+
+        return $presenter->getData();
     }
 }

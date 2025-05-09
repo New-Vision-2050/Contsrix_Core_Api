@@ -101,8 +101,8 @@ class SubEntityController extends Controller
 
     public function getByProgram(GetSubEntityListByProgramNameRequest $request): JsonResponse
     {
-        $result = $this->subEntityService->paginatedByProgramName(
-            programName: $request->get('program_name'),
+        $result = $this->subEntityService->paginatedByProgramId(
+            programId: $request->get('program_id'),
             page: (int) $request->get('page', 1),
             perPage: (int) $request->get('per_page', 10),
         );
