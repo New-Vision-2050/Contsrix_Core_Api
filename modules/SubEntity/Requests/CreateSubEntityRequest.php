@@ -7,6 +7,7 @@ namespace Modules\SubEntity\Requests;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\SubEntity\DTO\CreateSubEntityDTO;
+use Modules\SubEntity\Rules\ValidSuperEntityId;
 use Modules\SubEntity\Services\SuperEntityService;
 
 class CreateSubEntityRequest extends FormRequest
@@ -23,7 +24,7 @@ class CreateSubEntityRequest extends FormRequest
                     return $query->where('super_entity', $this->input('super_entity'));
                 })
             ],
-            'super_entity' => ['required', 'string', Rule::in($this->getValidSuperEntitiesIds())],
+            'super_entity' => ['required', 'string', new ValidSuperEntityId()],
             'icon' => 'required|integer|min:0|max:255',
             'main_program_id' => 'required|uuid|exists:programs,id',
             'is_active' => 'sometimes|boolean',
@@ -41,7 +42,6 @@ class CreateSubEntityRequest extends FormRequest
         return [
             'icon.min' => 'Icon code must be between 0-255',
             'icon.max' => 'Icon code must be between 0-255',
-            'super_entity.in' => "Invalid Super entity Id.",
             'name.unique' => 'This name already exists for the selected super entity type',
         ];
     }
@@ -58,12 +58,6 @@ class CreateSubEntityRequest extends FormRequest
             default_attributes: $this->input('default_attributes'),
             optional_attributes: $this->input('optional_attributes'),
         );
-    }
-
-    protected function getValidSuperEntitiesIds()
-    {
-        $superEntityService = app(SuperEntityService::class);
-        return $superEntityService->getIds();
     }
 
     protected function getValidSuperEntityAttributes()
