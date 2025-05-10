@@ -17,6 +17,8 @@ use Modules\SubEntity\Requests\CreateSubEntityRequest;
 use Modules\SubEntity\Requests\DeleteSubEntityRequest;
 use Modules\SubEntity\Requests\UpdateSubEntityRequest;
 use Modules\SubEntity\Requests\GetSubEntityListRequest;
+use Modules\SubEntity\Handlers\UpdateSubEntityStatusHandler;
+use Modules\SubEntity\Requests\UpdateSubEntityStatusRequest;
 use Modules\SubEntity\Handlers\UpdateSubEntityAttributesHandler;
 use Modules\SubEntity\Requests\UpdateSubEntityAttributesRequest;
 use Modules\SubEntity\Requests\GetSubEntityListBySuperEntityIdRequest;
@@ -28,6 +30,7 @@ class SubEntityController extends Controller
         private UpdateSubEntityHandler $updateSubEntityHandler,
         private DeleteSubEntityHandler $deleteSubEntityHandler,
         private UpdateSubEntityAttributesHandler $updateSubEntityAttributesHandler,
+        private UpdateSubEntityStatusHandler $updateSubEntityStatusHandler,
     ) {
     }
 
@@ -126,5 +129,16 @@ class SubEntityController extends Controller
             SubEntityPresenter::selectionCollection($result['data']),
             paginationSettings: $result['pagination']
         );
+    }
+
+    public function updateStatus(UpdateSubEntityStatusRequest $request): JsonResponse{
+        $command = $request->createUpdateSubEntityStatusCommand();
+        $this->updateSubEntityStatusHandler->handle(updateSubEntityStatusCommand: $command);
+
+        $item = $this->subEntityService->get($command->getId());
+
+        $presenter = new SubEntityPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 }

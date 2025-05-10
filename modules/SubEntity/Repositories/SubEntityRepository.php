@@ -98,4 +98,9 @@ class SubEntityRepository extends BaseRepository
             'pagination' => $pagination['pagination'],
         ];
     }
+
+    public function updateSubEntityStatus(UuidInterface $id, array $data): bool
+    {
+        return $this->update($id, $data);
+    }
 }
