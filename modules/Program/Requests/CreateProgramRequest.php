@@ -15,7 +15,7 @@ class CreateProgramRequest extends FormRequest
         return [
             'name_en' => 'required|string|unique:programs,name->en',
             'name_ar' => 'required|string|unique:programs,name->ar',
-            'parent_id' => 'sometimes|exists:programs,id'
+            'parent_id' => 'nullable|exists:programs,id'
         ];
     }
 
@@ -25,7 +25,8 @@ class CreateProgramRequest extends FormRequest
             name: [
                 'en' => $this->get('name_en'),
                 'ar' => $this->get('name_ar'),
-            ]
+            ],
+            parentId: $this->get('parent_id')
         );
 
     }

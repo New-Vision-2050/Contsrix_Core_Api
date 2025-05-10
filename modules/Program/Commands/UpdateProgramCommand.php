@@ -11,6 +11,7 @@ class UpdateProgramCommand
     public function __construct(
         private UuidInterface $id,
         private array $name,
+        private ?string $parentId,
     ) {
     }
 
@@ -28,6 +29,7 @@ class UpdateProgramCommand
     {
         return array_filter([
             'name' => $this->name,
+            'parent_id' => $this->parentId,
         ]);
     }
 }
