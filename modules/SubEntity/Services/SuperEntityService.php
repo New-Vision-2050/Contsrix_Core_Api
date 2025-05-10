@@ -19,7 +19,10 @@ class SuperEntityService
 
     public function list(?string $search = ''): array
     {
-        return $this->repository->list($search);
+        $supEntities = $this->subEntityCRUDService->getSelection();
+        $supEntities = $supEntities['data']->toArray();
+        $subEntities = $this->repository->list($search);
+        return array_merge($supEntities, $subEntities);
     }
 
     public function getAvailableAttributes(string $superEntityId): array
