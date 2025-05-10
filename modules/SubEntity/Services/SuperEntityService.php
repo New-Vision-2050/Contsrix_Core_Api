@@ -27,9 +27,15 @@ class SuperEntityService
 
     public function getAvailableAttributes(string $superEntityId): array
     {
+        $id = $superEntityId;
+        if (Str::isUuid($id)) {
+            $parentSubEntity = $this->subEntityCRUDService->get(id: Uuid::fromString($id));
+            $id = $parentSubEntity?->super_entity;
+        }
+
         return array_map(function($name) {
             return AttributesTranslationService::getTranslations($name);
-        }, $this->repository->getAvailableAttributes($superEntityId) ?? []);
+        }, $this->repository->getAvailableAttributes($id) ?? []);
     }
 
     public function getIds()
