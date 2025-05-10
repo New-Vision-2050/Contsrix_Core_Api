@@ -56,7 +56,6 @@ class SubEntityRepository extends BaseRepository
     public function getPaginatedBySuperEntity(string $superEntityId, ?string $programSlug = null, ?string $entityName = null, int $page = 1, int $perPage = 15): array
     {
         $query = $this->model->newQuery()
-            ->active()
             ->when($entityName, function ($q) use ($entityName) {
                 return $q->where('name', $entityName);
             })
