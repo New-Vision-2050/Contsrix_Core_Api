@@ -114,4 +114,17 @@ class SubEntityController extends Controller
             paginationSettings: $result['pagination']
         );
     }
+
+    public function getSelection(): JsonResponse
+    {
+        $result = $this->subEntityService->getSelection(
+            page: (int) request()->get('page', 1),
+            perPage: (int) request()->get('per_page', 10),
+        );
+
+        return Json::items(
+            SubEntityPresenter::selectionCollection($result['data']),
+            paginationSettings: $result['pagination']
+        );
+    }
 }

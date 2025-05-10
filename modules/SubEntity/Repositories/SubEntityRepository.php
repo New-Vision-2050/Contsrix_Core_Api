@@ -79,4 +79,23 @@ class SubEntityRepository extends BaseRepository
             'pagination' => $pagination['pagination'],
         ];
     }
+
+    public function getSelection(int $page = 1, int $perPage = 15): array
+    {
+        $query = $this->model->newQuery()
+            ->select('id', 'name')
+            ->active()
+            ->when(request()->has('name'), function ($query) {
+                return $query->filter(['name' => request()->get('name')]);
+            });
+
+        $count = $query->count();
+        $data = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();
+        $pagination = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'data' => $data,
+            'pagination' => $pagination['pagination'],
+        ];
+    }
 }

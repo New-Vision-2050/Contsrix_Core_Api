@@ -13,6 +13,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{id}/show/attributes', [SubEntityController::class, 'showAttributes']);
     Route::put('/{id}/update/attributes', [SubEntityController::class, 'updateAttributes']);
     Route::get('/super_entity/sub_tables', [SubEntityController::class, 'getBySuperEntity']);
+    Route::get('/list/selection', [SubEntityController::class, 'getSelection']);
 
     // super entity
     Route::get('/super_entities/list', [SuperEntityController::class, 'index']);
