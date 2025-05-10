@@ -58,6 +58,9 @@ class SubEntityRepository extends BaseRepository
         $query = $this->model->newQuery()
             ->whereHas('mainProgram', function ($q) use ($programId): void {
                 $q->where('id', $programId);
+            })
+            ->when(request()->has('name'), function($q) {
+                return $q->filter(['name' => request()->get('name')]);
             });
 
         $count = $query->count();
