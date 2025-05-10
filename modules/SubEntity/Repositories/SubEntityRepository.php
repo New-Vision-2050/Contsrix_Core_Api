@@ -53,35 +53,21 @@ class SubEntityRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getPaginatedByProgramId(string $programId, int $page = 1, int $perPage = 15): array
-    {
-        $query = $this->model->newQuery()
-            ->whereHas('mainProgram', function ($q) use ($programId): void {
-                $q->where('id', $programId);
-            })
-            ->when(request()->has('name'), function($q) {
-                return $q->filter(['name' => request()->get('name')]);
-            });
-
-        $count = $query->count();
-        $data = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();
-        $pagination = $this->getPaginationInformation($page, $perPage, $count);
-
-        return [
-            'data' => $data,
-            'pagination' => $pagination['pagination'],
-        ];
-    }
-
-    public function getPaginatedBySuperEntity(string $superEntityId, string $programId, int $page = 1, int $perPage = 15): array
+    public function getPaginatedBySuperEntity(string $superEntityId, ?string $programSlug = null, ?string $entityName = null, int $page = 1, int $perPage = 15): array
     {
         $query = $this->model->newQuery()
             ->active()
-            ->select('id', 'name')
+            ->when($entityName, function ($q) use ($entityName) {
+                return $q->where('name', $entityName);
+            })
             ->where('super_entity', $superEntityId)
-            ->where('main_program_id', $programId)
-            ->when(request()->has('name'), function($q) {
-                return $q->filter(['name' => request()->get('name')]);
+            ->when($programSlug, function ($query) use ($programSlug) {
+                return $query->whereHas('mainProgram', function ($q) use ($programSlug): void {
+                    $q->where('slug', $programSlug);
+                });
+            })
+            ->when(request()->has('name'), function ($query) {
+                return $query->filter(['name' => request()->get('name')]);
             });
 
         $count = $query->count();

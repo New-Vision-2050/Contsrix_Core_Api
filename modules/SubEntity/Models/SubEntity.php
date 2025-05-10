@@ -53,10 +53,7 @@ class SubEntity extends Model
 
     public function getAttributesCountAttribute(): int
     {
-        $default = is_array($this->default_attributes) ? count($this->default_attributes) : 0;
-        $optional = is_array($this->optional_attributes) ? count($this->optional_attributes) : 0;
-
-        return $default + $optional;
+       return is_array($this->optional_attributes) ? count($this->optional_attributes) : 0;
     }
 
     /**

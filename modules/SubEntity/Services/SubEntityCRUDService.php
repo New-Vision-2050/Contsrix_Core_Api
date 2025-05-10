@@ -37,20 +37,12 @@ class SubEntityCRUDService
         );
     }
 
-    public function paginatedByProgramId(string $programId, int $page = 1, int $perPage = 10): array
-    {
-        return $this->repository->getPaginatedByProgramId(
-            programId: $programId,
-            page: $page,
-            perPage: $perPage
-        );
-    }
-
-    public function paginatedBySuperEntity(string $superEntityId,string $programId, int $page = 1, int $perPage = 10): array
+    public function paginatedBySuperEntity(string $superEntityId,  ?string $programSlug = null, ?string $entityName = null, int $page = 1, int $perPage = 10): array
     {
         return $this->repository->getPaginatedBySuperEntity(
             superEntityId: $superEntityId,
-            programId: $programId,
+            programSlug: $programSlug,
+            entityName: $entityName,
             page: $page,
             perPage: $perPage
         );
