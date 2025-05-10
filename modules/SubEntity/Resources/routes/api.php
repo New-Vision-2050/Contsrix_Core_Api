@@ -16,6 +16,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
 
     Route::get('/programs/sub_tables', [SubEntityController::class, 'getByProgram']);
+    Route::get('/super_entity/sub_tables', [SubEntityController::class, 'getBySuperEntity']);
 
     // super entity attributes
     Route::get('/super_entities/list', [SuperEntityController::class, 'index']);

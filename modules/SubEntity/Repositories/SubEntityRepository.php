@@ -72,4 +72,25 @@ class SubEntityRepository extends BaseRepository
             'pagination' => $pagination['pagination'],
         ];
     }
+
+    public function getPaginatedBySuperEntity(string $superEntityId, string $programId, int $page = 1, int $perPage = 15): array
+    {
+        $query = $this->model->newQuery()
+            ->active()
+            ->select('id', 'name')
+            ->where('super_entity', $superEntityId)
+            ->where('main_program_id', $programId)
+            ->when(request()->has('name'), function($q) {
+                return $q->filter(['name' => request()->get('name')]);
+            });
+
+        $count = $query->count();
+        $data = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();
+        $pagination = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'data' => $data,
+            'pagination' => $pagination['pagination'],
+        ];
+    }
 }

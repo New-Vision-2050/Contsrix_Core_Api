@@ -85,4 +85,28 @@ class SubEntityPresenter extends AbstractPresenter
 
         return $presenter->getData();
     }
+
+    public function getForSelection(): ?array
+    {
+        return [
+            'id' => $this->subEntity->id,
+            'name' => $this->subEntity->name
+        ];
+    }
+
+    public static function selectionCollection(iterable $collection, ...$additionalParams): array
+    {
+        $result = [];
+        foreach ($collection as $item) {
+            $data = (new static($item, ...$additionalParams))->getForSelection();
+
+            if ($data === null) {
+                continue;
+            }
+
+            $result[] = $data;
+        }
+
+        return $result;
+    }
 }

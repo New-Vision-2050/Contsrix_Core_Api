@@ -58,4 +58,12 @@ class SubEntity extends Model
 
         return $default + $optional;
     }
+
+    /**
+     * Scope a query to only include active sub-entities.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 }

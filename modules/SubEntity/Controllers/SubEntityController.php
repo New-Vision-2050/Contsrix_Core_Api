@@ -20,6 +20,7 @@ use Modules\SubEntity\Requests\GetSubEntityListRequest;
 use Modules\SubEntity\Handlers\UpdateSubEntityAttributesHandler;
 use Modules\SubEntity\Requests\UpdateSubEntityAttributesRequest;
 use Modules\SubEntity\Requests\GetSubEntityListByProgramNameRequest;
+use Modules\SubEntity\Requests\GetSubEntityListBySuperEntityIdRequest;
 
 class SubEntityController extends Controller
 {
@@ -109,6 +110,22 @@ class SubEntityController extends Controller
 
         return Json::items(
             SubEntityPresenter::collection($result['data']),
+            paginationSettings: $result['pagination']
+        );
+    }
+
+
+    public function getBySuperEntity(GetSubEntityListBySuperEntityIdRequest $request): JsonResponse
+    {
+        $result = $this->subEntityService->paginatedBySuperEntity(
+            superEntityId: $request->get('super_entity_id'),
+            programId: $request->get('main_program_id'),
+            page: (int) $request->get('page', 1),
+            perPage: (int) $request->get('per_page', 10),
+        );
+
+        return Json::items(
+            SubEntityPresenter::selectionCollection($result['data']),
             paginationSettings: $result['pagination']
         );
     }
