@@ -73,4 +73,15 @@ class ProgramController extends Controller
 
         return Json::deleted();
     }
+
+    public function listWithSubEntities(): JsonResponse
+    {
+        $list = $this->programService->list(
+            (int) request()->get('page', 1),
+            (int) request()->get('per_page', 10)
+        );
+
+        return Json::items(ProgramPresenter::collectionWithSubEntities($list['data']), paginationSettings: $list['pagination']);
+    }
+
 }

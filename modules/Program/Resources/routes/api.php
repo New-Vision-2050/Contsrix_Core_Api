@@ -9,4 +9,5 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/{id}', [ProgramController::class, 'show']);
     Route::put('/{id}', [ProgramController::class, 'update']);
     Route::delete('/{id}', [ProgramController::class, 'delete']);
+    Route::get('/sub_entities/list', [ProgramController::class, 'listWithSubEntities']);
 });
