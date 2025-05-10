@@ -24,10 +24,10 @@ class CreateSubEntityRequest extends FormRequest
                 })
             ],
             'super_entity' => ['required', 'string', Rule::in($this->getValidSuperEntitiesIds())],
-            'icon' => 'required|integer|min:0|max:255', // Unsigned tinyint range
+            'icon' => 'required|integer|min:0|max:255',
             'main_program_id' => 'required|uuid|exists:programs,id',
             'is_active' => 'sometimes|boolean',
-            'is_registrable' => 'sometimes|boolean', //TODO registration form is required when this value is true
+            'is_registrable' => 'sometimes|boolean',
             'default_attributes' => 'required|array',
             'default_attributes.*' => [Rule::In($this->getValidSuperEntityAttributes())],
             'optional_attributes' => 'sometimes|nullable|array',
