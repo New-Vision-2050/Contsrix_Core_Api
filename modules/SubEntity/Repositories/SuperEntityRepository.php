@@ -18,7 +18,8 @@ class SuperEntityRepository
         return collect($this->availableSuperEntities)
             ->when(filled($search), function ($collection) use ($search) {
                 return $collection->filter(function ($entity) use ($search) {
-                    return Str::contains(json_encode($entity), $search);
+                    $entityName = $entity['name'][app()->getLocale()] ?? '';
+                    return Str::contains($entityName, $search, true);
                 });
             })
             ->values()
