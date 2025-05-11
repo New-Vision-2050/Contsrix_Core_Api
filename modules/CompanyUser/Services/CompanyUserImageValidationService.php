@@ -17,6 +17,7 @@ class CompanyUserImageValidationService
 
         // Ensure the image is uploaded
         if (!$request->hasFile('image')) {
+
             array_push($errors, ["sentence" => "الصورة مطلوبة", "sub_title" => null, "status" => -1]);
         } else {
             $image = $request->file('image');
@@ -40,9 +41,9 @@ class CompanyUserImageValidationService
                 list($width, $height) = getimagesize($image->getPathname());
 
                 // Validate dimensions
-                if ($width < 478 || $height < 484) {
-                    array_push($errors, [
-                        "sentence" => "حجم الصورة غير مناسب. يفضل أن يكون العرض أكبر من 600 والطول أكبر من 800 بكسل",
+                if ($width == 1080 && $height == 1920) {
+                        array_push($errors, [
+                        "sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080",
                         "sub_title" => null,
                         "status" => -1
                     ]);

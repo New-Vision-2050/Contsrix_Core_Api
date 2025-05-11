@@ -189,15 +189,32 @@ class CompanyProfileService
         $img = $manager->read($image);
         $width = $img->width();
         $height = $img->height();
+
         $white = 0;
         $color = 0;
 
-// Iterate over each pixel
-        for ($x = 0; $x < 2; $x++) {
-            for ($y = 0; $y < $width; $y++) {
-                $rgb = $img->pickColor($x, $y)->toArray();
-                // Check if the pixel color is white (255, 255, 255)
-                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
+        // Coordinates of the 4 corners
+        $corners = [
+            [0, 0],                    // top-left
+            [$width - 1, 0],           // top-right
+            [0, $height - 1],          // bottom-left
+            [$width - 1, $height - 1], // bottom-right
+        ];
+
+        foreach ($corners as [$x, $y]) {
+            $rgb = $img->pickColor($x, $y)->toArray();
+            if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) { // allow slight variation
+                $white++;
+            } else {
+                $color++;
+            }
+        }
+
+        // Sample horizontal and vertical edges (skip corners)
+        for ($i = 10; $i < $width - 10; $i += 20) {
+            foreach ([0, $height - 1] as $y) {
+                $rgb = $img->pickColor($i, $y)->toArray();
+                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
                     $white++;
                 } else {
                     $color++;
@@ -205,11 +222,10 @@ class CompanyProfileService
             }
         }
 
-        for ($x = 0; $x < 2; $x++) {
-            for ($y = 0; $y < $height; $y++) {
-                $rgb = $img->pickColor($y, $x)->toArray();
-                // Check if the pixel color is white (255, 255, 255)
-                if ($rgb[0] == 255 || $rgb[1] == 255 || $rgb[2] == 255) {
+        for ($i = 10; $i < $height - 10; $i += 20) {
+            foreach ([0, $width - 1] as $x) {
+                $rgb = $img->pickColor($x, $i)->toArray();
+                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
                     $white++;
                 } else {
                     $color++;
@@ -219,13 +235,7 @@ class CompanyProfileService
 
         $percentage = ($white / ($white + $color)) * 100;
 
-
-        if ($percentage > 70) {
-            return 1;
-        } else {
-
-            return 0;
-        }
+        return $percentage > 70 ? 1 : 0;
 
     }
 
