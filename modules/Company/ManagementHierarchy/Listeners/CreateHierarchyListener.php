@@ -31,10 +31,6 @@ class CreateHierarchyListener
      */
     public function handle(CompanyCreatedEvent $event)
     {
-//        $company = $this->companyRepository->getCompany(Uuid::fromString($event->data->id));
-////        throw new \Exception(json_encode($company->name));
-///
-
         try {
             DB::beginTransaction();
             $branch = $this->managementHierarchyRepository->createBranch(["company_id" => $event->data->id, "name" => $event->data->name, "type" => "branch", "is_first_branch" => 1], ["company_id" => $event->data->id, "country_id" => $event->data->country_id]);
