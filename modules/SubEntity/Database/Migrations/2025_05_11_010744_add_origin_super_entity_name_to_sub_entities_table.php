@@ -12,4 +12,11 @@ return new class extends Migration
             $table->string('origin_super_entity')->after('super_entity');
         });
     }
+
+    public function down()
+    {
+        Schema::table('sub_entities', function (Blueprint $table) {
+            $table->dropColumn('origin_super_entity');
+        });
+    }
 };
