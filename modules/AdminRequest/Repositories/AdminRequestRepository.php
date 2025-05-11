@@ -84,7 +84,7 @@ class AdminRequestRepository extends BaseRepository
     }
 
 
-    public function createAdminRequestForCompanyLegalData(UuidInterface $userId, UuidInterface $id, array $data, string $requestType, array $action, ?string $notes = "")
+    public function createAdminRequestForCompanyLegalData(UuidInterface $userId,  $id, array $data, string $requestType, array $action, ?string $notes = "")
     {
 
         try {

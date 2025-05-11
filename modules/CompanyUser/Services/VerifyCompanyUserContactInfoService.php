@@ -13,7 +13,7 @@ class VerifyCompanyUserContactInfoService
 {
     public function __construct(
         private CompanyUserRepository $repository,
-        private SendOtpEmail                        $sendOtpEmail
+        private SendOtpEmail $sendOtpEmail
     )
     {
 

@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Events\CompanyLegalDataUpdated;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
@@ -40,6 +41,7 @@ class CompanyLegalDataRepository extends BaseRepository
             throw new \Exception($e->getMessage(), 409);
 
         }
+        $companyLegalData->touch();
         return $companyLegalData;
     }
 
@@ -59,7 +61,8 @@ class CompanyLegalDataRepository extends BaseRepository
             }
 
             DB::commit();
-
+            $legalData =$legalData->fresh();
+            event(new CompanyLegalDataUpdated($legalData));
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);

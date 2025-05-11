@@ -19,7 +19,7 @@ class RequestUpdateLegalCompanyDataRequestDTO
 
     public function getId()
     {
-        return Uuid::fromString($this->managementHierarchy->id);
+        return  $this->managementHierarchy->id;
     }
 
     public function toArray(): array

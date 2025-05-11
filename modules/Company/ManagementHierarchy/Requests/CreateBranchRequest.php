@@ -18,7 +18,7 @@ class CreateBranchRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'parent_id' => 'nullable|exists:management_hierarchies,id',
+            'parent_id' => 'required|exists:management_hierarchies,id',
             'manager_id' => 'required|exists:users,id',
             "phone" => "required|unique:management_hierarchies,phone",
             "email" => "required|unique:management_hierarchies,email",

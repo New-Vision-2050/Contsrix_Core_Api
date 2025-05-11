@@ -26,6 +26,7 @@ class TimeUnit extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'code'
     ];
 
     protected $casts = [
@@ -36,4 +37,5 @@ class TimeUnit extends Model
     {
         return TimeUnitFactory::new();
     }
+
 }

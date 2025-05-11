@@ -21,6 +21,7 @@ class TimeUnitPresenter extends AbstractPresenter
         return [
             'id' => $this->timeUnit->id,
             'name' => $this->timeUnit->name,
+            'code' =>$this->timeUnit->code,
         ];
     }
 }
