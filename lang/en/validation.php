@@ -303,6 +303,16 @@ return [
         'manager_uuid' => 'General manager ID must be a valid UUID.',
         'manager_exists' => 'The selected general manager does not exist.',
     ],
+
+
+    'user_relative' => [
+        'name_required' => 'The name field is required.',
+        'user_id_required' => 'The user ID is required.',
+        'marital_status_required' => 'The marital status is required.',
+        'relationship_required' => 'The relationship field is required.',
+        'phone_required' => 'The phone number is required.',
+    ],
+    
     'validation_failed'   => 'Validation failed',
     'unauthenticated'     => 'Unauthenticated',
     'unauthorized'        => 'Unauthorized',

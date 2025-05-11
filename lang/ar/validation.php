@@ -270,8 +270,16 @@ return [
         'manager_exists' => 'المدير العام المحدد غير موجود.',
     ],
 
-        'validation_failed'   => 'فشل التحقق من الصحة',
-        'unauthenticated'     => 'غير مصادق عليه',
-        'unauthorized'        => 'غير مصرح به',
-        'resource_not_found'  => 'المورد غير موجود',
+    'user_relative' => [
+        'name_required' => 'حقل الاسم مطلوب.',
+        'user_id_required' => 'معرف المستخدم مطلوب.',
+        'marital_status_required' => 'الحالة الاجتماعية مطلوبة.',
+        'relationship_required' => 'العلاقة مطلوبة.',
+        'phone_required' => 'رقم الهاتف مطلوب.',
+    ],
+
+    'validation_failed'   => 'فشل التحقق من الصحة',
+    'unauthenticated'     => 'غير مصادق عليه',
+    'unauthorized'        => 'غير مصرح به',
+    'resource_not_found'  => 'المورد غير موجود',
 ];
