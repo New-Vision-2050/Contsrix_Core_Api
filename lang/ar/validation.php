@@ -277,6 +277,28 @@ return [
         'relationship_required' => 'العلاقة مطلوبة.',
         'phone_required' => 'رقم الهاتف مطلوب.',
     ],
+    
+    'identity' => [
+        'passport_end_date_required_with' => 'تاريخ انتهاء جواز السفر مطلوب عند وجود تاريخ بداية.',
+        'passport_end_date_date' => 'يجب أن يكون تاريخ انتهاء جواز السفر تاريخًا صالحًا.',
+        'passport_end_date_after' => 'يجب أن يكون تاريخ انتهاء جواز السفر بعد تاريخ البداية.',
+
+        'identity_end_date_required_with' => 'تاريخ انتهاء الهوية مطلوب عند وجود تاريخ بداية.',
+        'identity_end_date_date' => 'يجب أن يكون تاريخ انتهاء الهوية تاريخًا صالحًا.',
+        'identity_end_date_after' => 'يجب أن يكون تاريخ انتهاء الهوية بعد تاريخ البداية.',
+
+        'border_number_end_date_required_with' => 'تاريخ انتهاء رقم الحدود مطلوب عند وجود تاريخ بداية.',
+        'border_number_end_date_date' => 'يجب أن يكون تاريخ انتهاء رقم الحدود تاريخًا صالحًا.',
+        'border_number_end_date_after' => 'يجب أن يكون تاريخ انتهاء رقم الحدود بعد تاريخ البداية.',
+
+        'entry_number_end_date_required_with' => 'تاريخ انتهاء رقم الدخول مطلوب عند وجود تاريخ بداية.',
+        'entry_number_end_date_date' => 'يجب أن يكون تاريخ انتهاء رقم الدخول تاريخًا صالحًا.',
+        'entry_number_end_date_after' => 'يجب أن يكون تاريخ انتهاء رقم الدخول بعد تاريخ البداية.',
+
+        'work_permit_end_date_required_with' => 'تاريخ انتهاء تصريح العمل مطلوب عند وجود تاريخ بداية.',
+        'work_permit_end_date_date' => 'يجب أن يكون تاريخ انتهاء تصريح العمل تاريخًا صالحًا.',
+        'work_permit_end_date_after' => 'يجب أن يكون تاريخ انتهاء تصريح العمل بعد تاريخ البداية.',
+    ],
 
     'validation_failed'   => 'فشل التحقق من الصحة',
     'unauthenticated'     => 'غير مصادق عليه',

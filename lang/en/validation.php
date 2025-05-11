@@ -312,7 +312,29 @@ return [
         'relationship_required' => 'The relationship field is required.',
         'phone_required' => 'The phone number is required.',
     ],
-    
+
+    'identity' => [
+        'passport_end_date_required_with' => 'The passport end date is required when passport start date is present.',
+        'passport_end_date_date' => 'The passport end date must be a valid date.',
+        'passport_end_date_after' => 'The passport end date must be after the start date.',
+
+        'identity_end_date_required_with' => 'The identity end date is required when identity start date is present.',
+        'identity_end_date_date' => 'The identity end date must be a valid date.',
+        'identity_end_date_after' => 'The identity end date must be after the start date.',
+
+        'border_number_end_date_required_with' => 'The border number end date is required when border number start date is present.',
+        'border_number_end_date_date' => 'The border number end date must be a valid date.',
+        'border_number_end_date_after' => 'The border number end date must be after the start date.',
+
+        'entry_number_end_date_required_with' => 'The entry number end date is required when entry number start date is present.',
+        'entry_number_end_date_date' => 'The entry number end date must be a valid date.',
+        'entry_number_end_date_after' => 'The entry number end date must be after the start date.',
+
+        'work_permit_end_date_required_with' => 'The work permit end date is required when work permit start date is present.',
+        'work_permit_end_date_date' => 'The work permit end date must be a valid date.',
+        'work_permit_end_date_after' => 'The work permit end date must be after the start date.',
+    ],
+
     'validation_failed'   => 'Validation failed',
     'unauthenticated'     => 'Unauthenticated',
     'unauthorized'        => 'Unauthorized',
