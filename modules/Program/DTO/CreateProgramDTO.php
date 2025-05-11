@@ -10,6 +10,7 @@ class CreateProgramDTO
 {
     public function __construct(
         public array $name,
+        public ?string $parentId
     ) {
     }
 
@@ -17,6 +18,7 @@ class CreateProgramDTO
     {
         return [
             'name' => $this->name,
+            'parent_id' => $this->parentId,
         ];
     }
 }

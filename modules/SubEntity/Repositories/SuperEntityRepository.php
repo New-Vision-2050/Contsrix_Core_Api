@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Repositories;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class SuperEntityRepository
 {
@@ -13,10 +13,16 @@ class SuperEntityRepository
         $this->availableSuperEntities = config('SubEntity::config.available_super_entities', []);
     }
 
-    public function list(): array
+    public function list(?string $search = ''): array
     {
         return collect($this->availableSuperEntities)
-            ->select('id', 'name')
+            ->when(filled($search), function ($collection) use ($search) {
+                return $collection->filter(function ($entity) use ($search) {
+                    $entityName = $entity['name'][app()->getLocale()] ?? '';
+                    return Str::contains($entityName, $search, true);
+                });
+            })
+            ->values()
             ->toArray();
     }
 

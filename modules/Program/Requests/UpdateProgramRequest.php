@@ -17,6 +17,7 @@ class UpdateProgramRequest extends FormRequest
         return [
             'name_en' => ['required', 'string', Rule::unique('programs', 'name->en')->ignore($this->route('id'))],
             'name_ar' => ['required', 'string', Rule::unique('programs', 'name->ar')->ignore($this->route('id'))],
+            'parent_id' => 'nullable|exists:programs,id'
         ];
     }
 
@@ -28,6 +29,7 @@ class UpdateProgramRequest extends FormRequest
                 'en' => $this->get('name_en'),
                 'ar' => $this->get('name_ar'),
             ],
+            parentId: $this->get('parent_id')
         );
     }
 }

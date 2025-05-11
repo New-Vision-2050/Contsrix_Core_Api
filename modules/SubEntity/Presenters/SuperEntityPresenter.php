@@ -19,7 +19,7 @@ class SuperEntityPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->superEntity['id'],
-            'name' => $this->superEntity['name'][app()->getLocale()],
+            'name' => is_array($this->superEntity['name']) ? $this->superEntity['name'][app()->getLocale()]: $this->superEntity['name'],
         ];
     }
 

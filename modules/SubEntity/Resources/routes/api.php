@@ -12,13 +12,12 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::delete('/{id}', [SubEntityController::class, 'delete']);
     Route::get('/{id}/show/attributes', [SubEntityController::class, 'showAttributes']);
     Route::put('/{id}/update/attributes', [SubEntityController::class, 'updateAttributes']);
+    Route::get('/super_entity/sub_tables', [SubEntityController::class, 'getBySuperEntity']);
+    Route::get('/list/selection', [SubEntityController::class, 'getSelection']);
+    Route::put('/{id}/status', [SubEntityController::class, 'updateStatus']);
 
 
-
-    Route::get('/programs/sub_tables', [SubEntityController::class, 'getByProgram']);
-
-    // super entity attributes
+    // super entity
     Route::get('/super_entities/list', [SuperEntityController::class, 'index']);
-
-    Route::get('/super_entities/{id}/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
+    Route::get('/super_entities/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
 });

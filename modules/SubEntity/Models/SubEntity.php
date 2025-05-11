@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Models;
 
+use Illuminate\Support\Str;
 use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\SubEntity\Database\factories\SubEntityFactory;
 
 class SubEntity extends Model
@@ -32,7 +34,8 @@ class SubEntity extends Model
         'optional_attributes',
         'is_registrable',
         'super_entity',
-        'company_id'
+        'company_id',
+        'origin_super_entity'
     ];
 
     protected $casts = [
@@ -53,9 +56,40 @@ class SubEntity extends Model
 
     public function getAttributesCountAttribute(): int
     {
-        $default = is_array($this->default_attributes) ? count($this->default_attributes) : 0;
-        $optional = is_array($this->optional_attributes) ? count($this->optional_attributes) : 0;
+        return is_array($this->optional_attributes) ? count($this->optional_attributes) : 0;
+    }
 
-        return $default + $optional;
+    /**
+     * Scope a query to only include active sub-entities.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function parentSubEntity(): BelongsTo
+    {
+        return $this->belongsTo(SubEntity::class, 'super_entity');
+    }
+
+    public function getOriginSuperEntityName(): string
+    {
+        $current = $this;
+
+        while (Str::isUuid($current->super_entity)) {
+            $parent = $current->parentSubEntity;
+
+            if (!$parent) {
+                break;
+            }
+
+            if (!Str::isUuid($parent->super_entity)) {
+                return $parent->super_entity;
+            }
+
+            $current = $parent;
+        }
+
+        return $current->super_entity;
     }
 }

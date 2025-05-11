@@ -17,9 +17,11 @@ use Modules\SubEntity\Requests\CreateSubEntityRequest;
 use Modules\SubEntity\Requests\DeleteSubEntityRequest;
 use Modules\SubEntity\Requests\UpdateSubEntityRequest;
 use Modules\SubEntity\Requests\GetSubEntityListRequest;
+use Modules\SubEntity\Handlers\UpdateSubEntityStatusHandler;
+use Modules\SubEntity\Requests\UpdateSubEntityStatusRequest;
 use Modules\SubEntity\Handlers\UpdateSubEntityAttributesHandler;
 use Modules\SubEntity\Requests\UpdateSubEntityAttributesRequest;
-use Modules\SubEntity\Requests\GetSubEntityListByProgramNameRequest;
+use Modules\SubEntity\Requests\GetSubEntityListBySuperEntityIdRequest;
 
 class SubEntityController extends Controller
 {
@@ -28,6 +30,7 @@ class SubEntityController extends Controller
         private UpdateSubEntityHandler $updateSubEntityHandler,
         private DeleteSubEntityHandler $deleteSubEntityHandler,
         private UpdateSubEntityAttributesHandler $updateSubEntityAttributesHandler,
+        private UpdateSubEntityStatusHandler $updateSubEntityStatusHandler,
     ) {
     }
 
@@ -99,10 +102,12 @@ class SubEntityController extends Controller
         return Json::deleted();
     }
 
-    public function getByProgram(GetSubEntityListByProgramNameRequest $request): JsonResponse
+    public function getBySuperEntity(GetSubEntityListBySuperEntityIdRequest $request): JsonResponse
     {
-        $result = $this->subEntityService->paginatedByProgramId(
-            programId: $request->get('program_id'),
+        $result = $this->subEntityService->paginatedBySuperEntity(
+            superEntityId: $request->get('super_entity_id'),
+            programSlug: $request->get('main_program_slug'),
+            entityName: $request->get('entity_name'),
             page: (int) $request->get('page', 1),
             perPage: (int) $request->get('per_page', 10),
         );
@@ -111,5 +116,29 @@ class SubEntityController extends Controller
             SubEntityPresenter::collection($result['data']),
             paginationSettings: $result['pagination']
         );
+    }
+
+    public function getSelection(): JsonResponse
+    {
+        $result = $this->subEntityService->getSelection(
+            page: (int) request()->get('page', 1),
+            perPage: (int) request()->get('per_page', 10),
+        );
+
+        return Json::items(
+            SubEntityPresenter::selectionCollection($result['data']),
+            paginationSettings: $result['pagination']
+        );
+    }
+
+    public function updateStatus(UpdateSubEntityStatusRequest $request): JsonResponse{
+        $command = $request->createUpdateSubEntityStatusCommand();
+        $this->updateSubEntityStatusHandler->handle(updateSubEntityStatusCommand: $command);
+
+        $item = $this->subEntityService->get($command->getId());
+
+        $presenter = new SubEntityPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 }

@@ -53,11 +53,20 @@ class SubEntityRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getPaginatedByProgramId(string $programId, int $page = 1, int $perPage = 15): array
+    public function getPaginatedBySuperEntity(string $superEntityId, ?string $programSlug = null, ?string $entityName = null, int $page = 1, int $perPage = 15): array
     {
         $query = $this->model->newQuery()
-            ->whereHas('mainProgram', function ($q) use ($programId): void {
-                $q->where('id', $programId);
+            ->when($entityName, function ($q) use ($entityName) {
+                return $q->where('name', $entityName);
+            })
+            ->where('origin_super_entity', $superEntityId)
+            ->when($programSlug, function ($query) use ($programSlug) {
+                return $query->whereHas('mainProgram', function ($q) use ($programSlug): void {
+                    $q->where('slug', $programSlug);
+                });
+            })
+            ->when(request()->has('name'), function ($query) {
+                return $query->filter(['name' => request()->get('name')]);
             });
 
         $count = $query->count();
@@ -68,5 +77,29 @@ class SubEntityRepository extends BaseRepository
             'data' => $data,
             'pagination' => $pagination['pagination'],
         ];
+    }
+
+    public function getSelection(int $page = 1, int $perPage = 15): array
+    {
+        $query = $this->model->newQuery()
+            ->select('id', 'name')
+            ->active()
+            ->when(request()->has('name'), function ($query) {
+                return $query->filter(['name' => request()->get('name')]);
+            });
+
+        $count = $query->count();
+        $data = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();
+        $pagination = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'data' => $data,
+            'pagination' => $pagination['pagination'],
+        ];
+    }
+
+    public function updateSubEntityStatus(UuidInterface $id, array $data): bool
+    {
+        return $this->update($id, $data);
     }
 }

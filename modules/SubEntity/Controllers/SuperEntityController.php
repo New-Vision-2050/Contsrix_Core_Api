@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Modules\SubEntity\Services\SuperEntityService;
 use Modules\SubEntity\Presenters\SuperEntityPresenter;
+use Modules\SubEntity\Requests\GetSuperEntityAttributesRequest;
 
 class SuperEntityController extends Controller
 {
@@ -19,14 +20,14 @@ class SuperEntityController extends Controller
 
     public function index(): JsonResponse
     {
-        $list = $this->superEntityService->list();
+        $list = $this->superEntityService->list(request()->get('search'));
 
         return Json::items(SuperEntityPresenter::collection($list));
     }
 
-    public function getAvailableAttributes(string $superEntity): JsonResponse
+    public function getAvailableAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
     {
-        $attributes = $this->superEntityService->getAvailableAttributes($superEntity);
+        $attributes = $this->superEntityService->getAvailableAttributes($request->get('super_entity_id'));
 
         return Json::items($attributes);
     }

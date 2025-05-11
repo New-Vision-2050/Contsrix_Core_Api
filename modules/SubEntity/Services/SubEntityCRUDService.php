@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
-use Illuminate\Support\Collection;
-use Modules\SubEntity\DTO\CreateSubEntityDTO;
-use Modules\SubEntity\Models\SubEntity;
-use Modules\SubEntity\Repositories\SubEntityRepository;
+use Ramsey\Uuid\Uuid;
+use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Support\Collection;
+use Modules\SubEntity\Models\SubEntity;
+use Modules\SubEntity\DTO\CreateSubEntityDTO;
+use Modules\SubEntity\Repositories\SubEntityRepository;
 
 class SubEntityCRUDService
 {
@@ -19,7 +21,17 @@ class SubEntityCRUDService
 
     public function create(CreateSubEntityDTO $createSubEntityDTO): SubEntity
     {
-        return $this->repository->createSubEntity($createSubEntityDTO->toArray());
+        $data = $createSubEntityDTO->toArray();
+        $superEntityId = $data['super_entity'];
+
+        if( Str::isUuid($superEntityId) ) {
+            $subEntityAsSup = $this->get(Uuid::fromString($superEntityId));
+            $data['origin_super_entity'] = $subEntityAsSup->getOriginSuperEntityName();
+        }else{
+            $data['origin_super_entity'] = $superEntityId;
+        }
+
+        return $this->repository->createSubEntity($data);
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -37,10 +49,26 @@ class SubEntityCRUDService
         );
     }
 
-    public function paginatedByProgramId(string $programId, int $page = 1, int $perPage = 10): array
+    public function paginatedBySuperEntity(string $superEntityId,  ?string $programSlug = null, ?string $entityName = null, int $page = 1, int $perPage = 10): array
     {
-        return $this->repository->getPaginatedByProgramId(
-            programId: $programId,
+
+        if( Str::isUuid($superEntityId) ) {
+            $subEntityAsSup = $this->get(Uuid::fromString($superEntityId));
+            $superEntityId = $subEntityAsSup->getOriginSuperEntityName();
+        }
+
+        return $this->repository->getPaginatedBySuperEntity(
+            superEntityId: $superEntityId,
+            programSlug: $programSlug,
+            entityName: $entityName,
+            page: $page,
+            perPage: $perPage
+        );
+    }
+
+    public function getSelection(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->getSelection(
             page: $page,
             perPage: $perPage
         );
