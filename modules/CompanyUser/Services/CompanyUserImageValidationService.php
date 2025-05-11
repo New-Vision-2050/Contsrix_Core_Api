@@ -41,7 +41,7 @@ class CompanyUserImageValidationService
                 list($width, $height) = getimagesize($image->getPathname());
 
                 // Validate dimensions
-                if ($width == 1080 && $height == 1920) {
+                if ($width ==  1920 && $height == 1080) {
                         array_push($errors, [
                         "sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080",
                         "sub_title" => null,
