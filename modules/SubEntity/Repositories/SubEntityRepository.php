@@ -59,7 +59,7 @@ class SubEntityRepository extends BaseRepository
             ->when($entityName, function ($q) use ($entityName) {
                 return $q->where('name', $entityName);
             })
-            ->where('super_entity', $superEntityId)
+            ->where('origin_super_entity', $superEntityId)
             ->when($programSlug, function ($query) use ($programSlug) {
                 return $query->whereHas('mainProgram', function ($q) use ($programSlug): void {
                     $q->where('slug', $programSlug);
