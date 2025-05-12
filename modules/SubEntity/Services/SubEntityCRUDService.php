@@ -73,4 +73,14 @@ class SubEntityCRUDService
             perPage: $perPage
         );
     }
+
+       /**
+     * @param string $id
+     *
+     * @return mixed
+     */
+    public function find($id)
+    {
+        return $this->repository->find($id);
+    }
 }
