@@ -344,4 +344,11 @@ return [
     'job_offer_number_required' => 'The job offer number is required.',
     'date_send_required' => 'The sending date is required.',
     'date_accept_required' => 'The acceptance date is required.',
+
+    'job_name_required' => 'The job title is required.',
+    'training_from_required' => 'The start date is required.',
+    'training_to_required' => 'The end date is required.',
+    'training_to_after_from' => 'The end date must be after or equal to the start date.',
+    'company_name_required' => 'The company name is required.',
+    'about_required' => 'The description is required.',
 ];

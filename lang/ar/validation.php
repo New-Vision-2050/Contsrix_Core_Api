@@ -309,4 +309,11 @@ return [
     'job_offer_number_required' => 'رقم عرض العمل مطلوب.',
     'date_send_required' => 'تاريخ الإرسال مطلوب.',
     'date_accept_required' => 'تاريخ القبول مطلوب.',
+
+    'job_name_required' => 'اسم الوظيفة مطلوب.',
+    'training_from_required' => 'تاريخ البداية مطلوب.',
+    'training_to_required' => 'تاريخ النهاية مطلوب.',
+    'training_to_after_from' => 'تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية.',
+    'company_name_required' => 'اسم الشركة مطلوب.',
+    'about_required' => 'الوصف مطلوب.',
 ];
