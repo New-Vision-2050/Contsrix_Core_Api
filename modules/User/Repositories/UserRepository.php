@@ -115,7 +115,7 @@ class UserRepository extends BaseRepository
 
     public function getAdminUsersFromCentralCompanies($page, $perPage)
     {
-        $query = $this->model->withoutTenancy()
+        $query = $this->model
             ->whereHas('company', function ($query) {
                 $query->where('is_central_company', true);
             });
