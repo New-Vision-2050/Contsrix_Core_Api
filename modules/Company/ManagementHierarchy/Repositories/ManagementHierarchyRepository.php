@@ -393,5 +393,4 @@ class ManagementHierarchyRepository extends BaseRepository
 
         return $lowerUsers->unique('id');
     }
-
 }

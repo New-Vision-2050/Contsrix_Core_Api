@@ -42,12 +42,7 @@ class JobTitle extends Model
         'id' => 'string',
     ];
 
-    protected static function booted()
-    {
-        static::addGlobalScope("active",function ($query) {
-            $query->where('status', 1);
-        });
-    }
+
     protected static function newFactory(): JobTitleFactory
     {
         return JobTitleFactory::new();

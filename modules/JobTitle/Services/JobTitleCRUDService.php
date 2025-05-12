@@ -24,7 +24,7 @@ class JobTitleCRUDService
 
     public function list(int $page = 1, int $perPage = 10): array
     {
-        return $this->repository->withoutScopePaginated(
+        return $this->repository->paginated(
             page: $page,
             perPage: $perPage,
         );

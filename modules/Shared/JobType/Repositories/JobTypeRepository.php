@@ -44,7 +44,9 @@ class JobTypeRepository extends BaseRepository
 
     public function getJobType(UuidInterface $id): JobType
     {
-        return $this->model->withoutGlobalScope("active")->where('id', $id)->first();
+        return $this->findOneByOrFail([
+            'id' => $id->toString(),
+        ]);
     }
 
     public function createJobType(array $data): JobType
@@ -54,11 +56,11 @@ class JobTypeRepository extends BaseRepository
 
     public function updateJobType(UuidInterface $id, array $data): bool
     {
-        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->update($data);
+        return $this->update($id, $data);
     }
 
     public function deleteJobType(UuidInterface $id): bool
     {
-        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
+        return $this->delete($id);
     }
 }
