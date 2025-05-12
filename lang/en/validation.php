@@ -351,4 +351,11 @@ return [
     'training_to_after_from' => 'The end date must be after or equal to the start date.',
     'company_name_required' => 'The company name is required.',
     'about_required' => 'The description is required.',
+
+    'country_id_required' => 'Country is required.',
+    'university_id_required' => 'University is required.',
+    'academic_qualification_id_required' => 'Academic qualification is required.',
+    'academic_specialization_id_required' => 'Academic specialization is required.',
+    'study_rate_required' => 'Study rate is required.',
+    'graduation_date_required' => 'Graduation date is required.',
 ];

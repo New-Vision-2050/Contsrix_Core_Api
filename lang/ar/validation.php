@@ -316,4 +316,11 @@ return [
     'training_to_after_from' => 'تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية.',
     'company_name_required' => 'اسم الشركة مطلوب.',
     'about_required' => 'الوصف مطلوب.',
+
+    'country_id_required' => 'الدولة مطلوبة.',
+    'university_id_required' => 'الجامعة مطلوبة.',
+    'academic_qualification_id_required' => 'المؤهل الأكاديمي مطلوب.',
+    'academic_specialization_id_required' => 'التخصص الأكاديمي مطلوب.',
+    'study_rate_required' => 'معدل الدراسة مطلوب.',
+    'graduation_date_required' => 'تاريخ التخرج مطلوب.',
 ];
