@@ -62,6 +62,19 @@ class SuperEntityRepository
             ->first();
     }
 
+    public function getRegistrationFormsForId(string $id): array
+    {
+        $forms = collect($this->availableSuperEntities)
+            ->where('id', $id)
+            ->pluck('registration_forms')
+            ->first();
+
+        return array_map(function ($form) {
+            $form['name'] = $form['name'][app()->getLocale()];
+            return $form;
+        }, $forms ?? []);
+    }
+
     public function getById(string $id): ?array
     {
         return collect($this->availableSuperEntities)
