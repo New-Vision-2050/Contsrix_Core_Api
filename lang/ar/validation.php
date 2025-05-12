@@ -367,4 +367,33 @@ return [
     ],
     'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
 
+    'address' => [
+            'country_id' => [
+                'required' => 'الدولة مطلوبة.',
+                'exists' => 'الدولة المحددة غير صالحة.',
+            ],
+            'state_id' => [
+                'required' => 'المحافظة مطلوبة.',
+                'exists' => 'المحافظة المحددة غير صالحة.',
+            ],
+            'city_id' => [
+                'required' => 'المدينة مطلوبة.',
+                'exists' => 'المدينة المحددة غير صالحة.',
+            ],
+            'neighborhood_name' => [
+                'required' => 'اسم الحي مطلوب.',
+            ],
+            'street_name' => [
+                'required' => 'اسم الشارع مطلوب.',
+            ],
+            'building_number' => [
+                'required' => 'رقم المبنى مطلوب.',
+            ],
+            'additional_phone' => [
+                'required' => 'الهاتف الإضافي مطلوب.',
+            ],
+            'postal_code' => [
+                'required' => 'الرمز البريدي مطلوب.',
+            ],
+        ],
 ];

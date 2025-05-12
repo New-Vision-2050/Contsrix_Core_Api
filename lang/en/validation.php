@@ -396,5 +396,35 @@ return [
             'date_format' => 'The notification date format must be YYYY-MM-DD.',
         ],
     ],
+
+    'address' => [
+        'country_id' => [
+            'required' => 'The country is required.',
+            'exists' => 'The selected country is invalid.',
+        ],
+        'state_id' => [
+            'required' => 'The state is required.',
+            'exists' => 'The selected state is invalid.',
+        ],
+        'city_id' => [
+            'required' => 'The city is required.',
+            'exists' => 'The selected city is invalid.',
+        ],
+        'neighborhood_name' => [
+            'required' => 'The neighborhood name is required.',
+        ],
+        'street_name' => [
+            'required' => 'The street name is required.',
+        ],
+        'building_number' => [
+            'required' => 'The building number is required.',
+        ],
+        'additional_phone' => [
+            'required' => 'The additional phone number is required.',
+        ],
+        'postal_code' => [
+            'required' => 'The postal code is required.',
+        ],
+    ],
     'notification_date_7_days' => 'The notification date must be at least 7 days before the end date.',
 ];
