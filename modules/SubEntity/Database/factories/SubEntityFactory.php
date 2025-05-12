@@ -15,11 +15,13 @@ class SubEntityFactory extends Factory
 
     public function definition(): array
     {
+        $superEntityType = $this->faker->randomElement(['User', 'Company', 'Department']);
         return [
             'id' => $this->faker->uuid(),
-            'super_entity' => $this->faker->randomElement(['User', 'Company', 'Department']),
+            'super_entity' => $superEntityType,
+            'origin_super_entity' => $superEntityType,
             'name' => $this->faker->unique()->word(),
-            'icon' => $this->faker->numberBetween(0, 255),
+            'icon' => $this->faker->numberBetween(0, int2: 8),
             'main_program_id' => Program::first(), // TODO
             'is_active' => $this->faker->boolean(70), // 80% chance of being active
             'is_registrable' => $this->faker->boolean(75), // 30% chance of being registrable

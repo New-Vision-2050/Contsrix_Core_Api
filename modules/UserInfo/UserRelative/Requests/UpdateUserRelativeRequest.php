@@ -15,12 +15,21 @@ class UpdateUserRelativeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'marital_status',
-            'relationship',
-            'phone',
+            'marital_status'=> 'required|string',
+            'relationship'=> 'required|string',
+            'phone'=> 'required|string',
         ];
     }
-
+    public function messages(): array
+    {
+        return [
+            'name.required' => __('validation.user_relative.name_required'),
+            'user_id.required' => __('validation.user_relative.user_id_required'),
+            'marital_status.required' => __('validation.user_relative.marital_status_required'),
+            'relationship.required' => __('validation.user_relative.relationship_required'),
+            'phone.required' => __('validation.user_relative.phone_required'),
+        ];
+    }
     public function createUpdateUserRelativeCommand(): UpdateUserRelativeCommand
     {
         return new UpdateUserRelativeCommand(

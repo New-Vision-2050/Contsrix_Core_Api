@@ -303,8 +303,59 @@ return [
         'manager_uuid' => 'General manager ID must be a valid UUID.',
         'manager_exists' => 'The selected general manager does not exist.',
     ],
+
+
+    'user_relative' => [
+        'name_required' => 'The name field is required.',
+        'user_id_required' => 'The user ID is required.',
+        'marital_status_required' => 'The marital status is required.',
+        'relationship_required' => 'The relationship field is required.',
+        'phone_required' => 'The phone number is required.',
+    ],
+
+    'identity' => [
+        'passport_end_date_required_with' => 'The passport end date is required when passport start date is present.',
+        'passport_end_date_date' => 'The passport end date must be a valid date.',
+        'passport_end_date_after' => 'The passport end date must be after the start date.',
+
+        'identity_end_date_required_with' => 'The identity end date is required when identity start date is present.',
+        'identity_end_date_date' => 'The identity end date must be a valid date.',
+        'identity_end_date_after' => 'The identity end date must be after the start date.',
+
+        'border_number_end_date_required_with' => 'The border number end date is required when border number start date is present.',
+        'border_number_end_date_date' => 'The border number end date must be a valid date.',
+        'border_number_end_date_after' => 'The border number end date must be after the start date.',
+
+        'entry_number_end_date_required_with' => 'The entry number end date is required when entry number start date is present.',
+        'entry_number_end_date_date' => 'The entry number end date must be a valid date.',
+        'entry_number_end_date_after' => 'The entry number end date must be after the start date.',
+
+        'work_permit_end_date_required_with' => 'The work permit end date is required when work permit start date is present.',
+        'work_permit_end_date_date' => 'The work permit end date must be a valid date.',
+        'work_permit_end_date_after' => 'The work permit end date must be after the start date.',
+    ],
+
     'validation_failed'   => 'Validation failed',
     'unauthenticated'     => 'Unauthenticated',
     'unauthorized'        => 'Unauthorized',
     'resource_not_found'  => 'Resource not found',
+
+    'user_id_required' => 'The user ID is required.',
+    'job_offer_number_required' => 'The job offer number is required.',
+    'date_send_required' => 'The sending date is required.',
+    'date_accept_required' => 'The acceptance date is required.',
+
+    'job_name_required' => 'The job title is required.',
+    'training_from_required' => 'The start date is required.',
+    'training_to_required' => 'The end date is required.',
+    'training_to_after_from' => 'The end date must be after or equal to the start date.',
+    'company_name_required' => 'The company name is required.',
+    'about_required' => 'The description is required.',
+
+    'country_id_required' => 'Country is required.',
+    'university_id_required' => 'University is required.',
+    'academic_qualification_id_required' => 'Academic qualification is required.',
+    'academic_specialization_id_required' => 'Academic specialization is required.',
+    'study_rate_required' => 'Study rate is required.',
+    'graduation_date_required' => 'Graduation date is required.',
 ];

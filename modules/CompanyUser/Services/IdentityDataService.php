@@ -24,44 +24,53 @@ class IdentityDataService
     {
 
     }
-    public function uploadFile($request, $globalId)//: array
-    {
-        $visibility = 'public';
-        $companyUser = $this->repository->getCompanyUserGlobalId($globalId);
-        $path = Company::find(auth()->user()->company_id)->name . '/' . $companyUser->name;
+public function uploadFile($request, $globalId)
+{
+    $visibility = 'public';
+    $companyUser = $this->repository->getCompanyUserGlobalId($globalId);
+    $path = Company::find(auth()->user()->company_id)->name . '/' . $companyUser->name;
 
-        $uploadedFiles = [];
+    $uploadedFiles = [];
 
-        $fields = [
-            'file_passport',
-            'file_identity',
-            'file_border_number',
-            'file_entry_number',
-            'file_work_permit',
-        ];
+    $fields = [
+        'file_passport',
+        'file_identity',
+        'file_border_number',
+        'file_entry_number',
+        'file_work_permit',
+    ];
 
-        foreach ($fields as $field) {
+    foreach ($fields as $field) {
+        // Skip processing this field if it's not included in the request
+        if (!$request->has($field) && !$request->hasFile($field)) {
+            continue;
+        }
 
-        $fieldIds = collect($request->input($field))
+        // Get the IDs of the existing media to keep (those sent from the frontend)
+        $fieldIds = collect($request->input($field, []))
             ->pluck('id')
             ->filter()
             ->toArray();
 
+        // Delete media not included in the request for this specific field
         $existingMedia = $companyUser->getMedia($field);
         foreach ($existingMedia as $media) {
             if (!in_array($media->id, $fieldIds)) {
                 $media->delete();
             }
         }
-            if ($request->hasFile($field)) {
-                foreach ($request->file($field) as $file) {
-                    $uploadedFiles[$field][] = $this->fileUploadService->uploadFile(
-                        $companyUser, $file, $path, $field, $visibility
-                    );
-                }
+
+        // Upload new files for this field
+        if ($request->hasFile($field)) {
+            foreach ($request->file($field) as $file) {
+                $uploadedFiles[$field][] = $this->fileUploadService->uploadFile(
+                    $companyUser, $file, $path, $field, $visibility
+                );
             }
         }
-
-        return $uploadedFiles;
     }
+
+    return $uploadedFiles;
+}
+
 }

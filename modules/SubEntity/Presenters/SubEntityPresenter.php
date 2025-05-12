@@ -74,9 +74,13 @@ class SubEntityPresenter extends AbstractPresenter
     {
         $superEntity = $this->superEntityService->getById($id);
 
-        $presenter = new SuperEntityPresenter($superEntity);
+        if($superEntity) {
+            $presenter = new SuperEntityPresenter($superEntity);
 
-        return $presenter->getData();
+            return $presenter->getData();
+        }
+
+        return [];
     }
 
     public function getMainProgram(): ?array
