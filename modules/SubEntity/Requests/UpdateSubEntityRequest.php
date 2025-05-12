@@ -26,7 +26,7 @@ class UpdateSubEntityRequest extends FormRequest
                     })->ignore($this->route('id'))
             ],
             'slug' => [
-                'required',
+                'nullable',
                 'string',
                 'max:255',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
