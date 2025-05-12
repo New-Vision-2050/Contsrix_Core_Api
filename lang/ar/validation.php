@@ -206,11 +206,7 @@ return [
 
     "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
 
-    'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
-        ],
-    ],
+
     'attributes' => [],
     'username_required'=>'الاسم المختصر ألرامي',
     'username_unique'=>'الاسم المختصر مستخدم بالفعل',
@@ -324,26 +320,51 @@ return [
     'study_rate_required' => 'معدل الدراسة مطلوب.',
     'graduation_date_required' => 'تاريخ التخرج مطلوب.',
 
-    'name.required' => 'الاسم مطلوب.',
-    'files.required' => 'حقل الملفات مطلوب.',
-    'files.array' => 'يجب أن تكون الملفات مصفوفة.',
-    'files.*.required' => 'كل ملف مطلوب.',
-    'files.*.file' => 'كل عنصر يجب أن يكون ملفاً.',
-    'files.*.mimes' => 'يجب أن تكون الملفات من نوع: pdf, jpeg, jpg, png, doc, docx.',
-    'document_type_id.required' => 'نوع المستند مطلوب.',
-    'document_type_id.exists' => 'نوع المستند المحدد غير صالح.',
-    'description.required' => 'الوصف مطلوب.',
-    'document_number.required' => 'رقم المستند مطلوب.',
-    'document_number.numeric' => 'يجب أن يكون رقم المستند رقماً.',
-    'start_date.required' => 'تاريخ البداية مطلوب.',
-    'start_date.before_or_equal' => 'يجب أن يكون تاريخ البداية قبل أو مساوياً لتاريخ الانتهاء.',
-    'start_date.date_format' => 'يجب أن يكون تاريخ البداية بالتنسيق Y-m-d.',
-    'end_date.required' => 'تاريخ الانتهاء مطلوب.',
-    'end_date.after_or_equal' => 'يجب أن يكون تاريخ الانتهاء بعد أو مساوياً لتاريخ البداية.',
-    'end_date.date_format' => 'يجب أن يكون تاريخ الانتهاء بالتنسيق Y-m-d.',
-    'notification_date.required' => 'تاريخ الإشعار مطلوب.',
-    'notification_date.date' => 'يجب أن يكون تاريخ الإشعار تاريخاً صالحاً.',
-    'notification_date.after_or_equal' => 'يجب أن يكون تاريخ الإشعار بعد أو مساوياً لتاريخ البداية.',
-    'notification_date.before' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء.',
-    'notification_date.date_format' => 'يجب أن يكون تاريخ الإشعار بالتنسيق Y-m-d.',
+    'custom' => [
+        'attribute-name' => [
+            'rule-name' => 'custom-message',
+        ],
+        'name' => [
+            'required' => 'الاسم مطلوب.',
+        ],
+        'files' => [
+            'required' => 'حقل الملفات مطلوب.',
+            'array' => 'يجب أن تكون الملفات مصفوفة.',
+            '*.required' => 'كل ملف مطلوب.',
+            '*.file' => 'كل عنصر يجب أن يكون ملفاً.',
+            '*.mimes' => 'يجب أن تكون الملفات من نوع: pdf, jpeg, jpg, png, doc, docx.',
+        ],
+        'document_type_id' => [
+            'required' => 'نوع المستند مطلوب.',
+            'exists' => 'نوع المستند المحدد غير صالح.',
+        ],
+        'description' => [
+            'required' => 'الوصف مطلوب.',
+        ],
+        'document_number' => [
+            'required' => 'رقم المستند مطلوب.',
+            'numeric' => 'يجب أن يكون رقم المستند رقماً.',
+        ],
+        'start_date' => [
+            'required' => 'تاريخ البداية مطلوب.',
+            'date' => 'تاريخ البداية غير صالح.',
+            'before_or_equal' => 'يجب أن يكون تاريخ البداية قبل أو مساوياً لتاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ البداية بالتنسيق Y-m-d.',
+        ],
+        'end_date' => [
+            'required' => 'تاريخ الانتهاء مطلوب.',
+            'date' => 'تاريخ الانتهاء غير صالح.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الانتهاء بعد أو مساوياً لتاريخ البداية.',
+            'date_format' => 'يجب أن يكون تاريخ الانتهاء بالتنسيق Y-m-d.',
+        ],
+        'notification_date' => [
+            'required' => 'تاريخ الإشعار مطلوب.',
+            'date' => 'يجب أن يكون تاريخ الإشعار تاريخاً صالحاً.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الإشعار بعد أو مساوياً لتاريخ البداية.',
+            'before' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ الإشعار بالتنسيق Y-m-d.',
+        ],
+    ],
+    'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
+
 ];

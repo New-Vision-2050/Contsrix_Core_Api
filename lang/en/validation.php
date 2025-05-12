@@ -235,11 +235,6 @@ return [
     |
     */
 
-    'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
-        ],
-    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -359,26 +354,47 @@ return [
     'study_rate_required' => 'Study rate is required.',
     'graduation_date_required' => 'Graduation date is required.',
 
-    'name.required' => 'The name is required.',
-    'files.required' => 'The files field is required.',
-    'files.array' => 'The files must be an array.',
-    'files.*.required' => 'Each file is required.',
-    'files.*.file' => 'Each item must be a file.',
-    'files.*.mimes' => 'Each file must be of type: pdf, jpeg, jpg, png, doc, docx.',
-    'document_type_id.required' => 'Document type is required.',
-    'document_type_id.exists' => 'Selected document type is invalid.',
-    'description.required' => 'Description is required.',
-    'document_number.required' => 'Document number is required.',
-    'document_number.numeric' => 'Document number must be numeric.',
-    'start_date.required' => 'Start date is required.',
-    'start_date.before_or_equal' => 'Start date must be before or equal to end date.',
-    'start_date.date_format' => 'Start date must be in the format Y-m-d.',
-    'end_date.required' => 'End date is required.',
-    'end_date.after_or_equal' => 'End date must be after or equal to start date.',
-    'end_date.date_format' => 'End date must be in the format Y-m-d.',
-    'notification_date.required' => 'Notification date is required.',
-    'notification_date.date' => 'Notification date must be a valid date.',
-    'notification_date.after_or_equal' => 'Notification date must be after or equal to start date.',
-    'notification_date.before' => 'Notification date must be before end date.',
-    'notification_date.date_format' => 'Notification date must be in the format Y-m-d.',
+  'custom' => [
+        'attribute-name' => [
+            'rule-name' => 'custom-message',
+        ],
+        'files' => [
+            'required' => 'The files field is required.',
+            'array' => 'The files must be an array.',
+            '*.required' => 'Each file is required.',
+            '*.file' => 'Each item must be a valid file.',
+            '*.mimes' => 'Each file must be a type of: pdf, jpeg, jpg, png, doc, docx.',
+        ],
+        'document_type_id' => [
+            'required' => 'The document type is required.',
+            'exists' => 'The selected document type is invalid.',
+        ],
+        'description' => [
+            'required' => 'The description is required.',
+        ],
+        'document_number' => [
+            'required' => 'The document number is required.',
+            'numeric' => 'The document number must be a number.',
+        ],
+        'start_date' => [
+            'required' => 'The start date is required.',
+            'date' => 'The start date must be a valid date.',
+            'before_or_equal' => 'The start date must be before or equal to the end date.',
+            'date_format' => 'The start date format must be YYYY-MM-DD.',
+        ],
+        'end_date' => [
+            'required' => 'The end date is required.',
+            'date' => 'The end date must be a valid date.',
+            'after_or_equal' => 'The end date must be after or equal to the start date.',
+            'date_format' => 'The end date format must be YYYY-MM-DD.',
+        ],
+        'notification_date' => [
+            'required' => 'The notification date is required.',
+            'date' => 'The notification date must be a valid date.',
+            'after_or_equal' => 'The notification date must be after or equal to the start date.',
+            'before' => 'The notification date must be before the end date.',
+            'date_format' => 'The notification date format must be YYYY-MM-DD.',
+        ],
+    ],
+    'notification_date_7_days' => 'The notification date must be at least 7 days before the end date.',
 ];
