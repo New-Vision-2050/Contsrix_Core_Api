@@ -9,7 +9,7 @@ class CreateSubEntityDTO
     public function __construct(
         public string $name,
         public string $super_entity,
-        public int $icon,
+        public string $icon,
         public string $main_program_id,
         public bool $is_active,
         public bool $is_registrable,

@@ -102,4 +102,14 @@ class SubEntityRepository extends BaseRepository
     {
         return $this->update($id, $data);
     }
+
+    /**
+     * @param string $id
+     *
+     * @return mixed
+     */
+    public function find($id)
+    {
+        return $this->model->find($id);
+    }
 }

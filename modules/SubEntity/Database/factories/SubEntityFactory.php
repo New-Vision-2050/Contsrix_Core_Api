@@ -21,7 +21,17 @@ class SubEntityFactory extends Factory
             'super_entity' => $superEntityType,
             'origin_super_entity' => $superEntityType,
             'name' => $this->faker->unique()->word(),
-            'icon' => $this->faker->numberBetween(0, int2: 8),
+            'icon' => $this->faker->randomElement([
+                'home',
+                'user',
+                'settings',
+                'chart',
+                'calendar',
+                'bell',
+                'star',
+                'folder',
+                'lock'
+            ]),
             'main_program_id' => Program::first(), // TODO
             'is_active' => $this->faker->boolean(70), // 80% chance of being active
             'is_registrable' => $this->faker->boolean(75), // 30% chance of being registrable

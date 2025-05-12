@@ -25,7 +25,7 @@ class UpdateSubEntityRequest extends FormRequest
                         return $query->where('super_entity', $subEntity->super_entity);
                     })->ignore($this->route('id'))
             ],
-            'icon' => 'required|integer|min:0|max:255',
+            'icon' => 'required|string|max:255',
             'main_program_id' => 'required|uuid|exists:programs,id',
             'is_active' => 'required|boolean',
             'is_registrable' => 'required|boolean',
@@ -35,8 +35,7 @@ class UpdateSubEntityRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'icon.min' => 'Icon code must be between 0-255',
-            'icon.max' => 'Icon code must be between 0-255',
+            'icon.max' => 'The icon name must not exceed 255 characters.',
             'name.unique' => 'This name already exists for the selected super entity type',
         ];
     }

@@ -11,7 +11,7 @@ class UpdateSubEntityCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
-        private int $icon,
+        private string $icon,
         private string $mainProgramId,
         private bool $isActive,
         private bool $isRegistrable,
