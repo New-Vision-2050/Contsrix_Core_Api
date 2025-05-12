@@ -19,7 +19,10 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHa
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyOfficialDocumentHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanySetAddressHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
+use Modules\Company\CompanyCore\Presenters\CompanyLegalDataPresenter;
+use Modules\Company\CompanyCore\Presenters\CompanyOfficialDocumentPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyOfficialDocumentRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\GetLocationByLatLongRequest;
@@ -179,5 +182,49 @@ class CompanyProfileController extends Controller
         $this->deleteCompanyLegalDataHandler->handle(Uuid::fromString($request->route("id")));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
+    }
+
+    /**
+     * Get company legal data as a separate API endpoint
+     *
+     * @return JsonResponse
+     */
+    public function getCompanyLegalData(): JsonResponse
+    {
+        $legalData = $this->companyProfileService->getCompanyLegalDataForCompany();
+        return Json::item(CompanyLegalDataPresenter::collection($legalData));
+    }
+
+    /**
+     * Get company address as a separate API endpoint
+     *
+     * @return JsonResponse
+     */
+    public function getCompanyAddress(): JsonResponse
+    {
+        $address = $this->companyProfileService->getCompanyAddressForCompany();
+        return Json::item($address);
+    }
+
+    /**
+     * Get company official documents as a separate API endpoint
+     *
+     * @return JsonResponse
+     */
+    public function getCompanyOfficialDocuments(): JsonResponse
+    {
+        $officialDocuments = $this->companyProfileService->getCompanyOfficialDocumentsForCompany();
+        return Json::items(CompanyOfficialDocumentPresenter::collection($officialDocuments));
+    }
+
+    /**
+     * Get company branches as a separate API endpoint
+     *
+     * @return JsonResponse
+     */
+    public function getCompanyBranches(): JsonResponse
+    {
+        $branches = $this->companyProfileService->getCompanyBranchesForCompany();
+        return Json::items(ManagementHierarchyPresenter::collection($branches));
     }
 }
