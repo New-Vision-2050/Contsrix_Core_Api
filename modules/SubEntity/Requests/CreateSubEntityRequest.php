@@ -25,7 +25,7 @@ class CreateSubEntityRequest extends FormRequest
                     })
             ],
             'slug' => [
-                'required',
+                'nullable',
                 'string',
                 'max:255',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',

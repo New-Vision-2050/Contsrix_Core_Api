@@ -8,7 +8,7 @@ class CreateSubEntityDTO
 {
     public function __construct(
         public string $name,
-        public string $slug,
+        public ?string $slug,
         public string $super_entity,
         public string $icon,
         public string $main_program_id,
