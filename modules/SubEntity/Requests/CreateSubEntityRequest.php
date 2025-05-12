@@ -20,12 +20,19 @@ class CreateSubEntityRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('sub_entities')
-                ->where(function ($query) {
-                    return $query->where('super_entity', $this->input('super_entity'));
-                })
+                    ->where(function ($query) {
+                        return $query->where('super_entity', $this->input('super_entity'));
+                    })
+            ],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('sub_entities', 'slug'),
             ],
             'super_entity' => ['required', 'string', new ValidSuperEntityId()],
-            'icon' => 'required|integer|min:0|max:255',
+            'icon' => 'required|string|max:255',
             'main_program_id' => 'required|uuid|exists:programs,id',
             'is_active' => 'sometimes|boolean',
             'is_registrable' => 'sometimes|boolean',
@@ -40,9 +47,10 @@ class CreateSubEntityRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'icon.min' => 'Icon code must be between 0-255',
-            'icon.max' => 'Icon code must be between 0-255',
+            'icon.max' => 'The icon name must not exceed 255 characters.',
             'name.unique' => 'This name already exists for the selected super entity type',
+            'slug.regex' => 'The slug must contain only lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen.',
+            'slug.unique' => 'This slug is already taken.',
         ];
     }
 
@@ -50,8 +58,9 @@ class CreateSubEntityRequest extends FormRequest
     {
         return new CreateSubEntityDTO(
             name: $this->input('name'),
+            slug: $this->input('slug'),
             super_entity: $this->input('super_entity'),
-            icon: (int) $this->input('icon'),
+            icon: $this->input('icon'),
             main_program_id: $this->input('main_program_id'),
             is_active: $this->input('is_active', true),
             is_registrable: $this->input('is_registrable', false),
@@ -63,12 +72,13 @@ class CreateSubEntityRequest extends FormRequest
     protected function getValidSuperEntityAttributes()
     {
         $superEntityId = $this->get('super_entity');
-        if(empty($superEntityId )) {
+        if (empty($superEntityId)) {
             return [];
         }
 
         $superEntityService = app(SuperEntityService::class);
-        $superEntityModel = $superEntityService->getModelForId($superEntityId );
+        $superEntityModel = $superEntityService->getModelForId($superEntityId);
+
         return $superEntityModel ? $superEntityModel::getSubEntitiesAvailableAttributes() : [];
     }
 }

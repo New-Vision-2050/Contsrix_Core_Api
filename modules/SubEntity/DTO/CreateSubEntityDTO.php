@@ -8,8 +8,9 @@ class CreateSubEntityDTO
 {
     public function __construct(
         public string $name,
+        public string $slug,
         public string $super_entity,
-        public int $icon,
+        public string $icon,
         public string $main_program_id,
         public bool $is_active,
         public bool $is_registrable,
@@ -22,6 +23,7 @@ class CreateSubEntityDTO
     {
         return [
             'name' => $this->name,
+            'slug' => $this->slug,
             'super_entity' => $this->super_entity,
             'icon' => $this->icon,
             'main_program_id' => $this->main_program_id,

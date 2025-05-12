@@ -51,7 +51,7 @@ class SuperEntityService
         $superEntityId = $id;
 
         while (Str::isUuid($superEntityId)) {
-            $parentSubEntity = $this->subEntityCRUDService->get(Uuid::fromString($superEntityId));
+            $parentSubEntity = $this->subEntityCRUDService->find(Uuid::fromString($superEntityId));
 
             if (!$parentSubEntity) {
                 break;

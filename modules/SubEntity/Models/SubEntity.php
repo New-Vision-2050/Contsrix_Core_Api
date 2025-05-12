@@ -35,7 +35,8 @@ class SubEntity extends Model
         'is_registrable',
         'super_entity',
         'company_id',
-        'origin_super_entity'
+        'origin_super_entity',
+        'slug'
     ];
 
     protected $casts = [
@@ -43,6 +44,21 @@ class SubEntity extends Model
         'default_attributes' => 'json',
         'optional_attributes' => 'json',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $subEntity) {
+            if (isset($subEntity->name) && blank($subEntity->slug)) {
+                $subEntity->slug = Str::slug($subEntity->name);
+            }
+        });
+
+        static::updating(function (self $subEntity) {
+            if ($subEntity->isDirty('name') && isset($subEntity->name) && blank($subEntity->slug)) {
+                $subEntity->slug = Str::slug($subEntity->name);
+            }
+        });
+    }
 
     public function mainProgram()
     {

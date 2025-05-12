@@ -9,14 +9,15 @@ return new class extends Migration
     public function up()
     {
         Schema::table('sub_entities', function (Blueprint $table) {
-            $table->string('origin_super_entity')->after('super_entity');
+            $table->string('slug')->unique()->after('name')->nullable();
         });
     }
 
     public function down()
     {
         Schema::table('sub_entities', function (Blueprint $table) {
-            $table->dropColumn('origin_super_entity');
+            $table->dropUnique(['slug']);
+            $table->dropColumn('slug');
         });
     }
 };

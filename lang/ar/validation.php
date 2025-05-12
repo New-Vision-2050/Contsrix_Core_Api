@@ -206,11 +206,7 @@ return [
 
     "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
 
-    'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
-        ],
-    ],
+
     'attributes' => [],
     'username_required'=>'الاسم المختصر ألرامي',
     'username_unique'=>'الاسم المختصر مستخدم بالفعل',
@@ -270,8 +266,134 @@ return [
         'manager_exists' => 'المدير العام المحدد غير موجود.',
     ],
 
-        'validation_failed'   => 'فشل التحقق من الصحة',
-        'unauthenticated'     => 'غير مصادق عليه',
-        'unauthorized'        => 'غير مصرح به',
-        'resource_not_found'  => 'المورد غير موجود',
+    'user_relative' => [
+        'name_required' => 'حقل الاسم مطلوب.',
+        'user_id_required' => 'معرف المستخدم مطلوب.',
+        'marital_status_required' => 'الحالة الاجتماعية مطلوبة.',
+        'relationship_required' => 'العلاقة مطلوبة.',
+        'phone_required' => 'رقم الهاتف مطلوب.',
+    ],
+
+    'identity' => [
+        'passport_end_date_required_with' => 'تاريخ انتهاء جواز السفر مطلوب عند وجود تاريخ بداية.',
+        'passport_end_date_date' => 'يجب أن يكون تاريخ انتهاء جواز السفر تاريخًا صالحًا.',
+        'passport_end_date_after' => 'يجب أن يكون تاريخ انتهاء جواز السفر بعد تاريخ البداية.',
+
+        'identity_end_date_required_with' => 'تاريخ انتهاء الهوية مطلوب عند وجود تاريخ بداية.',
+        'identity_end_date_date' => 'يجب أن يكون تاريخ انتهاء الهوية تاريخًا صالحًا.',
+        'identity_end_date_after' => 'يجب أن يكون تاريخ انتهاء الهوية بعد تاريخ البداية.',
+
+        'border_number_end_date_required_with' => 'تاريخ انتهاء رقم الحدود مطلوب عند وجود تاريخ بداية.',
+        'border_number_end_date_date' => 'يجب أن يكون تاريخ انتهاء رقم الحدود تاريخًا صالحًا.',
+        'border_number_end_date_after' => 'يجب أن يكون تاريخ انتهاء رقم الحدود بعد تاريخ البداية.',
+
+        'entry_number_end_date_required_with' => 'تاريخ انتهاء رقم الدخول مطلوب عند وجود تاريخ بداية.',
+        'entry_number_end_date_date' => 'يجب أن يكون تاريخ انتهاء رقم الدخول تاريخًا صالحًا.',
+        'entry_number_end_date_after' => 'يجب أن يكون تاريخ انتهاء رقم الدخول بعد تاريخ البداية.',
+
+        'work_permit_end_date_required_with' => 'تاريخ انتهاء تصريح العمل مطلوب عند وجود تاريخ بداية.',
+        'work_permit_end_date_date' => 'يجب أن يكون تاريخ انتهاء تصريح العمل تاريخًا صالحًا.',
+        'work_permit_end_date_after' => 'يجب أن يكون تاريخ انتهاء تصريح العمل بعد تاريخ البداية.',
+    ],
+
+    'validation_failed'   => 'فشل التحقق من الصحة',
+    'unauthenticated'     => 'غير مصادق عليه',
+    'unauthorized'        => 'غير مصرح به',
+    'resource_not_found'  => 'المورد غير موجود',
+
+    'user_id_required' => 'رقم المستخدم مطلوب.',
+    'job_offer_number_required' => 'رقم عرض العمل مطلوب.',
+    'date_send_required' => 'تاريخ الإرسال مطلوب.',
+    'date_accept_required' => 'تاريخ القبول مطلوب.',
+
+    'job_name_required' => 'اسم الوظيفة مطلوب.',
+    'training_from_required' => 'تاريخ البداية مطلوب.',
+    'training_to_required' => 'تاريخ النهاية مطلوب.',
+    'training_to_after_from' => 'تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية.',
+    'company_name_required' => 'اسم الشركة مطلوب.',
+    'about_required' => 'الوصف مطلوب.',
+
+    'country_id_required' => 'الدولة مطلوبة.',
+    'university_id_required' => 'الجامعة مطلوبة.',
+    'academic_qualification_id_required' => 'المؤهل الأكاديمي مطلوب.',
+    'academic_specialization_id_required' => 'التخصص الأكاديمي مطلوب.',
+    'study_rate_required' => 'معدل الدراسة مطلوب.',
+    'graduation_date_required' => 'تاريخ التخرج مطلوب.',
+
+    'custom' => [
+        'attribute-name' => [
+            'rule-name' => 'custom-message',
+        ],
+        'name' => [
+            'required' => 'الاسم مطلوب.',
+        ],
+        'files' => [
+            'required' => 'حقل الملفات مطلوب.',
+            'array' => 'يجب أن تكون الملفات مصفوفة.',
+            '*.required' => 'كل ملف مطلوب.',
+            '*.file' => 'كل عنصر يجب أن يكون ملفاً.',
+            '*.mimes' => 'يجب أن تكون الملفات من نوع: pdf, jpeg, jpg, png, doc, docx.',
+        ],
+        'document_type_id' => [
+            'required' => 'نوع المستند مطلوب.',
+            'exists' => 'نوع المستند المحدد غير صالح.',
+        ],
+        'description' => [
+            'required' => 'الوصف مطلوب.',
+        ],
+        'document_number' => [
+            'required' => 'رقم المستند مطلوب.',
+            'numeric' => 'يجب أن يكون رقم المستند رقماً.',
+        ],
+        'start_date' => [
+            'required' => 'تاريخ البداية مطلوب.',
+            'date' => 'تاريخ البداية غير صالح.',
+            'before_or_equal' => 'يجب أن يكون تاريخ البداية قبل أو مساوياً لتاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ البداية بالتنسيق Y-m-d.',
+        ],
+        'end_date' => [
+            'required' => 'تاريخ الانتهاء مطلوب.',
+            'date' => 'تاريخ الانتهاء غير صالح.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الانتهاء بعد أو مساوياً لتاريخ البداية.',
+            'date_format' => 'يجب أن يكون تاريخ الانتهاء بالتنسيق Y-m-d.',
+        ],
+        'notification_date' => [
+            'required' => 'تاريخ الإشعار مطلوب.',
+            'date' => 'يجب أن يكون تاريخ الإشعار تاريخاً صالحاً.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الإشعار بعد أو مساوياً لتاريخ البداية.',
+            'before' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ الإشعار بالتنسيق Y-m-d.',
+        ],
+    ],
+    'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
+
+    'address' => [
+            'country_id' => [
+                'required' => 'الدولة مطلوبة.',
+                'exists' => 'الدولة المحددة غير صالحة.',
+            ],
+            'state_id' => [
+                'required' => 'المحافظة مطلوبة.',
+                'exists' => 'المحافظة المحددة غير صالحة.',
+            ],
+            'city_id' => [
+                'required' => 'المدينة مطلوبة.',
+                'exists' => 'المدينة المحددة غير صالحة.',
+            ],
+            'neighborhood_name' => [
+                'required' => 'اسم الحي مطلوب.',
+            ],
+            'street_name' => [
+                'required' => 'اسم الشارع مطلوب.',
+            ],
+            'building_number' => [
+                'required' => 'رقم المبنى مطلوب.',
+            ],
+            'additional_phone' => [
+                'required' => 'الهاتف الإضافي مطلوب.',
+            ],
+            'postal_code' => [
+                'required' => 'الرمز البريدي مطلوب.',
+            ],
+        ],
 ];

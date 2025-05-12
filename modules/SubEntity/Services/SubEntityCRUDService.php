@@ -7,7 +7,6 @@ namespace Modules\SubEntity\Services;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
-use Illuminate\Support\Collection;
 use Modules\SubEntity\Models\SubEntity;
 use Modules\SubEntity\DTO\CreateSubEntityDTO;
 use Modules\SubEntity\Repositories\SubEntityRepository;
@@ -72,5 +71,15 @@ class SubEntityCRUDService
             page: $page,
             perPage: $perPage
         );
+    }
+
+       /**
+     * @param string $id
+     *
+     * @return mixed
+     */
+    public function find($id)
+    {
+        return $this->repository->find($id);
     }
 }
