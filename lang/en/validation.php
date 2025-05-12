@@ -339,4 +339,9 @@ return [
     'unauthenticated'     => 'Unauthenticated',
     'unauthorized'        => 'Unauthorized',
     'resource_not_found'  => 'Resource not found',
+
+    'user_id_required' => 'The user ID is required.',
+    'job_offer_number_required' => 'The job offer number is required.',
+    'date_send_required' => 'The sending date is required.',
+    'date_accept_required' => 'The acceptance date is required.',
 ];

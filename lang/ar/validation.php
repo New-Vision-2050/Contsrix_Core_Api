@@ -277,7 +277,7 @@ return [
         'relationship_required' => 'العلاقة مطلوبة.',
         'phone_required' => 'رقم الهاتف مطلوب.',
     ],
-    
+
     'identity' => [
         'passport_end_date_required_with' => 'تاريخ انتهاء جواز السفر مطلوب عند وجود تاريخ بداية.',
         'passport_end_date_date' => 'يجب أن يكون تاريخ انتهاء جواز السفر تاريخًا صالحًا.',
@@ -304,4 +304,9 @@ return [
     'unauthenticated'     => 'غير مصادق عليه',
     'unauthorized'        => 'غير مصرح به',
     'resource_not_found'  => 'المورد غير موجود',
+
+    'user_id_required' => 'رقم المستخدم مطلوب.',
+    'job_offer_number_required' => 'رقم عرض العمل مطلوب.',
+    'date_send_required' => 'تاريخ الإرسال مطلوب.',
+    'date_accept_required' => 'تاريخ القبول مطلوب.',
 ];
