@@ -63,6 +63,23 @@ class SuperEntityService
         return $this->repository->getModelForId($superEntityId);
     }
 
+     public function getRegistrationFormsForId(string $id): array
+    {
+        $superEntityId = $id;
+
+        while (Str::isUuid($superEntityId)) {
+            $parentSubEntity = $this->subEntityCRUDService->find(Uuid::fromString($superEntityId));
+
+            if (!$parentSubEntity) {
+                break;
+            }
+
+            $superEntityId = $parentSubEntity->super_entity;
+        }
+
+        return $this->repository->getRegistrationFormsForId($superEntityId);
+    }
+
     public function getById(string $id): ?array
     {
         if (Str::isUuid($id)) {
