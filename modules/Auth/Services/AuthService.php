@@ -190,13 +190,18 @@ class AuthService
         $loginWay = $this->getDefaultLoginWay($getLoginWaysDTO->getIdentifier());
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
+        $firstLogin = $user->password == null ? 1 : 0;
+
         if ($user->password == null) {
-            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier());
+            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier(),$firstLogin);
             return [$loginWay->id, null, $step, 1];
         }
+
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
         $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1, "login_way" => $loginWay])->token;
-        return [$loginWay->id, $token, $step, 0];
+
+
+        return [$loginWay->id, $token, $step, 0, $firstLogin];
 
     }
 

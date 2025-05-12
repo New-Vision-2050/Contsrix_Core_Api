@@ -41,12 +41,12 @@ private function  createAuthMailForLoginStepData($identifier)
         );
     }
 
-    public function resetPassword($identifier){
+    public function resetPassword($identifier,$firstLogin){
         $data =$this->createAuthMailForLoginStepData($identifier)->toArray();
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
+        $data['first_login'] = $firstLogin;
 
         $user->notify(new ResetPassword($data));
-
     }
 
     public function sendOtpForEmailChange(UuidInterface $userId){

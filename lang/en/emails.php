@@ -5,6 +5,8 @@ return [
     'login-with-otp' => 'login with otp',
     'welcome' => 'welcome',
     'you-tried-to-change-password-with' => 'you tried to change password with',
+    'you-tried-to-first-login-with' => 'you tried to first login with',
+    
     "you-tried-to-change-email-with"=>"you tried to change email with :email",
     "change-your-email" => "change your email with otp",
     "change-your-phone"=> "change your phone with otp",
