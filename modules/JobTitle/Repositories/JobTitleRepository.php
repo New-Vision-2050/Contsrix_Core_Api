@@ -20,6 +20,16 @@ class JobTitleRepository extends BaseRepository
     {
         parent::__construct($model);
     }
+    public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
+    {
+        $query = $this->model->withoutGlobalScope("active")->where($conditions);
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return [
+            'data' => $paginatedData,
+            'pagination' => $paginationArray];
+    }
 
     public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
     {
@@ -33,9 +43,7 @@ class JobTitleRepository extends BaseRepository
 
     public function getJobTitle(UuidInterface $id): JobTitle
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->withoutGlobalScope("active")->where('id', $id)->first();
     }
 
     public function createJobTitle(array $data): JobTitle
@@ -45,11 +53,11 @@ class JobTitleRepository extends BaseRepository
 
     public function updateJobTitle(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->update($data);
     }
 
     public function deleteJobTitle(UuidInterface $id): bool
     {
-        return $this->delete($id);
+        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
     }
 }
