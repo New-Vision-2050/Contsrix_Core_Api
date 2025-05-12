@@ -194,7 +194,7 @@ class AuthService
 
         if ($user->password == null) {
             $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier(),$firstLogin);
-            return [$loginWay->id, null, $step, 1];
+            return [$loginWay->id, null, $step, 1,$firstLogin];
         }
 
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
