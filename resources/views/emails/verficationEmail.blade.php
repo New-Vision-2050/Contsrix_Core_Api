@@ -51,7 +51,7 @@
 
                                     <h1 dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}"  style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; color: #3d4852; font-size: 18px; font-weight: bold; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
                                          {{__("emails.welcome")." : ".$data['name']}}</h1>
-                                     @if($data['first_login'])
+                                    @if(!empty($data['first_login']))
                                      <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
                                          {{ __("emails.you-tried-to-first-login-with")." : ".$data['email'] }}<br>
                                         </p>
