@@ -11,6 +11,7 @@ class UpdateSubEntityCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
+        private string $slug,
         private string $icon,
         private string $mainProgramId,
         private bool $isActive,
@@ -33,6 +34,7 @@ class UpdateSubEntityCommand
     {
         return array_filter([
             'name' => $this->name,
+            'slug' => $this->slug,
             'icon' => $this->icon,
             'main_program_id' => $this->mainProgramId,
             'is_active' => $this->isActive,

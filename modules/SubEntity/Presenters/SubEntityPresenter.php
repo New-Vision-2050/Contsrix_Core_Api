@@ -27,6 +27,7 @@ class SubEntityPresenter extends AbstractPresenter
         return [
             'id' => $this->subEntity->id,
             'name' => $this->subEntity->name,
+            'slug' => $this->subEntity->slug,
             'icon' => $this->subEntity->icon,
             'super_entity' => $this->getSuperEntity($this->subEntity->super_entity),
             'is_active' => $this->subEntity->is_active,
