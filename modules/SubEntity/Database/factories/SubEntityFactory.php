@@ -22,15 +22,14 @@ class SubEntityFactory extends Factory
             'origin_super_entity' => $superEntityType,
             'name' => $this->faker->unique()->word(),
             'icon' => $this->faker->randomElement([
-                'home',
-                'user',
-                'settings',
-                'chart',
-                'calendar',
-                'bell',
-                'star',
-                'folder',
-                'lock'
+                'TwoPersonsIcon',
+                'PersonLoudIcon',
+                'PersonIcon',
+                'PersonSettingsIcon',
+                'PersonCircleIcon',
+                'PersonSmileIcon',
+                'TwoPersonsCircleIcon',
+                'PersonLockIcon',
             ]),
             'main_program_id' => Program::first(), // TODO
             'is_active' => $this->faker->boolean(70), // 80% chance of being active
