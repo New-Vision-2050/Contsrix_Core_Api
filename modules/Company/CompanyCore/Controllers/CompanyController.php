@@ -31,10 +31,16 @@ use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\User\Repositories\UserRepository;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Cache;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 
-
+/**
+ * Class CompanyController
+ * @package Modules\Company\CompanyCore\Controllers
+ */
 class CompanyController extends Controller
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
         private CompanyCRUDService $companyService,
         private UpdateCompanyHandler $updateCompanyHandler,
@@ -162,9 +168,14 @@ class CompanyController extends Controller
 
     public function getCurrentCompanyLoggedIn()
     {
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+
+        $cacheKey = 'current_company_logged_in_' . $company->id . '_' . $branch->id;
 
         try {
-            $company = $this->companyService->getCurrentCompanyLoggedIn();
+            $company = Cache::remember($cacheKey, now()->addHours(1), function () {
+                return $this->companyService->getCurrentCompanyLoggedIn();
+            });
         } catch (\Exception $e) {
             return Json::error($e->getMessage(),$e->getCode());
         }
