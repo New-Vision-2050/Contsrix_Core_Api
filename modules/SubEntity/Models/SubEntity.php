@@ -49,15 +49,36 @@ class SubEntity extends Model
     {
         static::creating(function (self $subEntity) {
             if (isset($subEntity->name) && blank($subEntity->slug)) {
-                $subEntity->slug = Str::slug($subEntity->name);
+                $subEntity->slug = static::generateUniqueSlug($subEntity->name);
             }
         });
 
         static::updating(function (self $subEntity) {
             if ($subEntity->isDirty('name') && isset($subEntity->name) && blank($subEntity->slug)) {
-                $subEntity->slug = Str::slug($subEntity->name);
+                $subEntity->slug = static::generateUniqueSlug($subEntity->name, $subEntity->id);
             }
         });
+    }
+
+    protected static function generateUniqueSlug(string $name, $ignoreId = null): string
+    {
+        $baseSlug = Str::slug($name);
+        $slug = $baseSlug;
+
+        $query = static::query()
+            ->where('slug', 'LIKE', "{$baseSlug}%");
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        $count = $query->count();
+
+        if ($count > 0) {
+            $slug = "{$baseSlug}-" . ($count + 1);
+        }
+
+        return $slug;
     }
 
     public function mainProgram()

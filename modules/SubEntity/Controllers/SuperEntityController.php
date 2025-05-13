@@ -10,6 +10,7 @@ use BasePackage\Shared\Presenters\Json;
 use Modules\SubEntity\Services\SuperEntityService;
 use Modules\SubEntity\Presenters\SuperEntityPresenter;
 use Modules\SubEntity\Requests\GetSuperEntityAttributesRequest;
+use Modules\SubEntity\Requests\GetSuperEntityRegistrationFormsRequest;
 
 class SuperEntityController extends Controller
 {
@@ -28,6 +29,13 @@ class SuperEntityController extends Controller
     public function getAvailableAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
     {
         $attributes = $this->superEntityService->getAvailableAttributes($request->get('super_entity_id'));
+
+        return Json::items($attributes);
+    }
+
+    public function getRegistrationForms(GetSuperEntityRegistrationFormsRequest $request): JsonResponse
+    {
+        $attributes = $this->superEntityService->getRegistrationFormsForId($request->get('super_entity_id'));
 
         return Json::items($attributes);
     }
