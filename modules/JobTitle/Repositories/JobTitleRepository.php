@@ -32,9 +32,9 @@ class JobTitleRepository extends BaseRepository
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return [
-            'data' => $paginatedData,
-            'pagination' => $paginationArray];
+        return array_merge($paginationArray,[
+            'data' => $paginatedData
+        ]);
     }
 
     public function getAllJobTitles(): Collection
