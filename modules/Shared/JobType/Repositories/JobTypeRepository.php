@@ -59,6 +59,11 @@ class JobTypeRepository extends BaseRepository
 
     public function deleteJobType(UuidInterface $id): bool
     {
-        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
+        $jobType =  $this->model->withoutGlobalScope("active")->where('id', $id)->first();
+        if (count($jobType->jobTitles) == 0) {
+            throw new \Exception(__("validation.delete-not-allow"), 400);
+        }
+
+        return $jobType->delete($id);
     }
 }
