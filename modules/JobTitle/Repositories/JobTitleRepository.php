@@ -61,4 +61,21 @@ class JobTitleRepository extends BaseRepository
     {
         return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
     }
+
+    /**
+     * Get filtered job titles for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->withoutGlobalScope("active");
+
+        if (isset($filters['ids']) && is_array($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->with(['jobType'])->get();
+    }
 }
