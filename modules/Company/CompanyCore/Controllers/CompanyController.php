@@ -78,7 +78,7 @@ class CompanyController extends Controller
     {
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
 
-        // Clear widget cache when a new company is created
+
         $this->companyWidgetService->clearWidgetCache();
 
         $presenter = new CompanyPresenter($createdItem);
@@ -92,7 +92,10 @@ class CompanyController extends Controller
         $command = $request->createUpdateCompanyCommand();
         $this->updateCompanyHandler->handle($command);
 
-        // Clear widget cache when a company is updated
+        // Clear cache for current company logged in
+        $cacheKey = 'current_company_logged_in_' . $command->getId() . '_' . $request->branch_id;
+        Cache::forget($cacheKey);
+
         $this->companyWidgetService->clearWidgetCache();
 
         $item = $this->companyService->get($command->getId());

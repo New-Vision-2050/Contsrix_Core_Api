@@ -35,6 +35,26 @@ use Stancl\Tenancy\DatabaseConfig;
 
 
 /**
+ * Class Company
+ *
+ * Represents a company entity in the system.
+ *
+ * @property string $id Unique identifier for the company.
+ * @property string $name Name of the company.
+ * @property string $user_name Username associated with the company.
+ * @property string $email Email address of the company.
+ * @property string $phone Phone number of the company.
+ * @property string $country_id ID of the country the company is located in.
+ * @property string $company_type_id ID representing the type of the company.
+ * @property string $company_field_id ID representing the field of the company.
+ * @property string $general_manager_id ID of the general manager of the company.
+ * @property bool $is_active Indicates if the company is active.
+ * @property bool $complete_data Indicates if all required data for the company is complete.
+ * @property string $date_activate Date when the company was activated.
+ * @property string $serial_no Serial number associated with the company.
+ * @property string $image_path Path to the company's image.
+ *
+ * @method static CompanyFactory factory(...$parameters)
  * @method  __call(string $method, array $parameters)
  * @method  __callStatic(string $method, array $parameters)
  */

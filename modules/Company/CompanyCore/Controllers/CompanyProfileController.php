@@ -22,6 +22,7 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDat
 use Modules\Company\CompanyCore\Presenters\CompanyLegalDataPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyOfficialDocumentPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyOfficialDocumentRequest;
@@ -40,6 +41,9 @@ use Ramsey\Uuid\Uuid;
 
 class CompanyProfileController extends Controller
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
+
+
     public function __construct(
         private UpdateOfficialCompanyDataHandler          $updateOfficialCompanyDataHandler,
         private CompanyCRUDService                        $companyService,
@@ -49,7 +53,7 @@ class CompanyProfileController extends Controller
         private DeleteCompanyOfficialDocumentHandler      $deleteCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler,
         private UpdateCompanySetAddressHandler            $updateCompanySetAddressHandler,
-        private DeleteCompanyLegalDataHandler             $deleteCompanyLegalDataHandler
+        private DeleteCompanyLegalDataHandler             $deleteCompanyLegalDataHandler,
     )
     {
     }
@@ -64,6 +68,7 @@ class CompanyProfileController extends Controller
     {
         $command = $request->createUpdateOfficialCompanyDataCommand();
         $this->updateOfficialCompanyDataHandler->handle($command);
+        $this->companyService->clearCahe();
 
         $item = $this->companyService->get($command->getId());
 
@@ -80,6 +85,7 @@ class CompanyProfileController extends Controller
     public function updateOfficialDataRequest(UpdateOfficialCompanyDataRequest $request)
     {
         $adminRequest = $this->companyProfileService->updateCompanyProfileRequest($request->createUpdateOfficialCompanyDataRequestDTO());
+        $this->companyService->clearCahe();
 
         return Json::item((new AdminRequestPresenter($adminRequest))->getData());
     }
@@ -88,17 +94,16 @@ class CompanyProfileController extends Controller
      * @param GetLocationByLatLongRequest $request
      * @return JsonResponse
      */
-
     public function getAddressFromMap(getLocationByLatLongRequest $request)
     {
         try {
             $geoCodingDTO = $request->createGeoCodingDTO();
             [$country,
-            $state,
-            $city,
-            $neighborhood,
-            $postalCode,
-            $route] = $this->companyProfileService->geoCoding($geoCodingDTO);
+                $state,
+                $city,
+                $neighborhood,
+                $postalCode,
+                $route] = $this->companyProfileService->geoCoding($geoCodingDTO);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(),httpStatus:  $e->getCode());
 
@@ -111,11 +116,12 @@ class CompanyProfileController extends Controller
      * @return JsonResponse
      * @throws \Exception
      */
-
     public function setCompanyLogo(setCompanyLogoRequest $request)
     {
         $logo = $request->createAssignLogoToCompanyDTO();
         $this->companyProfileService->assignLogo($logo);
+        $this->companyService->clearCahe();
+
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         $presenter = new CompanyPresenter($company);
 
@@ -126,7 +132,6 @@ class CompanyProfileController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-
     public function validateCompanyLogo(Request $request)
     {
         $logo = $request->logo;
@@ -142,11 +147,13 @@ class CompanyProfileController extends Controller
     /**
      * @param CreateCompanyLegalDataRequest $request
      * @return JsonResponse
+     * @throws \Exception
      */
-
     public function createLegalData(CreateCompanyLegalDataRequest $request)
     {
         $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
+        $this->companyService->clearCahe();
+
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
 
@@ -155,6 +162,7 @@ class CompanyProfileController extends Controller
     /**
      * @param RequestUpdateLegalCompanyDataRequest $request
      * @return JsonResponse
+     * @throws \Exception
      */
 
     public function requestUpdateLegalDataRequest(RequestUpdateLegalCompanyDataRequest $request)
@@ -166,12 +174,13 @@ class CompanyProfileController extends Controller
     /**
      * @param SetCompanyAddressRequest $request
      * @return JsonResponse
+     * @throws \Exception
      */
-
     public function setAddress(SetCompanyAddressRequest $request)
     {
         $command = $request->createSetCompanyAddressCommand();
         $this->updateCompanySetAddressHandler->handle($command);
+        $this->companyService->clearCahe();
 
         $company = $this->companyService->getCurrentCompanyLoggedIn();
 
@@ -182,11 +191,12 @@ class CompanyProfileController extends Controller
      * @param UpdateCompanyLegalDataRequest $request
      * @return JsonResponse
      */
-
     public function updateCompanyLegalData(UpdateCompanyLegalDataRequest $request)
     {
         $command = $request->createUpdateLegalCompanyDataCommand();
         $this->updateCompanyLegalDataHandler->handle($command);
+        $this->companyService->clearCahe();
+
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
@@ -194,12 +204,14 @@ class CompanyProfileController extends Controller
     /**
      * @param CreateCompanyOfficialDocumentRequest $request
      * @return JsonResponse
+     * @throws \Exception
      */
-
     public function createOfficialDocument(CreateCompanyOfficialDocumentRequest $request)
     {
         $this->companyProfileService->createCompanyOfficialDocument($request->createCreateCompanyOfficialDocumentDTO());
         $company = $this->companyService->getCurrentCompanyLoggedIn();
+        $this->companyService->clearCahe();
+
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
@@ -207,11 +219,12 @@ class CompanyProfileController extends Controller
      * @param UpdateCompanyOfficialDocumentRequest $request
      * @return JsonResponse
      */
-
     public function updateOfficialDocument(UpdateCompanyOfficialDocumentRequest $request)
     {
         $command = $request->createUpdateCompanyOfficialDocumentCommand();
         $this->updateCompanyOfficialDocumentHandler->handle($command);
+        $this->companyService->clearCahe();
+
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
@@ -220,12 +233,12 @@ class CompanyProfileController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-
-
-    public function deleteOfficialDocument(Request $request): JsonResponse
+    public function deleteOfficialDocument(Request $request)
     {
 
         $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
+        $this->companyService->clearCahe();
+
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
@@ -238,25 +251,13 @@ class CompanyProfileController extends Controller
     {
 
         $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), $request->route("media_id"));
+        $this->companyService->clearCahe();
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
     /**
      * @param Request $request
-     * @return JsonResponse
-     */
-
-    public function deleteLegalData(Request $request)
-    {
-        $this->deleteCompanyLegalDataHandler->handle(Uuid::fromString($request->route("id")));
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
-        return Json::item((new CompanyPresenter($company))->getData());
-    }
-
-    /**
-     * Get company legal data as a separate API endpoint
-     *
      * @return JsonResponse
      */
     public function getCompanyLegalData(): JsonResponse
