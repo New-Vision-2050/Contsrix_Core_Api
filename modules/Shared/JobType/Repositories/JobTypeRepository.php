@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Shared\JobType\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
@@ -61,7 +62,7 @@ class JobTypeRepository extends BaseRepository
     {
         $jobType = $this->model->withoutGlobalScope("active")->where('id', $id)->first();
         if(count($jobType->jobTitles) > 0){
-            throw new \Exception(__("validation.delete-not-allowed"), 400);
+           throw  new CustomException(__("validation.delete-not-allowed"), 400);
         }
         return $jobType->delete($id);    }
 }
