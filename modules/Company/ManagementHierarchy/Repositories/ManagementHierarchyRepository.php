@@ -91,6 +91,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();

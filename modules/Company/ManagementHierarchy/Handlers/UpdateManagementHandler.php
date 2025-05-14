@@ -18,7 +18,7 @@ class UpdateManagementHandler
     {
         $managementData = [
             'name' => $command->getName(),
-            'parent_id' => $command->getBranchId(),
+//            'parent_id' => $command->getBranchId(),
             'company_id' => $command->getCompanyId(),
             'is_active' => $command->getIsActive(),
             'manager_id' => $command->getManagerId(),
