@@ -55,7 +55,7 @@ class JobTitle extends Model
 
     public function jobType()
     {
-        return $this->belongsTo(JobType::class);
+        return $this->belongsTo(JobType::class)->withoutGlobalScope("active");
     }
 
     public function userProfissional()
