@@ -12,6 +12,7 @@ class UpdateManagementCommand
         private int $id,
         private string $name,
         private int $branchId,
+        private int $managementId,
         private UuidInterface $companyId,
         private string $description,
         private int $isActive,
@@ -26,43 +27,33 @@ class UpdateManagementCommand
         return $this->id;
     }
 
-    public function getName(): string
+
+    public function managementToArray(): array
     {
-        return $this->name;
+        return [
+            'name' => $this->name,
+            'parent_id' => $this->managementId ?? $this->branchId,
+            'is_main' => $this->managementId == null ? 1 : 0,
+            'company_id' => $this->companyId,
+            'is_active' => $this->isActive,
+            "type" => "management",
+            "manager_id" => $this->managerId
+        ];
     }
 
-    public function getBranchId(): int
+    public function managementDetailToArray(): array
     {
-        return $this->branchId;
-    }
-
-    public function getCompanyId(): UuidInterface
-    {
-        return $this->companyId;
-    }
-
-    public function getDescription(): string
-    {
-        return $this->description;
-    }
-
-    public function getIsActive(): int
-    {
-        return $this->isActive;
+        return [
+            'description' => $this->description,
+            "reference_user_id" => $this->referenceUserId,
+            "branch_id" => $this->branchId
+        ];
     }
 
     public function getDeputyManagerIds(): array
     {
+
         return $this->deputyManagerIds;
     }
 
-    public function getReferenceUserId(): UuidInterface
-    {
-        return $this->referenceUserId;
-    }
-
-    public function getManagerId(): UuidInterface
-    {
-        return $this->managerId;
-    }
 }

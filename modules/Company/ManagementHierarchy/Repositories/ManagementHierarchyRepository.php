@@ -39,8 +39,16 @@ class ManagementHierarchyRepository extends BaseRepository
     public function getAll()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        if (request()->has("id")) {
+            $managementHierarchy = $this->model->where("id", request()->id)->where("company_id", $company->id)->first();
 
-        return $this->model->filter(request()->all())->where("company_id", $company->id)->get();
+        }
+
+        return $this->model->filter(request()->all())
+            ->when(request()->has("id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
+                $query->whereSelfOrDescendantOf($managementHierarchy);
+
+            })->where("company_id", $company->id)->get();
     }
 
     public function getTree()
@@ -52,7 +60,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         }
 
-        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren","detail"])
+        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren", "detail"])
             ->when(request()->has("type"), function ($query) {
                 if (request()->type == "management") {
                     $query->where("type", "management")->orWhere("type", "department");
@@ -61,7 +69,7 @@ class ManagementHierarchyRepository extends BaseRepository
                     $query->where("type", "department");
                 }
             })
-            ->when(request()->has("id")&& $managementHierarchy, function ($query) use ($managementHierarchy) {
+            ->when(request()->has("id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
 
             })->get()->tree();
@@ -89,6 +97,9 @@ class ManagementHierarchyRepository extends BaseRepository
             DB::beginTransaction();
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
+            $this->nextId = $this->nextId+1;
+            $this->createManagement(["company_id" => $managementHierarchy->comapny_id,"parent_id"=>$managementHierarchy->id, "is_main"=>1,"name" => "الادارة العامة", "type" => "management"], ["description"=>"الادارة العامة","branch_id"=>$managementHierarchy->id],[]);
+
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
 
@@ -108,16 +119,16 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function createManagement(array $managementData, array $managementDetail,array $deputyManagers): ManagementHierarchy
+    public function createManagement(array $managementData, array $managementDetail, array $deputyManagers): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
-            $detail =$managementHierarchy->detail()->create($managementDetail);
-            if(count($deputyManagers)>0){
-                foreach ($deputyManagers as $deputyManager){
-                    ManagementHierarchyDetailManager::create( ["deputy_manager_id"=>$deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
+            $detail = $managementHierarchy->detail()->create($managementDetail);
+            if (count($deputyManagers) > 0) {
+                foreach ($deputyManagers as $deputyManager) {
+                    ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
 
                 }
 
@@ -341,7 +352,7 @@ class ManagementHierarchyRepository extends BaseRepository
         $managementHierarchies = $managerHierarchies->merge($deputyManagerHierarchies);
 
         // If user is not a manager or deputy manager anywhere, use their assigned hierarchy
-        if ( $user->management_hierarchy_id) {
+        if ($user->management_hierarchy_id) {
             $userHierarchy = $this->model
                 ->where('id', $user->management_hierarchy_id)
                 ->first();
