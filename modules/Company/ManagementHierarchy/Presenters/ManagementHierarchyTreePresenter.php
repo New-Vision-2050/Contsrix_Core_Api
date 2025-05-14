@@ -39,6 +39,7 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
             'description' => $this->managementHierarchy->detail?->description,
             'reference_user_id' => $this->managementHierarchy->detail?->reference_user_id,
             'branch_id' => $this->managementHierarchy->detail?->branch_id,
+            "status" => $this->managementHierarchy->is_active,
             'reference_user' => $this->managementHierarchy->detail?->referanceUser ? (new UserPresenter($this->managementHierarchy->detail?->referanceUser))->getData():null,
 
 
