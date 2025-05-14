@@ -39,13 +39,14 @@ class ManagementHierarchyRepository extends BaseRepository
     public function getAll()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-        if (request()->has("id")) {
+        $managementHierarchy = null;
+        if (request()->has("parent_children_id")) {
             $managementHierarchy = $this->model->where("id", request()->id)->where("company_id", $company->id)->first();
 
         }
 
         return $this->model->filter(request()->all())
-            ->when(request()->has("id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
+            ->when(request()->has("parent_children_id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
 
             })->where("company_id", $company->id)->get();
