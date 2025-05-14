@@ -38,6 +38,7 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
             'deputy_managers' =>$this->managementHierarchy->detail?->deputyManagers&& count($this->managementHierarchy->detail?->deputyManagers)>0?UserPresenter::collection($this->managementHierarchy->detail?->deputyManagers):[],
             'description' => $this->managementHierarchy->detail?->decription,
             'reference_user_id' => $this->managementHierarchy->detail?->reference_user_id,
+            'branch_id' => $this->managementHierarchy->detail?->branch_id,
             'reference_user' => $this->managementHierarchy->detail?->referanceUser ? (new UserPresenter($this->managementHierarchy->detail?->referanceUser))->getData():null,
 
 
