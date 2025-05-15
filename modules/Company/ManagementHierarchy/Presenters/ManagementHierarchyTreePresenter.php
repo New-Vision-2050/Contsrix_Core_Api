@@ -14,12 +14,48 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
 {
     use CalculateTreeManagementHierarchy;
     private ManagementHierarchy $managementHierarchy;
+    private static bool $skipManagementMainNodes = false;
 
     public function __construct(ManagementHierarchy $managementHierarchy)
     {
         $this->managementHierarchy = $managementHierarchy;
     }
 
+
+    public static function setSkipManagementMainNodes(bool $skip): void
+    {
+        self::$skipManagementMainNodes = $skip;
+    }
+
+
+    protected function processChildren($children)
+    {
+        if (!self::$skipManagementMainNodes) {
+            // Normal processing without skipping
+            return ManagementHierarchyTreePresenter::Collection($children);
+        }
+
+        $result = [];
+
+        foreach ($children as $child) {
+            if ($child->type === 'management' && $child->is_main == 1) {
+                // Skip this node but include its children in the result
+                if ($child->children && $child->children->count() > 0) {
+                    // Process each child of the skipped node
+                    foreach ($child->children as $grandchild) {
+                        $presenter = new ManagementHierarchyTreePresenter($grandchild);
+                        $result[] = $presenter->getData();
+                    }
+                }
+            } else {
+                // Include this node normally
+                $presenter = new ManagementHierarchyTreePresenter($child);
+                $result[] = $presenter->getData();
+            }
+        }
+
+        return $result;
+    }
 
 
     protected function present(bool $isListing = false): array
@@ -62,7 +98,7 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
             "management_count" => $hierarchyCounts['management_count'],
             "branch_count" => $hierarchyCounts['branch_count'],
             "user_count" => $users?->count(),
-            "children" => ManagementHierarchyTreePresenter::collection($this->managementHierarchy->children),
+            "children" => $this->processChildren($this->managementHierarchy->children),
 //            "direct_users"=> $this->managementHierarchy->directUserChildren
 
         ];

@@ -41,7 +41,7 @@ private function  createAuthMailForLoginStepData($identifier)
         );
     }
 
-    public function resetPassword($identifier,$firstLogin){
+    public function resetPassword($identifier,$firstLogin=0){
         $data =$this->createAuthMailForLoginStepData($identifier)->toArray();
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
         $data['first_login'] = $firstLogin;
