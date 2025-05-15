@@ -43,6 +43,7 @@ class CreateManagementDTO
         return [
             'description' => $this->description,
             "reference_user_id" => $this->referenceUserId,
+            "branch_id" => $this->branchId
         ];
     }
 
