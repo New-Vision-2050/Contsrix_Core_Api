@@ -89,10 +89,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'name',
             'email',
             'phone',
-            "phone_code",
-            "company",
-            'updated_at',
-            'created_at'
+            "companies",
+            'user-type'
        ];
     }
 
