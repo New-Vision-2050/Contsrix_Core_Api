@@ -39,13 +39,14 @@ class ManagementHierarchyRepository extends BaseRepository
     public function getAll()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-        if (request()->has("id")) {
-            $managementHierarchy = $this->model->where("id", request()->id)->where("company_id", $company->id)->first();
+        $managementHierarchy = null;
+        if (request()->has("parent_children_id")) {
+            $managementHierarchy = $this->model->where("id", request()->parent_children_id)->where("company_id", $company->id)->first();
 
         }
 
         return $this->model->filter(request()->all())
-            ->when(request()->has("id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
+            ->when(request()->has("parent_children_id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
 
             })->where("company_id", $company->id)->get();
@@ -63,11 +64,9 @@ class ManagementHierarchyRepository extends BaseRepository
         return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren", "detail"])
             ->when(request()->has("type"), function ($query) {
                 if (request()->type == "management") {
-                    $query->where("type", "management")->orWhere("type", "department");
-                } elseif (request()->type == "department") {
-
-                    $query->where("type", "department");
+                    $query->where("type", "management");
                 }
+
             })
             ->when(request()->has("id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
