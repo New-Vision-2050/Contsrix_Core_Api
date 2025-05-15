@@ -21,10 +21,10 @@ class UpdateManagementRequest extends FormRequest
             'branch_id' => 'required|exists:management_hierarchies,id,type,branch',
             'description' => 'required|string',
             'is_active' => 'required|in:1,0',
-            "deputy_manager_ids" => "required|array",
+            "deputy_manager_ids" => "nullable|array",
             "deputy_manager_ids.*" => "required|exists:users,id",
-            "reference_user_id" => "required|exists:users,id",
-            "manager_id" => "required|exists:users,id"
+            "reference_user_id" => "nullable|exists:users,id",
+            "manager_id" => "nullable|exists:users,id"
         ];
     }
 

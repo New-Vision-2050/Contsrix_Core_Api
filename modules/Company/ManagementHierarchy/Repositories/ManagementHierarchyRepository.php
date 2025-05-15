@@ -107,14 +107,14 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function createManagement(array $managementData, array $managementDetail,array $deputyManagers): ManagementHierarchy
+    public function createManagement(array $managementData, array $managementDetail,?array $deputyManagers ): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
             $detail =$managementHierarchy->detail()->create($managementDetail);
-            if(count($deputyManagers)>0){
+            if($deputyManagers != null&&count($deputyManagers)>0){
                 foreach ($deputyManagers as $deputyManager){
                     ManagementHierarchyDetailManager::create( ["deputy_manager_id"=>$deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
 
@@ -166,7 +166,7 @@ class ManagementHierarchyRepository extends BaseRepository
         return true;
     }
 
-    public function updateManagement(int $id, array $managementData, array $managementDetail, array $deputyManagers): bool
+    public function updateManagement(int $id, array $managementData, array $managementDetail, ?array $deputyManagers): bool
     {
         try {
             DB::beginTransaction();
@@ -188,7 +188,7 @@ class ManagementHierarchyRepository extends BaseRepository
                 ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
 
                 // Create new deputy managers
-                if (count($deputyManagers) > 0) {
+                if ($deputyManagers!=null&&count($deputyManagers) > 0) {
                     foreach ($deputyManagers as $deputyManager) {
                         ManagementHierarchyDetailManager::create([
                             'deputy_manager_id' => $deputyManager,
