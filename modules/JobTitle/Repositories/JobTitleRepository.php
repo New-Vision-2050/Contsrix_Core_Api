@@ -32,9 +32,9 @@ class JobTitleRepository extends BaseRepository
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return [
-            'data' => $paginatedData,
-            'pagination' => $paginationArray];
+        return array_merge($paginationArray,[
+            'data' => $paginatedData
+        ]);
     }
 
     public function getAllJobTitles(): Collection
@@ -60,5 +60,22 @@ class JobTitleRepository extends BaseRepository
     public function deleteJobTitle(UuidInterface $id): bool
     {
         return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
+    }
+
+    /**
+     * Get filtered job titles for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->withoutGlobalScope("active");
+
+        if (isset($filters['ids']) && is_array($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->with(['jobType'])->get();
     }
 }
