@@ -62,12 +62,12 @@ class ManagementHierarchyRepository extends BaseRepository
         }
 
         return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren", "detail"])
-            ->when(request()->has("type"), function ($query) {
-                if (request()->type == "management") {
-                    $query->where("type", "management");
-                }
-
-            })
+//            ->when(request()->has("type"), function ($query) {
+//                if (request()->type == "management") {
+//                    $query->where("type", "management");
+//                }
+//
+//            })
             ->when(request()->has("id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
 

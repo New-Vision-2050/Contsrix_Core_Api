@@ -178,19 +178,39 @@ class ManagementHierarchyController extends Controller
         return Json::item($presenter->getData());
     }
 
+    /**
+     * Present the management hierarchy tree with optional filtering
+     *
+     * @param GetManagementHierarchyLookupRequest $request
+     * @return JsonResponse
+     */
     public function presentTree(GetManagementHierarchyLookupRequest $request)
     {
         $type = $request->input('type');
 
-        if ($type == "management") {//when type is management we will not skip any nodes
+        if ($type == "management") {
+            // When type is management:
+            // 1. Don't skip management nodes with is_main=1
+            // 2. Skip branch nodes entirely
             ManagementHierarchyTreePresenter::setSkipManagementMainNodes(false);
+            ManagementHierarchyTreePresenter::setSkipBranchNodes(true);
         } else {
+            // For other types or no type specified:
+            // 1. Skip management nodes with is_main=1
+            // 2. Don't skip branch nodes
             ManagementHierarchyTreePresenter::setSkipManagementMainNodes(true);
+            ManagementHierarchyTreePresenter::setSkipBranchNodes(false);
         }
 
         $tree = $this->managementHierarchyService->getTree();
 
-        $presentedTree = ManagementHierarchyTreePresenter::collection($tree);
+        if ($type == "management") {
+            $presentedTree = ManagementHierarchyTreePresenter::collection($tree)[0];
+
+        }else{
+            $presentedTree = ManagementHierarchyTreePresenter::collection($tree);
+
+        }
 
         return Json::item($presentedTree);
     }

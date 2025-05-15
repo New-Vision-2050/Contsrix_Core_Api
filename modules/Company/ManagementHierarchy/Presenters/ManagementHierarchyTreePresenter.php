@@ -15,30 +15,64 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
     use CalculateTreeManagementHierarchy;
     private ManagementHierarchy $managementHierarchy;
     private static bool $skipManagementMainNodes = false;
+    private static bool $skipBranchNodes = false;
 
     public function __construct(ManagementHierarchy $managementHierarchy)
     {
         $this->managementHierarchy = $managementHierarchy;
     }
 
-
+    /**
+     * Set whether to skip management nodes with is_main=1
+     *
+     * @param bool $skip Whether to skip management nodes with is_main=1
+     */
     public static function setSkipManagementMainNodes(bool $skip): void
     {
         self::$skipManagementMainNodes = $skip;
     }
 
+    /**
+     * Set whether to skip branch nodes
+     *
+     * @param bool $skip Whether to skip branch nodes
+     */
+    public static function setSkipBranchNodes(bool $skip): void
+    {
+        self::$skipBranchNodes = $skip;
+    }
 
+
+    /**
+     * Process children with conditional skipping of nodes
+     *
+     * @param mixed $children The children collection to process
+     * @return array The processed children
+     */
     protected function processChildren($children)
     {
-        if (!self::$skipManagementMainNodes) {
-            // Normal processing without skipping
+        if (!self::$skipManagementMainNodes && !self::$skipBranchNodes) {
+            // Normal processing without skipping any nodes
             return ManagementHierarchyTreePresenter::Collection($children);
         }
 
         $result = [];
 
         foreach ($children as $child) {
-            if ($child->type === 'management' && $child->is_main == 1) {
+            // Check if this node should be skipped
+            $skipNode = false;
+
+            // Skip management nodes with is_main=1 if that option is enabled
+            if (self::$skipManagementMainNodes && $child->type === 'management' && $child->is_main == 1) {
+                $skipNode = true;
+            }
+
+            // Skip branch nodes if that option is enabled
+            if (self::$skipBranchNodes && $child->type === 'branch') {
+                $skipNode = true;
+            }
+
+            if ($skipNode) {
                 // Skip this node but include its children in the result
                 if ($child->children && $child->children->count() > 0) {
                     // Process each child of the skipped node
@@ -60,6 +94,20 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        // Check if this is a branch node and branch skipping is enabled
+        if (self::$skipBranchNodes && $this->managementHierarchy->type === 'branch') {
+            // Instead of duplicating code, use the processChildren function to handle the children
+            return $this->processChildren($this->managementHierarchy->children);
+        }
+
+        // Skip this node entirely if it's a management with is_main=1 and management skipping is enabled
+        if (self::$skipManagementMainNodes &&
+            $this->managementHierarchy->type === 'management' &&
+            $this->managementHierarchy->is_main == 1 &&
+            $this->managementHierarchy->parent_id === null) {
+            return [];
+        }
+
         //Theta(n+1)
 //        $descendants = ManagementHierarchy::query()->whereSelfOrDescendantOf($this->managementHierarchy)->where("company_id", $this->managementHierarchy->company_id)->get();
         $hierarchyCounts = $this->managementHierarchy->getCachedHierarchyCounts()
