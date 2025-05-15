@@ -154,7 +154,7 @@ class CompanyUserRepository extends BaseRepository
         ];
     }
 
-    public function createCompanyUser(array $companyUserData, array $companyRole): CompanyUser
+    public function createCompanyUser(array $companyUserData, array $companyRole)
     {
         try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);

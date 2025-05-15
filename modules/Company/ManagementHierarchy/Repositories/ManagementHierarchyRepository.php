@@ -97,7 +97,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
             $this->nextId = $this->nextId+1;
-            $this->createManagement(["company_id" => $managementHierarchy->comapny_id,"parent_id"=>$managementHierarchy->id, "is_main"=>1,"name" => "الادارة العامة", "type" => "management"], ["description"=>"الادارة العامة","branch_id"=>$managementHierarchy->id],[]);
+            $this->createManagement(["company_id" => $managementHierarchy->company_id,"parent_id"=>$managementHierarchy->id, "is_main"=>1,"name" => "الادارة العامة", "type" => "management"], ["description"=>"الادارة العامة","branch_id"=>$managementHierarchy->id],[]);
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
