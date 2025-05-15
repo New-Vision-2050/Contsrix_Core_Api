@@ -63,7 +63,7 @@ trait CalculateTreeManagementHierarchy
             $departmentCount = $descendants->where('type', 'department')->count();
 
 //            // Adjust counts if the current node is of the same type (to avoid counting itself)
-            if ($this->type == 'branch') $managementCount -=abs($branchCount-1);
+            if ($this->type == 'branch') $managementCount -=abs($branchCount+1);
 //            if ($this->type == 'management') $managementCount--;
 //            if ($this->type == 'department') $departmentCount--;
 //
