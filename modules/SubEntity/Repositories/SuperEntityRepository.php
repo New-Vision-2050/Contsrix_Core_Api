@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Repositories;
 
 use Illuminate\Support\Str;
+use Modules\SubEntity\Models\RegistrationForm;
+use Monolog\Registry;
 
 class SuperEntityRepository
 {
@@ -69,10 +71,12 @@ class SuperEntityRepository
             ->pluck('registration_forms')
             ->first();
 
-        return array_map(function ($form) {
+        $forms = RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active']);
+
+        return $forms->map(function ($form) {
             $form['name'] = $form['name'][app()->getLocale()];
             return $form;
-        }, $forms ?? []);
+        })->toArray();
     }
 
     public function getById(string $id): ?array
