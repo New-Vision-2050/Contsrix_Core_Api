@@ -41,4 +41,15 @@ class JobTitleCRUDService
             id: $id,
         );
     }
+
+    /**
+     * Get job titles for export with optional filtering
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters);
+    }
 }
