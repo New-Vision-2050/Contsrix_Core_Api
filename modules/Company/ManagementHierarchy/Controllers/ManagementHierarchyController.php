@@ -62,9 +62,8 @@ class ManagementHierarchyController extends Controller
         return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
-    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request): JsonResponse
+    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request)
     {
-
         return Json::items(ManagementHierarchyPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
     }
 
