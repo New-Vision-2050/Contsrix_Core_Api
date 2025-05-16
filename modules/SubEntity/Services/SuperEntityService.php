@@ -7,7 +7,6 @@ namespace Modules\SubEntity\Services;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Model;
 use Modules\SubEntity\Repositories\SuperEntityRepository;
 
 class SuperEntityService
