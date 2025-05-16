@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Repositories;
 
-use BasePackage\Shared\Repositories\BaseRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Support\Facades\DB;
 use Modules\SubEntity\Models\SubEntity;
+use Illuminate\Database\Eloquent\Collection;
+use BasePackage\Shared\Repositories\BaseRepository;
 
 /**
  * @property SubEntity $model
@@ -35,12 +36,28 @@ class SubEntityRepository extends BaseRepository
 
     public function createSubEntity(array $data): SubEntity
     {
-        return $this->create($data);
+        return DB::transaction(function () use ($data) {
+            $subEntity = $this->create($data);
+
+            if (isset($data['children_allowed_registration_forms']) && filled($data['children_allowed_registration_forms'])) {
+                $subEntity->allowedChildForms()->attach($data['children_allowed_registration_forms']);
+            }
+
+            return $subEntity;
+        });
     }
 
     public function updateSubEntity(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        return DB::transaction(function () use ($id, $data) {
+            $subEntity = $this->model->findOrFail($id);
+
+            if (isset($data['children_allowed_registration_forms']) && filled($data['children_allowed_registration_forms'])) {
+                $subEntity->allowedChildForms()->sync($data['children_allowed_registration_forms']);
+            }
+
+            return $subEntity->update($data);
+        });
     }
 
     public function updateSubEntityAttributes(UuidInterface $id, array $data): bool
