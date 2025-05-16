@@ -46,7 +46,12 @@ class SubEntityPresenter extends AbstractPresenter
 
     public function getData(bool $isListing = false): ?array
     {
-        return $this->present($isListing);
+        $present = $this->present($isListing);
+        $allowedRegistrationForms =  $this->subEntity->allowedChildForms;
+        if(filled($allowedRegistrationForms)) {
+            $present['allowed_registration_forms'] = RegistrationFormPresenter::collection($allowedRegistrationForms);
+        }
+        return $present;
     }
 
     public function getAttributes(bool $isListing = false): ?array
