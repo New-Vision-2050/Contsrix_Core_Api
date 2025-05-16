@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
+use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
@@ -63,7 +64,7 @@ class SuperEntityService
         return $this->repository->getModelForId($superEntityId);
     }
 
-     public function getRegistrationFormsForId(string $id): array
+     public function getRegistrationFormsForId(string $id): Collection
     {
         $superEntityId = $id;
 
