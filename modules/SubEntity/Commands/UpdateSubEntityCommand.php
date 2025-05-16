@@ -16,7 +16,8 @@ class UpdateSubEntityCommand
         private string $mainProgramId,
         private bool $isActive,
         private bool $isRegistrable,
-
+        private string $registrationFormId,
+        private ?array $childrenAllowedRegistrationForms
     ) {
     }
 
@@ -38,7 +39,8 @@ class UpdateSubEntityCommand
             'icon' => $this->icon,
             'main_program_id' => $this->mainProgramId,
             'is_active' => $this->isActive,
-            'is_registrable' => $this->isRegistrable
+            'is_registrable' => $this->isRegistrable,
+            'children_allowed_registration_forms' => $this->childrenAllowedRegistrationForms
         ]);
     }
 }
