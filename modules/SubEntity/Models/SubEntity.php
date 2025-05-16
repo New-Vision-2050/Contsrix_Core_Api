@@ -36,7 +36,8 @@ class SubEntity extends Model
         'super_entity',
         'company_id',
         'origin_super_entity',
-        'slug'
+        'slug',
+        'registration_form_id'
     ];
 
     protected $casts = [
@@ -107,6 +108,11 @@ class SubEntity extends Model
     public function parentSubEntity(): BelongsTo
     {
         return $this->belongsTo(SubEntity::class, 'super_entity');
+    }
+
+    public function registrationForm()
+    {
+        return $this->belongsTo(RegistrationForm::class, 'registration_form_id');
     }
 
     public function getOriginSuperEntityName(): string

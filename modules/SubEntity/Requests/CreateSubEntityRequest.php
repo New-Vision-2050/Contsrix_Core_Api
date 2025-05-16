@@ -40,6 +40,7 @@ class CreateSubEntityRequest extends FormRequest
             'default_attributes.*' => [Rule::In($this->getValidSuperEntityAttributes())],
             'optional_attributes' => 'sometimes|nullable|array',
             'optional_attributes.*' => [Rule::In($this->getValidSuperEntityAttributes())],
+            'registration_form_id' => 'required|exists:registration_forms,id'
         ];
     }
 
@@ -66,6 +67,7 @@ class CreateSubEntityRequest extends FormRequest
             is_registrable: $this->input('is_registrable', false),
             default_attributes: $this->input('default_attributes'),
             optional_attributes: $this->input('optional_attributes'),
+            registrationFormId: $this->input('registration_form_id'),
         );
     }
 

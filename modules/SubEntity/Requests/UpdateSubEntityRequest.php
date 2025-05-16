@@ -37,6 +37,7 @@ class UpdateSubEntityRequest extends FormRequest
             'main_program_id' => 'required|uuid|exists:programs,id',
             'is_active' => 'required|boolean',
             'is_registrable' => 'required|boolean',
+            'registration_form_id' => 'required|exists:registration_forms,id'
         ];
     }
 
@@ -60,7 +61,7 @@ class UpdateSubEntityRequest extends FormRequest
             mainProgramId: $this->get('main_program_id'),
             isActive: (bool) $this->get('is_active'),
             isRegistrable: (bool) $this->get('is_registrable'),
-
+            registrationFormId: $this->get('registration_form_id'),
         );
     }
 }
