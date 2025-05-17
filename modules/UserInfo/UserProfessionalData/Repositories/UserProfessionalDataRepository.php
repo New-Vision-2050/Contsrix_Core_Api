@@ -56,11 +56,8 @@ class UserProfessionalDataRepository extends BaseRepository
             ])->first();
             $user = $this->userRepository->findOneBy(["global_company_user_id"=>$data["global_id"],"company_id"=>$data["company_id"]]);
             $managementHierarchyId = null;
-            if($data["department_id"]!=null)
-            {
-                $managementHierarchyId = $data["department_id"];
-            }
-            elseif($data["management_id"]!=null){
+
+            if($data["management_id"]!=null){
                 $managementHierarchyId = $data["management_id"];
             }
             elseif($data["branch_id"]!=null)
