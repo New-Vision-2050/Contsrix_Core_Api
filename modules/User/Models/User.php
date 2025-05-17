@@ -14,8 +14,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\Setting\Models\LoginWay;
 use Modules\User\Database\factories\UserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -56,7 +58,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "global_company_user_id",
         "company_id",
         "is_owner",
-        "management_hierarchy_id"
+        "management_hierarchy_id",
+        "status"
     ];
 
     protected $casts = [
@@ -130,5 +133,22 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function companyUserCompanies()
     {
         return $this->hasMany(CompanyUserCompany::class,"global_company_user_id" , "global_company_user_id" );
+    }
+
+    public function roleAndBranches()
+    {
+        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class,"user_id","id");
+    }
+
+
+    public function managementHierarchies()
+    {
+        return $this->hasManyThrough(ManagementHierarchy::class,
+            CompanyUserCompanyManagementHierarchy::class,
+            'user_id',
+            'id',
+            'id',
+            'management_hierarchy_id'
+        )->distinct();
     }
 }

@@ -18,6 +18,7 @@ use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
+use Modules\User\Presenters\UserRolesPresenter;
 use Ramsey\Uuid\Uuid;
 
 class BrokerController extends Controller
@@ -38,7 +39,7 @@ class BrokerController extends Controller
         );
 
 
-        return Json::items(UserPresenter::collection($list['data']),paginationSettings: $list['pagination']);
+        return Json::items(UserRolesPresenter::collection($list['data']),paginationSettings: $list['pagination']);
     }
 
 
