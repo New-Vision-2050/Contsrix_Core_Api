@@ -194,7 +194,7 @@ class CompanyUserRepository extends BaseRepository
 
                 $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
 
-                $this->userRepository->createUser(array_merge([
+               $user= $this->userRepository->createUser(array_merge([
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
