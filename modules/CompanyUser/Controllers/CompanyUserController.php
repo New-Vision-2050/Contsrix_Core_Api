@@ -47,7 +47,7 @@ class CompanyUserController extends Controller
     {
     }
 
-    public function index(GetCompanyUserListRequest $request): JsonResponse
+    public function index(GetCompanyUserListRequest $request)
     {
         $list = $this->companyUserService->list(
             (int)$request->get('page', 1),
