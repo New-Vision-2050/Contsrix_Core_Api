@@ -10,6 +10,7 @@ use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\User\Models\User;
@@ -153,7 +154,7 @@ class CompanyUserRepository extends BaseRepository
         ];
     }
 
-    public function createCompanyUser(array $companyUserData, array $companyRole): CompanyUser
+    public function createCompanyUser(array $companyUserData, array $companyRole)
     {
         try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
@@ -173,12 +174,18 @@ class CompanyUserRepository extends BaseRepository
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
                 $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
 
-                $this->userRepository->createUser(array_merge([
+                //get main management in company
+                $mainBranchId = ManagementHierarchy::query()->where("company_id",$companyRole['company_id'])->where("parent_id",null)->first()->id;
+                $mainManagement = ManagementHierarchy::query()->where("company_id",$companyRole['company_id'])->where("parent_id",$mainBranchId)->first();
+                //create user in company assigned to main management
+
+                $userInCompany = $this->userRepository->createUser(array_merge([
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id,
-                    "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
+                    "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
+                    "management_hierarchy_id" => $mainManagement->id,
                 ], $phone));
 
             } else {
@@ -216,12 +223,17 @@ class CompanyUserRepository extends BaseRepository
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]]);
             if (!$user) {
                 $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
+                //get main management in company
+                $mainBranchId = ManagementHierarchy::query()->where("company_id",$companyUserRoleData["company_id"])->where("parent_id",null)->first()->id;
+                $mainManagement = ManagementHierarchy::query()->where("company_id",$companyUserRoleData["company_id"])->where("parent_id",$mainBranchId)->first();
+                //create user in company assigned to main management
                 if ($user) {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
                     $newUser = $user->replicate();
                     $newUser->password = null; // make password null
                     $newUser->company_id = $companyUserRoleData["company_id"];
                     $newUser->is_owner = $usersInCompanyCount == 0 ? 1 : 0;
+                    $newUser->management_hierarchy_id = $mainManagement->id;
 
                     $newUser->save();
                 } else {
@@ -234,7 +246,8 @@ class CompanyUserRepository extends BaseRepository
                         "phone" => $companyUser->phone,
                         "phone_code" => $companyUser->phone_code,
                         "global_company_user_id" => $companyUser->global_id,
-                        "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
+                        "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
+                        "management_hierarchy_id" => $mainManagement->id
                     ]);
                 }
 
@@ -307,7 +320,6 @@ class CompanyUserRepository extends BaseRepository
 
 
     public function updateUserData(UuidInterface $userId, array $data){
-        return $userId;
         $this->userRepository->updateWhere(
                 ["id" => $userId],$data
             );

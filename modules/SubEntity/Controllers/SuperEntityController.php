@@ -7,6 +7,7 @@ namespace Modules\SubEntity\Controllers;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use Modules\SubEntity\Presenters\RegistrationFormPresenter;
 use Modules\SubEntity\Services\SuperEntityService;
 use Modules\SubEntity\Presenters\SuperEntityPresenter;
 use Modules\SubEntity\Requests\GetSuperEntityAttributesRequest;
@@ -35,8 +36,8 @@ class SuperEntityController extends Controller
 
     public function getRegistrationForms(GetSuperEntityRegistrationFormsRequest $request): JsonResponse
     {
-        $attributes = $this->superEntityService->getRegistrationFormsForId($request->get('super_entity_id'));
+        $forms = $this->superEntityService->getRegistrationFormsForId($request->get('super_entity_id'));
 
-        return Json::items($attributes);
+        return Json::items(RegistrationFormPresenter::collection($forms));
     }
 }
