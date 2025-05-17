@@ -57,11 +57,11 @@ class UpdateSubEntityRequest extends FormRequest
     {
         return new UpdateSubEntityCommand(
             id: Uuid::fromString($this->route('id')),
-            name: $this->get('name'),
-            slug: $this->get('slug'),
-            icon: $this->get('icon'),
-            mainProgramId: $this->get('main_program_id'),
-            isActive: (bool) $this->get('is_active'),
+            // name: $this->get('name'),
+            // slug: $this->get('slug'),
+            // icon: $this->get('icon'),
+            // mainProgramId: $this->get('main_program_id'),
+            // isActive: (bool) $this->get('is_active'),
             isRegistrable: (bool) $this->get('is_registrable'),
             registrationFormId: $this->get('registration_form_id'),
             childrenAllowedRegistrationForms: $this->get('children_allowed_registration_forms'),
