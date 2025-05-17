@@ -16,9 +16,9 @@ class UpdateManagementCommand
         private UuidInterface $companyId,
         private string $description,
         private int $isActive,
-        private array $deputyManagerIds,
-        private UuidInterface $referenceUserId,
-        private UuidInterface $managerId,
+        private ?array $deputyManagerIds,
+        private ?UuidInterface $referenceUserId,
+        private ?UuidInterface $managerId,
     ) {
     }
 
@@ -50,7 +50,7 @@ class UpdateManagementCommand
         ];
     }
 
-    public function getDeputyManagerIds(): array
+    public function getDeputyManagerIds(): ?array
     {
 
         return $this->deputyManagerIds;

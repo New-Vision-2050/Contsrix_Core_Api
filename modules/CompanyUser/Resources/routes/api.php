@@ -11,6 +11,12 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
 
     });
+
+    Route::group(["prefix"=>"employees"],function (){
+        Route::get('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'index']);
+        Route::post('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'store']);
+
+    });
     Route::get('/', [CompanyUserController::class, 'index']);
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
     Route::get('/roles', [CompanyUserController::class, 'roles']);
