@@ -31,12 +31,15 @@ class UpdateSubEntityRequest extends FormRequest
                 'max:255',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique('sub_entities', 'slug')
-                ->ignore($this->route('id')),
+                    ->ignore($this->route('id')),
             ],
             'icon' => 'required|string|max:255',
             'main_program_id' => 'required|uuid|exists:programs,id',
             'is_active' => 'required|boolean',
             'is_registrable' => 'required|boolean',
+            'registration_form_id' => 'required|exists:registration_forms,id',
+            'children_allowed_registration_forms' => 'nullable|array',
+            'children_allowed_registration_forms.*' => 'required|distinct|exists:registration_forms,id',
         ];
     }
 
@@ -60,7 +63,8 @@ class UpdateSubEntityRequest extends FormRequest
             mainProgramId: $this->get('main_program_id'),
             isActive: (bool) $this->get('is_active'),
             isRegistrable: (bool) $this->get('is_registrable'),
-
+            registrationFormId: $this->get('registration_form_id'),
+            childrenAllowedRegistrationForms: $this->get('children_allowed_registration_forms'),
         );
     }
 }

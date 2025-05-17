@@ -36,7 +36,8 @@ class SubEntity extends Model
         'super_entity',
         'company_id',
         'origin_super_entity',
-        'slug'
+        'slug',
+        'registration_form_id'
     ];
 
     protected $casts = [
@@ -107,6 +108,25 @@ class SubEntity extends Model
     public function parentSubEntity(): BelongsTo
     {
         return $this->belongsTo(SubEntity::class, 'super_entity');
+    }
+
+    public function registrationForm()
+    {
+        return $this->belongsTo(RegistrationForm::class, 'registration_form_id');
+    }
+
+    /**
+     * Return allowed registration forms: Which registration forms could be chosed from to create a child sub-entity
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<RegistrationForm, SubEntity>
+     */
+    public function allowedChildForms()
+    {
+        return $this->belongsToMany(
+            \Modules\SubEntity\Models\RegistrationForm::class,
+            'sub_entity_registration_form',
+            'sub_entity_id',
+            'registration_form_id'
+        );
     }
 
     public function getOriginSuperEntityName(): string

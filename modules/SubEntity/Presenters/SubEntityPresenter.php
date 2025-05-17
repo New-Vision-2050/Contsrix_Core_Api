@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Presenters;
 
 use Modules\SubEntity\Models\SubEntity;
-use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Program\Presenters\ProgramPresenter;
-use Modules\SubEntity\Services\AttributesTranslationService;
 use Modules\SubEntity\Services\SuperEntityService;
+use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\SubEntity\Presenters\RegistrationFormPresenter;
+use Modules\SubEntity\Services\AttributesTranslationService;
 
 class SubEntityPresenter extends AbstractPresenter
 {
@@ -33,6 +34,7 @@ class SubEntityPresenter extends AbstractPresenter
             'is_active' => $this->subEntity->is_active,
             'is_registrable' => $this->subEntity->is_registrable,
             'main_program' => $this->getMainProgram(),
+            'registration_form' => $this->getRegistrationForm(),
             'default_attributes' => $this->formatAttributes($this->subEntity->default_attributes),
             'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
             'attributes_count' => $this->subEntity->attributes_count,
@@ -44,7 +46,12 @@ class SubEntityPresenter extends AbstractPresenter
 
     public function getData(bool $isListing = false): ?array
     {
-        return $this->present($isListing);
+        $present = $this->present($isListing);
+        $allowedRegistrationForms =  $this->subEntity->allowedChildForms;
+        if(filled($allowedRegistrationForms)) {
+            $present['allowed_registration_forms'] = RegistrationFormPresenter::collection($allowedRegistrationForms);
+        }
+        return $present;
     }
 
     public function getAttributes(bool $isListing = false): ?array
@@ -58,7 +65,7 @@ class SubEntityPresenter extends AbstractPresenter
 
     protected function formatAttributes(array|string|null $attributes)
     {
-        if(empty($attributes)) {
+        if (empty($attributes)) {
             return [];
         }
 
@@ -66,7 +73,7 @@ class SubEntityPresenter extends AbstractPresenter
             $attributes = json_decode($attributes);
         }
 
-        return array_map(function($name) {
+        return array_map(function ($name) {
             return AttributesTranslationService::getTranslations($name);
         }, $attributes);
     }
@@ -75,7 +82,7 @@ class SubEntityPresenter extends AbstractPresenter
     {
         $superEntity = $this->superEntityService->getById($id);
 
-        if($superEntity) {
+        if ($superEntity) {
             $presenter = new SuperEntityPresenter($superEntity);
 
             return $presenter->getData();
@@ -87,6 +94,13 @@ class SubEntityPresenter extends AbstractPresenter
     public function getMainProgram(): ?array
     {
         $presenter = new ProgramPresenter($this->subEntity->mainProgram);
+
+        return $presenter->getData();
+    }
+
+    public function getRegistrationForm()
+    {
+        $presenter = new RegistrationFormPresenter($this->subEntity->registrationForm);
 
         return $presenter->getData();
     }

@@ -22,7 +22,7 @@ class ManagementPresenter extends AbstractPresenter
             'id' => $this->managementHierarchy->id,
             'parent_id' => $this->managementHierarchy->parent_id,
             'name' => $this->managementHierarchy->name,
-            'description' => $this->managementHierarchy->detail?->decription,
+            'description' => $this->managementHierarchy->detail?->description,
             'reference_user_id' => $this->managementHierarchy->detail?->reference_user_id,
             'manager_id' => $this->managementHierarchy->manager_id,
             'deputy_managers' => $this->managementHierarchy->detail?->deputyManagers()->pluck("deputy_manager_id")->toArray(),

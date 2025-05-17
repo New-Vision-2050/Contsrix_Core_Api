@@ -11,6 +11,7 @@ use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\CompanyUserAddress;
@@ -56,7 +57,9 @@ class CompanyUserRepository extends BaseRepository
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return array_merge($paginationArray, ['data' => $paginatedData]);
+        return array_merge($paginationArray,[
+            'data' => $paginatedData
+        ]);
     }
 
     public
@@ -69,8 +72,7 @@ class CompanyUserRepository extends BaseRepository
 
     }
 
-    public
-    function getActiveInactiveCompanyUserCount(Carbon $date = null, $status = CompanyUserStatus::ACTIVE->value)
+    public function getActiveInactiveCompanyUserCount(Carbon $date = null, $status = CompanyUserStatus::ACTIVE->value)
     {
         return $this->model->when($date != null, function ($query) use ($date) {
             $query->whereYear('created_at', $date->year)
@@ -93,8 +95,7 @@ class CompanyUserRepository extends BaseRepository
     }
 
 
-    public
-    function deleteCompanyUserRole(
+    public function deleteCompanyUserRole(
         UuidInterface $companyUserId,
         UuidInterface $companyId,
         int           $role): void
@@ -121,52 +122,45 @@ class CompanyUserRepository extends BaseRepository
 
     }
 
-    public
-    function getCompanyUserList(?int $page, ?int $perPage = 10): Collection
+    public function getCompanyUserList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public
-    function getCompanyUser(UuidInterface $id): CompanyUser
+    public function getCompanyUser(UuidInterface $id): CompanyUser
     {
         return $this->findOneByOrFail([
             'id' => $id->toString(),
         ]);
     }
 
-    public
-    function getCompanyUserGlobalId(UuidInterface $global_id): CompanyUser
+    public function getCompanyUserGlobalId(UuidInterface $global_id): CompanyUser
     {
         return $this->findOneByOrFail([
             'global_id' => $global_id->toString(),
         ]);
     }
 
-    public
-    function findByEmail(string $email)
+    public function findByEmail(string $email)
     {
         return $this->findOneBy([
             'email' => $email,
         ]);
     }
 
-    public
-    function findByPhone(string $phone)
+    public function findByPhone(string $phone)
     {
         return $this->findOneBy([
             'phone' => $phone,
         ]);
     }
 
-    public
-    function getCompanyUserBy(array $by): CompanyUser
+    public function getCompanyUserBy(array $by): CompanyUser
     {
         return $this->findOneBy($by);
     }
 
-    private
-    function getPhoneNumberInfo(string $phone): array
+    private function getPhoneNumberInfo(string $phone): array
     {
         $phoneArray = explode(' ', $phone);
         return [
@@ -260,12 +254,17 @@ class CompanyUserRepository extends BaseRepository
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]]);
             if (!$user) {
                 $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
+                //get main management in company
+                $mainBranchId = ManagementHierarchy::query()->where("company_id",$companyUserRoleData["company_id"])->where("parent_id",null)->first()->id;
+                $mainManagement = ManagementHierarchy::query()->where("company_id",$companyUserRoleData["company_id"])->where("parent_id",$mainBranchId)->first();
+                //create user in company assigned to main management
                 if ($user) {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
                     $newUser = $user->replicate();
                     $newUser->password = null; // make password null
                     $newUser->company_id = $companyUserRoleData["company_id"];
                     $newUser->is_owner = $usersInCompanyCount == 0 ? 1 : 0;
+                    $newUser->management_hierarchy_id = $mainManagement->id;
 
                     $newUser->save();
                 } else {
@@ -278,7 +277,8 @@ class CompanyUserRepository extends BaseRepository
                         "phone" => $companyUser->phone,
                         "phone_code" => $companyUser->phone_code,
                         "global_company_user_id" => $companyUser->global_id,
-                        "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
+                        "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
+                        "management_hierarchy_id" => $mainManagement->id
                     ]);
                 }
 
@@ -291,8 +291,7 @@ class CompanyUserRepository extends BaseRepository
         }
     }
 
-    public
-    function updateCompanyUser(UuidInterface $id, array $data): bool
+    public function updateCompanyUser(UuidInterface $id, array $data): bool
     {
         try {
             DB::beginTransaction();
@@ -317,8 +316,7 @@ class CompanyUserRepository extends BaseRepository
     }
 
 
-    public
-    function updateCompanyUserDataInfo(UuidInterface $global_id, array $data): bool
+    public function updateCompanyUserDataInfo(UuidInterface $global_id, array $data): bool
     {
         $this->updateWhere(["global_id" => $global_id], $data);
 
@@ -330,8 +328,7 @@ class CompanyUserRepository extends BaseRepository
         return true;
     }
 
-    public
-    function updateCompanyUserIdentityData(UuidInterface $global_id, array $data): bool
+    public function updateCompanyUserIdentityData(UuidInterface $global_id, array $data): bool
     {
         $this->updateWhere(["global_id" => $global_id], $data);
 
@@ -356,7 +353,6 @@ class CompanyUserRepository extends BaseRepository
     public
     function updateUserData(UuidInterface $userId, array $data)
     {
-        return $userId;
         $this->userRepository->updateWhere(
             ["id" => $userId], $data
         );
