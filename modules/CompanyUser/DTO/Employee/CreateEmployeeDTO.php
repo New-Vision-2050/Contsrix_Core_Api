@@ -13,9 +13,9 @@ class CreateEmployeeDTO
         public string $email,
         public ? string $countryId,
         public string $phone,
-        public string $jobTitleId,
+        public ?string $jobTitleId,
         public int $status,
-        public int $branchId
+        public ?int $branchId
 
     ) {
     }
@@ -40,7 +40,7 @@ class CreateEmployeeDTO
 
     public function getBranchId()
     {
-        return [$this->branchId];
+        return $this->branchId != null?[$this->branchId]:null;
     }
 
 }
