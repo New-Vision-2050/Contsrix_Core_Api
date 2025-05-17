@@ -36,7 +36,7 @@ class CompanyUserRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function withRelationsFilterByType(array $relations = [], $type = null, $companyId = null, $branchId = null, $page = 1, $perPage = 15)
+    public function withRelationsFilterByType(array $relations = [], $page = 1, $perPage = 15,$type = null, $companyId = null, $branchId = null)
     {
         if (method_exists($this->model, 'scopeFilter')) {
             $query = $this->model->filter(request()->all())->with($relations);
