@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Country\Models\Country;
@@ -183,5 +184,10 @@ class CompanyUser extends Model implements HasMedia
     public function userProfessionalData()
     {
         return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_id');
+    }
+
+    public function nationalAddress()
+    {
+        return $this->hasOne(CompanyUserAddress::class,"global_company_user_id","global_id");
     }
 }

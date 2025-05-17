@@ -19,7 +19,7 @@ use Modules\User\Models\User;
 class UserRepository extends BaseRepository
 {
     public function __construct(
-        User                              $model,
+        User                                $model,
         private AuditRepository             $auditRepository,
         private IdentifierSettingRepository $identifierSettingRepository)
     {
@@ -59,6 +59,29 @@ class UserRepository extends BaseRepository
         })->where("company_id", tenant("id"))->first();
     }
 
+    public function getUserInCurrentCompanyWith(array $relations = [], $type = null, $page = 1, $perPage = 10)
+    {
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+        $query = $query->with(array_merge($relations, ["companyUserCompanies" => function ($query) {
+            $query->where("company_id",tenant("id"));
+            }]
+        ));
+        $query = $query->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companyUserCompanies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        })->where("company_id", tenant("id"));
+        //TODO filter with branches very important
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return array_merge($paginationArray, ['data' => $paginatedData]);
+    }
 
     public function createUser(array $data): User
     {

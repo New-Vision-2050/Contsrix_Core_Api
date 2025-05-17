@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\SubEntity\Models\RegistrationForm;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -56,7 +59,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "global_company_user_id",
         "company_id",
         "is_owner",
-        "management_hierarchy_id"
+        "management_hierarchy_id",
+        "status"
     ];
 
     protected $casts = [
@@ -123,6 +127,28 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function companyUser()
     {
         return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
+    }
+
+    public function companyUserCompanies()
+    {
+        return $this->hasMany(CompanyUserCompany::class,"global_company_user_id" , "global_company_user_id" );
+    }
+
+    public function roleAndBranches()
+    {
+        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class,"user_id","id");
+    }
+
+
+    public function managementHierarchies()
+    {
+        return $this->hasManyThrough(ManagementHierarchy::class,
+            CompanyUserCompanyManagementHierarchy::class,
+            'user_id',
+            'id',
+            'id',
+            'management_hierarchy_id'
+        )->distinct();
     }
 
     public function registrationForm()
