@@ -16,7 +16,7 @@ class UpdateSubEntityCommand
         // private string $mainProgramId,
         // private bool $isActive,
         private bool $isRegistrable,
-        private string $registrationFormId,
+        // private string $registrationFormId,
         private ?array $childrenAllowedRegistrationForms
     ) {
     }
