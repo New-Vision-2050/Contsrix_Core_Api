@@ -30,6 +30,7 @@ class SubEntityPresenter extends AbstractPresenter
             'name' => $this->subEntity->name,
             'slug' => $this->subEntity->slug,
             'icon' => $this->subEntity->icon,
+            'origin_super_entity' => $this->subEntity->origin_super_entity,
             'super_entity' => $this->getSuperEntity($this->subEntity->super_entity),
             'is_active' => $this->subEntity->is_active,
             'is_registrable' => $this->subEntity->is_registrable,
@@ -48,9 +49,8 @@ class SubEntityPresenter extends AbstractPresenter
     {
         $present = $this->present($isListing);
         $allowedRegistrationForms =  $this->subEntity->allowedChildForms;
-        if(filled($allowedRegistrationForms)) {
-            $present['allowed_registration_forms'] = RegistrationFormPresenter::collection($allowedRegistrationForms);
-        }
+
+        $present['allowed_registration_forms'] = filled($allowedRegistrationForms) ? RegistrationFormPresenter::collection($allowedRegistrationForms) : [];
         return $present;
     }
 
