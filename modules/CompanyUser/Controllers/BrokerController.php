@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
@@ -39,7 +40,7 @@ class BrokerController extends Controller
         );
 
 
-        return Json::items(UserRolesPresenter::collection($list['data']),paginationSettings: $list['pagination']);
+        return Json::items(UserRolesPresenter::collection($list['data'],CompanyUserRole::BROKER->value),paginationSettings: $list['pagination']);
     }
 
 
