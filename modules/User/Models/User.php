@@ -22,6 +22,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -140,16 +141,36 @@ class User extends Authenticatable implements JWTSubject, Auditable
     }
 
 
-    public function managementHierarchies()
+    /**
+     * Get the unique management hierarchies associated with the user through the roleAndBranches relation.
+     * Filtered by the role column in CompanyUserCompany model.
+     *
+     * @param string|int|null $role The role value to filter by (optional)
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function managementHierarchies($role = null)
     {
-        return $this->hasManyThrough(ManagementHierarchy::class,
+        $query = $this->hasManyThrough(
+            ManagementHierarchy::class,
             CompanyUserCompanyManagementHierarchy::class,
-            'user_id',
-            'id',
-            'id',
-            'management_hierarchy_id'
-        )->distinct();
+            'user_id', // Foreign key on CompanyUserCompanyManagementHierarchy table
+            'id', // Foreign key on ManagementHierarchy table
+            'id', // Local key on User table
+            'management_hierarchy_id' // Local key on CompanyUserCompanyManagementHierarchy table
+        )
+        ->join('company_users_companies', 'company_users_company_management_hierarchies.company_user_company_id', '=', 'company_users_companies.id')
+        ->select('management_hierarchies.*')
+        ->distinct();
+
+        // Apply role filter if provided
+        if ($role !== null) {
+            $query->where('company_users_companies.role', $role);
+        }
+
+        return $query;
     }
+
+
 
     public function registrationForm()
     {
