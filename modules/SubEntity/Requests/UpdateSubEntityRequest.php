@@ -63,7 +63,7 @@ class UpdateSubEntityRequest extends FormRequest
             // mainProgramId: $this->get('main_program_id'),
             // isActive: (bool) $this->get('is_active'),
             isRegistrable: (bool) $this->get('is_registrable'),
-            registrationFormId: $this->get('registration_form_id'),
+            // registrationFormId: $this->get('registration_form_id'),
             childrenAllowedRegistrationForms: $this->get('children_allowed_registration_forms'),
         );
     }
