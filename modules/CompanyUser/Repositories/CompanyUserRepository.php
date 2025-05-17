@@ -188,6 +188,10 @@ class CompanyUserRepository extends BaseRepository
             $user = $this->userRepository->model->withTrashed()->withoutTenancy()->where(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']])->first();
 
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
+
+                $mainBranchId = ManagementHierarchy::query()->where("company_id",$companyRole['company_id'])->where("parent_id",null)->first()->id;
+                $mainManagement = ManagementHierarchy::query()->where("company_id",$companyRole['company_id'])->where("parent_id",$mainBranchId)->first();
+
                 $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
 
                 $this->userRepository->createUser(array_merge([
@@ -195,7 +199,8 @@ class CompanyUserRepository extends BaseRepository
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id,
-                    "is_owner" => $usersInCompanyCount == 0 ? 1 : 0
+                    "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
+                    "management_hierarchy_id" => $mainManagement->id,
                 ], $phone));
 
             } else {
@@ -207,11 +212,12 @@ class CompanyUserRepository extends BaseRepository
             if (!$companyUserCompany) {
                 $companyUserCompany =  CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
 
-            } else {
-                if ($companyUserCompany->deleted_at == null) {
-                    throw new \Exception(__("validation.user-already-exists"), 422);
+            }
+            else {
+                if ($companyUserCompany->deleted_at != null) {
+                    $companyUserCompany->restore();
+
                 }
-                $companyUserCompany->restore();
             }
             if ($branches != null) {
                 //replace when user in specifice role branches
@@ -232,7 +238,7 @@ class CompanyUserRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $exception) {
             DB::rollBack();
-            throw new CustomException(__("validation.create-not-successful"), 400);
+            throw new CustomException($exception->getMessage(), 400);
         }
 
         return $companyUser;
