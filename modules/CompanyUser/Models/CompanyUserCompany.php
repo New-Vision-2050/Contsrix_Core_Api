@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Database\factories\CompanyUserFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -65,6 +66,11 @@ class CompanyUserCompany extends Pivot
     protected static function newFactory(): CompanyUserFactory
     {
         return CompanyUserFactory::new();
+    }
+
+    public function managementHierarchy()
+    {
+        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class);
     }
 
 

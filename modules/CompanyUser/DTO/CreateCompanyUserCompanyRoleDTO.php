@@ -22,6 +22,11 @@ class CreateCompanyUserCompanyRoleDTO
 
     }
 
+    public function getRole()
+    {
+        return $this->role;
+    }
+
     public function toArray(): array
     {
         return [
