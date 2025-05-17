@@ -11,14 +11,14 @@ class CreateManagementDTO
 {
     public function __construct(
         public string        $name,
-        public ?int          $managementId,
+        public int          $managementId,
         public int           $branchId,
         public UuidInterface $companyId,
         public string        $description,
         public int           $isActive,
-        public array         $deputyManagerIds,
-        public UuidInterface $referenceUserId,
-        public UuidInterface $managerId,
+        public ?array         $deputyManagerIds,
+        public ?UuidInterface $referenceUserId,
+        public ?UuidInterface $managerId,
 
 
     )
@@ -47,7 +47,7 @@ class CreateManagementDTO
         ];
     }
 
-    public function getDeputyManagerIds(): array
+    public function getDeputyManagerIds(): ?array
     {
 
         return $this->deputyManagerIds;
