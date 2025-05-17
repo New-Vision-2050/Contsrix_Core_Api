@@ -37,7 +37,7 @@ class UpdateSubEntityRequest extends FormRequest
             // 'main_program_id' => 'required|uuid|exists:programs,id',
             // 'is_active' => 'required|boolean',
             'is_registrable' => 'required|boolean',
-            'registration_form_id' => 'required|exists:registration_forms,id',
+            // 'registration_form_id' => 'required|exists:registration_forms,id',
             'children_allowed_registration_forms' => 'nullable|array',
             'children_allowed_registration_forms.*' => 'required|distinct|exists:registration_forms,id',
         ];
