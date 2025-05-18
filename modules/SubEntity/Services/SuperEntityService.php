@@ -67,17 +67,14 @@ class SuperEntityService
     {
         $superEntityId = $id;
 
-        while (Str::isUuid($superEntityId)) {
+        if(Str::isUuid($superEntityId)){
             $parentSubEntity = $this->subEntityCRUDService->find(Uuid::fromString($superEntityId));
-
-            if (!$parentSubEntity) {
-                break;
-            }
-
-            $superEntityId = $parentSubEntity->super_entity;
+            $allowedRegistrationForms = $parentSubEntity->allowedChildForms;
+            return filled($allowedRegistrationForms) ? $allowedRegistrationForms :
+            $this->repository->getRegistrationFormsForId($parentSubEntity->origin_super_entity);
         }
 
-        return $this->repository->getRegistrationFormsForId($superEntityId);
+        return $this->repository->getRegistrationFormsForId($id);
     }
 
     public function getById(string $id): ?array
