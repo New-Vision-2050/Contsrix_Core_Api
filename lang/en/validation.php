@@ -178,6 +178,7 @@ return [
     'email_verified_successfully' => 'Email verified successfully',
     "phone"=>"phone format is invalid",
     'delete-not-successful' => 'Delete not successful',
+    "delete-not-allowed"=>"Delete not allowed",
     'delete-successful' => 'Delete successful',
     "create-not-successful"=>"Create not successful",
     "create-successful"=>"Create successful",
