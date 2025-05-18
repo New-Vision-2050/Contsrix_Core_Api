@@ -397,4 +397,36 @@ return [
                 'required' => 'الرمز البريدي مطلوب.',
             ],
         ],
+
+        'branch' => [
+        'name_required' => 'اسم الفرع مطلوب.',
+        'name_string' => 'يجب أن يكون اسم الفرع نصاً.',
+
+        'parent_id_required' => 'معرّف الفرع الرئيسي مطلوب.',
+        'parent_id_exists' => 'معرّف الفرع الرئيسي غير صالح.',
+
+        'manager_id_required' => 'معرّف المدير مطلوب.',
+        'manager_id_exists' => 'معرّف المدير غير صالح.',
+
+        'phone_required' => 'رقم الهاتف مطلوب.',
+        'phone_invalid' => 'رقم الهاتف غير صالح.',
+
+        'email_required' => 'البريد الإلكتروني مطلوب.',
+        'email_invalid' => 'تنسيق البريد الإلكتروني غير صالح.',
+
+        'latitude_required' => 'خط العرض مطلوب.',
+        'latitude_numeric' => 'يجب أن يكون خط العرض رقمًا.',
+
+        'longitude_required' => 'خط الطول مطلوب.',
+        'longitude_numeric' => 'يجب أن يكون خط الطول رقمًا.',
+
+        'country_required' => 'الدولة مطلوبة.',
+        'country_exists' => 'الدولة المحددة غير صالحة.',
+
+        'state_required' => 'المنطقة مطلوبة.',
+        'state_exists' => 'المنطقة المحددة غير صالحة.',
+
+        'city_required' => 'المدينة مطلوبة.',
+        'city_exists' => 'المدينة المحددة غير صالحة.',
+    ],
 ];
