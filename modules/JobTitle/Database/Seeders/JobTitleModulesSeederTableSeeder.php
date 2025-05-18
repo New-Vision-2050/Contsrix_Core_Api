@@ -11,6 +11,7 @@ use Ramsey\Uuid\Uuid;
 
 class JobTitleModulesSeederTableSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      *
@@ -22,7 +23,7 @@ class JobTitleModulesSeederTableSeeder extends Seeder
         $data = [
 
             ['en' => 'General Manager', 'ar' => 'مدير عام','type'=>'general_manager'],
-            ['en' => 'Head of Department', 'ar' => 'تصنيف', 'رئيس قسم','type'=>'head_department'],
+            ['en' => 'Head of Department', 'ar' => 'رئيس قسم','type'=>'head_department'],
             ['en' => 'hr manager', 'ar' => 'مدير الموارد البشرية','type'=>'hr_manager'],
         ];
 
