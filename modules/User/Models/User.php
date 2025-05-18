@@ -173,6 +173,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
 
 
+
     public function registrationForm()
     {
         return $this->belongsTo(RegistrationForm::class);
