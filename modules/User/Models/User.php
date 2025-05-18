@@ -23,6 +23,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -169,6 +170,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
         return $query;
     }
+
 
 
 
