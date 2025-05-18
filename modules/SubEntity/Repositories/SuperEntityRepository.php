@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Repositories;
 
+use Monolog\Registry;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Collection;
+use Modules\SubEntity\Models\RegistrationForm;
 
 class SuperEntityRepository
 {
@@ -60,6 +63,16 @@ class SuperEntityRepository
             ->where('id', $id)
             ->pluck('model')
             ->first();
+    }
+
+    public function getRegistrationFormsForId(string $id): Collection
+    {
+        $forms = collect($this->availableSuperEntities)
+            ->where('id', $id)
+            ->pluck('registration_forms')
+            ->first();
+
+       return RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active']);
     }
 
     public function getById(string $id): ?array

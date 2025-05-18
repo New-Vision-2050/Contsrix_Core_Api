@@ -160,7 +160,7 @@ class CompanyUser extends Model implements HasMedia
 
     public function jobTitle()
     {
-        return $this->belongsTo(JobTitle::class);
+        return $this->belongsTo(JobTitle::class)->withoutGlobalScope("active");
     }
 
     public function bankAccount()

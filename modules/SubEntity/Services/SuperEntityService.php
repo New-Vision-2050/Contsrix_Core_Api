@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
+use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Model;
 use Modules\SubEntity\Repositories\SuperEntityRepository;
 
 class SuperEntityService
@@ -51,7 +51,7 @@ class SuperEntityService
         $superEntityId = $id;
 
         while (Str::isUuid($superEntityId)) {
-            $parentSubEntity = $this->subEntityCRUDService->get(Uuid::fromString($superEntityId));
+            $parentSubEntity = $this->subEntityCRUDService->find(Uuid::fromString($superEntityId));
 
             if (!$parentSubEntity) {
                 break;
@@ -61,6 +61,23 @@ class SuperEntityService
         }
 
         return $this->repository->getModelForId($superEntityId);
+    }
+
+     public function getRegistrationFormsForId(string $id): Collection
+    {
+        $superEntityId = $id;
+
+        while (Str::isUuid($superEntityId)) {
+            $parentSubEntity = $this->subEntityCRUDService->find(Uuid::fromString($superEntityId));
+
+            if (!$parentSubEntity) {
+                break;
+            }
+
+            $superEntityId = $parentSubEntity->super_entity;
+        }
+
+        return $this->repository->getRegistrationFormsForId($superEntityId);
     }
 
     public function getById(string $id): ?array

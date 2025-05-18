@@ -11,6 +11,11 @@ return [
                 'en' => 'Users'
             ],
             'model' => User::class,
+            'registration_forms' => [
+                'employee',
+                'customer',
+                'reseller'
+            ]
         ],
     ]
 ];

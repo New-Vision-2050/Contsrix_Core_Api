@@ -80,7 +80,7 @@ class UserProfessionalData extends Model
 
     public function jobTitle()
     {
-        return $this->belongsTo(JobTitle::class);
+        return $this->belongsTo(JobTitle::class)->withoutGlobalScope("active");
     }
 
     public function user()//TODO under Testing not used up till now

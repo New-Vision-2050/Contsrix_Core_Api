@@ -235,11 +235,6 @@ return [
     |
     */
 
-    'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
-        ],
-    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -358,4 +353,78 @@ return [
     'academic_specialization_id_required' => 'Academic specialization is required.',
     'study_rate_required' => 'Study rate is required.',
     'graduation_date_required' => 'Graduation date is required.',
+
+  'custom' => [
+        'attribute-name' => [
+            'rule-name' => 'custom-message',
+        ],
+        'files' => [
+            'required' => 'The files field is required.',
+            'array' => 'The files must be an array.',
+            '*.required' => 'Each file is required.',
+            '*.file' => 'Each item must be a valid file.',
+            '*.mimes' => 'Each file must be a type of: pdf, jpeg, jpg, png, doc, docx.',
+        ],
+        'document_type_id' => [
+            'required' => 'The document type is required.',
+            'exists' => 'The selected document type is invalid.',
+        ],
+        'description' => [
+            'required' => 'The description is required.',
+        ],
+        'document_number' => [
+            'required' => 'The document number is required.',
+            'numeric' => 'The document number must be a number.',
+        ],
+        'start_date' => [
+            'required' => 'The start date is required.',
+            'date' => 'The start date must be a valid date.',
+            'before_or_equal' => 'The start date must be before or equal to the end date.',
+            'date_format' => 'The start date format must be YYYY-MM-DD.',
+        ],
+        'end_date' => [
+            'required' => 'The end date is required.',
+            'date' => 'The end date must be a valid date.',
+            'after_or_equal' => 'The end date must be after or equal to the start date.',
+            'date_format' => 'The end date format must be YYYY-MM-DD.',
+        ],
+        'notification_date' => [
+            'required' => 'The notification date is required.',
+            'date' => 'The notification date must be a valid date.',
+            'after_or_equal' => 'The notification date must be after or equal to the start date.',
+            'before' => 'The notification date must be before the end date.',
+            'date_format' => 'The notification date format must be YYYY-MM-DD.',
+        ],
+    ],
+
+    'address' => [
+        'country_id' => [
+            'required' => 'The country is required.',
+            'exists' => 'The selected country is invalid.',
+        ],
+        'state_id' => [
+            'required' => 'The state is required.',
+            'exists' => 'The selected state is invalid.',
+        ],
+        'city_id' => [
+            'required' => 'The city is required.',
+            'exists' => 'The selected city is invalid.',
+        ],
+        'neighborhood_name' => [
+            'required' => 'The neighborhood name is required.',
+        ],
+        'street_name' => [
+            'required' => 'The street name is required.',
+        ],
+        'building_number' => [
+            'required' => 'The building number is required.',
+        ],
+        'additional_phone' => [
+            'required' => 'The additional phone number is required.',
+        ],
+        'postal_code' => [
+            'required' => 'The postal code is required.',
+        ],
+    ],
+    'notification_date_7_days' => 'The notification date must be at least 7 days before the end date.',
 ];

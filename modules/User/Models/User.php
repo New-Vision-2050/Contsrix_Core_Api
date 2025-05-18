@@ -6,21 +6,22 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
-use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\HasTranslations;
-use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Modules\Company\CompanyCore\Models\Company;
-use Modules\CompanyUser\Models\CompanyUser;
 use Modules\Setting\Models\LoginWay;
-use Modules\User\Database\factories\UserFactory;
-use BasePackage\Shared\Traits\BaseFilterable;
-use OwenIt\Auditing\Contracts\Auditable;
+use App\Traits\CustomBelongsToTenant;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Notifications\Notifiable;
+use OwenIt\Auditing\Contracts\Auditable;
+use Modules\CompanyUser\Models\CompanyUser;
+use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use BasePackage\Shared\Traits\HasTranslations;
+use Modules\SubEntity\Models\RegistrationForm;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\User\Database\factories\UserFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -89,10 +90,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'name',
             'email',
             'phone',
-            "phone_code",
-            "company",
-            'updated_at',
-            'created_at'
+            "companies",
+            'user-type'
        ];
     }
 
@@ -124,5 +123,10 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function companyUser()
     {
         return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
+    }
+
+    public function registrationForm()
+    {
+        return $this->belongsTo(RegistrationForm::class);
     }
 }

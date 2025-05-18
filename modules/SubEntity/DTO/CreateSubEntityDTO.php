@@ -8,13 +8,16 @@ class CreateSubEntityDTO
 {
     public function __construct(
         public string $name,
+        public ?string $slug,
         public string $super_entity,
-        public int $icon,
+        public string $icon,
         public string $main_program_id,
         public bool $is_active,
         public bool $is_registrable,
         public array $default_attributes,
         public ?array $optional_attributes,
+        public string $registrationFormId,
+        public ?array $childrenAllowedRegistrationForms,
     ) {
     }
 
@@ -22,6 +25,7 @@ class CreateSubEntityDTO
     {
         return [
             'name' => $this->name,
+            'slug' => $this->slug,
             'super_entity' => $this->super_entity,
             'icon' => $this->icon,
             'main_program_id' => $this->main_program_id,
@@ -29,6 +33,8 @@ class CreateSubEntityDTO
             'is_registrable' => $this->is_registrable,
             'default_attributes' => $this->default_attributes,
             'optional_attributes' => $this->optional_attributes,
+            'registration_form_id' => $this->registrationFormId,
+            'children_allowed_registration_forms' => $this->childrenAllowedRegistrationForms
         ];
     }
 }

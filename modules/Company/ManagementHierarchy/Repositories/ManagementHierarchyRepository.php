@@ -39,8 +39,17 @@ class ManagementHierarchyRepository extends BaseRepository
     public function getAll()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        $managementHierarchy = null;
+        if (request()->has("parent_children_id")) {
+            $managementHierarchy = $this->model->where("id", request()->parent_children_id)->where("company_id", $company->id)->first();
 
-        return $this->model->filter(request()->all())->where("company_id", $company->id)->get();
+        }
+
+        return $this->model->filter(request()->all())
+            ->when(request()->has("parent_children_id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
+                $query->whereSelfOrDescendantOf($managementHierarchy);
+
+            })->where("company_id", $company->id)->get();
     }
 
     public function getTree()
@@ -52,16 +61,14 @@ class ManagementHierarchyRepository extends BaseRepository
 
         }
 
-        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren","detail"])
+        return $this->model->where("company_id", $company->id)->with(["user.companyUser.media", "users", "directUserChildren", "detail"])
             ->when(request()->has("type"), function ($query) {
                 if (request()->type == "management") {
-                    $query->where("type", "management")->orWhere("type", "department");
-                } elseif (request()->type == "department") {
-
-                    $query->where("type", "department");
+                    $query->where("type", "management");
                 }
+
             })
-            ->when(request()->has("id")&& $managementHierarchy, function ($query) use ($managementHierarchy) {
+            ->when(request()->has("id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
                 $query->whereSelfOrDescendantOf($managementHierarchy);
 
             })->get()->tree();
@@ -89,7 +96,11 @@ class ManagementHierarchyRepository extends BaseRepository
             DB::beginTransaction();
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
+            $this->nextId = $this->nextId+1;
+            $this->createManagement(["company_id" => $managementHierarchy->comapny_id,"parent_id"=>$managementHierarchy->id, "is_main"=>1,"name" => "الادارة العامة", "type" => "management"], ["description"=>"الادارة العامة","branch_id"=>$managementHierarchy->id],[]);
+
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
+
 
             DB::commit();
         } catch (\Exception $e) {
@@ -107,14 +118,14 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function createManagement(array $managementData, array $managementDetail,array $deputyManagers): ManagementHierarchy
+    public function createManagement(array $managementData, array $managementDetail,?array $deputyManagers ): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
             $detail =$managementHierarchy->detail()->create($managementDetail);
-            if(count($deputyManagers)>0){
+            if($deputyManagers != null&&count($deputyManagers)>0){
                 foreach ($deputyManagers as $deputyManager){
                     ManagementHierarchyDetailManager::create( ["deputy_manager_id"=>$deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
 
@@ -166,7 +177,7 @@ class ManagementHierarchyRepository extends BaseRepository
         return true;
     }
 
-    public function updateManagement(int $id, array $managementData, array $managementDetail, array $deputyManagers): bool
+    public function updateManagement(int $id, array $managementData, array $managementDetail, ?array $deputyManagers): bool
     {
         try {
             DB::beginTransaction();
@@ -188,7 +199,7 @@ class ManagementHierarchyRepository extends BaseRepository
                 ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
 
                 // Create new deputy managers
-                if (count($deputyManagers) > 0) {
+                if ($deputyManagers!=null&&count($deputyManagers) > 0) {
                     foreach ($deputyManagers as $deputyManager) {
                         ManagementHierarchyDetailManager::create([
                             'deputy_manager_id' => $deputyManager,

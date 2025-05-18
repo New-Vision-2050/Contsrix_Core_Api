@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\SubEntity\Controllers\SubEntityController;
 use Modules\SubEntity\Controllers\SuperEntityController;
+use Modules\SubEntity\Controllers\SubEntityRecordsController;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [SubEntityController::class, 'index']);
@@ -20,4 +21,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // super entity
     Route::get('/super_entities/list', [SuperEntityController::class, 'index']);
     Route::get('/super_entities/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
+    Route::get('/super_entities/registration_forms', [SuperEntityController::class, 'getRegistrationForms']);
+
+    // sub-entity records
+    Route::get('/records/list', [SubEntityRecordsController::class, 'index']);
 });
