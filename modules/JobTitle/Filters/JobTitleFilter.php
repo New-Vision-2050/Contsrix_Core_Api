@@ -18,6 +18,6 @@ class JobTitleFilter extends SearchModelFilter
     }
     public function type($type)
     {
-        $this->where('type',$type);
+        return $this->where('type',$type);
     }
 }
