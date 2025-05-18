@@ -36,7 +36,7 @@ class ManagementHierarchyWidgetService
             return $this->userRepository->getUserCountStatistics($companyId);
         });
     }
-    
+
     /**
      * Get branch counts statistics
      *
@@ -52,7 +52,7 @@ class ManagementHierarchyWidgetService
             return $this->repository->getHierarchyCountStatistics('branch', $companyId);
         });
     }
-    
+
     /**
      * Get management counts statistics
      *
@@ -68,7 +68,7 @@ class ManagementHierarchyWidgetService
             return $this->repository->getHierarchyCountStatistics('management', $companyId);
         });
     }
-    
+
     /**
      * Get department counts statistics
      *
@@ -95,15 +95,15 @@ class ManagementHierarchyWidgetService
         $cacheKey = 'all_widgets_statistics_' . tenant("id");
         $cacheTtl = 60 * 30; // 30 minutes
 
-        return Cache::remember($cacheKey, $cacheTtl, function () {
+//        return Cache::remember($cacheKey, $cacheTtl, function () {
             $companyId = tenant("id");
-            
+
             return [
                 'users' => $this->userRepository->getUserCountStatistics($companyId),
                 'branches' => $this->repository->getHierarchyCountStatistics('branch', $companyId),
                 'management' => $this->repository->getHierarchyCountStatistics('management', $companyId),
                 'departments' => $this->repository->getHierarchyCountStatistics('department', $companyId)
             ];
-        });
+//        });
     }
 }

@@ -154,6 +154,7 @@ return [
     "can-not-resend-before" => "لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
     "phone" => "رقم الهاتف غير صحيح",
     'delete-not-successful' => 'فشل الحذف',
+    "delete-not-allowed"=>'لا يمكن مسح هذا الحقل',
     'delete-successful' => 'تم الحذف بنجاح',
     'create-not-successful' => 'فشل الحفظ',
     'create-successful' => 'تم الحفظ بنجاح',
