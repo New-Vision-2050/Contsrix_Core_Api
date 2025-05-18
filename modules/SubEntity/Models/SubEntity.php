@@ -19,7 +19,7 @@ class SubEntity extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    use BelongsToTenant;
+    //use BelongsToTenant;
 
     public $incrementing = false;
 
