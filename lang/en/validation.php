@@ -178,6 +178,7 @@ return [
     'email_verified_successfully' => 'Email verified successfully',
     "phone"=>"phone format is invalid",
     'delete-not-successful' => 'Delete not successful',
+    "delete-not-allowed"=>"Delete not allowed",
     'delete-successful' => 'Delete successful',
     "create-not-successful"=>"Create not successful",
     "create-successful"=>"Create successful",
@@ -427,4 +428,36 @@ return [
         ],
     ],
     'notification_date_7_days' => 'The notification date must be at least 7 days before the end date.',
+
+      'branch' => [
+        'name_required' => 'Branch name is required.',
+        'name_string' => 'Branch name must be a string.',
+
+        'parent_id_required' => 'Parent ID is required.',
+        'parent_id_exists' => 'The selected parent ID is invalid.',
+
+        'manager_id_required' => 'Manager ID is required.',
+        'manager_id_exists' => 'The selected manager ID is invalid.',
+
+        'phone_required' => 'Phone number is required.',
+        'phone_invalid' => 'The phone number is not valid.',
+
+        'email_required' => 'Email is required.',
+        'email_invalid' => 'The email format is not valid.',
+
+        'latitude_required' => 'Latitude is required.',
+        'latitude_numeric' => 'Latitude must be a number.',
+
+        'longitude_required' => 'Longitude is required.',
+        'longitude_numeric' => 'Longitude must be a number.',
+
+        'country_required' => 'Country is required.',
+        'country_exists' => 'The selected country is invalid.',
+
+        'state_required' => 'State is required.',
+        'state_exists' => 'The selected state is invalid.',
+
+        'city_required' => 'City is required.',
+        'city_exists' => 'The selected city is invalid.',
+    ],
 ];
