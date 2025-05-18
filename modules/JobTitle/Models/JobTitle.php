@@ -41,6 +41,8 @@ class JobTitle extends Model
     protected $casts = [
         'id' => 'string',
     ];
+
+
     protected static function booted()
     {
         static::addGlobalScope("active",function ($query) {

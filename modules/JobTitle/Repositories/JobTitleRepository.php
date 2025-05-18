@@ -20,13 +20,7 @@ class JobTitleRepository extends BaseRepository
     {
         parent::__construct($model);
     }
-
-    public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
-    {
-        return $this->paginatedList([], $page, $perPage);
-    }
-
-    public function withoutScopePaginated(array $conditions = [], $page = 1, $perPage = 10)
+    public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
     {
         $query = $this->model->withoutGlobalScope("active")->where($conditions);
         $count = $query->count();
@@ -36,6 +30,13 @@ class JobTitleRepository extends BaseRepository
             'data' => $paginatedData
         ]);
     }
+
+    public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
+    {
+        return $this->paginatedList([], $page, $perPage);
+    }
+
+
 
     public function getAllJobTitles(): Collection
     {
