@@ -19,6 +19,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\SubEntity\Models\RegistrationForm;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
+use Modules\CompanyUser\Enum\CompanyUserRole;
+
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -56,7 +61,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "global_company_user_id",
         "company_id",
         "is_owner",
-        "management_hierarchy_id"
+        "management_hierarchy_id",
+        "status"
     ];
 
     protected $casts = [
@@ -124,6 +130,48 @@ class User extends Authenticatable implements JWTSubject, Auditable
     {
         return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
     }
+
+    public function companyUserCompanies()
+    {
+        return $this->hasMany(CompanyUserCompany::class,"global_company_user_id" , "global_company_user_id" );
+    }
+
+    public function roleAndBranches()
+    {
+        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class,"user_id","id");
+    }
+
+
+    /**
+     * Get the unique management hierarchies associated with the user through the roleAndBranches relation.
+     * Filtered by the role column in CompanyUserCompany model.
+     *
+     * @param string|int|null $role The role value to filter by (optional)
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function managementHierarchies($role = null)
+    {
+        $query = $this->hasManyThrough(
+            ManagementHierarchy::class,
+            CompanyUserCompanyManagementHierarchy::class,
+            'user_id', // Foreign key on CompanyUserCompanyManagementHierarchy table
+            'id', // Foreign key on ManagementHierarchy table
+            'id', // Local key on User table
+            'management_hierarchy_id' // Local key on CompanyUserCompanyManagementHierarchy table
+        )
+        ->join('company_users_companies', 'company_users_company_management_hierarchies.company_user_company_id', '=', 'company_users_companies.id')
+        ->select('management_hierarchies.*')
+        ->distinct();
+
+        // Apply role filter if provided
+        if ($role !== null) {
+            $query->where('company_users_companies.role', $role);
+        }
+
+        return $query;
+    }
+
+
 
     public function registrationForm()
     {
