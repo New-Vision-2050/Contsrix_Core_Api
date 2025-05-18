@@ -41,7 +41,7 @@ class JobTypeRepository extends BaseRepository
     public function getAllJobTypes(): Collection
     {
         if (method_exists($this->model, 'scopeFilter')) {
-            return $this->model->filter(request()->all())->all();
+            return $this->model->filter(request()->all())->get();
         }
         return $this->model->all();
     }
