@@ -32,6 +32,8 @@ class CreateQualificationRequest extends FormRequest
             'academic_qualification_id.required' => __('validation.academic_qualification_id_required'),
             'academic_specialization_id.required' => __('validation.academic_specialization_id_required'),
             'study_rate.required' => __('validation.study_rate_required'),
+            'study_rate.numeric' => __('validation.study_rate_numeric'),
+
             'graduation_date.required' => __('validation.graduation_date_required'),
         ];
     }
