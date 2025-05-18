@@ -226,6 +226,11 @@ class ManagementHierarchyRepository extends BaseRepository
     public function hasChildren(int $id): bool
     {
         $managementHierarchy = $this->findOneOrFail($id);
+        //not allow to delete main management or main branch pu by default main branch has children
+        if($managementHierarchy->is_main == 1)
+        {
+            return true;
+        }
 
         // Check for direct management hierarchy children
         $childrenCount = $this->model->where('parent_id', $id)->count();
