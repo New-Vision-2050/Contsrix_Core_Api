@@ -42,7 +42,7 @@ class QualificationCRUDService
 
     public function uploadFile($qualification,$request)//: array
     {
-        $files = $request->file;
+        $files = $request->file('file');
 
         $visibility = 'public';
         if($files){
