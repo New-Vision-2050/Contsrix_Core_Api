@@ -179,6 +179,54 @@ class ManagementHierarchyController extends Controller
     }
 
     /**
+     * Consolidate multiple tree nodes by making all nodes children of the node with lowest ID
+     *
+     * @param array $treeNodes Array of tree nodes to consolidate
+     * @return array Consolidated tree with nodes attached to the lowest ID node
+     */
+    private function consolidateTreeNodesUnderLowestId(array $treeNodes): array
+    {
+        if (count($treeNodes) <= 1) {
+            return $treeNodes;
+        }
+
+        // Find the node with the lowest ID to use as the root
+        $lowestIdIndex = 0;
+        $lowestId = $treeNodes[0]['id'];
+
+        for ($i = 1; $i < count($treeNodes); $i++) {
+            if ($treeNodes[$i]['id'] < $lowestId) {
+                $lowestId = $treeNodes[$i]['id'];
+                $lowestIdIndex = $i;
+            }
+        }
+
+        // Node with lowest ID will be our root node
+        $rootNode = $treeNodes[$lowestIdIndex];
+
+        // Start with existing children of the root node or empty array
+        $allChildren = isset($rootNode['children']) ? $rootNode['children'] : [];
+
+        // Add all other nodes as children of the root node
+        for ($i = 0; $i < count($treeNodes); $i++) {
+            if ($i !== $lowestIdIndex) {
+                $allChildren[] = $treeNodes[$i];
+            }
+        }
+
+        // Update the count properties for the root node
+        $rootNode['department_count'] = array_sum(array_column($treeNodes, 'department_count'));
+        $rootNode['management_count'] = array_sum(array_column($treeNodes, 'management_count'));
+        $rootNode['branch_count'] = array_sum(array_column($treeNodes, 'branch_count'));
+        $rootNode['user_count'] = array_sum(array_column($treeNodes, 'user_count'));
+
+        // Set the consolidated children to the root node
+        $rootNode['children'] = $allChildren;
+
+        return $rootNode;
+    }
+
+    /**
      * Present the management hierarchy tree with optional filtering
      *
      * @param GetManagementHierarchyLookupRequest $request
@@ -205,11 +253,16 @@ class ManagementHierarchyController extends Controller
         $tree = $this->managementHierarchyService->getTree();
 
         if ($type == "management") {
-            $presentedTree = ManagementHierarchyTreePresenter::collection($tree)[0];
-
-        }else{
             $presentedTree = ManagementHierarchyTreePresenter::collection($tree);
 
+            // If we have multiple top-level nodes, consolidate them under the node with lowest ID
+            if (is_array($presentedTree[0]) && count($presentedTree[0]) > 1) {
+                $presentedTree = $this->consolidateTreeNodesUnderLowestId($presentedTree[0]);
+            } else if (is_array($presentedTree[0]) && count($presentedTree[0]) == 1) {
+                $presentedTree = $presentedTree[0];
+            }
+        } else {
+            $presentedTree = ManagementHierarchyTreePresenter::collection($tree);
         }
 
         return Json::item($presentedTree);
