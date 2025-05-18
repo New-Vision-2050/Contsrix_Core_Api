@@ -28,6 +28,7 @@ class ManagementHierarchyPresenter extends AbstractPresenter
         return [
             'id' => $this->managementHierarchy->id,
             'parent_id' => $this->managementHierarchy->parent_id,
+            'is_main' => $this->managementHierarchy->is_main,
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
             'phone' => $this->managementHierarchy->phone,
