@@ -200,7 +200,7 @@ class CompanyUserRepository extends BaseRepository
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id,
                     "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
-                    "management_hierarchy_id" => $mainManagement->id,
+                    "management_hierarchy_id" =>$companyRole['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id:null,
                 ], $phone));
 
             } else {
@@ -270,7 +270,7 @@ class CompanyUserRepository extends BaseRepository
                     $newUser->password = null; // make password null
                     $newUser->company_id = $companyUserRoleData["company_id"];
                     $newUser->is_owner = $usersInCompanyCount == 0 ? 1 : 0;
-                    $newUser->management_hierarchy_id = $mainManagement->id;
+                    $newUser->management_hierarchy_id = $companyUserRoleData['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id:null;
 
                     $newUser->save();
                 } else {
@@ -284,7 +284,7 @@ class CompanyUserRepository extends BaseRepository
                         "phone_code" => $companyUser->phone_code,
                         "global_company_user_id" => $companyUser->global_id,
                         "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
-                        "management_hierarchy_id" => $mainManagement->id
+                        "management_hierarchy_id" =>$companyUserRoleData['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id:null,
                     ]);
                 }
 
