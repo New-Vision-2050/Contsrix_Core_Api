@@ -30,8 +30,8 @@ class JobTitleModulesSeederTableSeeder extends Seeder
         $companyId = Uuid::uuid5($namespace, "new-vision")->toString();
         foreach ($data as $item) {
             JobTitle::firstOrCreate(
-                ['type' => $item['type'],"company_id"=>$companyId],
-                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type'],"company_id"=>$companyId]
+                ['type' => $item['type'],"company_id"=>tenant("id") ?? $companyId],
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type'],"company_id"=>tenant("id") ?? $companyId]
             );
         }
 
