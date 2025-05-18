@@ -319,6 +319,7 @@ return [
     'academic_qualification_id_required' => 'المؤهل الأكاديمي مطلوب.',
     'academic_specialization_id_required' => 'التخصص الأكاديمي مطلوب.',
     'study_rate_required' => 'معدل الدراسة مطلوب.',
+    'study_rate_numeric' => 'معدل الدراسة يجب أن يكون رقمًا.',
     'graduation_date_required' => 'تاريخ التخرج مطلوب.',
 
     'custom' => [

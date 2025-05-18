@@ -353,6 +353,7 @@ return [
     'academic_qualification_id_required' => 'Academic qualification is required.',
     'academic_specialization_id_required' => 'Academic specialization is required.',
     'study_rate_required' => 'Study rate is required.',
+    'study_rate_numeric' => 'Study rate must be a number.',
     'graduation_date_required' => 'Graduation date is required.',
 
   'custom' => [
