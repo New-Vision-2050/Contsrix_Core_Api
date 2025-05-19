@@ -48,7 +48,7 @@ class SubEntityCRUDService
         );
     }
 
-    public function paginatedBySuperEntity(string $superEntityId,  ?string $programSlug = null, ?string $entityName = null, int $page = 1, int $perPage = 10): array
+    public function paginatedBySuperEntity(string $superEntityId,  ?string $programSlug = null, ?string $entityName = null, ?string $registrationForm = null, int $page = 1, int $perPage = 10): array
     {
 
         if( Str::isUuid($superEntityId) ) {
@@ -60,6 +60,7 @@ class SubEntityCRUDService
             superEntityId: $superEntityId,
             programSlug: $programSlug,
             entityName: $entityName,
+            registrationForm: $registrationForm,
             page: $page,
             perPage: $perPage
         );

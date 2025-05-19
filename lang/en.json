@@ -3,5 +3,7 @@
     "email": "email",
     "phone": "phone",
     "phone_code": "phone code",
-    "company": "company"
+    "company": "company",
+    "user-type": "User Type",
+    "companies": "Companies"
 }
