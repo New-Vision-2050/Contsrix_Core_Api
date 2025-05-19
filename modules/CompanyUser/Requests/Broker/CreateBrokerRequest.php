@@ -78,7 +78,7 @@ class CreateBrokerRequest extends FormRequest
             phone: $this->get('phone'),
             residence: $this->get('residence'),
             branchIds: $this->get('branch_ids'),
-            message_address : $this->messageAddress
+            messageAddress : $this->messageAddress
 
         );
     }
