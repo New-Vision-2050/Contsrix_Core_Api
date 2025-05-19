@@ -9,7 +9,6 @@ use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\SubEntity\Database\factories\SubEntityFactory;
@@ -19,8 +18,6 @@ class SubEntity extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    use BelongsToTenant;
-
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -34,7 +31,6 @@ class SubEntity extends Model
         'optional_attributes',
         'is_registrable',
         'super_entity',
-        'company_id',
         'origin_super_entity',
         'slug',
         'registration_form_id'

@@ -10,6 +10,7 @@ use Modules\Program\Database\Seeders\ProgramDatabaseSeeder;
 use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\SubEntity\Database\Seeders\RegistrationFormsSeeder;
+use Modules\SubEntity\Database\Seeders\SubEntityDatabaseSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
@@ -86,5 +87,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(ProgramDatabaseSeeder::class);
         $this->call(RegistrationFormsSeeder::class);
+        $this->call(SubEntityDatabaseSeeder::class);
     }
 }
