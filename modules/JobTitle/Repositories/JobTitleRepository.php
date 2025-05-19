@@ -42,11 +42,7 @@ class JobTitleRepository extends BaseRepository
 
 public function getAllJobTitles(): Collection
 {
-    if (method_exists($this->model, 'scopeFilter')) {
-        return $this->model->filter(request()->all())->get();
-    }
-
-    return $this->model->all();
+    return $this->model->get();
 }
 
 
