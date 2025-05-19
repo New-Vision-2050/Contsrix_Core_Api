@@ -14,7 +14,9 @@ class CreateBrokerDTO
         public string  $phone,
 
         public ?string $residence,
-        public ?array $branchIds
+        public ?array $branchIds,
+        public ?string $messageAddress
+
 
     )
     {
@@ -33,6 +35,8 @@ class CreateBrokerDTO
             'country_id' => $this->countryId,
             'phone' => $this->phone,
             'residence' => $this->residence,
+            "message_address" => $this->messageAddress
+
         ];
     }
 

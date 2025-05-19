@@ -17,10 +17,17 @@ class SuperEntityPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        return [
+        $attributes = [
             'id' => $this->superEntity['id'],
             'name' => is_array($this->superEntity['name']) ? $this->superEntity['name'][app()->getLocale()]: $this->superEntity['name'],
         ];
+
+        if(isset($this->superEntity['allowed_attributes']) && filled($this->superEntity['allowed_attributes']))
+        {
+            $attributes['allowed_attributes'] = $this->superEntity['allowed_attributes'];
+        }
+
+        return $attributes;
     }
 
     public function getData(bool $isListing = false): ?array

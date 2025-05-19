@@ -7,14 +7,12 @@ namespace Modules\User\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
 
-class GetUserListRequest extends FormRequest
+class GetUserByEmailRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'per_page' => 'integer',
-            'page' => 'integer',
-
+            "email" => "required|email"
         ];
     }
 }

@@ -70,7 +70,7 @@ class SubEntityRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getPaginatedBySuperEntity(string $superEntityId, ?string $programSlug = null, ?string $entityName = null, int $page = 1, int $perPage = 15): array
+    public function getPaginatedBySuperEntity(string $superEntityId, ?string $programSlug = null, ?string $entityName = null, ?string $registrationForm = null, int $page = 1, int $perPage = 15): array
     {
         $query = $this->model->newQuery()
             ->when($entityName, function ($q) use ($entityName) {
@@ -84,6 +84,9 @@ class SubEntityRepository extends BaseRepository
             })
             ->when(request()->has('name'), function ($query) {
                 return $query->filter(['name' => request()->get('name')]);
+            })
+            ->when($registrationForm, function ($q) use ($registrationForm) {
+                return $q->where('registration_form_id', $registrationForm);
             });
 
         $count = $query->count();
@@ -101,6 +104,7 @@ class SubEntityRepository extends BaseRepository
         $query = $this->model->newQuery()
             ->select('id', 'name')
             ->active()
+            ->where('is_registrable', true)
             ->when(request()->has('name'), function ($query) {
                 return $query->filter(['name' => request()->get('name')]);
             });

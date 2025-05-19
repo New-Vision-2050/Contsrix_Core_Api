@@ -108,6 +108,7 @@ class SubEntityController extends Controller
             superEntityId: $request->get('super_entity_id'),
             programSlug: $request->get('main_program_slug'),
             entityName: $request->get('entity_name'),
+            registrationForm: $request->get('registration_form_id'),
             page: (int) $request->get('page', 1),
             perPage: (int) $request->get('per_page', 10),
         );
