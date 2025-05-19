@@ -49,7 +49,11 @@ class SuperEntityService
 
     public function getAttributesConfig(string $superEntityId): array
     {
-       return $this->repository->getAttributesConfig($superEntityId);
+        $attributes =  $this->repository->getAttributesConfig($superEntityId);
+
+        return array_map(function ($name) {
+            return AttributesTranslationService::getTranslations($name);
+        }, $attributes['allowed_attributes'] ?? []);
     }
 
     public function getIds()
