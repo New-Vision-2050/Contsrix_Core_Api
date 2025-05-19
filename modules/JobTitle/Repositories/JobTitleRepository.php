@@ -42,7 +42,7 @@ class JobTitleRepository extends BaseRepository
 
 public function getAllJobTitles(): Collection
 {
-    return $this->model->get();
+    return $this->model->withoutTenancy()->filter(request()->all())->get();
 }
 
 
