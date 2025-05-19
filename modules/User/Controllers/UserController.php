@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
+use Modules\User\Presenters\UserBranchesPresenter;
 use Modules\User\Presenters\UserRolesPresenter;
 use Modules\User\Requests\ExportUsersRequest;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
@@ -26,6 +27,7 @@ use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
 use Modules\User\Requests\GetAdminUsersRequest;
 use Modules\User\Requests\GetUserAuditListRequest;
+use Modules\User\Requests\GetUserByEmailRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
 use Modules\User\Requests\GetUserRolesAndPermissionRequest;
@@ -149,6 +151,12 @@ class UserController extends Controller
         $roles = $this->userRoleAndPermissionService->getRoles(auth()->user()->id);
         $permissionPresenter = RolePresenter::collection($roles);
         return Json::item($permissionPresenter);
+    }
+
+    public function getUserByEmail(GetUserByEmailRequest $userByEmailRequest)
+    {
+        $branchesWithRole =  $this->userService->getUserByEmailWithBranches($userByEmailRequest->email);
+        return Json::items(UserBranchesPresenter::collection($branchesWithRole));
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)
