@@ -10,19 +10,18 @@ use Ramsey\Uuid\UuidInterface;
 class CreateClientDTO
 {
     public function __construct(
-        public string                      $name,
-        public string                      $email,
-        private ?string                    $countryId,
-        public string                      $phone,
+        public string         $name,
+        public string         $email,
+        private ?string       $countryId,
+        public string         $phone,
 
-        public ?string                     $residence,
-        public ?array                      $branchIds,
+        public ?string        $residence,
+        public ?array         $branchIds,
         public ?UuidInterface $brokerId,
-        public int                         $type,
-        public ?string                     $registrationNumber,
-        public ?string                     $companyRepresentativeName
-
-
+        public int            $type,
+        public ?string        $registrationNumber,
+        public ?string        $companyRepresentativeName,
+        public ?string        $messageAddress
 
 
     )
@@ -41,6 +40,7 @@ class CreateClientDTO
             'email' => $this->email,
             'phone' => $this->phone,
             'residence' => $this->residence,
+            "message_address" => $this->messageAddress,
         ];
     }
 
@@ -59,7 +59,6 @@ class CreateClientDTO
     {
         return $this->branchIds;
     }
-
 
 
 }
