@@ -88,6 +88,11 @@ class BrokerCRUDService
         );
     }
 
+    public function listAsSubEntity(int $page = 1, int $perPage = 10): array
+    {
 
+        $users = $this->userRepository->getBrokerInCurrentCompanyWith($page, $perPage);
 
+        return $users;
+    }
 }

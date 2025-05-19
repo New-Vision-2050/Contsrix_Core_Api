@@ -6,6 +6,7 @@ namespace Modules\SubEntity\Database\factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Program\Models\Program;
+use Modules\SubEntity\Models\RegistrationForm;
 use Modules\SubEntity\Models\SubEntity;
 
 /** @extends Factory<SubEntity> */
@@ -44,6 +45,7 @@ class SubEntityFactory extends Factory
                 "is_owner",
                 "management_hierarchy_id"
             ])),
+            'registration_form_id' => RegistrationForm::first()
         ];
     }
 }
