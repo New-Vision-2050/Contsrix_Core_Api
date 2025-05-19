@@ -24,4 +24,11 @@ class JobTitleFilter extends SearchModelFilter
     {
         return $this->where('company_id',$company);
     }
+
+    public function jobType($job_type_id)
+    {
+        return $this->where('job_type_id',$job_type_id);
+    }
+
+    
 }
