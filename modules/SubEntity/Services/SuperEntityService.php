@@ -21,8 +21,8 @@ class SuperEntityService
     {
         $supEntities = $this->subEntityCRUDService->getSelection();
         $supEntities = $supEntities['data']->toArray();
-        $subEntities = $this->repository->list($search);
-        return array_merge($supEntities, $subEntities);
+        $superEntities = $this->repository->list($search);
+        return array_merge($supEntities, $superEntities);
     }
 
     public function getAvailableAttributes(string $superEntityId): array
