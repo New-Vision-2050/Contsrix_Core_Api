@@ -6,6 +6,7 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
+use Modules\CompanyUser\Models\ClientDetail;
 use Modules\Setting\Models\LoginWay;
 use App\Traits\CustomBelongsToTenant;
 use Spatie\Permission\Traits\HasRoles;
@@ -177,5 +178,10 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function registrationForm()
     {
         return $this->belongsTo(RegistrationForm::class);
+    }
+
+    public function clientDetail()
+    {
+        return $this->hasOne(ClientDetail::class);
     }
 }

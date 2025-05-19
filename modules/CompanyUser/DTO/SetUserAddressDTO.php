@@ -17,6 +17,8 @@ class SetUserAddressDTO
         private ?string        $buildingNumber,
         private ?string        $additionalPhone,
         private ?string        $postalCode,
+        private ?string        $latitude,
+        private ?string        $longitude
     )
     {
     }
@@ -37,6 +39,8 @@ class SetUserAddressDTO
             "building_number" => $this->buildingNumber,
             "additional_phone" => $this->additionalPhone,
             "postal_code" => $this->postalCode,
+            "latitude" => $this->latitude,
+            "longitude" => $this->longitude
 
         ];
     }

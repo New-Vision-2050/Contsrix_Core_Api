@@ -14,6 +14,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
+use Modules\CompanyUser\Models\ClientDetail;
 use Modules\CompanyUser\Models\CompanyUserAddress;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
@@ -171,7 +172,7 @@ class CompanyUserRepository extends BaseRepository
     }
 
     public
-    function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null): CompanyUser
+    function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null): CompanyUser
     {
         try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
@@ -189,13 +190,11 @@ class CompanyUserRepository extends BaseRepository
             $user = $this->userRepository->model->withTrashed()->withoutTenancy()->where(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']])->first();
             $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", null)->first()->id;
             $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $mainBranchId)->first();
-            if($branches!=null &&  CompanyUserRole::EMPLOYEE->value == $companyRole['role'])
-            {
+            if ($branches != null && CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
                 $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $branches[0])->first();
 
             }
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
-
 
 
                 $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
@@ -239,8 +238,7 @@ class CompanyUserRepository extends BaseRepository
             if ($address != null) {
                 CompanyUserAddress::query()->updateOrCreate(["global_company_user_id" => $companyUser->id], $address + ["global_company_user_id" => $companyUser->id]);
             }
-            if(CompanyUserRole::EMPLOYEE->value == $companyRole['role'] )
-            {
+            if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
                 $userProfessionalData = UserProfessionalData::query()->where([
                     'global_id' => $user->global_company_user_id,
                     'company_id' => $companyRole['company_id'],
@@ -248,20 +246,22 @@ class CompanyUserRepository extends BaseRepository
                 $data = [
                     'company_id' => $companyRole['company_id'],
                     'global_id' => $user->global_company_user_id,
-                    'branch_id' => $branches!=null?$branches[0]:$mainBranchId,
+                    'branch_id' => $branches != null ? $branches[0] : $mainBranchId,
                     'management_id' => $mainManagement->id,
 
                 ];
                 if ($userProfessionalData) {
                     $userProfessionalData->update($data);
 
-                }else{
-                    $userProfessionalData =  UserProfessionalData::create($data);
-
+                } else {
+                    $userProfessionalData = UserProfessionalData::create($data);
                 }
 
             }
 
+            if (CompanyUserRole::CLIENT->value == $companyRole['role']) {
+                ClientDetail::query()->updateOrCreate(["user_id"=>$user->id],$clientDetail+["user_id"=>$user->id]);
+            }
 
 
             DB::commit();
@@ -319,8 +319,7 @@ class CompanyUserRepository extends BaseRepository
 
             }
             CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
-            if(CompanyUserRole::EMPLOYEE->value ==$companyUserRoleData['role'])
-            {
+            if (CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
                 $userProfessionalData = UserProfessionalData::query()->where([
                     'global_id' => $user->global_company_user_id,
                     'company_id' => $companyUserRoleData['role'],
@@ -335,8 +334,8 @@ class CompanyUserRepository extends BaseRepository
                 if ($userProfessionalData) {
                     $userProfessionalData->update($data);
 
-                }else{
-                    $userProfessionalData =  UserProfessionalData::create($data);
+                } else {
+                    $userProfessionalData = UserProfessionalData::create($data);
 
                 }
 
