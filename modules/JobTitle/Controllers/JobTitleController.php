@@ -26,9 +26,12 @@ use Modules\JobTitle\Exports\JobTitleExport;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Artisan;
 use Maatwebsite\Excel\Facades\Excel;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 
 class JobTitleController extends Controller
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
         private JobTitleCRUDService $jobTitleService,
         private UpdateJobTitleHandler $updateJobTitleHandler,
