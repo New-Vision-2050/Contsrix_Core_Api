@@ -49,11 +49,16 @@ class SuperEntityService
 
     public function getAttributesConfig(string $superEntityId): array
     {
-        $attributes =  $this->repository->getAttributesConfig($superEntityId);
+        $attributes = $this->repository->getAttributesConfig($superEntityId);
 
-        return array_map(function ($name) {
-            return AttributesTranslationService::getTranslations($name);
-        }, $attributes['allowed_attributes'] ?? []);
+        if (isset($attributes['allowed_attributes']) && filled($attributes['allowed_attributes'])) {
+            return array_map(function ($name) {
+                return AttributesTranslationService::getTranslations($name);
+            }, $attributes['allowed_attributes'] ?? []);
+        }
+
+        // fallback to the whole list of attributes
+        return $this->getAvailableAttributes($superEntityId);
     }
 
     public function getIds()
@@ -94,7 +99,7 @@ class SuperEntityService
 
     public function getById(string $id): ?array
     {
-        $allowed_attributes =  $this->getAttributesConfig($id);
+        $allowed_attributes = $this->getAttributesConfig($id);
 
         if (Str::isUuid($id)) {
             $parentSubEntity = $this->subEntityCRUDService->get(Uuid::fromString($id));
