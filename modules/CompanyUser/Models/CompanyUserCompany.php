@@ -70,7 +70,7 @@ class CompanyUserCompany extends Pivot
 
     public function managementHierarchy()
     {
-        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class);
+        return $this->belongsToMany(ManagementHierarchy::class , "company_users_company_management_hierarchies","company_user_company_id","management_hierarchy_id");
     }
 
 

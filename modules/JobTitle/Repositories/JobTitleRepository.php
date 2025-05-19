@@ -6,6 +6,7 @@ namespace Modules\JobTitle\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\UuidInterface;
 use Modules\JobTitle\Models\JobTitle;
 
@@ -16,17 +17,12 @@ use Modules\JobTitle\Models\JobTitle;
  */
 class JobTitleRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(JobTitle $model)
     {
         parent::__construct($model);
     }
-
-    public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
-    {
-        return $this->paginatedList([], $page, $perPage);
-    }
-
-    public function withoutScopePaginated(array $conditions = [], $page = 1, $perPage = 10)
+    public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
     {
         $query = $this->model->withoutGlobalScope("active")->where($conditions);
         $count = $query->count();
@@ -37,10 +33,18 @@ class JobTitleRepository extends BaseRepository
         ]);
     }
 
-    public function getAllJobTitles(): Collection
+    public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
     {
-        return $this->model->all();
+        return $this->paginatedList([], $page, $perPage);
     }
+
+
+
+public function getAllJobTitles(): Collection
+{
+    return $this->model->withoutTenancy()->filter(request()->all())->get();
+}
+
 
     public function getJobTitle(UuidInterface $id): JobTitle
     {

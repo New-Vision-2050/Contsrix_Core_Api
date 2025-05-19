@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Shared\JobType\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Shared\JobType\Models\JobType;
-
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 /**
  * @property JobType $model
  * @method JobType findOneOrFail($id)
@@ -16,6 +17,7 @@ use Modules\Shared\JobType\Models\JobType;
  */
 class JobTypeRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(JobType $model)
     {
         parent::__construct($model);
@@ -39,6 +41,9 @@ class JobTypeRepository extends BaseRepository
 
     public function getAllJobTypes(): Collection
     {
+        if (method_exists($this->model, 'scopeFilter')) {
+            return $this->model->withoutTenancy()->filter(request()->all())->get();
+        }
         return $this->model->all();
     }
 
@@ -59,6 +64,9 @@ class JobTypeRepository extends BaseRepository
 
     public function deleteJobType(UuidInterface $id): bool
     {
-        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
-    }
+        $jobType = $this->model->withoutGlobalScope("active")->where('id', $id)->first();
+        if(count($jobType->jobTitles) > 0){
+           throw  new CustomException(__("validation.delete-not-allowed"), 400);
+        }
+        return $jobType->delete($id);    }
 }

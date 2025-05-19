@@ -35,12 +35,15 @@ class JobTitle extends Model
         "name",
         "job_type_id",
         "description",
-        "status"
+        "status",
+        'company_id',
     ];
     public array $translatable = ['name'];
     protected $casts = [
         'id' => 'string',
     ];
+
+
     protected static function booted()
     {
         static::addGlobalScope("active",function ($query) {

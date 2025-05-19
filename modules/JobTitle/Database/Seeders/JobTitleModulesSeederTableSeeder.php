@@ -22,15 +22,16 @@ class JobTitleModulesSeederTableSeeder extends Seeder
         $data = [
 
             ['en' => 'General Manager', 'ar' => 'مدير عام','type'=>'general_manager'],
-            ['en' => 'Head of Department', 'ar' => 'تصنيف', 'رئيس قسم','type'=>'head_department'],
+            ['en' => 'Head of Department', 'ar' => 'رئيس قسم','type'=>'head_department'],
             ['en' => 'hr manager', 'ar' => 'مدير الموارد البشرية','type'=>'hr_manager'],
         ];
 
         $namespace = Uuid::NAMESPACE_DNS;
         $companyId = Uuid::uuid5($namespace, "new-vision")->toString();
         foreach ($data as $item) {
-            JobTitle::Create(
-                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type'],"company_id"=>$companyId]
+            JobTitle::firstOrCreate(
+                ['type' => $item['type'],"company_id"=>tenant("id") ?? $companyId],
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']] ,'type'=> $item['type'],"company_id"=>tenant("id") ?? $companyId]
             );
         }
 

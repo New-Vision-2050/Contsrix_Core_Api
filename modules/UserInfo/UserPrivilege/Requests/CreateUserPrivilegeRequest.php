@@ -19,7 +19,7 @@ class CreateUserPrivilegeRequest extends FormRequest
             'charge_amount'=> 'nullable|string',
             'description'=> 'required|string',
             'privilege_id'=> 'required|string',
-            'period_id' => 'required|string',
+            'period_id' => 'nullable|string',
         ];
     }
 

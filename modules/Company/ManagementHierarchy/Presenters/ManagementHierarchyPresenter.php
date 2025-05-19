@@ -27,7 +27,9 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             ?? $this->managementHierarchy->cacheHierarchyCounts();
         return [
             'id' => $this->managementHierarchy->id,
+            'company_id' => $this->managementHierarchy->company_id,
             'parent_id' => $this->managementHierarchy->parent_id,
+            'is_main' => $this->managementHierarchy->is_main,
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
             'phone' => $this->managementHierarchy->phone,

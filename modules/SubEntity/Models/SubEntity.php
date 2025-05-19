@@ -18,6 +18,7 @@ class SubEntity extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+
     public $incrementing = false;
 
     protected $keyType = 'string';
