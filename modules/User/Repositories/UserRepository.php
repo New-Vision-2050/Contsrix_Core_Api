@@ -7,6 +7,7 @@ namespace Modules\User\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Audit\Repositories\AuditRepository;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Setting\Repositories\IdentifierSettingRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\User\Models\User;
@@ -57,6 +58,16 @@ class UserRepository extends BaseRepository
                 return $query->orWhere('phone', $identifier);
             });
         })->where("company_id", tenant("id"))->first();
+    }
+
+    public function getUserByEmailWithBranches($email)
+    {
+        $user = $this->model->query()->where('email', $email)->where("company_id", tenant("id"))->first();
+        return CompanyUserCompany::query()->where("company_id", tenant("id"))
+            ->where("global_company_user_id",$user->global_company_user_id)
+           ->with("managementHierarchy")
+            ->get();
+
     }
 
     public function getUserInCurrentCompanyWith(array $relations = [], $type = null, $page = 1, $perPage = 10)
