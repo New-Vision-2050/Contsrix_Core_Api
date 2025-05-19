@@ -14,6 +14,7 @@ class GetUserListRequest extends FormRequest
         return [
             'per_page' => 'integer',
             'page' => 'integer',
+
         ];
     }
 }

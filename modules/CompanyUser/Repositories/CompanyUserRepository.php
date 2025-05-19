@@ -14,11 +14,13 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
+use Modules\CompanyUser\Models\ClientDetail;
 use Modules\CompanyUser\Models\CompanyUserAddress;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Ramsey\Uuid\UuidInterface;
 use Modules\CompanyUser\Models\CompanyUser;
 use function Laravel\Prompts\table;
@@ -36,7 +38,7 @@ class CompanyUserRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function withRelationsFilterByType(array $relations = [], $page = 1, $perPage = 15,$type = null, $companyId = null, $branchId = null)
+    public function withRelationsFilterByType(array $relations = [], $page = 1, $perPage = 15, $type = null, $companyId = null, $branchId = null)
     {
         if (method_exists($this->model, 'scopeFilter')) {
             $query = $this->model->filter(request()->all())->with($relations);
@@ -57,7 +59,7 @@ class CompanyUserRepository extends BaseRepository
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return array_merge($paginationArray,[
+        return array_merge($paginationArray, [
             'data' => $paginatedData
         ]);
     }
@@ -170,7 +172,7 @@ class CompanyUserRepository extends BaseRepository
     }
 
     public
-    function createCompanyUser(array $companyUserData, array $companyRole, array $branches=null,array $address = null): CompanyUser
+    function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null): CompanyUser
     {
         try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
@@ -186,21 +188,24 @@ class CompanyUserRepository extends BaseRepository
             $companyUser->update(["global_id" => $companyUser->id]);//set global id we can make different logic  in the future
             $companyUser = $companyUser->fresh();//get updated data for company user
             $user = $this->userRepository->model->withTrashed()->withoutTenancy()->where(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']])->first();
+            $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", null)->first()->id;
+            $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $mainBranchId)->first();
+            if ($branches != null && CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
+                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $branches[0])->first();
 
+            }
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
 
-                $mainBranchId = ManagementHierarchy::query()->where("company_id",$companyRole['company_id'])->where("parent_id",null)->first()->id;
-                $mainManagement = ManagementHierarchy::query()->where("company_id",$companyRole['company_id'])->where("parent_id",$mainBranchId)->first();
 
                 $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
 
-               $user= $this->userRepository->createUser(array_merge([
+                $user = $this->userRepository->createUser(array_merge([
                     'name' => $companyUserData['name'],
                     'email' => $companyUserData['email'],
                     'company_id' => $companyRole['company_id'],
                     "global_company_user_id" => $companyUser->global_id,
                     "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
-                    "management_hierarchy_id" =>$companyRole['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id:null,
+                    "management_hierarchy_id" => $companyRole['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id : null,
                 ], $phone));
 
             } else {
@@ -210,10 +215,9 @@ class CompanyUserRepository extends BaseRepository
             }
             $companyUserCompany = CompanyUserCompany::query()->withTrashed()->withoutTenancy()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->first();
             if (!$companyUserCompany) {
-                $companyUserCompany =  CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
+                $companyUserCompany = CompanyUserCompany::create($companyRole + ["global_company_user_id" => $companyUser->id]);
 
-            }
-            else {
+            } else {
                 if ($companyUserCompany->deleted_at != null) {
                     $companyUserCompany->restore();
 
@@ -221,7 +225,7 @@ class CompanyUserRepository extends BaseRepository
             }
             if ($branches != null) {
                 //replace when user in specifice role branches
-                CompanyUserCompanyManagementHierarchy::query()->where("company_user_company_id",$companyUserCompany->id)->delete();
+                CompanyUserCompanyManagementHierarchy::query()->where("company_user_company_id", $companyUserCompany->id)->delete();
                 foreach ($branches as $branch)
                     CompanyUserCompanyManagementHierarchy::query()->create(
                         [
@@ -231,9 +235,34 @@ class CompanyUserRepository extends BaseRepository
                         ]
                     );
             }
-            if ($address != null){
-                CompanyUserAddress::query()->updateOrCreate(["global_company_user_id"=>$companyUser->id],$address+["global_company_user_id"=> $companyUser->id]);
+            if ($address != null) {
+                CompanyUserAddress::query()->updateOrCreate(["global_company_user_id" => $companyUser->id], $address + ["global_company_user_id" => $companyUser->id]);
             }
+            if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
+                $userProfessionalData = UserProfessionalData::query()->where([
+                    'global_id' => $user->global_company_user_id,
+                    'company_id' => $companyRole['company_id'],
+                ])->first();
+                $data = [
+                    'company_id' => $companyRole['company_id'],
+                    'global_id' => $user->global_company_user_id,
+                    'branch_id' => $branches != null ? $branches[0] : $mainBranchId,
+                    'management_id' => $mainManagement->id,
+
+                ];
+                if ($userProfessionalData) {
+                    $userProfessionalData->update($data);
+
+                } else {
+                    $userProfessionalData = UserProfessionalData::create($data);
+                }
+
+            }
+
+            if (CompanyUserRole::CLIENT->value == $companyRole['role']) {
+                ClientDetail::query()->updateOrCreate(["user_id"=>$user->id],$clientDetail+["user_id"=>$user->id]);
+            }
+
 
             DB::commit();
         } catch (\Exception $exception) {
@@ -261,8 +290,8 @@ class CompanyUserRepository extends BaseRepository
             if (!$user) {
                 $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
                 //get main management in company
-                $mainBranchId = ManagementHierarchy::query()->where("company_id",$companyUserRoleData["company_id"])->where("parent_id",null)->first()->id;
-                $mainManagement = ManagementHierarchy::query()->where("company_id",$companyUserRoleData["company_id"])->where("parent_id",$mainBranchId)->first();
+                $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", null)->first()->id;
+                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", $mainBranchId)->first();
                 //create user in company assigned to main management
                 if ($user) {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
@@ -270,7 +299,7 @@ class CompanyUserRepository extends BaseRepository
                     $newUser->password = null; // make password null
                     $newUser->company_id = $companyUserRoleData["company_id"];
                     $newUser->is_owner = $usersInCompanyCount == 0 ? 1 : 0;
-                    $newUser->management_hierarchy_id = $companyUserRoleData['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id:null;
+                    $newUser->management_hierarchy_id = $companyUserRoleData['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id : null;
 
                     $newUser->save();
                 } else {
@@ -284,12 +313,33 @@ class CompanyUserRepository extends BaseRepository
                         "phone_code" => $companyUser->phone_code,
                         "global_company_user_id" => $companyUser->global_id,
                         "is_owner" => $usersInCompanyCount == 0 ? 1 : 0,
-                        "management_hierarchy_id" =>$companyUserRoleData['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id:null,
+                        "management_hierarchy_id" => $companyUserRoleData['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id : null,
                     ]);
                 }
 
             }
             CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
+            if (CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
+                $userProfessionalData = UserProfessionalData::query()->where([
+                    'global_id' => $user->global_company_user_id,
+                    'company_id' => $companyUserRoleData['role'],
+                ])->first();
+                $data = [
+                    'company_id' => $companyUserRoleData['role'],
+                    'global_id' => $user->global_company_user_id,
+                    'branch_id' => $mainBranchId,
+                    'management_id' => $mainManagement->id,
+
+                ];
+                if ($userProfessionalData) {
+                    $userProfessionalData->update($data);
+
+                } else {
+                    $userProfessionalData = UserProfessionalData::create($data);
+
+                }
+
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
