@@ -24,6 +24,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/super_entities/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
     Route::get('/super_entities/registration_forms', [SuperEntityController::class, 'getRegistrationForms']);
     Route::get('/registration_forms/selection/list', [RegistrationFormController::class, 'getRegistrationForms']);
+    Route::get('/super_entities/allowed_attributes/config', [SuperEntityController::class, 'getAttributesConfig']);
+    Route::post('/super_entities/allowed_attributes/config/{id}', [SuperEntityController::class, 'setAttributesConfig']);
 
     // sub-entity records
     Route::get('/records/list', [SubEntityRecordsController::class, 'index']);
