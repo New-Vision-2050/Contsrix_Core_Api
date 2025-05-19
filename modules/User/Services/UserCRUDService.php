@@ -6,6 +6,7 @@ namespace Modules\User\Services;
 
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\User\DTO\CreateUserDTO;
 use Modules\User\Models\User;
@@ -31,6 +32,17 @@ class UserCRUDService
             page: $page,
             perPage: $perPage,
         );
+    }
+    public function listByRole(int $page = 1, int $perPage = 10,$role = CompanyUserRole::EMPLOYEE->value): array
+    {
+        $users = $this->repository->getUserInCurrentCompanyWith([],$role, $page, $perPage);
+
+        return $users;
+    }
+
+    public function getUserByEmailWithBranches($email)
+    {
+       return $this->repository->getUserByEmailWithBranches($email);
     }
 
     public function get(UuidInterface $id): User

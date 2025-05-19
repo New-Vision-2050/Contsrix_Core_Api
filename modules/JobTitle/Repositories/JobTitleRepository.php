@@ -6,6 +6,7 @@ namespace Modules\JobTitle\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\UuidInterface;
 use Modules\JobTitle\Models\JobTitle;
 
@@ -16,6 +17,7 @@ use Modules\JobTitle\Models\JobTitle;
  */
 class JobTitleRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(JobTitle $model)
     {
         parent::__construct($model);
@@ -38,10 +40,11 @@ class JobTitleRepository extends BaseRepository
 
 
 
-    public function getAllJobTitles(): Collection
-    {
-        return $this->model->all();
-    }
+public function getAllJobTitles(): Collection
+{
+    return $this->model->withoutTenancy()->filter(request()->all())->get();
+}
+
 
     public function getJobTitle(UuidInterface $id): JobTitle
     {

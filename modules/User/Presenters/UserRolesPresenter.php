@@ -28,7 +28,8 @@ class UserRolesPresenter extends AbstractPresenter
             'email' => $this->user->email,
             'phone' => $this->user->phone,
             "branches"=>ManagementHierarchyPresenter::collection($this->user->managementHierarchies($this->role)->get()),
-            "status"=>$this->user->status
+            "status"=>$this->user->status,
+            "client_data"=>$this->user->clientDetail
         ];
     }
 }

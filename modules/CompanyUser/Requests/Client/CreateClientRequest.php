@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\CompanyUser\Requests\Broker;
+namespace Modules\CompanyUser\Requests\Client;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\Broker\CreateBrokerDTO;
+use Modules\CompanyUser\DTO\Client\CreateClientDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\SetUserAddressDTO;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -16,7 +17,7 @@ use Modules\CompanyUser\Rules\UserNameValidation;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
-class CreateBrokerRequest extends FormRequest
+class CreateClientRequest extends FormRequest
 {
 
 
@@ -51,6 +52,12 @@ class CreateBrokerRequest extends FormRequest
             "branch_ids.*" => "exists:management_hierarchies,id,type,branch",
             "latitude" => "nullable",
             "longitude" => "nullable",
+            'type' => 'required|integer',
+            'registration_number' => 'nullable|string',
+            "company_representative_name" => 'nullable|string',
+            "broker_id" => 'nullable|string|exists:users,id',
+            "message_address"=>"nullable|email"
+
 
 
         ];
@@ -69,17 +76,20 @@ class CreateBrokerRequest extends FormRequest
         ];
     }
 
-    public function createCreateBrokerDTO(): CreateBrokerDTO
+    public function createCreateClientDTO(): CreateClientDTO
     {
-        return new CreateBrokerDTO(
+        return new CreateClientDTO(
             name: $this->get("name"),
             email: $this->get('email'),
             countryId: $this->get('country_id'),
             phone: $this->get('phone'),
             residence: $this->get('residence'),
             branchIds: $this->get('branch_ids'),
-            message_address : $this->messageAddress
-
+            brokerId:$this->get("broker_id")!=null?Uuid::fromString( $this->get("broker_id")):null,
+            type: (int)$this->get("type"),
+            registrationNumber: (string)$this->get("registration_number"),
+            companyRepresentativeName: $this->get("company_representative_name"),
+            messageAddress: $this->get("message_address")
         );
     }
     public function createSetUserAddressDTO(): SetUserAddressDTO
@@ -95,7 +105,8 @@ class CreateBrokerRequest extends FormRequest
             additionalPhone: $this->get('additional_phone'),
             postalCode: $this->get('postal_code'),
             latitude: $this->get("latitude"),
-            longitude: $this->get("longitude")
+            longitude: $this->get("longitude"),
+
 
         );
     }
@@ -104,7 +115,7 @@ class CreateBrokerRequest extends FormRequest
     {
         return new CreateCompanyUserCompanyRoleDTO(
             company_id: Uuid::fromString( tenant("id")),//will create for current company
-            role: (string)CompanyUserRole::BROKER->value,
+            role: (string)CompanyUserRole::CLIENT->value,
 
         );
     }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Repositories;
 
-use Monolog\Registry;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\SubEntity\Models\RegistrationForm;
 
@@ -72,7 +72,7 @@ class SuperEntityRepository
             ->pluck('registration_forms')
             ->first();
 
-       return RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active']);
+        return RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active']);
     }
 
     public function getById(string $id): ?array
@@ -81,5 +81,48 @@ class SuperEntityRepository
             ->where('id', $id)
             ->select('id', 'name')
             ->first();
+    }
+
+    public function setAttributesConfig(string $superEntityId, $attributes): array
+    {
+        $config = ['allowed_attributes' => $attributes];
+
+        $existing = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->first();
+
+        if ($existing) {
+            DB::table('super_entities_config')
+                ->where('super_entity', $superEntityId)
+                ->update([
+                    'config' => json_encode($config),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            DB::table('super_entities_config')->insert([
+                'id' => Str::uuid(),
+                'super_entity' => $superEntityId,
+                'config' => json_encode($config),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return $config;
+    }
+
+    public function getAttributesConfig(string $superEntityId): array
+    {
+        $config = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->value('config');
+
+        if (!$config) {
+            return [];
+        }
+
+        $decoded = json_decode($config, true);
+
+        return $decoded['allowed_attributes'] ?? [];
     }
 }

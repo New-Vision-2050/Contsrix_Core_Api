@@ -35,7 +35,8 @@ class JobTitle extends Model
         "name",
         "job_type_id",
         "description",
-        "status"
+        "status",
+        'company_id',
     ];
     public array $translatable = ['name'];
     protected $casts = [
