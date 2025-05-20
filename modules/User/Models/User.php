@@ -63,7 +63,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "company_id",
         "is_owner",
         "management_hierarchy_id",
-        "status"
+        "status",
+        "message_address"
     ];
 
     protected $casts = [

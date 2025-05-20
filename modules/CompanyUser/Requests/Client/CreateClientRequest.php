@@ -56,6 +56,7 @@ class CreateClientRequest extends FormRequest
             'registration_number' => 'nullable|string',
             "company_representative_name" => 'nullable|string',
             "broker_id" => 'nullable|string|exists:users,id',
+            "message_address"=>"nullable|email"
 
 
 
@@ -88,6 +89,7 @@ class CreateClientRequest extends FormRequest
             type: (int)$this->get("type"),
             registrationNumber: (string)$this->get("registration_number"),
             companyRepresentativeName: $this->get("company_representative_name"),
+            messageAddress: $this->get("message_address")
         );
     }
     public function createSetUserAddressDTO(): SetUserAddressDTO
@@ -103,7 +105,8 @@ class CreateClientRequest extends FormRequest
             additionalPhone: $this->get('additional_phone'),
             postalCode: $this->get('postal_code'),
             latitude: $this->get("latitude"),
-            longitude: $this->get("longitude")
+            longitude: $this->get("longitude"),
+
 
         );
     }

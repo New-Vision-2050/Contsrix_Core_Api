@@ -26,7 +26,7 @@ class CompanyObserver
             'type' => 'general_manager',
             'name' => ['ar' => 'مدير عام', 'en' => 'General Manager'],
             'job_type_id' => $jobType->id,
-            'description' => 'Created by CompanyObserver',
+            'description' => 'مدير عام',
             'status' => 1,
             'company_id' => $company->id,
         ]);
