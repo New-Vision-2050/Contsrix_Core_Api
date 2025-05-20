@@ -40,10 +40,6 @@ class EmployeeCRUDService
 
 
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(),$createEmployeeDTO->getBranchId());
-        if($createEmployeeDTO->getBranchId())
-        $this->userRepository->updateWhere(["global_company_user_id" => $user->global_id, "company_id" => $companyRoleDTO->getCompanyId()],["management_hierarchy_id"=>$createEmployeeDTO->getBranchId()[0]]);
-
-
 
         //here i do not email up till now
 //        $data = [
