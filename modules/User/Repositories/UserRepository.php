@@ -130,6 +130,39 @@ class UserRepository extends BaseRepository
         return array_merge($paginationArray, ['data' => $paginatedData]);
     }
 
+    public function getEmployeeInCurrentCompanyWith($page = 1, $perPage = 10)
+    {
+        $type = CompanyUserRole::EMPLOYEE->value;
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+        $query = $query->with(array_merge(
+            [
+                "companyUserCompanies" => function ($query) {
+                    $query->where("company_id", tenant("id"));
+                },
+                'companyUser:id,global_id,name,email,job_title_id,country_id',
+                'companyUser.jobTitle:id,type,status,company_id',
+                'companyUser.country:id,name,native',
+                'branch:id,name,type,is_active'
+            ]
+        ));
+        $query = $query->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companyUserCompanies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        })->where("company_id", tenant("id"))
+         ->select('id', 'name', 'email', 'phone', 'global_company_user_id', 'company_id', 'is_owner', 'management_hierarchy_id', 'status');
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return array_merge($paginationArray, ['data' => $paginatedData]);
+    }
+
     public function createUser(array $data): User
     {
         return $this->create($data);

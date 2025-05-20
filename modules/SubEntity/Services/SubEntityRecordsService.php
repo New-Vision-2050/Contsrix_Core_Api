@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
+use Modules\CompanyUser\Services\Employee\EmployeeCRUDService;
 
 class SubEntityRecordsService
 {
      protected $mappedRegistrationForms = [
-        CompanyUserRole::BROKER->value => 'getBrokers'
+        CompanyUserRole::BROKER->value => 'getBrokers',
+        CompanyUserRole::EMPLOYEE->value => 'getEmployees',
     ];
 
 
@@ -22,6 +24,7 @@ class SubEntityRecordsService
         protected  SuperEntityService $superEntityService,
         protected SubEntityCRUDService $subEntityCRUDService,
         protected BrokerCRUDService $brokerCRUDService,
+        protected EmployeeCRUDService $employeeCRUDService,
         protected RegistrationFormCRUDService $registrationFormCRUDService
     ) {
     }
@@ -50,5 +53,10 @@ class SubEntityRecordsService
     protected function getBrokers(): array
     {
         return $this->brokerCRUDService->listAsSubEntity();
+    }
+
+    protected function getEmployees(): array
+    {
+        return $this->employeeCRUDService->listAsSubEntity();
     }
 }
