@@ -46,12 +46,18 @@ class UpdateOfficialCompanyDataCommand
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'name' => ["en" => $this->nameEn],
-            'email' => $this->email,
-            'phone' => $this->phone,
             'company_type_id' => $this->companyTypeId,
 
         ];
+        if (!request()->has('branch_id')) {
+            $data += [
+                "phone" => $this->phone,
+                "email" => $this->email
+            ];
+        }
+
+        return $data;
     }
 }
