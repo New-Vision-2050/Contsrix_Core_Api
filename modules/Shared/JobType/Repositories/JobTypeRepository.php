@@ -68,5 +68,24 @@ class JobTypeRepository extends BaseRepository
         if(count($jobType->jobTitles) > 0){
            throw  new CustomException(__("validation.delete-not-allowed"), 400);
         }
-        return $jobType->delete($id);    }
+        return $jobType->delete($id);
+    }
+
+    /**
+     * Get filtered job types for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->withoutGlobalScope("active");
+
+        if (isset($filters['ids']) && is_array($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        // Include the job titles relationship to display count
+        return $query->with(['jobTitles', 'userProfissional'])->get();
+    }
 }

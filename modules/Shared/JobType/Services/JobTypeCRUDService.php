@@ -39,4 +39,15 @@ class JobTypeCRUDService
             id: $id,
         );
     }
+
+    /**
+     * Get job types for export with optional filtering
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters);
+    }
 }
