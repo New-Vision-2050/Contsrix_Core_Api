@@ -32,17 +32,27 @@ class EmployeePresenter extends AbstractPresenter
             'country' => $this->formatCountry($this->user->companyUser?->country),
             'status' => $this->user->status,
             'branch' => $this->formatBranch($this->user->branch)
-         ];
+        ];
     }
 
-    protected function formatJobTitle(JobTitle $jobTitle) {
+    protected function formatJobTitle(?JobTitle $jobTitle)
+    {
+        if (blank($jobTitle)) {
+            return [];
+        }
+
         return [
             'id' => $jobTitle->id,
             'name' => $jobTitle->translations?->where('locale', app()->getLocale())->first()->content
         ];
     }
 
-    protected function formatCountry(Country $country) {
+    protected function formatCountry(?Country $country)
+    {
+        if (blank($country)) {
+            return [];
+        }
+
         return [
             'id' => $country->id,
             'name' => $country->name,
@@ -50,11 +60,12 @@ class EmployeePresenter extends AbstractPresenter
         ];
     }
 
-    protected function formatBranch(?ManagementHierarchy $branch) {
-        if(blank($branch)) {
+    protected function formatBranch(?ManagementHierarchy $branch)
+    {
+        if (blank($branch)) {
             return [];
         }
-        
+
         return [
             'id' => $branch->id,
             'name' => $branch->name
