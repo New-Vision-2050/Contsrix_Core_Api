@@ -27,6 +27,6 @@ class SubEntityRecordsController extends Controller
         );
 
         // Create a presenter that takes the sub-entity + records and present the records based on sub-entity attributes
-        return Json::items($list);
+        return Json::items($list['data'], $list['pagination']);
     }
 }
