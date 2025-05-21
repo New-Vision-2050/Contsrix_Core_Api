@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
+use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\CompanyUser\Services\Employee\EmployeeCRUDService;
 
 class SubEntityRecordsService
@@ -23,8 +24,7 @@ class SubEntityRecordsService
     public function __construct(
         protected  SuperEntityService $superEntityService,
         protected SubEntityCRUDService $subEntityCRUDService,
-        protected BrokerCRUDService $brokerCRUDService,
-        protected EmployeeCRUDService $employeeCRUDService,
+        protected CompanyUserRepository $companyUserRepository,
         protected RegistrationFormCRUDService $registrationFormCRUDService
     ) {
     }
@@ -35,7 +35,7 @@ class SubEntityRecordsService
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
         if(array_key_exists($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->{$this->mappedRegistrationForms[$registrationForm->company_user_role_map]}($page, $perPage);
+            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map);
         }
 
         //get sub_entity
@@ -50,13 +50,8 @@ class SubEntityRecordsService
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getBrokers(int $page = 1, int $perPage = 10): array
+    protected function getMappedRecords(int $page = 1, int $perPage = 10, $type): array
     {
-        return $this->brokerCRUDService->listAsSubEntity($page, $perPage);
-    }
-
-    protected function getEmployees(int $page = 1, int $perPage = 10): array
-    {
-        return $this->employeeCRUDService->listAsSubEntity($page, $perPage);
+        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type);
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Modules\SubEntity\Services\SubEntityRecordsService;
+use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\SubEntity\Requests\GetSubEntityRecordsRequest;
 
 class SubEntityRecordsController extends Controller
@@ -26,7 +27,6 @@ class SubEntityRecordsController extends Controller
             (int) $request->get('per_page', 10)
         );
 
-        // Create a presenter that takes the sub-entity + records and present the records based on sub-entity attributes
-        return Json::items($list['data'] ?? [], $list['pagination']);
+        return Json::items(CompanyUserPresenter::collection($list["data"]),paginationSettings: $list['pagination']);
     }
 }
