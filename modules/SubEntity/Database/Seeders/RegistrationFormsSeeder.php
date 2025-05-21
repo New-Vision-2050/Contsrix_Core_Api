@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Ranium\SeedOnce\Traits\SeedOnce;
 use Illuminate\Database\Eloquent\Model;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\SubEntity\Models\RegistrationForm;
 
 class RegistrationFormsSeeder extends Seeder
 {
-    use SeedOnce;
     public function run(): void
     {
         Model::unguard();
