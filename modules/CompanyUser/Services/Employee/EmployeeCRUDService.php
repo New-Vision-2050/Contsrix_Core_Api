@@ -31,8 +31,9 @@ class EmployeeCRUDService
 
     public function __construct(
         private CompanyUserRepository $repository,
-        private UserRepository $userRepository,
-    ) {
+        private UserRepository        $userRepository,
+    )
+    {
     }
 
     public function create(CreateEmployeeDTO $createEmployeeDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
@@ -95,84 +96,11 @@ class EmployeeCRUDService
     public function listAsSubEntity(int $page = 1, int $perPage = 10): array
     {
 
-        // $users = $this->userRepository->getEmployeeInCurrentCompanyWith($page, $perPage);
+        $users = $this->userRepository->getEmployeeInCurrentCompanyWith($page, $perPage);
 
-        // $users['data'] = EmployeePresenter::collection($users['data']);
-        return ['data' => $this->tempEmpoyeeResponse(), 'pagination' => $this->tempPagination()];
-        // return $users;
-    }
+        $users['data'] = EmployeePresenter::collection($users['data']);
 
-    private function tempEmpoyeeResponse(): array
-    {
-        return json_decode('[
-        {
-            "id": "2f7c7255-9b5a-4888-8d09-34e879915ea2",
-            "name": "ممتاز نصير",
-            "email": "momtaznussair@gmail.com",
-            "phone": "+966542138116",
-            "job_title": {
-                "id": "38df07b6-ae10-4c4e-a560-c698911f3c4d",
-                "name": "Head of Department"
-            },
-            "country": {
-                "id": "1",
-                "name": "Afghanistan",
-                "native": "افغانستان"
-            },
-            "status": 1,
-            "branch": {
-                "id": 1,
-                "name": "الفرع الرئيسي"
-            }
-        },
-        {
-            "id": "b5aefe83-d9c0-4935-831a-71e6108e346b",
-            "name": "Admin",
-            "email": "admin@constrix-nv.com",
-            "phone": "966542138116",
-            "job_title": {
-                "id": "38df07b6-ae10-4c4e-a560-c698911f3c4d",
-                "name": "Head of Department"
-            },
-            "country": {
-                "id": "1",
-                "name": "Afghanistan",
-                "native": "افغانستان"
-            },
-            "status": 1,
-            "branch": []
-        },
-        {
-            "id": "e105eccb-4d52-4428-8503-de17fc7ebedf",
-            "name": "عمرو صالح",
-            "email": "amrsaleh@gmail.com",
-            "phone": "+966542138114",
-            "job_title": {
-                "id": "38df07b6-ae10-4c4e-a560-c698911f3c4d",
-                "name": "Head of Department"
-            },
-            "country": {
-                "id": "65",
-                "name": "Egypt",
-                "native": "مصر‎"
-            },
-            "status": 1,
-            "branch": {
-                "id": 1,
-                "name": "الفرع الرئيسي"
-            }
-        }
-    ]');
-    }
-
-    private function tempPagination(): array {
-        return json_decode('{
-            "page": 1,
-            "page_size": 10,
-            "next_page": 1,
-            "last_page": 1,
-            "result_count": 3
-        }', true);
+        return $users;
     }
 
 }
