@@ -35,7 +35,7 @@ class SubEntityRecordsService
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
         if(array_key_exists($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->{$this->mappedRegistrationForms[$registrationForm->company_user_role_map]}();
+            return $this->{$this->mappedRegistrationForms[$registrationForm->company_user_role_map]}($page, $perPage);
         }
 
         //get sub_entity
@@ -43,20 +43,20 @@ class SubEntityRecordsService
         //get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
 
-        return $model::where('registration_form_id', $registrationFormId)->paginate();
+        return $model::where('registration_form_id', $registrationFormId)->paginate($perPage);
     }
 
     protected function getSuperEntityModel(string $superEntityId): string {
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getBrokers(): array
+    protected function getBrokers(int $page = 1, int $perPage = 10): array
     {
-        return $this->brokerCRUDService->listAsSubEntity();
+        return $this->brokerCRUDService->listAsSubEntity($page, $perPage);
     }
 
-    protected function getEmployees(): array
+    protected function getEmployees(int $page = 1, int $perPage = 10): array
     {
-        return $this->employeeCRUDService->listAsSubEntity();
+        return $this->employeeCRUDService->listAsSubEntity($page, $perPage);
     }
 }
