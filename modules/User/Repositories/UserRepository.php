@@ -127,7 +127,11 @@ class UserRepository extends BaseRepository
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return array_merge($paginationArray, ['data' => $paginatedData]);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
     }
 
     public function getEmployeeInCurrentCompanyWith($page = 1, $perPage = 10)
@@ -160,7 +164,11 @@ class UserRepository extends BaseRepository
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return array_merge($paginationArray, ['data' => $paginatedData]);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
     }
 
     public function createUser(array $data): User
