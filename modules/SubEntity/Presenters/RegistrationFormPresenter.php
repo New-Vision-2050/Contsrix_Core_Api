@@ -22,6 +22,7 @@ class RegistrationFormPresenter extends AbstractPresenter
             'id' => $this->registrationForm->id,
             'name' => $this->registrationForm->name[app()->getLocale()],
             'slug' => $this->registrationForm->slug,
+            'company_user_role_map' => $this->registrationForm->company_user_role_map,
         ];
     }
 }
