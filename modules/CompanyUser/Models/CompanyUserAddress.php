@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Models;
 
-use BasePackage\Shared\Traits\UuidTrait;
+use Modules\Country\Models\City;
+use Modules\Country\Models\State;
+use Modules\Country\Models\Country;
 use Illuminate\Database\Eloquent\Model;
+use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -41,4 +44,19 @@ class CompanyUserAddress extends Model
     protected $casts = [
         'id' => 'string',
     ];
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function state()
+    {
+        return $this->belongsTo(State::class);
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
+    }
 }

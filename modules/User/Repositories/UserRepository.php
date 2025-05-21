@@ -110,10 +110,11 @@ class UserRepository extends BaseRepository
         }
         $query = $query->with(array_merge(
             [
-                "companyUserCompanies" => function ($query) {
-                    $query->where("company_id", tenant("id"));
-                },
-                'companyUser:id,global_id,country_id,job_title_id'
+                'companyUser:id,global_id,country_id,job_title_id',
+                'companyUser.nationalAddress',
+                'companyUser.nationalAddress.country:id,name,native',
+                'companyUser.nationalAddress.state:id,name',
+                'companyUser.nationalAddress.city:id,name',
             ]
         ));
         $query = $query->when($type != null, function ($query) use ($type) {
@@ -122,7 +123,6 @@ class UserRepository extends BaseRepository
             });
         })->where("company_id", tenant("id"))
          ->select('id', 'name', 'email', 'phone', 'status', 'global_company_user_id', 'company_id');
-        //TODO filter with branches very important
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
@@ -144,7 +144,7 @@ class UserRepository extends BaseRepository
                 "companyUserCompanies" => function ($query) {
                     $query->where("company_id", tenant("id"));
                 },
-                'companyUser:id,global_id,name,email,job_title_id,country_id',
+                'companyUser:id,global_id',
                 'companyUser.jobTitle:id,type,status,company_id',
                 'companyUser.country:id,name,native',
                 'branch:id,name,type,is_active'
