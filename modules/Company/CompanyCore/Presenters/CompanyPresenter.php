@@ -47,15 +47,15 @@ class CompanyPresenter extends AbstractPresenter
             'owner_id' => $this->company->owner?->id,
             'owner_name' => $this->company->owner?->name,
 
-            'email' => $this->company->email,
-            'phone' => $this->company->phone ?? '',
-          
+            'email' => request("branch_id") ? $this->company->branches->where("id", request("branch_id"))->first()?->email : $this->company->mainBranch?->email,
+            'phone' => request("branch_id") ? $this->company->branches->where("id", request("branch_id"))->first()?->phone : $this->company->mainBranch?->phone,
+
             'serial_no' => $this->company?->serial_no,
-            'country_id' => $this->company->country_id,
-            'country_name' => $this->company->country?->name,
-            'country_lat' => $this->company->country?->latitude,
-            'country_long' => $this->company->country?->longitude,
-            'country_iso2' => $this->company->country?->iso2,
+            'country_id' => $this->company?->companyAddress?->country_id,
+            'country_name' =>$this->company?->companyAddress?->country?->name,
+            'country_lat' => $this->company?->companyAddress?->country?->latitude,
+            'country_long' =>$this->company?->companyAddress?->country?->longitude,
+            'country_iso2' => $this->company?->companyAddress?->country?->iso2,
             'company_type_id' => $this->company->company_type_id,
             'registration_type_id' => $this->company->registration_type_id,
             'general_manager_id' => $this->company->general_manager_id,

@@ -18,6 +18,7 @@ use Modules\User\Models\User;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -28,6 +29,7 @@ class ManagementHierarchy extends Model
     use AsTree;
     use CustomBelongsToTenant;
     use CalculateTreeManagementHierarchy;
+    use HasRelationships; // Add the trait from staudenmeir/eloquent-has-many-deep
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -86,6 +88,29 @@ class ManagementHierarchy extends Model
     {
         return $this->hasOne(ManagementHierarchyDetail::class, 'management_hierarchy_id');
     }
+
+    /**
+     * Direct access to deputy managers using eloquent-has-many-deep
+     * This eliminates the N+1 query problem by providing a direct relation
+     */
+    public function deputyManagers()
+    {
+        return $this->hasManyDeep(
+            User::class,
+            [ManagementHierarchyDetail::class, ManagementHierarchyDetailManager::class],
+            [
+                'management_hierarchy_id', // Foreign key on ManagementHierarchyDetail table
+                'management_hierarchy_detail_id', // Foreign key on ManagementHierarchyDetailManager table
+                'id', // Foreign key on User table
+            ],
+            [
+                'id', // Local key on ManagementHierarchy model
+                'id', // Local key on ManagementHierarchyDetail model
+                'deputy_manager_id', // Local key on ManagementHierarchyDetailManager model
+            ]
+        ); // Ensure no duplicate users are returned
+    }
+
 
 
     protected static function newFactory(): ManagementHierarchyFactory
@@ -154,12 +179,26 @@ class ManagementHierarchy extends Model
     public function getAllUsersAttribute()
     {
         //get manager if found
-        $directUsers = $this->user ? collect([$this->user]) : collect([]);
+        $manager = $this->user;
+        if($this->user)
+        {
+            $manager->type = "manager";
+        }
+        $manager = $this->user ? collect([$manager]) : collect([]);
+
+        // Get deputy managers and mark them with type
+        $deputyManagers = $this->deputyManagers ?? collect([]);
+        $deputyManagers->map(function ($user){
+           $user->type = "deputy_manager";
+        });
 
         //get direct user Children
         $childrenUsers = $this->directUserChildren ?? collect([]);
+        $childrenUsers->map(function ($user){
+           $user->type = "user";
+        });
 
         //merging are put unique id
-        return $directUsers->merge($childrenUsers)->unique('id');
+        return $manager->merge($deputyManagers)->merge($childrenUsers)->unique('id');
     }
 }
