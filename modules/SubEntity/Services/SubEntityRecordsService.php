@@ -16,8 +16,8 @@ use Modules\CompanyUser\Services\Employee\EmployeeCRUDService;
 class SubEntityRecordsService
 {
      protected $mappedRegistrationForms = [
-        CompanyUserRole::BROKER->value => 'getBrokers',
-        CompanyUserRole::EMPLOYEE->value => 'getEmployees',
+        CompanyUserRole::BROKER->value,
+        CompanyUserRole::EMPLOYEE->value,
     ];
 
 
@@ -34,7 +34,7 @@ class SubEntityRecordsService
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
-        if(array_key_exists($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+        if(in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
             return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map);
         }
 
