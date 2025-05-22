@@ -32,7 +32,7 @@ class ProgramPresenter extends AbstractPresenter
             'id' => $this->program->id,
             'name' => $this->program->name[app()->getLocale()],
             'slug' => $this->program->slug,
-            // 'sub_entities' => SubEntityPresenter::collection($this->program->subEntities)
+            'sub_entities' => SubEntityPresenter::collection($this->program->subEntities)
         ];
     }
 

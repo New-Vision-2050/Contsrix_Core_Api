@@ -16,7 +16,7 @@ class SubEntityFactory extends Factory
 
     public function definition(): array
     {
-        $superEntityType = $this->faker->randomElement(['User', 'Company', 'Department']);
+        $superEntityType = $this->faker->randomElement(['users']);
         return [
             'id' => $this->faker->uuid(),
             'super_entity' => $superEntityType,
