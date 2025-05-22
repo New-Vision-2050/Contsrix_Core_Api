@@ -6,6 +6,7 @@ namespace Modules\UserInfo\BankAccount\Presenters;
 
 use Modules\UserInfo\BankAccount\Models\BankAccount;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\BankTypeAccount\Presenters\BankTypeAccountPresenter;
 
 class BankAccountPresenter extends AbstractPresenter
 {
@@ -33,7 +34,9 @@ class BankAccountPresenter extends AbstractPresenter
             'account_number' => $this->bankAccount->account_number,
             'iban' => $this->bankAccount->iban,
             'swift_bic' => $this->bankAccount->swift_bic,
-            'type' => $this->bankAccount->type,
+            'type_id' => $this->bankAccount->type_id,
+            'type' => $this->bankAccount->type ?(new BankTypeAccountPresenter($this->bankAccount->type))->getData(): null,
+
         ];
     }
 }
