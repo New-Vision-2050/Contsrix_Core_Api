@@ -18,6 +18,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     private ManagementHierarchy $managementHierarchy;
 
     private static bool $includeManagers = true;
+    private static bool $includeDeputyManagers = true;
     private static bool $includeDirectChildren = true;
 
     public function __construct(ManagementHierarchy $managementHierarchy)
@@ -35,6 +36,11 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         self::$includeDirectChildren = $include;
     }
 
+    public static function setIncludeDeputyManagers(bool $include): void
+    {
+        self::$includeDeputyManagers = $include;
+    }
+
 
     protected function present(bool $isListing = false): array
     {
@@ -49,15 +55,17 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         // Present the manager as the root of this subtree
         $result = (new UserPresenter($manager))->getData();
 
+        $result['type'] = "manager";
+
         // Add hierarchy node info as metadata
         $result['hierarchy_info'] = [
             'id' => $this->managementHierarchy->id,
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
         ];
-        $result['deputy_managers'] = UserPresenter::collection($this->managementHierarchy->deputyManagers);
-
-
+        if (self::$includeDeputyManagers) {
+            $result['deputy_managers'] = UserPresenter::collection($this->managementHierarchy->deputyManagers);
+        }
         // Add the manager's children (both direct reports and lower managers)
         $result['children'] = $this->getUserChildren();
 
@@ -75,11 +83,18 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
                 'name' => $this->managementHierarchy->name,
                 'type' => $this->managementHierarchy->type,
             ],
-            "deputy_managers"=>[]
+
         ];
+
 
         // Even without a manager, we should include the children users and lower managers
         $result['children'] = $this->getUserChildren();
+
+
+        if (self::$includeDeputyManagers) {
+            $result['deputy_managers'] = UserPresenter::collection($this->managementHierarchy->deputyManagers);
+        }
+
 
         return $result;
     }
@@ -96,6 +111,8 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
                 // Present each direct report as a user with an empty children array
                 $userData = (new UserPresenter($user))->getData();
                 $userData['children'] = [];
+                $userData['type'] = "employee";
+
                 $children[] = $userData;
             }
         }
@@ -104,13 +121,6 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         $childHierarchies = $this->managementHierarchy->children;
         if ($childHierarchies->isNotEmpty()) {
             foreach ($childHierarchies as $childHierarchy) {
-                // Skip hierarchy nodes without managers to avoid duplication
-                if (!$childHierarchy->user) {
-                    // Instead, directly add their children to our current level
-                    $this->addChildrenFromHierarchyWithoutManager($childHierarchy, $children);
-                    continue;
-                }
-
                 // Add the manager as a child with their own subtree
                 $childPresenter = new self($childHierarchy);
                 $children[] = $childPresenter->getData();
@@ -121,37 +131,4 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     }
 
 
-    private function addChildrenFromHierarchyWithoutManager(ManagementHierarchy $hierarchy, array &$children): void
-    {
-        // Add direct reports from this hierarchy if enabled
-        if (self::$includeDirectChildren) {
-            $directUsers = $hierarchy->directUserChildren ?? collect([]);
-            foreach ($directUsers as $user) {
-                $userData = (new UserPresenter($user))->getData();
-                $userData['children'] = [];
-                $userData['hierarchy_info'] = [
-                    'id' => $hierarchy->id,
-                    'name' => $hierarchy->name,
-                    'type' => $hierarchy->type,
-                ];
-                $userData['deputy_managers'] = UserPresenter::collection($hierarchy->deputyManagers);
-                $children[] = $userData;
-            }
-        }
-
-        // Recursively process child hierarchies
-        $childHierarchies = $hierarchy->children;
-        if ($childHierarchies->isNotEmpty()) {
-            foreach ($childHierarchies as $childHierarchy) {
-                if ($childHierarchy->user) {
-                    // If this child has a manager, add them as a child
-                    $childPresenter = new self($childHierarchy);
-                    $children[] = $childPresenter->getData();
-                } else {
-                    // Otherwise, recursively add their children
-                    $this->addChildrenFromHierarchyWithoutManager($childHierarchy, $children);
-                }
-            }
-        }
-    }
 }

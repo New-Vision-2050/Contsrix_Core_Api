@@ -204,6 +204,7 @@ class ManagementHierarchyController extends Controller
         // Set custom options for the presenter if needed
         ManagementHierarchyUserTreePresenter::setIncludeManagers(true);
         ManagementHierarchyUserTreePresenter::setIncludeDirectChildren(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
 
         // Return the formatted tree using our enhanced presenter
         return Json::item(ManagementHierarchyUserTreePresenter::collection($tree));
