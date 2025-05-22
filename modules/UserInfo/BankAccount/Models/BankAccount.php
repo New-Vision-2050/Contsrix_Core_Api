@@ -39,7 +39,7 @@ class BankAccount extends Model
         'account_number',
         'iban',
         'swift_bic',
-        'type'
+        'type_id'
     ];
 
     protected $casts = [

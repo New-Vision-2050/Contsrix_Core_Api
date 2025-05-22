@@ -36,6 +36,7 @@ use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeed
 use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
 use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
+use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -88,5 +89,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ProgramDatabaseSeeder::class);
         $this->call(RegistrationFormsSeeder::class);
         $this->call(SubEntityDatabaseSeeder::class);
+        $this->call(BankTypeAccountSeederTableSeeder::class);
     }
 }
