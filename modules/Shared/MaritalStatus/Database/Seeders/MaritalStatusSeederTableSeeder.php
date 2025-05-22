@@ -1,10 +1,9 @@
 <?php
 
-namespace Modules\Shared\BankTypeAccount\Database\Seeders;
+namespace Modules\Shared\MaritalStatus\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Shared\BankTypeAccount\Models\BankTypeAccount;
 use Modules\Shared\MaritalStatus\Models\MaritalStatus;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
