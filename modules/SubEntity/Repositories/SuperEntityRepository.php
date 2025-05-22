@@ -92,10 +92,13 @@ class SuperEntityRepository
             ->first();
 
         if ($existing) {
+            $existingConfig = $existing->config;
+            $existingConfig['allowed_attributes'] = $attributes;
+
             DB::table('super_entities_config')
                 ->where('super_entity', $superEntityId)
-                ->update([
-                    'config' => json_encode($config),
+                ->update(values: [
+                    'config' => json_encode($existingConfig),
                     'updated_at' => now(),
                 ]);
         } else {
@@ -124,5 +127,51 @@ class SuperEntityRepository
         $decoded = json_decode($config, true);
 
         return $decoded['allowed_attributes'] ?? [];
+    }
+
+    public function setConfigValue(string $superEntityId, string $key, $value): array
+    {
+        $existing = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->first();
+
+        if ($existing) {
+            $existingConfig = json_decode($existing->config, true) ?? [];
+            $existingConfig[$key] = $value;
+
+            DB::table('super_entities_config')
+                ->where('super_entity', $superEntityId)
+                ->update([
+                    'config' => json_encode($existingConfig),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            $newConfig = [$key => $value];
+
+            DB::table('super_entities_config')->insert([
+                'id' => Str::uuid(),
+                'super_entity' => $superEntityId,
+                'config' => json_encode($newConfig),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return [$key => $value];
+    }
+
+    public function getConfigValue(string $superEntityId, string $key)
+    {
+        $config = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->value('config');
+
+        if (!$config) {
+            return null;
+        }
+
+        $decoded = json_decode($config, true);
+
+        return $decoded[$key] ?? null;
     }
 }

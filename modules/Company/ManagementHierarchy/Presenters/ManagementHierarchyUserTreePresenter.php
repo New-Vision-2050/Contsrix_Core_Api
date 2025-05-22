@@ -9,6 +9,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
+use Modules\User\Presenters\UsersBranchPresenter;
 
 class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 {
@@ -31,7 +32,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 
 
             // Include direct user children
-            "users" => UserPresenter::collection($this->managementHierarchy->allUsers),
+            "users" => UsersBranchPresenter::collection($this->managementHierarchy->allUsers),
 
             // Include hierarchical children
             "children" => ManagementHierarchyUserTreePresenter::collection($this->managementHierarchy->children),

@@ -5,34 +5,35 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Services;
 
 use Ramsey\Uuid\Uuid;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
+use Modules\CompanyUser\Repositories\CompanyUserRepository;
 
 class SubEntityRecordsService
 {
      protected $mappedRegistrationForms = [
-        CompanyUserRole::BROKER->value => 'getBrokers'
+        CompanyUserRole::BROKER->value,
+        CompanyUserRole::EMPLOYEE->value,
+        CompanyUserRole::CLIENT->value,
     ];
 
 
     public function __construct(
         protected  SuperEntityService $superEntityService,
         protected SubEntityCRUDService $subEntityCRUDService,
-        protected BrokerCRUDService $brokerCRUDService,
+        protected CompanyUserRepository $companyUserRepository,
         protected RegistrationFormCRUDService $registrationFormCRUDService
     ) {
     }
 
 
-    public function getRecords(string $subEntityId, string $registrationFormId, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
+   public function getRecords(string $subEntityId, string $registrationFormId, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
-        if(array_key_exists($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->{$this->mappedRegistrationForms[$registrationForm->company_user_role_map]}();
+        if(in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map);
         }
 
         //get sub_entity
@@ -40,15 +41,15 @@ class SubEntityRecordsService
         //get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
 
-        return $model::where('registration_form_id', $registrationFormId)->paginate();
+        return $model::where('registration_form_id', $registrationFormId)->paginate($perPage);
     }
 
     protected function getSuperEntityModel(string $superEntityId): string {
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getBrokers(): array
+    protected function getMappedRecords(int $page = 1, int $perPage = 10, $type): array
     {
-        return $this->brokerCRUDService->listAsSubEntity();
+        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type);
     }
 }
