@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Services;
 
 use Ramsey\Uuid\Uuid;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
-use Modules\CompanyUser\Services\Employee\EmployeeCRUDService;
 
 class SubEntityRecordsService
 {
