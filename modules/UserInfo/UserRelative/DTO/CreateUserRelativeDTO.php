@@ -12,7 +12,7 @@ class CreateUserRelativeDTO
         public string $name,
         public string $company_id,
         public string $global_id,
-        public string $marital_status,
+        public string $marital_status_id,
         public string $relationship,
         public string $phone,
     ) {
@@ -24,7 +24,7 @@ class CreateUserRelativeDTO
             'name' => $this->name,
             'company_id'=> $this->company_id,
             'global_id'=> $this->global_id,
-            'marital_status'=> $this->marital_status,
+            'marital_status_id'=> $this->marital_status_id,
             'relationship'=> $this->relationship,
             'phone'=> $this->phone,
         ];
