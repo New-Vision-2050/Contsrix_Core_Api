@@ -24,7 +24,7 @@ class JobTitleRepository extends BaseRepository
     }
     public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
     {
-        $query = $this->model->withoutGlobalScope("active")->where($conditions);
+        $query = $this->model->withoutGlobalScope("active")->where($conditions)->filter(request()->all());
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);

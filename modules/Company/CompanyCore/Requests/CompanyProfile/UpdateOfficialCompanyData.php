@@ -35,6 +35,7 @@ class UpdateOfficialCompanyData extends FormRequest
             phone: $this->get('phone'),
             branchName: $this->get('branch_name'),
             companyTypeId: $this->get('company_type_id'),
+            branch : $branch
         );
     }
 }
