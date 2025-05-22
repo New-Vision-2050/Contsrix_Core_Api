@@ -13,8 +13,8 @@ return [
             'model' => User::class,
             'registration_forms' => [
                 'employee',
-                'customer',
-                'reseller'
+                'client',
+                'broker'
             ]
         ],
     ]
