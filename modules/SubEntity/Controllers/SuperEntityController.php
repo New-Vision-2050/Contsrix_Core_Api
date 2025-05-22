@@ -106,8 +106,8 @@ class SuperEntityController extends Controller
     // TODO: refactor config functionality
     public function getRegistrableConfig(GetSuperEntityAttributesRequest $request): JsonResponse
     {
-        $attributes = $this->superEntityService->getIsRegistrableConfig($request->get('super_entity_id'));
+        $isRegistrable = $this->superEntityService->getIsRegistrableConfig($request->get('super_entity_id'));
 
-        return Json::item($attributes);
+        return Json::item(['is_registrable' => $isRegistrable]);
     }
 }
