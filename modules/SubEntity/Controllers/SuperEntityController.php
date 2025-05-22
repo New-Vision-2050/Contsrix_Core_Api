@@ -110,4 +110,11 @@ class SuperEntityController extends Controller
 
         return Json::item(['is_registrable' => $isRegistrable]);
     }
+
+    public function getRegistrationConfig(GetSuperEntityAttributesRequest $request): JsonResponse
+    {
+        $config = $this->superEntityService->getRegistrationConfig($request->get('super_entity_id'));
+
+        return Json::item($config);
+    }
 }

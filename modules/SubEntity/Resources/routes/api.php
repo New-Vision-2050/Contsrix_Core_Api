@@ -33,6 +33,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/super_entities/registrable/config', [SuperEntityController::class, 'getRegistrableConfig']);
     Route::post('/super_entities/registrable/config/{id}', [SuperEntityController::class, 'setRegistrableConfig']);
 
+    Route::get('/super_entities/registration/config', [SuperEntityController::class, 'getRegistrationConfig']);
+
+
     // sub-entity records
     Route::get('/records/list', [SubEntityRecordsController::class, 'index']);
 });
