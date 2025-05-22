@@ -60,18 +60,19 @@ class ManagementHierarchyTreePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        //Theta(n+1)
-//        $descendants = ManagementHierarchy::query()->whereSelfOrDescendantOf($this->managementHierarchy)->where("company_id", $this->managementHierarchy->company_id)->get();
         $hierarchyCounts = $this->managementHierarchy->getCachedHierarchyCounts()
             ?? $this->managementHierarchy->cacheHierarchyCounts();
 
-        $users = $this->managementHierarchy->users?->where("company_id", $this->managementHierarchy->company_id);//theta (1)
+        $users = $this->managementHierarchy->users?->where("company_id", $this->managementHierarchy->company_id);
+
+        // Get deputy managers directly using the optimized deputyManagers relation
+        $deputyManagers = $this->managementHierarchy->deputyManagers;
         return [
             'id' => $this->managementHierarchy->id,
             'parent_id' => $this->managementHierarchy->parent_id,
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
-            'deputy_managers' =>$this->managementHierarchy->detail?->deputyManagers&& count($this->managementHierarchy->detail?->deputyManagers)>0?UserPresenter::collection($this->managementHierarchy->detail?->deputyManagers):[],
+            'deputy_managers' => $this->managementHierarchy->deputyManagers && count($this->managementHierarchy->deputyManagers) > 0 ? UserPresenter::collection($this->managementHierarchy->deputyManagers) : [],
             'description' => $this->managementHierarchy->detail?->description,
             'reference_user_id' => $this->managementHierarchy->detail?->reference_user_id,
             'branch_id' => $this->managementHierarchy->detail?->branch_id,
