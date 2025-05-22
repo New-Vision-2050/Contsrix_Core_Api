@@ -14,12 +14,15 @@ use Modules\SubEntity\Requests\GetSuperEntityAttributesRequest;
 use Modules\SubEntity\Requests\GetSuperEntityRegistrationFormsRequest;
 use Modules\SubEntity\Handlers\UpdateSuperEntityAttributesConfigHandler;
 use Modules\SubEntity\Requests\UpdateSuperEntityAttributesConfigRequest;
+use Modules\SubEntity\Handlers\UpdateSuperEntityRegistrationFormsConfigHandler;
+use Modules\SubEntity\Requests\UpdateSuperEntityRegistrationFormsConfigRequest;
 
 class SuperEntityController extends Controller
 {
     public function __construct(
         private SuperEntityService $superEntityService,
         private UpdateSuperEntityAttributesConfigHandler $updateSuperEntityAttributesConfigHandler,
+        private UpdateSuperEntityRegistrationFormsConfigHandler $updateSuperEntityRegistrationFormsConfigHandler,
     ) {
     }
 
@@ -61,5 +64,24 @@ class SuperEntityController extends Controller
         $presenter = new SuperEntityPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+     public function setRegistrationFormsConfig(UpdateSuperEntityRegistrationFormsConfigRequest $request): JsonResponse{
+        $command = $request->createUpdateSuperEntityRegistrationConfigCommand();
+
+        $this->updateSuperEntityRegistrationFormsConfigHandler->handle($command);
+
+        $item = $this->superEntityService->getById($command->getId());
+
+        $presenter = new SuperEntityPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function getRegistrationFormsConfig(GetSuperEntityAttributesRequest $request): JsonResponse
+    {
+        $attributes = $this->superEntityService->getRegistrationFormsConfig($request->get('super_entity_id'));
+
+        return Json::items($attributes);
     }
 }
