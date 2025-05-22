@@ -76,7 +76,7 @@ class SuperEntityService
 
     public function getIsRegistrableConfig(string $superEntityId): bool
     {
-        return $this->repository->getConfigValue($superEntityId, 'is_registrable') ?? [];
+        return $this->repository->getConfigValue($superEntityId, 'is_registrable') ?? 1;
     }
 
     public function getIds()
