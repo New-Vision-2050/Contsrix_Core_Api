@@ -167,9 +167,10 @@ class CompanyUser extends Model implements HasMedia
     public function bankAccount()
     {
         return $this->hasOne(BankAccount::class, 'global_id', 'global_id')
-            ->where('type', 'default');
+            ->whereHas('bankTypeAccount', function ($q) {
+                $q->where('code', 'default');
+            });
     }
-
 
     public function getRelationshipToPrimaryModel(): string
     {
