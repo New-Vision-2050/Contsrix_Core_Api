@@ -6,6 +6,7 @@ namespace Modules\SubEntity\Database\factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Modules\Program\Models\Program;
+use Modules\SubEntity\Models\RegistrationForm;
 use Modules\SubEntity\Models\SubEntity;
 
 /** @extends Factory<SubEntity> */
@@ -15,7 +16,7 @@ class SubEntityFactory extends Factory
 
     public function definition(): array
     {
-        $superEntityType = $this->faker->randomElement(['User', 'Company', 'Department']);
+        $superEntityType = $this->faker->randomElement(['users']);
         return [
             'id' => $this->faker->uuid(),
             'super_entity' => $superEntityType,
@@ -44,6 +45,7 @@ class SubEntityFactory extends Factory
                 "is_owner",
                 "management_hierarchy_id"
             ])),
+            'registration_form_id' => RegistrationForm::first()
         ];
     }
 }

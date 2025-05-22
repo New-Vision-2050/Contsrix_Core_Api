@@ -19,6 +19,7 @@ use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
+use Modules\User\Presenters\BrokerPresenter;
 use Modules\User\Repositories\UserRepository;
 use RabbitMQ\Jobs\BroadcastMessage;
 use Ramsey\Uuid\UuidInterface;
@@ -88,6 +89,13 @@ class BrokerCRUDService
         );
     }
 
+    public function listAsSubEntity(int $page = 1, int $perPage = 10): array
+    {
 
+        $users = $this->userRepository->getBrokerInCurrentCompanyWith($page, $perPage);
 
+        $users['data'] = BrokerPresenter::collection($users['data']);
+
+        return $users;
+    }
 }
