@@ -15,6 +15,7 @@ class SubEntityRecordsService
      protected $mappedRegistrationForms = [
         CompanyUserRole::BROKER->value,
         CompanyUserRole::EMPLOYEE->value,
+        CompanyUserRole::CLIENT->value,
     ];
 
 
