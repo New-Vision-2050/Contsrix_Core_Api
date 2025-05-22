@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Modules\SubEntity\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Ranium\SeedOnce\Traits\SeedOnce;
 use Illuminate\Database\Eloquent\Model;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\SubEntity\Models\RegistrationForm;
 
 class RegistrationFormsSeeder extends Seeder
 {
-    use SeedOnce;
     public function run(): void
     {
         Model::unguard();
@@ -22,28 +21,31 @@ class RegistrationFormsSeeder extends Seeder
                     'ar' => 'الموظفين',
                     'en' => 'Employees'
                 ],
-                'slug' => 'employee'
+                'slug' => 'employee',
+                'company_user_role_map' => CompanyUserRole::EMPLOYEE->value
             ],
             [
                 "name" => [
                     'ar' => 'العملاء',
-                    'en' => 'Customers'
+                    'en' => 'Clients'
                 ],
-                'slug' => 'customer'
+                'slug' => 'client',
+                'company_user_role_map' => CompanyUserRole::CLIENT->value
             ],
             [
                 "name" => [
                     'ar' => 'الوسطاء',
-                    'en' => 'Resellers'
+                    'en' => 'Brokers'
                 ],
-                'slug' => 'reseller'
+                'slug' => 'broker',
+                'company_user_role_map' => CompanyUserRole::BROKER->value
             ]
         ];
 
         foreach ($registrationForms as $form) {
-            RegistrationForm::firstOrCreate(
+            RegistrationForm::updateOrCreate(
                 ['slug' => $form['slug']],
-                ['name' => $form['name']],
+                ['name' => $form['name'], 'company_user_role_map' => $form['company_user_role_map']],
             );
         }
     }

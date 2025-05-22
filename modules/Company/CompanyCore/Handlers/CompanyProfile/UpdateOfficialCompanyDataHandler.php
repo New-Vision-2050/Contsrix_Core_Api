@@ -14,6 +14,7 @@ use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyReposito
 class UpdateOfficialCompanyDataHandler
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
         private CompanyRepository             $repository,
         private ManagementHierarchyRepository $managementHierarchyRepository,
@@ -25,25 +26,17 @@ class UpdateOfficialCompanyDataHandler
     {
 
 
-
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
         try {
             DB::beginTransaction();
             $this->repository->updateCompany($updateOfficialCompanyDataCommand->getId(), $updateOfficialCompanyDataCommand->toArray());
-            if(request()->has("branch_id"))
-            {
-                $this->managementHierarchyRepository->updateWhere(["id"=>request()->branch_id],[
-                    "name" => $updateOfficialCompanyDataCommand->getBranchName()
-                ]);
-            }else{
-                $this->managementHierarchyRepository->getMainBranchForCompany(
-                    $updateOfficialCompanyDataCommand->getId())->update(
-                        ["name" => $updateOfficialCompanyDataCommand->getBranchName(),
-                                    "phone"=> $updateOfficialCompanyDataCommand->getPhone(),
-                                    "email"=> $updateOfficialCompanyDataCommand->getEmail(),
-                                    
-                                ]);
 
-            }
+            $this->managementHierarchyRepository->updateWhere(["id" => $branch->id], [
+                "name" => $updateOfficialCompanyDataCommand->getBranchName(),
+                "phone" => $updateOfficialCompanyDataCommand->getPhone(),
+                "email" => $updateOfficialCompanyDataCommand->getEmail(),
+            ]);
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();

@@ -16,6 +16,7 @@ use Modules\Company\CompanyCore\Events\CompanyLegalDataDeleted;
 use Modules\Company\CompanyCore\Listeners\CreateOfficialDocumentFromLegalData;
 use Modules\Company\CompanyCore\Listeners\UpdateOfficialDocumentFromLegalData;
 use Modules\Company\CompanyCore\Listeners\DeleteOfficialDocumentFromLegalData;
+use Modules\Company\CompanyCore\Observers\CompanyObserver;
 
 class CompanyServiceProvider extends ModuleServiceProvider
 {
@@ -32,6 +33,8 @@ class CompanyServiceProvider extends ModuleServiceProvider
         $this->registerCommands();
         $this->registerSchedules();
         $this->registerEventListeners();
+        Company::observe(CompanyObserver::class);
+
     }
 
     public function register(): void
@@ -61,7 +64,7 @@ class CompanyServiceProvider extends ModuleServiceProvider
             ]);
         }
     }
-    
+
     /**
      * Register event listeners.
      *
@@ -73,12 +76,12 @@ class CompanyServiceProvider extends ModuleServiceProvider
             CompanyLegalDataCreated::class,
             CreateOfficialDocumentFromLegalData::class
         );
-        
+
         Event::listen(
             CompanyLegalDataUpdated::class,
             UpdateOfficialDocumentFromLegalData::class
         );
-        
+
         Event::listen(
             CompanyLegalDataDeleted::class,
             DeleteOfficialDocumentFromLegalData::class

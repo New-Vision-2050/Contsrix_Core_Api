@@ -55,6 +55,8 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
         ];
+        $result['deputy_managers'] = UserPresenter::collection($this->managementHierarchy->deputyManagers);
+
 
         // Add the manager's children (both direct reports and lower managers)
         $result['children'] = $this->getUserChildren();
@@ -73,6 +75,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
                 'name' => $this->managementHierarchy->name,
                 'type' => $this->managementHierarchy->type,
             ],
+            "deputy_managers"=>[]
         ];
 
         // Even without a manager, we should include the children users and lower managers
@@ -131,7 +134,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
                     'name' => $hierarchy->name,
                     'type' => $hierarchy->type,
                 ];
-                $userData['deputy_managers'] = UserPresenter::collection($hierarchy->de)
+                $userData['deputy_managers'] = UserPresenter::collection($hierarchy->deputyManagers);
                 $children[] = $userData;
             }
         }

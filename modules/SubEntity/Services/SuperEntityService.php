@@ -49,7 +49,34 @@ class SuperEntityService
 
     public function getAttributesConfig(string $superEntityId): array
     {
-       return $this->repository->getAttributesConfig($superEntityId);
+        $attributes = $this->repository->getAttributesConfig($superEntityId);
+
+        if (isset($attributes['allowed_attributes']) && filled($attributes['allowed_attributes'])) {
+            return array_map(function ($name) {
+                return AttributesTranslationService::getTranslations($name);
+            }, $attributes['allowed_attributes'] ?? []);
+        }
+
+        // fallback to the whole list of attributes
+        return $this->getAvailableAttributes($superEntityId);
+    }
+
+    public function getRegistrationFormsConfig(string $superEntityId): array
+    {
+        return $this->repository->getConfigValue($superEntityId, 'registration_forms') ?? [];
+    }
+
+    public function getRegistrationConfig(string $superEntityId): array
+    {
+        return [
+            'registration_forms' => $this->getRegistrationFormsConfig($superEntityId)['registration_forms'] ?? [],
+            'is_registrable' => $this->getIsRegistrableConfig($superEntityId)
+        ];
+    }
+
+    public function getIsRegistrableConfig(string $superEntityId): bool
+    {
+        return $this->repository->getConfigValue($superEntityId, 'is_registrable') ?? true;
     }
 
     public function getIds()
@@ -90,7 +117,7 @@ class SuperEntityService
 
     public function getById(string $id): ?array
     {
-        $allowed_attributes =  $this->getAttributesConfig($id);
+        $allowed_attributes = $this->getAttributesConfig($id);
 
         if (Str::isUuid($id)) {
             $parentSubEntity = $this->subEntityCRUDService->get(Uuid::fromString($id));

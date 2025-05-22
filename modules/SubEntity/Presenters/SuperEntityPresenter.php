@@ -27,6 +27,11 @@ class SuperEntityPresenter extends AbstractPresenter
             $attributes['allowed_attributes'] = $this->superEntity['allowed_attributes'];
         }
 
+        if(isset($this->superEntity['registration_forms']) && filled($this->superEntity['registration_forms']))
+        {
+            $attributes['registration_forms'] = $this->superEntity['registration_forms'];
+        }
+
         return $attributes;
     }
 

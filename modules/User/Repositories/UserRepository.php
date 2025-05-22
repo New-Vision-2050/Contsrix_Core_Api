@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\User\Repositories;
 
-use BasePackage\Shared\Repositories\BaseRepository;
+use Modules\User\Models\User;
+use Ramsey\Uuid\UuidInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\Audit\Repositories\AuditRepository;
 use Modules\CompanyUser\Models\CompanyUserCompany;
+use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Setting\Repositories\IdentifierSettingRepository;
-use Ramsey\Uuid\UuidInterface;
-use Modules\User\Models\User;
 
 /**
  * @property User $model
@@ -20,10 +21,10 @@ use Modules\User\Models\User;
 class UserRepository extends BaseRepository
 {
     public function __construct(
-        User                                $model,
-        private AuditRepository             $auditRepository,
-        private IdentifierSettingRepository $identifierSettingRepository)
-    {
+        User $model,
+        private AuditRepository $auditRepository,
+        private IdentifierSettingRepository $identifierSettingRepository
+    ) {
         parent::__construct($model);
     }
 
@@ -64,8 +65,8 @@ class UserRepository extends BaseRepository
     {
         $user = $this->model->query()->where('email', $email)->where("company_id", tenant("id"))->first();
         return CompanyUserCompany::query()->where("company_id", tenant("id"))
-            ->where("global_company_user_id",$user->global_company_user_id)
-           ->with("managementHierarchy")
+            ->where("global_company_user_id", $user->global_company_user_id)
+            ->with("managementHierarchy")
             ->get();
 
     }
@@ -77,9 +78,13 @@ class UserRepository extends BaseRepository
         } else {
             $query = $this->model;
         }
-        $query = $query->with(array_merge($relations, ["companyUserCompanies" => function ($query) {
-            $query->where("company_id",tenant("id"));
-            }]
+        $query = $query->with(array_merge(
+            $relations,
+            [
+                "companyUserCompanies" => function ($query) {
+                    $query->where("company_id", tenant("id"));
+                }
+            ]
         ));
         $query = $query->when($type != null, function ($query) use ($type) {
             $query->whereHas("companyUserCompanies", function ($query) use ($type) {
@@ -92,6 +97,78 @@ class UserRepository extends BaseRepository
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
         return array_merge($paginationArray, ['data' => $paginatedData]);
+    }
+
+    public function getBrokerInCurrentCompanyWith($page = 1, $perPage = 10)
+    {
+        $type = CompanyUserRole::BROKER->value;
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+        $query = $query->with(array_merge(
+            [
+                'companyUser:id,global_id,country_id,job_title_id',
+                'companyUser.nationalAddress',
+                'companyUser.nationalAddress.country:id,name,native',
+                'companyUser.nationalAddress.state:id,name',
+                'companyUser.nationalAddress.city:id,name',
+            ]
+        ));
+        $query = $query->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companyUserCompanies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        })->where("company_id", tenant("id"))
+         ->select('id', 'name', 'email', 'phone', 'status', 'global_company_user_id', 'company_id');
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
+
+    public function getEmployeeInCurrentCompanyWith($page = 1, $perPage = 10)
+    {
+        $type = CompanyUserRole::EMPLOYEE->value;
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+        $query = $query->with(array_merge(
+            [
+                "companyUserCompanies" => function ($query) {
+                    $query->where("company_id", tenant("id"));
+                },
+                'companyUser:id,global_id',
+                'companyUser.jobTitle:id,type,status,company_id',
+                'companyUser.country:id,name,native',
+                'branch:id,name,type,is_active'
+            ]
+        ));
+        $query = $query->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companyUserCompanies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        })->where("company_id", tenant("id"))
+         ->select('id', 'name', 'email', 'phone', 'global_company_user_id', 'company_id', 'is_owner', 'management_hierarchy_id', 'status');
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
     }
 
     public function createUser(array $data): User
