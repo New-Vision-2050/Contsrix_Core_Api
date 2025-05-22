@@ -195,9 +195,18 @@ class ManagementHierarchyController extends Controller
         return Json::item($presentedTree);
     }
 
+
     public function directChildrenTree()
     {
-        return Json::item(ManagementHierarchyUserTreePresenter::collection($this->managementHierarchyService->getTree()));
+        // Get the complete management hierarchy tree
+        $tree = $this->managementHierarchyService->getTree();
+
+        // Set custom options for the presenter if needed
+        ManagementHierarchyUserTreePresenter::setIncludeManagers(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDirectChildren(true);
+
+        // Return the formatted tree using our enhanced presenter
+        return Json::item(ManagementHierarchyUserTreePresenter::collection($tree));
     }
 
     /**

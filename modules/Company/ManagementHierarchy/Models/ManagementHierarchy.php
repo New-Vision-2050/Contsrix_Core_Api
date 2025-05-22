@@ -147,19 +147,65 @@ class ManagementHierarchy extends Model
     }
 
     /**
-     * Get merged users from different related collections
+     * Get all direct users for this hierarchy level
+     * This includes the manager and any users assigned directly to this node
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return \Illuminate\Support\Collection
      */
-    public function getAllUsersAttribute()
+    public function getAllDirectUsersAttribute()
     {
-        //get manager if found
-        $directUsers = $this->user ? collect([$this->user]) : collect([]);
+        // Get manager if found
+        $manager = $this->user ? collect([$this->user]) : collect([]);
 
-        //get direct user Children
-        $childrenUsers = $this->directUserChildren ?? collect([]);
+        // Get direct user children
+        $directUsers = $this->directUserChildren ?? collect([]);
 
-        //merging are put unique id
-        return $directUsers->merge($childrenUsers)->unique('id');
+        // Merge and ensure unique users
+        return $manager->merge($directUsers)->unique('id');
     }
+
+    /**
+     * Get managers of all direct child hierarchies
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getChildManagersAttribute()
+    {
+        $managers = collect([]);
+
+        // Get all direct child hierarchies
+        $childHierarchies = $this->children;
+
+        // For each child hierarchy, get its manager if available
+        foreach ($childHierarchies as $childHierarchy) {
+            if ($childHierarchy->user) {
+                $managers->push($childHierarchy->user);
+            }
+        }
+
+        return $managers->unique('id');
+    }
+
+    /**
+     * Get a comprehensive collection of users related to this hierarchy node
+     * This includes:
+     * - The manager of this node
+     * - Direct users assigned to this node
+     * - Managers of all direct child hierarchies
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function getFullUserTreeAttribute()
+    {
+        // Get manager and direct users
+        $directUsers = $this->allDirectUsers;
+
+        // Get managers from child hierarchies
+        $childManagers = $this->childManagers;
+
+        // Merge all users and ensure uniqueness
+        return $directUsers->merge($childManagers)->unique('id');
+    }
+
+
 }
