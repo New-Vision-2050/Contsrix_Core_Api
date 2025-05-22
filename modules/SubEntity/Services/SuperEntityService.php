@@ -63,7 +63,7 @@ class SuperEntityService
 
     public function getRegistrationFormsConfig(string $superEntityId): array
     {
-        return $this->repository->getConfigValue($superEntityId, 'registration_forms');
+        return $this->repository->getConfigValue($superEntityId, 'registration_forms') ?? [];
     }
 
     public function getIds()
