@@ -9,7 +9,7 @@ CACHEBUST=$(date +%s)
 # Generate a random suffix for the docker compose project name
 RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 8)
 DOCKER_NAMESPACE="${DEPLOYMENT_ID}-${RANDOM_SUFFIX}"
-
+#DOCKER_NAMESPACE="${DEPLOYMENT_ID}"
 # Export variables as environment variables so Docker Compose can use them
 export CACHEBUST
 
@@ -29,27 +29,34 @@ OLD_IMAGES=$(docker images --filter "reference=*${DEPLOYMENT_ID}-*" --format "{{
 echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.stackmail.com
+MAIL_PORT=465
+MAIL_USERNAME=admin@constrix-nv.com
+MAIL_PASSWORD=Ul6cade0c
+MAIL_FROM_ADDRESS="admin@constrix-nv.com"
+
 if [ "$APP_ENV" == "production" ]; then
-     EMAIL_HOST=vision-dashbord.com
+     EMAIL_HOST=smtp.stackmail.com
      EMAIL_PORT=465
-     EMAIL_HOST_USER=info@vision-dashbord.com
-     EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+     EMAIL_HOST_USER=admin@constrix-nv.com
+     EMAIL_HOST_PASSWORD="Ul6cade0c"
      EMAIL_ENCRYPTION=tls
-     EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+     EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
 elif [ "$APP_ENV" == "stage" ]; then
-    EMAIL_HOST=vision-dashbord.com
-    EMAIL_PORT=465
-    EMAIL_HOST_USER=info@vision-dashbord.com
-    EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
-    EMAIL_ENCRYPTION=tls
-    EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+     EMAIL_HOST=smtp.stackmail.com
+     EMAIL_PORT=465
+     EMAIL_HOST_USER=admin@constrix-nv.com
+     EMAIL_HOST_PASSWORD="Ul6cade0c"
+     EMAIL_ENCRYPTION=tls
+     EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
 else
-    EMAIL_HOST=vision-dashbord.com
+    EMAIL_HOST=smtp.stackmail.com
     EMAIL_PORT=465
-    EMAIL_HOST_USER=info@vision-dashbord.com
-    EMAIL_HOST_PASSWORD="0;Kl=0G]v%]8"
+    EMAIL_HOST_USER=admin@constrix-nv.com
+    EMAIL_HOST_PASSWORD="Ul6cade0c"
     EMAIL_ENCRYPTION=tls
-    EMAIL_FROM_ADDRESS="info@vision-dashbord.com"
+    EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
 fi
 
 APP_NAME="Constrix"
