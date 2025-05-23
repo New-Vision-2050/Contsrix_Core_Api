@@ -29,13 +29,6 @@ OLD_IMAGES=$(docker images --filter "reference=*${DEPLOYMENT_ID}-*" --format "{{
 echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.stackmail.com
-MAIL_PORT=465
-MAIL_USERNAME=admin@constrix-nv.com
-MAIL_PASSWORD=Ul6cade0c
-MAIL_FROM_ADDRESS="admin@constrix-nv.com"
-
 if [ "$APP_ENV" == "production" ]; then
      EMAIL_HOST=smtp.stackmail.com
      EMAIL_PORT=465
