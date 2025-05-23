@@ -42,7 +42,8 @@ class JobTitleRepository extends BaseRepository
 
 public function getAllJobTitles(): Collection
 {
-    return $this->model->withoutTenancy()->filter(request()->all())->get();
+
+    return $this->model->filter(request()->all())->get();
 }
 
 
