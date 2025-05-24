@@ -92,7 +92,7 @@ class SuperEntityRepository
 
         if ($existing) {
             $existingConfig = $existing->config;
-            if(!isArray($existingConfig)){
+            if(!is_array($existingConfig)){
                 $existingConfig = json_decode($existingConfig,true);
             }
             $existingConfig['allowed_attributes'] = $attributes;
