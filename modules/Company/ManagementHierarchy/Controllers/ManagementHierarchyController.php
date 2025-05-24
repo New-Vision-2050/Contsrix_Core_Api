@@ -197,10 +197,14 @@ class ManagementHierarchyController extends Controller
 
     public function directChildrenTree()
     {
-//        return$this->managementHierarchyService->getTree();
-//        return ManagementHierarchy::query()->where('parent_id', null)->where("company_id",tenant("id"))->first()->allUsers;
+        $tree = $this->managementHierarchyService->getTree();
 
-        return Json::item(ManagementHierarchyUserTreePresenter::collection($this->managementHierarchyService->getTree()));
+        ManagementHierarchyUserTreePresenter::setIncludeManagers(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDirectChildren(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
+
+
+        return Json::item(ManagementHierarchyUserTreePresenter::collection($tree));
     }
 
     /**
