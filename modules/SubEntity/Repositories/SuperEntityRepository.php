@@ -91,16 +91,10 @@ class SuperEntityRepository
             ->first();
 
         if ($existing) {
-            $existingConfig = $existing->config;
-            if(!is_array($existingConfig)){
-                $existingConfig = json_decode($existingConfig,true);
-            }
-            $existingConfig['allowed_attributes'] = $attributes;
-
             DB::table('super_entities_config')
                 ->where('super_entity', $superEntityId)
                 ->update(values: [
-                    'config' => json_encode($existingConfig),
+                    'config' => json_encode($config),
                     'updated_at' => now(),
                 ]);
         } else {
