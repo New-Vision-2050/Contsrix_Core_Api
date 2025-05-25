@@ -304,7 +304,7 @@ return [
     'user_relative' => [
         'name_required' => 'The name field is required.',
         'user_id_required' => 'The user ID is required.',
-        'marital_status_required' => 'The marital status is required.',
+        'marital_status_id_required' => 'The marital status is required.',
         'relationship_required' => 'The relationship field is required.',
         'phone_required' => 'The phone number is required.',
     ],
