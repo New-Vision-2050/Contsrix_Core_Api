@@ -24,7 +24,7 @@ class JobTitleRepository extends BaseRepository
     }
     public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
     {
-        $query = $this->model->withoutGlobalScope("active")->where($conditions);
+        $query = $this->model->withoutGlobalScope("active")->where($conditions)->filter(request()->all());
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
@@ -42,7 +42,8 @@ class JobTitleRepository extends BaseRepository
 
 public function getAllJobTitles(): Collection
 {
-    return $this->model->withoutTenancy()->filter(request()->all())->get();
+
+    return $this->model->filter(request()->all())->get();
 }
 
 
@@ -76,7 +77,7 @@ public function getAllJobTitles(): Collection
     {
         $query = $this->model->withoutGlobalScope("active");
 
-        if (isset($filters['ids']) && is_array($filters['ids'])) {
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters["ids"])) {
             $query->whereIn('id', $filters['ids']);
         }
 

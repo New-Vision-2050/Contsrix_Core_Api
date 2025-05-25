@@ -20,7 +20,7 @@ class CreateBankAccountRequest extends FormRequest
             'user_name' => 'required|string',
             'iban' => 'required|string',
             'swift_bic' => 'nullable',
-            'type' => 'required|string',
+            'type_id' => 'required|string',
         ];
     }
 
@@ -36,7 +36,7 @@ class CreateBankAccountRequest extends FormRequest
             account_number: $this->get('account_number'),
             iban: $this->get('iban'),
             swift_bic: $this->get('swift_bic'),
-            type: $this->get('type'),
+            type_id: $this->get('type_id'),
         );
     }
 }

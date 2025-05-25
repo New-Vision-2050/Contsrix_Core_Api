@@ -11,6 +11,7 @@ use Modules\UserInfo\BankAccount\Database\factories\BankAccountFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Country\Models\Country;
 use Modules\Shared\Bank\Models\Bank;
+use Modules\Shared\BankTypeAccount\Models\BankTypeAccount;
 use Modules\Shared\Currency\Models\Currency;
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -39,7 +40,7 @@ class BankAccount extends Model
         'account_number',
         'iban',
         'swift_bic',
-        'type'
+        'type_id'
     ];
 
     protected $casts = [
@@ -62,5 +63,9 @@ class BankAccount extends Model
     public function bank()
     {
         return $this->belongsTo(Bank::class);
+    }
+    public function bankTypeAccount()
+    {
+        return $this->belongsTo(BankTypeAccount::class, 'type_id');
     }
 }

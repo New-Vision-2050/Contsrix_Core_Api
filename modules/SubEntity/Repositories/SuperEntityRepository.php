@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\SubEntity\Models\RegistrationForm;
 
+use function PHPUnit\Framework\isArray;
+
 class SuperEntityRepository
 {
     public function __construct(protected array $availableSuperEntities = [])
@@ -82,7 +84,6 @@ class SuperEntityRepository
             ->select('id', 'name')
             ->first();
     }
-
 
     public function setConfigValue(string $superEntityId, string $key, $value): array
     {

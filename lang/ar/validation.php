@@ -270,7 +270,7 @@ return [
     'user_relative' => [
         'name_required' => 'حقل الاسم مطلوب.',
         'user_id_required' => 'معرف المستخدم مطلوب.',
-        'marital_status_required' => 'الحالة الاجتماعية مطلوبة.',
+        'marital_status_id_required' => 'الحالة الاجتماعية مطلوبة.',
         'relationship_required' => 'العلاقة مطلوبة.',
         'phone_required' => 'رقم الهاتف مطلوب.',
     ],
