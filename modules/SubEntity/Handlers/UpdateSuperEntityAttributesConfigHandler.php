@@ -16,6 +16,6 @@ class UpdateSuperEntityAttributesConfigHandler
 
     public function handle(UpdateSuperEntityAttributesConfigCommand $updateSuperEntityAttributesConfigCommand)
     {
-        $this->repository->setAttributesConfig($updateSuperEntityAttributesConfigCommand->getId(), $updateSuperEntityAttributesConfigCommand->toArray());
+        $this->repository->setConfigValue($updateSuperEntityAttributesConfigCommand->getId(), 'allowed_attributes', $updateSuperEntityAttributesConfigCommand->toArray());
     }
 }

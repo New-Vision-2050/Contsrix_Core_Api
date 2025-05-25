@@ -77,7 +77,7 @@ public function getAllJobTitles(): Collection
     {
         $query = $this->model->withoutGlobalScope("active");
 
-        if (isset($filters['ids']) && is_array($filters['ids'])) {
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters["ids"])) {
             $query->whereIn('id', $filters['ids']);
         }
 
