@@ -77,7 +77,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     private function presentHierarchyWithoutManager(): array
     {
         $result = [
-            'id' => Uuid::uuid4()->toString(),
+            'id' => Uuid::uuid()->toString(),
             'name' => 'No Manager Assigned',
             'hierarchy_info' => [
                 'id' => $this->managementHierarchy->id,
