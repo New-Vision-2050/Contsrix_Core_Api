@@ -12,9 +12,9 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 
 class UserBranchesPresenter extends AbstractPresenter
 {
-    private CompanyUserCompany $user;
+    private ?CompanyUserCompany $user;
 
-    public function __construct(CompanyUserCompany $user)
+    public function __construct(?CompanyUserCompany $user)
     {
         $this->user = $user;
     }
@@ -22,11 +22,10 @@ class UserBranchesPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'id' => $this->user->id,
-            'role' => $this->user->role,
-            'status' => $this->user->status,
+            'role' => $this->user?->role,
+            'status' => $this->user?->status,
 
-            "branches"=>ManagementHierarchyPresenter::collection($this->user->managementHierarchy)
+            "branches"=>$this->user?->managementHierarchy?ManagementHierarchyPresenter::collection($this->user->managementHierarchy):[]
         ];
     }
 }
