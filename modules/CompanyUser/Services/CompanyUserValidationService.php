@@ -47,7 +47,7 @@ class CompanyUserValidationService
     public function validateEmail()
     {
         if($user = $this->repository->findByEmail(request()->email)) {
-            $userInCompany = $this->userRepository->findOneBy(["email"=>request()->email]);
+            $userInCompany = $this->userRepository->findOneBy(["email"=>request()->email,"company_id"=>tenant("id")]);
             $this->errors[] = [
                 'sentence' => __("validation.user-email-error",["name"=>$user->name]),
                 'sub_title' => 'email',
