@@ -45,6 +45,11 @@ class UserCRUDService
        return $this->repository->getUserByEmailWithBranches($email);
     }
 
+    public function getUserBy($condition)
+    {
+        return $this->repository->findOneBy($condition);
+    }
+
     public function get(UuidInterface $id): User
     {
         return $this->repository->getUser(
