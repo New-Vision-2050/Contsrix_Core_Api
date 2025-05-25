@@ -85,55 +85,6 @@ class SuperEntityRepository
             ->first();
     }
 
-    public function setAttributesConfig(string $superEntityId, $attributes): array
-    {
-        $config = ['allowed_attributes' => $attributes];
-
-        $existing = DB::table('super_entities_config')
-            ->where('super_entity', $superEntityId)
-            ->first();
-
-        if ($existing) {
-            $existingConfig = $existing->config;
-            if(!isArray($existingConfig)){
-                $existingConfig = json_decode($existingConfig,true);
-            }
-            $existingConfig['allowed_attributes'] = $attributes;
-
-            DB::table('super_entities_config')
-                ->where('super_entity', $superEntityId)
-                ->update(values: [
-                    'config' => json_encode($existingConfig),
-                    'updated_at' => now(),
-                ]);
-        } else {
-            DB::table('super_entities_config')->insert([
-                'id' => Str::uuid(),
-                'super_entity' => $superEntityId,
-                'config' => json_encode($config),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        return $config;
-    }
-
-    public function getAttributesConfig(string $superEntityId): array
-    {
-        $config = DB::table('super_entities_config')
-            ->where('super_entity', $superEntityId)
-            ->value('config');
-
-        if (!$config) {
-            return [];
-        }
-
-        $decoded = json_decode($config, true);
-
-        return $decoded['allowed_attributes'] ?? [];
-    }
-
     public function setConfigValue(string $superEntityId, string $key, $value): array
     {
         $existing = DB::table('super_entities_config')
@@ -178,5 +129,17 @@ class SuperEntityRepository
         $decoded = json_decode($config, true);
 
         return $decoded[$key] ?? null;
+    }
+
+    public function setMultipleConfigValues(string $superEntityId, array $configs): array
+    {
+        $results = [];
+
+        foreach ($configs as $key => $value) {
+            $result = $this->setConfigValue($superEntityId, $key, $value);
+            $results = array_merge($results, $result);
+        }
+        
+        return $results;
     }
 }
