@@ -35,9 +35,16 @@ class SuperEntityController extends Controller
         return Json::items(SuperEntityPresenter::collection($list));
     }
 
-    public function getAvailableAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
+    public function getDefaultAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
     {
-        $attributes = $this->superEntityService->getAvailableAttributes($request->get('super_entity_id'));
+        $attributes = $this->superEntityService->getDefaultAttributes($request->get('super_entity_id'));
+
+        return Json::items($attributes);
+    }
+
+     public function getOptionalAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
+    {
+        $attributes = $this->superEntityService->getOptionalAttributes($request->get('super_entity_id'));
 
         return Json::items($attributes);
     }
