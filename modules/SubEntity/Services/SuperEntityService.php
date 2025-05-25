@@ -23,6 +23,7 @@ class SuperEntityService
         $supEntities = $this->subEntityCRUDService->getSelection();
         $supEntities = $supEntities['data']->toArray();
         $superEntities = $this->repository->list($search);
+        
         return array_merge($supEntities, $superEntities);
     }
 

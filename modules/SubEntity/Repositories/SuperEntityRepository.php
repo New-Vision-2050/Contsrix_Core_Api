@@ -21,6 +21,17 @@ class SuperEntityRepository
     public function list(?string $search = ''): array
     {
         return collect($this->availableSuperEntities)
+            ->filter(function ($entity) {
+                $superEntityId = $entity['id'] ?? null;
+
+                if (!$superEntityId) {
+                    return false;
+                }
+
+                $isRegistrable = $this->getConfigValue($superEntityId, 'is_registrable');
+
+                return is_null($isRegistrable) || $isRegistrable === true;
+            })
             ->when(filled($search), function ($collection) use ($search) {
                 return $collection->filter(function ($entity) use ($search) {
                     $entityName = $entity['name'][app()->getLocale()] ?? '';
@@ -131,7 +142,7 @@ class SuperEntityRepository
         return $decoded[$key] ?? null;
     }
 
-      public function getConfig(string $superEntityId)
+    public function getConfig(string $superEntityId)
     {
         $config = DB::table('super_entities_config')
             ->where('super_entity', $superEntityId)
