@@ -38,12 +38,22 @@ class SuperEntityService
             $attributes = $this->repository->getAvailableAttributes($id) ?? [];
         }
 
-        return array_map(function ($name) {
-            return AttributesTranslationService::getTranslations($name);
-        }, $attributes);
+        $attributesConfig = $this->getAttributesConfig($superEntityId);
+        $defaultAttrubutes = $attributesConfig['default_attributes'] ?? $attributes;
+        $optionalAttrubutes = $attributesConfig['optional_attributes'] ?? $attributes;
+
+        return [
+            'default_attributes' => $translatedAttributes = array_map(function ($name) {
+                return AttributesTranslationService::getTranslations($name);
+            }, $defaultAttrubutes),
+
+            'optional_attributes' => $translatedAttributes = array_map(function ($name) {
+                return AttributesTranslationService::getTranslations($name);
+            }, $optionalAttrubutes)
+        ];
     }
 
-     public function getAllAttributes(string $superEntityId): array
+    public function getAllAttributes(string $superEntityId): array
     {
         $id = $superEntityId;
         $attributes = [];
@@ -54,14 +64,14 @@ class SuperEntityService
             $attributes = $this->repository->getAvailableAttributes($id) ?? [];
         }
 
-       return $attributes;
+        return $attributes;
     }
 
     public function getAttributesConfig(string $superEntityId): array
     {
         return [
             'default_attributes' => $this->repository->getConfigValue($superEntityId, 'default_attributes') ?? $this->getAllAttributes($superEntityId),
-            'optional_attributes' => $this->repository->getConfigValue($superEntityId,'optional_attributes') ?? $this->getAllAttributes($superEntityId),
+            'optional_attributes' => $this->repository->getConfigValue($superEntityId, 'optional_attributes') ?? $this->getAllAttributes($superEntityId),
         ];
     }
 
