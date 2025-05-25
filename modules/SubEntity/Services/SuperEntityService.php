@@ -23,6 +23,7 @@ class SuperEntityService
         $supEntities = $this->subEntityCRUDService->getSelection();
         $supEntities = $supEntities['data']->toArray();
         $superEntities = $this->repository->list($search);
+
         return array_merge($supEntities, $superEntities);
     }
 
@@ -42,26 +43,39 @@ class SuperEntityService
         }, $attributes);
     }
 
-    public function getAttributesConfig(string $superEntityId): array
+     public function getAllAttributes(string $superEntityId): array
     {
-        $attributes = $this->repository->getConfigValue($superEntityId, 'allowed_attributes');
-
-        if (isset($attributes['allowed_attributes']) && filled($attributes['allowed_attributes'])) {
-            return array_map(function ($name) {
-                return AttributesTranslationService::getTranslations($name);
-            }, $attributes['allowed_attributes'] ?? []);
+        $id = $superEntityId;
+        $attributes = [];
+        if (Str::isUuid($id)) {
+            $parentSubEntity = $this->subEntityCRUDService->get(id: Uuid::fromString($id));
+            $attributes = array_merge($parentSubEntity->default_attributes, $parentSubEntity->optional_attributes ?? []);
+        } else {
+            $attributes = $this->repository->getAvailableAttributes($id) ?? [];
         }
 
-        // fallback to the whole list of attributes
-        return $this->getAvailableAttributes($superEntityId);
+       return $attributes;
+    }
+
+    public function getAttributesConfig(string $superEntityId): array
+    {
+        return [
+            'default_attributes' => $this->repository->getConfigValue($superEntityId, 'default_attributes') ?? $this->getAllAttributes($superEntityId),
+            'optional_attributes' => $this->repository->getConfigValue($superEntityId,'optional_attributes') ?? $this->getAllAttributes($superEntityId),
+        ];
     }
 
     public function getRegistrationConfig(string $superEntityId): array
     {
         return [
-            'registration_forms' => $this->repository->getConfigValue($superEntityId, 'registration_forms'),
-            'is_registrable' => $this->repository->getConfigValue($superEntityId, 'is_registrable')
+            'registration_forms' => $this->repository->getConfigValue($superEntityId, 'registration_forms') ?? $this->getDefaultRegistrationFormsIds($superEntityId),
+            'is_registrable' => $this->repository->getConfigValue($superEntityId, 'is_registrable') ?? true
         ];
+    }
+
+    public function getConfig(string $superEntityId): array
+    {
+        return $this->repository->getConfig($superEntityId);
     }
 
     public function getIds()
@@ -100,19 +114,32 @@ class SuperEntityService
         return $this->repository->getRegistrationFormsForId($id);
     }
 
+    public function getDefaultRegistrationFormsIds(string $id): array
+    {
+        $superEntityId = $id;
+        if (Str::isUuid($superEntityId)) {
+            $parentSubEntity = $this->subEntityCRUDService->find(Uuid::fromString($superEntityId));
+            $allowedRegistrationForms = $parentSubEntity->allowedChildForms;
+            return filled($allowedRegistrationForms) ? $allowedRegistrationForms->pluck('id')->toArray() :
+                $this->repository->getRegistrationFormsIds($parentSubEntity->origin_super_entity);
+        }
+
+        return $this->repository->getRegistrationFormsIds($id);
+    }
+
     public function getById(string $id): ?array
     {
-        $allowed_attributes = $this->getAttributesConfig($id);
+        $config = $this->getConfig($id);
 
         if (Str::isUuid($id)) {
             $parentSubEntity = $this->subEntityCRUDService->get(Uuid::fromString($id));
             return [
                 'id' => $id,
                 'name' => $parentSubEntity->name,
-                'allowed_attributes' => $allowed_attributes
+                'config' => $config
             ];
         }
 
-        return array_merge($this->repository->getById($id), ['allowed_attributes' => $allowed_attributes]);
+        return array_merge($this->repository->getById($id), ['config' => $config]);
     }
 }
