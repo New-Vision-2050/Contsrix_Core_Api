@@ -39,11 +39,11 @@ class SuperEntityService
         }
 
         return array_map(function ($name) {
-                return AttributesTranslationService::getTranslations($name);
-            }, $attributes);
+            return AttributesTranslationService::getTranslations($name);
+        }, $attributes);
     }
 
-    public function getAvailableAttributes(string $superEntityId): array
+    public function getDefaultAttributes(string $superEntityId): array
     {
         $id = $superEntityId;
         $attributes = [];
@@ -56,17 +56,28 @@ class SuperEntityService
 
         $attributesConfig = $this->getAttributesConfig($superEntityId);
         $defaultAttrubutes = $attributesConfig['default_attributes'] ?? $attributes;
-        $optionalAttrubutes = $attributesConfig['optional_attributes'] ?? $attributes;
 
-        return [
-            'default_attributes' => $translatedAttributes = array_map(function ($name) {
-                return AttributesTranslationService::getTranslations($name);
-            }, $defaultAttrubutes),
+        return array_map(function ($name) {
+            return AttributesTranslationService::getTranslations($name);
+        }, $defaultAttrubutes);
+    }
+    public function getOptionalAttributes(string $superEntityId): array
+    {
+        $id = $superEntityId;
+        $attributes = [];
+        if (Str::isUuid($id)) {
+            $parentSubEntity = $this->subEntityCRUDService->get(id: Uuid::fromString($id));
+            $attributes = array_merge($parentSubEntity->default_attributes, $parentSubEntity->optional_attributes ?? []);
+        } else {
+            $attributes = $this->repository->getAvailableAttributes($id) ?? [];
+        }
 
-            'optional_attributes' => $translatedAttributes = array_map(function ($name) {
-                return AttributesTranslationService::getTranslations($name);
-            }, $optionalAttrubutes)
-        ];
+        $attributesConfig = $this->getAttributesConfig($superEntityId);
+        $defaultAttrubutes = $attributesConfig['optional_attributes'] ?? $attributes;
+
+        return array_map(function ($name) {
+            return AttributesTranslationService::getTranslations($name);
+        }, $defaultAttrubutes);
     }
 
     public function getAllAttributes(string $superEntityId): array
