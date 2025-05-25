@@ -20,7 +20,15 @@ class CreateJobOfferRequest extends FormRequest
             'file' => 'nullable'
         ];
     }
-
+    public function messages(): array
+    {
+        return [
+            'user_id.required' => __('validation.user_id_required'),
+            'job_offer_number.required' => __('validation.job_offer_number_required'),
+            'date_send.required' => __('validation.date_send_required'),
+            'date_accept.required' => __('validation.date_accept_required'),
+        ];
+    }
     public function createCreateJobOfferDTO(): CreateJobOfferDTO
     {
         return new CreateJobOfferDTO(

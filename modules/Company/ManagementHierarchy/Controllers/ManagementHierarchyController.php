@@ -6,11 +6,13 @@ namespace Modules\Company\ManagementHierarchy\Controllers;
 
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Request;
 use Modules\Company\ManagementHierarchy\Handlers\DeleteManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Handlers\MakeBranchMainHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateBranchHandler;
+use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHandler;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
@@ -30,7 +32,11 @@ use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
+use Modules\Shared\Currency\Requests\GetUsersLowLevelRequest;
+use Modules\User\Models\User;
+use Modules\User\Presenters\UserPresenter;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\Uuid;
 
@@ -42,7 +48,7 @@ class ManagementHierarchyController extends Controller
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
         private UpdateBranchHandler              $updateBranchHandler,
-        private ManagementHierarchyRepository    $managementHierarchyRepository,
+        private UpdateManagementHandler          $updateManagementHandler
     )
     {
     }
@@ -56,9 +62,8 @@ class ManagementHierarchyController extends Controller
         return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
-    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request): JsonResponse
+    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request)
     {
-
         return Json::items(ManagementHierarchyPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
     }
 
@@ -145,20 +150,81 @@ class ManagementHierarchyController extends Controller
 
     public function delete(DeleteManagementHierarchyRequest $request): JsonResponse
     {
-        $this->deleteManagementHierarchyHandler->handle((int)($request->route('id')));
+        try {
+            $this->deleteManagementHierarchyHandler->handle((int)($request->route('id')));
+            return Json::deleted();
+        } catch (Exception $e) {
+            if ($e->getCode() === 422) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 422);
+            }
 
-        return Json::deleted();
+            // For any other exceptions, rethrow
+            throw $e;
+        }
+    }
+
+    public function updateManagement(UpdateManagementRequest $request): JsonResponse
+    {
+        $command = $request->createUpdateManagementCommand();
+        $this->updateManagementHandler->handle($command);
+
+        $item = $this->managementHierarchyService->get($command->getId());
+
+        $presenter = new ManagementPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 
     public function presentTree(GetManagementHierarchyLookupRequest $request)
     {
-        return Json::item(ManagementHierarchyTreePresenter::collection($this->managementHierarchyService->getTree()));
+        $type = $request->input('type');
+
+        if ($type == "management") {//when type is management we will not skip any nodes
+            ManagementHierarchyTreePresenter::setSkipManagementMainNodes(false);
+        } else {
+            ManagementHierarchyTreePresenter::setSkipManagementMainNodes(true);
+        }
+
+        $tree = $this->managementHierarchyService->getTree();
+
+        $presentedTree = ManagementHierarchyTreePresenter::collection($tree);
+
+        return Json::item($presentedTree);
     }
 
     public function directChildrenTree()
     {
-        return Json::item(ManagementHierarchyUserTreePresenter::collection($this->managementHierarchyService->getTree()));
+        $tree = $this->managementHierarchyService->getTree();
+
+        ManagementHierarchyUserTreePresenter::setIncludeManagers(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDirectChildren(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
+
+
+        return Json::item(ManagementHierarchyUserTreePresenter::collection($tree));
     }
 
+    /**
+     * Get all lower level users in the management hierarchy tree for a specific user
+     *
+     * @param GetUsersLowLevelRequest $request
+     * @return JsonResponse
+     */
+    public function getUserLowerLevels(GetUsersLowLevelRequest $request)
+    {
+        try {
+            $userId = uuid::fromString($request->input('user_id'));
+            $lowerUsers = $this->managementHierarchyService->getLowerUsers($userId);
+
+            return Json::items(
+                UserPresenter::collection($lowerUsers)
+            );
+        } catch (Exception $e) {
+            return Json::error($e->getMessage(),400);
+        }
+    }
 
 }

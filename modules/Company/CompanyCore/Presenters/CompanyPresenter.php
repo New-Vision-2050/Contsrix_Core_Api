@@ -43,14 +43,19 @@ class CompanyPresenter extends AbstractPresenter
             'name_ar' => $this?->company->getTranslation("name", "ar"),
             'name_en' => $this?->company->getTranslation("name", "en"),
             'user_name' => $this->company->user_name,
-            'email' => $this->company->email,
-            'phone' => $this->company->phone ?? '',
+
+            'owner_id' => $this->company->owner?->id,
+            'owner_name' => $this->company->owner?->name,
+
+            'email' => request("branch_id") ? $this->company->branches->where("id", request("branch_id"))->first()?->email : $this->company->mainBranch?->email,
+            'phone' => request("branch_id") ? $this->company->branches->where("id", request("branch_id"))->first()?->phone : $this->company->mainBranch?->phone,
+
             'serial_no' => $this->company?->serial_no,
-            'country_id' => $this->company->country_id,
-            'country_name' => $this->company->country?->name,
-            'country_lat' => $this->company->country?->latitude,
-            'country_long' => $this->company->country?->longitude,
-            'country_iso2' => $this->company->country?->iso2,
+            'country_id' => $this->company?->companyAddress?->country_id,
+            'country_name' =>$this->company?->companyAddress?->country?->name,
+            'country_lat' => $this->company?->companyAddress?->country?->latitude,
+            'country_long' =>$this->company?->companyAddress?->country?->longitude,
+            'country_iso2' => $this->company?->companyAddress?->country?->iso2,
             'company_type_id' => $this->company->company_type_id,
             'registration_type_id' => $this->company->registration_type_id,
             'general_manager_id' => $this->company->general_manager_id,
@@ -74,10 +79,19 @@ class CompanyPresenter extends AbstractPresenter
             "main_branch" => [
                 "name" => $this->company->mainBranch?->name
             ],
+
+            //TODO we will separate in new api
             "company_legal_data" => CompanyLegalDataPresenter::collection($this->company->companyLegalData),
+
+            //TODO we will separate in new api
             "company_address" => $this->appendDateToAddress($this->company?->companyAddress),
+
+            //TODO we will separate in new api
             "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
+
+            //TODO we will separate in new api
             "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
+
             "created_at" => $this->company->created_at,
         ];
     }

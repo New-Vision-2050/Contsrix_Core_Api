@@ -22,7 +22,7 @@ class ManagementHierarchyDetail extends Model
 {
     use HasFactory;
 
-//    use UuidTrait;
+
     use BaseFilterable;
 
 //    use AsTree;
@@ -37,21 +37,15 @@ class ManagementHierarchyDetail extends Model
     protected $table = "management_hierarchy_details";
 
 
-    public $incrementing = false;
-
-//    protected $keyType = 'string';
-
     protected $fillable = [
-//        "id",
+        "id",
         "description",
-        "deputy_manager_id",
         "reference_user_id",
-        "management_hierarchy_id"
+        "management_hierarchy_id",
+        "branch_id"
     ];
 
     protected $casts = [
-//        'id' => 'string',
-        'deputy_manager_id' => 'string',
         'reference_user_id' => 'string',
     ];
 
@@ -69,16 +63,41 @@ class ManagementHierarchyDetail extends Model
         return ManagementHierarchyFactory::new();
     }
 
+    /**
+     * Get the management hierarchy this detail belongs to
+     */
     public function managementHierarchy()
     {
-        return $this->belongsTo(ManagementHierarchy::class , "management_hierarchy_id");
+        return $this->belongsTo(ManagementHierarchy::class, "management_hierarchy_id");
     }
 
-    public function user()
+    /**
+     * Get the deputy manager relationships for this management hierarchy detail
+     */
+    public function deputyManagerRelations()
     {
-        return $this->belongsTo(User::class ,"deputy_manager_id","id");
+        return $this->hasMany(ManagementHierarchyDetailManager::class, 'management_hierarchy_detail_id');
     }
 
+    /**
+     * Get the deputy managers for this management hierarchy detail
+     */
+    public function deputyManagers()
+    {
+        return $this->hasManyThrough(
+            User::class,
+            ManagementHierarchyDetailManager::class,
+            'management_hierarchy_detail_id',
+            'id',
+            'id',
+            'deputy_manager_id'
+        );
+    }
+
+    public function referanceUser()
+    {
+        return $this->belongsTo(User::class , "reference_user_id");
+    }
 
     public function getRelationshipToPrimaryModel(): string
     {

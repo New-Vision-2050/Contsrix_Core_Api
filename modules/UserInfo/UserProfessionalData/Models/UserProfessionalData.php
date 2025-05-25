@@ -13,6 +13,8 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Country\Models\Country;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\JobType\Models\JobType;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Modules\User\Models\User;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -23,6 +25,7 @@ class UserProfessionalData extends Model
     use BaseFilterable;
     //use HasTranslations;
     //use SoftDeletes;
+    use BelongsToTenant;//we can use belongs to primary model user or belongs to tenant because have company id
 
     //public array $translatable = [];
     protected $table = 'user_professional_datas';
@@ -35,7 +38,7 @@ class UserProfessionalData extends Model
         'global_id',
         'branch_id',
         'management_id',
-        'department_id',
+//        'department_id',
         'job_type_id',
         'job_title_id',
         'job_code',
@@ -77,8 +80,13 @@ class UserProfessionalData extends Model
 
     public function jobTitle()
     {
-        return $this->belongsTo(JobTitle::class);
+        return $this->belongsTo(JobTitle::class)->withoutGlobalScope("active");
     }
 
+    public function user()//TODO under Testing not used up till now
+    {
+        return $this->belongsTo(User::class, 'global_id', 'global_company_user_id')
+            ->where('users.company_id', '=', $this->company_id);
+    }
 
 }

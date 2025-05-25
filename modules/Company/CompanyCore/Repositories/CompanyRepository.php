@@ -181,19 +181,28 @@ class CompanyRepository extends BaseRepository
 
         },"companyOfficialDocuments"=>function ($query)use ($branch) {
             $query->where("management_hierarchy_id",$branch->id);}
+
         ]))->first();
     }
 
     public function getAllWithRelations(array $relations = []): Collection
     {
-        return $this->model->with($relations)->get();
+        $query = $this->model->with($relations)->where(['is_central_company' => 0]);
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+        return $query->get();
     }
 
     public function getCompaniesByIdsWithRelations(array $ids, array $relations = []): Collection
     {
-        return $this->model->whereIn('id', $ids)
-            ->with($relations)
-            ->get();
+        $query =  $this->model->whereIn('id', $ids)->where(['is_central_company' => 0])->with($relations);
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+
+        return $query->get();
     }
 
     public function getLastCreatedCompany(): ?Company

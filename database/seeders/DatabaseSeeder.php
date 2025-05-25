@@ -3,36 +3,43 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
-use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
-use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
-use Modules\Shared\University\Database\Seeders\UniversitiesTableSeeder;
-use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
-use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
-use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
-use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
+use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
+use Modules\User\Database\Seeders\AdminSeedTableSeeder;
+use Modules\Program\Database\Seeders\ProgramDatabaseSeeder;
+use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
+use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
+use Modules\SubEntity\Database\Seeders\RegistrationFormsSeeder;
+use Modules\SubEntity\Database\Seeders\SubEntityDatabaseSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
-use Modules\User\Database\Seeders\AdminSeedTableSeeder;
-use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
-use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
-use Modules\Shared\University\Database\Seeders\UniversitiesSeederTableSeeder;
-use Modules\Shared\Bank\Database\Seeders\BanksModulesSeederTableSeeder;
-use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
-use Modules\Shared\NatureWork\Database\Seeders\NatureWorkSeederTableSeeder;
+use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
+use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
+use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
+use Modules\Shared\Bank\Database\Seeders\BanksModulesSeederTableSeeder;
+use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
+use Modules\Shared\University\Database\Seeders\UniversitiesTableSeeder;
+use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
+use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitsSeederTableSeeder;
+use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
+use Modules\Shared\NatureWork\Database\Seeders\NatureWorkSeederTableSeeder;
+use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
+use Modules\Shared\University\Database\Seeders\UniversitiesSeederTableSeeder;
+use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
-use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
-use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
-use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitsSeederTableSeeder;
-use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
-use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
-use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
+use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
+use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
+use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
-use Ranium\SeedOnce\Traits\SeedOnce;
+use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
+use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
+use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
+use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
+use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
+
 class DatabaseSeeder extends Seeder
 {
     use SeedOnce;
@@ -44,13 +51,11 @@ class DatabaseSeeder extends Seeder
         $this->call(CurrencySeederTable::class);
 //        $this->call(UniversitiesTableSeeder::class);
         $this->call(RolesAndPermissionsSeeder::class);
-        $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(LanguagesTableSeeder::class);
+        $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(AdminSeedTableSeeder::class);
-
         $this->call(CompanyModulesSeederTableSeeder::class);
-
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
         $this->call(QuestionSettingTableSeeder::class);
@@ -82,5 +87,11 @@ class DatabaseSeeder extends Seeder
         $this->call(NatureWorkSeederTableSeeder::class);
         $this->call(RightTerminateSeederTableSeeder::class);
         $this->call(TypeWorkingHourSeederTableSeeder::class);
+
+        $this->call(ProgramDatabaseSeeder::class);
+        $this->call(RegistrationFormsSeeder::class);
+        $this->call(SubEntityDatabaseSeeder::class);
+        $this->call(BankTypeAccountSeederTableSeeder::class);
+        $this->call(SeedersMaritalStatusSeederTableSeeder::class);
     }
 }

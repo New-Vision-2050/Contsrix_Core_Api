@@ -16,23 +16,23 @@ class Handler
         return match (true) {
             $e instanceof ValidationException => response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => __('validation.validation_failed'),
                 'errors' => $e->errors(),
             ], 422),
 
             $e instanceof AuthenticationException => response()->json([
                 'success' => false,
-                'message' => 'Unauthenticated',
+                'message' => __('validation.unauthenticated'),
             ], 401),
 
             $e instanceof AuthorizationException => response()->json([
                 'success' => false,
-                'message' => 'Unauthorized',
+                'message' => __('validation.unauthorized'),
             ], 403),
 
             $e instanceof NotFoundHttpException => response()->json([
                 'success' => false,
-                'message' => 'Resource not found',
+                'message' => __('validation.resource_not_found'),
             ], 404),
 
             $e instanceof CustomException => response()->json([

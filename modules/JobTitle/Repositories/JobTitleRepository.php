@@ -6,6 +6,7 @@ namespace Modules\JobTitle\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\UuidInterface;
 use Modules\JobTitle\Models\JobTitle;
 
@@ -16,9 +17,20 @@ use Modules\JobTitle\Models\JobTitle;
  */
 class JobTitleRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(JobTitle $model)
     {
         parent::__construct($model);
+    }
+    public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
+    {
+        $query = $this->model->withoutGlobalScope("active")->where($conditions)->filter(request()->all());
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return array_merge($paginationArray,[
+            'data' => $paginatedData
+        ]);
     }
 
     public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
@@ -26,16 +38,18 @@ class JobTitleRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getAllJobTitles(): Collection
-    {
-        return $this->model->all();
-    }
+
+
+public function getAllJobTitles(): Collection
+{
+
+    return $this->model->filter(request()->all())->get();
+}
+
 
     public function getJobTitle(UuidInterface $id): JobTitle
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->withoutGlobalScope("active")->where('id', $id)->first();
     }
 
     public function createJobTitle(array $data): JobTitle
@@ -45,11 +59,28 @@ class JobTitleRepository extends BaseRepository
 
     public function updateJobTitle(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->update($data);
     }
 
     public function deleteJobTitle(UuidInterface $id): bool
     {
-        return $this->delete($id);
+        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
+    }
+
+    /**
+     * Get filtered job titles for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->withoutGlobalScope("active");
+
+        if (isset($filters['ids']) && is_array($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->with(['jobType'])->get();
     }
 }

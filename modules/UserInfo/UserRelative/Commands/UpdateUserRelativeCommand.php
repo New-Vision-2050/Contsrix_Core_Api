@@ -11,7 +11,7 @@ class UpdateUserRelativeCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
-        private string $marital_status,
+        private string $marital_status_id,
         private string $relationship,
         private string $phone,
     ) {
@@ -31,7 +31,7 @@ class UpdateUserRelativeCommand
     {
         return array_filter([
             'name' => $this->name,
-            'marital_status' => $this->marital_status,
+            'marital_status_id' => $this->marital_status_id,
             'relationship' => $this->relationship,
             'phone' => $this->phone,
         ]);

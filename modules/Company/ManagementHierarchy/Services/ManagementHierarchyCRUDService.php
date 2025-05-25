@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Services;
 
+use Faker\Core\Uuid;
 use Modules\Company\ManagementHierarchy\DTO\CreateBranchDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateDepartmentDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Ramsey\Uuid\UuidInterface;
 
 class ManagementHierarchyCRUDService
 {
@@ -32,7 +34,7 @@ class ManagementHierarchyCRUDService
 
     public function createManagement(CreateManagementDTO $createManagementDTO): ManagementHierarchy
     {
-         return $this->repository->createManagement($createManagementDTO->managementToArray(),$createManagementDTO->managementDetailToArray());
+         return $this->repository->createManagement($createManagementDTO->managementToArray(),$createManagementDTO->managementDetailToArray(),$createManagementDTO->getDeputyManagerIds());
     }
 
     public function createDepartment(CreateDepartmentDTO $createDepartmentDTO): ManagementHierarchy
@@ -71,6 +73,11 @@ class ManagementHierarchyCRUDService
     public function getTree()
     {
         return $this->repository->getTree();
+    }
+
+    public function getLowerUsers(UuidInterface $id)
+    {
+        return $this->repository->getUserLowerLevels($id);
     }
 
 }

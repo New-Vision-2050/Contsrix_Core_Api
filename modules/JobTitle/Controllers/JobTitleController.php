@@ -7,6 +7,7 @@ namespace Modules\JobTitle\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Modules\JobTitle\Handlers\ChangeJobTitleStatusHandler;
 use Modules\JobTitle\Handlers\DeleteJobTitleHandler;
 use Modules\JobTitle\Handlers\UpdateJobTitleHandler;
@@ -15,16 +16,22 @@ use Modules\JobTitle\Presenters\JobTitleSimplePresenter;
 use Modules\JobTitle\Requests\ChangeJobTitleStatusRequest;
 use Modules\JobTitle\Requests\CreateJobTitleRequest;
 use Modules\JobTitle\Requests\DeleteJobTitleRequest;
+use Modules\JobTitle\Requests\ExportJobTitleRequest;
 use Modules\JobTitle\Requests\GetJobTitleListRequest;
 use Modules\JobTitle\Requests\GetJobTitleRequest;
 use Modules\JobTitle\Requests\GetJobTitleSimpleListRequest;
 use Modules\JobTitle\Requests\UpdateJobTitleRequest;
 use Modules\JobTitle\Services\JobTitleCRUDService;
+use Modules\JobTitle\Exports\JobTitleExport;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Artisan;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 
 class JobTitleController extends Controller
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
         private JobTitleCRUDService $jobTitleService,
         private UpdateJobTitleHandler $updateJobTitleHandler,
@@ -86,7 +93,7 @@ class JobTitleController extends Controller
 
         return Json::deleted();
     }
-    
+
     public function changeStatus(ChangeJobTitleStatusRequest $request): JsonResponse
     {
         $command = $request->createChangeJobTitleStatusCommand();
@@ -97,5 +104,21 @@ class JobTitleController extends Controller
         $presenter = new JobTitlePresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Export job titles to a file
+     *
+     * @param ExportJobTitleRequest $request
+     */
+    public function export(ExportJobTitleRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'job_titles.' . $format;
+
+        $filters = $request->getFilters();
+
+
+        return Excel::download(new JobTitleExport($this->jobTitleService, $filters), $fileName);
     }
 }

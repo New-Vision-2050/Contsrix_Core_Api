@@ -71,7 +71,19 @@ class CompanyLegalDataRepository extends BaseRepository
         return true;
     }
 
-
-
+    public function delete( $id)
+    {
+        try {
+            DB::beginTransaction();
+            $legalData = $this->findOneOrFail($id);
+            $legalData->clearMediaCollection('upload'); // Clear associated media files
+            $legalData->delete(); // Delete the legal data record
+            DB::commit();
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 409);
+        }
+    }
 
 }

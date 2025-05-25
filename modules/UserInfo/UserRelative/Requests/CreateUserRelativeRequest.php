@@ -15,19 +15,28 @@ class CreateUserRelativeRequest extends FormRequest
         return [
             'name' => 'required|string',
             'user_id'=> 'required|string',
-            'marital_status'=> 'required|string',
+            'marital_status_id'=> 'required|string',
             'relationship'=> 'required|string',
             'phone'=> 'required|string',
         ];
     }
-
+    public function messages(): array
+    {
+        return [
+            'name.required' => __('validation.user_relative.name_required'),
+            'user_id.required' => __('validation.user_relative.user_id_required'),
+            'marital_status_id.required' => __('validation.user_relative.marital_status_id_required'),
+            'relationship.required' => __('validation.user_relative.relationship_required'),
+            'phone.required' => __('validation.user_relative.phone_required'),
+        ];
+    }
     public function createCreateUserRelativeDTO(): CreateUserRelativeDTO
     {
         return new CreateUserRelativeDTO(
             name: $this->get('name'),
             company_id:'',
             global_id:'',
-            marital_status:$this->get('marital_status'),
+            marital_status_id:$this->get('marital_status_id'),
             relationship:$this->get('relationship'),
             phone:$this->get('phone'),
         );

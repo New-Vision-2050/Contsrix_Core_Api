@@ -3,11 +3,11 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
-use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
-use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
+use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
+use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
+use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -32,7 +32,5 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(DefaultIdentifierSeederTableSeeder::class);
 
         $this->call(DefaultLoginWaySeederTableSeeder::class);
-
-
     }
 }

@@ -109,13 +109,14 @@ class AuthController extends Controller
     public function getLoginWays(GetLoginWaysRequest $request)
     {
 
-        [$loginWayId, $token, $step, $canSetPass] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
+        [$loginWayId, $token, $step, $canSetPass,$firstLogin] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
         $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
         return Json::item([
             "login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step, $user))->getData(),
             "token" => $token,
-            "can_set_pass" => $canSetPass
+            "can_set_pass" => $canSetPass,
+            "first_login"=> $firstLogin
         ]);
     }
 

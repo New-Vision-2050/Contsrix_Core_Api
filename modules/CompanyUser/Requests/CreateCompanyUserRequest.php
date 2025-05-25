@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Rules\CompanyUserValidation;
 use Modules\CompanyUser\Rules\PhoneEmailConsistencyRule;
 use Modules\CompanyUser\Rules\UserNameValidation;
@@ -46,7 +47,28 @@ class CreateCompanyUserRequest extends FormRequest
 
         ];
     }
-
+    public function messages(): array
+    {
+        return [
+            'first_name.required' => __('validation.company_user.first_name_required'),
+            'last_name.required' => __('validation.company_user.last_name_required'),
+            'company_id.required' => __('validation.company_user.company_id_required'),
+            'company_id.exists' => __('validation.company_user.company_id_exists'),
+            'country_id.exists' => __('validation.company_user.country_id_exists'),
+            'time_zone_id.exists' => __('validation.company_user.time_zone_id_exists'),
+            'language_id.exists' => __('validation.company_user.language_id_exists'),
+            'currency_id.exists' => __('validation.company_user.currency_id_exists'),
+            'phone.required' => __('validation.company_user.phone_required'),
+            'email.required' => __('validation.company_user.email_required'),
+            'email.email' => __('validation.company_user.email_invalid'),
+            'job_title_id.required' => __('validation.company_user.job_title_required'),
+            'job_title_id.exists' => __('validation.company_user.job_title_exists'),
+            'border_number.unique' => __('validation.company_user.border_number_unique'),
+            'residence.unique' => __('validation.company_user.residence_unique'),
+            'passport.unique' => __('validation.company_user.passport_unique'),
+            'identity.unique' => __('validation.company_user.identity_unique'),
+        ];
+    }
     public function createCreateCompanyUserDTO(): CreateCompanyUserDTO
     {
         return new CreateCompanyUserDTO(

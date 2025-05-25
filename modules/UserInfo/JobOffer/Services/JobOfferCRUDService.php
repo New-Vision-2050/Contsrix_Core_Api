@@ -23,13 +23,12 @@ class JobOfferCRUDService
     ) {
     }
 
-    public function create(CreateJobOfferDTO $createJobOfferDTO,$request): JobOffer
+    public function create(CreateJobOfferDTO $createJobOfferDTO,$request)//: JobOffer
     {
         $jobOffer = $this->repository->createOrUpdateJobOffer($createJobOfferDTO->toArray());
 
         $inputFile = $request->input('file');
-        $file = $$request->file('file');
-
+        $file = $request->file('file');
         $company_id = $createJobOfferDTO->company_id;
         $global_id = $createJobOfferDTO->global_id;
 

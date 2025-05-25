@@ -19,7 +19,19 @@ class UpdateQualificationRequest extends FormRequest
             'academic_qualification_id' => 'required|string',
             'academic_specialization_id' => 'required|string',
             'study_rate' => 'required|string',
-            'graduation_date' => 'required|string',
+            'graduation_date' => 'required',
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'graduation_date.required' => __('validation.graduation_date_required'),
+            'study_rate.required' => __('validation.study_rate_required'),
+            'country_id.required' => __('validation.country_id_required'),
+            'university_id.required' => __('validation.university_id_required'),
+            'academic_qualification_id.required' => __('validation.academic_qualification_id_required'),
+            'academic_specialization_id.required' => __('validation.academic_specialization_id_required'),
         ];
     }
 
