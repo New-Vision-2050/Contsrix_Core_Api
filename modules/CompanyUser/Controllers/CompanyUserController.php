@@ -88,7 +88,7 @@ class CompanyUserController extends Controller
         }
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData(),extraItems: ["userInCompany"=>$this->userCRUDService->getUserBy(["email"=>$request->email])]);
+        return Json::item($presenter->getData(),extraItems: ["userInCompany"=>$this->userCRUDService->getUserBy(["email"=>$request->email,"company_id"=>tenant("id")])]);
 
 
     }
