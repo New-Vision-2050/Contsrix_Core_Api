@@ -156,7 +156,7 @@ class UserController extends Controller
     public function getUserByEmail(GetUserByEmailRequest $userByEmailRequest)
     {
         $branchesWithRole =  $this->userService->getUserByEmailWithBranches($userByEmailRequest->email,$userByEmailRequest->role);
-        return Json::items(UserBranchesPresenter::collection($branchesWithRole));
+        return Json::item((new UserBranchesPresenter($branchesWithRole))->getData());
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)

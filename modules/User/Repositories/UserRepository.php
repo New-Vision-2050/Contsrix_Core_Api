@@ -68,7 +68,7 @@ class UserRepository extends BaseRepository
             ->where("global_company_user_id", $user->global_company_user_id)
             ->where("role", $role)
             ->with("managementHierarchy")
-            ->get();
+            ->first();
 
     }
 
