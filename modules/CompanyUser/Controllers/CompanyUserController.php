@@ -86,7 +86,7 @@ class CompanyUserController extends Controller
         }
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData(),extraItems: ["userInCompany"=>auth()->user()]);
 
 
     }

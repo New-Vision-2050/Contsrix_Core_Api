@@ -8,9 +8,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\SubEntity\Models\RegistrationForm;
-
-use function PHPUnit\Framework\isArray;
-
 class SuperEntityRepository
 {
     public function __construct(protected array $availableSuperEntities = [])
@@ -83,6 +80,49 @@ class SuperEntityRepository
             ->where('id', $id)
             ->select('id', 'name')
             ->first();
+    }
+
+    public function setAttributesConfig(string $superEntityId, $attributes): array
+    {
+        $config = ['allowed_attributes' => $attributes];
+
+        $existing = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->first();
+
+        if ($existing) {
+            DB::table('super_entities_config')
+                ->where('super_entity', $superEntityId)
+                ->update(values: [
+                    'config' => json_encode($config),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            DB::table('super_entities_config')->insert([
+                'id' => Str::uuid(),
+                'super_entity' => $superEntityId,
+                'config' => json_encode($config),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return $config;
+    }
+
+    public function getAttributesConfig(string $superEntityId): array
+    {
+        $config = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->value('config');
+
+        if (!$config) {
+            return [];
+        }
+
+        $decoded = json_decode($config, true);
+
+        return $decoded['allowed_attributes'] ?? [];
     }
 
     public function setConfigValue(string $superEntityId, string $key, $value): array
