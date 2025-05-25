@@ -170,4 +170,16 @@ class SuperEntityRepository
 
         return $decoded[$key] ?? null;
     }
+
+    public function setMultipleConfigValues(string $superEntityId, array $configs): array
+    {
+        $results = [];
+
+        foreach ($configs as $key => $value) {
+            $result = $this->setConfigValue($superEntityId, $key, $value);
+            $results = array_merge($results, $result);
+        }
+        
+        return $results;
+    }
 }

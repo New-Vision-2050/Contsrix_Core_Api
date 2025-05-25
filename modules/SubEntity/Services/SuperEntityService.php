@@ -42,14 +42,9 @@ class SuperEntityService
         }, $attributes);
     }
 
-    public function setAttributesConfig(string $superEntityId, $attributes): array
-    {
-        return $this->repository->setAttributesConfig($superEntityId, $attributes);
-    }
-
     public function getAttributesConfig(string $superEntityId): array
     {
-        $attributes = $this->repository->getAttributesConfig($superEntityId);
+        $attributes = $this->repository->getConfigValue($superEntityId, 'allowed_attributes');
 
         if (isset($attributes['allowed_attributes']) && filled($attributes['allowed_attributes'])) {
             return array_map(function ($name) {
@@ -61,22 +56,12 @@ class SuperEntityService
         return $this->getAvailableAttributes($superEntityId);
     }
 
-    public function getRegistrationFormsConfig(string $superEntityId): array
-    {
-        return $this->repository->getConfigValue($superEntityId, 'registration_forms') ?? [];
-    }
-
     public function getRegistrationConfig(string $superEntityId): array
     {
         return [
-            'registration_forms' => $this->getRegistrationFormsConfig($superEntityId)['registration_forms'] ?? [],
-            'is_registrable' => $this->getIsRegistrableConfig($superEntityId)
+            'registration_forms' => $this->repository->getConfigValue($superEntityId, 'registration_forms'),
+            'is_registrable' => $this->repository->getConfigValue($superEntityId, 'is_registrable')
         ];
-    }
-
-    public function getIsRegistrableConfig(string $superEntityId): bool
-    {
-        return $this->repository->getConfigValue($superEntityId, 'is_registrable') ?? true;
     }
 
     public function getIds()

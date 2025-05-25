@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Commands;
 
-class UpdateSuperEntityRegistrationFormsConfigCommand
+class UpdateSuperEntityRegistrationCommand
 {
     public function __construct(
         private string $id,
         private array $registrationForms,
+        private bool $isRegistrable,
     ) {
     }
 
@@ -25,6 +26,7 @@ class UpdateSuperEntityRegistrationFormsConfigCommand
     {
         return [
             'registration_forms' => $this->registrationForms,
+            'is_registrable' => $this->isRegistrable,
         ];
     }
 }
