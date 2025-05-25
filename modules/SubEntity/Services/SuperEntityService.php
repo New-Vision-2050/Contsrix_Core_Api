@@ -23,7 +23,7 @@ class SuperEntityService
         $supEntities = $this->subEntityCRUDService->getSelection();
         $supEntities = $supEntities['data']->toArray();
         $superEntities = $this->repository->list($search);
-        
+
         return array_merge($supEntities, $superEntities);
     }
 
@@ -43,19 +43,33 @@ class SuperEntityService
         }, $attributes);
     }
 
+     public function getAllAttributes(string $superEntityId): array
+    {
+        $id = $superEntityId;
+        $attributes = [];
+        if (Str::isUuid($id)) {
+            $parentSubEntity = $this->subEntityCRUDService->get(id: Uuid::fromString($id));
+            $attributes = array_merge($parentSubEntity->default_attributes, $parentSubEntity->optional_attributes ?? []);
+        } else {
+            $attributes = $this->repository->getAvailableAttributes($id) ?? [];
+        }
+
+       return $attributes;
+    }
+
     public function getAttributesConfig(string $superEntityId): array
     {
         return [
-            'default_attributes' => $this->repository->getConfigValue($superEntityId, 'default_attributes'),
-            'optional_attributes' => $this->repository->getConfigValue($superEntityId,'optional_attributes'),
+            'default_attributes' => $this->repository->getConfigValue($superEntityId, 'default_attributes') ?? $this->getAllAttributes($superEntityId),
+            'optional_attributes' => $this->repository->getConfigValue($superEntityId,'optional_attributes') ?? $this->getAllAttributes($superEntityId),
         ];
     }
 
     public function getRegistrationConfig(string $superEntityId): array
     {
         return [
-            'registration_forms' => $this->repository->getConfigValue($superEntityId, 'registration_forms'),
-            'is_registrable' => $this->repository->getConfigValue($superEntityId, 'is_registrable')
+            'registration_forms' => $this->repository->getConfigValue($superEntityId, 'registration_forms') ?? $this->getDefaultRegistrationFormsIds($superEntityId),
+            'is_registrable' => $this->repository->getConfigValue($superEntityId, 'is_registrable') ?? true
         ];
     }
 
@@ -98,6 +112,19 @@ class SuperEntityService
         }
 
         return $this->repository->getRegistrationFormsForId($id);
+    }
+
+    public function getDefaultRegistrationFormsIds(string $id): array
+    {
+        $superEntityId = $id;
+        if (Str::isUuid($superEntityId)) {
+            $parentSubEntity = $this->subEntityCRUDService->find(Uuid::fromString($superEntityId));
+            $allowedRegistrationForms = $parentSubEntity->allowedChildForms;
+            return filled($allowedRegistrationForms) ? $allowedRegistrationForms->pluck('id')->toArray() :
+                $this->repository->getRegistrationFormsIds($parentSubEntity->origin_super_entity);
+        }
+
+        return $this->repository->getRegistrationFormsIds($id);
     }
 
     public function getById(string $id): ?array

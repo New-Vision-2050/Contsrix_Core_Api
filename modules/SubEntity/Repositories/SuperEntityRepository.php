@@ -88,6 +88,18 @@ class SuperEntityRepository
         return RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active']);
     }
 
+    public function getRegistrationFormsIds(string $id): array
+    {
+        $forms = collect($this->availableSuperEntities)
+            ->where('id', $id)
+            ->pluck('registration_forms')
+            ->first();
+
+        return RegistrationForm::whereIn('slug', $forms)
+            ->pluck('id')
+            ->toArray();
+    }
+
     public function getById(string $id): ?array
     {
         return collect($this->availableSuperEntities)
