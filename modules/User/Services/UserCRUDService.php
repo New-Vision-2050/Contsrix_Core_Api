@@ -40,9 +40,9 @@ class UserCRUDService
         return $users;
     }
 
-    public function getUserByEmailWithBranches($email)
+    public function getUserByEmailWithBranches($email,$role)
     {
-       return $this->repository->getUserByEmailWithBranches($email);
+       return $this->repository->getUserByEmailWithBranches($email,$role);
     }
 
     public function getUserBy($condition)
