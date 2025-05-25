@@ -42,6 +42,13 @@ class SuperEntityController extends Controller
         return Json::items($attributes);
     }
 
+    public function getAllAttributesForSelection(GetSuperEntityAttributesRequest $request): JsonResponse
+    {
+        $attributes = $this->superEntityService->getAllAttributesForSelection($request->get('super_entity_id'));
+
+        return Json::items($attributes);
+    }
+
     public function getRegistrationForms(GetSuperEntityRegistrationFormsRequest $request): JsonResponse
     {
         $forms = $this->superEntityService->getRegistrationFormsForId($request->get('super_entity_id'));
@@ -53,7 +60,7 @@ class SuperEntityController extends Controller
     {
         $attributes = $this->superEntityService->getAttributesConfig($request->get('super_entity_id'));
 
-        return Json::item( $attributes);
+        return Json::item($attributes);
     }
 
     public function setAttributesConfig(UpdateSuperEntityAttributesConfigRequest $request): JsonResponse

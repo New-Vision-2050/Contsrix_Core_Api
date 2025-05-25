@@ -27,6 +27,22 @@ class SuperEntityService
         return array_merge($supEntities, $superEntities);
     }
 
+    public function getAllAttributesForSelection(string $superEntityId): array
+    {
+        $id = $superEntityId;
+        $attributes = [];
+        if (Str::isUuid($id)) {
+            $parentSubEntity = $this->subEntityCRUDService->get(id: Uuid::fromString($id));
+            $attributes = array_merge($parentSubEntity->default_attributes, $parentSubEntity->optional_attributes ?? []);
+        } else {
+            $attributes = $this->repository->getAvailableAttributes($id) ?? [];
+        }
+
+        return array_map(function ($name) {
+                return AttributesTranslationService::getTranslations($name);
+            }, $attributes);
+    }
+
     public function getAvailableAttributes(string $superEntityId): array
     {
         $id = $superEntityId;
