@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\SubEntity\Models\RegistrationForm;
 
+use function PHPUnit\Framework\isArray;
+
 class SuperEntityRepository
 {
     public function __construct(protected array $availableSuperEntities = [])
@@ -93,6 +95,9 @@ class SuperEntityRepository
 
         if ($existing) {
             $existingConfig = $existing->config;
+            if(!isArray($existingConfig)){
+                $existingConfig = json_decode($existingConfig,true);
+            }
             $existingConfig['allowed_attributes'] = $attributes;
 
             DB::table('super_entities_config')
