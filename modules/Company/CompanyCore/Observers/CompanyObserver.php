@@ -12,26 +12,26 @@ use Modules\Shared\JobType\Services\JobTypeCRUDService;
 
 class CompanyObserver
 {
-    public function created(Company $company): void
-    {
-        $createJobTypeWithCompanyDTO = new CreateJobTypeWithCompanyDTO(
-            name: 'مجلس ادارة',
-            companyId: Uuid::fromString($company->id),
-            status: 1
-        );
-
-        $jobType = app(JobTypeCRUDService::class)->createWithCompany($createJobTypeWithCompanyDTO);
-
-        JobTitle::create([
-            'type' => 'general_manager',
-            'name' => ['ar' => 'مدير عام', 'en' => 'General Manager'],
-            'job_type_id' => $jobType->id,
-            'description' => 'مدير عام',
-            'status' => 1,
-            'company_id' => $company->id,
-        ]);
-
-    }
+    //public function created(Company $company): void
+    //{
+    //    $createJobTypeWithCompanyDTO = new CreateJobTypeWithCompanyDTO(
+    //        name: 'مجلس ادارة',
+    //        companyId: Uuid::fromString($company->id),
+    //        status: 1
+    //    );
+    //
+    //    $jobType = app(JobTypeCRUDService::class)->createWithCompany($createJobTypeWithCompanyDTO);
+    //
+    //    JobTitle::create([
+    //        'type' => 'general_manager',
+    //        'name' => ['ar' => 'مدير عام', 'en' => 'General Manager'],
+    //        'job_type_id' => $jobType->id,
+    //        'description' => 'مدير عام',
+    //        'status' => 1,
+    //        'company_id' => $company->id,
+    //    ]);
+    //
+    //}
 
 
 }
