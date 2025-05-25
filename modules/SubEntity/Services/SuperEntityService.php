@@ -44,16 +44,10 @@ class SuperEntityService
 
     public function getAttributesConfig(string $superEntityId): array
     {
-        $attributes = $this->repository->getConfigValue($superEntityId, 'allowed_attributes');
-
-        if (isset($attributes['allowed_attributes']) && filled($attributes['allowed_attributes'])) {
-            return array_map(function ($name) {
-                return AttributesTranslationService::getTranslations($name);
-            }, $attributes['allowed_attributes'] ?? []);
-        }
-
-        // fallback to the whole list of attributes
-        return $this->getAvailableAttributes($superEntityId);
+        return [
+            'default_attributes' => $this->repository->getConfigValue($superEntityId, 'default_attributes'),
+            'optional_attributes' => $this->repository->getConfigValue($superEntityId,'optional_attributes'),
+        ];
     }
 
     public function getRegistrationConfig(string $superEntityId): array
@@ -62,6 +56,11 @@ class SuperEntityService
             'registration_forms' => $this->repository->getConfigValue($superEntityId, 'registration_forms'),
             'is_registrable' => $this->repository->getConfigValue($superEntityId, 'is_registrable')
         ];
+    }
+
+    public function getConfig(string $superEntityId): array
+    {
+        return $this->repository->getConfig($superEntityId);
     }
 
     public function getIds()
@@ -102,17 +101,17 @@ class SuperEntityService
 
     public function getById(string $id): ?array
     {
-        $allowed_attributes = $this->getAttributesConfig($id);
+        $config = $this->getConfig($id);
 
         if (Str::isUuid($id)) {
             $parentSubEntity = $this->subEntityCRUDService->get(Uuid::fromString($id));
             return [
                 'id' => $id,
                 'name' => $parentSubEntity->name,
-                'allowed_attributes' => $allowed_attributes
+                'config' => $config
             ];
         }
 
-        return array_merge($this->repository->getById($id), ['allowed_attributes' => $allowed_attributes]);
+        return array_merge($this->repository->getById($id), ['config' => $config]);
     }
 }

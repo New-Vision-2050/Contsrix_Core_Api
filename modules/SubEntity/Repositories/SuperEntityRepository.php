@@ -131,6 +131,19 @@ class SuperEntityRepository
         return $decoded[$key] ?? null;
     }
 
+      public function getConfig(string $superEntityId)
+    {
+        $config = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->value('config');
+
+        if (!$config) {
+            return null;
+        }
+
+        return json_decode($config, true);
+    }
+
     public function setMultipleConfigValues(string $superEntityId, array $configs): array
     {
         $results = [];
@@ -139,7 +152,7 @@ class SuperEntityRepository
             $result = $this->setConfigValue($superEntityId, $key, $value);
             $results = array_merge($results, $result);
         }
-        
+
         return $results;
     }
 }
