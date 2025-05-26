@@ -10,7 +10,8 @@ class UpdateSuperEntityAttributesConfigCommand
 {
     public function __construct(
         private string $id,
-        private array $allowedAttributes,
+        private array $defaultAttributes,
+        private array $optionalAttributes,
     ) {
     }
 
@@ -18,15 +19,12 @@ class UpdateSuperEntityAttributesConfigCommand
     {
         return $this->id;
     }
-    public function getAllowedAttributes(): array
-    {
-        return $this->allowedAttributes;
-    }
 
     public function toArray(): array
     {
         return [
-            'allowed_attributes' => $this->allowedAttributes,
+            'default_attributes' => $this->defaultAttributes,
+            'optional_attributes' => $this->optionalAttributes,
         ];
     }
 }

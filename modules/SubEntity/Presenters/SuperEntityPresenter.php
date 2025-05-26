@@ -19,17 +19,15 @@ class SuperEntityPresenter extends AbstractPresenter
     {
         $attributes = [
             'id' => $this->superEntity['id'],
-            'name' => is_array($this->superEntity['name']) ? $this->superEntity['name'][app()->getLocale()]: $this->superEntity['name'],
+            'name' => is_array($this->superEntity['name']) ? $this->superEntity['name'][app()->getLocale()] : $this->superEntity['name'],
         ];
 
-        if(isset($this->superEntity['allowed_attributes']) && filled($this->superEntity['allowed_attributes']))
-        {
-            $attributes['allowed_attributes'] = $this->superEntity['allowed_attributes'];
-        }
+        $configSet = ['default_attributes', 'optional_attributes', 'registration_forms', 'is_registrable'];
 
-        if(isset($this->superEntity['registration_forms']) && filled($this->superEntity['registration_forms']))
-        {
-            $attributes['registration_forms'] = $this->superEntity['registration_forms'];
+        foreach ($configSet as $value) {
+            if (isset($this->superEntity['config'][$value]) && filled($this->superEntity['config'][$value])) {
+                $attributes[$value] = $this->superEntity['config'][$value];
+            }
         }
 
         return $attributes;
