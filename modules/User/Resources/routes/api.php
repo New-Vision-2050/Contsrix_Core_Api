@@ -7,7 +7,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     //  ->middleware("permission:user.list") Ignore User List For Testing
     Route::get('/', [UserController::class, 'index'])->name("users.list");
     Route::get('/get-by-role', [UserController::class, 'getByRole'])->name("users.list");
-    Route::get('/get-by-email-with-branches', [UserController::class, 'getUserByEmail'])->name("users.list");
+    Route::get('/get-by-email-with-branches', [UserController::class, 'getUserByGlobalId']);
 
     Route::get('/available-tenants-for-auth-user', [UserController::class, 'getAvailableTenantsForAuthUser'])->name("tenants-for-user");
     Route::get('/admin-users', [UserController::class, 'getAdminUsers'])->middleware("permission:user.list")->name("users.admin-list");

@@ -61,9 +61,9 @@ class UserRepository extends BaseRepository
         })->where("company_id", tenant("id"))->first();
     }
 
-    public function getUserByEmailWithBranches($email,$role)
+    public function getUserByGlobalIdWithBranches($global_id,$role)
     {
-        $user = $this->model->query()->where('email', $email)->where("company_id", tenant("id"))->first();
+        $user = $this->model->query()->where('global_company_user_id', $global_id)->where("company_id", tenant("id"))->first();
         return CompanyUserCompany::query()->where("company_id", tenant("id"))
             ->where("global_company_user_id", $user->global_company_user_id)
             ->where("role", $role)

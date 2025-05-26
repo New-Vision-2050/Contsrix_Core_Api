@@ -29,7 +29,7 @@ use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
 use Modules\User\Requests\GetAdminUsersRequest;
 use Modules\User\Requests\GetUserAuditListRequest;
-use Modules\User\Requests\GetUserByEmailRequest;
+use Modules\User\Requests\GetUserByGlobalIdRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
 use Modules\User\Requests\GetUserRolesAndPermissionRequest;
@@ -155,10 +155,11 @@ class UserController extends Controller
         return Json::item($permissionPresenter);
     }
 
-    public function getUserByEmail(GetUserByEmailRequest $userByEmailRequest)
+    public function getUserByGlobalId(GetUserByGlobalIdRequest $userByEmailRequest)
     {
 
-        $branchesWithRole =  $this->userService->getUserByEmailWithBranches($userByEmailRequest->email,$userByEmailRequest->role);
+        $branchesWithRole =  $this->userService->getUserByGlobalIdWithBranches($userByEmailRequest->global_id,$userByEmailRequest->role);
+
         return Json::item( ManagementHierarchySimpleDataPresenter::collection($branchesWithRole?->managementHierarchy?$branchesWithRole?->managementHierarchy:[]));
     }
 
