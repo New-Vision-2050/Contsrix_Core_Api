@@ -18,6 +18,7 @@ class AssignRoleCompanyUserForCurrentCompanyRequest extends FormRequest
         return [
 
             'role' => 'required',
+
             "branch_ids" => "nullable|array",
             "branch_ids.*" => "exists:management_hierarchies,id,type,branch"
         ];
@@ -29,6 +30,7 @@ class AssignRoleCompanyUserForCurrentCompanyRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             company_id: Uuid::fromString(tenant("id")),
             role: (int)$this->get('role'),
+
             branch_ids: $this->get('branch_ids') ,
         );
     }

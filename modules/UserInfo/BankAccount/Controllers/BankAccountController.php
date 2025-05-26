@@ -11,12 +11,14 @@ use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\BankAccount\Handlers\DeleteBankAccountHandler;
 use Modules\UserInfo\BankAccount\Handlers\UpdateBankAccountHandler;
+use Modules\UserInfo\BankAccount\Handlers\UpdateTypeBankAccountHandler;
 use Modules\UserInfo\BankAccount\Presenters\BankAccountPresenter;
 use Modules\UserInfo\BankAccount\Requests\CreateBankAccountRequest;
 use Modules\UserInfo\BankAccount\Requests\DeleteBankAccountRequest;
 use Modules\UserInfo\BankAccount\Requests\GetBankAccountListRequest;
 use Modules\UserInfo\BankAccount\Requests\GetBankAccountRequest;
 use Modules\UserInfo\BankAccount\Requests\UpdateBankAccountRequest;
+use Modules\UserInfo\BankAccount\Requests\UpdateTypeBankAccountRequest;
 use Modules\UserInfo\BankAccount\Services\BankAccountCRUDService;
 use Ramsey\Uuid\Uuid;
 
@@ -25,6 +27,7 @@ class BankAccountController extends Controller
     public function __construct(
         private BankAccountCRUDService $bankAccountService,
         private UpdateBankAccountHandler $updateBankAccountHandler,
+        private UpdateTypeBankAccountHandler $updateTypeBankAccountHandler,
         private DeleteBankAccountHandler $deleteBankAccountHandler,
         private CompanyUserCRUDService $companyUserCRUDService,
         private UserRepository $userRepository
@@ -83,6 +86,19 @@ class BankAccountController extends Controller
 
         return Json::item( $presenter->getData());
     }
+
+    public function updateType(UpdateTypeBankAccountRequest $request): JsonResponse
+    {
+        $command = $request->createUpdateTypeBankAccountCommand();
+        $this->updateTypeBankAccountHandler->handle($command);
+
+        $item = $this->bankAccountService->get($command->getId());
+
+        $presenter = new BankAccountPresenter($item);
+
+        return Json::item( $presenter->getData());
+    }
+
 
     public function delete(DeleteBankAccountRequest $request): JsonResponse
     {
