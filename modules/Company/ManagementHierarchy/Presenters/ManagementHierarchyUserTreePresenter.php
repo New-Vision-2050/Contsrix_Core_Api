@@ -10,6 +10,7 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Presenters\UsersBranchPresenter;
+use Ramsey\Uuid\Uuid;
 
 class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 {
@@ -76,7 +77,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     private function presentHierarchyWithoutManager(): array
     {
         $result = [
-            'id' => null,
+            'id' => Uuid::uuid4()->toString(),
             'name' => 'No Manager Assigned',
             'hierarchy_info' => [
                 'id' => $this->managementHierarchy->id,

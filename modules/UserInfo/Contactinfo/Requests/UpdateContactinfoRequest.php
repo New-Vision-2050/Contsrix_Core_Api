@@ -26,7 +26,8 @@ class UpdateContactinfoRequest extends FormRequest
     public function createUpdateContactinfoCommand(): UpdateContactinfoCommand
     {
         return new UpdateContactinfoCommand(
-            id: Uuid::fromString($this->route('id')),
+            company_id: '',
+            global_id: '',
             email: $this->get('email'),
             other_phone: $this->get('other_phone'),
             code_other_phone: $this->get('code_other_phone'),

@@ -9,6 +9,7 @@ use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 
 class CompanyUserValidationService
@@ -17,6 +18,7 @@ class CompanyUserValidationService
     private $errors = [];
     public function __construct(
         private CompanyUserRepository $repository,
+        private UserRepository $userRepository,
     )
     {
 
@@ -45,10 +47,12 @@ class CompanyUserValidationService
     public function validateEmail()
     {
         if($user = $this->repository->findByEmail(request()->email)) {
+            $userInCompany = $this->userRepository->findOneBy(["email"=>request()->email,"company_id"=>tenant("id")]);
             $this->errors[] = [
                 'sentence' => __("validation.user-email-error",["name"=>$user->name]),
                 'sub_title' => 'email',
                 'status' => 0,
+                "status_in_company"=>$userInCompany == null?0:1,
                 'validate' => 'required',
                 'id' =>$user->id
             ];
@@ -57,6 +61,7 @@ class CompanyUserValidationService
                 'sentence' => __("validation.user-email-success"),
                 'sub_title' => 'email',
                 'status' => 1,
+                "status_in_company"=>0,
                 'validate' => 'required'
             ];
         }

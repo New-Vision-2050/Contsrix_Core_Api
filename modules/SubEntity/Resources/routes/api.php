@@ -21,18 +21,14 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     // super entity
     Route::get('/super_entities/list', [SuperEntityController::class, 'index']);
-    Route::get('/super_entities/attributes', [SuperEntityController::class, 'getAvailableAttributes']);
+    Route::get('/super_entities/default_attributes', [SuperEntityController::class, 'getDefaultAttributes']);
+    Route::get('/super_entities/optional_attributes', [SuperEntityController::class, 'getOptionalAttributes']);
+    Route::get('/super_entities/attributes/all', [SuperEntityController::class, 'getAllAttributesForSelection']);
     Route::get('/super_entities/registration_forms', [SuperEntityController::class, 'getRegistrationForms']);
     Route::get('/registration_forms/selection/list', [RegistrationFormController::class, 'getRegistrationForms']);
-    Route::get('/super_entities/allowed_attributes/config', [SuperEntityController::class, 'getAttributesConfig']);
-    Route::post('/super_entities/allowed_attributes/config/{id}', [SuperEntityController::class, 'setAttributesConfig']);
-
-    Route::get('/super_entities/registration_forms/config', [SuperEntityController::class, 'getRegistrationFormsConfig']);
-    Route::post('/super_entities/registration_forms/config/{id}', [SuperEntityController::class, 'setRegistrationFormsConfig']);
-
-    Route::get('/super_entities/registrable/config', [SuperEntityController::class, 'getRegistrableConfig']);
-    Route::post('/super_entities/registrable/config/{id}', [SuperEntityController::class, 'setRegistrableConfig']);
-
+    Route::get('/super_entities/attributes/config', [SuperEntityController::class, 'getAttributesConfig']);
+    Route::post('/super_entities/attributes/config/{id}', [SuperEntityController::class, 'setAttributesConfig']);
+    Route::post('/super_entities/registration/config', [SuperEntityController::class, 'setRegistrationConfig']);
     Route::get('/super_entities/registration/config', [SuperEntityController::class, 'getRegistrationConfig']);
 
 
