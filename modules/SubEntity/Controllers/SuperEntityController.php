@@ -17,6 +17,7 @@ use Modules\SubEntity\Presenters\SuperEntityRegistrationConfigPresenter;
 use Modules\SubEntity\Requests\UpdateSuperEntityAttributesConfigRequest;
 use Modules\SubEntity\Handlers\UpdateSuperEntityRegistrationConfigHandler;
 use Modules\SubEntity\Requests\UpdateSuperEntityRegistrationConfigRequest;
+use Modules\SubEntity\Presenters\SuperEntityAttributesConfigPresenter;
 
 class SuperEntityController extends Controller
 {
@@ -34,9 +35,23 @@ class SuperEntityController extends Controller
         return Json::items(SuperEntityPresenter::collection($list));
     }
 
-    public function getAvailableAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
+    public function getDefaultAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
     {
-        $attributes = $this->superEntityService->getAvailableAttributes($request->get('super_entity_id'));
+        $attributes = $this->superEntityService->getDefaultAttributes($request->get('super_entity_id'));
+
+        return Json::items($attributes);
+    }
+
+     public function getOptionalAttributes(GetSuperEntityAttributesRequest $request): JsonResponse
+    {
+        $attributes = $this->superEntityService->getOptionalAttributes($request->get('super_entity_id'));
+
+        return Json::items($attributes);
+    }
+
+    public function getAllAttributesForSelection(GetSuperEntityAttributesRequest $request): JsonResponse
+    {
+        $attributes = $this->superEntityService->getAllAttributesForSelection($request->get('super_entity_id'));
 
         return Json::items($attributes);
     }
@@ -52,7 +67,7 @@ class SuperEntityController extends Controller
     {
         $attributes = $this->superEntityService->getAttributesConfig($request->get('super_entity_id'));
 
-        return Json::items($attributes);
+        return Json::item($attributes);
     }
 
     public function setAttributesConfig(UpdateSuperEntityAttributesConfigRequest $request): JsonResponse
@@ -63,7 +78,7 @@ class SuperEntityController extends Controller
 
         $item = $this->superEntityService->getById($command->getId());
 
-        $presenter = new SuperEntityPresenter($item);
+        $presenter = new SuperEntityAttributesConfigPresenter($item);
 
         return Json::item($presenter->getData());
     }
@@ -80,8 +95,6 @@ class SuperEntityController extends Controller
 
         return Json::item($presenter->getData());
     }
-
-    // TODO: refactor config functionality
     public function getRegistrationConfig(GetSuperEntityAttributesRequest $request): JsonResponse
     {
         $config = $this->superEntityService->getRegistrationConfig($request->get('super_entity_id'));

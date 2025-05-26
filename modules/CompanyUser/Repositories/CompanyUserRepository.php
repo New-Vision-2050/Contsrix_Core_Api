@@ -18,6 +18,7 @@ use Modules\CompanyUser\Models\ClientDetail;
 use Modules\CompanyUser\Models\CompanyUserAddress;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
+use Modules\JobTitle\Models\JobTitle;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -189,9 +190,9 @@ class CompanyUserRepository extends BaseRepository
             $companyUser = $companyUser->fresh();//get updated data for company user
             $user = $this->userRepository->model->withTrashed()->withoutTenancy()->where(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyRole['company_id']])->first();
             $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", null)->first()->id;
-            $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $mainBranchId)->first();
+            $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $mainBranchId)->where("type","management")->first();
             if ($branches != null && CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
-                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $branches[0])->first();
+                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $branches[0])->where("type","management")->first();
 
             }
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
@@ -259,6 +260,8 @@ class CompanyUserRepository extends BaseRepository
                     'global_id' => $user->global_company_user_id,
                     'branch_id' => $branches != null ? $branches[0] : $mainBranchId,
                     'management_id' => $mainManagement->id,
+                    "job_title_id"=>isset($companyRole["job_title_id"])?$companyRole["job_title_id"]:null,
+                    "job_type_id"=>isset($companyRole["job_title_id"])?JobTitle::query()->where("id", $companyRole["job_title_id"])->first()->job_type_id : null,
 
                 ];
                 if ($userProfessionalData) {
