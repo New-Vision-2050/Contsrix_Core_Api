@@ -66,6 +66,13 @@ return [
     'json' => 'يجب أن يكون حقل :attribute سلسلة JSON صالحة.',
     'list' => 'يجب أن يكون حقل :attribute قائمة.',
     'lowercase' => 'يجب أن يكون حقل :attribute بحروف صغيرة.',
+
+    'branch_id_required' => 'حقل الفرع مطلوب.',
+    'management_id_required' => 'حقل الإدارة مطلوب.',
+    'job_type_id_required' => 'حقل نوع الوظيفة مطلوب.',
+    'job_title_id_required' => 'حقل المسمى الوظيفي مطلوب.',
+    'job_code_required' => 'حقل كود الوظيفة مطلوب.',
+
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
         'file' => 'يجب أن يكون حجم حقل :attribute أقل من :value كيلوبايت.',
