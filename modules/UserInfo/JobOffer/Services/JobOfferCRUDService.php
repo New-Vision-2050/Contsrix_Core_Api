@@ -7,6 +7,7 @@ namespace Modules\UserInfo\JobOffer\Services;
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\Shared\Media\Services\FileDeletedService;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\UserInfo\JobOffer\DTO\CreateJobOfferDTO;
 use Modules\UserInfo\JobOffer\Models\JobOffer;
@@ -20,6 +21,7 @@ class JobOfferCRUDService
         private JobOfferRepository $repository,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService  $fileUploadService,
+        private FileDeletedService $fileDeletedService
     ) {
     }
 
@@ -36,7 +38,6 @@ class JobOfferCRUDService
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
         if ($file) {
-            $jobOffer->clearMediaCollection('upload_offerjob');
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
 
@@ -47,11 +48,14 @@ class JobOfferCRUDService
                 'upload_offerjob',
                 $visibility
             );
-        }else{
-            if (!isset($inputFile['id'])) {
-                $jobOffer->clearMediaCollection('upload_offerjob');
-            }
         }
+
+        $this->fileDeletedService->deleteFile(
+            $jobOffer,
+            $inputFile,
+            collectionName: 'upload_offerjob'
+        );
+        
         return $jobOffer;
     }
 
