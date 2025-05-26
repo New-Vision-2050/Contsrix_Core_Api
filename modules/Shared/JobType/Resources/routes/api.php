@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Shared\JobType\Controllers\JobTypeController;
+Route::get('/export', [JobTypeController::class, 'export'])->name('job-type.export');
+
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [JobTypeController::class, 'index']);
