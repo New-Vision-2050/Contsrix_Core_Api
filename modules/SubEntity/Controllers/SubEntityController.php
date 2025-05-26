@@ -24,6 +24,7 @@ use Modules\SubEntity\Requests\UpdateSubEntityStatusRequest;
 use Modules\SubEntity\Handlers\UpdateSubEntityAttributesHandler;
 use Modules\SubEntity\Requests\UpdateSubEntityAttributesRequest;
 use Modules\SubEntity\Requests\GetSubEntityListBySuperEntityIdRequest;
+use Modules\SubEntity\Requests\ValidateSubEntitySlug;
 
 class SubEntityController extends Controller
 {
@@ -172,5 +173,10 @@ class SubEntityController extends Controller
         $filename = 'sub_entities_export_' . now()->format('Y-m-d_H-i-s');
 
         return Excel::download($export, $filename . '.' . $format);
+    }
+
+    public function validateSlug(ValidateSubEntitySlug $request): JsonResponse
+    {
+        return Json::item(['valid' => true]);
     }
 }

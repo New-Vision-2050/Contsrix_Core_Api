@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Presenters;
 use Modules\Company\CompanyCore\Models\Company;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class CompanyLegalDataPresenter extends AbstractPresenter
 {
@@ -26,7 +27,7 @@ class CompanyLegalDataPresenter extends AbstractPresenter
             'registration_type_id' => $this->company->registration_type_id,
             "start_date"=>$this->company->start_date,
             "end_date"=>$this->company->end_date,
-            "file"=>$this->company->getFirstMediaUrl("upload")
+            'file' => MediaPresenter::collection($this->company->getMedia('upload')),
         ];
     }
 }

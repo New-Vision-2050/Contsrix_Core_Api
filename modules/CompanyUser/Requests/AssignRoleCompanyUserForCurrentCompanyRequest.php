@@ -11,24 +11,27 @@ use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
-class AssignRoleCompanyUserRequest extends FormRequest
+class AssignRoleCompanyUserForCurrentCompanyRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
 
-            'role' => 'nullable',
-            'company_id' => 'required|exists:companies,id',
+            'role' => 'required',
+
+            "branch_ids" => "nullable|array",
+            "branch_ids.*" => "exists:management_hierarchies,id,type,branch"
         ];
     }
 
-    public function createAssignCompanyUserCommand(): AssignRoleCompanyUserCommand
+    public function createAssignCompanyUserForCurrentCompanyCommand(): AssignRoleCompanyUserCommand
     {
         return new AssignRoleCompanyUserCommand(
             id: Uuid::fromString($this->route('id')),
-            company_id: Uuid::fromString($this->get('company_id')),
-            role: $this->get('role')?? 1,
-            branch_ids: null
+            company_id: Uuid::fromString(tenant("id")),
+            role: (int)$this->get('role'),
+
+            branch_ids: $this->get('branch_ids') ,
         );
     }
 }

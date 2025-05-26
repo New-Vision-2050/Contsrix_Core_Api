@@ -28,7 +28,12 @@ class ManagementHierarchyRepository extends BaseRepository
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
-        $this->nextId = $model->query()->orderBy("id", "desc")->withoutGlobalScope(CustomTenantScope::class)->first()->id + 1;
+        $last = $model->query()
+            ->orderBy("id", "desc")
+            ->withoutGlobalScope(CustomTenantScope::class)
+            ->first();
+
+        $this->nextId = $last ? $last->id + 1 : 1;
     }
 
     public function getManagementHierarchyList(?int $page, ?int $perPage = 10): Collection

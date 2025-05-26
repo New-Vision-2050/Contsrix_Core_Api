@@ -25,7 +25,9 @@ class JobOfferPresenter extends AbstractPresenter
             'job_offer_number' => $this->jobOffer->job_offer_number,
             'date_send' => $this->jobOffer->date_send,
             'date_accept' => $this->jobOffer->date_accept,
-            'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+            // 'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+            'files' => MediaPresenter::collection(mediaItems: $this->jobOffer->getMedia('upload_offerjob')),
+
         ];
     }
 }

@@ -22,6 +22,7 @@ class CompanyRegistrationTypePresenter extends AbstractPresenter
             'id' => $this->companyRegistrationType->id,
             'name' => $this->companyRegistrationType->name,
             'type' =>$this->companyRegistrationType->type,
+            'id_type' => $this->companyRegistrationType->id .'_'.$this->companyRegistrationType->type,
         ];
     }
 }

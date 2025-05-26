@@ -10,14 +10,13 @@ use Ramsey\Uuid\UuidInterface;
 class CreateCompanyLegalDataDTO
 {
     public function __construct(
-        private ManagementHierarchy $managementHierarchy ,
-        private UuidInterface $registrationTypeId,
-        private string        $registrationNumber,
-        private string        $startDate,
-        private string        $endDate,
-        private               $file
-    )
-    {
+        private ManagementHierarchy $managementHierarchy,
+        private ?UuidInterface $registrationTypeId = null,
+        private ?string $registrationNumber = null,
+        private ?string $startDate = null,
+        private ?string $endDate = null,
+        private mixed $file = null
+    ) {
     }
 
     public function getId()
@@ -25,11 +24,10 @@ class CreateCompanyLegalDataDTO
         return $this->managementHierarchy->company_id;
     }
 
-    public function getFile()
+    public function getFile(): mixed
     {
         return $this->file;
     }
-
 
     public function toArray(): array
     {
