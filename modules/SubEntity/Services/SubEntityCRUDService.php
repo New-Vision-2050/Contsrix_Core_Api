@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
 use Modules\SubEntity\Models\SubEntity;
 use Modules\SubEntity\DTO\CreateSubEntityDTO;
+use Modules\SubEntity\Exports\SubEntitiesExport;
 use Modules\SubEntity\Repositories\SubEntityRepository;
 
 class SubEntityCRUDService
@@ -23,10 +24,10 @@ class SubEntityCRUDService
         $data = $createSubEntityDTO->toArray();
         $superEntityId = $data['super_entity'];
 
-        if( Str::isUuid($superEntityId) ) {
+        if (Str::isUuid($superEntityId)) {
             $subEntityAsSup = $this->get(Uuid::fromString($superEntityId));
             $data['origin_super_entity'] = $subEntityAsSup->getOriginSuperEntityName();
-        }else{
+        } else {
             $data['origin_super_entity'] = $superEntityId;
         }
 
@@ -48,10 +49,10 @@ class SubEntityCRUDService
         );
     }
 
-    public function paginatedBySuperEntity(string $superEntityId,  ?string $programSlug = null, ?string $entityName = null, ?string $registrationForm = null, int $page = 1, int $perPage = 10): array
+    public function paginatedBySuperEntity(string $superEntityId, ?string $programSlug = null, ?string $entityName = null, ?string $registrationForm = null, int $page = 1, int $perPage = 10): array
     {
 
-        if( Str::isUuid($superEntityId) ) {
+        if (Str::isUuid($superEntityId)) {
             $subEntityAsSup = $this->get(Uuid::fromString($superEntityId));
             $superEntityId = $subEntityAsSup->getOriginSuperEntityName();
         }
@@ -66,6 +67,25 @@ class SubEntityCRUDService
         );
     }
 
+    public function export(string $superEntityId, ?string $programSlug = null, ?string $entityName = null, ?string $registrationForm = null, ?array $ids = null): SubEntitiesExport
+    {
+
+        if (Str::isUuid($superEntityId)) {
+            $subEntityAsSup = $this->get(Uuid::fromString($superEntityId));
+            $superEntityId = $subEntityAsSup->getOriginSuperEntityName();
+        }
+
+        $subEntities = $this->repository->getExportData(
+            superEntityId: $superEntityId,
+            programSlug: $programSlug,
+            entityName: $entityName,
+            registrationForm: $registrationForm,
+            ids: $ids
+        );
+
+        return new SubEntitiesExport($subEntities);
+    }
+
     public function getSelection(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->getSelection(
@@ -74,7 +94,7 @@ class SubEntityCRUDService
         );
     }
 
-       /**
+    /**
      * @param string $id
      *
      * @return mixed
