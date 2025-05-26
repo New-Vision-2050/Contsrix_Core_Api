@@ -6,7 +6,7 @@ namespace Modules\SubEntity\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class SuperEntityRegistrationConfigPresenter extends AbstractPresenter
+class SuperEntityAttributesConfigPresenter extends AbstractPresenter
 {
     private array $superEntityConfig;
 
@@ -19,11 +19,10 @@ class SuperEntityRegistrationConfigPresenter extends AbstractPresenter
     {
         $attributes = [];
 
-        $registrationConfigValues = ['registration_forms', 'is_registrable'];
-
+        $registrationConfigValues = ['default_attributes', 'optional_attributes'];
         foreach ($registrationConfigValues as $value) {
-            if (isset($this->superEntityConfig[$value]) && filled($this->superEntityConfig[$value])) {
-                $attributes[$value] = $this->superEntityConfig[$value];
+            if (isset($this->superEntityConfig['config'][$value]) && filled($this->superEntityConfig['config'][$value])) {
+                $attributes[$value] = $this->superEntityConfig['config'][$value];
             }
         }
 
