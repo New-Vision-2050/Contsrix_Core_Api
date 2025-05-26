@@ -22,7 +22,8 @@ class CreateCompanyLegalDataRequest extends FormRequest
             'regestration_number' => 'required',
             'start_date' => 'required|date|before_or_equal:end_date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            "file"=>"required|mimes:pdf,jpeg,jpg,png,doc,docx",
+            'file' => 'required|array',
+            'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
         ];
     }
     public function messages(): array
@@ -38,7 +39,7 @@ class CreateCompanyLegalDataRequest extends FormRequest
             'end_date.date' => __('validation.company_legal.end_date_invalid'),
             'end_date.after_or_equal' => __('validation.company_legal.end_date_after_start'),
             'file.required' => __('validation.company_legal.file_required'),
-            'file.mimes' => __('validation.company_legal.file_mimes'),
+            'file.*.mimes' => __('validation.company_legal.file_mimes'),
         ];
     }
     public function createCreateCompanyLegalDataDTO(): CreateCompanyLegalDataDTO

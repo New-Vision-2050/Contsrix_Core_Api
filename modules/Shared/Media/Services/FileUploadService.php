@@ -7,10 +7,9 @@ use Illuminate\Support\Facades\Config;
 class FileUploadService
 {
 
-    public function uploadFile($model, $file,$filePath ='default' ,string $collectionName = 'upload', string $visibility = 'public', ?string $folderId = null)
+    public function uploadFile($model, $file, $filePath = 'default', string $collectionName = 'upload', string $visibility = 'public', ?string $folderId = null)
     {
-        // $disk = Config::get('filesystems.default');
-        $disk =$visibility == 'public' ? "s3_public" : "s3_private";
+        $disk = $visibility === 'public' ? 's3_public' : 's3_private';
 
         // Generate a unique file name
         $fileName = sprintf(
@@ -20,21 +19,24 @@ class FileUploadService
             $file->getClientOriginalExtension()
         );
 
-        // Store file and add custom properties
-        $media = $model->addMedia($file)
-            ->usingFileName($fileName)
-            ->storingConversionsOnDisk($disk)
-            ->withCustomProperties([
-                'folder_id' => $folderId,
-                'file_path' => $filePath,
-                'disk'=> $disk,
-            ])->preservingOriginal()
-            ->toMediaCollection($collectionName, $disk);
+        // Temporarily store the file in the request to let addMultipleMediaFromRequest() find it
+        request()->files->set('file', [$file]);
+
+        $media = $model->addMultipleMediaFromRequest(['file'])->each(function ($fileAdder) use ($folderId, $filePath, $disk, $collectionName, $fileName) {
+            $fileAdder
+                ->usingFileName($fileName)
+                ->storingConversionsOnDisk($disk)
+                ->withCustomProperties([
+                    'folder_id' => $folderId,
+                    'file_path' => $filePath,
+                    'disk' => $disk,
+                ])
+                ->preservingOriginal()
+                ->toMediaCollection($collectionName, $disk);
+        });
 
         return $media;
-
     }
-
 
 
 }
