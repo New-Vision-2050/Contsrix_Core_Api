@@ -302,10 +302,10 @@ class CompanyUserRepository extends BaseRepository
             $companyUser = $this->findOneBy(["id" => $id]);
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]]);
             $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", null)->first()->id;
-            $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", $mainBranchId)->first();
+            $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", $mainBranchId)->where("type","management")->first();
             if ($branches != null && CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
                 $mainBranchId = $branches[0];
-                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData['company_id'])->where("parent_id", $branches[0])->first();
+                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData['company_id'])->where("parent_id", $branches[0])->where("type","management")->first();
 
             }
             if (!$user) {
