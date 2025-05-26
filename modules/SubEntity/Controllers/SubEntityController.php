@@ -7,6 +7,7 @@ namespace Modules\SubEntity\Controllers;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use BasePackage\Shared\Presenters\Json;
 use Modules\SubEntity\Requests\GetSubEntityRequest;
 use Modules\SubEntity\Presenters\SubEntityPresenter;
@@ -17,6 +18,7 @@ use Modules\SubEntity\Requests\CreateSubEntityRequest;
 use Modules\SubEntity\Requests\DeleteSubEntityRequest;
 use Modules\SubEntity\Requests\UpdateSubEntityRequest;
 use Modules\SubEntity\Requests\GetSubEntityListRequest;
+use Modules\SubEntity\Requests\ExportSubEntitiesRequest;
 use Modules\SubEntity\Handlers\UpdateSubEntityStatusHandler;
 use Modules\SubEntity\Requests\UpdateSubEntityStatusRequest;
 use Modules\SubEntity\Handlers\UpdateSubEntityAttributesHandler;
@@ -132,7 +134,8 @@ class SubEntityController extends Controller
         );
     }
 
-    public function updateStatus(UpdateSubEntityStatusRequest $request): JsonResponse{
+    public function updateStatus(UpdateSubEntityStatusRequest $request): JsonResponse
+    {
         $command = $request->createUpdateSubEntityStatusCommand();
         $this->updateSubEntityStatusHandler->handle(updateSubEntityStatusCommand: $command);
 
@@ -141,5 +144,33 @@ class SubEntityController extends Controller
         $presenter = new SubEntityPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Export SubEntities data as Excel/CSV
+     *
+     * @param ExportSubEntitiesRequest $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
+     */
+    public function export(ExportSubEntitiesRequest $request)
+    {
+        $ids = $request->input('ids');
+        $format = strtolower($request->input('format', 'xlsx'));
+
+        if (!in_array($format, ['xlsx', 'csv'])) {
+            return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
+        }
+
+        $export = $this->subEntityService->export(
+            superEntityId: $request->get('super_entity_id'),
+            programSlug: $request->get('main_program_slug'),
+            entityName: $request->get('entity_name'),
+            registrationForm: $request->get('registration_form_id'),
+            ids: $ids,
+        );
+        
+        $filename = 'sub_entities_export_' . now()->format('Y-m-d_H-i-s');
+
+        return Excel::download($export, $filename . '.' . $format);
     }
 }

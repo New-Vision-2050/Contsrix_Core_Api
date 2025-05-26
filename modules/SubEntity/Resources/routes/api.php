@@ -15,6 +15,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{id}/show/attributes', [SubEntityController::class, 'showAttributes']);
     Route::put('/{id}/update/attributes', [SubEntityController::class, 'updateAttributes']);
     Route::get('/super_entity/sub_tables', [SubEntityController::class, 'getBySuperEntity']);
+    Route::post('/super_entity/sub_tables/export', [SubEntityController::class, 'export']);
     Route::get('/list/selection', [SubEntityController::class, 'getSelection']);
     Route::put('/{id}/status', [SubEntityController::class, 'updateStatus']);
 
