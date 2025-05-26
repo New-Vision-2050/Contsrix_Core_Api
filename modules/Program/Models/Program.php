@@ -58,6 +58,6 @@ class Program extends Model
     }
 
     public function subEntities() {
-        return $this->hasMany(SubEntity::class, 'main_program_id');
+        return $this->hasMany(SubEntity::class, 'main_program_id')->where('is_active', true);
     }
 }

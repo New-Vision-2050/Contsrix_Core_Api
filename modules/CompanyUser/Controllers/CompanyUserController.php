@@ -30,6 +30,7 @@ use Modules\CompanyUser\Requests\UpdateTimeZoneCompanyUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\CompanyUserValidationService;
 use Modules\CompanyUser\Services\CompanyUserWidgetsService;
+use Modules\User\Services\UserCRUDService;
 use Ramsey\Uuid\Uuid;
 
 class CompanyUserController extends Controller
@@ -43,6 +44,7 @@ class CompanyUserController extends Controller
         private AssignRoleCompanyUserHandler     $assignRoleCompanyUserHandler,
         private DeleteCompanyUserRoleHandler     $deleteCompanyUserRoleHandler,
         private DeleteCompanyUserHandler         $deleteCompanyUserHandler,
+        private UserCRUDService $userCRUDService
     )
     {
     }
@@ -86,7 +88,7 @@ class CompanyUserController extends Controller
         }
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData(),extraItems: ["userInCompany"=>$this->userCRUDService->getUserBy(["email"=>$request->email,"company_id"=>tenant("id")])]);
 
 
     }

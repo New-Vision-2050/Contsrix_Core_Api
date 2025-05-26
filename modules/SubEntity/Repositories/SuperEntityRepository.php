@@ -8,9 +8,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\SubEntity\Models\RegistrationForm;
-
-use function PHPUnit\Framework\isArray;
-
 class SuperEntityRepository
 {
     public function __construct(protected array $availableSuperEntities = [])
@@ -21,6 +18,17 @@ class SuperEntityRepository
     public function list(?string $search = ''): array
     {
         return collect($this->availableSuperEntities)
+            ->filter(function ($entity) {
+                $superEntityId = $entity['id'] ?? null;
+
+                if (!$superEntityId) {
+                    return false;
+                }
+
+                $isRegistrable = $this->getConfigValue($superEntityId, 'is_registrable');
+
+                return is_null($isRegistrable) || $isRegistrable === true;
+            })
             ->when(filled($search), function ($collection) use ($search) {
                 return $collection->filter(function ($entity) use ($search) {
                     $entityName = $entity['name'][app()->getLocale()] ?? '';
@@ -69,12 +77,29 @@ class SuperEntityRepository
 
     public function getRegistrationFormsForId(string $id): Collection
     {
+        $registrationFormsConfig = $this->getConfigValue($id, 'registration_forms');
+        if(filled( $registrationFormsConfig)) {
+            return RegistrationForm::whereIn('id', $registrationFormsConfig)->get(['id', 'name', 'slug', 'is_active']);
+        }
+
         $forms = collect($this->availableSuperEntities)
             ->where('id', $id)
             ->pluck('registration_forms')
             ->first();
 
         return RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active']);
+    }
+
+    public function getRegistrationFormsIds(string $id): array
+    {
+        $forms = collect($this->availableSuperEntities)
+            ->where('id', $id)
+            ->pluck('registration_forms')
+            ->first();
+
+        return RegistrationForm::whereIn('slug', $forms)
+            ->pluck('id')
+            ->toArray();
     }
 
     public function getById(string $id): ?array
@@ -94,16 +119,10 @@ class SuperEntityRepository
             ->first();
 
         if ($existing) {
-            $existingConfig = $existing->config;
-            if(!isArray($existingConfig)){
-                $existingConfig = json_decode($existingConfig,true);
-            }
-            $existingConfig['allowed_attributes'] = $attributes;
-
             DB::table('super_entities_config')
                 ->where('super_entity', $superEntityId)
                 ->update(values: [
-                    'config' => json_encode($existingConfig),
+                    'config' => json_encode($config),
                     'updated_at' => now(),
                 ]);
         } else {
@@ -178,5 +197,30 @@ class SuperEntityRepository
         $decoded = json_decode($config, true);
 
         return $decoded[$key] ?? null;
+    }
+
+    public function getConfig(string $superEntityId)
+    {
+        $config = DB::table('super_entities_config')
+            ->where('super_entity', $superEntityId)
+            ->value('config');
+
+        if (!$config) {
+            return null;
+        }
+
+        return json_decode($config, true);
+    }
+
+    public function setMultipleConfigValues(string $superEntityId, array $configs): array
+    {
+        $results = [];
+
+        foreach ($configs as $key => $value) {
+            $result = $this->setConfigValue($superEntityId, $key, $value);
+            $results = array_merge($results, $result);
+        }
+
+        return $results;
     }
 }

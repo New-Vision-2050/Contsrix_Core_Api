@@ -16,8 +16,10 @@ class UpdateSuperEntityAttributesConfigRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'allowed_attributes' => 'required|array',
-            'allowed_attributes.*' => [Rule::In($this->getValidSuperEntityAttributes())],
+            'default_attributes' => 'required|array',
+            'default_attributes.*' => [Rule::In($this->getValidSuperEntityAttributes())],
+            'optional_attributes' => 'required|array',
+            'optional_attributes.*' => [Rule::In($this->getValidSuperEntityAttributes())],
         ];
     }
 
@@ -25,7 +27,8 @@ class UpdateSuperEntityAttributesConfigRequest extends FormRequest
     {
         return new UpdateSuperEntityAttributesConfigCommand(
             id: $this->route('id'),
-            allowedAttributes: $this->input('allowed_attributes'),
+            defaultAttributes: $this->input('default_attributes'),
+            optionalAttributes: $this->input('optional_attributes')
         );
     }
 
