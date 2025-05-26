@@ -8,5 +8,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/', [BankAccountController::class, 'store']);
     Route::get('/{id}', [BankAccountController::class, 'show']);
     Route::put('/{id}', [BankAccountController::class, 'update']);
+    Route::put('/{id}/type', [BankAccountController::class, 'updateType']);
     Route::delete('/{id}', [BankAccountController::class, 'delete']);
 });
