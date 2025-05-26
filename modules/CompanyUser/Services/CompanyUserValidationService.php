@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\CompanyUser\Services;
 
 use Illuminate\Support\Facades\Validator;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\Models\CompanyUser;
@@ -57,7 +58,7 @@ class CompanyUserValidationService
                 'sub_title' => 'email',
                 'status' => 0,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
-                "branches" => $companyUserCompany?->managementHierarchy?$companyUserCompany?->managementHierarchy:[],
+                "branches" => $companyUserCompany?->managementHierarchy?ManagementHierarchySimpleDataPresenter::collection($companyUserCompany?->managementHierarchy):[],
                 'validate' => 'required',
                 'id' => $user->id
             ];
