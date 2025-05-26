@@ -172,6 +172,8 @@ class CompanyUserRepository extends BaseRepository
         ];
     }
 
+
+
     public
     function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null): CompanyUser
     {
