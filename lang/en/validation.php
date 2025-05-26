@@ -25,6 +25,14 @@ return [
     'ascii' => 'The :attribute field must only contain single-byte alphanumeric characters and symbols.',
     'before' => 'The :attribute field must be a date before :date.',
     'before_or_equal' => 'The :attribute field must be a date before or equal to :date.',
+
+    'branch_id_required' => 'The branch field is required.',
+    'management_id_required' => 'The management field is required.',
+    'job_type_id_required' => 'The job type field is required.',
+    'job_title_id_required' => 'The job title field is required.',
+    'job_code_required' => 'The job code field is required.',
+
+
     'between' => [
         'array' => 'The :attribute field must have between :min and :max items.',
         'file' => 'The :attribute field must be between :min and :max kilobytes.',
