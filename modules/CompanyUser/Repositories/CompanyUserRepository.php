@@ -192,7 +192,7 @@ class CompanyUserRepository extends BaseRepository
             $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", null)->first()->id;
             $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $mainBranchId)->first();
             if ($branches != null && CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
-                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $branches[0])->first();
+                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $branches[0])->where("type","management")->first();
 
             }
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
@@ -305,7 +305,7 @@ class CompanyUserRepository extends BaseRepository
                 $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
                 //get main management in company
                 $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", null)->first()->id;
-                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", $mainBranchId)->first();
+                $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", $mainBranchId)->where("type","management")->first();
                 //create user in company assigned to main management
                 if ($user) {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
