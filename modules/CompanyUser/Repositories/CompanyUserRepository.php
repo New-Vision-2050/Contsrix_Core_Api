@@ -307,6 +307,7 @@ class CompanyUserRepository extends BaseRepository
                 $mainBranchId = $branches[0];
                 $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData['company_id'])->where("parent_id", $branches[0])->where("type","management")->first();
 
+
             }
             if (!$user) {
                 $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
