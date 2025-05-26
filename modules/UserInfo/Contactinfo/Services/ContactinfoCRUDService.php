@@ -32,7 +32,7 @@ class ContactinfoCRUDService
         );
     }
 
-    public function get(UuidInterface $companyId,UuidInterface $globalId): ContactInfo
+    public function get(UuidInterface $companyId,UuidInterface $globalId): ?ContactInfo
     {
         return $this->repository->getContactinfo($companyId, $globalId);
     }
