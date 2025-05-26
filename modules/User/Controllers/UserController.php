@@ -8,6 +8,8 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\User\Presenters\UserBranchesPresenter;
@@ -155,8 +157,9 @@ class UserController extends Controller
 
     public function getUserByEmail(GetUserByEmailRequest $userByEmailRequest)
     {
+
         $branchesWithRole =  $this->userService->getUserByEmailWithBranches($userByEmailRequest->email,$userByEmailRequest->role);
-        return Json::item((new UserBranchesPresenter($branchesWithRole))->getData());
+        return Json::item( ManagementHierarchySimpleDataPresenter::collection($branchesWithRole?->managementHierarchy?$branchesWithRole?->managementHierarchy:[]));
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)
