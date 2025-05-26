@@ -53,6 +53,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/{id}', [CompanyUserController::class, 'show']);
     Route::put('/{id}', [CompanyUserController::class, 'update']);
     Route::post('/{id}/assign-role', [CompanyUserController::class, 'assignRoleForCompanies']);
+    Route::post('/{id}/assign-role-for-current-company', [CompanyUserController::class, 'assignRoleForCurrentCompany']);
     Route::delete('/{id}', [CompanyUserController::class, 'delete']);
     Route::delete('/{id}/specific-role', [CompanyUserController::class, 'deleteForSpecificRole']);
     Route::post('/export', [UserController::class, 'export'])->middleware("permission:user.list")->name("users.export");
