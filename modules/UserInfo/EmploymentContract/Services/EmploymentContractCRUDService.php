@@ -7,6 +7,7 @@ namespace Modules\UserInfo\EmploymentContract\Services;
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\Shared\Media\Services\FileDeletedService;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\UserInfo\EmploymentContract\DTO\CreateEmploymentContractDTO;
 use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
@@ -19,6 +20,7 @@ class EmploymentContractCRUDService
         private EmploymentContractRepository $repository,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService  $fileUploadService,
+        private FileDeletedService $fileDeletedService
     ) {
     }
 
@@ -34,6 +36,12 @@ class EmploymentContractCRUDService
         $visibility = 'public';
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
+        $this->fileDeletedService->deleteFile(
+            $employmentContract,
+            $inputFile,
+            'upload_employment_contracts'
+        );
+        
         if ($file) {
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
@@ -45,12 +53,9 @@ class EmploymentContractCRUDService
                 'upload_employment_contracts',
                 $visibility
             );
-        }else{
-            if (!isset($inputFile['id'])) {
-                $employmentContract->clearMediaCollection('upload_employment_contracts');
-            }
-
         }
+
+
 
         return $employmentContract;
     }
