@@ -18,7 +18,7 @@ class CreateJobOfferRequest extends FormRequest
             'date_send' => 'required|string',
             'date_accept' => 'required|string',
             'file' => 'nullable|array',
-            'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
+            'file.*' => 'nullable',
         ];
     }
     public function messages(): array
