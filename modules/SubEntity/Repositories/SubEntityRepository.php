@@ -127,6 +127,8 @@ class SubEntityRepository extends BaseRepository
     {
         $query = $this->model->newQuery()
             ->select('id', 'name')
+            ->active()
+            ->where('is_registrable', true)
             ->when(request()->has('name'), function ($query) {
                 return $query->filter(['name' => request()->get('name')]);
             });
