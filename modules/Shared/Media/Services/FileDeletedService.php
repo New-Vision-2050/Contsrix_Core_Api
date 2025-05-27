@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Config;
 
 class FileDeletedService
 {
-    public function deleteFile($model, $inputFiles, string $collectionName = 'upload')
+    public function deleteFile($model, $inputFiles, string $collectionName)
     {
 
         if (!$inputFiles ) {

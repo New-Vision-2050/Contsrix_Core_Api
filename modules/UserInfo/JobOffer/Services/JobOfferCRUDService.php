@@ -55,7 +55,7 @@ class JobOfferCRUDService
             $inputFile,
             collectionName: 'upload_offerjob'
         );
-        
+
         return $jobOffer;
     }
 
