@@ -10,7 +10,6 @@ use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
-use Modules\User\Presenters\UserBranchesPresenter;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 
@@ -60,7 +59,6 @@ class CompanyUserValidationService
                 'status' => 0,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
                 "branches" => $companyUserCompany?->managementHierarchy?ManagementHierarchySimpleDataPresenter::collection($companyUserCompany?->managementHierarchy):[],
-//                "roles"=>UserBranchesPresenter::collection($companyUserCompany),
                 'validate' => 'required',
                 'id' => $user->id
             ];
