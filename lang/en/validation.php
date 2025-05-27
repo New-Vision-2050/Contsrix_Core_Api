@@ -220,6 +220,9 @@ return [
     "phone-exists"=>"phone exists",
     "phone_email_consistency-error"=>"phone and email consistency error",
     "can-not-delete-has-children"=>"can not delete has children",
+    "client-already-exist-in-thies-branches"=>'client already exists in this branches',
+    "employee-already-exist"=>'employee already exists in this branches',
+    "broker-already-exist-in-thies-branches"=>'broker already exists in this branches',
 
 
 

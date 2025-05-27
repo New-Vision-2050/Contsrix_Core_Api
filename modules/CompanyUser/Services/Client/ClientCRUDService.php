@@ -38,8 +38,30 @@ class ClientCRUDService
     public function create(CreateClientDTO $createClientDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO, SetUserAddressDTO $userAddressDTO)
     {
 
+        $companyUser = $this->repository->findByEmail($createClientDTO->getEmail());
 
-        $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(),$createClientDTO->clientDetailToArray());
+        if ($companyUser != null && $createClientDTO->getBranchIds() != null) {
+            $branches = $this->repository->getUserInBranches($companyUser->global_id, $companyRoleDTO->role, $createClientDTO->getBranchIds());
+            if (count($branches) > 0 && $companyRoleDTO->getRole() == CompanyUserRole::EMPLOYEE->value) {
+                throw new CustomException(__("validation.employee-already-exist"), 400);
+
+            }
+            if (count($branches) == count($createClientDTO->getBranchIds())) {
+                if ($companyRoleDTO->getRole() == CompanyUserRole::CLIENT->value) {
+                    throw new CustomException(__("validation.client-already-exist-in-thies-branches"), 400);
+                } elseif ($companyRoleDTO->getRole() == CompanyUserRole::EMPLOYEE->value) {
+                    throw new CustomException(__("validation.employee-already-exist"), 400);
+
+                } else {
+                    throw new CustomException(__("validation.broker-already-exist-in-thies-branches"), 400);
+
+                }
+            }
+
+        }
+
+
+        $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(), $createClientDTO->clientDetailToArray());
 
 
         //here i do not email up till now
@@ -88,7 +110,6 @@ class ClientCRUDService
             email: $email,
         );
     }
-
 
 
 }
