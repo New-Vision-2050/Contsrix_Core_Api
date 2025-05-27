@@ -34,7 +34,7 @@ class CreateEmploymentContractRequest extends FormRequest
             'right_terminate_id' => 'required|string',
 
             'file' => 'nullable|array',
-            'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
+            'file.*' => 'nullable',
         ];
     }
 

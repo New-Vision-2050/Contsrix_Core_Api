@@ -65,7 +65,7 @@ class UserRepository extends BaseRepository
     {
         $user = $this->model->query()->where('global_company_user_id', $global_id)->where("company_id", tenant("id"))->first();
         return CompanyUserCompany::query()->where("company_id", tenant("id"))
-            ->where("global_company_user_id", $user->global_company_user_id)
+            ->where("global_company_user_id", $user?->global_company_user_id)
             ->where("role", $role)
             ->with("managementHierarchy")
             ->first();

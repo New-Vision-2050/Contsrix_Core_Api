@@ -347,10 +347,11 @@ class CompanyUserRepository extends BaseRepository
                     $newUser->management_hierarchy_id = $companyUserRoleData['role'] == CompanyUserRole::EMPLOYEE->value ? $mainManagement->id : null;
 
                     $newUser->save();
+                    $user = $newUser->fresh();
                 } else {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
 
-                    $this->userRepository->createUser([
+                    $user =$this->userRepository->createUser([
                         'name' => $companyUser->first_name . ' ' . $companyUser->last_name,
                         'email' => $companyUser->email,
                         'company_id' => $companyUserRoleData["company_id"],
