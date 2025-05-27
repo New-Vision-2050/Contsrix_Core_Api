@@ -32,6 +32,11 @@ class AssignRoleCompanyUserCommand
         return $this->branch_ids;
     }
 
+    public function getRole()
+    {
+        return $this->role;
+    }
+
 
 
     public function toArray(): array

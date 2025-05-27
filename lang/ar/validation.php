@@ -320,6 +320,9 @@ return [
     'training_to_after_from' => 'تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية.',
     'company_name_required' => 'اسم الشركة مطلوب.',
     'about_required' => 'الوصف مطلوب.',
+    "client-already-exist-in-thies-branches"=>'العميل موجودة في هذه الفروع',
+    "employee-already-exist"=>'الموظف موجود',
+    "broker-already-exist-in-thies-branches"=>'الوسيط موجودة في هذه الفروع',
 
     'country_id_required' => 'الدولة مطلوبة.',
     'university_id_required' => 'الجامعة مطلوبة.',

@@ -34,7 +34,7 @@ class CreateHierarchyListener
         $this->managementHierarchyRepository->createBranch([
             "company_id" => $event->data->id,
             "name" => $event->data->name,
-            'manager_id' => $event->data->general_manager_id,
+            'manager_id' => null,
             "phone" => $event->data->phone,
             "email" => $event->data->email,
             "type" => "branch",
