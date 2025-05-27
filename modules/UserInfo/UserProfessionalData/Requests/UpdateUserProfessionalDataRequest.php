@@ -21,7 +21,16 @@ class UpdateUserProfessionalDataRequest extends FormRequest
             'job_code' => 'required|string',
         ];
     }
-
+    public function messages(): array
+    {
+        return [
+            'branch_id.required' => __('validation.branch_id_required'),
+            'management_id.required' => __('validation.management_id_required'),
+            'job_type_id.required' => __('validation.job_type_id_required'),
+            'job_title_id.required' => __('validation.job_title_id_required'),
+            'job_code.required' => __('validation.job_code_required'),
+        ];
+    }
     public function createUpdateUserProfessionalDataCommand(): UpdateUserProfessionalDataCommand
     {
         return new UpdateUserProfessionalDataCommand(

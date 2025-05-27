@@ -21,7 +21,7 @@ class AssignRoleCompanyUserHandler
 
     public function handle(AssignRoleCompanyUserCommand $assignRoleCompanyUserCommand)
     {
-        $this->repository->assignRoleCompanyUser($assignRoleCompanyUserCommand->getId(), $assignRoleCompanyUserCommand->toArray());
+        $this->repository->assignRoleCompanyUser($assignRoleCompanyUserCommand->getId(), $assignRoleCompanyUserCommand->toArray(),$assignRoleCompanyUserCommand->getBranchIds());
         $companyUser = $this->repository->findOneBy(["id"=>$assignRoleCompanyUserCommand->getId()]);
         $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $assignRoleCompanyUserCommand->getCompanyId()]);
         $data = [
