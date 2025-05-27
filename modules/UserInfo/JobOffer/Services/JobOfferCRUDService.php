@@ -37,6 +37,13 @@ class JobOfferCRUDService
         $visibility = 'public';
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
+
+        $this->fileDeletedService->deleteFile(
+            $jobOffer,
+            $inputFile,
+            collectionName: 'upload_offerjob'
+        );
+
         if ($file) {
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
@@ -50,11 +57,6 @@ class JobOfferCRUDService
             );
         }
 
-        $this->fileDeletedService->deleteFile(
-            $jobOffer,
-            $inputFile,
-            collectionName: 'upload_offerjob'
-        );
 
         return $jobOffer;
     }
