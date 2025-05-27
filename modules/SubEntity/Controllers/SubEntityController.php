@@ -22,6 +22,7 @@ use Modules\SubEntity\Requests\UpdateSubEntityStatusRequest;
 use Modules\SubEntity\Handlers\UpdateSubEntityAttributesHandler;
 use Modules\SubEntity\Requests\UpdateSubEntityAttributesRequest;
 use Modules\SubEntity\Requests\GetSubEntityListBySuperEntityIdRequest;
+use Modules\SubEntity\Requests\ValidateSubEntitySlug;
 
 class SubEntityController extends Controller
 {
@@ -141,5 +142,10 @@ class SubEntityController extends Controller
         $presenter = new SubEntityPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    public function validateSlug(ValidateSubEntitySlug $request): JsonResponse
+    {
+        return Json::item(['valid' => true]);
     }
 }
