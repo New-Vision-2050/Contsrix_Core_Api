@@ -25,15 +25,6 @@ class ValidateSubEntitySlug extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'slug.required' => 'The slug is required.',
-            'slug.regex' => 'The slug must contain only lowercase letters, numbers, and hyphens.',
-            'slug.unique' => 'This slug is already taken.',
-        ];
-    }
-
     /**
      * Determine if the user is authorized to make this request.
      *
