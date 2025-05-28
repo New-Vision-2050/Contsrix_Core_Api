@@ -369,6 +369,7 @@ class CompanyUserRepository extends BaseRepository
                 ManagementHierarchy::query()->where("company_id", $companyUserRoleData['company_id'])->where("parent_id", $branch->id)->where("type", "management")->first()->update(["manager_id" => $user->id]);
             }
             $companyUserCompany = CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
+
             if (CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
                 $userProfessionalData = UserProfessionalData::query()->where([
                     'global_id' => $user->global_company_user_id,
