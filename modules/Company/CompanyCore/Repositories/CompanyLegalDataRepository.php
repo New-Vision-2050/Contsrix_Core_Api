@@ -45,31 +45,44 @@ class CompanyLegalDataRepository extends BaseRepository
         return $companyLegalData;
     }
 
-    public function updateCompanyLegalData( array $data)
+    public function updateCompanyLegalData(array $data)
     {
         try {
             DB::beginTransaction();
-            foreach ($data as $item) {
-               $legalData =  $this->findOneOrFail($item["id"]);
-               $legalData->update(["start_date"=>$item["start_date"],"end_date"=>$item["end_date"]]);
-               if(array_key_exists("file",$item) && !is_string($item["file"]))
-               {
-                   $legalData->clearMediaCollection('upload');//for replace with new media
-                   $this->fileUploadService->uploadFile($legalData, $item["file"], "company");
-               }
 
+            $lastLegalData = null;
+
+            foreach ($data as $item) {
+                $legalData = $this->findOneOrFail($item["id"]);
+                $legalData->update([
+                    "start_date" => $item["start_date"],
+                    "end_date" => $item["end_date"]
+                ]);
+
+                if (array_key_exists("file", $item) && !is_string($item["file"])) {
+                    $legalData->clearMediaCollection('upload');
+                    $this->fileUploadService->uploadFile($legalData, $item["file"], "company");
+                }
+
+                // Store reference to last updated item
+                $lastLegalData = $legalData;
             }
 
             DB::commit();
-            $legalData =$legalData->fresh();
-            event(new CompanyLegalDataUpdated($legalData));
+
+            // Fire event only if at least one item was updated
+            if ($lastLegalData) {
+                event(new CompanyLegalDataUpdated($lastLegalData->fresh()));
+            }
+
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);
-
         }
+
         return true;
     }
+
 
     public function delete( $id)
     {
