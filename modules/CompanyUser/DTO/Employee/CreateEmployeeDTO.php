@@ -24,6 +24,10 @@ class CreateEmployeeDTO
     {
         return $this->countryId;
     }
+    public function getEmail()
+    {
+        return $this->email;
+    }
 
     public function toArray(): array
     {
