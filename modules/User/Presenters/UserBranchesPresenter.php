@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\User\Presenters;
 
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\User\Models\User;
@@ -23,9 +24,7 @@ class UserBranchesPresenter extends AbstractPresenter
     {
         return [
             'role' => $this->user?->role,
-            'status' => $this->user?->status,
-
-            "branches"=>$this->user?->managementHierarchy?ManagementHierarchyPresenter::collection($this->user->managementHierarchy):[]
+            "branches"=>$this->user?->managementHierarchy?ManagementHierarchySimpleDataPresenter::collection($this->user->managementHierarchy):[]
         ];
     }
 }

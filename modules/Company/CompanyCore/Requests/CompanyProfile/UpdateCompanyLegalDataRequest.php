@@ -20,7 +20,7 @@ class UpdateCompanyLegalDataRequest extends FormRequest
             "data.*.id" => 'required|exists:company_legal_data,id',
             "data.*.start_date" => 'required|date|before_or_equal:data.*.end_date',
             'data.*.end_date' => 'required|date|after_or_equal:data.*.start_date',
-            "data.*.file"=>"mimes:pdf,jpeg,jpg,png,doc,docx"
+            "data.*.file"=>"nullable"
             ];
     }
 
