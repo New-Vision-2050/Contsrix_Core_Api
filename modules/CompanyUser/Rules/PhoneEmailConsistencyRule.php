@@ -20,7 +20,7 @@ class PhoneEmailConsistencyRule implements Rule
     {
         $phone = str_replace(" ", "", $value);
         $emailExists = DB::table('company_users')->where('email', $this->email)->exists();
-        $phoneExists = DB::table('company_users')->where('phone', $phone)->exists();
+        $phoneExists = DB::table('users')->where('phone', $phone)->exists();
 
         // If email is not found, phone should also not exist
         if (!$emailExists && $phoneExists) {
