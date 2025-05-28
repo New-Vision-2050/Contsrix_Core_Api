@@ -237,7 +237,12 @@ class CompanyUserRepository extends BaseRepository
             if ($branches != null) {
 
                 foreach ($branches as $branch)
-                    CompanyUserCompanyManagementHierarchy::query()->create(
+                    CompanyUserCompanyManagementHierarchy::query()->updateOrCreate(
+                        [
+                            "user_id" => $user->id,
+                            "management_hierarchy_id" => $branch,
+                            "company_user_company_id" => $companyUserCompany->id
+                        ],
                         [
                             "user_id" => $user->id,
                             "management_hierarchy_id" => $branch,
@@ -245,7 +250,12 @@ class CompanyUserRepository extends BaseRepository
                         ]
                     );
             } elseif (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {//
-                CompanyUserCompanyManagementHierarchy::query()->create(
+                CompanyUserCompanyManagementHierarchy::query()->updateOrCreate(
+                    [
+                        "user_id" => $user->id,
+                        "management_hierarchy_id" => $mainBranchId,
+                        "company_user_company_id" => $companyUserCompany->id
+                    ],
                     [
                         "user_id" => $user->id,
                         "management_hierarchy_id" => $mainBranchId,
@@ -298,6 +308,14 @@ class CompanyUserRepository extends BaseRepository
     public function setAddress(array $addressData)
     {
         return CompanyUserAddress::query()->create($addressData);
+    }
+
+    public function getUserInBranches($globalId ,$role, array $branchIds)
+    {
+        return CompanyUserCompanyManagementHierarchy::query()->whereIn("management_hierarchy_id", $branchIds)->whereHas("companyUserCompany",function ($query)use ($globalId,$role){
+            $query->where("global_company_user_id", $globalId)->where("role", $role)->where("company_id",tenant("id"));
+        })->get();
+
     }
 
 
@@ -375,8 +393,12 @@ class CompanyUserRepository extends BaseRepository
             }
 
             if (CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
-                CompanyUserCompanyManagementHierarchy::query()->create(
+                CompanyUserCompanyManagementHierarchy::query()->updateOrCreate(
                     [
+                        "user_id" => $user->id,
+                        "management_hierarchy_id" => $mainBranchId,
+                        "company_user_company_id" => $companyUserCompany->id
+                    ],[
                         "user_id" => $user->id,
                         "management_hierarchy_id" => $mainBranchId,
                         "company_user_company_id" => $companyUserCompany->id
@@ -386,7 +408,12 @@ class CompanyUserRepository extends BaseRepository
             } elseif ($branches != null) {
 
                 foreach ($branches as $branch)
-                    CompanyUserCompanyManagementHierarchy::query()->create(
+                    CompanyUserCompanyManagementHierarchy::query()->updateOrCreate(
+                        [
+                            "user_id" => $user->id,
+                            "management_hierarchy_id" => $branch,
+                            "company_user_company_id" => $companyUserCompany->id
+                        ],
                         [
                             "user_id" => $user->id,
                             "management_hierarchy_id" => $branch,

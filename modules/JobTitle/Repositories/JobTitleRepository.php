@@ -18,17 +18,19 @@ use Modules\JobTitle\Models\JobTitle;
 class JobTitleRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(JobTitle $model)
     {
         parent::__construct($model);
     }
-    public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
+
+    public function withoutScopePaginated(array $conditions = [], $page = 1, $perPage = 10)
     {
         $query = $this->model->withoutGlobalScope("active")->where($conditions)->filter(request()->all());
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return array_merge($paginationArray,[
+        return array_merge($paginationArray, [
             'data' => $paginatedData
         ]);
     }
@@ -39,12 +41,11 @@ class JobTitleRepository extends BaseRepository
     }
 
 
+    public function getAllJobTitles(): Collection
+    {
 
-public function getAllJobTitles(): Collection
-{
-
-    return $this->model->filter(request()->all())->get();
-}
+        return $this->model->filter(request()->all())->get();
+    }
 
 
     public function getJobTitle(UuidInterface $id): JobTitle
