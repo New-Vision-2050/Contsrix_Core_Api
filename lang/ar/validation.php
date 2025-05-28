@@ -215,7 +215,9 @@ return [
     "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
 
 
-    'attributes' => [],
+    'attributes' => [
+        'slug' => 'الاسم المختصر'
+    ],
     'username_required'=>'الاسم المختصر ألرامي',
     'username_unique'=>'الاسم المختصر مستخدم بالفعل',
     'username_regex'=>'الاسم المختصر غير صحيح',

@@ -18,7 +18,7 @@ class CreateJobOfferRequest extends FormRequest
             'date_send' => 'required|string',
             'date_accept' => 'required|string',
             'file' => 'nullable|array',
-            'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
+            'file.*' => 'nullable',
         ];
     }
     public function messages(): array
@@ -28,6 +28,7 @@ class CreateJobOfferRequest extends FormRequest
             'job_offer_number.required' => __('validation.job_offer_number_required'),
             'date_send.required' => __('validation.date_send_required'),
             'date_accept.required' => __('validation.date_accept_required'),
+            'file.*.mimes' => __('validation.company_legal.file_mimes'),
         ];
     }
     public function createCreateJobOfferDTO(): CreateJobOfferDTO
