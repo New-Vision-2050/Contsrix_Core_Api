@@ -216,7 +216,15 @@ return [
 
 
     'attributes' => [
-        'slug' => 'الاسم المختصر'
+        'slug' => 'الاسم المختصر',
+        "job_type_id"=>"النوع الوظيفي",
+        "description"=>"وصف",
+        "name"=>"الاسم",
+        "state_id"=>"المحافظة",
+        "city_id"=>"المدينة",
+        "country_id"=>"الدوله",
+        "manager_id"=>"المدير",
+        "status"=>"الحالة"
     ],
     'username_required'=>'الاسم المختصر ألرامي',
     'username_unique'=>'الاسم المختصر مستخدم بالفعل',
