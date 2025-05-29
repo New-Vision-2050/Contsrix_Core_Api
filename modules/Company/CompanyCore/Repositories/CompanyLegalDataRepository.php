@@ -54,7 +54,6 @@ class CompanyLegalDataRepository extends BaseRepository
 
     public function updateCompanyLegalData(array $data = [])
     {
-        return $data;
         try {
             DB::beginTransaction();
 
