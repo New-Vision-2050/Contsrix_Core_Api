@@ -96,27 +96,25 @@ class CompanyLegalDataRepository extends BaseRepository
                     'end_date' => $item['end_date'] ?? null,
                 ]);
 
-                if (!isset($item['file']) || empty($item['file'])) {
-                } else {
-                    foreach ($item['file'] as $fileEntry) {
-                        // Delete by ID (old file)
-                        if (is_array($fileEntry) && isset($fileEntry['id'])) {
-                            $oldFile = 1;
-                            $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
-                        }
+                foreach ($item['file'] as $fileEntry) {
+                    // Delete by ID (old file)
+                    if (is_array($fileEntry) && isset($fileEntry['id'])) {
+                        $oldFile = 1;
+                        $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
+                    }
 
-                        // Upload new file
-                        if ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
-                            $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company', 'upload');
-                        }
+                    // Upload new file
+                    if ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
+                        $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company', 'upload');
                     }
                 }
 
+                if($oldFile==null){
+                    $legalData->clearMediaCollection('upload');
+                }
                 $lastLegalData = $legalData;
             }
-            if($oldFile==null){
-                $legalData->clearMediaCollection('upload');
-            }
+
             DB::commit();
 
             if ($lastLegalData) {
