@@ -69,7 +69,6 @@ class CompanyLegalDataRepository extends BaseRepository
                 $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
             }
 
-
             $legalDataCollection = $legalDataQuery->get();
 
             if (empty($data)) {
@@ -77,6 +76,7 @@ class CompanyLegalDataRepository extends BaseRepository
                     $legalData->clearMediaCollection('upload');
                     $legalData->delete();
                 });
+
                 DB::commit();
                 return true;
             }
@@ -95,14 +95,15 @@ class CompanyLegalDataRepository extends BaseRepository
                     'end_date' => $item['end_date'] ?? null,
                 ]);
 
+                if (isset($item['file']) && is_array($item['file'])) {
+                    foreach ($item['file'] as $fileEntry) {
+                        if (is_array($fileEntry) && isset($fileEntry['id'])) {
+                            $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
+                        }
 
-                foreach ($item['file'] as $fileEntry) {
-                    if (is_array($fileEntry) && isset($fileEntry['id'])) {
-                        $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
-                    }
-
-                    if ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
-                        $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company', 'upload');
+                        if ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
+                            $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company', 'upload');
+                        }
                     }
                 }
 
@@ -121,6 +122,7 @@ class CompanyLegalDataRepository extends BaseRepository
             throw new \Exception($e->getMessage(), 409);
         }
     }
+
 
 
     public function delete( $id)
