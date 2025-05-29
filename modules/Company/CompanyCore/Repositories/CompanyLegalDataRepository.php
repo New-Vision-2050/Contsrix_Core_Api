@@ -82,7 +82,7 @@ class CompanyLegalDataRepository extends BaseRepository
             }
 
             $lastLegalData = null;
-            $oldFile = null;
+
 
             foreach ($data as $item) {
                 $legalData = $legalDataCollection->firstWhere('id', $item['id']);
@@ -95,7 +95,7 @@ class CompanyLegalDataRepository extends BaseRepository
                     'start_date' => $item['start_date'] ?? null,
                     'end_date' => $item['end_date'] ?? null,
                 ]);
-
+                $oldFile = null;
                 foreach ($item['file'] as $fileEntry) {
                     // Delete by ID (old file)
                     if (is_array($fileEntry) && isset($fileEntry['id'])) {
