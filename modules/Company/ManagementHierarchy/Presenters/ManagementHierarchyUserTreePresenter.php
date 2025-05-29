@@ -21,6 +21,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     private static bool $includeManagers = true;
     private static bool $includeDeputyManagers = true;
     private static bool $includeDirectChildren = true;
+    private static bool $skipManagementMainNodes = false;
 
     public function __construct(ManagementHierarchy $managementHierarchy)
     {
@@ -40,6 +41,11 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     public static function setIncludeDeputyManagers(bool $include): void
     {
         self::$includeDeputyManagers = $include;
+    }
+
+    public static function setSkipManagementMainNodes(bool $skip): void
+    {
+        self::$skipManagementMainNodes = $skip;
     }
 
 
@@ -122,9 +128,23 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         $childHierarchies = $this->managementHierarchy->children;
         if ($childHierarchies->isNotEmpty()) {
             foreach ($childHierarchies as $childHierarchy) {
-                // Add the manager as a child with their own subtree
-                $childPresenter = new self($childHierarchy);
-                $children[] = $childPresenter->getData();
+                if (self::$skipManagementMainNodes && $childHierarchy->type === 'management' && $childHierarchy->is_main == 1) {
+                    // Skip this node but include its children in the result
+                    if ($childHierarchy->children && $childHierarchy->children->count() > 0) {
+                        // Process each child of the skipped node
+                        foreach ($childHierarchy->children as $grandchild) {
+                            // Add the manager as a child with their own subtree
+                            $childPresenter = new self($childHierarchy);
+                            $children[] = $childPresenter->getData();
+                        }
+                    }
+                } else {
+                    // Add the manager as a child with their own subtree
+                    $childPresenter = new self($childHierarchy);
+                    $children[] = $childPresenter->getData();
+                }
+
+
             }
         }
 
