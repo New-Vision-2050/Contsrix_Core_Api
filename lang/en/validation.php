@@ -261,7 +261,10 @@ return [
 
     'attributes' => [
         "job_type_id"=>"Job type",
-        "manager_id"=>"manager"
+        "manager_id"=>"manager",
+        "state_id"=>"state",
+        "city_id"=>"city",
+        "country_id"=>"country",
     ],
 
     'company_user' => [
