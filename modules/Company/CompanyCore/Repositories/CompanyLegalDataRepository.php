@@ -96,16 +96,13 @@ class CompanyLegalDataRepository extends BaseRepository
                 ]);
 
 
-                if (isset($item['file']) && is_array($item['file'])) {
-                    foreach ($item['file'] as $fileEntry) {
-                        // If it's a string or array with ID, it's a file to delete
-                        if (is_array($fileEntry) && isset($fileEntry['id'])) {
-                            $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
-                        }
-                        // If it's an uploaded file, upload it
-                        elseif ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
-                            $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company','upload');
-                        }
+                foreach ($item['file'] as $fileEntry) {
+                    if (is_array($fileEntry) && isset($fileEntry['id'])) {
+                        $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
+                    }
+
+                    if ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
+                        $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company', 'upload');
                     }
                 }
 
