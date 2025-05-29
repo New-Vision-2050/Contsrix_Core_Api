@@ -40,25 +40,28 @@ class QualificationCRUDService
         );
     }
 
-    public function uploadFile($qualification,$request)//: array
+    public function uploadFile($qualification, $request)
     {
-        $files = $request->file('file');
-
         $visibility = 'public';
-        if($files){
-            foreach ($files as $file) {
+        $uploadedFiles = [];
 
-            $fieldIds = collect($request->input('file'))
-                ->pluck('id')
-                ->filter()
-                ->toArray();
+        $fieldIds = collect($request->input('file', []))
+            ->pluck('id')
+            ->filter()
+            ->toArray();
 
-            $existingMedia = $qualification->getMedia('upload_Qualification');
-                foreach ($existingMedia as $media) {
-                    if (!in_array($media->id, $fieldIds)) {
-                        $media->delete();
-                    }
-                }
+        $hasOldFiles = !empty($fieldIds);
+        $hasNewFiles = $request->hasFile('file') && is_array($request->file('file')) && count($request->file('file')) > 0;
+
+        $existingMedia = $qualification->getMedia('upload_Qualification');
+        foreach ($existingMedia as $media) {
+            if (!in_array($media->id, $fieldIds)) {
+                $media->delete();
+            }
+        }
+
+        if ($hasNewFiles) {
+            foreach ($request->file('file') as $file) {
                 $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($qualification->global_id));
                 $path = Company::find($qualification->company_id)->name . '/' . $user->name;
 
@@ -67,7 +70,11 @@ class QualificationCRUDService
             }
         }
 
-        return $qualification->fresh()->load('media');
+        if (!$hasOldFiles && !$hasNewFiles) {
+            $qualification->clearMediaCollection('upload_Qualification');
+        }
 
+        return $qualification->fresh()->load('media');
     }
+
 }
