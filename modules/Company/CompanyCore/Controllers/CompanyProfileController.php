@@ -139,7 +139,7 @@ class CompanyProfileController extends Controller
     public function updateCompanyLegalData(UpdateCompanyLegalDataRequest $request)
     {
         $command = $request->createUpdateLegalCompanyDataCommand();
-        $this->updateCompanyLegalDataHandler->handle($command);
+       return $this->updateCompanyLegalDataHandler->handle($command);
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
