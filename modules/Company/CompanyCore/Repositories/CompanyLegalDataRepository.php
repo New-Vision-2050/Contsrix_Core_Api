@@ -102,16 +102,16 @@ class CompanyLegalDataRepository extends BaseRepository
                         $oldFile = 1;
                         $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
                     }
-
+                    if($oldFile==null){
+                        $legalData->clearMediaCollection('upload');
+                    }
                     // Upload new file
                     if ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
                         $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company', 'upload');
                     }
                 }
 
-                if($oldFile==null){
-                    $legalData->clearMediaCollection('upload');
-                }
+
                 $lastLegalData = $legalData;
             }
 
