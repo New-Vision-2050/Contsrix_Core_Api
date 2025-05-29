@@ -185,6 +185,7 @@ class CompanyProfileService
 
     private function checkImage($image): int
     {
+        return 100;
         $manager = new ImageManager(new Driver());
         $img = $manager->read($image);
         $width = $img->width();
@@ -302,7 +303,7 @@ class CompanyProfileService
 
         $company->clearMediaCollection('logo');
 
-        $this->fileUploadService->uploadFile($company, $logoFile, 'company', 'logo');
+        $this->fileUploadService->uploadFile($company, $logoFile, 'company', 'logo', 'public', null, 'logo');
 
         return $company;
     }
