@@ -134,7 +134,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
                         // Process each child of the skipped node
                         foreach ($childHierarchy->children as $grandchild) {
                             // Add the manager as a child with their own subtree
-                            $childPresenter = new self($childHierarchy);
+                            $childPresenter = new self($grandchild);
                             $children[] = $childPresenter->getData();
                         }
                     }
