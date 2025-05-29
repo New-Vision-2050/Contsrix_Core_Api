@@ -82,6 +82,7 @@ class CompanyLegalDataRepository extends BaseRepository
             }
 
             $lastLegalData = null;
+            $oldFile = null;
 
             foreach ($data as $item) {
                 $legalData = $legalDataCollection->firstWhere('id', $item['id']);
@@ -96,11 +97,11 @@ class CompanyLegalDataRepository extends BaseRepository
                 ]);
 
                 if (!isset($item['file']) || empty($item['file'])) {
-                    $legalData->clearMediaCollection('upload');
                 } else {
                     foreach ($item['file'] as $fileEntry) {
                         // Delete by ID (old file)
                         if (is_array($fileEntry) && isset($fileEntry['id'])) {
+                            $oldFile = 1;
                             $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
                         }
 
@@ -113,7 +114,9 @@ class CompanyLegalDataRepository extends BaseRepository
 
                 $lastLegalData = $legalData;
             }
-
+            if($oldFile==null){
+                $legalData->clearMediaCollection('upload');
+            }
             DB::commit();
 
             if ($lastLegalData) {
