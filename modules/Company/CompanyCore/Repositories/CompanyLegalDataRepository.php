@@ -17,6 +17,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Shared\Media\Services\FileDeletedService;
+use Illuminate\Http\UploadedFile;
 
 /**
  * @property Company $model
@@ -61,14 +62,12 @@ class CompanyLegalDataRepository extends BaseRepository
             $companyId = request()->get('company_id') ?? request()->header('X-Tenant');
             $legalDataQuery = $this->model;
 
-            if ($branchId) {
-                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
-            } else {
+            if (!$branchId) {
                 $branch = $this->managementHierarchyRepository->getMainBranchForCompany($companyId);
-                $branchId = $branch->id;
-                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
+                $branchId = $branch->id ?? null;
             }
 
+            $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
             $legalDataCollection = $legalDataQuery->get();
 
             if (empty($data)) {
@@ -83,7 +82,6 @@ class CompanyLegalDataRepository extends BaseRepository
 
             $lastLegalData = null;
 
-
             foreach ($data as $item) {
                 $legalData = $legalDataCollection->firstWhere('id', $item['id']);
 
@@ -95,22 +93,39 @@ class CompanyLegalDataRepository extends BaseRepository
                     'start_date' => $item['start_date'] ?? null,
                     'end_date' => $item['end_date'] ?? null,
                 ]);
-                $oldFile = null;
-                foreach ($item['file'] as $fileEntry) {
-                    // Delete by ID (old file)
+
+                $hasNewFile = false;
+                $hasOldFile = false;
+
+                foreach ($item['file'] ?? [] as $fileEntry) {
                     if (is_array($fileEntry) && isset($fileEntry['id'])) {
-                        $oldFile = 1;
+                        $hasOldFile = true;
                         $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
                     }
-                    if($oldFile==null){
-                        $legalData->clearMediaCollection('upload');
-                    }
-                    // Upload new file
-                    if ($fileEntry instanceof \Illuminate\Http\UploadedFile) {
-                        $this->fileUploadService->uploadFile($legalData, $fileEntry, 'company', 'upload');
+
+                    if ($fileEntry instanceof UploadedFile) {
+                        $hasNewFile = true;
                     }
                 }
 
+                // If there's a new file and no old one, clear all to avoid duplicates
+                if (!$hasOldFile && $hasNewFile) {
+                    $legalData->clearMediaCollection('upload');
+                }
+
+                foreach ($item['file'] ?? [] as $index => $fileEntry) {
+                    if ($fileEntry instanceof UploadedFile) {
+                        $this->fileUploadService->uploadFile(
+                            $legalData,
+                            $fileEntry,
+                            'company',
+                            'upload',
+                            'public',
+                            null,
+                            'legal_file_' . $item['id'] . '_' . $index
+                        );
+                    }
+                }
 
                 $lastLegalData = $legalData;
             }
@@ -127,7 +142,6 @@ class CompanyLegalDataRepository extends BaseRepository
             throw new \Exception($e->getMessage(), 409);
         }
     }
-
 
 
     public function delete( $id)
