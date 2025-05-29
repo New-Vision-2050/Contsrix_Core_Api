@@ -100,10 +100,7 @@ class CompanyLegalDataRepository extends BaseRepository
                 $this->fileDeletedService->deleteFile($legalData,$item['file'],'upload');
 
                 if (array_key_exists('file', $item) && !is_string($item['file'])) {
-
-                    if (array_key_exists('file', $item) && !is_string($item['file'])) {
-                        $this->fileUploadService->uploadFile($legalData, $item['file'], 'company');
-                    }
+                    $this->fileUploadService->uploadFile($legalData, $item['file'], 'company');
                 }
 
                 $lastLegalData = $legalData;
