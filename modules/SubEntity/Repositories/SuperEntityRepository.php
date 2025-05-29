@@ -79,7 +79,7 @@ class SuperEntityRepository
     {
         $registrationFormsConfig = $this->getConfigValue($id, 'registration_forms');
         if(filled( $registrationFormsConfig)) {
-            return RegistrationForm::whereIn('id', $registrationFormsConfig)->get(['id', 'name', 'slug', 'is_active']);
+            return RegistrationForm::whereIn('id', $registrationFormsConfig)->get(['id', 'name', 'slug', 'is_active', 'company_user_role_map']);
         }
 
         $forms = collect($this->availableSuperEntities)
@@ -87,7 +87,7 @@ class SuperEntityRepository
             ->pluck('registration_forms')
             ->first();
 
-        return RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active']);
+        return RegistrationForm::whereIn('slug', $forms)->get(['id', 'name', 'slug', 'is_active', 'company_user_role_map']);
     }
 
     public function getRegistrationFormsIds(string $id): array
