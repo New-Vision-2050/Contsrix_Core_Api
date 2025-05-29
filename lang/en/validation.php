@@ -259,7 +259,10 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        "job_type_id"=>"Job type",
+        "manager_id"=>"manager"
+    ],
 
     'company_user' => [
         'first_name_required' => 'First name is required.',
