@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Models\CompanyUser;
+use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\Country\Models\Country;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\Currency\Models\Currency;
@@ -57,7 +58,8 @@ class AdminSeedTableSeeder extends Seeder
                     "management_hierarchy_id"=>2 //main management in main company
                 ]
             );
-            $user->assignRole('super-admin');
+
+        $user->assignRole('super-admin');
         }
     //}
 }

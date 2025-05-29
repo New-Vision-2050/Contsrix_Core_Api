@@ -18,10 +18,12 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\Country\Models\Country;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Ramsey\Uuid\Uuid;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
@@ -133,6 +135,21 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'global_company_user_id' => $general_manager->global_company_user_id,
             'role' => CompanyUserRole::EMPLOYEE->value
         ]);
+
+        CompanyUserCompanyManagementHierarchy::query()->updateOrCreate(
+            [
+                "user_id" => $general_manager->id,
+                "management_hierarchy_id" => $branchId,
+                "company_user_company_id" => $companyUserCompanyId
+            ],
+            [
+                "user_id" => $general_manager->id,
+                "management_hierarchy_id" => $branchId,
+                "company_user_company_id" => $companyUserCompanyId
+            ]
+        );
+        UserProfessionalData
+
 
     }
 }
