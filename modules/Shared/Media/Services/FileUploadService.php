@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Config;
 
 class FileUploadService
 {
-    public function uploadFile($model, $file, $filePath = 'default', string $collectionName = 'upload', string $visibility = 'public', ?string $folderId = null)
+    public function uploadFile($model, $file, $filePath = 'default', string $collectionName = 'upload', string $visibility = 'public', ?string $folderId = null, string $requestKey = 'file')
     {
         $disk = $visibility === 'public' ? 's3_public' : 's3_private';
 
@@ -30,9 +30,9 @@ class FileUploadService
             );
 
             // Store file temporarily to mimic form request file input
-            request()->files->set('file', [$singleFile]);
+            request()->files->set($requestKey, [$singleFile]);
 
-            $media = $model->addMultipleMediaFromRequest(['file'])->each(function ($fileAdder) use ($folderId, $filePath, $disk, $collectionName, $fileName) {
+            $media = $model->addMultipleMediaFromRequest([$requestKey])->each(function ($fileAdder) use ($folderId, $filePath, $disk, $collectionName, $fileName) {
                 $fileAdder
                     ->usingFileName($fileName)
                     ->storingConversionsOnDisk($disk)
