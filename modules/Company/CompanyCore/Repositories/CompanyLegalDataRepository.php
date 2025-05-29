@@ -59,7 +59,7 @@ class CompanyLegalDataRepository extends BaseRepository
 
             // Get optional branch_id from request
             $branchId = request()->get('branch_id');
-            $companyId = request()->get('company_id');
+            $companyId = request()->get('company_id')??request()->header('X-Tenant') ;
             // Get legal data scoped by branch if branch_id is provided
             $legalDataQuery = $this->model;
 
@@ -79,7 +79,6 @@ class CompanyLegalDataRepository extends BaseRepository
                     $legalData->clearMediaCollection('upload');
                     $legalData->delete();
                 });
-
                 DB::commit();
                 // return true;
             }
@@ -87,6 +86,7 @@ class CompanyLegalDataRepository extends BaseRepository
             $lastLegalData = null;
 
             foreach ($data as $item) {
+
                 $legalData = $legalDataCollection->firstWhere('id', $item['id']);
 
                 if (!$legalData) {
@@ -94,18 +94,30 @@ class CompanyLegalDataRepository extends BaseRepository
                 }
 
                 $legalData->update([
-                    'start_date' => $item['start_date']??null,
-                    'end_date' => $item['end_date']??null,
+                    'start_date' => $item['start_date'] ?? null,
+                    'end_date' => $item['end_date'] ?? null,
                 ]);
-                $this->fileDeletedService->deleteFile($legalData,$item['file'],'upload');
 
-                if (array_key_exists('file', $item) && !is_string($item['file'])) {
-                    $this->fileUploadService->uploadFile($legalData, $item['file'], 'company');
+                $oldFileData = false;
+               // Delete old files by file IDs in `files`
+               foreach ($item['files'] ?? [] as $fileEntry) {
+                    if (isset($fileEntry['id'])) {
+                        $oldFileData = true;
+                        $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
+                    }
                 }
 
-                $lastLegalData = $legalData;
-            }
+                if($oldFileData == false){
+                    $legalData->clearMediaCollection('upload');
+                }
 
+                foreach ($item['file'] ?? [] as $newFile) {
+                    if (!is_string($newFile)) {
+                        $this->fileUploadService->uploadFile($legalData, $newFile, 'company');
+                    }
+                }
+
+            }
             DB::commit();
 
             if ($lastLegalData) {
@@ -113,6 +125,7 @@ class CompanyLegalDataRepository extends BaseRepository
             }
 
             return true;
+
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);

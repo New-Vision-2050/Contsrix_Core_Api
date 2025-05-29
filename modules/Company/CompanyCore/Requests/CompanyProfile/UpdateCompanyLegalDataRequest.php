@@ -26,7 +26,7 @@ class UpdateCompanyLegalDataRequest extends FormRequest
 
     public function createUpdateLegalCompanyDataCommand(): UpdateCompanyLegalDataCommand
     {
-        $data = $this->input('data', []);
+        $data = $this->data;
         return new UpdateCompanyLegalDataCommand (
             data: $data
 

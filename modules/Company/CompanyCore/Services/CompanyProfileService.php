@@ -287,18 +287,25 @@ class CompanyProfileService
 
     public function assignLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
     {
+        $logoFile = $assignLogoToCompanyDTO->getLogo();
+        $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
 
-        $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
+        if (!$logoFile instanceof \Illuminate\Http\UploadedFile || !$logoFile->isValid()) {
+            $company->clearMediaCollection('logo');
+            return $company;
+        }
+
+        $result = $this->checkImage($logoFile);
         if (!$result) {
             throw new \Exception(__("validation.logo-not-valid"), 400);
         }
-        $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
+
         $company->clearMediaCollection('logo');
 
-        $this->fileUploadService->uploadFile($company, $assignLogoToCompanyDTO->getLogo(), 'company', 'logo');
+        $this->fileUploadService->uploadFile($company, $logoFile, 'company', 'logo', 'public', null, 'logo');
+
         return $company;
     }
-
     public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
 //        return
