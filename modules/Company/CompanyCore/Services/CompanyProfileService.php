@@ -185,7 +185,6 @@ class CompanyProfileService
 
     private function checkImage($image): int
     {
-        return 100;
         $manager = new ImageManager(new Driver());
         $img = $manager->read($image);
         $width = $img->width();
