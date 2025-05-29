@@ -20,8 +20,8 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
     {
         return [
             "name"=>"nullable",
-            "files"=>"required|array",
-            "files.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
+            "file"=>"required|array",
+            "file.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
             "document_type_id"=>"required|exists:company_registration_types,id",
             "description"=>"required",
             "document_number"=>"required|numeric",
@@ -93,7 +93,7 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
             endDate: $this->end_date,
             notificationDate: $this->notification_date,
             documentTypeId: Uuid::fromString($this->document_type_id),
-            files: $this->file("files")
+            files: $this->file("file")
         );
     }
 }
