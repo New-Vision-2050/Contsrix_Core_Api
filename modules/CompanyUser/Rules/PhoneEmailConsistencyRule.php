@@ -29,7 +29,7 @@ class PhoneEmailConsistencyRule implements Rule
         //if email exist and phone exist should be for same user with same global_company_user_id
         if($userEmail && count($userPhones) > 0) {
             foreach ($userPhones as $user){
-                if($user->global_company_user_id == $userEmail->global_id )
+                if($user->global_company_user_id != $userEmail->global_id )
                 {
                     return false;
                 }
