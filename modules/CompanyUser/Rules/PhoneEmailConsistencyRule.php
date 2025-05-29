@@ -19,12 +19,21 @@ class PhoneEmailConsistencyRule implements Rule
     public function passes($attribute, $value): bool
     {
         $phone = str_replace(" ", "", $value);
-        $emailExists = DB::table('company_users')->where('email', $this->email)->exists();
-        $phoneExists = DB::table('users')->where('phone', $phone)->exists();
+        $userEmail = DB::table('company_users')->where('email', $this->email)->first();
+        $userPhones = DB::table('users')->where('phone', $phone)->get();
 
         // If email is not found, phone should also not exist
-        if (!$emailExists && $phoneExists) {
+        if (!$userEmail && count($userPhones)) {
             return false;
+        }
+        //if email exist and phone exist should be for same user with same global_company_user_id
+        if($userEmail && count($userPhones) > 0) {
+            foreach ($userPhones as $user){
+                if($user->global_company_user_id != $userEmail->global_id )
+                {
+                    return false;
+                }
+            }
         }
 
         return true;
