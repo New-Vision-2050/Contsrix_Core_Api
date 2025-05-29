@@ -15,6 +15,8 @@ use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
+use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Shared\Media\Services\FileDeletedService;
 
 /**
  * @property Company $model
@@ -23,7 +25,12 @@ use Carbon\Carbon;
  */
 class CompanyLegalDataRepository extends BaseRepository
 {
-    public function __construct(CompanyLegalData $model, private FileUploadService $fileUploadService)
+    public function __construct(
+        CompanyLegalData $model,
+        private FileUploadService $fileUploadService,
+        private ManagementHierarchyRepository $managementHierarchyRepository,
+        private FileDeletedService $fileDeletedService,
+        )
     {
         parent::__construct($model);
     }
@@ -45,42 +52,74 @@ class CompanyLegalDataRepository extends BaseRepository
         return $companyLegalData;
     }
 
-    public function updateCompanyLegalData(array $data)
+    public function updateCompanyLegalData(array $data = [])
     {
         try {
             DB::beginTransaction();
 
+            // Get optional branch_id from request
+            $branchId = request()->get('branch_id');
+            $companyId = request()->get('company_id');
+            // Get legal data scoped by branch if branch_id is provided
+            $legalDataQuery = $this->model;
+
+            if ($branchId) {
+                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
+            }else{
+                $branch =  $this->managementHierarchyRepository->getMainBranchForCompany($companyId);
+                $branchId = $branch->id;
+                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
+            }
+
+            $legalDataCollection = $legalDataQuery->get();
+
+            if (empty($data)) {
+                // Delete all legal data for this branch or all data if no branch specified
+                $legalDataCollection->each(function ($legalData) {
+                    $legalData->clearMediaCollection('upload');
+                    $legalData->delete();
+                });
+
+                DB::commit();
+                // return true;
+            }
+
             $lastLegalData = null;
 
             foreach ($data as $item) {
-                $legalData = $this->findOneOrFail($item["id"]);
-                $legalData->update([
-                    "start_date" => $item["start_date"],
-                    "end_date" => $item["end_date"]
-                ]);
+                $legalData = $legalDataCollection->firstWhere('id', $item['id']);
 
-                if (array_key_exists("file", $item) && !is_string($item["file"])) {
-                    $legalData->clearMediaCollection('upload');
-                    $this->fileUploadService->uploadFile($legalData, $item["file"], "company");
+                if (!$legalData) {
+                    throw new \Exception("Legal data with ID {$item['id']} not found in the specified scope.", 404);
                 }
 
-                // Store reference to last updated item
+                $legalData->update([
+                    'start_date' => $item['start_date']??null,
+                    'end_date' => $item['end_date']??null,
+                ]);
+                $this->fileDeletedService->deleteFile($legalData,$item['file'],'upload');
+
+                if (array_key_exists('file', $item) && !is_string($item['file'])) {
+
+                    if (array_key_exists('file', $item) && !is_string($item['file'])) {
+                        $this->fileUploadService->uploadFile($legalData, $item['file'], 'company');
+                    }
+                }
+
                 $lastLegalData = $legalData;
             }
 
             DB::commit();
 
-            // Fire event only if at least one item was updated
             if ($lastLegalData) {
                 event(new CompanyLegalDataUpdated($lastLegalData->fresh()));
             }
 
+            return true;
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);
         }
-
-        return true;
     }
 
 
