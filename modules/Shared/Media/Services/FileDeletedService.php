@@ -7,28 +7,38 @@ use Illuminate\Support\Facades\Config;
 
 class FileDeletedService
 {
-    public function deleteFile($model, $inputFiles, string $collectionName)
+    public function deleteFile($model, $inputFiles, string $collectionName): void
     {
-
-        if (!$inputFiles ) {
+        if (!$inputFiles) {
             return;
         }
 
-        // Get the IDs of the existing media to keep (those sent from the frontend)
-        $fieldIds = collect($inputFiles)
-            ->pluck('id')
-            ->filter()
-            ->toArray();
+        $fieldIds = [];
 
-        // Delete media not included in the request for this specific field
+        if (is_array($inputFiles)) {
+            if (array_is_list($inputFiles)) {
+                // Array of multiple objects or IDs
+                foreach ($inputFiles as $item) {
+                    if (is_array($item) && isset($item['id'])) {
+                        $fieldIds[] = $item['id'];
+                    } elseif (is_numeric($item)) {
+                        $fieldIds[] = $item;
+                    }
+                }
+            } elseif (isset($inputFiles['id'])) {
+                // Single object with ID
+                $fieldIds[] = $inputFiles['id'];
+            }
+        } elseif (is_numeric($inputFiles)) {
+            // Single ID
+            $fieldIds[] = $inputFiles;
+        }
+
         $existingMedia = $model->getMedia($collectionName);
         foreach ($existingMedia as $media) {
             if (!in_array($media->id, $fieldIds)) {
                 $media->delete();
             }
         }
-
-
-
     }
 }
