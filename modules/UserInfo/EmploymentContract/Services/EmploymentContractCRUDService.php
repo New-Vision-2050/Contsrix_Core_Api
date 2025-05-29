@@ -41,7 +41,11 @@ class EmploymentContractCRUDService
             $inputFile,
             'upload_employment_contracts'
         );
-        
+
+        if (!$file && empty($inputFile)) {
+            $employmentContract->clearMediaCollection('upload_employment_contracts');
+        }
+
         if ($file) {
             $companyName = Company::find($company_id)?->name ?? 'UnknownCompany';
             $path = $companyName . '/' . $user->name;
