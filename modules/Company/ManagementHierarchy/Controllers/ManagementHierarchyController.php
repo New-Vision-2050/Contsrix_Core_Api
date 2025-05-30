@@ -203,7 +203,7 @@ class ManagementHierarchyController extends Controller
         ManagementHierarchyUserTreePresenter::setIncludeManagers(true);
         ManagementHierarchyUserTreePresenter::setIncludeDirectChildren(true);
         ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
-        ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(true);
+        ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(false);
 
 
 

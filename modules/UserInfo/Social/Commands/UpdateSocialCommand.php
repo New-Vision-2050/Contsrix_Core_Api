@@ -26,7 +26,7 @@ class UpdateSocialCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return ([
             "whatsapp"=> $this->whatsapp??"",
             "facebook"=> $this->facebook??"",
             "telegram"=> $this->telegram??"",
