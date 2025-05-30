@@ -94,6 +94,14 @@ class SubEntityCRUDService
         );
     }
 
+    public function getSuperEntitySelection(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->getSuperEntitySelection(
+            page: $page,
+            perPage: $perPage
+        );
+    }
+
     /**
      * @param string $id
      *
