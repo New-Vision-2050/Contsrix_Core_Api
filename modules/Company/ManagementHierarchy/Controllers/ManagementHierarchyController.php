@@ -195,6 +195,49 @@ class ManagementHierarchyController extends Controller
         return Json::item($presentedTree);
     }
 
+    private function consolidateTreeNodesUnderLowestId(array $treeNodes): array
+    {
+        if (count($treeNodes) <= 1) {
+            return $treeNodes;
+        }
+
+        // Find the node with the lowest ID to use as the root
+        $lowestIdIndex = 0;
+        $lowestId = $treeNodes[0]['id'];
+
+        for ($i = 1; $i < count($treeNodes); $i++) {
+            if ($treeNodes[$i]['id'] < $lowestId) {
+                $lowestId = $treeNodes[$i]['id'];
+                $lowestIdIndex = $i;
+            }
+        }
+
+        // Node with lowest ID will be our root node
+        $rootNode = $treeNodes[$lowestIdIndex];
+
+        // Start with existing children of the root node or empty array
+        $allChildren = isset($rootNode['children']) ? $rootNode['children'] : [];
+
+        // Add all other nodes as children of the root node
+        for ($i = 0; $i < count($treeNodes); $i++) {
+            if ($i !== $lowestIdIndex) {
+                $allChildren[] = $treeNodes[$i];
+            }
+        }
+
+        // Update the count properties for the root node
+        $rootNode['department_count'] = array_sum(array_column($treeNodes, 'department_count'));
+        $rootNode['management_count'] = array_sum(array_column($treeNodes, 'management_count'));
+        $rootNode['branch_count'] = array_sum(array_column($treeNodes, 'branch_count'));
+        $rootNode['user_count'] = array_sum(array_column($treeNodes, 'user_count'));
+
+        // Set the consolidated children to the root node
+        $rootNode['children'] = $allChildren;
+
+        return $rootNode;
+    }
+
+
     public function directChildrenTree()
     {
         $tree = $this->managementHierarchyService->getTree();
@@ -202,7 +245,7 @@ class ManagementHierarchyController extends Controller
         ManagementHierarchyUserTreePresenter::setIncludeManagers(true);
         ManagementHierarchyUserTreePresenter::setIncludeDirectChildren(true);
         ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
-        ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(true);
+        ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(false);
 
 
 
