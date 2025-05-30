@@ -123,6 +123,11 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
                 // Present each direct report as a user with an empty children array
                 $userData = (new UserPresenter($user))->getData();
                 $userData['children'] = [];
+                $userData['hierarchy_info'] = [
+                    'id' => $this->managementHierarchy->id,
+                    'name' => $this->managementHierarchy->name,
+                    'type' => $this->managementHierarchy->type,
+                ];
                 $userData['type'] = "employee";
 
                 $children[] = $userData;

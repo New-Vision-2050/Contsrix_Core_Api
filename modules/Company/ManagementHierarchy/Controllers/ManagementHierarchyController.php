@@ -203,11 +203,11 @@ class ManagementHierarchyController extends Controller
 
         // Find the node with the lowest ID to use as the root
         $lowestIdIndex = 0;
-        $lowestId = $treeNodes[0]['id'];
+        $lowestId = $treeNodes[0]["hierarchy_info"]['id'];
 
         for ($i = 1; $i < count($treeNodes); $i++) {
-            if ($treeNodes[$i]['id'] < $lowestId) {
-                $lowestId = $treeNodes[$i]['id'];
+            if ($treeNodes[$i]["hierarchy_info"]['id'] < $lowestId) {
+                $lowestId = $treeNodes[$i]["hierarchy_info"]['id'];
                 $lowestIdIndex = $i;
             }
         }
@@ -225,12 +225,6 @@ class ManagementHierarchyController extends Controller
             }
         }
 
-        // Update the count properties for the root node
-        $rootNode['department_count'] = array_sum(array_column($treeNodes, 'department_count'));
-        $rootNode['management_count'] = array_sum(array_column($treeNodes, 'management_count'));
-        $rootNode['branch_count'] = array_sum(array_column($treeNodes, 'branch_count'));
-        $rootNode['user_count'] = array_sum(array_column($treeNodes, 'user_count'));
-
         // Set the consolidated children to the root node
         $rootNode['children'] = $allChildren;
 
@@ -247,9 +241,14 @@ class ManagementHierarchyController extends Controller
         ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
         ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(false);
 
+        $presentedTree=ManagementHierarchyUserTreePresenter::collection($tree);
 
-
-        return Json::item(ManagementHierarchyUserTreePresenter::collection($tree));
+        if (is_array($presentedTree[0]) && count($presentedTree[0]) > 1) {
+            $presentedTree = $this->consolidateTreeNodesUnderLowestId($presentedTree[0]);
+        } else if (is_array($presentedTree[0]) && count($presentedTree[0]) == 1) {
+            $presentedTree = $presentedTree[0];
+        }
+        return Json::item($presentedTree);
     }
 
     /**
