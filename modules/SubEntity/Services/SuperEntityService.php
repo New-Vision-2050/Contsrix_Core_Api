@@ -20,7 +20,7 @@ class SuperEntityService
 
     public function list(?string $search = ''): array
     {
-        $supEntities = $this->subEntityCRUDService->getSelection();
+        $supEntities = $this->subEntityCRUDService->getSuperEntitySelection();
         $supEntities = $supEntities['data']->toArray();
         $superEntities = $this->repository->list($search);
 
