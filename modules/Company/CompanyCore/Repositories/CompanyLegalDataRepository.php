@@ -94,8 +94,8 @@ class CompanyLegalDataRepository extends BaseRepository
                 }
 
                 $legalData->update([
-                    'start_date' => $item['start_date'] ?? null,
-                    'end_date' => $item['end_date'] ?? null,
+                    'start_date' => isset($item['start_date']) ? Carbon::parse($item['start_date'])->format('Y-m-d') : null,
+                    'end_date' => isset($item['end_date']) ? Carbon::parse($item['end_date'])->format('Y-m-d') : null,
                 ]);
 
                 $oldFileData = false;
