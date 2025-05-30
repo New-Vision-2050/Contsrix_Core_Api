@@ -19,6 +19,7 @@ use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Modules\User\Repositories\UserRepository;
 use RabbitMQ\Jobs\BroadcastMessage;
@@ -31,6 +32,7 @@ class ClientCRUDService
     public function __construct(
         private CompanyUserRepository $repository,
         private UserRepository        $userRepository,
+        private CompanyUserCRUDService $companyUserCRUDService
     )
     {
     }
@@ -40,25 +42,9 @@ class ClientCRUDService
 
         $companyUser = $this->repository->findByEmail($createClientDTO->getEmail());
 
-        if ($companyUser != null && $createClientDTO->getBranchIds() != null) {
-            $branches = $this->repository->getUserInBranches($companyUser->global_id, $companyRoleDTO->role, $createClientDTO->getBranchIds());
-            if (count($branches) > 0 && $companyRoleDTO->getRole() == CompanyUserRole::EMPLOYEE->value) {
-                throw new CustomException(__("validation.employee-already-exist"), 400);
+        $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createClientDTO->getBranchIds());
 
-            }
-            if (count($branches) == count($createClientDTO->getBranchIds())) {
-                if ($companyRoleDTO->getRole() == CompanyUserRole::CLIENT->value) {
-                    throw new CustomException(__("validation.client-already-exist-in-thies-branches"), 400);
-                } elseif ($companyRoleDTO->getRole() == CompanyUserRole::EMPLOYEE->value) {
-                    throw new CustomException(__("validation.employee-already-exist"), 400);
 
-                } else {
-                    throw new CustomException(__("validation.broker-already-exist-in-thies-branches"), 400);
-
-                }
-            }
-
-        }
 
 
         $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(), $createClientDTO->clientDetailToArray());

@@ -17,6 +17,7 @@ use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandle
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
@@ -64,7 +65,7 @@ class ManagementHierarchyController extends Controller
 
     public function listWithoutPagination(GetManagementHierarchyLookupRequest $request)
     {
-        return Json::items(ManagementHierarchyPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
+        return Json::items(ManagementHierarchySimpleDataPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
     }
 
     public function show(GetManagementHierarchyRequest $request): JsonResponse

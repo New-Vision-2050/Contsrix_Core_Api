@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\Validator;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\User\Presenters\UserBranchesPresenter;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 
@@ -46,6 +48,30 @@ class CompanyUserValidationService
         return $this;
     }
 
+    private function getRolesAndPermissions($companyUserCompany)
+    {
+
+        $rolesWithBranches = [];
+
+        foreach (CompanyUserRole::values() as $availableRole) {
+            $branches = []; // Initialize branches as an empty array for each role
+            foreach ($companyUserCompany as $roleWithBranches) {
+                if ($roleWithBranches->getRawOriginal("role") == $availableRole) {
+                    $branches = $roleWithBranches->managementHierarchy ? ManagementHierarchySimpleDataPresenter::collection($roleWithBranches->managementHierarchy) : [];
+                }
+            }
+            if ($branches == null) {
+                $branches = [];
+            }
+            $rolesWithBranches[] = [
+                'role' => $availableRole,
+                'branches' => $branches
+            ];
+        }
+        return $rolesWithBranches;
+
+    }
+
     public function validateEmail()
     {
         if ($user = $this->repository->findByEmail(request()->email)) {
@@ -58,9 +84,10 @@ class CompanyUserValidationService
                 'sub_title' => 'email',
                 'status' => 0,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
-                "branches" => $companyUserCompany?->managementHierarchy?ManagementHierarchySimpleDataPresenter::collection($companyUserCompany?->managementHierarchy):[],
+                "roles" => $this->getRolesAndPermissions($companyUserCompany),
                 'validate' => 'required',
-                'id' => $user->id
+                'id' => $user->id,
+                "email"=>$user->email
             ];
         } else {
             $this->errors[] = [
