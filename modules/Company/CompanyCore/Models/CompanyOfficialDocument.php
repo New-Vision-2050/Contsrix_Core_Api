@@ -51,6 +51,9 @@ class CompanyOfficialDocument extends Model implements HasMedia
 
     protected $casts = [
         'id' => 'string',
+        'start_date' => 'date:Y-m-d',
+        'end_date' => 'date:Y-m-d',
+        'notification_date' => 'date:Y-m-d',
     ];
 
     public function company()
