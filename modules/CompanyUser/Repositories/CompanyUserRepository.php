@@ -146,9 +146,8 @@ class CompanyUserRepository extends BaseRepository
 
     public function findByEmail(string $email)
     {
-        return $this->findOneBy([
-            'email' => $email,
-        ]);
+        return $this->model->withoutParentModel()->where("email",$email)->first();
+
     }
 
     public function findByPhone(string $phone)
