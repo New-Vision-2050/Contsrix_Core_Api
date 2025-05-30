@@ -128,7 +128,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         $childHierarchies = $this->managementHierarchy->children;
         if ($childHierarchies->isNotEmpty()) {
             foreach ($childHierarchies as $childHierarchy) {
-                if (self::$skipManagementMainNodes && $childHierarchy->type === 'management' && $childHierarchy->is_main == 1) {
+                if ((self::$skipManagementMainNodes && $childHierarchy->type === 'management' && $childHierarchy->is_main == 1||$childHierarchy->type=="branch")) {
                     // Skip this node but include its children in the result
                     if ($childHierarchy->children && $childHierarchy->children->count() > 0) {
                         // Process each child of the skipped node
