@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
+use Carbon\Carbon;
 
 class CreateCompanyLegalDataRequest extends FormRequest
 {
@@ -45,8 +46,8 @@ class CreateCompanyLegalDataRequest extends FormRequest
             managementHierarchy: $branch,
             registrationTypeId: $this->filled('registration_type_id') ? Uuid::fromString($this->registration_type_id) : null,
             registrationNumber: $this->regestration_number,
-            startDate: $this->start_date,
-            endDate: $this->end_date,
+            startDate: $this->start_date ? Carbon::parse($this->start_date)->format('Y-m-d') : null,
+            endDate: $this->end_date ? Carbon::parse($this->end_date)->format('Y-m-d') : null,
             file: $this->file('file'),
         );
     }
