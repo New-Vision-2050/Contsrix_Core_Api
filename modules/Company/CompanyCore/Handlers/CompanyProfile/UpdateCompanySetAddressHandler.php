@@ -23,6 +23,6 @@ class UpdateCompanySetAddressHandler
     public function handle(SetCompanyAddressCommand $setCompanyAddressCommand)
     {
 
-        $this->repository->updateCompanyAddress($setCompanyAddressCommand->getId() , $setCompanyAddressCommand->toArray());
+        $this->repository->updateCompanyAddress($setCompanyAddressCommand->getId() , $setCompanyAddressCommand->toArray(),$setCompanyAddressCommand->latAndLongToArray());
     }
 }

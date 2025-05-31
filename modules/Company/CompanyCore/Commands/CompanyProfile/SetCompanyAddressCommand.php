@@ -18,6 +18,8 @@ class SetCompanyAddressCommand
         private string        $buildingNumber,
         private string        $addtionalPhone,
         private string        $postalCode,
+        private ?string        $latitude,
+        private ?string        $longitude
     )
     {
     }
@@ -39,6 +41,14 @@ class SetCompanyAddressCommand
             "additional_phone" => $this->addtionalPhone,
             "postal_code" => $this->postalCode,
 
+        ];
+    }
+
+    public function latAndLongToArray()
+    {
+        return[
+            "latitude" => $this->latitude,
+            "longitude" => $this->longitude,
         ];
     }
 }
