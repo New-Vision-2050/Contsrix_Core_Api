@@ -156,8 +156,7 @@ private function hasFilledFields(?object $object, array $fields): bool
         }
 
         $socialFields = [
-            'email', 'phone', 'other_phone', 'code_other_phone',
-            'address', 'postal_code', 'whatsapp', 'facebook',
+             'whatsapp', 'facebook',
             'telegram', 'instagram', 'snapchat', 'linkedin'
         ];
 
