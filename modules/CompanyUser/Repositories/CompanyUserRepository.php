@@ -19,6 +19,7 @@ use Modules\CompanyUser\Models\CompanyUserAddress;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\JobTitle\Models\JobTitle;
+use Modules\JobTitle\Repositories\JobTitleRepository;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -34,7 +35,7 @@ use function Laravel\Prompts\table;
 class CompanyUserRepository extends BaseRepository
 {
 
-    public function __construct(CompanyUser $model, private UserRepository $userRepository)
+    public function __construct(CompanyUser $model, private UserRepository $userRepository,private JobTitleRepository $jobTitleRepository)
     {
         parent::__construct($model);
     }
@@ -267,6 +268,7 @@ class CompanyUserRepository extends BaseRepository
                 CompanyUserAddress::query()->updateOrCreate(["global_company_user_id" => $companyUser->id], $address + ["global_company_user_id" => $companyUser->id]);
             }
             if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
+                $generalManagerJobTitle = $this->jobTitleRepository->findOneBy(["type"=>"general_manager"]);
                 $userProfessionalData = UserProfessionalData::query()->where([
                     'global_id' => $user->global_company_user_id,
                     'company_id' => $companyRole['company_id'],
@@ -276,8 +278,8 @@ class CompanyUserRepository extends BaseRepository
                     'global_id' => $user->global_company_user_id,
                     'branch_id' => $branches != null ? $branches[0] : $mainBranchId,
                     'management_id' => $mainManagement->id,
-                    "job_title_id" => isset($companyUserData["job_title_id"]) ? $companyUserData["job_title_id"] : null,
-                    "job_type_id" => isset($companyUserData["job_title_id"]) ? JobTitle::query()->where("id", $companyUserData["job_title_id"])->first()->job_type_id : null,
+                    "job_title_id" => isset($companyUserData["job_title_id"]) ? $companyUserData["job_title_id"] : $generalManagerJobTitle->id,
+                    "job_type_id" => isset($companyUserData["job_title_id"]) ? JobTitle::query()->where("id", $companyUserData["job_title_id"])->first()->job_type_id : $generalManagerJobTitle->job_type_id,
 
                 ];
                 if ($userProfessionalData) {
