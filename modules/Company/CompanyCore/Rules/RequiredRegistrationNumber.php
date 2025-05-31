@@ -5,34 +5,32 @@ namespace Modules\Company\CompanyCore\Rules;
 use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
-class RequiredRegistrationNumber implements Rule
-{
-    protected ?string $registrationTypeId;
-    protected bool $required = false;
+use Illuminate\Contracts\Validation\DataAwareRule;
 
-    public function __construct(?string $registrationTypeId)
+class RequiredRegistrationNumber implements Rule, DataAwareRule
+{
+    protected array $data = [];
+
+    public function setData(array $data)
     {
-        $this->registrationTypeId = $registrationTypeId;
+        $this->data = $data;
     }
 
     public function passes($attribute, $value): bool
     {
-        if (!$this->registrationTypeId) {
+        $registrationTypeId = $this->data['registration_type_id'] ?? null;
+
+        if (!$registrationTypeId) {
             return true;
         }
 
         $type = DB::table('company_registration_types')
-            ->where('id', $this->registrationTypeId)
+            ->where('id', $registrationTypeId)
             ->value('type');
 
-        $this->required = $type !== 3;
+        $required = (int)$type !== 3;
 
-        // If required and value is empty → invalid
-        if ($this->required && empty($value)) {
-            return false;
-        }
-
-        return true;
+        return !$required || !empty($value);
     }
 
     public function message(): string
