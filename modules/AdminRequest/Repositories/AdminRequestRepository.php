@@ -32,6 +32,11 @@ class AdminRequestRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getAll()
+    {
+        return $this->model->filter(request()->all())->get();
+    }
+
     public function getAdminRequest(UuidInterface $id): AdminRequest
     {
         return $this->findOneByOrFail([

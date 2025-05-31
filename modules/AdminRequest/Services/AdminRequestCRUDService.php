@@ -22,12 +22,9 @@ class AdminRequestCRUDService
          return $this->repository->createAdminRequest($createAdminRequestDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list()
     {
-        return $this->repository->paginated(
-            page: $page,
-            perPage: $perPage,
-        );
+        return $this->repository->getAll();
     }
 
     public function get(UuidInterface $id): AdminRequest
