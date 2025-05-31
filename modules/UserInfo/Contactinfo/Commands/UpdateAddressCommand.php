@@ -19,7 +19,7 @@ class UpdateAddressCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return ([
             'company_id' => $this->company_id,
             'global_id' => $this->global_id,
             'address'=> $this->address,
