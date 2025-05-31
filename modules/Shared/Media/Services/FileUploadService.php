@@ -7,17 +7,21 @@ use Illuminate\Support\Facades\Config;
 
 class FileUploadService
 {
-    public function uploadFile($model, $file, $filePath = 'default', string $collectionName = 'upload', string $visibility = 'public', ?string $folderId = null, string $requestKey = 'file')
-    {
+    public function uploadFile(
+         $model,
+        UploadedFile|array $file,
+        string $filePath = 'default',
+        string $collectionName = 'upload',
+        string $visibility = 'public',
+        ?string $folderId = null
+    ) {
         $disk = $visibility === 'public' ? 's3_public' : 's3_private';
 
-        // Normalize to array if single file is passed
+        // Normalize to array
         $files = is_array($file) ? $file : [$file];
-
         $allMedia = collect();
 
-        foreach ($files as $index => $singleFile) {
-            // Skip empty or invalid file
+        foreach ($files as $singleFile) {
             if (!$singleFile instanceof UploadedFile) {
                 continue;
             }
@@ -29,23 +33,18 @@ class FileUploadService
                 $singleFile->getClientOriginalExtension()
             );
 
-            // Store file temporarily to mimic form request file input
-            request()->files->set($requestKey, [$singleFile]);
+            $media = $model->addMedia($singleFile)
+                ->usingFileName($fileName)
+                ->storingConversionsOnDisk($disk)
+                ->withCustomProperties([
+                    'folder_id' => $folderId,
+                    'file_path' => $filePath,
+                    'disk' => $disk,
+                ])
+                ->preservingOriginal()
+                ->toMediaCollection($collectionName, $disk);
 
-            $media = $model->addMultipleMediaFromRequest([$requestKey])->each(function ($fileAdder) use ($folderId, $filePath, $disk, $collectionName, $fileName) {
-                $fileAdder
-                    ->usingFileName($fileName)
-                    ->storingConversionsOnDisk($disk)
-                    ->withCustomProperties([
-                        'folder_id' => $folderId,
-                        'file_path' => $filePath,
-                        'disk' => $disk,
-                    ])
-                    ->preservingOriginal()
-                    ->toMediaCollection($collectionName, $disk);
-            });
-
-            $allMedia = $allMedia->merge($media);
+            $allMedia->push($media);
         }
 
         return $allMedia;
