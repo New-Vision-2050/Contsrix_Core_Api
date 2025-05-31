@@ -18,6 +18,9 @@ use Modules\UserInfo\UserPrivilege\Repositories\UserPrivilegeRepository;
 use Modules\UserInfo\UserRelative\Repositories\UserRelativeRepository;
 use Modules\UserInfo\UserSalary\Repositories\UserSalaryRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\UserInfo\Contactinfo\Repositories\ContactinfoRepository;
+use Modules\UserInfo\UserProfessionalData\Repositories\UserProfessionalDataRepository;
+use Modules\UserInfo\UserProfessionalData\Requests\GetUserProfessionalDataRequest;
 
 class CompanyUserDatatatusService
 {
@@ -34,7 +37,9 @@ class CompanyUserDatatatusService
         private ProfessionalCertificateRepository $professionalCertificateRepository,
         private JobOfferRepository $jobOfferRepository,
         private UserPrivilegeRepository $userPrivilegeRepository,
-        private CompanyRepository $companyRepository
+        private CompanyRepository $companyRepository,
+        private ContactinfoRepository $contactinfoRepository,
+        private UserProfessionalDataRepository $userProfessionalDataRepository
     ) {}
 
     public function getDatatatus($companyId, $globalId): array
@@ -54,12 +59,14 @@ class CompanyUserDatatatusService
         $media = $companyUser->getFirstMedia('upload_biography');
         $jobOffer = $this->jobOfferRepository->getJobOffer($companyId, $globalId);
         $userPrivileges = $this->userPrivilegeRepository->getUserPrivilegeList($companyId, $globalId, 1);
+        $userDataContactInfo = $this->contactinfoRepository->getContactinfo($companyId, $globalId);
+        $userProfessionalData = $this->userProfessionalDataRepository->getUserProfessionalData($companyId, $globalId);
 
         $hasIdentity = $this->hasIdentityInfo($companyUser, $company->country_id);
         $hasIdentityInfoUser = $this->hasIdentityInfoUser($companyUser, $company->country_id);
         $hasBasicInfo = $this->hasBasicUserInfo($companyUser);
-        $hasContactInfo = $this->hasContactInfo($companyUser, $userRelatives);
-        $hasAddressInfo = $this->hasFilledFields($companyUser, ['address', 'postal_code']);
+        $hasContactInfo = $this->hasContactInfo($companyUser, $userRelatives,$userDataContactInfo);
+        $hasAddressInfo = $this->hasFilledFields($userDataContactInfo, ['address', 'postal_code']);
 
         return [
             'info_company_user' => $hasBasicInfo && $hasIdentityInfoUser,
@@ -77,6 +84,7 @@ class CompanyUserDatatatusService
             'employment_contract' => !empty($employmentContract),
             'user_salary' => !empty($userSalary),
             'userPrivilege' => $this->hasData($userPrivileges),
+            'user_professional_data' => !empty($userProfessionalData),
         ];
     }
 
@@ -139,28 +147,35 @@ class CompanyUserDatatatusService
         return true;
     }
 
-    private function hasContactInfo(object $companyUser, array $userRelatives): bool
+    private function hasContactInfo(object $companyUser, array $userRelatives,$userDataContactInfo): bool
     {
         if (!isset($userRelatives['data']) || count($userRelatives['data']) === 0) {
             return false;
         }
 
-        $contactFields = [
+        $socialFields = [
             'email', 'phone', 'other_phone', 'code_other_phone',
             'address', 'postal_code', 'whatsapp', 'facebook',
             'telegram', 'instagram', 'snapchat', 'linkedin'
         ];
 
-        foreach ($contactFields as $field) {
-            if (!empty($companyUser->{$field})) {
-                return true;
-            }
-
-            if ($field === 'phone' && $companyUser->users->first()?->phone) {
-                return true;
+        foreach ($socialFields as $field) {
+            if (empty($companyUser->{$field})) {
+                return false;
             }
         }
 
-        return false;
+        $userDataContactFields = [
+            'email', 'phone', 'other_phone', 'code_other_phone',
+            'address', 'postal_code'
+        ];
+
+        foreach ($userDataContactFields as $field) {
+            if (empty($userDataContactInfo->{$field})) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
