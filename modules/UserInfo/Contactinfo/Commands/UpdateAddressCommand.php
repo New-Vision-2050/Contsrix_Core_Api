@@ -9,21 +9,19 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateAddressCommand
 {
     public function __construct(
-        private UuidInterface $id,
-        private string $address,
-        private string $postal_code,
+        public string $company_id,
+        public string $global_id,
+        public string $address,
+        public string $postal_code,
     ) {
-    }
-
-    public function getId(): UuidInterface
-    {
-        return $this->id;
     }
 
 
     public function toArray(): array
     {
-        return array_filter([
+        return ([
+            'company_id' => $this->company_id,
+            'global_id' => $this->global_id,
             'address'=> $this->address,
             'postal_code'=> $this->postal_code,
         ]);
