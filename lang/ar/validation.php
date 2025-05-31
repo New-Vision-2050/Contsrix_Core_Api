@@ -263,6 +263,7 @@ return [
         'end_date_after_start' => 'تاريخ الانتهاء يجب أن يكون بعد أو يساوي تاريخ البدء.',
         'file_required' => 'الملف مطلوب.',
         'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
+        'regestration_number_required' => 'رقم التسجيل مطلوب لهذا النوع.',
     ],
 
 

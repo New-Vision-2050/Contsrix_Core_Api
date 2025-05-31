@@ -20,7 +20,7 @@ class RequestUpdateLegalCompanyDataRequest extends FormRequest
 
             'data.*.id' => 'required|exists:company_legal_data,id',
             'data.*.registration_type_id' => 'required|exists:company_registration_types,id',
-            'data.*.registration_number' => 'required',
+            'data.*.registration_number' => 'nullable',
         ];
     }
 
