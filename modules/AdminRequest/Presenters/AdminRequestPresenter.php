@@ -28,7 +28,7 @@ class AdminRequestPresenter extends AbstractPresenter
             "data" => $this->adminRequest->data,
             "action" => $this->adminRequest->action,
             "request_type" => $this->adminRequest->request_type,
-            "status" => AdminRequestStatus::lang($this->adminRequest->status),
+            "status" => $this->adminRequest->status,
             "notes" => $this->adminRequest->notes,
             "company_name"=> $this->adminRequest->company->name,
             "attachments"=> $this->adminRequest->mediaUrls,
