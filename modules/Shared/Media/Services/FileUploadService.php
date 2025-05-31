@@ -17,8 +17,13 @@ class FileUploadService
     ) {
         $disk = $visibility === 'public' ? 's3_public' : 's3_private';
 
+        if (empty($file)) {
+            return collect();
+        }
         // Normalize to array
         $files = is_array($file) ? $file : [$file];
+
+
         $allMedia = collect();
 
         foreach ($files as $singleFile) {
