@@ -93,15 +93,17 @@ class CompanyUserDatatatusService
         return isset($response['data']) && count($response['data']) > 0;
     }
 
-    private function hasFilledFields(object $object, array $fields): bool
-    {
-        foreach ($fields as $field) {
-            if (empty($object->{$field})) {
-                return false;
-            }
+private function hasFilledFields(?object $object, array $fields): bool
+{
+    if (!$object) return false;
+
+    foreach ($fields as $field) {
+        if (empty($object->{$field})) {
+            return false;
         }
-        return true;
     }
+    return true;
+}
 
     private function hasIdentityInfo(object $companyUser, $companyCountryId): bool
     {
