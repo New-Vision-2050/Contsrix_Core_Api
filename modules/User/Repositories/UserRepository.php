@@ -226,7 +226,7 @@ class UserRepository extends BaseRepository
 
     public function getAdminUsersFromCentralCompanies($page, $perPage)
     {
-        $query = $this->model->withoutTenancy()->whereNotNull("management_hierarchy_id")//mean this is employee not any type else
+        $query = $this->model->query()->distinct("global_company_user_id")->withoutTenancy()->whereNotNull("management_hierarchy_id")//mean this is employee not any type else
             ->whereHas('company', function ($query) {
                 $query->where('is_central_company', true);
             });
