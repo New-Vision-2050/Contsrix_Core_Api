@@ -35,6 +35,8 @@ class ContactInfo extends Model
         'phone',
         'phone_code',
         'landline_number',
+        'postal_code',
+        'address'
     ];
 
     protected $casts = [

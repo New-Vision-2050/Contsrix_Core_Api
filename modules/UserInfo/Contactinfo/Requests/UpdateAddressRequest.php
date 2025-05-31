@@ -22,7 +22,8 @@ class UpdateAddressRequest extends FormRequest
     public function createUpdateAddressCommand(): UpdateAddressCommand
     {
         return new UpdateAddressCommand(
-            id: Uuid::fromString($this->route('id')),
+            company_id: '',
+            global_id: '',
             address: $this->get('address'),
             postal_code: $this->get('postal_code'),
 
