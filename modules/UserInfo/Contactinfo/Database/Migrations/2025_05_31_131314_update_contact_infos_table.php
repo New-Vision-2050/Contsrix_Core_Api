@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('contact_infos', function (Blueprint $table) {
             $table->string("postal_code")->nullable();
-            $table->string('address')->nullable();
+            $table->text('address')->nullable();
         });
     }
 };
