@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Rules\Company\CompanyCore\Rules;
+namespace Modules\Company\CompanyCore\Rules;
 
 use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Support\Facades\DB;

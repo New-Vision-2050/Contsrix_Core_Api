@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
-use App\Rules\Company\CompanyCore\Rules\RequiredRegistrationNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
+use RequiredRegistrationNumber;
 
 class CreateCompanyLegalDataRequest extends FormRequest
 {
