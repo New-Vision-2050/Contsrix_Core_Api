@@ -51,6 +51,11 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+
+        if ($this->managementHierarchy->type == "branch")
+        {
+            return $this->getUserChildren();
+        }
         // Get manager of this hierarchy node
         $manager = $this->managementHierarchy->user;
 
@@ -112,12 +117,17 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         $children = [];
 
         // Add direct reports (users directly assigned to this hierarchy) if enabled
-        if (self::$includeDirectChildren) {
+        if (self::$includeDirectChildren && $this->managementHierarchy->type!="branch") {
             $directUsers = $this->managementHierarchy->directUserChildren ?? collect([]);
             foreach ($directUsers as $user) {
                 // Present each direct report as a user with an empty children array
                 $userData = (new UserPresenter($user))->getData();
                 $userData['children'] = [];
+                $userData['hierarchy_info'] = [
+                    'id' => $this->managementHierarchy->id,
+                    'name' => $this->managementHierarchy->name,
+                    'type' => $this->managementHierarchy->type,
+                ];
                 $userData['type'] = "employee";
 
                 $children[] = $userData;
@@ -128,7 +138,7 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         $childHierarchies = $this->managementHierarchy->children;
         if ($childHierarchies->isNotEmpty()) {
             foreach ($childHierarchies as $childHierarchy) {
-                if (self::$skipManagementMainNodes && $childHierarchy->type === 'management' && $childHierarchy->is_main == 1) {
+                if ((self::$skipManagementMainNodes && $childHierarchy->type === 'management' && $childHierarchy->is_main == 1||$childHierarchy->type=="branch")) {
                     // Skip this node but include its children in the result
                     if ($childHierarchy->children && $childHierarchy->children->count() > 0) {
                         // Process each child of the skipped node
