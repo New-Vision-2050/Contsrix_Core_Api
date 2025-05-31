@@ -18,9 +18,8 @@ class CreateCompanyLegalDataRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'registration_type_id' => 'nullable|exists:company_registration_types,id',
+            'registration_type_id' => 'required|exists:company_registration_types,id',
             'regestration_number' => [
-                'nullable',
                 'string',
                 new RequiredRegistrationNumber($this->input('registration_type_id')),
             ],
