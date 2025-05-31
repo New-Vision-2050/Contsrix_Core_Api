@@ -323,8 +323,8 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $companyUser = $this->findOneBy(["id" => $id]);
-            $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]]);
+            $companyUser = $this->model->withoutParentModel()->where(["id" => $id])->first();
+            $user = $this->userRepository->model->withoutTenancy()->where(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]])->first();
             $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", null)->first()->id;
             $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", $mainBranchId)->where("type", "management")->first();
             if ($branches != null && CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
@@ -334,7 +334,7 @@ class CompanyUserRepository extends BaseRepository
 
             }
             if (!$user) {
-                $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id]);
+                $user = $this->userRepository->model->withoutTenancy()->where(["global_company_user_id" => $companyUser->global_id])->first();
 
                 //create user in company assigned to main management
                 if ($user) {
