@@ -85,6 +85,13 @@ class CompanyLegalDataRepository extends BaseRepository
                 // return true;
             }
 
+            $newIds = collect($data)->pluck('id')->all();
+
+            $legalDataCollection->whereNotIn('id', $newIds)->each(function ($legalData) {
+                $legalData->clearMediaCollection('upload');
+                $legalData->delete();
+            });
+
             $lastLegalData = null;
 
             foreach ($data as $item) {
