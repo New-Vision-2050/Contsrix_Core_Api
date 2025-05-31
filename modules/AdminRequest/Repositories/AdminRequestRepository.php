@@ -11,6 +11,7 @@ use Modules\AdminRequest\Enum\AdminRequestStatus;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
 use Modules\AdminRequest\Models\AdminRequest;
@@ -22,6 +23,7 @@ use Modules\AdminRequest\Models\AdminRequest;
  */
 class AdminRequestRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(AdminRequest $model)
     {
         parent::__construct($model);
@@ -34,7 +36,18 @@ class AdminRequestRepository extends BaseRepository
 
     public function getAll()
     {
-        return $this->model->filter(request()->all())->get();
+       [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        return $this->model->filter(request()->all())->when(!request()->has("branch_id") && request()->has("type"),function ($query) use ($branch){
+            if(request()->type == "companyOfficialDataUpdate")
+            {
+                $branch = ManagementHierarchy::query()->find($branch->id);
+                $query->where("requestable_id",$branch->company_id);
+
+            }elseif(request()->type == "companyLegalDataUpdate")
+            {
+                $query->where("requestable_id",$branch->id);
+            }
+        })->get();
     }
 
     public function getAdminRequest(UuidInterface $id): AdminRequest
