@@ -276,8 +276,8 @@ class CompanyUserRepository extends BaseRepository
                     'global_id' => $user->global_company_user_id,
                     'branch_id' => $branches != null ? $branches[0] : $mainBranchId,
                     'management_id' => $mainManagement->id,
-                    "job_title_id" => isset($companyRole["job_title_id"]) ? $companyRole["job_title_id"] : null,
-                    "job_type_id" => isset($companyRole["job_title_id"]) ? JobTitle::query()->where("id", $companyRole["job_title_id"])->first()->job_type_id : null,
+                    "job_title_id" => isset($companyUserData["job_title_id"]) ? $companyUserData["job_title_id"] : null,
+                    "job_type_id" => isset($companyUserData["job_title_id"]) ? JobTitle::query()->where("id", $companyUserData["job_title_id"])->first()->job_type_id : null,
 
                 ];
                 if ($userProfessionalData) {
