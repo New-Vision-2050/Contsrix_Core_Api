@@ -249,7 +249,7 @@ class ManagementHierarchyController extends Controller
         } else if (is_array($presentedTree[0]) && count($presentedTree[0]) == 1) {
             $presentedTree = $presentedTree[0];
         }
-        return Json::item([$presentedTree]);
+        return Json::item(is_array($presentedTree)?$presentedTree:[$presentedTree]);
     }
 
     /**
