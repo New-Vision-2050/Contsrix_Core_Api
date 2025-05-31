@@ -82,7 +82,11 @@ class AdminRequestRepository extends BaseRepository
                 "requestable_type" => Company::class,
                 "notes" => $notes
             ]);
-            $this->fileUploadService->uploadFile($adminRequest, $file, "admin-request");
+            if($file)
+            {
+                $this->fileUploadService->uploadFile($adminRequest, $file, "admin-request");
+
+            }
 
             $adminRequest->adminRequestTransactions()->create([
                 "data" => $data,
