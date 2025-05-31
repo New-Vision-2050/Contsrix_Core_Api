@@ -323,7 +323,7 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $companyUser = $this->findOneBy(["id" => $id]);
+            $companyUser = $this->findOneOrFail($id);
             $user = $this->userRepository->findOneBy(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyUserRoleData["company_id"]]);
             $mainBranchId = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", null)->first()->id;
             $mainManagement = ManagementHierarchy::query()->where("company_id", $companyUserRoleData["company_id"])->where("parent_id", $mainBranchId)->where("type", "management")->first();
@@ -424,7 +424,7 @@ class CompanyUserRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception($e->getMessage(), 500);
+            throw $e;
         }
     }
 
