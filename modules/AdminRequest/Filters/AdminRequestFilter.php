@@ -14,4 +14,15 @@ class AdminRequestFilter extends SearchModelFilter
     {
         return $this->where('name', $name);
     }
+    public function type($type)
+    {
+        return $this->where('request_type', $type);
+    }
+
+    public function company($companyId)
+    {
+        return $this->where("company_id",$companyId);
+    }
+
+
 }
