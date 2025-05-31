@@ -81,7 +81,7 @@ class CompanyUserDatatatusService
             'professional_certificate' => $this->hasData($certificates),
             'biography' => !empty($media),
             'jobOffer' => !empty($jobOffer),
-            'employment_contract' => !empty($employmentContract),
+            'employment_contract' => !empty($employmentContract) && !empty($jobOffer),
             'user_salary' => !empty($userSalary),
             'userPrivilege' => $this->hasData($userPrivileges),
             'user_professional_data' => !empty($userProfessionalData),
