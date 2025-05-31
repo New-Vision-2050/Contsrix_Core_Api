@@ -26,7 +26,7 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
     Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show');
     Route::put('/{id}', [CompanyController::class, 'update']);
     Route::delete('/delete-last', [CompanyController::class, 'deleteLastCreated'])->name('companies.delete');
-    Route::delete('/{id}', [CompanyController::class, 'delete'])->name('companies.delete');
+    Route::delete('/{id}', [CompanyController::class, 'delete']);
     Route::group(['prefix' => 'company-profile'], function () {
         Route::prefix("official-data")->group(function () {
             Route::put("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialData"]);

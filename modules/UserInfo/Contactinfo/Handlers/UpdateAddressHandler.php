@@ -17,6 +17,6 @@ class UpdateAddressHandler
 
     public function handle(UpdateAddressCommand $updateAddressCommand)
     {
-     return   $this->repository->updateContactinfo($updateAddressCommand->companyUserId, $updateAddressCommand->toArray());
+     return   $this->repository->updateContactinfo($updateAddressCommand->getId(), $updateAddressCommand->toArray());
     }
 }

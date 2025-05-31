@@ -63,17 +63,17 @@ class ContactinfoController extends Controller
         return Json::item( $presenter->getData());
     }
 
-    public function updateAddress(UpdateAddressRequest $request): JsonResponse
+    public function updateAddress(UpdateAddressRequest $request)
     {
         $user = $this->userRepository->getUser(Uuid::fromString($request->route('id')));
 
         $companyUser =$this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($user->global_company_user_id));
 
         $command = $request->createUpdateAddressCommand();
-        $command->companyUserId = Uuid::fromString($companyUser->id) ;
+        $command->companyUserId = Uuid::fromString($companyUser->global_id) ;
 
         $this->updateAddressHandler->handle($command);
-        $item = $this->contactinfoService->get($command->companyUserId);
+        $item = $this->contactinfoService->get( Uuid::fromString($user->company_id),$command->companyUserId);
 
         $presenter = new ContactinfoPresenter($item);
 

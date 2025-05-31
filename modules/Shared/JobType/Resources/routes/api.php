@@ -8,7 +8,7 @@ Route::get('/export', [JobTypeController::class, 'export'])->name('job-type.expo
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [JobTypeController::class, 'index']);
     Route::get('/list', [JobTypeController::class, 'listSimple']);
-    Route::post('/export', [JobTypeController::class, 'export'])->name('job-type.export');
+    Route::post('/export', [JobTypeController::class, 'export']);
     Route::post('/', [JobTypeController::class, 'store']);
     Route::get('/{id}', [JobTypeController::class, 'show']);
     Route::put('/{id}', [JobTypeController::class, 'update']);

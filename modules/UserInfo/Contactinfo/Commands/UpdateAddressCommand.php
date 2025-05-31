@@ -8,6 +8,7 @@ use Ramsey\Uuid\UuidInterface;
 
 class UpdateAddressCommand
 {
+    public $companyUserId;
     public function __construct(
         private UuidInterface $id,
         private string $address,
