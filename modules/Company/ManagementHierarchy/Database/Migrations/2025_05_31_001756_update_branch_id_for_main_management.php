@@ -10,10 +10,13 @@ return new class extends Migration {
         $details = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail::query()->withoutParentModel()->whereNull("branch_id")->with("managementHierarchy")->get();
         foreach ($details as $detail) {
 
-            $branch = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::query()->withoutTenancy()->where("company_id", $detail->managementHierarchy->company_id)
-                ->where("type", "branch")->whereNull("parent_id")->first();
-            $detail->update(["branch_id" => $branch->id]);
-
+//        $branch = \Modules\Company\ManagementHierarchy\Models\ManagementHierarchy::query()->withoutTenancy()->where("company_id", $detail->managementHierarchy->company_id)
+//            ->where("type", "branch")->whereNull("parent_id")->first();
+            $managemant = $detail->managementHierarchy;
+            while ($managemant->type != "branch") {
+                $managemant = $managemant->parent;
+            }
+            $detail->update(["branch_id" => $managemant->id]);
         }
     }
 };
