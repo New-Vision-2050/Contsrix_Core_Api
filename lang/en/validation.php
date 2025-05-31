@@ -479,4 +479,13 @@ return [
         'city_required' => 'City is required.',
         'city_exists' => 'The selected city is invalid.',
     ],
+    'company_official' => [
+        'name_required' => 'The company name (English) is required.',
+        'email_required' => 'The email address is required.',
+        'email_valid' => 'The email must be a valid email address.',
+        'phone_required' => 'The phone number is required.',
+        'branch_required' => 'The branch name is required.',
+        'company_type_required' => 'The company type is required.',
+        'company_type_exists' => 'The selected company type does not exist.',
+    ],
 ];
