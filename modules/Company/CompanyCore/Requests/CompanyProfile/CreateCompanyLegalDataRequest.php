@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
+use App\Rules\Company\CompanyCore\Rules\RequiredRegistrationNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
@@ -18,7 +19,11 @@ class CreateCompanyLegalDataRequest extends FormRequest
     {
         return [
             'registration_type_id' => 'nullable|exists:company_registration_types,id',
-            'regestration_number' => 'nullable|string',
+            'regestration_number' => [
+                'nullable',
+                'string',
+                new RequiredRegistrationNumber($this->input('registration_type_id')),
+            ],
             'start_date' => 'nullable|date|before_or_equal:end_date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'file' => 'nullable|array',

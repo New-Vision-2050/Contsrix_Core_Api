@@ -299,6 +299,8 @@ return [
         'end_date_after_start' => 'End date must be after or equal to start date.',
         'file_required' => 'A file is required.',
         'file_mimes' => 'The file must be one of the following types: pdf, jpeg, jpg, png, doc, docx.',
+        'regestration_number_required' => 'The registration number is required for this type.',
+
     ],
     'company' => [
         'name_required' => 'Company name is required.',
