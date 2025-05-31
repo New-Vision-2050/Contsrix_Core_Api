@@ -19,6 +19,7 @@ use Modules\CompanyUser\Models\CompanyUserAddress;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\JobTitle\Models\JobTitle;
+use Modules\JobTitle\Repositories\JobTitleRepository;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -34,7 +35,7 @@ use function Laravel\Prompts\table;
 class CompanyUserRepository extends BaseRepository
 {
 
-    public function __construct(CompanyUser $model, private UserRepository $userRepository)
+    public function __construct(CompanyUser $model, private UserRepository $userRepository, private JobTitleRepository $jobTitleRepository)
     {
         parent::__construct($model);
     }
@@ -146,7 +147,7 @@ class CompanyUserRepository extends BaseRepository
 
     public function findByEmail(string $email)
     {
-        return $this->model->withoutParentModel()->where("email",$email)->first();
+        return $this->model->withoutParentModel()->where("email", $email)->first();
 
     }
 
@@ -170,7 +171,6 @@ class CompanyUserRepository extends BaseRepository
             'phone' => str_replace(" ", "", $phone),
         ];
     }
-
 
 
     public
@@ -267,6 +267,7 @@ class CompanyUserRepository extends BaseRepository
                 CompanyUserAddress::query()->updateOrCreate(["global_company_user_id" => $companyUser->id], $address + ["global_company_user_id" => $companyUser->id]);
             }
             if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
+                $generalManagerJobTitle = $this->jobTitleRepository->findOneBy(["type" => "general_manager"]);
                 $userProfessionalData = UserProfessionalData::query()->where([
                     'global_id' => $user->global_company_user_id,
                     'company_id' => $companyRole['company_id'],
@@ -276,10 +277,11 @@ class CompanyUserRepository extends BaseRepository
                     'global_id' => $user->global_company_user_id,
                     'branch_id' => $branches != null ? $branches[0] : $mainBranchId,
                     'management_id' => $mainManagement->id,
-                    "job_title_id" => isset($companyRole["job_title_id"]) ? $companyRole["job_title_id"] : null,
-                    "job_type_id" => isset($companyRole["job_title_id"]) ? JobTitle::query()->where("id", $companyRole["job_title_id"])->first()->job_type_id : null,
+                    "job_title_id" => isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] != null ? $companyUserData["job_title_id"] : $generalManagerJobTitle->id,
+                    "job_type_id" => isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] != null ? JobTitle::query()->where("id", $companyUserData["job_title_id"])->first()?->job_type_id : $generalManagerJobTitle?->job_type_id,
 
                 ];
+
                 if ($userProfessionalData) {
                     $userProfessionalData->update($data);
 
@@ -309,10 +311,10 @@ class CompanyUserRepository extends BaseRepository
         return CompanyUserAddress::query()->create($addressData);
     }
 
-    public function getUserInBranches($globalId ,$role, array $branchIds)
+    public function getUserInBranches($globalId, $role, array $branchIds)
     {
-        return CompanyUserCompanyManagementHierarchy::query()->whereIn("management_hierarchy_id", $branchIds)->whereHas("companyUserCompany",function ($query)use ($globalId,$role){
-            $query->where("global_company_user_id", $globalId)->where("role", $role)->where("company_id",tenant("id"));
+        return CompanyUserCompanyManagementHierarchy::query()->whereIn("management_hierarchy_id", $branchIds)->whereHas("companyUserCompany", function ($query) use ($globalId, $role) {
+            $query->where("global_company_user_id", $globalId)->where("role", $role)->where("company_id", tenant("id"));
         })->get();
 
     }
@@ -350,7 +352,7 @@ class CompanyUserRepository extends BaseRepository
                 } else {
                     $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
 
-                    $user =$this->userRepository->createUser([
+                    $user = $this->userRepository->createUser([
                         'name' => $companyUser->first_name . ' ' . $companyUser->last_name,
                         'email' => $companyUser->email,
                         'company_id' => $companyUserRoleData["company_id"],
@@ -398,7 +400,7 @@ class CompanyUserRepository extends BaseRepository
                         "user_id" => $user->id,
                         "management_hierarchy_id" => $mainBranchId,
                         "company_user_company_id" => $companyUserCompany->id
-                    ],[
+                    ], [
                         "user_id" => $user->id,
                         "management_hierarchy_id" => $mainBranchId,
                         "company_user_company_id" => $companyUserCompany->id
