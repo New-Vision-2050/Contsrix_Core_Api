@@ -43,6 +43,7 @@ class CompanyProfileService
         private StateRepository                   $stateRepository,
         private CountryRepository                 $countryRepository,
 
+
     )
     {
     }
@@ -54,7 +55,7 @@ class CompanyProfileService
             data: $companyDataRequestDTO->toArray() + ["id" => $companyDataRequestDTO->getId()],
             requestType: "companyOfficialDataUpdate",
             action: ["ar" => "طلب تعديل البيانات الرسميه للشركة", "en" => "Company official data update request"],
-            notes: $companyDataRequestDTO->getNotes()
+            notes: $companyDataRequestDTO->getNotes(), file:$companyDataRequestDTO->getFile()
         );
         return $adminRequest;
 

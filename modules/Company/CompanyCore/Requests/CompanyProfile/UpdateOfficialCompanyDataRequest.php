@@ -20,6 +20,9 @@ class UpdateOfficialCompanyDataRequest extends FormRequest
             'company_type_id' => 'required|exists:company_types,id',
             'company_field_id' => 'required|exists:company_fields,id',
             'notes' => 'present|nullable|string',
+            "file"=>"nullable|array",
+            'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
+
         ];
     }
 
@@ -33,6 +36,7 @@ class UpdateOfficialCompanyDataRequest extends FormRequest
             companyTypeId: (string)$this->get('company_type_id'),
             companyFieldId: (string)$this->get('company_field_id'),
             notes: $this->get('notes'),
+            file: $this->file("file")
         );
     }
 }
