@@ -21,7 +21,7 @@ class CreateCompanyLegalDataRequest extends FormRequest
             'registration_type_id' => 'required|exists:company_registration_types,id',
             'regestration_number' => [
                 'string',
-                new RequiredRegistrationNumber($this->input('registration_type_id')),
+                new RequiredRegistrationNumber(),
             ],
             'start_date' => 'nullable|date|before_or_equal:end_date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
