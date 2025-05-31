@@ -13,6 +13,7 @@ use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Modules\AdminRequest\Models\AdminRequest;
 
@@ -24,7 +25,7 @@ use Modules\AdminRequest\Models\AdminRequest;
 class AdminRequestRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
-    public function __construct(AdminRequest $model)
+    public function __construct(AdminRequest $model ,private FileUploadService $fileUploadService)
     {
         parent::__construct($model);
     }
@@ -65,7 +66,7 @@ class AdminRequestRepository extends BaseRepository
      * @return AdminRequest
      */
 
-    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action, ?string $notes = ""): AdminRequest
+    public function createAdminRequestForCompanyOfficialData(UuidInterface $userId, array $data, string $requestType, array $action,$file, ?string $notes = ""): AdminRequest
     {
         $id = $data['id'];
         $company = Company::query()->where('id', $id)->first();
@@ -81,6 +82,8 @@ class AdminRequestRepository extends BaseRepository
                 "requestable_type" => Company::class,
                 "notes" => $notes
             ]);
+            $this->fileUploadService->uploadFile($adminRequest, $file, "admin-request");
+
             $adminRequest->adminRequestTransactions()->create([
                 "data" => $data,
                 "action" => "update",
