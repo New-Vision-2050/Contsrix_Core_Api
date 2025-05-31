@@ -450,4 +450,14 @@ return [
         'city_required' => 'المدينة مطلوبة.',
         'city_exists' => 'المدينة المحددة غير صالحة.',
     ],
+
+    'company_official' => [
+        'name_required' => 'اسم الشركة (بالإنجليزية) مطلوب.',
+        'email_required' => 'البريد الإلكتروني مطلوب.',
+        'email_valid' => 'يجب أن يكون البريد الإلكتروني صالحاً.',
+        'phone_required' => 'رقم الهاتف مطلوب.',
+        'branch_required' => 'اسم الفرع مطلوب.',
+        'company_type_required' => 'نوع الشركة مطلوب.',
+        'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
+    ],
 ];
