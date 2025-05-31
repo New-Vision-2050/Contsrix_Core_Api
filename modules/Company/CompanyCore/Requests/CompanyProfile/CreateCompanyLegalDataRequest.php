@@ -6,10 +6,10 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
+use Modules\Company\CompanyCore\Rules\RequiredRegistrationNumber;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
-use RequiredRegistrationNumber;
 
 class CreateCompanyLegalDataRequest extends FormRequest
 {
