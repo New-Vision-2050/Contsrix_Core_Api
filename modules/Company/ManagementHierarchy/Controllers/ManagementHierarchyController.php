@@ -244,10 +244,16 @@ class ManagementHierarchyController extends Controller
 
         $presentedTree=ManagementHierarchyUserTreePresenter::collection($tree);
 
-        if (is_array($presentedTree[0]) && count($presentedTree[0]) > 1) {
-            $presentedTree = $this->consolidateTreeNodesUnderLowestId($presentedTree[0]);
-        } else if (is_array($presentedTree[0]) && count($presentedTree[0]) == 1) {
-            $presentedTree = $presentedTree[0];
+
+        try {
+            if (is_array($presentedTree[0]) && count($presentedTree[0]) > 1) {
+                $presentedTree = $this->consolidateTreeNodesUnderLowestId($presentedTree[0]);
+            } else if (is_array($presentedTree[0]) && count($presentedTree[0]) == 1) {
+                $presentedTree = $presentedTree[0];
+            }
+        } catch (Exception $e) {
+            return Json::items(is_array($presentedTree)?$presentedTree:[$presentedTree]);
+
         }
         return Json::item(is_array($presentedTree)?$presentedTree:[$presentedTree]);
     }
