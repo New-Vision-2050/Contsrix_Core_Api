@@ -81,7 +81,7 @@ class CompanyUserDatatatusService
             'professional_certificate' => $this->hasData($certificates),
             'biography' => !empty($media),
             'jobOffer' => !empty($jobOffer),
-            'employment_contract' => !empty($employmentContract),
+            'employment_contract' => !empty($employmentContract) && !empty($jobOffer),
             'user_salary' => !empty($userSalary),
             'userPrivilege' => $this->hasData($userPrivileges),
             'user_professional_data' => !empty($userProfessionalData),
@@ -156,8 +156,7 @@ private function hasFilledFields(?object $object, array $fields): bool
         }
 
         $socialFields = [
-            'email', 'phone', 'other_phone', 'code_other_phone',
-            'address', 'postal_code', 'whatsapp', 'facebook',
+             'whatsapp', 'facebook',
             'telegram', 'instagram', 'snapchat', 'linkedin'
         ];
 
