@@ -461,4 +461,13 @@ return [
         'company_type_required' => 'نوع الشركة مطلوب.',
         'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
     ],
+
+    'professional_bodie_id_required' => 'رقم الجهة المهنية مطلوب.',
+    'accreditation_name_required' => 'اسم الاعتماد مطلوب.',
+    'accreditation_number_required' => 'رقم الاعتماد مطلوب.',
+    'accreditation_degree_required' => 'درجة الاعتماد مطلوبة.',
+    'date_obtain_required' => 'تاريخ الحصول على الشهادة مطلوب.',
+    'date_obtain_date' => 'تاريخ الحصول على الشهادة يجب أن يكون تاريخًا صحيحًا.',
+    'date_end_required' => 'تاريخ انتهاء الشهادة مطلوب.',
+    'date_end_date' => 'تاريخ انتهاء الشهادة يجب أن يكون تاريخًا صحيحًا.',
 ];
