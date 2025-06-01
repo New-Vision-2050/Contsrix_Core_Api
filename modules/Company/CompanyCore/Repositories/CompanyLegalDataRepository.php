@@ -34,7 +34,10 @@ class CompanyLegalDataRepository extends BaseRepository
     {
         parent::__construct($model);
     }
-
+    public function getCompanyLegalData($id): ?CompanyLegalData
+    {
+       return $this->model->find($id);
+    }
     public function createCompanyLegalData(array $data, $file): CompanyLegalData
     {
         try {
@@ -107,24 +110,35 @@ class CompanyLegalDataRepository extends BaseRepository
                     'end_date' => isset($item['end_date']) ? Carbon::parse($item['end_date'])->format('Y-m-d') : null,
                 ]);
 
-                $oldFileData = false;
-               // Delete old files by file IDs in `files`
-               foreach ($item['files'] ?? [] as $fileEntry) {
-                    if (isset($fileEntry['id'])) {
-                        $oldFileData = true;
-                        $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
+
+                // Then collect all file IDs that should be kept (from the request)
+                $fileIdsToKeep = [];
+                if (isset($item['files'])) {
+                    foreach ($item['files'] as $fileEntry) {
+                        if (isset($fileEntry['id'])) {
+                            $fileIdsToKeep[] = $fileEntry['id'];
+                        }
                     }
+
+
+
+                    // Only perform file deletion if 'files' array is present
+                    // This ensures we keep files based on what's in the request
+                    $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
+                }
+                else
+                {
+                        $legalData->clearMediaCollection('upload');
+
                 }
 
-                if(!$oldFileData){
-                    $legalData->clearMediaCollection('upload');
-                }
-
+                // First upload any new files
                 foreach ($item['file'] ?? [] as $newFile) {
                     if (!is_string($newFile)) {
-                        $this->fileUploadService->uploadFile($legalData, $newFile, 'company');
+                        $this->fileUploadService->uploadFile($legalData, $newFile, 'upload');
                     }
                 }
+
 
             }
             DB::commit();
