@@ -129,6 +129,7 @@ class CompanyLegalDataRepository extends BaseRepository
                 else
                 {
                         $legalData->clearMediaCollection('upload');
+
                 }
 
                 // First upload any new files
