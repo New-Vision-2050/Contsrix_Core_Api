@@ -19,7 +19,6 @@ use Modules\Company\CompanyCore\DTO\CompanyProfile\RequestUpdateLegalCompanyData
 use Modules\Company\CompanyCore\DTO\CompanyProfile\UpdateOfficialCompanyDataRequestDTO;
 use Modules\Company\CompanyCore\Events\CompanyLegalDataCreated;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
-use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
 use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
@@ -340,7 +339,7 @@ class CompanyProfileService
         return $this->companyAddressRepository->find($id);
     }
 
-    public function getCompanyOfficialDocument(UuidInterface $id): CompanyOfficialDocument
+    public function getCompanyOfficialDocument(UuidInterface $id): CompanyLegalData
     {
         return $this->companyOfficialDocumentRepository->find($id);
     }
