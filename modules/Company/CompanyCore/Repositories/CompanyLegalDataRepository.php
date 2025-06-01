@@ -107,26 +107,25 @@ class CompanyLegalDataRepository extends BaseRepository
                     'end_date' => isset($item['end_date']) ? Carbon::parse($item['end_date'])->format('Y-m-d') : null,
                 ]);
 
-                // Get the files to be deleted from the files array
-                $filesToDelete = [];
-                foreach ($item['files'] ?? [] as $fileEntry) {
-                    if (isset($fileEntry['id'])) {
-                        $filesToDelete[] = $fileEntry['id'];
-                    }
-                }
-
-                // If specific files are marked for deletion, delete only those
-                if (!empty($filesToDelete)) {
-                    foreach ($filesToDelete as $fileId) {
-                        $this->fileDeletedService->deleteFile($legalData, $fileId, 'upload');
-                    }
-                }
-
-                // Add any new files
+                // First upload any new files
                 foreach ($item['file'] ?? [] as $newFile) {
                     if (!is_string($newFile)) {
-                        $this->fileUploadService->uploadFile($legalData, $newFile, 'company');
+                        $this->fileUploadService->uploadFile($legalData, $newFile, 'upload');
                     }
+                }
+
+                // Then collect all file IDs that should be kept (from the request)
+                $fileIdsToKeep = [];
+                if (isset($item['files'])) {
+                    foreach ($item['files'] as $fileEntry) {
+                        if (isset($fileEntry['id'])) {
+                            $fileIdsToKeep[] = $fileEntry['id'];
+                        }
+                    }
+
+                    // Only perform file deletion if 'files' array is present
+                    // This ensures we keep files based on what's in the request
+                    $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
                 }
 
             }
