@@ -107,19 +107,22 @@ class CompanyLegalDataRepository extends BaseRepository
                     'end_date' => isset($item['end_date']) ? Carbon::parse($item['end_date'])->format('Y-m-d') : null,
                 ]);
 
-                $oldFileData = false;
-               // Delete old files by file IDs in `files`
-               foreach ($item['files'] ?? [] as $fileEntry) {
+                // Get the files to be deleted from the files array
+                $filesToDelete = [];
+                foreach ($item['files'] ?? [] as $fileEntry) {
                     if (isset($fileEntry['id'])) {
-                        $oldFileData = true;
-                        $this->fileDeletedService->deleteFile($legalData, $fileEntry['id'], 'upload');
+                        $filesToDelete[] = $fileEntry['id'];
                     }
                 }
 
-                if($oldFileData == false){
-                    $legalData->clearMediaCollection('upload');
+                // If specific files are marked for deletion, delete only those
+                if (!empty($filesToDelete)) {
+                    foreach ($filesToDelete as $fileId) {
+                        $this->fileDeletedService->deleteFile($legalData, $fileId, 'upload');
+                    }
                 }
 
+                // Add any new files
                 foreach ($item['file'] ?? [] as $newFile) {
                     if (!is_string($newFile)) {
                         $this->fileUploadService->uploadFile($legalData, $newFile, 'company');
