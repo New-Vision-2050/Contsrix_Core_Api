@@ -30,6 +30,7 @@ use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateCompanyLegalDataRe
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateCompanyOfficialDocumentRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyData;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\UpdateOfficialCompanyDataRequest;
+use Modules\Company\CompanyCore\Services\CompanyCheckDeleteLegalService;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyProfileService;
 use Modules\Country\Presenters\CountryStateCityPresenter;
@@ -46,7 +47,8 @@ class CompanyProfileController extends Controller
         private DeleteCompanyOfficialDocumentHandler      $deleteCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler,
         private UpdateCompanySetAddressHandler            $updateCompanySetAddressHandler,
-        private DeleteCompanyLegalDataHandler             $deleteCompanyLegalDataHandler
+        private DeleteCompanyLegalDataHandler             $deleteCompanyLegalDataHandler,
+        private CompanyCheckDeleteLegalService            $companyCheckDeleteLegalService
     )
     {
     }
@@ -162,11 +164,30 @@ class CompanyProfileController extends Controller
 
     public function deleteOfficialDocument(Request $request)
     {
+        $officialDocument = $this->companyProfileService->getCompanyOfficialDocument(
+            Uuid::fromString($request->route("id"))
+        );
+        $hasLegalData = $this->companyCheckDeleteLegalService->handle(
+            Uuid::fromString($officialDocument->company_legal_data_id)
+        );
 
-        $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
         $company = $this->companyService->getCurrentCompanyLoggedIn();
-        return Json::item((new CompanyPresenter($company))->getData());
+
+        if ($hasLegalData) {
+            return Json::item((new CompanyPresenter($company))->getData(), [
+                'legalDataExists' => true,
+            ]);
+        }
+
+        $this->deleteCompanyOfficialDocumentHandler->handle(
+            Uuid::fromString($request->route("id"))
+        );
+
+        return Json::item((new CompanyPresenter($company))->getData(), [
+                'legalDataExists' => false,
+            ]);
     }
+
 
     public function deleteOfficialDocumentMedia(Request $request)
     {
