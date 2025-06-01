@@ -107,12 +107,6 @@ class CompanyLegalDataRepository extends BaseRepository
                     'end_date' => isset($item['end_date']) ? Carbon::parse($item['end_date'])->format('Y-m-d') : null,
                 ]);
 
-                // First upload any new files
-                foreach ($item['file'] ?? [] as $newFile) {
-                    if (!is_string($newFile)) {
-                        $this->fileUploadService->uploadFile($legalData, $newFile, 'upload');
-                    }
-                }
 
                 // Then collect all file IDs that should be kept (from the request)
                 $fileIdsToKeep = [];
@@ -127,6 +121,14 @@ class CompanyLegalDataRepository extends BaseRepository
                     // This ensures we keep files based on what's in the request
                     $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
                 }
+
+                // First upload any new files
+                foreach ($item['file'] ?? [] as $newFile) {
+                    if (!is_string($newFile)) {
+                        $this->fileUploadService->uploadFile($legalData, $newFile, 'upload');
+                    }
+                }
+
 
             }
             DB::commit();
