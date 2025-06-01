@@ -13,7 +13,7 @@ class CreateCompanyOfficialDocumentDTO
         private ManagementHierarchy $managementHierarchy,
         private ?string        $name,
         private string        $description,
-        private string        $documentNumber,
+        private ?string        $documentNumber,
         private string        $startDate,
         private string        $endDate,
         private string        $notificationDate,
