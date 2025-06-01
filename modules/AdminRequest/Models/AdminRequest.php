@@ -14,9 +14,11 @@ use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Database\factories\AdminRequestFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\AdminRequest\Enum\AdminRequestStatus;
+use Modules\AdminRequest\Services\AdminRequestCRUDService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\User\Models\User;
+use Ramsey\Uuid\Uuid;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -56,6 +58,19 @@ class AdminRequest extends Model implements HasMedia
         'id' => 'string',
         "data" => "array"
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->serial_number)) {
+                $model->{$model->getKeyName()} = Uuid::uuid4()->toString();
+
+                $model->serial_number = app(AdminRequestCRUDService::class)->generateSerialNumber();
+            }
+        });
+    }
 
     public function getMediaUrlsAttribute()
     {
