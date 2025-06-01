@@ -9,6 +9,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use http\Client\Curl\User;
 use Illuminate\Support\Facades\DB;
 use Modules\ActivityLog\Repositories\ActivityLogRepository;
+use Modules\Company\CompanyCore\Events\CompanyAddressUpdated;
 use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
 use Modules\Shared\Media\Services\FileUploadService;
@@ -30,7 +31,10 @@ class CompanyAddressRepository extends BaseRepository
 
     public function createCompanyAddress(array $data): CompanyAddress
     {
-        return $this->create($data);
+        $address = $this->create($data);
+        // Dispatch event for address creation
+        event(new CompanyAddressUpdated($address));
+        return $address;
     }
 
     public function updateCompanyAddress(UuidInterface $id, array $data,array $latAndLong): CompanyAddress
@@ -41,13 +45,13 @@ class CompanyAddressRepository extends BaseRepository
             $companyAddress->update($data);
             $companyAddress->branch()->update($latAndLong);
             DB::commit();
+
+            // Dispatch event after successful update
+            event(new CompanyAddressUpdated($companyAddress->fresh()));
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new CustomException(__("validation.update-not-successful"));
+            throw new CustomException($e->getMessage(), 409);
         }
         return $companyAddress->fresh();
     }
-
-
-
 }

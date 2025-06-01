@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Support\Facades\DB;
 use Modules\ActivityLog\Repositories\ActivityLogRepository;
+use Modules\Company\CompanyCore\Events\CompanyOfficialDocumentUpdated;
 use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
@@ -33,7 +34,11 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             foreach ($files as $file) {
                 $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null,'files');
             }
-            $this->activityLogRepository->createActivityLog(["action" => ["ar" => "إنشاء", "en" => "create"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
+            $this->activityLogRepository->createActivityLog(["action" => ["ar" => "إنشاء", "en" => "create"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
+            
+            // Dispatch event for document creation
+            event(new CompanyOfficialDocumentUpdated($companyOfficialDocument));
+            
             DB::commit();
 
         } catch (\Exception $e) {
@@ -60,15 +65,19 @@ class CompanyOfficialDocumentRepository extends BaseRepository
                     $companyOfficialDocument->deleteMedia($fileId);
                 }
             }
-            $this->activityLogRepository->createActivityLog(["action" => ["ar" => "قام بالتعديل", "en" => "update"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
-
+            $this->activityLogRepository->createActivityLog(["action" => ["ar" => "تحديث", "en" => "update"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
+            
+            // Dispatch event for document update
+            event(new CompanyOfficialDocumentUpdated($companyOfficialDocument->fresh()));
+            
             DB::commit();
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception($e->getMessage(), 409);
+            throw new \Exception(__("validation.update-not-successful"), 409);
+
         }
-        return $companyOfficialDocument;
+        return $companyOfficialDocument->fresh();
     }
 
     public function deleteMedia(UuidInterface $id, $fileId)
@@ -76,6 +85,4 @@ class CompanyOfficialDocumentRepository extends BaseRepository
         $this->find($id)->deleteMedia($fileId);
         return true;
     }
-
-
 }

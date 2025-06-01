@@ -13,6 +13,7 @@ use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Events\CompanyLegalDataCreated;
 use Modules\Company\CompanyCore\Events\CompanyLegalDataUpdated;
 use Modules\Company\CompanyCore\Events\CompanyLegalDataDeleted;
+use Modules\Company\CompanyCore\Listeners\CompanyDataChangeSubscriber;
 use Modules\Company\CompanyCore\Listeners\CreateOfficialDocumentFromLegalData;
 use Modules\Company\CompanyCore\Listeners\UpdateOfficialDocumentFromLegalData;
 use Modules\Company\CompanyCore\Listeners\DeleteOfficialDocumentFromLegalData;
@@ -86,5 +87,8 @@ class CompanyServiceProvider extends ModuleServiceProvider
             CompanyLegalDataDeleted::class,
             DeleteOfficialDocumentFromLegalData::class
         );
+        
+        // Register the subscriber that handles company data change events for cache clearing
+        Event::subscribe(CompanyDataChangeSubscriber::class);
     }
 }

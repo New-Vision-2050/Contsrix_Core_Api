@@ -383,6 +383,7 @@ class CompanyUserRepository extends BaseRepository
                     'branch_id' => $mainBranchId,
                     'management_id' => $mainManagement->id,
 
+
                 ];
                 if ($userProfessionalData) {
                     $userProfessionalData->update($data);

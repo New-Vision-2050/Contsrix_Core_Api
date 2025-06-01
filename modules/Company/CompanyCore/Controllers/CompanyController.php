@@ -22,12 +22,13 @@ use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyValidateService;
 use Modules\Company\CompanyCore\Services\CompanyValidatedService;
+use Modules\Company\CompanyCore\Services\CompanyCacheService;
+use Modules\Company\CompanyCore\Services\CompanyWidgetService;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
-use Modules\Company\CompanyCore\Services\CompanyWidgetService;
-use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\User\Repositories\UserRepository;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Cache;
@@ -35,6 +36,7 @@ use Illuminate\Support\Facades\Cache;
 
 class CompanyController extends Controller
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(
         private CompanyCRUDService $companyService,
         private UpdateCompanyHandler $updateCompanyHandler,
@@ -43,7 +45,7 @@ class CompanyController extends Controller
         private CompanyValidatedService $validatedCompanyService,
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
-        private UserRepository $userRepository
+        private CompanyCacheService $companyCacheService
         // private TransformImgsService  $transformImgsService
     ) {
     }
@@ -89,6 +91,9 @@ class CompanyController extends Controller
         // Clear widget cache when a company is updated
         $this->companyWidgetService->clearWidgetCache();
 
+        // Also clear company data cache when a company is updated
+        $this->companyCacheService->clearCompanyCache($command->getId()->toString());
+
         $item = $this->companyService->get($command->getId());
 
         $presenter = new CompanyPresenter($item);
@@ -98,12 +103,13 @@ class CompanyController extends Controller
 
     public function delete(DeleteCompanyRequest $request): JsonResponse
     {
-        $this->deleteCompanyHandler->handle(Uuid::fromString($request->route('id')));
+        $command = $request->createDeleteCompanyCommand();
+        $this->deleteCompanyHandler->handle($command);
 
-        // Clear widget cache when a company is deleted
-        $this->companyWidgetService->clearWidgetCache();
+        // Clear company cache when deleted
+        $this->companyCacheService->clearCompanyCache($command->getId()->toString());
 
-        return Json::deleted();
+        return Json::success();
     }
     public function validate(Request $request)//: JsonResponse
     {
@@ -162,12 +168,17 @@ class CompanyController extends Controller
 
     public function getCurrentCompanyLoggedIn()
     {
-
+        [$companyFromRequest, $branchFromRequest] = $this->declareCompanyAndBranchUsingRequest();
         try {
-            $company = $this->companyService->getCurrentCompanyLoggedIn();
+            // Use the cache service to cache the company data
+            $company = $this->companyCacheService->cacheCompanyData($companyFromRequest->id,$branchFromRequest->id, function () {
+                return $this->companyService->getCurrentCompanyLoggedIn();
+            });
+
         } catch (\Exception $e) {
-            return Json::error($e->getMessage(),$e->getCode());
+            return Json::error($e->getMessage(), $e->getCode());
         }
+
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
