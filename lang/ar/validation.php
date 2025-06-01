@@ -263,6 +263,7 @@ return [
         'end_date_after_start' => 'تاريخ الانتهاء يجب أن يكون بعد أو يساوي تاريخ البدء.',
         'file_required' => 'الملف مطلوب.',
         'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
+        'regestration_number_required' => 'رقم التسجيل مطلوب لهذا النوع.',
     ],
 
 
@@ -449,5 +450,15 @@ return [
 
         'city_required' => 'المدينة مطلوبة.',
         'city_exists' => 'المدينة المحددة غير صالحة.',
+    ],
+
+    'company_official' => [
+        'name_required' => 'اسم الشركة (بالإنجليزية) مطلوب.',
+        'email_required' => 'البريد الإلكتروني مطلوب.',
+        'email_valid' => 'يجب أن يكون البريد الإلكتروني صالحاً.',
+        'phone_required' => 'رقم الهاتف مطلوب.',
+        'branch_required' => 'اسم الفرع مطلوب.',
+        'company_type_required' => 'نوع الشركة مطلوب.',
+        'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
     ],
 ];

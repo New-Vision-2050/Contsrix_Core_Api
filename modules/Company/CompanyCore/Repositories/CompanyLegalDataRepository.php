@@ -40,7 +40,9 @@ class CompanyLegalDataRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $companyLegalData = $this->create($data);
-            $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            if (!is_null($file)) {
+                $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            }
             DB::commit();
 
         } catch (\Exception $e) {
@@ -82,6 +84,13 @@ class CompanyLegalDataRepository extends BaseRepository
                 DB::commit();
                 // return true;
             }
+
+            $newIds = collect($data)->pluck('id')->all();
+
+            $legalDataCollection->whereNotIn('id', $newIds)->each(function ($legalData) {
+                $legalData->clearMediaCollection('upload');
+                $legalData->delete();
+            });
 
             $lastLegalData = null;
 

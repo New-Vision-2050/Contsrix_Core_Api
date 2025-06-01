@@ -16,4 +16,5 @@ class AcademicQualificationFilter extends SearchModelFilter
                $q->where('content','like','%'.$name.'%');
            });
        }
+
 }

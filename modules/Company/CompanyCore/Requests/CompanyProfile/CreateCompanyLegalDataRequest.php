@@ -6,6 +6,7 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
+use Modules\Company\CompanyCore\Rules\RequiredRegistrationNumber;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
@@ -17,15 +18,24 @@ class CreateCompanyLegalDataRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'registration_type_id' => 'nullable|exists:company_registration_types,id',
-            'regestration_number' => 'nullable|string',
+            'registration_type_id' => 'required|exists:company_registration_types,id',
+            'regestration_number' => 'string',
             'start_date' => 'nullable|date|before_or_equal:end_date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'file' => 'nullable|array',
             'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
         ];
     }
+    public function withValidator($validator)
+    {
+        $validator->sometimes('regestration_number', 'required', function ($input) {
+            $type = \DB::table('company_registration_types')
+                ->where('id', $input->registration_type_id)
+                ->value('type');
 
+            return (int)$type !== 3;
+        });
+    }
     public function messages(): array
     {
         return [
