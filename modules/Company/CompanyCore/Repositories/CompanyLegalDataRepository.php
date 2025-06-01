@@ -117,6 +117,10 @@ class CompanyLegalDataRepository extends BaseRepository
                         }
                     }
 
+                    if(count($item['files'] == 0)){
+                        $legalData->clearMediaCollection('upload');
+                    }
+
                     // Only perform file deletion if 'files' array is present
                     // This ensures we keep files based on what's in the request
                     $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
