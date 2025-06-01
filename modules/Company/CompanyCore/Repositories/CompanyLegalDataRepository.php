@@ -116,7 +116,7 @@ class CompanyLegalDataRepository extends BaseRepository
                     }
                 }
 
-                if($oldFileData == false){
+                if(!$oldFileData){
                     $legalData->clearMediaCollection('upload');
                 }
 
