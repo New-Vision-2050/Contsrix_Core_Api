@@ -117,7 +117,7 @@ class CompanyLegalDataRepository extends BaseRepository
                         }
                     }
 
-                    if(count($item['files']) == 0)){
+                    if(count($item['files']) == 0){
                         $legalData->clearMediaCollection('upload');
                     }
 
