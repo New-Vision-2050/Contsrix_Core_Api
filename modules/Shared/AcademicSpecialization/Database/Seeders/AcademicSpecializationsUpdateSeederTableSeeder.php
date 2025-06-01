@@ -22,7 +22,7 @@ class AcademicSpecializationsUpdateSeederTableSeeder extends Seeder
         Model::unguard();
 
         $bachelorId = AcademicQualification::whereHas('translations', function ($q) {
-            $q->where('content', 'Bachelor');
+            $q->where(column: 'content', 'Bachelor');
         })->value('id');
 
         // Update all rows in one query
