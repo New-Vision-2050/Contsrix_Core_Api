@@ -31,7 +31,7 @@ class AdminRequestPresenter extends AbstractPresenter
             "status" => $this->adminRequest->status,
             "notes" => $this->adminRequest->notes,
             "company_name"=> $this->adminRequest->company->name,
-            "attachments"=> $this->adminRequest->mediaUrls,
+            "attachments"=> $this->adminRequest->getMedia("upload"),
             "created_at" => Carbon::parse($this->adminRequest->created_at)->setTimezone(getTimeZoneByRequest())->format('Y-m-d H:i:s')
 //            "requestable" => $this->adminRequest->requestable,TODO add requestable with specific information dependant on request type
         ];
