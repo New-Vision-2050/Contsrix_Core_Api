@@ -30,7 +30,7 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
     Route::group(['prefix' => 'company-profile'], function () {
         Route::prefix("official-data")->group(function () {
             Route::put("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialData"]);
-            Route::put("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDataRequest"]);
+            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDataRequest"]);
         });
 
         Route::prefix("official-document")->group(function () {
