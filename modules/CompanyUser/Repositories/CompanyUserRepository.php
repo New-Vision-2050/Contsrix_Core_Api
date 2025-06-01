@@ -373,6 +373,8 @@ class CompanyUserRepository extends BaseRepository
             $companyUserCompany = CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
 
             if (CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
+                $generalManagerJobTitle = $this->jobTitleRepository->findOneBy(["type" => "general_manager"]);
+
                 $userProfessionalData = UserProfessionalData::query()->where([
                     'global_id' => $user->global_company_user_id,
                     'company_id' => $companyUserRoleData['company_id'],
@@ -382,6 +384,8 @@ class CompanyUserRepository extends BaseRepository
                     'global_id' => $user->global_company_user_id,
                     'branch_id' => $mainBranchId,
                     'management_id' => $mainManagement->id,
+                    "job_title_id"=>$generalManagerJobTitle->id,
+                    "job_type_id"=>$generalManagerJobTitle->job_type_id
 
                 ];
                 if ($userProfessionalData) {
