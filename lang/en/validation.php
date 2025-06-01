@@ -499,4 +499,5 @@ return [
     'date_obtain_date' => 'The date of obtaining the certificate must be a valid date.',
     'date_end_required' => 'The certificate expiry date is required.',
     'date_end_date' => 'The certificate expiry date must be a valid date.',
+    'graduation_date_date' => 'Graduation date must be a valid date.',
 ];
