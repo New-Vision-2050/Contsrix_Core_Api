@@ -61,14 +61,13 @@ class UserRepository extends BaseRepository
         })->where("company_id", tenant("id"))->first();
     }
 
-    public function getUserByEmailWithBranches($email,$role)
+    public function getUserByGlobalIdWithBranches($global_id,$role=1)
     {
-        $user = $this->model->query()->where('email', $email)->where("company_id", tenant("id"))->first();
+        $user = $this->model->query()->where('global_company_user_id', $global_id)->where("company_id", tenant("id"))->first();
         return CompanyUserCompany::query()->where("company_id", tenant("id"))
-            ->where("global_company_user_id", $user->global_company_user_id)
-            ->where("role", $role)
+            ->where("global_company_user_id", $user?->global_company_user_id)
             ->with("managementHierarchy")
-            ->first();
+            ->get();
 
     }
 
@@ -227,7 +226,12 @@ class UserRepository extends BaseRepository
 
     public function getAdminUsersFromCentralCompanies($page, $perPage)
     {
-        $query = $this->model->withoutTenancy()
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+        $query = $query->distinct("global_company_user_id")->withoutTenancy()->whereNotNull("management_hierarchy_id")//mean this is employee not any type else
             ->whereHas('company', function ($query) {
                 $query->where('is_central_company', true);
             });

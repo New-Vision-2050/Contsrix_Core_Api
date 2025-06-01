@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Modules\AdminRequest\Enum\AdminRequestStatus;
 use Modules\AdminRequest\Models\AdminRequest;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 use Stevebauman\Location\Facades\Location;
 
 class AdminRequestPresenter extends AbstractPresenter
@@ -28,10 +29,10 @@ class AdminRequestPresenter extends AbstractPresenter
             "data" => $this->adminRequest->data,
             "action" => $this->adminRequest->action,
             "request_type" => $this->adminRequest->request_type,
-            "status" => AdminRequestStatus::lang($this->adminRequest->status),
+            "status" => $this->adminRequest->status,
             "notes" => $this->adminRequest->notes,
             "company_name"=> $this->adminRequest->company->name,
-            "attachments"=> $this->adminRequest->mediaUrls,
+            "attachments"=>MediaPresenter::collection( $this->adminRequest->getMedia("upload")),
             "created_at" => Carbon::parse($this->adminRequest->created_at)->setTimezone(getTimeZoneByRequest())->format('Y-m-d H:i:s')
 //            "requestable" => $this->adminRequest->requestable,TODO add requestable with specific information dependant on request type
         ];

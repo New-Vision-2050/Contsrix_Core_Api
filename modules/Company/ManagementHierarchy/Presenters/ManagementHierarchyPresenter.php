@@ -42,7 +42,7 @@ class ManagementHierarchyPresenter extends AbstractPresenter
                 "email"=>$this->managementHierarchy->user?->email,
                 "phone"=>$this->managementHierarchy->user?->phone,
             ],
-            'latitude' => $this->managementHierarchy->lattitude,
+            'latitude' => $this->managementHierarchy->latitude,
             'longitude' => $this->managementHierarchy->longitude,
             'country_id' => $this->managementHierarchy->address?->country_id,
             'state_id' => $this->managementHierarchy->address?->state_id,

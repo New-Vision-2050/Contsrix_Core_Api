@@ -199,14 +199,14 @@ class SuperEntityRepository
         return $decoded[$key] ?? null;
     }
 
-    public function getConfig(string $superEntityId)
+    public function getConfig(string $superEntityId): array
     {
         $config = DB::table('super_entities_config')
             ->where('super_entity', $superEntityId)
             ->value('config');
 
         if (!$config) {
-            return null;
+            return [];
         }
 
         return json_decode($config, true);

@@ -11,7 +11,8 @@ class AssignRoleCompanyUserCommand
     public function __construct(
         private UuidInterface $id,
         private UuidInterface $company_id,
-        private int $role
+        private int $role,
+        private ?array $branch_ids
     ) {
     }
 
@@ -24,6 +25,16 @@ class AssignRoleCompanyUserCommand
     public function getCompanyId()
     {
         return $this->company_id;
+    }
+
+    public function getBranchIds()
+    {
+        return $this->branch_ids;
+    }
+
+    public function getRole()
+    {
+        return $this->role;
     }
 
 

@@ -9,12 +9,14 @@ use Modules\SubEntity\Controllers\SubEntityRecordsController;
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [SubEntityController::class, 'index']);
     Route::post('/', [SubEntityController::class, 'store']);
+    Route::post('/slug-validate', [SubEntityController::class, 'validateSlug']);
     Route::get('/{id}', [SubEntityController::class, 'show']);
     Route::put('/{id}', [SubEntityController::class, 'update']);
     Route::delete('/{id}', [SubEntityController::class, 'delete']);
     Route::get('/{id}/show/attributes', [SubEntityController::class, 'showAttributes']);
     Route::put('/{id}/update/attributes', [SubEntityController::class, 'updateAttributes']);
     Route::get('/super_entity/sub_tables', [SubEntityController::class, 'getBySuperEntity']);
+    Route::post('/super_entity/sub_tables/export', [SubEntityController::class, 'export']);
     Route::get('/list/selection', [SubEntityController::class, 'getSelection']);
     Route::put('/{id}/status', [SubEntityController::class, 'updateStatus']);
 

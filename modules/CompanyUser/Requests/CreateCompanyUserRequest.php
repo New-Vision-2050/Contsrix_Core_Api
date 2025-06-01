@@ -31,7 +31,7 @@ class CreateCompanyUserRequest extends FormRequest
 
             'phone' => [
                 'required'
-//                , new PhoneEmailConsistencyRule($this->input('email'))
+                , new PhoneEmailConsistencyRule($this->input('email'))
             ],
             'email' => [
                 'required',

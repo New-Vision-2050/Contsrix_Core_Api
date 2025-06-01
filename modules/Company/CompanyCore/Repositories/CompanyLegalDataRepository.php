@@ -15,6 +15,8 @@ use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
+use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Shared\Media\Services\FileDeletedService;
 
 /**
  * @property Company $model
@@ -23,7 +25,12 @@ use Carbon\Carbon;
  */
 class CompanyLegalDataRepository extends BaseRepository
 {
-    public function __construct(CompanyLegalData $model, private FileUploadService $fileUploadService)
+    public function __construct(
+        CompanyLegalData $model,
+        private FileUploadService $fileUploadService,
+        private ManagementHierarchyRepository $managementHierarchyRepository,
+        private FileDeletedService $fileDeletedService,
+        )
     {
         parent::__construct($model);
     }
@@ -33,7 +40,9 @@ class CompanyLegalDataRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $companyLegalData = $this->create($data);
-            $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            if (!is_null($file)) {
+                $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+            }
             DB::commit();
 
         } catch (\Exception $e) {
@@ -45,31 +54,103 @@ class CompanyLegalDataRepository extends BaseRepository
         return $companyLegalData;
     }
 
-    public function updateCompanyLegalData( array $data)
+    public function updateCompanyLegalData(array $data = [])
     {
         try {
             DB::beginTransaction();
-            foreach ($data as $item) {
-               $legalData =  $this->findOneOrFail($item["id"]);
-               $legalData->update(["start_date"=>$item["start_date"],"end_date"=>$item["end_date"]]);
-               if(array_key_exists("file",$item) && !is_string($item["file"]))
-               {
-                   $legalData->clearMediaCollection('upload');//for replace with new media
-                   $this->fileUploadService->uploadFile($legalData, $item["file"], "company");
-               }
 
+            // Get optional branch_id from request
+            $branchId = request()->get('branch_id');
+            $companyId = request()->get('company_id')??request()->header('X-Tenant') ;
+            // Get legal data scoped by branch if branch_id is provided
+            $legalDataQuery = $this->model;
+
+            if ($branchId) {
+                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
+            }else{
+                $branch =  $this->managementHierarchyRepository->getMainBranchForCompany($companyId);
+                $branchId = $branch->id;
+                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
             }
 
+            $legalDataCollection = $legalDataQuery->get();
+
+            if (empty($data)) {
+                // Delete all legal data for this branch or all data if no branch specified
+                $legalDataCollection->each(function ($legalData) {
+                    $legalData->clearMediaCollection('upload');
+                    $legalData->delete();
+                });
+                DB::commit();
+                // return true;
+            }
+
+            $newIds = collect($data)->pluck('id')->all();
+
+            $legalDataCollection->whereNotIn('id', $newIds)->each(function ($legalData) {
+                $legalData->clearMediaCollection('upload');
+                $legalData->delete();
+            });
+
+            $lastLegalData = null;
+
+            foreach ($data as $item) {
+
+                $legalData = $legalDataCollection->firstWhere('id', $item['id']);
+
+                if (!$legalData) {
+                    throw new \Exception("Legal data with ID {$item['id']} not found in the specified scope.", 404);
+                }
+
+                $legalData->update([
+                    'start_date' => isset($item['start_date']) ? Carbon::parse($item['start_date'])->format('Y-m-d') : null,
+                    'end_date' => isset($item['end_date']) ? Carbon::parse($item['end_date'])->format('Y-m-d') : null,
+                ]);
+
+
+                // Then collect all file IDs that should be kept (from the request)
+                $fileIdsToKeep = [];
+                if (isset($item['files'])) {
+                    foreach ($item['files'] as $fileEntry) {
+                        if (isset($fileEntry['id'])) {
+                            $fileIdsToKeep[] = $fileEntry['id'];
+                        }
+                    }
+
+
+
+                    // Only perform file deletion if 'files' array is present
+                    // This ensures we keep files based on what's in the request
+                    $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
+                }
+                else
+                {
+                        $legalData->clearMediaCollection('upload');
+                }
+
+                // First upload any new files
+                foreach ($item['file'] ?? [] as $newFile) {
+                    if (!is_string($newFile)) {
+                        $this->fileUploadService->uploadFile($legalData, $newFile, 'upload');
+                    }
+                }
+
+
+            }
             DB::commit();
-            $legalData =$legalData->fresh();
-            event(new CompanyLegalDataUpdated($legalData));
+
+            if ($lastLegalData) {
+                event(new CompanyLegalDataUpdated($lastLegalData->fresh()));
+            }
+
+            return true;
+
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);
-
         }
-        return true;
     }
+
 
     public function delete( $id)
     {

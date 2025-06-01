@@ -25,6 +25,14 @@ return [
     'ascii' => 'The :attribute field must only contain single-byte alphanumeric characters and symbols.',
     'before' => 'The :attribute field must be a date before :date.',
     'before_or_equal' => 'The :attribute field must be a date before or equal to :date.',
+
+    'branch_id_required' => 'The branch field is required.',
+    'management_id_required' => 'The management field is required.',
+    'job_type_id_required' => 'The job type field is required.',
+    'job_title_id_required' => 'The job title field is required.',
+    'job_code_required' => 'The job code field is required.',
+
+
     'between' => [
         'array' => 'The :attribute field must have between :min and :max items.',
         'file' => 'The :attribute field must be between :min and :max kilobytes.',
@@ -212,6 +220,9 @@ return [
     "phone-exists"=>"phone exists",
     "phone_email_consistency-error"=>"phone and email consistency error",
     "can-not-delete-has-children"=>"can not delete has children",
+    "client-already-exist-in-thies-branches"=>'client already exists in this branches',
+    "employee-already-exist"=>'employee already exists in this branches',
+    "broker-already-exist-in-thies-branches"=>'broker already exists in this branches',
 
 
 
@@ -248,7 +259,14 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        "job_type_id"=>"Job type",
+        "manager_id"=>"manager",
+        "state_id"=>"state",
+        "city_id"=>"city",
+        "country_id"=>"country",
+
+    ],
 
     'company_user' => [
         'first_name_required' => 'First name is required.',
@@ -281,6 +299,8 @@ return [
         'end_date_after_start' => 'End date must be after or equal to start date.',
         'file_required' => 'A file is required.',
         'file_mimes' => 'The file must be one of the following types: pdf, jpeg, jpg, png, doc, docx.',
+        'regestration_number_required' => 'The registration number is required for this type.',
+
     ],
     'company' => [
         'name_required' => 'Company name is required.',
@@ -460,5 +480,14 @@ return [
 
         'city_required' => 'City is required.',
         'city_exists' => 'The selected city is invalid.',
+    ],
+    'company_official' => [
+        'name_required' => 'The company name (English) is required.',
+        'email_required' => 'The email address is required.',
+        'email_valid' => 'The email must be a valid email address.',
+        'phone_required' => 'The phone number is required.',
+        'branch_required' => 'The branch name is required.',
+        'company_type_required' => 'The company type is required.',
+        'company_type_exists' => 'The selected company type does not exist.',
     ],
 ];

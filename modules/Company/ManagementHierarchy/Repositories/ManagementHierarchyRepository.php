@@ -28,7 +28,12 @@ class ManagementHierarchyRepository extends BaseRepository
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
-        $this->nextId = $model->query()->orderBy("id", "desc")->withoutGlobalScope(CustomTenantScope::class)->first()->id + 1;
+        $last = $model->query()
+            ->orderBy("id", "desc")
+            ->withoutGlobalScope(CustomTenantScope::class)
+            ->first();
+
+        $this->nextId = $last ? $last->id + 1 : 1;
     }
 
     public function getManagementHierarchyList(?int $page, ?int $perPage = 10): Collection
@@ -43,6 +48,14 @@ class ManagementHierarchyRepository extends BaseRepository
         if (request()->has("parent_children_id")) {
             $managementHierarchy = $this->model->where("id", request()->parent_children_id)->where("company_id", $company->id)->first();
 
+        }
+        if(request()->has("branch_id"))
+        {
+            return $this->model->where("company_id", $company->id)->where("type", "management")->whereHas("detail",function ($query) {
+
+                $query->where("branch_id",request()->branch_id);
+
+            })->get();
         }
 
         return $this->model->filter(request()->all())

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Services;
 
+use App\Exceptions\CustomException;
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
@@ -38,7 +39,7 @@ class CompanyUserCRUDService
         $data = [
             "name" => $userInCompany->name,
             "company_name" => $userInCompany->company?->name,
-            "domain_name" => $userInCompany->company?->domains()->first()?->domain
+            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain
         ];
         $userInCompany->notify(new SendDomainForUser($data));
 
@@ -131,6 +132,35 @@ class CompanyUserCRUDService
         return createCSV($csvData);
 
     }
+
+    public function validateDataInsertion($globalId = null, $role = CompanyUserRole::EMPLOYEE->value, array $branchIds = null)
+    {
+
+        if ($globalId != null && $branchIds != null) {
+            $branches = $this->repository->getUserInBranches($globalId, $role, $branchIds);
+            //check if the employee already exist in Exactly in one branch
+            if (count($branches) > 0 && $role == CompanyUserRole::EMPLOYEE->value) {
+                throw new CustomException(__("validation.employee-already-exist"), 400);
+
+            }
+            //check if the user is already in the branches
+            if (count($branches) == count($branchIds) && count(array_intersect( $branches->pluck("management_hierarchy_id")->toArray(),$branchIds)) == count($branches)) {
+                if ($role == CompanyUserRole::CLIENT->value) {
+                    throw new CustomException(__("validation.client-already-exist-in-thies-branches"), 400);
+                } elseif ($role == CompanyUserRole::EMPLOYEE->value) {
+                    throw new CustomException(__("validation.employee-already-exist"), 400);
+
+                } else {
+                    throw new CustomException(__("validation.broker-already-exist-in-thies-branches"), 400);
+
+                }
+            }
+
+        }
+        return true;
+
+    }
+
 
 
 }

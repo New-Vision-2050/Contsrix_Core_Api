@@ -35,10 +35,13 @@ use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeede
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
 use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
+use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsNewSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
+use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
+use Modules\Shared\Privilege\Database\Seeders\UpdatePrivilegeModulesSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -93,5 +96,9 @@ class DatabaseSeeder extends Seeder
         $this->call(SubEntityDatabaseSeeder::class);
         $this->call(BankTypeAccountSeederTableSeeder::class);
         $this->call(SeedersMaritalStatusSeederTableSeeder::class);
+        $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
+        $this->call(AcademicSpecializationsUpdateSeederTableSeeder::class);
+        $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
+
     }
 }
