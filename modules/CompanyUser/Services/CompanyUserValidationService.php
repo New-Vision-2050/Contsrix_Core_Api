@@ -85,9 +85,15 @@ class CompanyUserValidationService
                 'status' => 0,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
                 "roles" => $this->getRolesAndPermissions($companyUserCompany),
+
                 'validate' => 'required',
                 'id' => $user->id,
-                "email"=>$user->email
+                "email"=>$user->email,
+                "phone"=>$user?->users()?->first()?->phone,
+                "phone_code"=>$user?->users()?->first()?->phone_code,
+                "name"=>$user->name,
+                "job_title_id"=>$user->job_title_id,
+                "identity "=>$user->identity ,
             ];
         } else {
             $this->errors[] = [
