@@ -93,7 +93,7 @@ class CompanyUserValidationService
                 "phone_code"=>$user?->users()?->first()?->phone_code,
                 "name"=>$user->name,
                 "job_title_id"=>$user->job_title_id,
-                "identity "=>$user->identity ,
+                "identity"=>$user->identity ,
             ];
         } else {
             $this->errors[] = [
