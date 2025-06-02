@@ -129,11 +129,8 @@ class CompanyUserValidationService
         }
         return $this;
     }
-
     public function get()
     {
         return $this->errors;
     }
-
-
 }
