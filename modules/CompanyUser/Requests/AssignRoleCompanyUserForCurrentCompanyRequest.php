@@ -31,9 +31,7 @@ class AssignRoleCompanyUserForCurrentCompanyRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             company_id: Uuid::fromString(tenant("id")),
             role: (int)$this->get('role'),
-            branch_ids: $this->get('branch_ids') ??
-                    $this->get('branch_id','') ?
-                    [$this->get('branch_id','')]: []
+            branch_ids: $this->get('branch_ids')
         );
     }
 }
