@@ -90,6 +90,16 @@ class CompanyDataChangeSubscriber
         );
 
         $events->listen(
+            'Modules\Company\CompanyCore\Events\CompanyLegalDataCreated',
+            [CompanyDataChangeSubscriber::class, 'handleCompanyLegalDataUpdated']
+        );
+
+        $events->listen(
+            'Modules\Company\CompanyCore\Events\CompanyLegalDataDeleted',
+            [CompanyDataChangeSubscriber::class, 'handleCompanyLegalDataUpdated']
+        );
+
+        $events->listen(
             'Modules\Company\CompanyCore\Events\CompanyAddressUpdated',
             [CompanyDataChangeSubscriber::class, 'handleCompanyAddressUpdated']
         );

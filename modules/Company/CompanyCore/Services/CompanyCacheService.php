@@ -21,10 +21,7 @@ class CompanyCacheService
      * Cache key prefixes for different entity types
      */
     const CACHE_KEY_COMPANY = 'company_data';
-    const CACHE_KEY_LEGAL_DATA = 'company_legal_data';
-    const CACHE_KEY_ADDRESS = 'company_address';
-    const CACHE_KEY_DOCUMENTS = 'company_official_documents';
-    const CACHE_KEY_BRANCHES = 'company_branches';
+
 
 
     public function cacheCompanyData(string $companyId,  ?int $branchId, callable $callback)
