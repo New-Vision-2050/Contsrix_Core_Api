@@ -31,7 +31,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             DB::beginTransaction();
             $companyOfficialDocument = $this->create($data);
             foreach ($files as $file) {
-                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null,'files');
             }
             $this->activityLogRepository->createActivityLog(["action" => ["ar" => "إنشاء", "en" => "create"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
             DB::commit();
@@ -52,7 +52,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             $companyOfficialDocument->update($data);
             if ($files) {
                 foreach ($files as $file) {
-                    $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company");
+                    $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null,'files');
                 }
             }
             if ($deletedFiles) {

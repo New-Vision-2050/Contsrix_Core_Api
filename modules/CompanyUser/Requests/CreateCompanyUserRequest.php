@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Rules\CompanyUserValidation;
 use Modules\CompanyUser\Rules\PhoneEmailConsistencyRule;
 use Modules\CompanyUser\Rules\UserNameValidation;
@@ -30,7 +31,7 @@ class CreateCompanyUserRequest extends FormRequest
 
             'phone' => [
                 'required'
-//                , new PhoneEmailConsistencyRule($this->input('email'))
+                , new PhoneEmailConsistencyRule($this->input('email'))
             ],
             'email' => [
                 'required',

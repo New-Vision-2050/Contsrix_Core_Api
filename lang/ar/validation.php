@@ -66,6 +66,13 @@ return [
     'json' => 'يجب أن يكون حقل :attribute سلسلة JSON صالحة.',
     'list' => 'يجب أن يكون حقل :attribute قائمة.',
     'lowercase' => 'يجب أن يكون حقل :attribute بحروف صغيرة.',
+
+    'branch_id_required' => 'حقل الفرع مطلوب.',
+    'management_id_required' => 'حقل الإدارة مطلوب.',
+    'job_type_id_required' => 'حقل نوع الوظيفة مطلوب.',
+    'job_title_id_required' => 'حقل المسمى الوظيفي مطلوب.',
+    'job_code_required' => 'حقل كود الوظيفة مطلوب.',
+
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
         'file' => 'يجب أن يكون حجم حقل :attribute أقل من :value كيلوبايت.',
@@ -154,6 +161,7 @@ return [
     "can-not-resend-before" => "لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
     "phone" => "رقم الهاتف غير صحيح",
     'delete-not-successful' => 'فشل الحذف',
+    "delete-not-allowed"=>'لا يمكن مسح هذا الحقل',
     'delete-successful' => 'تم الحذف بنجاح',
     'create-not-successful' => 'فشل الحفظ',
     'create-successful' => 'تم الحفظ بنجاح',
@@ -206,12 +214,18 @@ return [
 
     "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
 
-    'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
-        ],
+
+    'attributes' => [
+        'slug' => 'الاسم المختصر',
+        "job_type_id"=>"النوع الوظيفي",
+        "description"=>"وصف",
+        "name"=>"الاسم",
+        "state_id"=>"المحافظة",
+        "city_id"=>"المدينة",
+        "country_id"=>"الدوله",
+        "manager_id"=>"المدير",
+        "status"=>"الحالة"
     ],
-    'attributes' => [],
     'username_required'=>'الاسم المختصر ألرامي',
     'username_unique'=>'الاسم المختصر مستخدم بالفعل',
     'username_regex'=>'الاسم المختصر غير صحيح',
@@ -249,6 +263,7 @@ return [
         'end_date_after_start' => 'تاريخ الانتهاء يجب أن يكون بعد أو يساوي تاريخ البدء.',
         'file_required' => 'الملف مطلوب.',
         'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
+        'regestration_number_required' => 'رقم التسجيل مطلوب لهذا النوع.',
     ],
 
 
@@ -273,7 +288,7 @@ return [
     'user_relative' => [
         'name_required' => 'حقل الاسم مطلوب.',
         'user_id_required' => 'معرف المستخدم مطلوب.',
-        'marital_status_required' => 'الحالة الاجتماعية مطلوبة.',
+        'marital_status_id_required' => 'الحالة الاجتماعية مطلوبة.',
         'relationship_required' => 'العلاقة مطلوبة.',
         'phone_required' => 'رقم الهاتف مطلوب.',
     ],
@@ -316,11 +331,134 @@ return [
     'training_to_after_from' => 'تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية.',
     'company_name_required' => 'اسم الشركة مطلوب.',
     'about_required' => 'الوصف مطلوب.',
+    "client-already-exist-in-thies-branches"=>'العميل موجودة في هذه الفروع',
+    "employee-already-exist"=>'الموظف موجود',
+    "broker-already-exist-in-thies-branches"=>'الوسيط موجودة في هذه الفروع',
 
     'country_id_required' => 'الدولة مطلوبة.',
     'university_id_required' => 'الجامعة مطلوبة.',
     'academic_qualification_id_required' => 'المؤهل الأكاديمي مطلوب.',
     'academic_specialization_id_required' => 'التخصص الأكاديمي مطلوب.',
     'study_rate_required' => 'معدل الدراسة مطلوب.',
+    'study_rate_numeric' => 'معدل الدراسة يجب أن يكون رقمًا.',
     'graduation_date_required' => 'تاريخ التخرج مطلوب.',
+
+    'custom' => [
+        'attribute-name' => [
+            'rule-name' => 'custom-message',
+        ],
+        'name' => [
+            'required' => 'الاسم مطلوب.',
+        ],
+        'files' => [
+            'required' => 'حقل الملفات مطلوب.',
+            'array' => 'يجب أن تكون الملفات مصفوفة.',
+            '*.required' => 'كل ملف مطلوب.',
+            '*.file' => 'كل عنصر يجب أن يكون ملفاً.',
+            '*.mimes' => 'يجب أن تكون الملفات من نوع: pdf, jpeg, jpg, png, doc, docx.',
+        ],
+        'document_type_id' => [
+            'required' => 'نوع المستند مطلوب.',
+            'exists' => 'نوع المستند المحدد غير صالح.',
+        ],
+        'description' => [
+            'required' => 'الوصف مطلوب.',
+        ],
+        'document_number' => [
+            'required' => 'رقم المستند مطلوب.',
+            'numeric' => 'يجب أن يكون رقم المستند رقماً.',
+        ],
+        'start_date' => [
+            'required' => 'تاريخ البداية مطلوب.',
+            'date' => 'تاريخ البداية غير صالح.',
+            'before_or_equal' => 'يجب أن يكون تاريخ البداية قبل أو مساوياً لتاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ البداية بالتنسيق Y-m-d.',
+        ],
+        'end_date' => [
+            'required' => 'تاريخ الانتهاء مطلوب.',
+            'date' => 'تاريخ الانتهاء غير صالح.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الانتهاء بعد أو مساوياً لتاريخ البداية.',
+            'date_format' => 'يجب أن يكون تاريخ الانتهاء بالتنسيق Y-m-d.',
+        ],
+        'notification_date' => [
+            'required' => 'تاريخ الإشعار مطلوب.',
+            'date' => 'يجب أن يكون تاريخ الإشعار تاريخاً صالحاً.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الإشعار بعد أو مساوياً لتاريخ البداية.',
+            'before' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ الإشعار بالتنسيق Y-m-d.',
+        ],
+    ],
+    'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
+
+    'address' => [
+            'country_id' => [
+                'required' => 'الدولة مطلوبة.',
+                'exists' => 'الدولة المحددة غير صالحة.',
+            ],
+            'state_id' => [
+                'required' => 'المحافظة مطلوبة.',
+                'exists' => 'المحافظة المحددة غير صالحة.',
+            ],
+            'city_id' => [
+                'required' => 'المدينة مطلوبة.',
+                'exists' => 'المدينة المحددة غير صالحة.',
+            ],
+            'neighborhood_name' => [
+                'required' => 'اسم الحي مطلوب.',
+            ],
+            'street_name' => [
+                'required' => 'اسم الشارع مطلوب.',
+            ],
+            'building_number' => [
+                'required' => 'رقم المبنى مطلوب.',
+            ],
+            'additional_phone' => [
+                'required' => 'الهاتف الإضافي مطلوب.',
+            ],
+            'postal_code' => [
+                'required' => 'الرمز البريدي مطلوب.',
+            ],
+        ],
+
+        'branch' => [
+        'name_required' => 'اسم الفرع مطلوب.',
+        'name_string' => 'يجب أن يكون اسم الفرع نصاً.',
+
+        'parent_id_required' => 'معرّف الفرع الرئيسي مطلوب.',
+        'parent_id_exists' => 'معرّف الفرع الرئيسي غير صالح.',
+
+        'manager_id_required' => 'معرّف المدير مطلوب.',
+        'manager_id_exists' => 'معرّف المدير غير صالح.',
+
+        'phone_required' => 'رقم الهاتف مطلوب.',
+        'phone_invalid' => 'رقم الهاتف غير صالح.',
+
+        'email_required' => 'البريد الإلكتروني مطلوب.',
+        'email_invalid' => 'تنسيق البريد الإلكتروني غير صالح.',
+
+        'latitude_required' => 'خط العرض مطلوب.',
+        'latitude_numeric' => 'يجب أن يكون خط العرض رقمًا.',
+
+        'longitude_required' => 'خط الطول مطلوب.',
+        'longitude_numeric' => 'يجب أن يكون خط الطول رقمًا.',
+
+        'country_required' => 'الدولة مطلوبة.',
+        'country_exists' => 'الدولة المحددة غير صالحة.',
+
+        'state_required' => 'المنطقة مطلوبة.',
+        'state_exists' => 'المنطقة المحددة غير صالحة.',
+
+        'city_required' => 'المدينة مطلوبة.',
+        'city_exists' => 'المدينة المحددة غير صالحة.',
+    ],
+
+    'company_official' => [
+        'name_required' => 'اسم الشركة (بالإنجليزية) مطلوب.',
+        'email_required' => 'البريد الإلكتروني مطلوب.',
+        'email_valid' => 'يجب أن يكون البريد الإلكتروني صالحاً.',
+        'phone_required' => 'رقم الهاتف مطلوب.',
+        'branch_required' => 'اسم الفرع مطلوب.',
+        'company_type_required' => 'نوع الشركة مطلوب.',
+        'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
+    ],
 ];

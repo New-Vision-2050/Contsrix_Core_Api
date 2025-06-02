@@ -23,6 +23,7 @@ class JobTitleSimplePresenter extends AbstractPresenter
             'id' => $this->model->id,
             'name' => $this->model->name,
             'job_type_id' => $this->model->job_type_id,
+            'company_id' => $this->model->company_id,
         ];
     }
 

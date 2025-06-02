@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use http\Client\Curl\User;
 use Illuminate\Support\Facades\DB;
@@ -32,10 +33,18 @@ class CompanyAddressRepository extends BaseRepository
         return $this->create($data);
     }
 
-    public function updateCompanyAddress(UuidInterface $id, array $data): CompanyAddress
+    public function updateCompanyAddress(UuidInterface $id, array $data,array $latAndLong): CompanyAddress
     {
-        $companyAddress = $this->find($id);
-        $companyAddress->update($data);
+        try {
+            DB::beginTransaction();
+            $companyAddress = $this->find($id);
+            $companyAddress->update($data);
+            $companyAddress->branch()->update($latAndLong);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException(__("validation.update-not-successful"));
+        }
         return $companyAddress->fresh();
     }
 

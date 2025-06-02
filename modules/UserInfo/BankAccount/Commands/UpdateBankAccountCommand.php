@@ -17,7 +17,7 @@ class UpdateBankAccountCommand
         private string $account_number,
         private string $iban,
         private string $swift_bic,
-        private string $type,
+        private string $type_id,
     ) {
     }
 
@@ -36,7 +36,7 @@ class UpdateBankAccountCommand
             'account_number' => $this->account_number,
             'iban' => $this->iban,
             'swift_bic' => $this->swift_bic,
-            'type'=> $this->type,
+            'type_id'=> $this->type_id,
         ]);
     }
 }

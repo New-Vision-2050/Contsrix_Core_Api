@@ -15,7 +15,7 @@ class UpdateUserRelativeRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'marital_status'=> 'required|string',
+            'marital_status_id'=> 'required|string',
             'relationship'=> 'required|string',
             'phone'=> 'required|string',
         ];
@@ -25,7 +25,7 @@ class UpdateUserRelativeRequest extends FormRequest
         return [
             'name.required' => __('validation.user_relative.name_required'),
             'user_id.required' => __('validation.user_relative.user_id_required'),
-            'marital_status.required' => __('validation.user_relative.marital_status_required'),
+            'marital_status_id.required' => __('validation.user_relative.marital_status_id_required'),
             'relationship.required' => __('validation.user_relative.relationship_required'),
             'phone.required' => __('validation.user_relative.phone_required'),
         ];
@@ -35,7 +35,7 @@ class UpdateUserRelativeRequest extends FormRequest
         return new UpdateUserRelativeCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
-            marital_status:$this->get('marital_status'),
+            marital_status_id:$this->get('marital_status_id'),
             relationship:$this->get('relationship'),
             phone:$this->get('phone'),
         );

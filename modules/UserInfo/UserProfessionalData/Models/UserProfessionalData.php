@@ -38,7 +38,7 @@ class UserProfessionalData extends Model
         'global_id',
         'branch_id',
         'management_id',
-        'department_id',
+//        'department_id',
         'job_type_id',
         'job_title_id',
         'job_code',
@@ -80,7 +80,7 @@ class UserProfessionalData extends Model
 
     public function jobTitle()
     {
-        return $this->belongsTo(JobTitle::class);
+        return $this->belongsTo(JobTitle::class)->withoutGlobalScope("active");
     }
 
     public function user()//TODO under Testing not used up till now

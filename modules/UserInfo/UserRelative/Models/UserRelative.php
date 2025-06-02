@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserRelative\Database\factories\UserRelativeFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Country\Models\Country;
+use Modules\Shared\MaritalStatus\Models\MaritalStatus;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -31,7 +32,7 @@ class UserRelative extends Model
         'name',
         'company_id',
         'global_id',
-        'marital_status',
+        'marital_status_id',
         'relationship',
         'phone',
     ];
@@ -47,5 +48,9 @@ class UserRelative extends Model
     public function country()
     {
         return $this->belongsTo(Country::class);
+    }
+    public function maritalStatus()
+    {
+        return $this->belongsTo(MaritalStatus::class);
     }
 }

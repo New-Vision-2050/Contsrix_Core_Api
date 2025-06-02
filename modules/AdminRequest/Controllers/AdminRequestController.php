@@ -29,12 +29,9 @@ class AdminRequestController extends Controller
 
     public function index(GetAdminRequestListRequest $request): JsonResponse
     {
-        $list = $this->adminRequestService->list(
-            (int)$request->get('page', 1),
-            (int)$request->get('per_page', 10)
-        );
+        $list = $this->adminRequestService->list();
 
-        return Json::items(AdminRequestPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        return Json::items(AdminRequestPresenter::collection($list));
     }
 
     public function show(GetAdminRequestRequest $request): JsonResponse

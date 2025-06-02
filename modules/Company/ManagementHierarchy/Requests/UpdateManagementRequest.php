@@ -19,12 +19,13 @@ class UpdateManagementRequest extends FormRequest
         return [
             'name' => 'required|string',
             'branch_id' => 'required|exists:management_hierarchies,id,type,branch',
+            'management_id' => 'required|exists:management_hierarchies,id,type,management',
             'description' => 'required|string',
             'is_active' => 'required|in:1,0',
-            "deputy_manager_ids" => "required|array",
+            "deputy_manager_ids" => "nullable|array",
             "deputy_manager_ids.*" => "required|exists:users,id",
-            "reference_user_id" => "required|exists:users,id",
-            "manager_id" => "required|exists:users,id"
+            "reference_user_id" => "nullable|exists:users,id",
+            "manager_id" => "nullable|exists:users,id"
         ];
     }
 
@@ -35,12 +36,13 @@ class UpdateManagementRequest extends FormRequest
             id: (int)$this->route('id'),
             name: $this->get('name'),
             branchId: (int)$this->get('branch_id'),
+            managementId: (int)$this->get('management_id'),
             companyId: Uuid::fromString($company->id),
             description: $this->get('description'),
             isActive: (int)$this->get('is_active'),
             deputyManagerIds: $this->get('deputy_manager_ids'),
-            referenceUserId: Uuid::fromString($this->get('reference_user_id')),
-            managerId: Uuid::fromString($this->get('manager_id'))
+            referenceUserId: $this->get("reference_user_id")?Uuid::fromString($this->get('reference_user_id')):null,
+            managerId: $this->get("manager_id")?Uuid::fromString($this->get('manager_id')):null
         );
     }
 }

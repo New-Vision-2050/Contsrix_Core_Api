@@ -41,7 +41,8 @@ class ManagementHierarchyDetail extends Model
         "id",
         "description",
         "reference_user_id",
-        "management_hierarchy_id"
+        "management_hierarchy_id",
+        "branch_id"
     ];
 
     protected $casts = [

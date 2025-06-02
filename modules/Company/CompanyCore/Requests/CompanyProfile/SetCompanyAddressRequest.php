@@ -26,6 +26,22 @@ class SetCompanyAddressRequest extends FormRequest
             ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'country_id.required' => __('validation.address.country_id.required'),
+            'country_id.exists' => __('validation.address.country_id.exists'),
+            'state_id.required' => __('validation.address.state_id.required'),
+            'state_id.exists' => __('validation.address.state_id.exists'),
+            'city_id.required' => __('validation.address.city_id.required'),
+            'city_id.exists' => __('validation.address.city_id.exists'),
+            'neighborhood_name.required' => __('validation.address.neighborhood_name.required'),
+            'street_name.required' => __('validation.address.street_name.required'),
+            'building_number.required' => __('validation.address.building_number.required'),
+            'additional_phone.required' => __('validation.address.additional_phone.required'),
+            'postal_code.required' => __('validation.address.postal_code.required'),
+        ];
+    }
     public function createSetCompanyAddressCommand(): SetCompanyAddressCommand
     {
         return new SetCompanyAddressCommand(
@@ -38,6 +54,8 @@ class SetCompanyAddressRequest extends FormRequest
             buildingNumber: $this->get('building_number'),
             addtionalPhone: $this->get('additional_phone'),
             postalCode: $this->get('postal_code'),
+            latitude: $this->get("latitude"),
+            longitude: $this->get("longitude")
         );
     }
 }

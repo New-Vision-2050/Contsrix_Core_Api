@@ -39,7 +39,7 @@ class EmploymentContractPresenter extends AbstractPresenter
             'annual_leave' => $this->employmentContract->annual_leave,
             'country_id' => $this->employmentContract->country_id,
             'country_name' => $this->employmentContract->country->name,
-            'files' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+            'files' => MediaPresenter::collection($this->employmentContract->getMedia('upload_employment_contracts')),
 
             'type_working_hour'  => $this->employmentContract->typeWorkingHour ?(new TypeWorkingHourPresenter($this->employmentContract->typeWorkingHour))->getData() : null,
             'right_terminate'  => $this->employmentContract->rightTerminate ?(new RightTerminatePresenter($this->employmentContract->rightTerminate))->getData() : null,
