@@ -81,4 +81,9 @@ class CompanyOfficialDocument extends Model implements HasMedia
     {
         return $this->morphMany(ActivityLog::class, "requestable");
     }
+    public function  companyLegalData()
+    {
+        return $this->belongsTo(CompanyLegalData::class);
+    }
+
 }

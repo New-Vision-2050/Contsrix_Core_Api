@@ -471,4 +471,16 @@ return [
     'user-identity-error' => 'رقم الهوية مستخدم بالفعل من قبل مستخدم آخر.',
     'user-identity-success' => 'رقم الهوية صالح.',
 
+
+    'professional_bodie_id_required' => 'رقم الجهة المهنية مطلوب.',
+    'accreditation_name_required' => 'اسم الاعتماد مطلوب.',
+    'accreditation_number_required' => 'رقم الاعتماد مطلوب.',
+    'accreditation_degree_required' => 'درجة الاعتماد مطلوبة.',
+    'date_obtain_required' => 'تاريخ الحصول على الشهادة مطلوب.',
+    'date_obtain_date' => 'تاريخ الحصول على الشهادة يجب أن يكون تاريخًا صحيحًا.',
+    'date_end_required' => 'تاريخ انتهاء الشهادة مطلوب.',
+    'date_end_date' => 'تاريخ انتهاء الشهادة يجب أن يكون تاريخًا صحيحًا.',
+    'graduation_date_date' => 'يجب أن يكون تاريخ التخرج تاريخًا صحيحًا.',
+
+
 ];

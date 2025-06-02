@@ -38,10 +38,14 @@ class JobOfferCRUDService
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
 
+        if (empty($inputFile)) {
+            $jobOffer->clearMediaCollection('upload_employment_contracts');
+        }
+
         $this->fileDeletedService->deleteFile(
             $jobOffer,
             $inputFile,
-            collectionName: 'upload_offerjob'
+            'upload_offerjob'
         );
 
         if ($file) {
