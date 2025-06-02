@@ -150,38 +150,6 @@ class CompanyUserController extends Controller
 
     }
 
-    public function checkResidence()
-    {
-        $validations = $this->companyUserValidationService
-            ->validateResidence()
-            ->get();
-        return Json::item($validations);
-    }
-
-    public function checkPassport()
-    {
-        $validations = $this->companyUserValidationService
-            ->validatePassport()
-            ->get();
-        return Json::item($validations);
-    }
-
-    public function checkIdentity()
-    {
-        $validations = $this->companyUserValidationService
-            ->validateIdentity()
-            ->get();
-        return Json::item($validations);
-    }
-
-    public function checkBorderNumber()
-    {
-        $validations = $this->companyUserValidationService
-            ->validateBorderNumber()
-            ->get();
-        return Json::item($validations);
-    }
-
     public function update(UpdateCompanyUserRequest $request)//: JsonResponse
     {
         $command = $request->createUpdateCompanyUserCommand();
