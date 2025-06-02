@@ -493,4 +493,14 @@ return [
         'company_type_required' => 'The company type is required.',
         'company_type_exists' => 'The selected company type does not exist.',
     ],
+
+    'professional_bodie_id_required' => 'The professional body ID is required.',
+    'accreditation_name_required' => 'The accreditation name is required.',
+    'accreditation_number_required' => 'The accreditation number is required.',
+    'accreditation_degree_required' => 'The accreditation degree is required.',
+    'date_obtain_required' => 'The date of obtaining the certificate is required.',
+    'date_obtain_date' => 'The date of obtaining the certificate must be a valid date.',
+    'date_end_required' => 'The certificate expiry date is required.',
+    'date_end_date' => 'The certificate expiry date must be a valid date.',
+    'graduation_date_date' => 'Graduation date must be a valid date.',
 ];

@@ -25,6 +25,7 @@ class AdminRequestPresenter extends AbstractPresenter
 
         return [
             'id' => $this->adminRequest->id,
+            'serial_number' => $this->adminRequest->serial_number,
             'user_name' => $this->adminRequest->user->name,
             "data" => $this->adminRequest->data,
             "action" => $this->adminRequest->action,
