@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Events\Dispatcher;
 use Modules\Company\CompanyCore\Events\CompanyAddressUpdated;
 use Modules\Company\CompanyCore\Events\CompanyLegalDataUpdated;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Services\CompanyCacheService;
 
 /**
@@ -66,12 +67,17 @@ class CompanyDataChangeSubscriber
 
     public function handleBranchUpdated($event)
     {
-        $branch = $event->branch;
+        $branch = $event->managementHierarchy;
         $companyId = $branch->company_id;
         $branchId = $branch->id;
 
+        Company::query()->where('id', $companyId)->first()->branches()->each(function ($branch) use ($companyId, $branchId) {
+            $this->cacheService->clearCompanyCache($companyId, $branch->id);
+
+        });
+
+
         // Clear cache for this specific data type
-        $this->cacheService->clearCompanyCache($companyId, $branchId);
 
 
     }

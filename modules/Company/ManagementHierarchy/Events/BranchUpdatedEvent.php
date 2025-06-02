@@ -10,10 +10,10 @@ class BranchUpdatedEvent
 {
     use SerializesModels;
 
-    public ManagementHierarchy $data;
+    public ManagementHierarchy $managementHierarchy;
 
-    public function __construct(ManagementHierarchy $data)
+    public function __construct(ManagementHierarchy $managementHierarchy)
     {
-        $this->data = $data;
+        $this->managementHierarchy = $managementHierarchy;
     }
 }
