@@ -10,6 +10,9 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Rules\CompanyUserValidation;
 use Modules\CompanyUser\Rules\PhoneEmailConsistencyRule;
 use Modules\CompanyUser\Rules\UserNameValidation;
+use Modules\CompanyUser\Rules\ResidenceValidationRule;
+use Modules\CompanyUser\Rules\PassportValidationRule;
+use Modules\CompanyUser\Rules\IdentityValidationRule;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
@@ -39,9 +42,9 @@ class CreateCompanyUserRequest extends FormRequest
             ],
             'job_title_id' => 'required|exists:job_titles,id',
             'border_number' => 'nullable|unique:company_users,border_number',
-            'residence' => 'nullable|unique:company_users,residence',
-            'passport' => 'nullable|unique:company_users,passport',
-            'identity' => 'nullable|unique:company_users,identity',
+            'residence' => ['nullable', 'unique:company_users,residence', new ResidenceValidationRule($this->input('email'))],
+            'passport' => ['nullable', 'unique:company_users,passport', new PassportValidationRule($this->input('email'))],
+            'identity' => ['nullable', 'unique:company_users,identity', new IdentityValidationRule($this->input('email'))],
             'company_user_validation' => [new CompanyUserValidation($this->get('company_id'), $this->get('country_id'))],
 
 

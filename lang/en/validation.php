@@ -225,17 +225,6 @@ return [
     "broker-already-exist-in-thies-branches"=>'broker already exists in this branches',
 
 
-
-
-
-
-
-
-
-
-
-
-
     /*
     |--------------------------------------------------------------------------
     | Custom Validation Language Lines
@@ -355,6 +344,17 @@ return [
     'unauthenticated'     => 'Unauthenticated',
     'unauthorized'        => 'Unauthorized',
     'resource_not_found'  => 'Resource not found',
+
+    // New validation messages for residence, passport and identity
+    'residence_validation_error' => 'This residence number is already in use.',
+    'passport_validation_error' => 'This passport number is already in use.',
+    'identity_validation_error' => 'This identity number is already in use.',
+    'user-residence-error' => 'This residence number is already in use by another user.',
+    'user-residence-success' => 'Residence number is valid.',
+    'user-passport-error' => 'This passport number is already in use by another user.',
+    'user-passport-success' => 'Passport number is valid.',
+    'user-identity-error' => 'This identity number is already in use by another user.',
+    'user-identity-success' => 'Identity number is valid.',
 
     'user_id_required' => 'The user ID is required.',
     'job_offer_number_required' => 'The job offer number is required.',
