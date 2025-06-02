@@ -177,8 +177,7 @@ class ManagementHierarchyRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->find($id);
-            if (isset($branchData["parent_id"]) && $branchData["parent_id"] != null) {
-
+            if (isset($branchData["parent_id"]) && $branchData["parent_id"] != null && $id != $branchData["parent_id"]) {
                 $flag = 0;
                 $swapBranch = $this->findOneBy(["id" => $branchData["parent_id"]]);
                 //check circular
@@ -202,10 +201,9 @@ class ManagementHierarchyRepository extends BaseRepository
                 } else {
                     $managementHierarchy->update(["parent_id" => $branchData["parent_id"]]);
                 }
-
-                unset($branchData["parent_id"]);
-
             }
+            unset($branchData["parent_id"]);
+
             $managementHierarchy->update($branchData);
             $managementHierarchy->fresh();
 

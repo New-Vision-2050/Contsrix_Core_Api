@@ -22,12 +22,7 @@ class UpdateBranchRequest extends FormRequest
             'name' => 'required|string',
             'parent_id' => [
                 'nullable',
-                'exists:management_hierarchies,id,type,branch',
-                function ($attribute, $value, $fail)  {
-                    if ($value == $this->route('id')) {
-                        $fail(__("validation.self_parent"));
-                    }
-                }
+                'exists:management_hierarchies,id,type,branch'
             ],
             'manager_id' => 'required|exists:users,id',
             "phone" => "required|phone",
