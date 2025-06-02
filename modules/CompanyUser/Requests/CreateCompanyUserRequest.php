@@ -13,6 +13,7 @@ use Modules\CompanyUser\Rules\UserNameValidation;
 use Modules\CompanyUser\Rules\ResidenceValidationRule;
 use Modules\CompanyUser\Rules\PassportValidationRule;
 use Modules\CompanyUser\Rules\IdentityValidationRule;
+use Modules\CompanyUser\Rules\BorderNumberValidationRule;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
@@ -41,7 +42,7 @@ class CreateCompanyUserRequest extends FormRequest
                 'email'
             ],
             'job_title_id' => 'required|exists:job_titles,id',
-            'border_number' => 'nullable|unique:company_users,border_number',
+            'border_number' => ['nullable', 'unique:company_users,border_number', new BorderNumberValidationRule($this->input('email'))],
             'residence' => ['nullable', 'unique:company_users,residence', new ResidenceValidationRule($this->input('email'))],
             'passport' => ['nullable', 'unique:company_users,passport', new PassportValidationRule($this->input('email'))],
             'identity' => ['nullable', 'unique:company_users,identity', new IdentityValidationRule($this->input('email'))],
