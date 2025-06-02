@@ -41,23 +41,13 @@ class ManagementHierarchyDetail extends Model
         "id",
         "description",
         "reference_user_id",
-        "reference_department_id",
         "management_hierarchy_id",
-        "branch_id",
-        "is_copied"
+        "branch_id"
     ];
 
     protected $casts = [
         'reference_user_id' => 'string',
-        'reference_department_id' => 'string',
-        'is_copied' => 'boolean',
     ];
-
-
-    public function sourceManagementHierarchy()
-    {
-        return $this->belongsTo(SourceManagementHierarchy::class, "reference_department_id", "id");
-    }
 
 
     //example for nested set
@@ -104,22 +94,9 @@ class ManagementHierarchyDetail extends Model
         );
     }
 
-    public function referenceUser()
+    public function referanceUser()
     {
-        return $this->belongsTo(User::class, "reference_user_id", "id");
-    }
-
-    /**
-     * Get the reference department if this department was cloned
-     */
-    public function referenceDepartment()
-    {
-        return $this->belongsTo(ManagementHierarchy::class, "reference_department_id", "id");
-    }
-
-    public function branch()
-    {
-        return $this->belongsTo(ManagementHierarchy::class, "branch_id", "id");
+        return $this->belongsTo(User::class , "reference_user_id");
     }
 
     public function getRelationshipToPrimaryModel(): string

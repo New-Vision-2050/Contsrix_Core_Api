@@ -9,7 +9,6 @@ use App\Casts\UuidCast;
 use Modules\CompanyUser\Models\ClientDetail;
 use Modules\Setting\Models\LoginWay;
 use App\Traits\CustomBelongsToTenant;
-use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use BasePackage\Shared\Traits\UuidTrait;
@@ -198,10 +197,5 @@ class User extends Authenticatable implements JWTSubject, Auditable
     {
         return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
             ->where('type', operator: 'branch');
-    }
-
-    public function userProfessionalData()
-    {
-        return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_company_user_id')->where("company_id", "=", tenant("id"));
     }
 }

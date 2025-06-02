@@ -117,7 +117,7 @@ class CompanyRepository extends BaseRepository
 
     public function isUserNameExists(string $userName): bool
     {
-        return $this->model->where('user_name', $userName)->exists();
+        return $this->model->query()->withTrashed()->where('user_name', $userName)->exists();
     }
 
     public function isNameExists(string $name): bool

@@ -10,10 +10,10 @@ class UpdateCompanyUserDataInfoCommand
 {
     public function __construct(
         public string $name,
-        public string $nickname,
-        public string $gender,
-        public string $birthdate_gregorian,
-        public string $birthdate_hijri,
+        public ?string $nickname,
+        public ?string $gender,
+        public ?string $birthdate_gregorian,
+        public ?string $birthdate_hijri,
         public int $is_default,
         public string $nationality,
     ) {

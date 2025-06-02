@@ -11,7 +11,10 @@ class AdminRequestFilter extends SearchModelFilter
 {
     public $relations = [];
 
-
+    public function name($name)
+    {
+        return $this->where('name', $name);
+    }
     public function type($type)
     {
         return $this->where('request_type', $type);

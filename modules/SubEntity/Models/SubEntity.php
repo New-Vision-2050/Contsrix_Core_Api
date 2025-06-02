@@ -9,9 +9,8 @@ use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\RoleAndPermission\Models\Permission;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\SubEntity\Database\factories\SubEntityFactory;
 
 class SubEntity extends Model
@@ -44,17 +43,6 @@ class SubEntity extends Model
         'optional_attributes' => 'json',
     ];
 
-    public const PERMISSION_ACTIONS = [
-        'activate',
-        'create',
-        'update',
-        'delete',
-        'list',
-        'view',
-        'export',
-    ];
-
-
     protected static function booted(): void
     {
         static::creating(function (self $subEntity) {
@@ -67,10 +55,6 @@ class SubEntity extends Model
             if ($subEntity->isDirty('name') && isset($subEntity->name) && blank($subEntity->slug)) {
                 $subEntity->slug = static::generateUniqueSlug($subEntity->name, $subEntity->id);
             }
-        });
-
-        static::created(function (self $subEntity) {
-            $subEntity->createDefaultPermissions();
         });
     }
 
@@ -123,11 +107,6 @@ class SubEntity extends Model
         return $this->belongsTo(SubEntity::class, 'super_entity');
     }
 
-    public function children()
-    {
-        return $this->hasMany(self::class, 'super_entity')->where('is_active', true);
-    }
-
     public function registrationForm()
     {
         return $this->belongsTo(RegistrationForm::class, 'registration_form_id');
@@ -166,25 +145,5 @@ class SubEntity extends Model
         }
 
         return $current->super_entity;
-    }
-
-    protected function createDefaultPermissions(): void
-    {
-        if (!$this->mainProgram || !$this->slug) {
-            return;
-        }
-
-        $module = $this->mainProgram->slug;
-        $resource = $this->id;
-        $companyId = tenant("id");
-
-        foreach (self::PERMISSION_ACTIONS as $action) {
-            Permission::firstOrCreate([
-                'name' => "{$module}.{$resource}.{$action}",
-            ], [
-                'status' => true,
-                "company_id" => $companyId
-            ]);
-        }
     }
 }

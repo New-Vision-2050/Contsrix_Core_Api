@@ -15,7 +15,6 @@ use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
-use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Shared\Media\Services\FileDeletedService;
 
@@ -26,7 +25,6 @@ use Modules\Shared\Media\Services\FileDeletedService;
  */
 class CompanyLegalDataRepository extends BaseRepository
 {
-    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(
         CompanyLegalData $model,
         private FileUploadService $fileUploadService,
@@ -36,10 +34,7 @@ class CompanyLegalDataRepository extends BaseRepository
     {
         parent::__construct($model);
     }
-    public function getCompanyLegalData($id): ?CompanyLegalData
-    {
-       return $this->model->find($id);
-    }
+
     public function createCompanyLegalData(array $data, $file): CompanyLegalData
     {
         try {
@@ -64,11 +59,19 @@ class CompanyLegalDataRepository extends BaseRepository
         try {
             DB::beginTransaction();
 
+            // Get optional branch_id from request
+            $branchId = request()->get('branch_id');
+            $companyId = request()->get('company_id')??request()->header('X-Tenant') ;
+            // Get legal data scoped by branch if branch_id is provided
+            $legalDataQuery = $this->model;
 
-            [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-            $branchId = $branch->id;
-
-            $legalDataQuery = $this->model->where('management_hierarchy_id', $branchId);
+            if ($branchId) {
+                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
+            }else{
+                $branch =  $this->managementHierarchyRepository->getMainBranchForCompany($companyId);
+                $branchId = $branch->id;
+                $legalDataQuery = $legalDataQuery->where('management_hierarchy_id', $branchId);
+            }
 
             $legalDataCollection = $legalDataQuery->get();
 

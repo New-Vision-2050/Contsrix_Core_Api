@@ -22,23 +22,16 @@ use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
-use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
-use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Country\Repositories\CityRepository;
 use Modules\Country\Repositories\CountryRepository;
 use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
-use Modules\Shared\OpenRouter\Services\OpenRouterGeoService;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Uuid;
-
 class CompanyProfileService
 {
-    use PreDeclareComapnyAndBranchDependOnReqeuest;
-
     public function __construct(
         private AdminRequestRepository            $adminRequestRepository,
         private FileUploadService                 $fileUploadService,
@@ -49,8 +42,6 @@ class CompanyProfileService
         private CityRepository                    $cityRepository,
         private StateRepository                   $stateRepository,
         private CountryRepository                 $countryRepository,
-        private OpenRouterGeoService              $openRouterGeoService,
-        private ManagementHierarchyRepository     $managementHierarchyRepository
 
 
     )
@@ -64,7 +55,7 @@ class CompanyProfileService
             data: $companyDataRequestDTO->toArray() + ["id" => $companyDataRequestDTO->getId()],
             requestType: "companyOfficialDataUpdate",
             action: ["ar" => "طلب تعديل البيانات الرسميه للشركة", "en" => "Company official data update request"],
-            file: $companyDataRequestDTO->getFile(), notes: $companyDataRequestDTO->getNotes()
+            notes: $companyDataRequestDTO->getNotes(), file:$companyDataRequestDTO->getFile()
         );
         return $adminRequest;
 
@@ -90,29 +81,29 @@ class CompanyProfileService
 
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
-        $isAiSupported = false  ;
+
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
         $neighborhood = "";
-        $cities = [];
-        $stateName = "";
-        $countryShortName = "";
+        $city = "";
+        $state = "";
+
+        $country = "";
         $postalCode = "";
         $route = "";
-
         foreach ($response['results'] as $key => $value) {
             if ($value['types'][0] == "political") {
                 $neighborhood = $value["address_components"][0]["long_name"];
             }
-            if ($value['types'][0] == "administrative_area_level_2" || $value['types'][0] == "locality") {
-                $cities[] = $value["address_components"][0]["long_name"];
+            if ($value['types'][0] == "locality") {
+                $city = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "administrative_area_level_1") {
-                $stateName = $value["address_components"][0]["long_name"];
+                $state = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "country") {
-                $countryShortName = $value["address_components"][0]["short_name"];
+                $country = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "postal_code") {
@@ -122,62 +113,25 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
-        $cityName = implode(',',$cities);
-        [$country, $state, $city] = $this->getFromDB($countryShortName, $cityName, $stateName);
-        // Use OpenRouter to get location data for additional verification
-
+        [$country, $state, $city] = $this->getFromDB($country, $city, $state);
         if ($country) {
-            if ((!request()->has("in_general") || request()->in_general == 0) && ($country->id != $geoCodingDTO->getBranch()->address->country_id)) {
+
+            if ((!request()->has("in_general")|| request()->in_general == 0) &&($country->id != $geoCodingDTO->getBranch()->address->country_id)) {
                 throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
 
             }
         }
         [$neighborhood, $route] = $this->getTranslatedNighborhoodAndRoute($geoCodingDTO->getLatitude(), $geoCodingDTO->getLongitude());
 
-        if(empty($state) && !empty($city) && !empty($country)){
-            $state = $city->state;
-        }
-        if(empty($state) || empty($city) || true){
-            try {
-                $data = $this->openRouterGeoService->getLocationFromOpenRouter(
-                    $geoCodingDTO,
-                    $this->stateRepository->getStatesWithCities(
-                        $country->id
-                    ),
-                    $cityName,
-                    $stateName
-                );
-
-                $locationData = (json_decode($data['data']['location_content'], true));
-
-                if($locationData['recommended_city']['add_or_rename']) {
-                    $state = $this->stateRepository->getState($locationData['state_id']);
-                    $locationData['recommended_city']['state_code'] = $state->iso2;
-                    $locationData['recommended_city']['state_id'] = $state->id;
-                    $locationData['recommended_city']['country_id'] = $country->id;
-                    $locationData['recommended_city']['country_code'] = $country->iso2;
-                    $city = $this->cityRepository->createCity($locationData['recommended_city']);
-                }
-                else{
-                    $city = $this->cityRepository->getCity($locationData['city_id']);
-                }
-
-                $state = $city->state;
-                $isAiSupported = true;
-            }catch (\Exception $e){
-            }
-        }
-        // Return the location data along with comparison results
-        $locationData = [
+        return [
             $country,
             $state,
             $city,
             $neighborhood,
             $postalCode,
             $route,
-            $isAiSupported
         ];
-        return $locationData;
+
     }
 
     private function getFromDB($country, $city, $state)
@@ -208,10 +162,8 @@ class CompanyProfileService
      */
     public function getCompanyLegalDataForCompany()
     {
-        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-
-        $companyLegalData = $this->companyLegalDataRepository->findBy(["company_id" => $company->id, "management_hierarchy_id" => $branch->id]);
-        return $companyLegalData;
+        $company = $this->companyRepository->getCurrentCompany();
+        return $company->companyLegalData;
     }
 
     /**
@@ -221,9 +173,8 @@ class CompanyProfileService
      */
     public function getCompanyAddressForCompany()
     {
-        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-
-        $address = $this->companyAddressRepository->findOneBy(["company_id" => $company->id, "management_hierarchy_id" => $branch->id]);
+        $company = $this->companyRepository->getCurrentCompany();
+        $address = $company->companyAddress;
 
         if ($address) {
             $address->country_name = $address->country?->name;
@@ -247,9 +198,8 @@ class CompanyProfileService
      */
     public function getCompanyOfficialDocumentsForCompany()
     {
-        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-        $companyOfficialDocuments = $this->companyOfficialDocumentRepository->findBy(["company_id" => $company->id, "management_hierarchy_id" => $branch->id]);
-        return $companyOfficialDocuments;
+        $company = $this->companyRepository->getCurrentCompany();
+        return $company->companyOfficialDocuments;
     }
 
     /**
@@ -259,9 +209,8 @@ class CompanyProfileService
      */
     public function getCompanyBranchesForCompany()
     {
-        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-        $branches = $this->managementHierarchyRepository->findByWithRelations(["type" => "branch", "company_id" => $company->id], ["address"]);
-        return $branches;
+        $company = $this->companyRepository->getCurrentCompany();
+        return $company->branches;
     }
 
     public function geoCodingUsingNationalAddressKSA(GeoCodingDTO $geoCodingDTO)
@@ -367,7 +316,7 @@ class CompanyProfileService
 
         if ($fileSizeInMB > $maxSizeInMB) {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 0, "validate" => "required"]);
-            $flag = 0;
+            $flag=0;
         } else {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 1, 'validate' => 'required']);
         }
@@ -380,18 +329,18 @@ class CompanyProfileService
             array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1, "validate" => "required"]);
         } else {
             array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0, "validate" => "required"]);
-            $flag = 0;
+            $flag=0;
         }
 
         $result = $this->checkImage($image);
 
         if ($result === 0) {
             array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0, "validate" => "required"]);
-            $flag = 0;
+            $flag=0;
         } else {
             array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1, "validate" => "required"]);
         }
-        return [$errors, $flag];
+        return [$errors,$flag];
     }
 
 
@@ -416,14 +365,13 @@ class CompanyProfileService
 
         return $company;
     }
-
     public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
 //        return
 
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
-            userId: Uuid::fromString((string)auth()->user()->id),
-            id: (string)$companyDataRequestDTO->getId(),
+            userId: Uuid::fromString((string) auth()->user()->id),
+            id: (string) $companyDataRequestDTO->getId(),
             data: $companyDataRequestDTO->toArray(),
             requestType: "companyLegalDataUpdate",
             action: ["ar" => "طلب تعديل البيانات القانونيه للشركة", "en" => "Company legal data update request"],
@@ -434,7 +382,7 @@ class CompanyProfileService
 
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
-        $companyData = $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+        $companyData =  $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
         event(new CompanyLegalDataCreated($companyData));
         return $companyData;
     }

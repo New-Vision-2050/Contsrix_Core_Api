@@ -13,9 +13,6 @@ use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Rules\CompanyUserValidation;
 use Modules\CompanyUser\Rules\PhoneEmailConsistencyRule;
 use Modules\CompanyUser\Rules\UserNameValidation;
-use Modules\CompanyUser\Rules\ResidenceValidationRule;
-use Modules\CompanyUser\Rules\PassportValidationRule;
-use Modules\CompanyUser\Rules\IdentityValidationRule;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
@@ -25,8 +22,6 @@ class CreateBrokerRequest extends FormRequest
 
     public function rules(): array
     {
-        $email = $this->input('email');
-
         return [
             'name' => ['required', 'string', new UserNameValidation()],
 
@@ -45,13 +40,13 @@ class CreateBrokerRequest extends FormRequest
 
             'phone' => [
                 'required',"phone"
-                , new PhoneEmailConsistencyRule($email)
+//                , new PhoneEmailConsistencyRule($this->input('email'))
             ],
             'email' => [
                 'required',
                 'email'
             ],
-            'residence' => ['nullable', new ResidenceValidationRule($email)],
+            'residence' => 'nullable',
             "branch_ids" => "nullable|array",
             "branch_ids.*" => "exists:management_hierarchies,id,type,branch",
             "latitude" => "nullable",

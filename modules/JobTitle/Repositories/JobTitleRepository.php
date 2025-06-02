@@ -47,15 +47,6 @@ class JobTitleRepository extends BaseRepository
         return $this->model->filter(request()->all())->get();
     }
 
-    /**
-     * Get job titles filtered by job type IDs
-     */
-    public function getJobTitlesByJobTypeIds(array $jobTypeIds): Collection
-    {
-        return $this->model->whereIn('job_type_id', $jobTypeIds)
-                          ->filter(request()->all())
-                          ->get();
-    }
 
     public function getJobTitle(UuidInterface $id): JobTitle
     {

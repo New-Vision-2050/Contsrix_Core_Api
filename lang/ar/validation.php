@@ -72,7 +72,6 @@ return [
     'job_type_id_required' => 'حقل نوع الوظيفة مطلوب.',
     'job_title_id_required' => 'حقل المسمى الوظيفي مطلوب.',
     'job_code_required' => 'حقل كود الوظيفة مطلوب.',
-    "self_parent"=>"لا يمكن الفرع هو نفس الاب",
 
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
@@ -176,8 +175,6 @@ return [
     "identity-or-passport-required" => "يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required" => "يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found" => "الشركة غير موجودة",
-    "management-not-found" => "الادارة غير موجودة",
-    "company-not-active" => "الشركة غير نشطة",
     "branch-not-found" => "الفرع غير موجود",
     "integrity-error" => "البيانات غير موحدة ",
     "login-way-not-found" => "طريقة الدخول غير موجودة",
@@ -267,7 +264,6 @@ return [
         'file_required' => 'الملف مطلوب.',
         'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
         'regestration_number_required' => 'رقم التسجيل مطلوب لهذا النوع.',
-        'start_date_less_than_8_days' => 'يجب أن يكون تاريخ البدء أكثر من 8 أيام قبل تاريخ الانتهاء.',
     ],
 
 
@@ -465,30 +461,4 @@ return [
         'company_type_required' => 'نوع الشركة مطلوب.',
         'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
     ],
-    'residence_validation_error' => 'رقم الإقامة مستخدم بالفعل.',
-    'passport_validation_error' => 'رقم جواز السفر مستخدم بالفعل.',
-    'identity_validation_error' => 'رقم الهوية مستخدم بالفعل.',
-    'border_number_validation_error' => 'رقم الحدود مستخدم بالفعل.',
-    'user-residence-error' => 'رقم الإقامة مستخدم بالفعل من قبل مستخدم آخر.',
-    'user-residence-success' => 'رقم الإقامة صالح.',
-    'user-passport-error' => 'رقم جواز السفر مستخدم بالفعل من قبل مستخدم آخر.',
-    'user-passport-success' => 'رقم جواز السفر صالح.',
-    'user-identity-error' => 'رقم الهوية مستخدم بالفعل من قبل مستخدم آخر.',
-    'user-identity-success' => 'رقم الهوية صالح.',
-    'user-border-number-error' => 'رقم الحدود مستخدم بالفعل من قبل مستخدم آخر.',
-    'user-border-number-success' => 'رقم الحدود صالح.',
-
-    'professional_bodie_id_required' => 'رقم الجهة المهنية مطلوب.',
-    'accreditation_name_required' => 'اسم الاعتماد مطلوب.',
-    'accreditation_number_required' => 'رقم الاعتماد مطلوب.',
-    'accreditation_degree_required' => 'درجة الاعتماد مطلوبة.',
-    'date_obtain_required' => 'تاريخ الحصول على الشهادة مطلوب.',
-    'date_obtain_date' => 'تاريخ الحصول على الشهادة يجب أن يكون تاريخًا صحيحًا.',
-    'date_end_required' => 'تاريخ انتهاء الشهادة مطلوب.',
-    'date_end_date' => 'تاريخ انتهاء الشهادة يجب أن يكون تاريخًا صحيحًا.',
-    'graduation_date_date' => 'يجب أن يكون تاريخ التخرج تاريخًا صحيحًا.',
-
-    'admin_account_cannot_be_deleted' => 'لا يمكن حذف حساب المسؤول.',
-    'cannot_delete_yourself' => 'لا يمكنك حذف حسابك الشخصي.',
-    'cannot_delete_company_owner' => 'لا يمكن حذف حساب مالك الشركة.',
 ];

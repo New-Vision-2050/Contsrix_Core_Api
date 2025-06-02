@@ -160,8 +160,6 @@ return [
         'string' => 'The :attribute field must be :size characters.',
     ],
     'starts_with' => 'The :attribute field must start with one of the following: :values.',
-
-    "self_parent"=>"self parent is not allowed",
     'string' => 'The :attribute field must be a string.',
     'timezone' => 'The :attribute field must be a valid timezone.',
     'unique' => 'The :attribute has already been taken.',
@@ -202,8 +200,6 @@ return [
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
-    "management-not-found"=>"management not found",
-    "company-not-active"=>"company not active",
     "branch-not-found"=>"branch not found",
     "integrity-error"=>"integrity error",
     "login-way-not-found"=>"login way not found",
@@ -227,6 +223,17 @@ return [
     "client-already-exist-in-thies-branches"=>'client already exists in this branches',
     "employee-already-exist"=>'employee already exists in this branches',
     "broker-already-exist-in-thies-branches"=>'broker already exists in this branches',
+
+
+
+
+
+
+
+
+
+
+
 
 
     /*
@@ -293,7 +300,7 @@ return [
         'file_required' => 'A file is required.',
         'file_mimes' => 'The file must be one of the following types: pdf, jpeg, jpg, png, doc, docx.',
         'regestration_number_required' => 'The registration number is required for this type.',
-        'start_date_less_than_8_days' => 'The start date must be at least 8 days before the end date.',
+
     ],
     'company' => [
         'name_required' => 'Company name is required.',
@@ -348,20 +355,6 @@ return [
     'unauthenticated'     => 'Unauthenticated',
     'unauthorized'        => 'Unauthorized',
     'resource_not_found'  => 'Resource not found',
-
-    // New validation messages for residence, passport and identity
-    'residence_validation_error' => 'Residence number is already used.',
-    'passport_validation_error' => 'Passport number is already used.',
-    'identity_validation_error' => 'Identity number is already used.',
-    'border_number_validation_error' => 'Border number is already used.',
-    'user-residence-error' => 'Residence number is already used by another user.',
-    'user-residence-success' => 'Residence number is valid.',
-    'user-passport-error' => 'Passport number is already used by another user.',
-    'user-passport-success' => 'Passport number is valid.',
-    'user-identity-error' => 'Identity number is already used by another user.',
-    'user-identity-success' => 'Identity number is valid.',
-    'user-border-number-error' => 'Border number is already used by another user.',
-    'user-border-number-success' => 'Border number is valid.',
 
     'user_id_required' => 'The user ID is required.',
     'job_offer_number_required' => 'The job offer number is required.',
@@ -497,19 +490,4 @@ return [
         'company_type_required' => 'The company type is required.',
         'company_type_exists' => 'The selected company type does not exist.',
     ],
-
-    'professional_bodie_id_required' => 'The professional body ID is required.',
-    'accreditation_name_required' => 'The accreditation name is required.',
-    'accreditation_number_required' => 'The accreditation number is required.',
-    'accreditation_degree_required' => 'The accreditation degree is required.',
-    'date_obtain_required' => 'The date of obtaining the certificate is required.',
-    'date_obtain_date' => 'The date of obtaining the certificate must be a valid date.',
-    'date_end_required' => 'The certificate expiry date is required.',
-    'date_end_date' => 'The certificate expiry date must be a valid date.',
-    'graduation_date_date' => 'Graduation date must be a valid date.',
-
-    // Company user deletion validation messages
-    'admin_account_cannot_be_deleted' => 'The admin account cannot be deleted.',
-    'cannot_delete_yourself' => 'You cannot delete your own account.',
-    'cannot_delete_company_owner' => 'A company owner account cannot be deleted.',
 ];
