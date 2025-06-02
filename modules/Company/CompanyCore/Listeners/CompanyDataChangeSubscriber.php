@@ -110,7 +110,7 @@ class CompanyDataChangeSubscriber
         );
 
         $events->listen(
-            'Modules\Company\ManagementHierarchy\Events\BranchUpdated',
+            'Modules\Company\ManagementHierarchy\Events\BranchUpdatedEvent',
             [CompanyDataChangeSubscriber::class, 'handleBranchUpdated']
         );
     }

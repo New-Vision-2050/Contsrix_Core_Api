@@ -9,6 +9,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\Company\ManagementHierarchy\Events\BranchUpdatedEvent;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -113,6 +114,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $this->createManagement(["company_id" => $managementHierarchy->company_id,"parent_id"=>$managementHierarchy->id, "is_main"=>1,"name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management","manager_id"=>$managementHierarchy->manager_id,"phone"=>$managementHierarchy->phone,"phone_code"=>$managementHierarchy->phone_code, "email"=>$managementHierarchy->email], ["description"=>"الادارة العامة","branch_id"=>$managementHierarchy->id],[]);
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
+            event(new BranchUpdatedEvent($managementHierarchy->fresh()));
 
 
             DB::commit();
@@ -180,6 +182,9 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy->fresh();
 
             $managementHierarchy->address()->update($addressData);
+
+            event(new BranchUpdatedEvent($managementHierarchy->fresh()));
+
 
             DB::commit();
         } catch (\Exception $e) {
