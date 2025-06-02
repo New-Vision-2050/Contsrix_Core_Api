@@ -14,6 +14,9 @@ use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Rules\CompanyUserValidation;
 use Modules\CompanyUser\Rules\PhoneEmailConsistencyRule;
 use Modules\CompanyUser\Rules\UserNameValidation;
+use Modules\CompanyUser\Rules\ResidenceValidationRule;
+use Modules\CompanyUser\Rules\PassportValidationRule;
+use Modules\CompanyUser\Rules\IdentityValidationRule;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
@@ -40,7 +43,6 @@ class CreateEmployeeRequest extends FormRequest
             'job_title_id' => 'nullable|exists:job_titles,id',
             "status" => 'nullable|in:1,0',
             'country_id' => 'nullable|exists:countries,id',
-
 
 
 

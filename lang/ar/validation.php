@@ -461,4 +461,14 @@ return [
         'company_type_required' => 'نوع الشركة مطلوب.',
         'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
     ],
+    'residence_validation_error' => 'رقم الإقامة مستخدم بالفعل.',
+    'passport_validation_error' => 'رقم جواز السفر مستخدم بالفعل.',
+    'identity_validation_error' => 'رقم الهوية مستخدم بالفعل.',
+    'user-residence-error' => 'رقم الإقامة مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-residence-success' => 'رقم الإقامة صالح.',
+    'user-passport-error' => 'رقم جواز السفر مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-passport-success' => 'رقم جواز السفر صالح.',
+    'user-identity-error' => 'رقم الهوية مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-identity-success' => 'رقم الهوية صالح.',
+
 ];
