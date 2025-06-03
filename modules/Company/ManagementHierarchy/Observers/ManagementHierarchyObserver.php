@@ -107,8 +107,8 @@ class ManagementHierarchyObserver
             'email' => $managementHierarchy->email,
             'latitude' => $managementHierarchy->latitude,
             'longitude' => $managementHierarchy->longitude,
-            'is_first_branch' => $managementHierarchy->is_first_branch, // Specific to branches
-            'is_main' => $managementHierarchy->is_main,
+            'is_first_branch' => $managementHierarchy->is_first_branch??0, // Specific to branches
+            'is_main' => $managementHierarchy->is_main??0,
         ];
     }
 }

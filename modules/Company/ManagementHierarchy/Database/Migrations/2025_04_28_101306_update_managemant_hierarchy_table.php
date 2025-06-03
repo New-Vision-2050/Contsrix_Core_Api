@@ -9,8 +9,8 @@ return new class extends Migration
     public function up()
     {
         Schema::table('management_hierarchies', function (Blueprint $table) {
-             $table->dropColumn("id");
-             $table->id()->first();
+//             $table->dropColumn("id");
+//             $table->id()->first();
         });
     }
 };
