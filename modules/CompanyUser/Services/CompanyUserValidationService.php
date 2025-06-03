@@ -78,7 +78,7 @@ class CompanyUserValidationService
             $userInCompany = $this->userRepository->findOneBy(["email" => request()->email, "company_id" => tenant("id")]);
             $role = request()->has("role") ? request()->role : 1;
             $companyUserCompany = $this->userRepository->getUserByGlobalIdWithBranches($userInCompany?->global_company_user_id, $role);
-
+            tenancy()->end();
             $this->errors[] = [
                 'sentence' => __("validation.user-email-error", ["name" => $user->name]),
                 'sub_title' => 'email',
@@ -94,6 +94,7 @@ class CompanyUserValidationService
                 "name"=>$user->name,
                 "job_title_id"=>$user->job_title_id,
                 "identity"=>$user->identity ,
+                "country_id"=>$user->country_id
             ];
         } else {
             $this->errors[] = [
@@ -105,6 +106,7 @@ class CompanyUserValidationService
                 'validate' => 'required'
             ];
         }
+
         return $this;
     }
 
