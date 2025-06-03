@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Modules\Company\ManagementHierarchy\Listeners\CreateHierarchyListener;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Observers\ManagementHierarchyObserver;
 
 class ManagementHierarchyServiceProvider extends ModuleServiceProvider
 {
@@ -24,6 +26,7 @@ class ManagementHierarchyServiceProvider extends ModuleServiceProvider
         $this->registerMigrations();
 
         Event::listen(CompanyCreatedEvent::class,CreateHierarchyListener::class );
+        ManagementHierarchy::observe(ManagementHierarchyObserver::class);
     }
 
     public function register(): void
