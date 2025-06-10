@@ -22,7 +22,19 @@ class UpdateProfessionalCertificateRequest extends FormRequest
             'date_end'=> 'required|date',
         ];
     }
-
+public function messages(): array
+{
+    return [
+        'professional_bodie_id.required' => __('validation.professional_bodie_id_required'),
+        'accreditation_name.required' => __('validation.accreditation_name_required'),
+        'accreditation_number.required' => __('validation.accreditation_number_required'),
+        'accreditation_degree.required' => __('validation.accreditation_degree_required'),
+        'date_obtain.required' => __('validation.date_obtain_required'),
+        'date_obtain.date' => __('validation.date_obtain_date'),
+        'date_end.required' => __('validation.date_end_required'),
+        'date_end.date' => __('validation.date_end_date'),
+    ];
+}
     public function createUpdateProfessionalCertificateCommand(): UpdateProfessionalCertificateCommand
     {
         return new UpdateProfessionalCertificateCommand(
