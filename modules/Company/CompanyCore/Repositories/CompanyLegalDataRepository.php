@@ -34,7 +34,10 @@ class CompanyLegalDataRepository extends BaseRepository
     {
         parent::__construct($model);
     }
-
+    public function getCompanyLegalData($id): ?CompanyLegalData
+    {
+       return $this->model->find($id);
+    }
     public function createCompanyLegalData(array $data, $file): CompanyLegalData
     {
         try {

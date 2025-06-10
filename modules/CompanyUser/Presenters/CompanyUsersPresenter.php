@@ -31,6 +31,7 @@ class CompanyUsersPresenter extends AbstractPresenter
             "phone"=>$this->companyUser->users()->where("company_id", $this->company->id)->first()?->phone,
             "logo"=> $this->company->getFirstMedia("logo")?->getFullUrl(),
             'users' => $this->companyUser->users->where('company_id', $this->company->id)->values(),
+            'serial_no' => $this->company->serial_no ,
         ];
     }
 

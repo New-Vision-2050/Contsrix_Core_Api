@@ -19,7 +19,7 @@ class CreateQualificationRequest extends FormRequest
             'academic_qualification_id' => 'required|string',
             'academic_specialization_id' => 'required|string',
             'study_rate' => 'required|numeric',
-            'graduation_date' => 'required',
+            'graduation_date' => 'required|date',
         ];
     }
 
@@ -34,6 +34,7 @@ class CreateQualificationRequest extends FormRequest
             'study_rate.required' => __('validation.study_rate_required'),
             'study_rate.numeric' => __(key: 'validation.study_rate_numeric'),
             'graduation_date.required' => __('validation.graduation_date_required'),
+            'graduation_date.date' => __('validation.graduation_date_date'),
         ];
     }
     public function createCreateQualificationDTO(): CreateQualificationDTO
