@@ -40,6 +40,7 @@ class JobOfferCRUDService
 
         if (empty($inputFile)) {
             $jobOffer->clearMediaCollection('upload_offerjob');
+
         }
 
         $this->fileDeletedService->deleteFile(
