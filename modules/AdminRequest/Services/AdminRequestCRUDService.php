@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\AdminRequest\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Modules\AdminRequest\DTO\CreateAdminRequestDTO;
 use Modules\AdminRequest\Models\AdminRequest;
@@ -32,5 +33,15 @@ class AdminRequestCRUDService
         return $this->repository->getAdminRequest(
             id: $id,
         );
+    }
+
+    public function generateSerialNumber(): string
+    {
+        $year = Carbon::now()->format('Y');
+        $month = Carbon::now()->format('m');
+
+        $sequence = count($this->repository->getAll()) + 1;
+
+        return "REQ-{$year}{$month}-" . str_pad((string)$sequence, 5, '0', STR_PAD_LEFT);
     }
 }
