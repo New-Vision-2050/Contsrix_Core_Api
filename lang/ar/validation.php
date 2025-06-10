@@ -72,6 +72,7 @@ return [
     'job_type_id_required' => 'حقل نوع الوظيفة مطلوب.',
     'job_title_id_required' => 'حقل المسمى الوظيفي مطلوب.',
     'job_code_required' => 'حقل كود الوظيفة مطلوب.',
+    "self_parent"=>"لا يمكن الفرع هو نفس الاب",
 
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
@@ -461,6 +462,7 @@ return [
         'company_type_required' => 'نوع الشركة مطلوب.',
         'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
     ],
+
     'residence_validation_error' => 'رقم الإقامة مستخدم بالفعل.',
     'passport_validation_error' => 'رقم جواز السفر مستخدم بالفعل.',
     'identity_validation_error' => 'رقم الهوية مستخدم بالفعل.',
