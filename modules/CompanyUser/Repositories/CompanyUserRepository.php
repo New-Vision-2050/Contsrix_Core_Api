@@ -295,11 +295,11 @@ class CompanyUserRepository extends BaseRepository
 
         if (!$companyUser) {
             $companyUser = $this->create($companyUserData);
+        }elseif ($companyUser->deleted_at !== null) {
+
+            $companyUser->restore();
+            $companyUser->update(["global_id" => $companyUser->id]);
         }
-
-        $companyUser->restore();
-        $companyUser->update(["global_id" => $companyUser->id]);
-
         return $companyUser->fresh();
     }
 
