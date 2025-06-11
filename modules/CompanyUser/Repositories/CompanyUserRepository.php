@@ -191,7 +191,9 @@ class CompanyUserRepository extends BaseRepository
             DB::beginTransaction();
 
             // Find or create company user
-            $companyUser = $this->findOrCreateCompanyUser($companyUserData);
+            $companyUser = $this->findOrCreateCompanyUser(array_merge($companyUserData, $phone));
+            $companyUser->phone = $phone['phone'];
+            $companyUser->phone_code = $phone['phone_code'];
 
             // Find or create user in the company
             $user = $this->findOrCreateUserInCompany(
