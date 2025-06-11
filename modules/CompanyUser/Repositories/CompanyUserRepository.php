@@ -371,11 +371,12 @@ class CompanyUserRepository extends BaseRepository
 
             $branch->update(["manager_id" => $user->id]);
 
-            $this->managementHierarchyRepository->updateWhere([
+            $this->managementHierarchyRepository->findOneBy([
                 "company_id" => $companyId,
                 "parent_id" => $branch->id,
-                "type" => "management"
-            ], ["manager_id" => $user->id]);
+                "type" => "management",
+                "is_main" => 1
+            ])->update(["manager_id" => $user->id]);
         }
     }
 
@@ -470,6 +471,7 @@ class CompanyUserRepository extends BaseRepository
         $mainManagement = $this->managementHierarchyRepository->findOneBy([
             "company_id" => $companyId,
             "parent_id" => $branchId,
+            "is_main" => 1,
             "type" => "management"
         ]);
 
@@ -492,7 +494,8 @@ class CompanyUserRepository extends BaseRepository
         $mainManagement = $this->managementHierarchyRepository->findOneBy([
             "company_id" => $companyId,
             "parent_id" => $branchId,
-            "type" => "management"
+            "type" => "management",
+            "is_main" => 1
         ]);
 
         $jobTitleId = $companyUserData["job_title_id"] ?? $generalManagerJobTitle->id;
