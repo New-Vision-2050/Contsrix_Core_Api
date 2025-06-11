@@ -298,15 +298,16 @@ class CompanyUserRepository extends BaseRepository
         }elseif ($companyUser->deleted_at !== null) {
 
             $companyUser->restore();
-            $companyUser->update(["global_id" => $companyUser->id]);
         }
+        $companyUser->update(["global_id" => $companyUser->id]);
+
         return $companyUser->fresh();
     }
 
     /**
      * Find or create user within a company
      */
-    private function findOrCreateUserInCompany(CompanyUser $companyUser, $companyId, string $name, int $role, ?array $branches = null): User
+    private function findOrCreateUserInCompany(CompanyUser $companyUser, $companyId, string $name,  $role, ?array $branches = null): User
     {
         // Try to find existing user in company
         $user = $this->userRepository->findOneBy([
