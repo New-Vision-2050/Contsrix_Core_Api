@@ -199,7 +199,7 @@ class CompanyUserRepository extends BaseRepository
             $user = $this->findOrCreateUserInCompany(
                 $companyUser,
                 $companyRole['company_id'],
-                $companyUserData['name'] ?? "{$companyUser->first_name} {$companyUser->last_name}",
+                $companyUserData['name'] ,
                 $companyRole['role'],
                 $branches
             );
@@ -253,7 +253,7 @@ class CompanyUserRepository extends BaseRepository
             $user = $this->findOrCreateUserInCompany(
                 $companyUser,
                 $companyUserRoleData['company_id'],
-                "{$companyUser->first_name} {$companyUser->last_name}",
+                $companyUser->name,
                 $companyUserRoleData['role'],
                 $branches
             );
