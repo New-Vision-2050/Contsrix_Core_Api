@@ -324,7 +324,7 @@ class CompanyUserRepository extends BaseRepository
                 "global_company_user_id" => $companyUser->global_id
             ]);
 
-            $usersInCompanyCount = $this->companyRepository->countWhere(["id" => $companyId]);
+            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->count();
             $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
 
             if ($existingUser) {
