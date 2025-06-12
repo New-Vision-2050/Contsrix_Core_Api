@@ -78,16 +78,23 @@ class CompanyUserValidationService
             $userInCompany = $this->userRepository->findOneBy(["email" => request()->email, "company_id" => tenant("id")]);
             $role = request()->has("role") ? request()->role : 1;
             $companyUserCompany = $this->userRepository->getUserByGlobalIdWithBranches($userInCompany?->global_company_user_id, $role);
-
+            tenancy()->end();
             $this->errors[] = [
                 'sentence' => __("validation.user-email-error", ["name" => $user->name]),
                 'sub_title' => 'email',
                 'status' => 0,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
                 "roles" => $this->getRolesAndPermissions($companyUserCompany),
+
                 'validate' => 'required',
                 'id' => $user->id,
-                "email"=>$user->email
+                "email"=>$user->email,
+                "phone"=>$user?->users()?->first()?->phone,
+                "phone_code"=>$user?->users()?->first()?->phone_code,
+                "name"=>$user->name,
+                "job_title_id"=>$user->job_title_id,
+                "identity"=>$user->identity ,
+                "country_id"=>$user->country_id
             ];
         } else {
             $this->errors[] = [
@@ -99,6 +106,7 @@ class CompanyUserValidationService
                 'validate' => 'required'
             ];
         }
+
         return $this;
     }
 
@@ -129,11 +137,8 @@ class CompanyUserValidationService
         }
         return $this;
     }
-
     public function get()
     {
         return $this->errors;
     }
-
-
 }

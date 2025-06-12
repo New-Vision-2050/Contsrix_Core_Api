@@ -72,6 +72,7 @@ return [
     'job_type_id_required' => 'حقل نوع الوظيفة مطلوب.',
     'job_title_id_required' => 'حقل المسمى الوظيفي مطلوب.',
     'job_code_required' => 'حقل كود الوظيفة مطلوب.',
+    "self_parent"=>"لا يمكن الفرع هو نفس الاب",
 
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
@@ -461,4 +462,27 @@ return [
         'company_type_required' => 'نوع الشركة مطلوب.',
         'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
     ],
+    'residence_validation_error' => 'رقم الإقامة مستخدم بالفعل.',
+    'passport_validation_error' => 'رقم جواز السفر مستخدم بالفعل.',
+    'identity_validation_error' => 'رقم الهوية مستخدم بالفعل.',
+    'border_number_validation_error' => 'رقم الحدود مستخدم بالفعل.',
+    'user-residence-error' => 'رقم الإقامة مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-residence-success' => 'رقم الإقامة صالح.',
+    'user-passport-error' => 'رقم جواز السفر مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-passport-success' => 'رقم جواز السفر صالح.',
+    'user-identity-error' => 'رقم الهوية مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-identity-success' => 'رقم الهوية صالح.',
+    'user-border-number-error' => 'رقم الحدود مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-border-number-success' => 'رقم الحدود صالح.',
+
+    'professional_bodie_id_required' => 'رقم الجهة المهنية مطلوب.',
+    'accreditation_name_required' => 'اسم الاعتماد مطلوب.',
+    'accreditation_number_required' => 'رقم الاعتماد مطلوب.',
+    'accreditation_degree_required' => 'درجة الاعتماد مطلوبة.',
+    'date_obtain_required' => 'تاريخ الحصول على الشهادة مطلوب.',
+    'date_obtain_date' => 'تاريخ الحصول على الشهادة يجب أن يكون تاريخًا صحيحًا.',
+    'date_end_required' => 'تاريخ انتهاء الشهادة مطلوب.',
+    'date_end_date' => 'تاريخ انتهاء الشهادة يجب أن يكون تاريخًا صحيحًا.',
+    'graduation_date_date' => 'يجب أن يكون تاريخ التخرج تاريخًا صحيحًا.',
+
 ];

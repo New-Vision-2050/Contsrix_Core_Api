@@ -14,13 +14,12 @@ class CreateProfessionalCertificateRequest extends FormRequest
     {
         return [
             'user_id'=> 'required|string',
-            'professional_bodie_id'=> 'nullable|string',
-            'accreditation_name'=> 'nullable|string',
-            'accreditation_number'=> 'nullable|string',
-            'accreditation_degree'=> 'nullable|string',
-            'date_obtain'=> 'nullable|date',
-            'date_end'=> 'nullable|date',
-            "file"=>"nullable|file",
+            'professional_bodie_id'=> 'required|string',
+            'accreditation_name'=> 'required|string',
+            'accreditation_number'=> 'required|string',
+            'accreditation_degree'=> 'required|string',
+            'date_obtain'=> 'required|date',
+            'date_end'=> 'required|date',
         ];
     }
     public function messages(): array
@@ -48,7 +47,6 @@ class CreateProfessionalCertificateRequest extends FormRequest
             accreditation_degree: $this->get('accreditation_degree'),
             date_obtain: $this->get('date_obtain'),
             date_end: $this->get('date_end'),
-            file: $this->file('file'),
         );
     }
 }
