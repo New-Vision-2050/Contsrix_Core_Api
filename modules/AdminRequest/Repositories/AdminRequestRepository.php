@@ -51,6 +51,12 @@ class AdminRequestRepository extends BaseRepository
         })->get();
     }
 
+    public function getAllWithoutFilter()
+    {
+       [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        return $this->model->where("company_id", $company->id)->get();
+    }
+
     public function getAdminRequest(UuidInterface $id): AdminRequest
     {
         return $this->findOneByOrFail([
