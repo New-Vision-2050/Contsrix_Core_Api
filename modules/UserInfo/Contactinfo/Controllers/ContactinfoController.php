@@ -10,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\Contactinfo\Handlers\UpdateAddressHandler;
-use Modules\UserInfo\Contactinfo\Handlers\UpdateContactinfoHandler;
 use Modules\UserInfo\Contactinfo\Presenters\ContactinfoPresenter;
 use Modules\UserInfo\Contactinfo\Requests\GetContactinfoRequest;
 use Modules\UserInfo\Contactinfo\Requests\UpdateAddressRequest;
@@ -22,21 +21,26 @@ class ContactinfoController extends Controller
 {
     public function __construct(
         private ContactinfoCRUDService $contactinfoService,
-        private UpdateContactinfoHandler $updateContactinfoHandler,
         private UpdateAddressHandler $updateAddressHandler,
         private UserRepository $userRepository,
         private CompanyUserRepository $companyUserRepository,
     ) {
     }
 
-    public function show(GetContactinfoRequest $request): JsonResponse
+    public function show(GetContactinfoRequest $request)//: JsonResponse
     {
         $user = $this->userRepository->getUser(Uuid::fromString($request->route('id')));
 
-        $companyUser =$this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($user->global_company_user_id));
+
+        $item = $this->contactinfoService->get(
+            Uuid::fromString($user->company_id),
+            Uuid::fromString($user->global_company_user_id),
+        );
 
 
-        $item = $this->contactinfoService->get(Uuid::fromString($companyUser->id));
+        if(!$item){
+            return Json::item(null);
+        }
 
         $presenter = new ContactinfoPresenter($item);
 
@@ -46,32 +50,30 @@ class ContactinfoController extends Controller
     {
         $user = $this->userRepository->getUser(Uuid::fromString($request->route('id')));
 
-        $companyUser =$this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($user->global_company_user_id));
+        $updateContactinfoCommand = $request->createUpdateContactinfoCommand();
 
-        $command = $request->createUpdateContactinfoCommand();
-        $command->companyUserId = Uuid::fromString($companyUser->id) ;
-        $command->userId = $user->id;
+        $updateContactinfoCommand->company_id = $user->company_id;
+        $updateContactinfoCommand->global_id = $user->global_company_user_id;
 
-        $this->updateContactinfoHandler->handle($command);
-        $item = $this->contactinfoService->get($command->companyUserId);
 
-        $presenter = new ContactinfoPresenter($item);
+        $createdItem = $this->contactinfoService->create($updateContactinfoCommand);
+
+        $presenter = new ContactinfoPresenter($createdItem);
 
         return Json::item( $presenter->getData());
     }
 
-    public function updateAddress(UpdateAddressRequest $request)//: JsonResponse
+    public function updateAddress(UpdateAddressRequest $request): JsonResponse
     {
         $user = $this->userRepository->getUser(Uuid::fromString($request->route('id')));
 
-        $companyUser =$this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($user->global_company_user_id));
+        $createUpdateAddressCommand = $request->createUpdateAddressCommand();
 
-        $command = $request->createUpdateAddressCommand();
-        $command->companyUserId = Uuid::fromString($companyUser->id) ;
+        $createUpdateAddressCommand->company_id = $user->company_id;
+        $createUpdateAddressCommand->global_id = $user->global_company_user_id;
 
-      return  $this->updateAddressHandler->handle($command);
-        $item = $this->contactinfoService->get($command->companyUserId);
-
+        $this->updateAddressHandler->handle($createUpdateAddressCommand);
+        $item = $this->contactinfoService->get(Uuid::fromString($user->company_id) ,Uuid::fromString($user->global_company_user_id));
         $presenter = new ContactinfoPresenter($item);
 
         return Json::item( $presenter->getData());

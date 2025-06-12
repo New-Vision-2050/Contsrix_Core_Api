@@ -17,6 +17,7 @@ use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandle
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\DepartmentPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
@@ -62,10 +63,9 @@ class ManagementHierarchyController extends Controller
         return Json::items(ManagementHierarchyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
-    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request): JsonResponse
+    public function listWithoutPagination(GetManagementHierarchyLookupRequest $request)
     {
-
-        return Json::items(ManagementHierarchyPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
+        return Json::items(ManagementHierarchySimpleDataPresenter::collection($this->managementHierarchyService->listWithoutPagination()));
     }
 
     public function show(GetManagementHierarchyRequest $request): JsonResponse
@@ -181,12 +181,81 @@ class ManagementHierarchyController extends Controller
 
     public function presentTree(GetManagementHierarchyLookupRequest $request)
     {
-        return Json::item(ManagementHierarchyTreePresenter::collection($this->managementHierarchyService->getTree()));
+        $type = $request->input('type');
+
+        if ($type == "management") {//when type is management we will not skip any nodes
+            ManagementHierarchyTreePresenter::setSkipManagementMainNodes(false);
+        } else {
+            ManagementHierarchyTreePresenter::setSkipManagementMainNodes(true);
+        }
+
+        $tree = $this->managementHierarchyService->getTree();
+
+        $presentedTree = ManagementHierarchyTreePresenter::collection($tree);
+
+        return Json::item($presentedTree);
     }
+
+    private function consolidateTreeNodesUnderLowestId(array $treeNodes): array
+    {
+        if (count($treeNodes) <= 1) {
+            return $treeNodes;
+        }
+
+        // Find the node with the lowest ID to use as the root
+        $lowestIdIndex = 0;
+        $lowestId = $treeNodes[0]["hierarchy_info"]['id'];
+
+        for ($i = 1; $i < count($treeNodes); $i++) {
+            if ($treeNodes[$i]["hierarchy_info"]['id'] < $lowestId) {
+                $lowestId = $treeNodes[$i]["hierarchy_info"]['id'];
+                $lowestIdIndex = $i;
+            }
+        }
+
+        // Node with lowest ID will be our root node
+        $rootNode = $treeNodes[$lowestIdIndex];
+
+        // Start with existing children of the root node or empty array
+        $allChildren = isset($rootNode['children']) ? $rootNode['children'] : [];
+
+        // Add all other nodes as children of the root node
+        for ($i = 0; $i < count($treeNodes); $i++) {
+            if ($i !== $lowestIdIndex) {
+                $allChildren[] = $treeNodes[$i];
+            }
+        }
+
+        // Set the consolidated children to the root node
+        $rootNode['children'] = $allChildren;
+
+        return $rootNode;
+    }
+
 
     public function directChildrenTree()
     {
-        return Json::item(ManagementHierarchyUserTreePresenter::collection($this->managementHierarchyService->getTree()));
+        $tree = $this->managementHierarchyService->getTree();
+
+        ManagementHierarchyUserTreePresenter::setIncludeManagers(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDirectChildren(true);
+        ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
+        ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(false);
+
+        $presentedTree=ManagementHierarchyUserTreePresenter::collection($tree);
+
+
+        try {
+            if (is_array($presentedTree[0]) && count($presentedTree[0]) > 1) {
+                $presentedTree = $this->consolidateTreeNodesUnderLowestId($presentedTree[0]);
+            } else if (is_array($presentedTree[0]) && count($presentedTree[0]) == 1) {
+                $presentedTree = $presentedTree[0];
+            }
+        } catch (Exception $e) {
+            return Json::items(is_array($presentedTree)?$presentedTree:[$presentedTree]);
+
+        }
+        return Json::item(array_is_list($presentedTree)?$presentedTree:[$presentedTree]);
     }
 
     /**

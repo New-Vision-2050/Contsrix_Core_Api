@@ -6,21 +6,28 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
-use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\HasTranslations;
-use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Modules\Company\CompanyCore\Models\Company;
-use Modules\CompanyUser\Models\CompanyUser;
+use Modules\CompanyUser\Models\ClientDetail;
 use Modules\Setting\Models\LoginWay;
-use Modules\User\Database\factories\UserFactory;
-use BasePackage\Shared\Traits\BaseFilterable;
-use OwenIt\Auditing\Contracts\Auditable;
+use App\Traits\CustomBelongsToTenant;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Notifications\Notifiable;
+use OwenIt\Auditing\Contracts\Auditable;
+use Modules\CompanyUser\Models\CompanyUser;
+use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use BasePackage\Shared\Traits\HasTranslations;
+use Modules\SubEntity\Models\RegistrationForm;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\CompanyUser\Models\CompanyUserCompany;
+use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
+use Modules\CompanyUser\Enum\CompanyUserRole;
+
+use Modules\User\Database\factories\UserFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 
 //use BasePackage\Shared\Traits\HasTranslations;
@@ -39,7 +46,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
     use SoftDeletes;
 
-//    public array $translatable = [];
+    //    public array $translatable = [];
     protected $primaryKey = "id";
     public $incrementing = false;
 
@@ -55,7 +62,9 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "global_company_user_id",
         "company_id",
         "is_owner",
-        "management_hierarchy_id"
+        "management_hierarchy_id",
+        "status",
+        "message_address"
     ];
 
     protected $casts = [
@@ -77,7 +86,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
         ];
     }
 
-     /**
+    /**
      * Get attributes available for sub-entities excluding sensitive fields (like password).
      *
      * @return array
@@ -85,15 +94,20 @@ class User extends Authenticatable implements JWTSubject, Auditable
      */
     public static function getSubEntitiesAvailableAttributes()
     {
-       return [
+        return [
             'name',
             'email',
             'phone',
-            "phone_code",
-            "company",
-            'updated_at',
-            'created_at'
-       ];
+            "companies",
+            'user-type',
+            "data_status",
+            "branch",
+            "job_title",
+            "residence",
+            "broker",
+            "number_of_projects",
+            "end_date",
+        ];
     }
 
     protected static function newFactory(): UserFactory
@@ -123,6 +137,65 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
     public function companyUser()
     {
-        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
+        return $this->belongsTo(CompanyUser::class, 'global_company_user_id', 'global_id');
+    }
+
+    public function companyUserCompanies()
+    {
+        return $this->hasMany(CompanyUserCompany::class, "global_company_user_id", "global_company_user_id");
+    }
+
+    public function roleAndBranches()
+    {
+        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class, "user_id", "id");
+    }
+
+
+    /**
+     * Get the unique management hierarchies associated with the user through the roleAndBranches relation.
+     * Filtered by the role column in CompanyUserCompany model.
+     *
+     * @param string|int|null $role The role value to filter by (optional)
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function managementHierarchies($role = null)
+    {
+        $query = $this->hasManyThrough(
+            ManagementHierarchy::class,
+            CompanyUserCompanyManagementHierarchy::class,
+            'user_id', // Foreign key on CompanyUserCompanyManagementHierarchy table
+            'id', // Foreign key on ManagementHierarchy table
+            'id', // Local key on User table
+            'management_hierarchy_id' // Local key on CompanyUserCompanyManagementHierarchy table
+        )
+            ->join('company_users_companies', 'company_users_company_management_hierarchies.company_user_company_id', '=', 'company_users_companies.id')
+            ->select('management_hierarchies.*')
+            ->distinct();
+
+        // Apply role filter if provided
+        if ($role !== null) {
+            $query->where('company_users_companies.role', $role);
+        }
+
+        return $query;
+    }
+
+
+
+
+    public function registrationForm()
+    {
+        return $this->belongsTo(RegistrationForm::class);
+    }
+
+    public function clientDetail()
+    {
+        return $this->hasOne(ClientDetail::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
+            ->where('type', operator: 'branch');
     }
 }

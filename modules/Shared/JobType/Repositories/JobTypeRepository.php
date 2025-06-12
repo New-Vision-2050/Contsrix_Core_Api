@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Shared\JobType\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Shared\JobType\Models\JobType;
-
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 /**
  * @property JobType $model
  * @method JobType findOneOrFail($id)
@@ -16,6 +17,7 @@ use Modules\Shared\JobType\Models\JobType;
  */
 class JobTypeRepository extends BaseRepository
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(JobType $model)
     {
         parent::__construct($model);
@@ -23,13 +25,13 @@ class JobTypeRepository extends BaseRepository
 
     public function withoutScopePaginated(array $conditions=[], $page=1, $perPage=10)
     {
-         $query = $this->model->withoutGlobalScope("active")->where($conditions);
+         $query = $this->model->withoutGlobalScope("active")->where($conditions)->filter(request()->all());
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-         return [
-            'data' => $paginatedData,
-            'pagination' => $paginationArray];
+        return array_merge($paginationArray,[
+            'data' => $paginatedData
+        ]);
     }
 
     public function getJobTypeList(?int $page, ?int $perPage = 10): Collection
@@ -39,7 +41,8 @@ class JobTypeRepository extends BaseRepository
 
     public function getAllJobTypes(): Collection
     {
-        return $this->model->all();
+        return $this->model->filter(request()->all())->get();
+
     }
 
     public function getJobType(UuidInterface $id): JobType
@@ -59,6 +62,28 @@ class JobTypeRepository extends BaseRepository
 
     public function deleteJobType(UuidInterface $id): bool
     {
-        return $this->model->withoutGlobalScope("active")->where('id', $id)->first()->delete($id);
+        $jobType = $this->model->withoutGlobalScope("active")->where('id', $id)->first();
+        if(count($jobType->jobTitles) > 0){
+           throw  new CustomException(__("validation.delete-not-allowed"), 400);
+        }
+        return $jobType->delete($id);
+    }
+
+    /**
+     * Get filtered job types for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->withoutGlobalScope("active");
+
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters["ids"])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        // Include the job titles relationship to display count
+        return $query->with(['jobTitles', 'userProfissional'])->get();
     }
 }

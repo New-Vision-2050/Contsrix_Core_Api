@@ -12,7 +12,7 @@ class UpdateBranchCommand
         private int $id,
         public string $name,
         public UuidInterface $companyId,
-        public ?UuidInterface $parentId,
+        public ?int $parentId,
         public UuidInterface $managerId,
         public string $phone,
         public string $email,

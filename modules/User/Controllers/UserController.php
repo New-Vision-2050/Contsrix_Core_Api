@@ -8,6 +8,12 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
+use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
+use Modules\User\Presenters\UserBranchesPresenter;
+use Modules\User\Presenters\UserRolesPresenter;
 use Modules\User\Requests\ExportUsersRequest;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
@@ -23,6 +29,7 @@ use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
 use Modules\User\Requests\GetAdminUsersRequest;
 use Modules\User\Requests\GetUserAuditListRequest;
+use Modules\User\Requests\GetUserByGlobalIdRequest;
 use Modules\User\Requests\GetUserListRequest;
 use Modules\User\Requests\GetUserRequest;
 use Modules\User\Requests\GetUserRolesAndPermissionRequest;
@@ -56,7 +63,23 @@ class UserController extends Controller
 
         return Json::items(UserPresenter::collection($list['data']),paginationSettings: $list['pagination']);
     }
+    public function getByRole(GetUserListRequest $request): JsonResponse
+    {
+        $role = CompanyUserRole::EMPLOYEE->value ;
+        if($request->has("role"))
+        {
+            $role = $request->role;
+        }
+        $list = $this->userService->listByRole(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10),
+            $role
+        );
 
+
+
+        return Json::items(UserRolesPresenter::collection($list['data'],$role),paginationSettings: $list['pagination']);
+    }
     public function show(GetUserRequest $request): JsonResponse
     {
         $item = $this->userService->get(Uuid::fromString($request->route('id')));
@@ -130,6 +153,13 @@ class UserController extends Controller
         $roles = $this->userRoleAndPermissionService->getRoles(auth()->user()->id);
         $permissionPresenter = RolePresenter::collection($roles);
         return Json::item($permissionPresenter);
+    }
+
+    public function getUserByGlobalId(GetUserByGlobalIdRequest $userByEmailRequest)
+    {
+
+        $branchesWithRole =  $this->userService->getUserByGlobalIdWithBranches($userByEmailRequest->global_id,$userByEmailRequest->role);
+        return Json::item( ManagementHierarchySimpleDataPresenter::collection($branchesWithRole?->managementHierarchy?$branchesWithRole?->managementHierarchy:[]));
     }
 
     public function getPermissions(GetUserRolesAndPermissionRequest $request)

@@ -36,8 +36,8 @@ class UpdateSubEntityAttributesRequest extends FormRequest
     {
         $superEntityId  = SubEntity::find($this->route('id'), ['id', 'super_entity'])?->super_entity;
 
-        if(empty($superEntityId )) {
-            return [];
+        if(empty($superEntityId)) {
+            abort(404, 'Super Entity Not Found!');
         }
 
         $superEntityService = app(SuperEntityService::class);

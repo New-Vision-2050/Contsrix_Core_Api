@@ -17,27 +17,19 @@ class UpdateSubEntityRequest extends FormRequest
         $subEntity = SubEntity::findOrFail($this->route('id'), ['id', 'super_entity']);
 
         return [
-                'name' => [
-                    'required',
-                    'string',
-                    Rule::unique('sub_entities')
-                    ->where(function ($query)use($subEntity) {
-                        return $query->where('super_entity', $subEntity->super_entity);
-                    })->ignore($this->route('id'))
-            ],
-            'icon' => 'required|integer|min:0|max:255',
-            'main_program_id' => 'required|uuid|exists:programs,id',
-            'is_active' => 'required|boolean',
             'is_registrable' => 'required|boolean',
+            'children_allowed_registration_forms' => 'nullable|array',
+            'children_allowed_registration_forms.*' => 'required|distinct|exists:registration_forms,id',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'icon.min' => 'Icon code must be between 0-255',
-            'icon.max' => 'Icon code must be between 0-255',
+            'icon.max' => 'The icon name must not exceed 255 characters.',
             'name.unique' => 'This name already exists for the selected super entity type',
+            'slug.regex' => 'The slug must contain only lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen.',
+            'slug.unique' => 'This slug is already taken.',
         ];
     }
 
@@ -45,12 +37,8 @@ class UpdateSubEntityRequest extends FormRequest
     {
         return new UpdateSubEntityCommand(
             id: Uuid::fromString($this->route('id')),
-            name: $this->get('name'),
-            icon: $this->get('icon'),
-            mainProgramId: $this->get('main_program_id'),
-            isActive: (bool) $this->get('is_active'),
             isRegistrable: (bool) $this->get('is_registrable'),
-
+            childrenAllowedRegistrationForms: $this->get('children_allowed_registration_forms'),
         );
     }
 }

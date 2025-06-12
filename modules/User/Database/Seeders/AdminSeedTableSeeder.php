@@ -53,7 +53,8 @@ class AdminSeedTableSeeder extends Seeder
                     "phone_code"=>"966",
                     'password' => "Test1234",
                     "global_company_user_id"=>$companyUser->global_id,
-                    "is_owner"=>1
+                    "is_owner"=>1,
+                    "management_hierarchy_id"=>2 //main management in main company
                 ]
             );
             $user->assignRole('super-admin');

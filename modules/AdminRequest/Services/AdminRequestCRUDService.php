@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\AdminRequest\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Modules\AdminRequest\DTO\CreateAdminRequestDTO;
 use Modules\AdminRequest\Models\AdminRequest;
@@ -22,12 +23,9 @@ class AdminRequestCRUDService
          return $this->repository->createAdminRequest($createAdminRequestDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list()
     {
-        return $this->repository->paginated(
-            page: $page,
-            perPage: $perPage,
-        );
+        return $this->repository->getAll();
     }
 
     public function get(UuidInterface $id): AdminRequest
@@ -35,5 +33,15 @@ class AdminRequestCRUDService
         return $this->repository->getAdminRequest(
             id: $id,
         );
+    }
+
+    public function generateSerialNumber(): string
+    {
+        $year = Carbon::now()->format('Y');
+        $month = Carbon::now()->format('m');
+
+        $sequence = count($this->repository->getAll()) + 1;
+
+        return "REQ-{$year}{$month}-" . str_pad((string)$sequence, 5, '0', STR_PAD_LEFT);
     }
 }

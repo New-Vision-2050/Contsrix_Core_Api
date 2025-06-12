@@ -38,11 +38,15 @@
                                     <h1 dir="{{ $dir }}" style="color: #3d4852; font-size: 18px; font-weight: bold; text-align: {{ $align }}; margin-top: 0;">
                                         {{ __("emails.welcome") . " : " . $data['name'] }}
                                     </h1>
-
-                                    <p style="font-size: 16px; line-height: 1.5em; text-align: {{ $align }};">
-                                        {{ __("emails.you-tried-to-change-password-with") . " : " . $data['email'] }}
-                                    </p>
-
+                                 @if(!empty($data['first_login']))
+                                       <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
+                                         {{ __("emails.you-tried-to-first-login-with")." : ".$data['email'] }}<br>
+                                        </p>
+                                    @else
+                                        <p style="font-size: 16px; line-height: 1.5em; text-align: {{ $align }};">
+                                            {{ __("emails.you-tried-to-change-password-with") . " : " . $data['email'] }}
+                                        </p>
+                                    @endif
                                     <p style="font-size: 16px; line-height: 1.5em; text-align: {{ $align }};">
                                         <b>{{ __("emails.your-verification-code-is") . " : " . $data['otp'] }}</b>
                                     </p>

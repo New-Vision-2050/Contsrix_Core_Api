@@ -16,13 +16,21 @@ class CreateUserProfessionalDataRequest extends FormRequest
             'user_id' => 'required|exists:users,id',
             'branch_id' => 'required|exists:management_hierarchies,id,type,branch',
             'management_id' => 'required|exists:management_hierarchies,id,type,management',
-            'department_id' => 'required|exists:management_hierarchies,id,type,department',
             'job_type_id' => 'required|exists:job_types,id',
             'job_title_id' => 'required|exists:job_titles,id',
             'job_code' => 'required|string',
         ];
     }
-
+    public function messages(): array
+    {
+        return [
+            'branch_id.required' => __('validation.branch_id_required'),
+            'management_id.required' => __('validation.management_id_required'),
+            'job_type_id.required' => __('validation.job_type_id_required'),
+            'job_title_id.required' => __('validation.job_title_id_required'),
+            'job_code.required' => __('validation.job_code_required'),
+        ];
+    }
 
     public function createCreateUserProfessionalDataDTO(): CreateUserProfessionalDataDTO
     {
@@ -31,7 +39,6 @@ class CreateUserProfessionalDataRequest extends FormRequest
             global_id: '',
             branch_id: $this->get('branch_id'),
             management_id: $this->get('management_id'),
-            department_id: $this->get('department_id'),
             job_type_id: $this->get('job_type_id'),
             job_title_id: $this->get('job_title_id'),
             job_code: $this->get('job_code'),

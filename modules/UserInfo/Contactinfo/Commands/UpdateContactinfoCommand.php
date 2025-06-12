@@ -9,25 +9,24 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateContactinfoCommand
 {
     public function __construct(
-        private UuidInterface $id,
-        private string $email,
-        private string $other_phone,
-        private string $code_other_phone,
-        private string $phone,
-        private string $phone_code,
-        private string $landline_number,
+        public string $company_id,
+        public string $global_id,
+        public ?string $email,
+        public ?string $other_phone,
+        public ?string $code_other_phone,
+        public ?string $phone,
+        public ?string $phone_code,
+        public ?string $landline_number,
     ) {
     }
 
-    public function getId(): UuidInterface
-    {
-        return $this->id;
-    }
 
 
     public function toArray(): array
     {
         return array_filter([
+            'company_id' => $this->company_id,
+            'global_id' => $this->global_id,
             'email'=> $this->email,
             'other_phone'=> $this->other_phone,
             'code_other_phone' => $this->code_other_phone,

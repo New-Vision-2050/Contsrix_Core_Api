@@ -20,10 +20,13 @@ class UpdateBranchRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'parent_id' => 'nullable|exists:management_hierarchies,id',
+            'parent_id' => [
+                'nullable',
+                'exists:management_hierarchies,id,type,branch'
+            ],
             'manager_id' => 'required|exists:users,id',
-            "phone" => "required|unique:management_hierarchies,phone",
-            "email" => "required|unique:management_hierarchies,email,".$this->route("id"),
+            "phone" => "required|phone",
+            "email" => "required|email",
             "latitude" => "required|numeric",
             "longitude" => "required|numeric",
             "country_id" => "required|exists:countries,id",
@@ -37,7 +40,7 @@ class UpdateBranchRequest extends FormRequest
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
         return new UpdateBranchCommand(
-            id: Uuid::fromString($this->route('id')),
+            id: (int)$this->route('id'),
             name: $this->get('name'),
             companyId: Uuid::fromString($company->id),
             parentId: $this->get('parent_id') !== null ?(int) $this->get('parent_id') : $this->get("parent_id"),

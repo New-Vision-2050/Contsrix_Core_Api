@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Commands\CompanyProfile;
 
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
 
 class UpdateOfficialCompanyDataCommand
 {
     public function __construct(
-        private UuidInterface $id,
-        private string        $nameEn,
-        private string        $email,
-        private string        $phone,
-        private string        $branchName,
-        private string        $companyTypeId
+        private UuidInterface       $id,
+        private string              $nameEn,
+        private string              $email,
+        private string              $phone,
+        private string              $branchName,
+        private string              $companyTypeId,
+        private ManagementHierarchy $branch
     )
     {
     }
@@ -46,12 +48,18 @@ class UpdateOfficialCompanyDataCommand
 
     public function toArray(): array
     {
-        return [
+        $data = [
             'name' => ["en" => $this->nameEn],
-            'email' => $this->email,
-            'phone' => $this->phone,
             'company_type_id' => $this->companyTypeId,
 
         ];
+        if ($this->branch->is_main == 1) {
+            $data += [
+                "phone" => $this->phone,
+                "email" => $this->email
+            ];
+        }
+
+        return $data;
     }
 }

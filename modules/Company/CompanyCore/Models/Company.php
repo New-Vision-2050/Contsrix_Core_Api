@@ -240,4 +240,20 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     {
         return $this->hasMany(User::class);
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            do {
+                $lastCode = self::where('serial_no', 'LIKE', 'CX-%')
+                    ->orderByDesc('created_at')
+                    ->value('serial_no');
+
+                $newNumber = $lastCode ? (int) str_replace('CX-', '', $lastCode) + 1 : 1;
+                $serial = 'CX-' . $newNumber;
+            } while (self::where('serial_no', $serial)->exists());
+
+            $model->serial_no = $serial;
+        });
+    }
 }

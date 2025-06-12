@@ -6,12 +6,13 @@ namespace Modules\Company\CompanyCore\DTO\CompanyProfile;
 
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Http\UploadedFile;
 
 class AssignLogoToCompanyDTO
 {
     public function __construct(
         public ManagementHierarchy $managementHierarchy,
-        public  $logo,
+        public UploadedFile $logo,
     ) {
     }
 
