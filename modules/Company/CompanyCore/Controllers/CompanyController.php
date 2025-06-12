@@ -171,14 +171,9 @@ class CompanyController extends Controller
 
     public function getCurrentCompanyLoggedIn()
     {
-        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-
-        $cacheKey = 'current_company_logged_in_' . $company->id . '_' . $branch->id;
 
         try {
-            $company = Cache::remember($cacheKey, now()->addHours(1), function () {
-                return $this->companyService->getCurrentCompanyLoggedIn();
-            });
+            $company = $this->companyService->getCurrentCompanyLoggedIn();
         } catch (\Exception $e) {
             return Json::error($e->getMessage(),$e->getCode());
         }
