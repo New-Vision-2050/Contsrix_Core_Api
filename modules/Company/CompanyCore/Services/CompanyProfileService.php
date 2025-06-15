@@ -155,6 +155,64 @@ class CompanyProfileService
 
     }
 
+    /**
+     * Get the company legal data
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCompanyLegalDataForCompany()
+    {
+        $company = $this->companyRepository->getCurrentCompany();
+        return $company->companyLegalData;
+    }
+
+    /**
+     * Get the company address with formatted country, state, and city data
+     *
+     * @return mixed
+     */
+    public function getCompanyAddressForCompany()
+    {
+        $company = $this->companyRepository->getCurrentCompany();
+        $address = $company->companyAddress;
+
+        if ($address) {
+            $address->country_name = $address->country?->name;
+            $address->state_name = $address->state?->name;
+            $address->city_name = $address->city?->name;
+            $address->country_lat = $address->country?->latitude;
+            $address->country_long = $address->country?->longitude;
+            $address->country_iso2 = $address->country?->iso2;
+            unset($address->country);
+            unset($address->state);
+            unset($address->city);
+        }
+
+        return $address;
+    }
+
+    /**
+     * Get the company official documents
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCompanyOfficialDocumentsForCompany()
+    {
+        $company = $this->companyRepository->getCurrentCompany();
+        return $company->companyOfficialDocuments;
+    }
+
+    /**
+     * Get the company branches
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCompanyBranchesForCompany()
+    {
+        $company = $this->companyRepository->getCurrentCompany();
+        return $company->branches;
+    }
+
     public function geoCodingUsingNationalAddressKSA(GeoCodingDTO $geoCodingDTO)
     {
         $url = "https://apina.address.gov.sa/NationalAddress/v3.1/Address/address-geocode?language=A&format=json&lat={$geoCodingDTO->getLatitude()}&long={$geoCodingDTO->getLongitude()}";
