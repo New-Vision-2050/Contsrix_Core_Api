@@ -38,8 +38,7 @@ class RolesAndPermissionsSeeder extends Seeder
             setPermissionsTeamId(tenant("id") ?? Company::query()->first()->id);
             $user->assignRole('super-admin');
         } else {
-            $generalManagerId = tenant("general_manager_id");
-            $generalManager = User::where('id', $generalManagerId)->first();
+            $generalManager = User::where(['company_id'=> tenant("id"),"is_owner"=>1])->first();
             $generalManager->assignRole('super-admin');
 
         }
