@@ -35,6 +35,20 @@ class CreateCompanyLegalDataRequest extends FormRequest
 
             return (int)$type !== 3;
         });
+
+        $validator->after(function ($validator) {
+            $startDate = $this->input('start_date');
+            $endDate = $this->input('end_date');
+
+            if ($startDate && $endDate) {
+                $start = Carbon::parse($startDate);
+                $end = Carbon::parse($endDate);
+
+                if ($start->diffInDays($end, false) < 8) {
+                    $validator->errors()->add('start_date', __('validation.company_legal.start_date_less_than_8_days'));
+                }
+            }
+        });
     }
     public function messages(): array
     {
