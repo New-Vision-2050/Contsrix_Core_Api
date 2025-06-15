@@ -16,7 +16,7 @@ class UpdateTimeZoneCompanyUserRequest extends FormRequest
             'country_id' => 'required|exists:countries,id',
             'time_zone_id' => 'required|exists:time_zones,id',
             'language_id' => 'required|exists:languages,id',
-            'currency_id' => 'required|exists:currencies,id',
+            'currency_id' => 'required|exists:countries,id',
         ];
     }
 

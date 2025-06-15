@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\JobTitle\Database\factories\JobTitleFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
+use Modules\Shared\JobType\Models\JobType;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class JobTitle extends Model
 {
@@ -17,6 +20,8 @@ class JobTitle extends Model
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
+    use BelongsToTenant;
+
     //use SoftDeletes;
 
     //public array $translatable = [];
@@ -26,15 +31,38 @@ class JobTitle extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        // 'name',
+        'type',
+        "name",
+        "job_type_id",
+        "description",
+        "status",
+        'company_id',
     ];
     public array $translatable = ['name'];
     protected $casts = [
         'id' => 'string',
     ];
 
+
+    protected static function booted()
+    {
+        static::addGlobalScope("active",function ($query) {
+            $query->where('status', 1);
+        });
+    }
+
     protected static function newFactory(): JobTitleFactory
     {
         return JobTitleFactory::new();
+    }
+
+    public function jobType()
+    {
+        return $this->belongsTo(JobType::class)->withoutGlobalScope("active");
+    }
+
+    public function userProfissional()
+    {
+        return $this->hasMany(UserProfessionalData::class);
     }
 }

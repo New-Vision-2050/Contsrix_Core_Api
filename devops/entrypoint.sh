@@ -19,9 +19,11 @@ set -e
 
 # Run Laravel Artisan commands
 echo "Running Laravel commands..."
+yes | composer dump-autoload
 php artisan storage:link
 yes | php artisan migrate --force
 yes | php artisan db:seed --force
+
 
 # Ensure storage/logs directory exists and has correct permissions
 echo "Setting up log directory permissions..."

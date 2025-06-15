@@ -122,7 +122,7 @@ class AuthService
             $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $resendOtpCommand->getToken()]);
 
         } catch (\Exception $e) {
-            throw new \ErrorException("invalid token", 404);
+            throw new \ErrorException(__("validation.invalid-token"), 404);
         }
 
         $loginWay = $this->getDefaultLoginWay($resendOtpCommand->getIdentifier());
@@ -186,16 +186,22 @@ class AuthService
 
     public function getLoginWays(GetLoginWaysDTO $getLoginWaysDTO)
     {
+
         $loginWay = $this->getDefaultLoginWay($getLoginWaysDTO->getIdentifier());
         $step = $loginWay->loginWaySteps()->where("order", 1)->first();
         $user = $this->userCRUDService->getUserByIdentifier($getLoginWaysDTO->getIdentifier());
+        $firstLogin = $user->password == null ? 1 : 0;
+
         if ($user->password == null) {
-            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier());
-            return [$loginWay->id, null, $step, 1];
+            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier(),$firstLogin);
+            return [$loginWay->id, null, $step, 1,$firstLogin];
         }
+
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
         $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1, "login_way" => $loginWay])->token;
-        return [$loginWay->id, $token, $step, 0];
+
+
+        return [$loginWay->id, $token, $step, 0, $firstLogin];
 
     }
 
@@ -243,7 +249,7 @@ class AuthService
             $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $loginStepDTO->getToken()]);
 
         } catch (\Exception $e) {
-            throw new \ErrorException("invalid token", 404);
+            throw new \ErrorException(__("validation.invalid-token"), 404);
         }
         /**
          * @var $loginWay LoginWay
@@ -309,7 +315,7 @@ class AuthService
             $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $alternativeDTO->getToken()]);
 
         } catch (\Exception $e) {
-            throw new \ErrorException("invalid token", 404);
+            throw new \ErrorException(__("validation.invalid-token"), 404);
         }
         $this->updateLoginStep($alternativeDTO->getToken(), $alternativeDTO->getLoginOption());
         [$step, $nextStep] = $this->getLoginStepAndNextStepFromToken($alternativeDTO->getToken());

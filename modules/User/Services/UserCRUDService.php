@@ -6,6 +6,7 @@ namespace Modules\User\Services;
 
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\User\DTO\CreateUserDTO;
 use Modules\User\Models\User;
@@ -32,6 +33,22 @@ class UserCRUDService
             perPage: $perPage,
         );
     }
+    public function listByRole(int $page = 1, int $perPage = 10,$role = CompanyUserRole::EMPLOYEE->value): array
+    {
+        $users = $this->repository->getUserInCurrentCompanyWith([],$role, $page, $perPage);
+
+        return $users;
+    }
+
+    public function getUserByGlobalIdWithBranches($globalId,$role)
+    {
+       return $this->repository->getUserByGlobalIdWithBranches($globalId,$role);
+    }
+
+    public function getUserBy($condition)
+    {
+        return $this->repository->findOneBy($condition);
+    }
 
     public function get(UuidInterface $id): User
     {
@@ -53,5 +70,25 @@ class UserCRUDService
         $user = $this->repository->find($id);
          $company_ids =  $this->repository->getWithoutTenancy()->getWherePluck(["global_company_user_id"=>$user->global_company_user_id],"company_id");
          return $this->companyRepository->whereIn("id", $company_ids)->get();
+    }
+    public function getAdminUsersFromCentralCompanies(int $page = 1, int $perPage = 10): array
+    {
+       return $this->repository->getAdminUsersFromCentralCompanies($page,$perPage);
+    }
+
+    public function export(?array $userIds = null, string $format = 'xlsx')
+    {
+        $relations = [
+            'company',
+            'companyUser',
+            'roles',
+            'permissions'
+        ];
+
+        $users = $userIds
+            ? $this->repository->getUsersWithRelations($userIds, $relations)
+            : $this->repository->getUsersWithRelations(null, $relations);
+
+        return new \Modules\User\Exports\UsersExport($users);
     }
 }

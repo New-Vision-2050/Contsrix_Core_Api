@@ -1,0 +1,16 @@
+{
+    "name": "name",
+    "email": "email",
+    "phone": "phone",
+    "phone_code": "phone code",
+    "company": "company",
+    "user-type": "User Type",
+    "companies": "Companies",
+    "data_status": "Data Status",
+    "branch": "Branch",
+    "job_title": "Job Title",
+    "residence": "Residence",
+    "broker": "Broker",
+    "number_of_projects": "Number of Projects",
+    "end_date": "End Date"
+}

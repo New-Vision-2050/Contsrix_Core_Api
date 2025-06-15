@@ -1,0 +1,14 @@
+{
+    "name": "UserEducationalCourse",
+    "alias": "usereducationalcourse",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\UserEducationalCourse\\Providers\\UserEducationalCourseServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\UserInfo"
+}

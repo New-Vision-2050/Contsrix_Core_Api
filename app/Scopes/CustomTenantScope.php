@@ -5,6 +5,7 @@ namespace App\Scopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
+use Modules\Company\CompanyCore\Models\Company;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class CustomTenantScope implements Scope
@@ -28,7 +29,19 @@ class CustomTenantScope implements Scope
             return;
         }
 
+        if($model instanceof Company) //if model is Company and not central , apply the tenant filtering on id because no have company_id column
+        {
+            $builder->where($model->qualifyColumn("id"), $tenant->id);
+            return;
+        }
+
         // For all other tenants, apply the normal tenant filtering
         $builder->where($model->qualifyColumn(BelongsToTenant::$tenantIdColumn), $tenant->getTenantKey());
+    }
+    public function extend(Builder $builder)
+    {
+        $builder->macro('withoutTenancy', function (Builder $builder) {
+            return $builder->withoutGlobalScope($this);
+        });
     }
 }

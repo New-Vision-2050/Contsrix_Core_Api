@@ -28,8 +28,12 @@ class TimeZone extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'time_zone',
-        'country_id'
+        'country_id',
+        'zone_name',
+        'gmt_offset',
+        'gmt_offset_name',
+        'abbreviation',
+        'tz_name',
     ];
 
     protected $casts = [

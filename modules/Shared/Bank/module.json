@@ -1,0 +1,14 @@
+{
+    "name": "Bank",
+    "alias": "bank",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\Bank\\Providers\\BankServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

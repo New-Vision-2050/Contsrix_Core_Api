@@ -1,0 +1,14 @@
+{
+    "name": "SalaryType",
+    "alias": "salarytype",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\SalaryType\\Providers\\SalaryTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

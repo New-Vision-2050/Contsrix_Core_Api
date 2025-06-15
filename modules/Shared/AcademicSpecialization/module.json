@@ -1,0 +1,14 @@
+{
+    "name": "AcademicSpecialization",
+    "alias": "academicspecialization",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\AcademicSpecialization\\Providers\\AcademicSpecializationServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

@@ -66,6 +66,14 @@ return [
     'json' => 'يجب أن يكون حقل :attribute سلسلة JSON صالحة.',
     'list' => 'يجب أن يكون حقل :attribute قائمة.',
     'lowercase' => 'يجب أن يكون حقل :attribute بحروف صغيرة.',
+
+    'branch_id_required' => 'حقل الفرع مطلوب.',
+    'management_id_required' => 'حقل الإدارة مطلوب.',
+    'job_type_id_required' => 'حقل نوع الوظيفة مطلوب.',
+    'job_title_id_required' => 'حقل المسمى الوظيفي مطلوب.',
+    'job_code_required' => 'حقل كود الوظيفة مطلوب.',
+    "self_parent"=>"لا يمكن الفرع هو نفس الاب",
+
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
         'file' => 'يجب أن يكون حجم حقل :attribute أقل من :value كيلوبايت.',
@@ -154,6 +162,7 @@ return [
     "can-not-resend-before" => "لا يمكن اعادة ارسال كلمه المرور المؤقتة قبل :minute دقائق",
     "phone" => "رقم الهاتف غير صحيح",
     'delete-not-successful' => 'فشل الحذف',
+    "delete-not-allowed"=>'لا يمكن مسح هذا الحقل',
     'delete-successful' => 'تم الحذف بنجاح',
     'create-not-successful' => 'فشل الحفظ',
     'create-successful' => 'تم الحفظ بنجاح',
@@ -161,12 +170,14 @@ return [
     'update-successful' => 'تم التعديل بنجاح',
     "user-name" => "اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
     "user-email-error" => " البريد الالكتروني موجود ضمن النظام بأسم :name .",
-    "user-email-success" => "البريد الالكتروني موجود ضمن النظام",
+    "user-email-success" => "البريد الالكتروني غير موجود ضمن النظام",
     "user-phone-error" => "رقم الجوال موجود ضمن النظام بأسم :name .",
     "user-phone-success" => " رقم الجوال موجود ضمن النظام",
     "identity-or-passport-required" => "يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required" => "يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found" => "الشركة غير موجودة",
+    "branch-not-found" => "الفرع غير موجود",
+    "integrity-error" => "البيانات غير موحدة ",
     "login-way-not-found" => "طريقة الدخول غير موجودة",
     "user-not-found" => "المستخدم غير موجود",
     "identifier-not-found" => "المعرف غير موجود",
@@ -178,8 +189,9 @@ return [
     "all-questions-are-required" => "جميع الاسئلة مطلوبة",
     "invalid-token" => "الرمز غير صحيح",
     "can-not-resend-otp"=>"لا يمكن اعادة ارسال كلمه المرور المؤقتة",
-    'company_name' => 'اسم الشركه غير صحيح',
-    'company_user_name' => 'اسم الشركه غير صحيح',
+    'company_name' => 'اسم الشركة غير صحيح',
+    'company_name_unique' => 'اسم الشركة موجد مسبقا',
+    'company_user_name' => 'الاسم المختصر موجد مسبقا',
     'classification_number_already_in_use' => 'رقم التصنيف مستخدم بالفعل',
     'classification_ number_available' => 'رقم التصنيف متاح',
     'commercial_registration_number' => 'رقم السجل التجاري صحيح',
@@ -189,11 +201,288 @@ return [
     'phone_number_verified_successfully' => 'تم التحقق من رقم الهاتف بنجاح"',
     'email_already_exists' => 'البريد الإلكتروني موجود بالفعل.',
     'email_verified_successfully' => 'تم التحقق من البريد الإلكتروني بنجاح"',
+    "action-took-before" => "تم اتخاذ الاجراء من قبل",
+    "logo-not-valid" => "الصورة غير صحيحة",
+    "pick-another-location"=> "يرجى اختيار موقع آخر",
+    'you-must-change-location-or-update-country'=> "يجب اختيار موقع آخر أو تحديث الدولة",
+    "user-already-exists"=>"المستخدم موجود بالفعل",
+    "phone-exists"=>"رقم الهاتف موجود بالفعل",
+    "phone_email_consistency-error"=>"الرقم مسجل لدي مستخدم اخر ",
+    "can-not-delete-has-children"=>"لا يمكن مسح اذا متفرع منه هيكل اداري اخر او مستخدمين ",
+
+
+
+
     "lookups-value-not-correct" => "قيم عمليات البحث غير صحيحة",
+
+
+    'attributes' => [
+        'slug' => 'الاسم المختصر',
+        "job_type_id"=>"النوع الوظيفي",
+        "description"=>"وصف",
+        "name"=>"الاسم",
+        "state_id"=>"المحافظة",
+        "city_id"=>"المدينة",
+        "country_id"=>"الدوله",
+        "manager_id"=>"المدير",
+        "status"=>"الحالة"
+    ],
+    'username_required'=>'الاسم المختصر ألرامي',
+    'username_unique'=>'الاسم المختصر مستخدم بالفعل',
+    'username_regex'=>'الاسم المختصر غير صحيح',
+
+
+        'company_user' => [
+            'first_name_required' => 'الاسم الأول مطلوب.',
+            'last_name_required' => 'الاسم الأخير مطلوب.',
+            'company_id_required' => 'الشركة مطلوبة.',
+            'company_id_exists' => 'الشركة المحددة غير موجودة.',
+            'country_id_exists' => 'الدولة المحددة غير موجودة.',
+            'time_zone_id_exists' => 'المنطقة الزمنية المحددة غير موجودة.',
+            'language_id_exists' => 'اللغة المحددة غير موجودة.',
+            'currency_id_exists' => 'العملة المحددة غير موجودة.',
+            'phone_required' => 'رقم الهاتف مطلوب.',
+            'email_required' => 'البريد الإلكتروني مطلوب.',
+            'email_invalid' => 'يجب أن يكون البريد الإلكتروني صالحًا.',
+            'job_title_required' => 'المسمى الوظيفي مطلوب.',
+            'job_title_exists' => 'المسمى الوظيفي المحدد غير موجود.',
+            'border_number_unique' => 'رقم الحدود يجب أن يكون فريدًا.',
+            'residence_unique' => 'رقم الإقامة يجب أن يكون فريدًا.',
+            'passport_unique' => 'رقم الجواز يجب أن يكون فريدًا.',
+            'identity_unique' => 'رقم الهوية يجب أن يكون فريدًا.',
+        ],
+
+        'company_legal' => [
+        'registration_type_required' => 'نوع التسجيل مطلوب.',
+        'registration_type_exists' => 'نوع التسجيل المحدد غير موجود.',
+        'registration_number_required' => 'رقم التسجيل مطلوب.',
+        'start_date_required' => 'تاريخ البدء مطلوب.',
+        'start_date_invalid' => 'تاريخ البدء غير صالح.',
+        'start_date_before_end' => 'تاريخ البدء يجب أن يكون قبل أو يساوي تاريخ الانتهاء.',
+        'end_date_required' => 'تاريخ الانتهاء مطلوب.',
+        'end_date_invalid' => 'تاريخ الانتهاء غير صالح.',
+        'end_date_after_start' => 'تاريخ الانتهاء يجب أن يكون بعد أو يساوي تاريخ البدء.',
+        'file_required' => 'الملف مطلوب.',
+        'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
+        'regestration_number_required' => 'رقم التسجيل مطلوب لهذا النوع.',
+    ],
+
+
+    'company' => [
+        'name_required' => 'اسم الشركة مطلوب.',
+        'name_arabic' => 'يجب أن يكون اسم الشركة باللغة العربية فقط.',
+        'username_required' => 'اسم المستخدم مطلوب.',
+        'username_unique' => 'اسم المستخدم مستخدم من قبل.',
+        'username_regex' => 'يجب أن يحتوي اسم المستخدم على أحرف أو أرقام أو شرطة سفلية فقط.',
+        'country_required' => 'الدولة مطلوبة.',
+        'country_exists' => 'الدولة المحددة غير موجودة.',
+        'field_required' => 'نشاطات الشركة مطلوبة.',
+        'field_array' => 'يجب أن تكون مجالات الشركة في شكل مصفوفة.',
+        'field_id_required' => 'كل مجال من مجالات الشركة مطلوب.',
+        'field_id_uuid' => 'كل معرف مجال يجب أن يكون UUID صحيح.',
+        'field_id_exists' => 'بعض مجالات الشركة المحددة غير موجودة.',
+        'manager_required' => 'المدير العام مطلوب.',
+        'manager_uuid' => 'معرف المدير العام يجب أن يكون UUID صحيح.',
+        'manager_exists' => 'المدير العام المحدد غير موجود.',
+    ],
+
+    'user_relative' => [
+        'name_required' => 'حقل الاسم مطلوب.',
+        'user_id_required' => 'معرف المستخدم مطلوب.',
+        'marital_status_id_required' => 'الحالة الاجتماعية مطلوبة.',
+        'relationship_required' => 'العلاقة مطلوبة.',
+        'phone_required' => 'رقم الهاتف مطلوب.',
+    ],
+
+    'identity' => [
+        'passport_end_date_required_with' => 'تاريخ انتهاء جواز السفر مطلوب عند وجود تاريخ بداية.',
+        'passport_end_date_date' => 'يجب أن يكون تاريخ انتهاء جواز السفر تاريخًا صالحًا.',
+        'passport_end_date_after' => 'يجب أن يكون تاريخ انتهاء جواز السفر بعد تاريخ البداية.',
+
+        'identity_end_date_required_with' => 'تاريخ انتهاء الهوية مطلوب عند وجود تاريخ بداية.',
+        'identity_end_date_date' => 'يجب أن يكون تاريخ انتهاء الهوية تاريخًا صالحًا.',
+        'identity_end_date_after' => 'يجب أن يكون تاريخ انتهاء الهوية بعد تاريخ البداية.',
+
+        'border_number_end_date_required_with' => 'تاريخ انتهاء رقم الحدود مطلوب عند وجود تاريخ بداية.',
+        'border_number_end_date_date' => 'يجب أن يكون تاريخ انتهاء رقم الحدود تاريخًا صالحًا.',
+        'border_number_end_date_after' => 'يجب أن يكون تاريخ انتهاء رقم الحدود بعد تاريخ البداية.',
+
+        'entry_number_end_date_required_with' => 'تاريخ انتهاء رقم الدخول مطلوب عند وجود تاريخ بداية.',
+        'entry_number_end_date_date' => 'يجب أن يكون تاريخ انتهاء رقم الدخول تاريخًا صالحًا.',
+        'entry_number_end_date_after' => 'يجب أن يكون تاريخ انتهاء رقم الدخول بعد تاريخ البداية.',
+
+        'work_permit_end_date_required_with' => 'تاريخ انتهاء تصريح العمل مطلوب عند وجود تاريخ بداية.',
+        'work_permit_end_date_date' => 'يجب أن يكون تاريخ انتهاء تصريح العمل تاريخًا صالحًا.',
+        'work_permit_end_date_after' => 'يجب أن يكون تاريخ انتهاء تصريح العمل بعد تاريخ البداية.',
+    ],
+
+    'validation_failed'   => 'فشل التحقق من الصحة',
+    'unauthenticated'     => 'غير مصادق عليه',
+    'unauthorized'        => 'غير مصرح به',
+    'resource_not_found'  => 'المورد غير موجود',
+
+    'user_id_required' => 'رقم المستخدم مطلوب.',
+    'job_offer_number_required' => 'رقم عرض العمل مطلوب.',
+    'date_send_required' => 'تاريخ الإرسال مطلوب.',
+    'date_accept_required' => 'تاريخ القبول مطلوب.',
+
+    'job_name_required' => 'اسم الوظيفة مطلوب.',
+    'training_from_required' => 'تاريخ البداية مطلوب.',
+    'training_to_required' => 'تاريخ النهاية مطلوب.',
+    'training_to_after_from' => 'تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية.',
+    'company_name_required' => 'اسم الشركة مطلوب.',
+    'about_required' => 'الوصف مطلوب.',
+    "client-already-exist-in-thies-branches"=>'العميل موجودة في هذه الفروع',
+    "employee-already-exist"=>'الموظف موجود',
+    "broker-already-exist-in-thies-branches"=>'الوسيط موجودة في هذه الفروع',
+
+    'country_id_required' => 'الدولة مطلوبة.',
+    'university_id_required' => 'الجامعة مطلوبة.',
+    'academic_qualification_id_required' => 'المؤهل الأكاديمي مطلوب.',
+    'academic_specialization_id_required' => 'التخصص الأكاديمي مطلوب.',
+    'study_rate_required' => 'معدل الدراسة مطلوب.',
+    'study_rate_numeric' => 'معدل الدراسة يجب أن يكون رقمًا.',
+    'graduation_date_required' => 'تاريخ التخرج مطلوب.',
+
     'custom' => [
         'attribute-name' => [
             'rule-name' => 'custom-message',
         ],
+        'name' => [
+            'required' => 'الاسم مطلوب.',
+        ],
+        'files' => [
+            'required' => 'حقل الملفات مطلوب.',
+            'array' => 'يجب أن تكون الملفات مصفوفة.',
+            '*.required' => 'كل ملف مطلوب.',
+            '*.file' => 'كل عنصر يجب أن يكون ملفاً.',
+            '*.mimes' => 'يجب أن تكون الملفات من نوع: pdf, jpeg, jpg, png, doc, docx.',
+        ],
+        'document_type_id' => [
+            'required' => 'نوع المستند مطلوب.',
+            'exists' => 'نوع المستند المحدد غير صالح.',
+        ],
+        'description' => [
+            'required' => 'الوصف مطلوب.',
+        ],
+        'document_number' => [
+            'required' => 'رقم المستند مطلوب.',
+            'numeric' => 'يجب أن يكون رقم المستند رقماً.',
+        ],
+        'start_date' => [
+            'required' => 'تاريخ البداية مطلوب.',
+            'date' => 'تاريخ البداية غير صالح.',
+            'before_or_equal' => 'يجب أن يكون تاريخ البداية قبل أو مساوياً لتاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ البداية بالتنسيق Y-m-d.',
+        ],
+        'end_date' => [
+            'required' => 'تاريخ الانتهاء مطلوب.',
+            'date' => 'تاريخ الانتهاء غير صالح.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الانتهاء بعد أو مساوياً لتاريخ البداية.',
+            'date_format' => 'يجب أن يكون تاريخ الانتهاء بالتنسيق Y-m-d.',
+        ],
+        'notification_date' => [
+            'required' => 'تاريخ الإشعار مطلوب.',
+            'date' => 'يجب أن يكون تاريخ الإشعار تاريخاً صالحاً.',
+            'after_or_equal' => 'يجب أن يكون تاريخ الإشعار بعد أو مساوياً لتاريخ البداية.',
+            'before' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء.',
+            'date_format' => 'يجب أن يكون تاريخ الإشعار بالتنسيق Y-m-d.',
+        ],
     ],
-    'attributes' => [],
+    'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
+
+    'address' => [
+            'country_id' => [
+                'required' => 'الدولة مطلوبة.',
+                'exists' => 'الدولة المحددة غير صالحة.',
+            ],
+            'state_id' => [
+                'required' => 'المحافظة مطلوبة.',
+                'exists' => 'المحافظة المحددة غير صالحة.',
+            ],
+            'city_id' => [
+                'required' => 'المدينة مطلوبة.',
+                'exists' => 'المدينة المحددة غير صالحة.',
+            ],
+            'neighborhood_name' => [
+                'required' => 'اسم الحي مطلوب.',
+            ],
+            'street_name' => [
+                'required' => 'اسم الشارع مطلوب.',
+            ],
+            'building_number' => [
+                'required' => 'رقم المبنى مطلوب.',
+            ],
+            'additional_phone' => [
+                'required' => 'الهاتف الإضافي مطلوب.',
+            ],
+            'postal_code' => [
+                'required' => 'الرمز البريدي مطلوب.',
+            ],
+        ],
+
+        'branch' => [
+        'name_required' => 'اسم الفرع مطلوب.',
+        'name_string' => 'يجب أن يكون اسم الفرع نصاً.',
+
+        'parent_id_required' => 'معرّف الفرع الرئيسي مطلوب.',
+        'parent_id_exists' => 'معرّف الفرع الرئيسي غير صالح.',
+
+        'manager_id_required' => 'معرّف المدير مطلوب.',
+        'manager_id_exists' => 'معرّف المدير غير صالح.',
+
+        'phone_required' => 'رقم الهاتف مطلوب.',
+        'phone_invalid' => 'رقم الهاتف غير صالح.',
+
+        'email_required' => 'البريد الإلكتروني مطلوب.',
+        'email_invalid' => 'تنسيق البريد الإلكتروني غير صالح.',
+
+        'latitude_required' => 'خط العرض مطلوب.',
+        'latitude_numeric' => 'يجب أن يكون خط العرض رقمًا.',
+
+        'longitude_required' => 'خط الطول مطلوب.',
+        'longitude_numeric' => 'يجب أن يكون خط الطول رقمًا.',
+
+        'country_required' => 'الدولة مطلوبة.',
+        'country_exists' => 'الدولة المحددة غير صالحة.',
+
+        'state_required' => 'المنطقة مطلوبة.',
+        'state_exists' => 'المنطقة المحددة غير صالحة.',
+
+        'city_required' => 'المدينة مطلوبة.',
+        'city_exists' => 'المدينة المحددة غير صالحة.',
+    ],
+
+    'company_official' => [
+        'name_required' => 'اسم الشركة (بالإنجليزية) مطلوب.',
+        'email_required' => 'البريد الإلكتروني مطلوب.',
+        'email_valid' => 'يجب أن يكون البريد الإلكتروني صالحاً.',
+        'phone_required' => 'رقم الهاتف مطلوب.',
+        'branch_required' => 'اسم الفرع مطلوب.',
+        'company_type_required' => 'نوع الشركة مطلوب.',
+        'company_type_exists' => 'نوع الشركة المحدد غير موجود.',
+    ],
+    'residence_validation_error' => 'رقم الإقامة مستخدم بالفعل.',
+    'passport_validation_error' => 'رقم جواز السفر مستخدم بالفعل.',
+    'identity_validation_error' => 'رقم الهوية مستخدم بالفعل.',
+    'border_number_validation_error' => 'رقم الحدود مستخدم بالفعل.',
+    'user-residence-error' => 'رقم الإقامة مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-residence-success' => 'رقم الإقامة صالح.',
+    'user-passport-error' => 'رقم جواز السفر مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-passport-success' => 'رقم جواز السفر صالح.',
+    'user-identity-error' => 'رقم الهوية مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-identity-success' => 'رقم الهوية صالح.',
+    'user-border-number-error' => 'رقم الحدود مستخدم بالفعل من قبل مستخدم آخر.',
+    'user-border-number-success' => 'رقم الحدود صالح.',
+
+    'professional_bodie_id_required' => 'رقم الجهة المهنية مطلوب.',
+    'accreditation_name_required' => 'اسم الاعتماد مطلوب.',
+    'accreditation_number_required' => 'رقم الاعتماد مطلوب.',
+    'accreditation_degree_required' => 'درجة الاعتماد مطلوبة.',
+    'date_obtain_required' => 'تاريخ الحصول على الشهادة مطلوب.',
+    'date_obtain_date' => 'تاريخ الحصول على الشهادة يجب أن يكون تاريخًا صحيحًا.',
+    'date_end_required' => 'تاريخ انتهاء الشهادة مطلوب.',
+    'date_end_date' => 'تاريخ انتهاء الشهادة يجب أن يكون تاريخًا صحيحًا.',
+    'graduation_date_date' => 'يجب أن يكون تاريخ التخرج تاريخًا صحيحًا.',
+
 ];

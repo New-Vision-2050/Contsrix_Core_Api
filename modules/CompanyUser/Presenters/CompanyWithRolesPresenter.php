@@ -26,7 +26,9 @@ class CompanyWithRolesPresenter extends AbstractPresenter
         return [
             'id' => $this->company->id,
             'name' => $this->company->name,
-            'roles' => RolesPresenter::collection($this->companyUser->rolesForCompany($this->company->id))
+            'country_id' => $this->company->country_id,
+            'roles' => RolesPresenter::collection($this->companyUser->rolesForCompany($this->company->id)),
+            "phone"=>$this->companyUser->users()->where("company_id", $this->company->id)->first()->phone
         ];
     }
 

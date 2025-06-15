@@ -1,0 +1,17 @@
+<?php
+
+namespace Modules\Company\ManagementHierarchy\Events;
+
+use Illuminate\Queue\SerializesModels;
+
+class CompanyCreatedEvent
+{
+    use SerializesModels;
+
+    public $data;
+
+    public function __construct($data)
+    {
+        $this->data = $data;
+    }
+}

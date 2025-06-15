@@ -7,6 +7,8 @@ return [
 
     'welcome' => 'اهلا',
     'you-tried-to-change-password-with' => 'لقد حاولت تغيير كلمه المرور عن طريق',
+    'you-tried-to-first-login-with' => 'لقد حاولت الدخول للمرة الاولي عن طريق',
+    
     "you-tried-to-change-email-with"=>"لقد حاولت تغيير البريد الالكتروني عن طريق: :email",
     "change-your-email" => "تغيير البريد الالكتروني عبر كلمة المرور المؤقتة",
     "change-your-phone" => "تغيير رقم الهاتف عبر كلمة المرور المؤقتة",

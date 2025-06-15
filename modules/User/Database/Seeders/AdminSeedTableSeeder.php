@@ -28,18 +28,17 @@ class AdminSeedTableSeeder extends Seeder
     public function run()
     {
 
-        if (App::environment('production') == false) {
+        //if (App::environment('production') == false) {
 
             $companyUser = CompanyUser::firstOrCreate(['email' =>'admin@constrix-nv.com'],
                 [
                     'name' => 'Admin',
                     'email' => 'admin@constrix-nv.com',
-                    "phone"=>"542138116",
-                    "phone_code"=>"966",
-                    "currency_id"=> Currency::query()->first()->id,
+
+                    "currency_id"=> Country::query()->first()->id,
                     "job_title_id"=>jobTitle::query()->first()->id,
                     "country_id"=>Country::query()->first()->id,
-                    "time_zone_id"=>TimeZone::query()->first()->id,
+                    "time_zone_id"=>Country::query()->first()->id,
                     "language_id"=>Language::query()->first()->id,
                 ]
             );
@@ -50,13 +49,15 @@ class AdminSeedTableSeeder extends Seeder
                 [
                     'name' => 'Admin',
                     'email' => 'admin@constrix-nv.com',
-                    "phone"=>"542138116",
+                    "phone"=>"966542138116",
                     "phone_code"=>"966",
                     'password' => "Test1234",
-                    "global_company_user_id"=>$companyUser->global_id
+                    "global_company_user_id"=>$companyUser->global_id,
+                    "is_owner"=>1,
+                    "management_hierarchy_id"=>2 //main management in main company
                 ]
             );
 
         }
-    }
+    //}
 }

@@ -12,6 +12,6 @@ class TimeZoneFilter extends SearchModelFilter
 
         public function name($name)
         {
-            return $this->where('time_zone', $name);
+            return $this->where('zone_name', $name);
         }
 }

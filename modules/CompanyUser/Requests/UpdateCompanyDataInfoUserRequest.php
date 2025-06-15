@@ -18,7 +18,7 @@ class UpdateCompanyDataInfoUserRequest extends FormRequest
             "is_default"=> 'present|nullable|in:0,1',
             "birthdate_gregorian"=> 'nullable',
             "birthdate_hijri"=> 'nullable',
-            "nationality"=> 'required',
+            "country_id"=> 'required',
         ];
     }
 
@@ -26,12 +26,12 @@ class UpdateCompanyDataInfoUserRequest extends FormRequest
     {
         return new UpdateCompanyUserDataInfoCommand(
             name: $this->get('name'),
-            nickname: $this->get("nickname"),
+            nickname: $this->get("nickname")??'',
             gender: $this->get("gender"),
             birthdate_gregorian: $this->get("birthdate_gregorian") ?? '', // Ensure it's an empty string if null
             birthdate_hijri: $this->get("birthdate_hijri"),
             is_default: $this->get("is_default"),
-            nationality: $this->get("nationality"),
+            country_id: $this->get("country_id"),
         );
     }
 }

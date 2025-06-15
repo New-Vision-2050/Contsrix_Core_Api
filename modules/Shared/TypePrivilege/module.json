@@ -1,0 +1,14 @@
+{
+    "name": "TypePrivilege",
+    "alias": "typeprivilege",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\TypePrivilege\\Providers\\TypePrivilegeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}
