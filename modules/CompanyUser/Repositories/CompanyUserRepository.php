@@ -199,7 +199,7 @@ class CompanyUserRepository extends BaseRepository
             if (!$user) {//must create user if use api createCompanyUser because validation prevent replicate
 
 
-                $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->count();
+                $usersInCompanyCount = Company::query()->where("id", $companyRole['company_id'])->first()->users()->where("is_owner",1)->count();
 
                 $user = $this->userRepository->createUser(array_merge([
                     'name' => $companyUserData['name'],
@@ -340,7 +340,7 @@ class CompanyUserRepository extends BaseRepository
 
                 //create user in company assigned to main management
                 if ($user) {
-                    $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->count();
+                    $usersInCompanyCount = Company::query()->where("id", $companyUserRoleData["company_id"])->first()->users()->where("is_owner",1)->count();
                     $newUser = $user->replicate();
                     $newUser->password = null; // make password null
                     $newUser->company_id = $companyUserRoleData["company_id"];
