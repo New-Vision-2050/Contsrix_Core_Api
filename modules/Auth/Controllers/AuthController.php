@@ -176,9 +176,10 @@ class AuthController extends Controller
 
     public function loginAsAdmin(LoginAsAdminRequest $request)
     {
-       $token= $this->authService->loginAsAdmin($request->token);
+       [$token,$user]= $this->authService->loginAsAdmin($request->token);
 
-        return Json::item(["token" => $token]);
+
+        return Json::item(["token" => $token,"user" => (new UserPresenter($user))->getData()]);
     }
 
 }

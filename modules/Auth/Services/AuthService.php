@@ -353,7 +353,7 @@ class AuthService
         $token = JWTAuth::fromUser($user);
 
 
-        return $token;
+        return [$token,$user];
 
 
     }
