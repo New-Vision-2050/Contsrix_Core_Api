@@ -6,7 +6,8 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
-use Modules\Company\CompanyCore\Rules\RequiredRegistrationNumber;
+use Modules\Company\CompanyCore\Rules\StartDateMinimumEightDays;
+use Modules\Company\CompanyCore\Rules\RequiredIfRegistrationTypeNot3;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
@@ -19,37 +20,22 @@ class CreateCompanyLegalDataRequest extends FormRequest
     {
         return [
             'registration_type_id' => 'required|exists:company_registration_types,id',
-            'regestration_number' => 'string',
-            'start_date' => 'nullable|date|before_or_equal:end_date',
+            'regestration_number' => [
+                'string',
+                new RequiredIfRegistrationTypeNot3(Uuid::fromString($this->input('registration_type_id'))),
+            ],
+            'start_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:end_date',
+                new StartDateMinimumEightDays($this->input('end_date')),
+            ],
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'file' => 'nullable|array',
             'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
         ];
     }
-    public function withValidator($validator)
-    {
-        $validator->sometimes('regestration_number', 'required', function ($input) {
-            $type = \DB::table('company_registration_types')
-                ->where('id', $input->registration_type_id)
-                ->value('type');
 
-            return (int)$type !== 3;
-        });
-
-        $validator->after(function ($validator) {
-            $startDate = $this->input('start_date');
-            $endDate = $this->input('end_date');
-
-            if ($startDate && $endDate) {
-                $start = Carbon::parse($startDate);
-                $end = Carbon::parse($endDate);
-
-                if ($start->diffInDays($end, false) < 8) {
-                    $validator->errors()->add('start_date', __('validation.company_legal.start_date_less_than_8_days'));
-                }
-            }
-        });
-    }
     public function messages(): array
     {
         return [
@@ -59,12 +45,13 @@ class CreateCompanyLegalDataRequest extends FormRequest
             'end_date.date' => __('validation.company_legal.end_date_invalid'),
             'end_date.after_or_equal' => __('validation.company_legal.end_date_after_start'),
             'file.*.mimes' => __('validation.company_legal.file_mimes'),
+            'regestration_number.required' => __('validation.company_legal.regestration_number_required'),
         ];
     }
 
     public function createCreateCompanyLegalDataDTO(): CreateCompanyLegalDataDTO
     {
-        [ $company , $branch ] = $this->declareCompanyAndBranchUsingRequest();
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
         return new CreateCompanyLegalDataDTO(
             managementHierarchy: $branch,
