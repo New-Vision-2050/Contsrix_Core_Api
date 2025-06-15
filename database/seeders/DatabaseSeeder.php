@@ -57,7 +57,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CurrencySeederTable::class);
 //        $this->call(UniversitiesTableSeeder::class);
-        $this->call(RolesAndPermissionsSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(LanguagesTableSeeder::class);
         $this->call(JobTitleModulesSeederTableSeeder::class);
