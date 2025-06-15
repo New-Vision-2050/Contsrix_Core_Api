@@ -19,6 +19,7 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHa
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyOfficialDocumentHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanySetAddressHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
+use Modules\Company\CompanyCore\Presenters\AddressPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyLegalDataPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyOfficialDocumentPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
@@ -268,7 +269,7 @@ class CompanyProfileController extends Controller
     public function getCompanyAddress(): JsonResponse
     {
         $address = $this->companyProfileService->getCompanyAddressForCompany();
-        return Json::item($address);
+        return Json::item((new AddressPresenter($address))->getData());
     }
 
     /**

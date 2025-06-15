@@ -22,6 +22,7 @@ use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Country\Repositories\CityRepository;
@@ -32,6 +33,7 @@ use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Uuid;
 class CompanyProfileService
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(
         private AdminRequestRepository            $adminRequestRepository,
         private FileUploadService                 $fileUploadService,
@@ -162,8 +164,10 @@ class CompanyProfileService
      */
     public function getCompanyLegalDataForCompany()
     {
-        $company = $this->companyRepository->getCurrentCompany();
-        return $company->companyLegalData;
+        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+
+        $companyLegalData = $this->companyLegalDataRepository->findBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+        return $companyLegalData;
     }
 
     /**
@@ -173,8 +177,9 @@ class CompanyProfileService
      */
     public function getCompanyAddressForCompany()
     {
-        $company = $this->companyRepository->getCurrentCompany();
-        $address = $company->companyAddress;
+        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+
+        $address = $this->companyAddressRepository->findOneBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
 
         if ($address) {
             $address->country_name = $address->country?->name;
@@ -198,8 +203,9 @@ class CompanyProfileService
      */
     public function getCompanyOfficialDocumentsForCompany()
     {
-        $company = $this->companyRepository->getCurrentCompany();
-        return $company->companyOfficialDocuments;
+        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+        $companyOfficialDocuments = $this->companyOfficialDocumentRepository->findBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+        return $companyOfficialDocuments;
     }
 
     /**
