@@ -15,7 +15,7 @@ class UpdateCompanyUserDataInfoCommand
         public ?string $birthdate_gregorian,
         public ?string $birthdate_hijri,
         public int $is_default,
-        public string $nationality,
+        public string $country_id,
     ) {
     }
 
@@ -33,7 +33,7 @@ class UpdateCompanyUserDataInfoCommand
             'birthdate_gregorian' => $this->birthdate_gregorian,
             'birthdate_hijri' => $this->birthdate_hijri,
             'is_default' => $this->is_default,
-            'nationality' => $this->nationality,
+            'country_id' => $this->country_id,
         ];
     }
 }

@@ -9,6 +9,10 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class PeriodSeederTableSeeder extends Seeder
 {
+<<<<<<< HEAD
+=======
+    use SeedOnce;
+>>>>>>> 7be6c72c (merge with stage (first version ))
     /**
      * Run the database seeds.
      *
@@ -17,6 +21,7 @@ class PeriodSeederTableSeeder extends Seeder
     public function run()
     {
         Model::unguard();
+<<<<<<< HEAD
         $periods = [
             ['ar' => 'شهري', 'en' => 'Monthly'],
             ['ar' => 'سنوي', 'en' => 'Annually'],
@@ -30,5 +35,18 @@ class PeriodSeederTableSeeder extends Seeder
             );
         }
 
+=======
+
+        $periods = [
+            ['ar' => 'شهري', 'en' => 'Monthly'],
+            ['ar' => 'سنوي', 'en' => 'Annually'],
+        ];
+
+        foreach ($periods as $index => $item) {
+            Period::create(
+                ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
+            );
+        }
+>>>>>>> 7be6c72c (merge with stage (first version ))
     }
 }

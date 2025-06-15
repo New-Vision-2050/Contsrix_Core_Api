@@ -80,6 +80,7 @@ class CompanyPresenter extends AbstractPresenter
                 "name" => $this->company->mainBranch?->name
             ],
 
+<<<<<<< HEAD
             // These data points are now available through separate API endpoints
             // Access via: /api/company-profile/company-legal-data
             // "company_legal_data" => CompanyLegalDataPresenter::collection($this->company->companyLegalData),
@@ -92,6 +93,19 @@ class CompanyPresenter extends AbstractPresenter
 
             // Access via: /api/company-profile/company-branches
             // "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
+=======
+            //TODO we will separate in new api
+            "company_legal_data" => CompanyLegalDataPresenter::collection($this->company->companyLegalData),
+
+            //TODO we will separate in new api
+            "company_address" => $this->appendDateToAddress($this->company?->companyAddress),
+
+            //TODO we will separate in new api
+            "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
+
+            //TODO we will separate in new api
+            "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
+>>>>>>> 7be6c72c (merge with stage (first version ))
 
             "created_at" => $this->company->created_at,
         ];

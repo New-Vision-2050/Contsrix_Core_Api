@@ -3,7 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyCloneController;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyController;
+<<<<<<< HEAD
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchySettingController;
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 use Modules\Company\ManagementHierarchy\Controllers\WidgetsController;
 
 
@@ -16,6 +19,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/tree-direct-children', [ManagementHierarchyController::class, 'directChildrenTree']);
     Route::get('/user', [ManagementHierarchyController::class, 'hierarchies']);
     Route::get('/user-lower-levels', [ManagementHierarchyController::class, 'getUserLowerLevels']);
+<<<<<<< HEAD
     Route::get('/non-copied', [ManagementHierarchySettingController::class, 'getNonCopiedHierarchies']);
     Route::get('/non-copied/all', [ManagementHierarchySettingController::class, 'getAllNonCopiedHierarchies']);
     Route::get('/non-copied/{id}', [ManagementHierarchySettingController::class, 'showNonCopiedHierarchy']);
@@ -37,6 +41,10 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     });
     Route::post('/create-management-with-relations', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
     Route::post('/create-department-with-relations', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
+=======
+    Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
+    Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
+>>>>>>> 7be6c72c (merge with stage (first version ))
     Route::post('/create-department', [ManagementHierarchyController::class, 'createDepartment']);
     Route::post('/update-branch/{id}', [ManagementHierarchyController::class, 'updateBranch']);
     Route::put('/update-management/{id}', [ManagementHierarchyController::class, 'updateManagement']);
@@ -47,10 +55,13 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::put('/{id}', [ManagementHierarchyController::class, 'update']);
     Route::delete('/{id}', [ManagementHierarchyController::class, 'delete']);
 
+<<<<<<< HEAD
     // Department cloning routes
     Route::post('/clone-department', [ManagementHierarchyCloneController::class, 'cloneManagement']);
     Route::get('/linked-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'getLinkedDepartments']);
     Route::post('/sync-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'syncLinkedDepartments']);
 
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
     // Widgets API - single endpoint for all widgets
 });

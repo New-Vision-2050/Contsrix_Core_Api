@@ -23,6 +23,7 @@ use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserSpecificRoleRequest;
+use Modules\CompanyUser\Requests\ExportCompanyUsersRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
 use Modules\CompanyUser\Requests\UpdateCompanyUserRequest;
@@ -99,7 +100,6 @@ class CompanyUserController extends Controller
             $request->createCreateCompanyUserDTO(),
             $request->createCreateCompanyUserCompanyRoleDTO()
         );
-
         $presenter = new CompanyUserPresenter($createdItem);
         return Json::item($presenter->getData());
     }
@@ -136,6 +136,15 @@ class CompanyUserController extends Controller
             ->validateName()
             ->validateEmail()
             ->validatePhone()
+            ->get();
+        return Json::item($validations);
+
+    }
+
+    public function checkEmail()
+    {
+        $validations = $this->companyUserValidationService
+            ->validateEmail()
             ->get();
         return Json::item($validations);
 
@@ -188,6 +197,22 @@ class CompanyUserController extends Controller
     {
         return Json::item(CompanyUserRole::array());
     }
+
+
+    public function export(ExportCompanyUsersRequest $request)
+    {
+        $companyUserIds = $request->input('company_user_ids');
+        $csv = $this->companyUserService->export($companyUserIds);
+        $filename = 'users_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        return response()->streamDownload(function () use ($csv) {
+            echo $csv;
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
 
 
 }

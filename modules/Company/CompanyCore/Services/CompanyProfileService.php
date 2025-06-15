@@ -155,6 +155,7 @@ class CompanyProfileService
 
     }
 
+<<<<<<< HEAD
     /**
      * Get the company legal data
      *
@@ -213,6 +214,8 @@ class CompanyProfileService
         return $company->branches;
     }
 
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
     public function geoCodingUsingNationalAddressKSA(GeoCodingDTO $geoCodingDTO)
     {
         $url = "https://apina.address.gov.sa/NationalAddress/v3.1/Address/address-geocode?language=A&format=json&lat={$geoCodingDTO->getLatitude()}&long={$geoCodingDTO->getLongitude()}";

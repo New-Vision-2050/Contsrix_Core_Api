@@ -22,7 +22,10 @@ class UserPresenter extends AbstractPresenter
             'id' => $this->user->id,
             'name' => $this->user->name,
             'email' => $this->user->email,
+<<<<<<< HEAD
             'is_super_admin' => $this->user->hasRole("super-admin")||$this->user->is_owner?1:0,
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
             'phone' => $this->user->phone,
         ];
     }

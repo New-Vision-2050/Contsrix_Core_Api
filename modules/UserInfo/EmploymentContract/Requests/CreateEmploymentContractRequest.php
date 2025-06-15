@@ -14,6 +14,7 @@ class CreateEmploymentContractRequest extends FormRequest
         return [
             'user_id' => 'required|string',
 
+<<<<<<< HEAD
             'contract_number' => 'nullable|string',
             'start_date' => 'nullable|string',
             'commencement_date' => 'nullable|string',
@@ -32,6 +33,26 @@ class CreateEmploymentContractRequest extends FormRequest
             'annual_leave' => 'nullable|numeric',
             'state_id' => 'nullable|string',
             'right_terminate_id' => 'nullable|string',
+=======
+            'contract_number' => 'required|string',
+            'start_date' => 'required|string',
+            'commencement_date' => 'required|string',
+            'contract_duration' => 'required|string',
+            'contract_duration_unit' => 'required|string',
+
+            'notice_period' => 'required|numeric',
+            'notice_period_unit' => 'required|string',
+            'probation_period' => 'required|numeric',
+            'probation_period_unit' => 'required|string',
+
+            'nature_work_id' => 'required|string',
+            'type_working_hour_id' => 'required|string',
+
+            'working_hours' => 'required|numeric',
+            'annual_leave' => 'required|numeric',
+            'country_id' => 'required|string',
+            'right_terminate_id' => 'required|string',
+>>>>>>> 7be6c72c (merge with stage (first version ))
 
             'file' => 'nullable|array',
             'file.*' => 'nullable',
@@ -56,7 +77,11 @@ class CreateEmploymentContractRequest extends FormRequest
 
             working_hours: $this->get('working_hours'),
             annual_leave: $this->get('annual_leave'),
+<<<<<<< HEAD
             state_id: $this->get('state_id'),
+=======
+            country_id: $this->get('country_id'),
+>>>>>>> 7be6c72c (merge with stage (first version ))
             right_terminate_id: $this->get('right_terminate_id'),
 
             contract_duration_unit: $this->get('contract_duration_unit'),

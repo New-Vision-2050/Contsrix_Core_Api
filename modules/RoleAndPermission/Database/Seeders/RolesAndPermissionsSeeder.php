@@ -15,6 +15,7 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 class RolesAndPermissionsSeeder extends Seeder
 {
     use SeedOnce;
+
     /**
      * Run the database seeds.
      *
@@ -22,25 +23,22 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run()
     {
-        if(!tenant())
-        {
+        if (!tenant()) {
             $this->call(UserPermissionsTableSeeder::class);//add permissions for user module
 
         }
 
 
-        if (App::environment('production') == false) {
-            $superAdminRole = Role::firstOrCreate(["name" => "super-admin"], ["name" => "super-admin","company_id"=>tenant("id")??Company::query()->first()->id]);
-            $adminRole = Role::firstOrCreate(["name" => "admin"], ["name" => "admin","company_id"=>tenant("id")??Company::query()->first()->id]);
-        }
+        $superAdminRole = Role::firstOrCreate(["name" => "super-admin"], ["name" => "super-admin", "company_id" => tenant("id") ?? Company::query()->first()->id]);
+        $adminRole = Role::firstOrCreate(["name" => "admin"], ["name" => "admin", "company_id" => tenant("id") ?? Company::query()->first()->id]);
         $superAdminRole->givePermissionTo(Permission::all());
         $adminRole->givePermissionTo(Permission::all());
-        if(!tenant()) {
+        if (!tenant()) {
             $user = User::first();
             setPermissionsTeamId(tenant("id") ?? Company::query()->first()->id);
             $user->assignRole('super-admin');
-        }else{
-            $generalManagerId= tenant("general_manager_id");
+        } else {
+            $generalManagerId = tenant("general_manager_id");
             $generalManager = User::where('id', $generalManagerId)->first();
             $generalManager->assignRole('super-admin');
 

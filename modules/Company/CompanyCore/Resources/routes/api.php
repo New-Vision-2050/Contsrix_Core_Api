@@ -3,6 +3,17 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Company\CompanyCore\Controllers\CompanyController;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
+<<<<<<< HEAD
+
+Route::get('/company-by-host', [CompanyController::class, 'getCompanyByHost'])->name('companies.company-by-host');
+
+Route::middleware(['auth:api'])->group(function () {
+    Route::get('branches/user/{id}', [CompanyController::class, 'branches']);
+    Route::get('managements/user/{id}', [CompanyController::class, 'managements']);
+
+});
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 
 Route::get('/company-by-host', [CompanyController::class, 'getCompanyByHost'])->name('companies.company-by-host');
 
@@ -12,7 +23,6 @@ Route::middleware(['auth:api'])->group(function () {
 
 });
 
-Route::get('/company-by-host', [CompanyController::class, 'getCompanyByHost'])->name('companies.company-by-host');
 
 Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(function () {
     Route::get('/', [CompanyController::class, 'index'])->name('companies.index');
@@ -56,11 +66,14 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
             Route::put("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "setAddress"]);
         });
 
+<<<<<<< HEAD
         // Separated API endpoints for company data
         Route::get("company-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyLegalData"]);
         Route::get("company-address", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyAddress"]);
         Route::get("company-official-documents", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyOfficialDocuments"]);
         Route::get("company-branches", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyBranches"]);
 
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
     });
 });

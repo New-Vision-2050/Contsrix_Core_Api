@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Controllers;
 
-use BasePackage\Shared\Facade\Json;
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\Company\CompanyCore\Requests\ExportCompaniesRequest;
 use Modules\Company\CompanyCore\Handlers\DeleteCompanyHandler;
 use Modules\Company\CompanyCore\Handlers\UpdateCompanyHandler;
 use Modules\Company\CompanyCore\Models\Company;
@@ -19,14 +21,18 @@ use Modules\Company\CompanyCore\Requests\GetCompanyRequest;
 use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Company\CompanyCore\Services\CompanyValidateService;
-use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Company\CompanyCore\Services\CompanyValidatedService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Handlers\ActivateCompanyHandler;
-use Modules\Company\CompanyCore\Presenters\CompanyWidgetPresenter;
 use Modules\Company\CompanyCore\Requests\ActiveCompanyRequest;
-use Modules\Company\CompanyCore\Services\CompanyValidatedService;
 use Modules\Company\CompanyCore\Services\CompanyWidgetService;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\User\Repositories\UserRepository;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\Cache;
+
+
 class CompanyController extends Controller
 {
     public function __construct(
@@ -37,6 +43,7 @@ class CompanyController extends Controller
         private CompanyValidatedService $validatedCompanyService,
         private CompanyWidgetService $companyWidgetService,
         private ActivateCompanyHandler $activateCompanyCommand,
+        private UserRepository $userRepository
         // private TransformImgsService  $transformImgsService
     ) {
     }
@@ -61,20 +68,26 @@ class CompanyController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function store(CreateCompanyRequest $request): JsonResponse
+    public function store(CreateCompanyRequest $request)
     {
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
+
+        // Clear widget cache when a new company is created
+        $this->companyWidgetService->clearWidgetCache();
 
         $presenter = new CompanyPresenter($createdItem);
 
         return Json::item($presenter->getData());
     }
 
-    public function update(UpdateCompanyRequest $request)//: JsonResponse
+    public function update(UpdateCompanyRequest $request): JsonResponse
     {
 
         $command = $request->createUpdateCompanyCommand();
         $this->updateCompanyHandler->handle($command);
+
+        // Clear widget cache when a company is updated
+        $this->companyWidgetService->clearWidgetCache();
 
         $item = $this->companyService->get($command->getId());
 
@@ -87,6 +100,9 @@ class CompanyController extends Controller
     {
         $this->deleteCompanyHandler->handle(Uuid::fromString($request->route('id')));
 
+        // Clear widget cache when a company is deleted
+        $this->companyWidgetService->clearWidgetCache();
+
         return Json::deleted();
     }
     public function validate(Request $request)//: JsonResponse
@@ -98,18 +114,36 @@ class CompanyController extends Controller
             'data' => $validationResult,
         ]);
     }
+    /**
+     * Get company statistics widget with caching
+     *
+     * @return JsonResponse
+     */
     public function widget(): JsonResponse
     {
-        $presenter = $this->companyWidgetService->getCompanyStatistics();
+        // Cache key for company widget statistics
+        $cacheKey = 'company_widget_statistics';
 
-        return Json::item($presenter->getData());
+        // Get data from cache or compute if not available
+        $widgetData = Cache::remember($cacheKey, now()->addHours(1), function () {
+            $presenter = $this->companyWidgetService->getCompanyStatistics();
+            return $presenter->getData();
+        });
 
+        return Json::item($widgetData);
     }
-    //concarncy in laravel
+
+    /**
+     * Clear the widget cache
+     */
+
     public function activate(ActiveCompanyRequest $request): JsonResponse
     {
         $command = $request->createActiveCompanyCommand();
         $this->activateCompanyCommand->handle($command);
+
+        // Clear widget cache when a company is activated/deactivated
+        $this->companyWidgetService->clearWidgetCache();
 
         $item = $this->companyService->get($command->getId());
 
@@ -129,7 +163,11 @@ class CompanyController extends Controller
     public function getCurrentCompanyLoggedIn()
     {
 
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
+        try {
+            $company = $this->companyService->getCurrentCompanyLoggedIn();
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(),$e->getCode());
+        }
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
@@ -137,5 +175,74 @@ class CompanyController extends Controller
     {
         $company = $this->companyService->getCompanyByHost($request->header('X-DOMAIN') ?? $request->getHost());
         return Json::item((new CompanyUnAuthPresenter($company))->getData());
+    }
+
+    /**
+     * Get company by name
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getByName(Request $request): JsonResponse
+    {
+        try {
+            $name = $request->query('name');
+
+            if (!$name) {
+                return Json::error('Company name is required', 400);
+            }
+
+            $company = $this->companyService->getByName($name);
+
+            if (!$company) {
+                return Json::error('Company not found', 404);
+            }
+
+            return Json::item((new CompanyPresenter($company))->getData());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Export companies data as CSV
+     *
+     */
+//    public function export(ExportCompaniesRequest $request)
+//    {
+//        $companyIds = $request->input('company_ids');
+//        $csv = $this->companyService->export($companyIds);
+//        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s') . '.csv';
+//
+//        return response()->streamDownload(function () use ($csv) {
+//            echo $csv;
+//        }, $filename, [
+//            'Content-Type' => 'text/csv',
+//            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+//        ]);
+//    }
+    public function export(ExportCompaniesRequest $request)
+    {
+        $companyIds = $request->input('ids');
+        $format = strtolower($request->input('format', 'xlsx'));
+
+        if (!in_array($format, ['xlsx', 'csv'])) {
+            return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
+        }
+
+        $export = $this->companyService->export($companyIds, $format);
+        $filename = 'companies_export_' . now()->format('Y-m-d_H-i-s');
+
+        return Excel::download($export, $filename . '.' . $format);
+    }
+
+    public function deleteLastCreated(): JsonResponse
+    {
+        $this->companyService->deleteLastCreated();
+
+        // Clear widget cache when the last created company is deleted
+        $this->companyWidgetService->clearWidgetCache();
+
+        return Json::deleted();
     }
 }

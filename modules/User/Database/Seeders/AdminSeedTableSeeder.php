@@ -36,7 +36,11 @@ class AdminSeedTableSeeder extends Seeder
                     'email' => 'admin@constrix-nv.com',
 
                     "currency_id"=> Country::query()->first()->id,
+<<<<<<< HEAD
                     "job_title_id"=>JobTitle::query()->first()->id,
+=======
+                    "job_title_id"=>jobTitle::query()->first()->id,
+>>>>>>> 7be6c72c (merge with stage (first version ))
                     "country_id"=>Country::query()->first()->id,
                     "time_zone_id"=>Country::query()->first()->id,
                     "language_id"=>Language::query()->first()->id,
@@ -63,6 +67,7 @@ class AdminSeedTableSeeder extends Seeder
             $this->recalculateUsersCount();
         }
     //}
+<<<<<<< HEAD
     
     /**
      * Manually recalculate users_count for all hierarchies
@@ -73,4 +78,6 @@ class AdminSeedTableSeeder extends Seeder
         // Use Artisan command to recalculate counts
         \Illuminate\Support\Facades\Artisan::call('recalculate:users-count');
     }
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 }

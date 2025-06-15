@@ -28,6 +28,7 @@ class ManagementHierarchyCRUDService
          return $this->repository->createManagementHierarchy($createManagementHierarchyDTO->toArray());
     }
 
+<<<<<<< HEAD
     public function updateManagementWithLookupsForChoise(UpdateManagementWithRelationsDTO $updateManagementWithRelationsDTO): SourceManagementHierarchy
     {
         return $this->repository->updateManagementWithRelations(
@@ -49,6 +50,8 @@ class ManagementHierarchyCRUDService
         return $this->repository->deleteManagementWithRelations($managementId);
     }
 
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
     public function createBranch(CreateBranchDTO $createBranchDTO): ManagementHierarchy
     {
          return $this->repository->createBranch($createBranchDTO->branchToArray(), $createBranchDTO->AddressToArray());
@@ -63,6 +66,7 @@ class ManagementHierarchyCRUDService
 
     public function createDepartment(CreateDepartmentDTO $createDepartmentDTO): ManagementHierarchy
     {
+<<<<<<< HEAD
          return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray(),[],[]);
     }
 
@@ -77,6 +81,9 @@ class ManagementHierarchyCRUDService
             $createManagementWithRelationsDTO->getJobTitles(),
             $createManagementWithRelationsDTO->getBranches()
         );
+=======
+         return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray());
+>>>>>>> 7be6c72c (merge with stage (first version ))
     }
 
     public function list(int $page = 1, int $perPage = 10): array

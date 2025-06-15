@@ -41,10 +41,13 @@ class SubEntityServiceProvider extends ModuleServiceProvider
             'SubEntity::config'
         );
     }
+<<<<<<< HEAD
 
     protected function registerMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
     }
 
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 }

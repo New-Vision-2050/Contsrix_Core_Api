@@ -100,10 +100,13 @@ class CountryController extends Controller
         return Json::items(CountryCurrencyPresenter::collection($list['data']),paginationSettings:$list['pagination']);
     }
 
+<<<<<<< HEAD
     public function getStatesByCurrentAuthUserBranch()
     {
         $states =  $this->countryService->getStatesByCountryBranch();
         return Json::items(MixedPresenter::collection($states));
     }
 
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 }

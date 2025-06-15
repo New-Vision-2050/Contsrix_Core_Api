@@ -23,11 +23,16 @@ class StateRepository extends BaseRepository
         parent::__construct($model);
     }
 
+<<<<<<< HEAD
     public function getStateList(?int $page, ?int $perPage = 10): Collection
+=======
+    public function getCountryList(?int $page, ?int $perPage = 10): Collection
+>>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->paginatedList(['status' => 1], $page, $perPage);
     }
 
+<<<<<<< HEAD
     public function getStatesWithCities($countryId = null)
     {
         return $this->model->with('cities:id,name,state_id')
@@ -45,16 +50,34 @@ class StateRepository extends BaseRepository
     }
 
     public function createState(array $data): State
+=======
+    public function getCity(UuidInterface $id): State
+    {
+        return $this->findOneByOrFail([
+            'id' => $id->toString(),
+        ]);
+    }
+
+    public function createCountry(array $data): State
+>>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->create($data);
     }
 
+<<<<<<< HEAD
     public function updateState(UuidInterface $id, array $data): bool
+=======
+    public function updateCountry(UuidInterface $id, array $data): bool
+>>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->update($id, $data);
     }
 
+<<<<<<< HEAD
     public function deleteState(UuidInterface $id): bool
+=======
+    public function deleteCountry(UuidInterface $id): bool
+>>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->delete($id);
     }

@@ -9,10 +9,13 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Modules\Company\ManagementHierarchy\Listeners\CreateHierarchyListener;
+<<<<<<< HEAD
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Observers\ManagementHierarchyObserver;
 use Modules\Company\ManagementHierarchy\Observers\UserCountObserver;
 use Modules\User\Models\User;
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 
 class ManagementHierarchyServiceProvider extends ModuleServiceProvider
 {
@@ -28,8 +31,11 @@ class ManagementHierarchyServiceProvider extends ModuleServiceProvider
         $this->registerMigrations();
 
         Event::listen(CompanyCreatedEvent::class,CreateHierarchyListener::class );
+<<<<<<< HEAD
         ManagementHierarchy::observe(ManagementHierarchyObserver::class);
         User::observe(UserCountObserver::class);
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
     }
 
     public function register(): void

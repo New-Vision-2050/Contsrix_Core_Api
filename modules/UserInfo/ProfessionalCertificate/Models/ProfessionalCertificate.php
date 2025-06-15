@@ -10,17 +10,27 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\ProfessionalCertificate\Database\factories\ProfessionalCertificateFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Shared\ProfessionalBodie\Models\ProfessionalBodie;
+<<<<<<< HEAD
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class ProfessionalCertificate extends Model implements HasMedia
+=======
+
+//use BasePackage\Shared\Traits\HasTranslations;
+
+class ProfessionalCertificate extends Model
+>>>>>>> 7be6c72c (merge with stage (first version ))
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+<<<<<<< HEAD
     use InteractsWithMedia;
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
     //use HasTranslations;
     //use SoftDeletes;
 

@@ -6,10 +6,13 @@ namespace Modules\UserInfo\ProfessionalCertificate\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+<<<<<<< HEAD
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Nonstandard\Uuid;
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 use Ramsey\Uuid\UuidInterface;
 use Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalCertificate;
 
@@ -20,12 +23,16 @@ use Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalCertificate;
  */
 class ProfessionalCertificateRepository extends BaseRepository
 {
+<<<<<<< HEAD
     public function __construct(
         ProfessionalCertificate $model,
         private CompanyUserRepository $companyUserRepository,
         private FileUploadService $fileUploadService,
 
     )
+=======
+    public function __construct(ProfessionalCertificate $model)
+>>>>>>> 7be6c72c (merge with stage (first version ))
     {
         parent::__construct($model);
     }
@@ -46,6 +53,7 @@ class ProfessionalCertificateRepository extends BaseRepository
         ]);
     }
 
+<<<<<<< HEAD
     public function createProfessionalCertificate(array $data , $file = null): ProfessionalCertificate
     {
         $certificate = $this->create($data);
@@ -87,6 +95,15 @@ class ProfessionalCertificateRepository extends BaseRepository
         }
 
 
+=======
+    public function createProfessionalCertificate(array $data): ProfessionalCertificate
+    {
+        return $this->create($data);
+    }
+
+    public function updateProfessionalCertificate(UuidInterface $id, array $data): bool
+    {
+>>>>>>> 7be6c72c (merge with stage (first version ))
         return $this->update($id, $data);
     }
 

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\UserEducationalCourse\DTO;
 
+<<<<<<< HEAD
 use Illuminate\Http\UploadedFile;
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
 use Ramsey\Uuid\UuidInterface;
 
 class CreateUserEducationalCourseDTO
@@ -18,8 +21,12 @@ class CreateUserEducationalCourseDTO
         public ?string $institute,
         public ?string $certificate,
         public ?string $date_obtain,
+<<<<<<< HEAD
         public ?string $date_end,
         public ?UploadedFile $file
+=======
+        public ?string $date_end
+>>>>>>> 7be6c72c (merge with stage (first version ))
     ) {
     }
 

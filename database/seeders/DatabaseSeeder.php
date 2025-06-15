@@ -53,6 +53,15 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CurrencySeederTable::class);
 //        $this->call(UniversitiesTableSeeder::class);
+<<<<<<< HEAD
+=======
+        $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(TimeZoneSeederTableSeeder::class);
+        $this->call(LanguagesTableSeeder::class);
+        $this->call(JobTitleModulesSeederTableSeeder::class);
+        $this->call(AdminSeedTableSeeder::class);
+        $this->call(CompanyModulesSeederTableSeeder::class);
+>>>>>>> 7be6c72c (merge with stage (first version ))
         $this->call(RolesAndPermissionsSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(LanguagesTableSeeder::class);

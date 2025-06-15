@@ -9,17 +9,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserEducationalCourse\Database\factories\UserEducationalCourseFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+<<<<<<< HEAD
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class UserEducationalCourse extends Model implements HasMedia
+=======
+//use BasePackage\Shared\Traits\HasTranslations;
+
+class UserEducationalCourse extends Model
+>>>>>>> 7be6c72c (merge with stage (first version ))
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+<<<<<<< HEAD
     use InteractsWithMedia;
+=======
+>>>>>>> 7be6c72c (merge with stage (first version ))
     //use HasTranslations;
     //use SoftDeletes;
 
