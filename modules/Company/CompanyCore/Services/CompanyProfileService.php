@@ -25,6 +25,8 @@ use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Country\Repositories\CityRepository;
 use Modules\Country\Repositories\CountryRepository;
 use Modules\Country\Repositories\StateRepository;
@@ -44,6 +46,7 @@ class CompanyProfileService
         private CityRepository                    $cityRepository,
         private StateRepository                   $stateRepository,
         private CountryRepository                 $countryRepository,
+        private ManagementHierarchyRepository               $managementHierarchyRepository
 
 
     )
@@ -57,7 +60,7 @@ class CompanyProfileService
             data: $companyDataRequestDTO->toArray() + ["id" => $companyDataRequestDTO->getId()],
             requestType: "companyOfficialDataUpdate",
             action: ["ar" => "طلب تعديل البيانات الرسميه للشركة", "en" => "Company official data update request"],
-            notes: $companyDataRequestDTO->getNotes(), file:$companyDataRequestDTO->getFile()
+            file: $companyDataRequestDTO->getFile(), notes: $companyDataRequestDTO->getNotes()
         );
         return $adminRequest;
 
@@ -215,8 +218,9 @@ class CompanyProfileService
      */
     public function getCompanyBranchesForCompany()
     {
-        $company = $this->companyRepository->getCurrentCompany();
-        return $company->branches;
+        [$company , $branch ]= $this->declareCompanyAndBranchUsingRequest();
+        $branches = $this->managementHierarchyRepository->findByWithRelations(["type"=>"branch" , "company_id"=>$company->id],["address"]);
+        return $branches;
     }
 
     public function geoCodingUsingNationalAddressKSA(GeoCodingDTO $geoCodingDTO)
