@@ -24,9 +24,33 @@ class JobTitleRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function withoutScopePaginated(array $conditions = [], $page = 1, $perPage = 10)
+    public function withoutScopePaginated(array $conditions = [], $page = 1, $perPage = 10, ?string $sort = null,string $order = 'asc')
     {
         $query = $this->model->withoutGlobalScope("active")->where($conditions)->filter(request()->all());
+
+
+        if ($sort) {
+            switch ($sort) {
+                case 'job_type.name':
+                    $query->join('job_types', 'job_titles.job_type_id', '=', 'job_types.id')
+                        ->orderBy('job_types.name', $order)
+                        ->select('job_titles.*');
+                    break;
+
+                case 'user_count':
+                    $query->withCount('users')->orderBy('users_count', $order);
+                    break;
+
+                case 'name':
+                case 'status':
+                    $query->orderBy($sort, $order);
+                    break;
+
+                default:
+                    // ignore or throw exception for unknown sort
+                    break;
+            }
+        }
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
