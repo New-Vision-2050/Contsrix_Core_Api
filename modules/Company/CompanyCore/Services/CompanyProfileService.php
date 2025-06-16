@@ -33,9 +33,11 @@ use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Uuid;
+
 class CompanyProfileService
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
         private AdminRequestRepository            $adminRequestRepository,
         private FileUploadService                 $fileUploadService,
@@ -46,7 +48,7 @@ class CompanyProfileService
         private CityRepository                    $cityRepository,
         private StateRepository                   $stateRepository,
         private CountryRepository                 $countryRepository,
-        private ManagementHierarchyRepository               $managementHierarchyRepository
+        private ManagementHierarchyRepository     $managementHierarchyRepository
 
 
     )
@@ -121,7 +123,7 @@ class CompanyProfileService
         [$country, $state, $city] = $this->getFromDB($country, $city, $state);
         if ($country) {
 
-            if ((!request()->has("in_general")|| request()->in_general == 0) &&($country->id != $geoCodingDTO->getBranch()->address->country_id)) {
+            if ((!request()->has("in_general") || request()->in_general == 0) && ($country->id != $geoCodingDTO->getBranch()->address->country_id)) {
                 throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
 
             }
@@ -167,9 +169,9 @@ class CompanyProfileService
      */
     public function getCompanyLegalDataForCompany()
     {
-        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
-        $companyLegalData = $this->companyLegalDataRepository->findBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+        $companyLegalData = $this->companyLegalDataRepository->findBy(["company_id" => $company->id, "management_hierarchy_id" => $branch->id]);
         return $companyLegalData;
     }
 
@@ -180,9 +182,9 @@ class CompanyProfileService
      */
     public function getCompanyAddressForCompany()
     {
-        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
-        $address = $this->companyAddressRepository->findOneBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+        $address = $this->companyAddressRepository->findOneBy(["company_id" => $company->id, "management_hierarchy_id" => $branch->id]);
 
         if ($address) {
             $address->country_name = $address->country?->name;
@@ -206,8 +208,8 @@ class CompanyProfileService
      */
     public function getCompanyOfficialDocumentsForCompany()
     {
-        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
-        $companyOfficialDocuments = $this->companyOfficialDocumentRepository->findBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        $companyOfficialDocuments = $this->companyOfficialDocumentRepository->findBy(["company_id" => $company->id, "management_hierarchy_id" => $branch->id]);
         return $companyOfficialDocuments;
     }
 
@@ -218,8 +220,8 @@ class CompanyProfileService
      */
     public function getCompanyBranchesForCompany()
     {
-        [$company , $branch ]= $this->declareCompanyAndBranchUsingRequest();
-        $branches = $this->managementHierarchyRepository->findByWithRelations(["type"=>"branch" , "company_id"=>$company->id],["address"]);
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        $branches = $this->managementHierarchyRepository->findByWithRelations(["type" => "branch", "company_id" => $company->id], ["address"]);
         return $branches;
     }
 
@@ -326,7 +328,7 @@ class CompanyProfileService
 
         if ($fileSizeInMB > $maxSizeInMB) {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 0, "validate" => "required"]);
-            $flag=0;
+            $flag = 0;
         } else {
             array_push($errors, ["sentence" => "حجم الصورة يجب أن لا يتعدى 5 ميجابايت", "sub_title" => null, "status" => 1, 'validate' => 'required']);
         }
@@ -339,18 +341,18 @@ class CompanyProfileService
             array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1, "validate" => "required"]);
         } else {
             array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0, "validate" => "required"]);
-            $flag=0;
+            $flag = 0;
         }
 
         $result = $this->checkImage($image);
 
         if ($result === 0) {
             array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 0, "validate" => "required"]);
-            $flag=0;
+            $flag = 0;
         } else {
             array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1, "validate" => "required"]);
         }
-        return [$errors,$flag];
+        return [$errors, $flag];
     }
 
 
@@ -375,13 +377,14 @@ class CompanyProfileService
 
         return $company;
     }
+
     public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
 //        return
 
         $adminRequest = $this->adminRequestRepository->createAdminRequestForCompanyLegalData(
-            userId: Uuid::fromString((string) auth()->user()->id),
-            id: (string) $companyDataRequestDTO->getId(),
+            userId: Uuid::fromString((string)auth()->user()->id),
+            id: (string)$companyDataRequestDTO->getId(),
             data: $companyDataRequestDTO->toArray(),
             requestType: "companyLegalDataUpdate",
             action: ["ar" => "طلب تعديل البيانات القانونيه للشركة", "en" => "Company legal data update request"],
@@ -392,7 +395,7 @@ class CompanyProfileService
 
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
-        $companyData =  $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+        $companyData = $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
         event(new CompanyLegalDataCreated($companyData));
         return $companyData;
     }
