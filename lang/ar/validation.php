@@ -265,6 +265,7 @@ return [
         'file_required' => 'الملف مطلوب.',
         'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
         'regestration_number_required' => 'رقم التسجيل مطلوب لهذا النوع.',
+        'start_date_less_than_8_days' => 'يجب أن يكون تاريخ البدء أكثر من 8 أيام قبل تاريخ الانتهاء.',
     ],
 
 
