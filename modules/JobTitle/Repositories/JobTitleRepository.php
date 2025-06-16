@@ -42,6 +42,16 @@ class JobTitleRepository extends BaseRepository
                     break;
 
                 case 'name':
+                    $query->join('translations', function ($join) {
+                            $join->on('translations.translatable_id', '=', 'job_titles.id')
+                                ->where('translations.translatable_type', $this->model::class)
+                                ->where('translations.field', '=', 'name')
+                                ->where('translations.locale', '=', app()->getLocale());
+                        })
+                        ->orderBy('translations.content', $order)
+                        ->select('job_titles.*');
+                    break;
+
                 case 'status':
                     $query->orderBy($sort, $order);
                     break;
@@ -51,6 +61,7 @@ class JobTitleRepository extends BaseRepository
                     break;
             }
         }
+
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
