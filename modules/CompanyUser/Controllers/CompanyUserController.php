@@ -108,7 +108,7 @@ class CompanyUserController extends Controller
     public function assignRoleForCompanies(AssignRoleCompanyUserRequest $request)
     {
         $command = $request->createAssignCompanyUserCommand();
-        $this->assignRoleCompanyUserHandler->handle($command);
+      return  $this->assignRoleCompanyUserHandler->handle($command);
 
         $item = $this->companyUserService->get($command->getId());
 

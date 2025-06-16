@@ -267,8 +267,16 @@ class CompanyUserRepository extends BaseRepository
                 CompanyUserAddress::query()->updateOrCreate(["global_company_user_id" => $companyUser->id], $address + ["global_company_user_id" => $companyUser->id]);
             }
             if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
-                $generalManagerJobTitle = $this->jobTitleRepository->findOneBy(["type" => "general_manager"]);
-                $userProfessionalData = UserProfessionalData::query()->where([
+                $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyRole['company_id']])->first();
+                if($companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
+                {
+                    $companyId = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
+                    if($companyId != $companyRole['company_id'] )
+                    {
+                        $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
+                    }
+                }
+                $userProfessionalData = UserProfessionalData::query()->withoutTenancy()->where([
                     'global_id' => $user->global_company_user_id,
                     'company_id' => $companyRole['company_id'],
                 ])->first();
@@ -278,7 +286,7 @@ class CompanyUserRepository extends BaseRepository
                     'branch_id' => $branches != null ? $branches[0] : $mainBranchId,
                     'management_id' => $mainManagement->id,
                     "job_title_id" => isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] != null ? $companyUserData["job_title_id"] : $generalManagerJobTitle->id,
-                    "job_type_id" => isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] != null ? JobTitle::query()->where("id", $companyUserData["job_title_id"])->first()?->job_type_id : $generalManagerJobTitle?->job_type_id,
+                    "job_type_id" => isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] != null ? JobTitle::query()->withoutTenancy()->where("id", $companyUserData["job_title_id"])->first()?->job_type_id : $generalManagerJobTitle?->job_type_id,
 
                 ];
 
@@ -320,8 +328,7 @@ class CompanyUserRepository extends BaseRepository
     }
 
 
-    public
-    function assignRoleCompanyUser(UuidInterface $id, array $companyUserRoleData, array $branches = null): void
+    public function assignRoleCompanyUser(UuidInterface $id, array $companyUserRoleData, array $branches = null)
     {
         try {
             DB::beginTransaction();
@@ -373,9 +380,9 @@ class CompanyUserRepository extends BaseRepository
             $companyUserCompany = CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
 
             if (CompanyUserRole::EMPLOYEE->value == $companyUserRoleData['role']) {
-                $generalManagerJobTitle = $this->jobTitleRepository->findOneBy(["type" => "general_manager"]);
+                $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyUserRoleData['company_id']])->first();
 
-                $userProfessionalData = UserProfessionalData::query()->where([
+                $userProfessionalData = UserProfessionalData::query()->withoutTenancy()->where([
                     'global_id' => $user->global_company_user_id,
                     'company_id' => $companyUserRoleData['company_id'],
                 ])->first();
