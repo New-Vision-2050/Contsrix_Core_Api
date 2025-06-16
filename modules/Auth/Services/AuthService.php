@@ -331,6 +331,10 @@ class AuthService
     public function getDataForLoginAsAdmin($companyId)
     {
         $company = $this->companyRepository->findOneBy(["id" => $companyId]);
+        if($company->is_active == 0)
+        {
+             throw new CustomException(__("validation.company-not-active"),403);
+        }
         tenancy()->end();
         tenancy()->initialize($company->id);
         $user = $this->userCRUDService->getUserByIdentifier("admin@constrix-nv.com");
