@@ -3,7 +3,6 @@
 namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 
 trait SortsByRelation
 {
@@ -17,14 +16,10 @@ trait SortsByRelation
      */
     public function scopeOrderByRelation(Builder $query, string $relationPath, string $order = 'asc'): Builder
     {
-        $query->distinct();
-
-        // Split the path e.g., 'jobType.name' -> ['jobType', 'name']
         $parts = explode('.', $relationPath);
         $column = array_pop($parts);
         $relationName = implode('.', $parts);
 
-        // Get the related model instance through the relationship
         $relationInstance = $this;
         foreach (explode('.', $relationName) as $relationSegment) {
             $relationInstance = $relationInstance->$relationSegment()->getRelated();
@@ -32,21 +27,21 @@ trait SortsByRelation
 
         $relationTable = $relationInstance->getTable();
         $modelTable = $this->getTable();
-        $relation = $this->$relationName(); // Get the relationship object
+        $relation = $this->$relationName();
         $foreignKey = $relation->getForeignKeyName();
         $ownerKey = $relation->getOwnerKeyName();
 
-        // Use addSelect to prevent wiping out other select statements (like from withCount)
-        // and to avoid ambiguous column errors from the join.
-        $query->addSelect("{$modelTable}.*");
+        // Ensure we only select from the main model's table to avoid ambiguous columns.
+        // Eloquent will handle this correctly if we don't add selects from other tables.
+        if (empty($query->getQuery()->columns)) {
+            $query->select("{$modelTable}.*");
+        }
 
         // Check if the column is translatable on the related model
         if (method_exists($relationInstance, 'isTranslatableAttribute') && $relationInstance->isTranslatableAttribute($column)) {
             $translationTableAlias = $relationTable . '_translations_sort';
             $query
-                // Use LEFT JOIN to include JobTitles that have no JobType
                 ->leftJoin($relationTable, "{$modelTable}.{$foreignKey}", '=', "{$relationTable}.{$ownerKey}")
-                // Also use LEFT JOIN here in case a JobType has no translation
                 ->leftJoin("translations as {$translationTableAlias}", function ($join) use ($relationTable, $relationInstance, $column, $translationTableAlias) {
                     $join->on("{$translationTableAlias}.translatable_id", '=', "{$relationTable}.id")
                         ->where("{$translationTableAlias}.translatable_type", get_class($relationInstance))
@@ -56,11 +51,13 @@ trait SortsByRelation
         } else {
             // Standard sort for non-translatable columns
             $query
-                // Use LEFT JOIN to include JobTitles that have no JobType
                 ->leftJoin($relationTable, "{$modelTable}.{$foreignKey}", '=', "{$relationTable}.{$ownerKey}")
                 ->orderBy("{$relationTable}.{$column}", $order);
         }
 
-        return $query;
+        // Use GROUP BY on the primary key of the main table.
+        // This is the correct way to remove duplicates from a one-to-many join.
+        // It's compatible with strict SQL modes and the ORDER BY on the joined table.
+        return $query->groupBy("{$modelTable}.{$this->getKeyName()}");
     }
 }
