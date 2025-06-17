@@ -12,11 +12,7 @@ use Modules\CompanyUser\Repositories\CompanyUserRepository;
 
 class SubEntityRecordsService
 {
-     protected $mappedRegistrationForms = [
-        CompanyUserRole::BROKER->value,
-        CompanyUserRole::EMPLOYEE->value,
-        CompanyUserRole::CLIENT->value,
-    ];
+
 
 
     public function __construct(
@@ -32,7 +28,7 @@ class SubEntityRecordsService
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
-        if(in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+        if(in_array($registrationForm->company_user_role_map, CompanyUserRole::values())) {
             return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map, $branchId);
         }
 
