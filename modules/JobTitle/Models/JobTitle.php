@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\JobTitle\Models;
 
+use App\Traits\SortableByTranslation;
+use App\Traits\SortsByRelation;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,7 +23,8 @@ class JobTitle extends Model
     use BaseFilterable;
     use HasTranslations;
     use BelongsToTenant;
-
+    use SortableByTranslation;
+    use SortsByRelation;
     //use SoftDeletes;
 
     //public array $translatable = [];
