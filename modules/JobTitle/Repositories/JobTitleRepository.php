@@ -67,7 +67,6 @@ class JobTitleRepository extends BaseRepository
             'data' => $paginatedData
         ]);
     }
-
     public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
