@@ -28,12 +28,12 @@ class SubEntityRecordsService
     }
 
 
-   public function getRecords(string $subEntityId, string $registrationFormId, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
+   public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
         if(in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map);
+            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map, $branchId);
         }
 
         //get sub_entity
@@ -48,8 +48,8 @@ class SubEntityRecordsService
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getMappedRecords(int $page = 1, int $perPage = 10, $type): array
+    protected function getMappedRecords(int $page = 1, int $perPage = 10, $type,$branchId = null): array
     {
-        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type);
+        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type,null,$branchId);
     }
 }
