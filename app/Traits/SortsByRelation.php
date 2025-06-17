@@ -18,7 +18,7 @@ trait SortsByRelation
      * @param string $currentTable        Optional current table name (default: from model)
      * @return Builder
      */
-    public function scopeJoinAndOrderByRelationField(
+    public function orderByRelation(
         Builder $query,
         string $relatedTable,
         string $foreignKey,
