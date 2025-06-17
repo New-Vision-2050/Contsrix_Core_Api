@@ -40,7 +40,15 @@ class JobTitleRepository extends BaseRepository
                     break;
 
                 case 'job_type.name':
-                    $query->orderByRelation('job_types', 'job_type_id', 'name', $order);
+                $query->orderByRelation(
+                    relatedTable: 'job_types',
+                    foreignKey: 'job_type_id',
+                    orderField: 'name',
+                    order: $order,
+                    ownerKey: 'id',
+                    translated: true,
+                    relatedModelClass: \Modules\Shared\JobType\Models\JobType::class
+                );
                     break;
 
                 case 'status':
