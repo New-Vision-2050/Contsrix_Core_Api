@@ -31,25 +31,16 @@ class JobTitleRepository extends BaseRepository
 
         if ($sort) {
             switch ($sort) {
-                case 'job_type.name':
-                    $query->join('job_types', 'job_titles.job_type_id', '=', 'job_types.id')
-                        ->orderBy('job_types.name', $order)
-                        ->select('job_titles.*');
-                    break;
+                case 'name':
+                    $query->orderByTranslation('name', $order);
+                break;
 
                 case 'user_count':
-                    $query->withCount('users')->orderBy('users_count', $order);
+                $query->withCount('userProfissional')->orderBy('user_profissional_count', $order);
                     break;
 
-                case 'name':
-                    $query->join('translations', function ($join) {
-                            $join->on('translations.translatable_id', '=', 'job_titles.id')
-                                ->where('translations.translatable_type', $this->model::class)
-                                ->where('translations.field', '=', 'name')
-                                ->where('translations.locale', '=', app()->getLocale());
-                        })
-                        ->orderBy('translations.content', $order)
-                        ->select('job_titles.*');
+                case 'job_type.name':
+                    $query->orderByRelation('jobType.name', $order);
                     break;
 
                 case 'status':
@@ -57,7 +48,6 @@ class JobTitleRepository extends BaseRepository
                     break;
 
                 default:
-                    // ignore or throw exception for unknown sort
                     break;
             }
         }
