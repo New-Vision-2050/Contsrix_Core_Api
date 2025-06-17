@@ -225,7 +225,9 @@ return [
         "city_id"=>"المدينة",
         "country_id"=>"الدوله",
         "manager_id"=>"المدير",
-        "status"=>"الحالة"
+        "status"=>"الحالة",
+        "branch_id"=>"الفرع",
+        "management_id"=>"الادارة",
     ],
     'username_required'=>'الاسم المختصر ألرامي',
     'username_unique'=>'الاسم المختصر مستخدم بالفعل',
