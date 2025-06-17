@@ -53,10 +53,20 @@ class CompanyUserRepository extends BaseRepository
             });
         })->when($companyId != null, function ($query) use ($companyId) {
             $query->whereHas("companies", function ($query) use ($companyId) {
-
                 $query->where("companies.id", $companyId);
             });
-        });//TODO filter with branches very important
+        })->when($branchId != null, function ($query) use ($branchId, $type) {
+            $query->whereHas('users', function ($userQuery) use ($branchId, $type) {
+                $userQuery->whereHas('companyUserCompanyManagementHierarchies', function ($hierarchyQuery) use ($branchId, $type) {
+                    $hierarchyQuery->where('management_hierarchy_id', $branchId)
+                        ->when($type != null, function ($q) use ($type) {
+                            $q->whereHas('companyUserCompany', function ($companyUserCompanyQuery) use ($type) {
+                                $companyUserCompanyQuery->where('role', $type);
+                            });
+                        });
+                });
+            });
+        });
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();

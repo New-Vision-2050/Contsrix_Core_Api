@@ -150,6 +150,10 @@ class User extends Authenticatable implements JWTSubject, Auditable
         return $this->hasMany(CompanyUserCompanyManagementHierarchy::class, "user_id", "id");
     }
 
+    public function companyUserCompanyManagementHierarchies()
+    {
+        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class, "user_id", "id");
+    }
 
     /**
      * Get the unique management hierarchies associated with the user through the roleAndBranches relation.
