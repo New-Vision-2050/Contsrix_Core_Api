@@ -40,7 +40,7 @@ class JobTitleRepository extends BaseRepository
                     break;
 
                 case 'job_type.name':
-                    $query->orderByRelation('jobType.name', $order);
+                    $query->orderByRelation('job_types', 'job_type_id', 'name', $order);
                     break;
 
                 case 'status':
