@@ -219,6 +219,7 @@ class CompanyUserRepository extends BaseRepository
                 $branch = ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", null)->first();
                 $branch->update(["manager_id" => $user->id]);
                 ManagementHierarchy::query()->where("company_id", $companyRole['company_id'])->where("parent_id", $branch->id)->where("type", "management")->first()->update(["manager_id" => $user->id]);
+                $user->assignRole('super-admin');//assign super admin role for first user
             }
             $companyUserCompany = CompanyUserCompany::query()->withTrashed()->withoutTenancy()->where("role", $companyRole['role'])->where("global_company_user_id", $companyUser->global_id)->where('company_id', $companyRole['company_id'])->first();
             if (!$companyUserCompany) {
@@ -369,6 +370,7 @@ class CompanyUserRepository extends BaseRepository
                 $branch = ManagementHierarchy::query()->where("company_id", $companyUserRoleData['company_id'])->where("parent_id", null)->first();
                 $branch->update(["manager_id" => $user->id]);
                 ManagementHierarchy::query()->where("company_id", $companyUserRoleData['company_id'])->where("parent_id", $branch->id)->where("type", "management")->first()->update(["manager_id" => $user->id]);
+                $user->assignRole('super-admin');//assign super admin role for first user
             }
             $companyUserCompany = CompanyUserCompany::firstOrCreate($companyUserRoleData + ["global_company_user_id" => $companyUser->global_id], $companyUserRoleData + ["global_company_user_id" => $companyUser->global_id]);
 
