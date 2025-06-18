@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Attendance\DTO;
+
+class ClockOutDTO
+{
+    public function __construct(
+        public string $user_id,
+        public string $company_id,
+        public string $clock_out_time,
+        public ?array $location = null,
+        public ?string $notes = null,
+        public ?string $ip_address = null,
+        public ?string $user_agent = null,
+    ) {}
+
+    public function toArray(): array
+    {
+        return [
+            'user_id' => $this->user_id,
+            'company_id' => $this->company_id,
+            'clock_out_time' => $this->clock_out_time,
+            'location' => $this->location,
+            'notes' => $this->notes,
+            'ip_address' => $this->ip_address,
+            'user_agent' => $this->user_agent,
+        ];
+    }
+
+    public function getUserId(): string
+    {
+        return $this->user_id;
+    }
+
+    public function getCompanyId(): string
+    {
+        return $this->company_id;
+    }
+
+    public function getClockOutTime(): string
+    {
+        return $this->clock_out_time;
+    }
+
+    public function getLocation(): ?array
+    {
+        return $this->location;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function getIpAddress(): ?string
+    {
+        return $this->ip_address;
+    }
+
+    public function getUserAgent(): ?string
+    {
+        return $this->user_agent;
+    }
+}
