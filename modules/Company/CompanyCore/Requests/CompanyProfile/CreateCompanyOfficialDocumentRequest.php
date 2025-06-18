@@ -38,7 +38,7 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
                     $notificationDate = \Carbon\Carbon::parse($value);
 
                     if ($notificationDate->diffInDays($endDate) < 7) {
-                        $fail('The notification date must be at least 7 days before the end date.');
+                        $fail(__('validation.notification_date_7_days'));
                     }
                 },
             ],
