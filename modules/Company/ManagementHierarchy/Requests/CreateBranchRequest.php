@@ -9,6 +9,7 @@ use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeues
 use Modules\Company\ManagementHierarchy\DTO\CreateBranchDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
 use Ramsey\Uuid\Uuid;
+use Illuminate\Validation\Rule;
 
 class CreateBranchRequest extends FormRequest
 {
@@ -22,48 +23,65 @@ class CreateBranchRequest extends FormRequest
             'manager_id' => 'required|exists:users,id',
             "phone" => "required|phone",
             "email" => "required|email",
-            "latitude" => "required|numeric",
-            "longitude" => "required|numeric",
+            'latitude' => [
+                'nullable',
+                'numeric',
+                Rule::requiredIf(function () {
+                    return empty($this->input('country_id')) ||
+                        empty($this->input('state_id')) ||
+                        empty($this->input('city_id'));
+                }),
+            ],
+            'longitude' => [
+                'nullable',
+                'numeric',
+                Rule::requiredIf(function () {
+                    return empty($this->input('country_id')) ||
+                        empty($this->input('state_id')) ||
+                        empty($this->input('city_id'));
+                }),
+            ],
             "country_id" => "required|exists:countries,id",
             "state_id" => "required|exists:states,id",
             "city_id" => "required|exists:cities,id",
 
         ];
     }
-public function messages(): array
-{
-    return [
-        'name.required' => __('validation.branch.name_required'),
-        'name.string' => __('validation.branch.name_string'),
 
-        'parent_id.required' => __('validation.branch.parent_id_required'),
-        'parent_id.exists' => __('validation.branch.parent_id_exists'),
+    public function messages(): array
+    {
+        return [
+            'name.required' => __('validation.branch.name_required'),
+            'name.string' => __('validation.branch.name_string'),
 
-        'manager_id.required' => __('validation.branch.manager_id_required'),
-        'manager_id.exists' => __('validation.branch.manager_id_exists'),
+            'parent_id.required' => __('validation.branch.parent_id_required'),
+            'parent_id.exists' => __('validation.branch.parent_id_exists'),
 
-        'phone.required' => __('validation.branch.phone_required'),
-        'phone.phone' => __('validation.branch.phone_invalid'),
+            'manager_id.required' => __('validation.branch.manager_id_required'),
+            'manager_id.exists' => __('validation.branch.manager_id_exists'),
 
-        'email.required' => __('validation.branch.email_required'),
-        'email.email' => __('validation.branch.email_invalid'),
+            'phone.required' => __('validation.branch.phone_required'),
+            'phone.phone' => __('validation.branch.phone_invalid'),
 
-        'latitude.required' => __('validation.branch.latitude_required'),
-        'latitude.numeric' => __('validation.branch.latitude_numeric'),
+            'email.required' => __('validation.branch.email_required'),
+            'email.email' => __('validation.branch.email_invalid'),
 
-        'longitude.required' => __('validation.branch.longitude_required'),
-        'longitude.numeric' => __('validation.branch.longitude_numeric'),
+            'latitude.required' => __('validation.branch.latitude_required'),
+            'latitude.numeric' => __('validation.branch.latitude_numeric'),
 
-        'country_id.required' => __('validation.branch.country_required'),
-        'country_id.exists' => __('validation.branch.country_exists'),
+            'longitude.required' => __('validation.branch.longitude_required'),
+            'longitude.numeric' => __('validation.branch.longitude_numeric'),
 
-        'state_id.required' => __('validation.branch.state_required'),
-        'state_id.exists' => __('validation.branch.state_exists'),
+            'country_id.required' => __('validation.branch.country_required'),
+            'country_id.exists' => __('validation.branch.country_exists'),
 
-        'city_id.required' => __('validation.branch.city_required'),
-        'city_id.exists' => __('validation.branch.city_exists'),
-    ];
-}
+            'state_id.required' => __('validation.branch.state_required'),
+            'state_id.exists' => __('validation.branch.state_exists'),
+
+            'city_id.required' => __('validation.branch.city_required'),
+            'city_id.exists' => __('validation.branch.city_exists'),
+        ];
+    }
 
     public function createCreateBranchDTO(): CreateBranchDTO
     {

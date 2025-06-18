@@ -20,7 +20,10 @@ class UpdateBranchRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'parent_id' => 'nullable|exists:management_hierarchies,id',
+            'parent_id' => [
+                'nullable',
+                'exists:management_hierarchies,id,type,branch'
+            ],
             'manager_id' => 'required|exists:users,id',
             "phone" => "required|phone",
             "email" => "required|email",
