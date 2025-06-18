@@ -1,0 +1,1460 @@
+{
+    "info": {
+        "_postman_id": "{{$guid}}",
+        "name": "Contsrix Core API - Attendance Module",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "description": "Postman collection for the Employee Attendance and Leave Management module of Contsrix Core API."
+    },
+    "item": [
+        {
+            "name": "Attendance Management",
+            "item": [
+                {
+                    "name": "Clock In",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"latitude\": \"34.0522\",\n    \"longitude\": \"-118.2437\",\n    \"ip_address\": \"192.168.1.100\",\n    \"device_info\": \"Chrome on macOS\",\n    \"notes\": \"Starting my day\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/clock-in",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "clock-in"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Clock Out",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"latitude\": \"34.0522\",\n    \"longitude\": \"-118.2437\",\n    \"ip_address\": \"192.168.1.100\",\n    \"device_info\": \"Chrome on macOS\",\n    \"notes\": \"Ending my day\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/clock-out",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "clock-out"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Start Break",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"break_type_id\": \"{{break_type_id}}\",\n    \"notes\": \"Lunch break\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/start-break",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "start-break"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "End Break",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"Back from lunch\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/end-break",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "end-break"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Current Attendance Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/current-status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "current-status"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Attendance History",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/history?user_id={{userId}}&date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "history"
+                            ],
+                            "query": [
+                                {
+                                    "key": "user_id",
+                                    "value": "{{userId}}"
+                                },
+                                {
+                                    "key": "company_id",
+                                    "value": "{{company_id}}",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "approved",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "15",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Attendance Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/summary?user_id={{userId}}&date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "summary"
+                            ],
+                            "query": [
+                                {
+                                    "key": "user_id",
+                                    "value": "{{userId}}"
+                                },
+                                {
+                                    "key": "company_id",
+                                    "value": "{{company_id}}",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Team Attendance (Supervisor)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/team?date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "team"
+                            ],
+                            "query": [
+                                {
+                                    "key": "company_id",
+                                    "value": "{{company_id}}",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "department_id",
+                                    "value": "{{department_id}}",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Attendance Record (Admin/HR)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"clock_in_time\": \"2025-06-18 09:05:00\",\n    \"clock_out_time\": \"2025-06-18 17:35:00\",\n    \"status\": \"approved\",\n    \"notes\": \"Corrected clock-in time\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/{{attendanceId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "{{attendanceId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Attendance Record (Admin/HR)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/{{attendanceId}}/approve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "{{attendanceId}}",
+                                "approve"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reject Attendance Record (Admin/HR)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"rejection_reason\": \"Clock-in time seems incorrect.\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/{{attendanceId}}/reject",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "{{attendanceId}}",
+                                "reject"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Attendance Record (Admin/HR)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/{{attendanceId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "{{attendanceId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints for managing employee clock-in/out, breaks, and attendance records."
+        },
+        {
+            "name": "Leave Management",
+            "item": [
+                {
+                    "name": "Leave Requests",
+                    "item": [
+                        {
+                            "name": "List Leave Requests",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests?status=pending",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "user_id",
+                                            "value": "{{userId}}",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "company_id",
+                                            "value": "{{company_id}}",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "leave_type_id",
+                                            "value": "{{leave_type_id}}",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "pending"
+                                        },
+                                        {
+                                            "key": "start_date",
+                                            "value": "2025-01-01",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "end_date",
+                                            "value": "2025-01-31",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create Leave Request",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"leave_type_id\": \"{{leave_type_id}}\",\n    \"start_date\": \"2025-07-01\",\n    \"end_date\": \"2025-07-05\",\n    \"reason\": \"Vacation\",\n    \"is_emergency\": false,\n    \"attachments\": [\"path/to/doc1.pdf\"],\n    \"contact_info\": \"0123456789\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Leave Request Details",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests/{{leaveRequestId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests",
+                                        "{{leaveRequestId}}"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Update Leave Request",
+                            "request": {
+                                "method": "PUT",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"reason\": \"Extended vacation due to personal reasons\",\n    \"end_date\": \"2025-07-08\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests/{{leaveRequestId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests",
+                                        "{{leaveRequestId}}"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Delete Leave Request",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests/{{leaveRequestId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests",
+                                        "{{leaveRequestId}}"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get My Leave Requests",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/my-requests?status=approved",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "my-requests"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "status",
+                                            "value": "approved"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Cancel Leave Request",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests/{{leaveRequestId}}/cancel",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests",
+                                        "{{leaveRequestId}}",
+                                        "cancel"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Pending Leave Approvals (Supervisor/HR)",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/pending-approvals",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "pending-approvals"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Approve Leave Request (Supervisor/HR)",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"approval_notes\": \"Approved. Enjoy your time off!\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests/{{leaveRequestId}}/approve",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests",
+                                        "{{leaveRequestId}}",
+                                        "approve"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Reject Leave Request (Supervisor/HR)",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"rejection_reason\": \"Critical project deadline during this period.\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/requests/{{leaveRequestId}}/reject",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "requests",
+                                        "{{leaveRequestId}}",
+                                        "reject"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Leave Calendar",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/calendar?month=7&year=2025",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "calendar"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "month",
+                                            "value": "7"
+                                        },
+                                        {
+                                            "key": "year",
+                                            "value": "2025"
+                                        },
+                                        {
+                                            "key": "department_id",
+                                            "value": "{{department_id}}",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Check Leave Conflicts",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"user_id\": \"{{userId}}\",\n    \"start_date\": \"2025-07-01\",\n    \"end_date\": \"2025-07-05\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/check-conflicts",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "check-conflicts"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ],
+                    "description": "Endpoints for managing employee leave requests."
+                },
+                {
+                    "name": "Leave Types",
+                    "item": [
+                        {
+                            "name": "List Leave Types",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/types?is_active=true",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "types"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "is_active",
+                                            "value": "true"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create Leave Type",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"name\": {\"en\": \"Annual Leave\", \"ar\": \"إجازة سنوية\"},\n    \"code\": \"ANNUAL\",\n    \"color\": \"#FF5733\",\n    \"max_days_per_year\": 21,\n    \"requires_approval\": true,\n    \"is_paid\": true,\n    \"is_active\": true,\n    \"company_id\": \"{{company_id}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/types",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "types"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Leave Type Details",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/types/{{leaveTypeId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "types",
+                                        "{{leaveTypeId}}"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Update Leave Type",
+                            "request": {
+                                "method": "PUT",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"name\": {\"en\": \"Sick Leave\"},\n    \"max_days_per_year\": 10\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/types/{{leaveTypeId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "types",
+                                        "{{leaveTypeId}}"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Delete Leave Type",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/types/{{leaveTypeId}}",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "types",
+                                        "{{leaveTypeId}}"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ],
+                    "description": "Endpoints for managing leave types (Admin/HR)."
+                },
+                {
+                    "name": "Leave Balances",
+                    "item": [
+                        {
+                            "name": "List All Leave Balances (Admin)",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/balances?year=2025",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "balances"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "year",
+                                            "value": "2025"
+                                        },
+                                        {
+                                            "key": "user_id",
+                                            "value": "{{userId}}",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get My Leave Balances",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/balances/my-balances?year=2025",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "balances",
+                                        "my-balances"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "year",
+                                            "value": "2025"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get User's Leave Balances",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/balances/{{userId}}?year=2025",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "balances",
+                                        "{{userId}}"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "year",
+                                            "value": "2025"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Initialize Leave Balances",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"user_id\": \"{{userId}}\",\n    \"year\": 2025,\n    \"company_id\": \"{{company_id}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/balances/initialize",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "balances",
+                                        "initialize"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Adjust Leave Balance",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"user_id\": \"{{userId}}\",\n    \"leave_type_id\": \"{{leave_type_id}}\",\n    \"adjustment_days\": 2.5,\n    \"year\": 2025,\n    \"reason\": \"Manual correction for unused days\",\n    \"company_id\": \"{{company_id}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/balances/adjust",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "balances",
+                                        "adjust"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Reset Balances For New Year",
+                            "request": {
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"year\": 2026,\n    \"company_id\": \"{{company_id}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/v1/leave/balances/reset-year",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "v1",
+                                        "leave",
+                                        "balances",
+                                        "reset-year"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ],
+                    "description": "Endpoints for managing employee leave balances (Admin/HR)."
+                }
+            ],
+            "description": "Endpoints related to employee leave requests, types, and balances."
+        },
+        {
+            "name": "Reports",
+            "item": [
+                {
+                    "name": "Get Attendance Summary Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/attendance-summary?date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "attendance-summary"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                },
+                                {
+                                    "key": "company_id",
+                                    "value": "{{company_id}}",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Overtime Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/overtime-report?date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "overtime-report"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Leave Utilization Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/leave-utilization?date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "leave-utilization"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Punctuality Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/punctuality-report?date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "punctuality-report"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Absence Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/absence-report?date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "absence-report"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Team Attendance Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/team-attendance?supervisor_id={{supervisorId}}&date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "team-attendance"
+                            ],
+                            "query": [
+                                {
+                                    "key": "supervisor_id",
+                                    "value": "{{supervisorId}}"
+                                },
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Export Attendance Report",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"format\": \"csv\",\n    \"report_type\": \"summary\",\n    \"filters\": {\n        \"company_id\": \"{{company_id}}\",\n        \"date_from\": \"2025-01-01\",\n        \"date_to\": \"2025-01-31\"\n    }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/export/attendance",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "export",
+                                "attendance"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Export Leave Requests Report",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"format\": \"csv\",\n    \"filters\": {\n        \"company_id\": \"{{company_id}}\",\n        \"status\": \"approved\",\n        \"date_from\": \"2025-01-01\",\n        \"date_to\": \"2025-01-31\"\n    }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/reports/export/leave-requests",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "reports",
+                                "export",
+                                "leave-requests"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints for generating and exporting attendance and leave reports (Admin/HR)."
+        },
+        {
+            "name": "Dashboard",
+            "item": [
+                {
+                    "name": "Get Employee Dashboard Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/dashboard/employee-stats",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "dashboard",
+                                "employee-stats"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Supervisor Dashboard Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/dashboard/supervisor-stats",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "dashboard",
+                                "supervisor-stats"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get HR Dashboard Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/dashboard/hr-stats",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "dashboard",
+                                "hr-stats"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints for fetching dashboard statistics for different user roles."
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{authToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000",
+            "type": "string"
+        },
+        {
+            "key": "authToken",
+            "value": "YOUR_AUTH_TOKEN_HERE",
+            "type": "string"
+        },
+        {
+            "key": "attendanceId",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "leaveRequestId",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "leaveTypeId",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "userId",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "company_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "department_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "supervisorId",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "break_type_id",
+            "value": "1",
+            "type": "string"
+        }
+    ]
+}
