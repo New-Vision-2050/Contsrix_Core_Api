@@ -522,7 +522,7 @@ class CompanyUserRepository extends BaseRepository
         ];
 
         // Create or update professional data
-       $userProfessionalData = UserProfessionalData::query()->withoutTenancy()->where([
+       $userProfessionalData = $this->userProfessionalDataRepository->model->withoutTenancy()->where([
             'global_id' => $user->global_company_user_id,
             'company_id' => $companyId,
         ])->first();
