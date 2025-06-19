@@ -1,0 +1,14 @@
+{
+    "name": "Attendance",
+    "alias": "attendance",
+    "description": "Employee Attendance Management System Module",
+    "keywords": ["attendance", "employee", "time", "leave", "management"],
+    "priority": 0,
+    "providers": [
+        "Modules\\Attendance\\Providers\\AttendanceServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}
