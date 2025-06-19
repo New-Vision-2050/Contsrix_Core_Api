@@ -486,7 +486,16 @@ class CompanyUserRepository extends BaseRepository
      */
     private function handleEmployeeData(User $user, $companyId, int $branchId, array $companyUserData = []): void
     {
-        $generalManagerJobTitle = $this->jobTitleRepository->findOneBy(["type" => "general_manager"]);
+        $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyId])->first();
+        if(isset($companyUserData["job_title_id"])&&$companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
+        {
+            $companyId = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
+            if($companyId != $companyId )
+            {
+                $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
+            }
+        }
+
 
         // Get management hierarchy
         $mainManagement = $this->managementHierarchyRepository->findOneBy([
@@ -497,7 +506,7 @@ class CompanyUserRepository extends BaseRepository
 
         $jobTitleId = $companyUserData["job_title_id"] ?? $generalManagerJobTitle->id;
         $jobTypeId = isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] !== null
-            ? $this->jobTitleRepository->findOneBy(["id" => $companyUserData["job_title_id"]])->job_type_id
+            ? $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyId])->first()->job_type_id
             : $generalManagerJobTitle->job_type_id;
 
         $data = [
@@ -510,13 +519,15 @@ class CompanyUserRepository extends BaseRepository
         ];
 
         // Create or update professional data
-        $this->userProfessionalDataRepository->updateOrCreate(
-            [
-                'global_id' => $user->global_company_user_id,
-                'company_id' => $companyId,
-            ],
-            $data
-        );
+       $userProfessionalData = UserProfessionalData::query()->withoutTenancy()->where([
+            'global_id' => $user->global_company_user_id,
+            'company_id' => $companyId,
+        ])->first();
+        if ($userProfessionalData) {
+            $userProfessionalData->update($data);
+        } else {
+            UserProfessionalData::create($data);
+        }
     }
 
     public function setAddress(array $addressData)
