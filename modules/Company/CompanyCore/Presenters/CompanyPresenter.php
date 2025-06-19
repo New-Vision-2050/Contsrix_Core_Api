@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\CompanyField\Presenters\CompanyFieldPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 
 class CompanyPresenter extends AbstractPresenter
 {
@@ -91,7 +92,7 @@ class CompanyPresenter extends AbstractPresenter
             // "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
 
             // Access via: /api/companies/company-profile/company-branches
-            // "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
+             "branches" => ManagementHierarchySimpleDataPresenter::collection($this->company->branches),
 
             "created_at" => $this->company->created_at,
         ];
