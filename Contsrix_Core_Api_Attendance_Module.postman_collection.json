@@ -1373,6 +1373,364 @@
                 }
             ],
             "description": "Endpoints for fetching dashboard statistics for different user roles."
+        },
+        {
+            "name": "Attendance Constraints",
+            "item": [
+                {
+                    "name": "Get All Constraints",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints?page=1&per_page=10&constraint_type=location&is_active=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "constraint_type",
+                                    "value": "location"
+                                },
+                                {
+                                    "key": "is_active",
+                                    "value": "true"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Constraint",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"constraint_type\": \"location\",\n    \"constraint_name\": \"geofencing\",\n    \"constraint_config\": {\n        \"allowed_zones\": [\n            {\n                \"name\": \"Main Office\",\n                \"latitude\": 34.0522,\n                \"longitude\": -118.2437,\n                \"radius\": 100\n            }\n        ]\n    },\n    \"is_active\": true,\n    \"priority\": 5,\n    \"start_date\": \"2025-01-01\",\n    \"notes\": \"Geofencing constraint for main office location\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Constraint by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/{{constraintId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "{{constraintId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Constraint",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"constraint_config\": {\n        \"allowed_zones\": [\n            {\n                \"name\": \"Main Office\",\n                \"latitude\": 34.0522,\n                \"longitude\": -118.2437,\n                \"radius\": 150\n            },\n            {\n                \"name\": \"Branch Office\",\n                \"latitude\": 34.0689,\n                \"longitude\": -118.4452,\n                \"radius\": 100\n            }\n        ]\n    },\n    \"is_active\": true,\n    \"priority\": 7,\n    \"notes\": \"Updated geofencing with additional branch office\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/{{constraintId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "{{constraintId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Constraint",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/{{constraintId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "{{constraintId}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Constraint Types",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/types",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "types"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Validate User Constraints",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"user_id\": \"{{userId}}\",\n    \"attendance_data\": {\n        \"latitude\": 34.0522,\n        \"longitude\": -118.2437,\n        \"ip_address\": \"192.168.1.100\",\n        \"device_info\": \"Chrome on macOS\"\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/validate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "validate"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Violations",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/violations?page=1&per_page=10&status=pending&severity_level=high",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "violations"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "pending"
+                                },
+                                {
+                                    "key": "severity_level",
+                                    "value": "high"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Resolve Violation",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"resolved\",\n    \"resolution_notes\": \"Violation resolved after verification with employee\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/violations/{{violationId}}/resolve",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "violations",
+                                "{{violationId}}",
+                                "resolve"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Constraint Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/attendance/constraints/statistics?date_from=2025-01-01&date_to=2025-01-31",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "attendance",
+                                "constraints",
+                                "statistics"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date_from",
+                                    "value": "2025-01-01"
+                                },
+                                {
+                                    "key": "date_to",
+                                    "value": "2025-01-31"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints for managing attendance constraints and violations."
         }
     ],
     "auth": {
@@ -1454,6 +1812,16 @@
         {
             "key": "break_type_id",
             "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "constraintId",
+            "value": "constraint-uuid-here",
+            "type": "string"
+        },
+        {
+            "key": "violationId",
+            "value": "violation-uuid-here",
             "type": "string"
         }
     ]

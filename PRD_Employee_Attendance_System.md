@@ -117,7 +117,65 @@ Create a comprehensive, automated attendance management system that:
 - **Leave Restrictions:** Blackout periods and minimum notice requirements
 - **Emergency Leave:** Special handling for urgent leave requests
 
-### 6.3 Reporting & Analytics
+### 6.3 Attendance Constraints System (محددات الحضور)
+
+#### Location-based Constraints
+- **Geofencing:** Define allowed geographical areas for clock-in/out operations
+- **IP Address Restrictions:** Limit attendance tracking to specific IP addresses or ranges
+- **Office Location Verification:** Require employees to be within designated office premises
+- **Remote Work Zones:** Configure approved remote work locations for hybrid employees
+- **Multi-location Support:** Support for employees working across multiple office locations
+
+#### Time-based Constraints
+- **Shift Schedule Enforcement:** Restrict clock-in/out to assigned shift hours
+- **Early Clock-in Prevention:** Prevent employees from clocking in too early before shift start
+- **Late Clock-out Restrictions:** Automatic clock-out after maximum allowed work hours
+- **Break Time Limits:** Enforce minimum and maximum break duration limits
+- **Overtime Approval Requirements:** Require supervisor approval for overtime work
+
+#### Device-based Constraints
+- **Authorized Device Registration:** Limit attendance tracking to registered devices only
+- **Device Fingerprinting:** Use device characteristics to prevent attendance fraud
+- **Single Device Policy:** Ensure one employee can only be logged in on one device at a time
+- **Mobile App Restrictions:** Control which mobile applications can access attendance features
+- **Browser Restrictions:** Limit web-based attendance to approved browsers
+
+#### Role-based Constraints
+- **Department-specific Rules:** Different attendance rules for different departments
+- **Employee Level Restrictions:** Varying constraints based on employee hierarchy
+- **Probationary Employee Rules:** Special attendance rules for new employees
+- **Contract Type Constraints:** Different rules for full-time, part-time, and contract employees
+- **Supervisor Override Permissions:** Allow supervisors to bypass certain constraints when needed
+
+#### Behavioral Constraints
+- **Consecutive Days Limit:** Prevent employees from working excessive consecutive days
+- **Weekly Hour Limits:** Enforce maximum weekly working hours per labor laws
+- **Mandatory Rest Periods:** Ensure minimum rest time between shifts
+- **Holiday Work Restrictions:** Special approval requirements for holiday work
+- **Attendance Pattern Monitoring:** Flag unusual attendance patterns for review
+
+#### Security Constraints
+- **Two-Factor Authentication:** Require 2FA for sensitive attendance operations
+- **Biometric Verification:** Optional biometric confirmation for high-security environments
+- **Audit Trail Requirements:** Maintain detailed logs of all attendance constraint violations
+- **Fraud Detection:** Automatic detection of suspicious attendance patterns
+- **Data Encryption:** Encrypt all attendance constraint data in transit and at rest
+
+#### Compliance Constraints
+- **Labor Law Compliance:** Ensure attendance rules comply with local labor regulations
+- **Union Agreement Adherence:** Respect collective bargaining agreement terms
+- **Industry-specific Rules:** Support for industry-specific attendance requirements
+- **Government Reporting:** Generate reports that meet regulatory requirements
+- **Documentation Requirements:** Maintain proper documentation for constraint violations
+
+#### Configuration and Management
+- **Flexible Rule Engine:** Allow HR administrators to configure custom constraint rules
+- **Exception Management:** System for handling and approving constraint exceptions
+- **Temporary Rule Modifications:** Support for temporary changes to attendance constraints
+- **Bulk Rule Application:** Apply constraint rules to groups of employees efficiently
+- **Rule Testing Environment:** Test new constraints before applying them to production
+
+### 6.4 Reporting & Analytics
 
 #### Standard Reports
 - **Individual Attendance Reports:** Detailed employee attendance history
@@ -134,7 +192,7 @@ Create a comprehensive, automated attendance management system that:
 - **Compliance Reporting:** Reports for labor law compliance
 - **Custom Dashboards:** Configurable dashboards for different user roles
 
-### 6.4 Multi-tenant Architecture
+### 6.5 Multi-tenant Architecture
 
 #### Company-specific Configuration
 - **Attendance Policies:** Customizable rules per company/tenant
@@ -168,6 +226,13 @@ Create a comprehensive, automated attendance management system that:
   - Supervisors and HR can approve/reject leave requests
   - Leave balances are accurately maintained and updated
   - Leave conflicts are detected and prevented
+  
+- [ ] **Attendance Constraints (محددات الحضور)**
+  - System enforces location-based attendance restrictions (geofencing, IP restrictions)
+  - Time-based constraints are properly implemented (shift schedules, overtime limits)
+  - Device-based restrictions prevent unauthorized attendance tracking
+  - Role-based constraints are applied according to employee hierarchy
+  - Security constraints ensure data protection and fraud prevention
   
 - [ ] **Reporting**
   - HR managers can generate individual and team attendance reports

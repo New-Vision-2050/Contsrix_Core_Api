@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Modules\Attendance\Services\AttendanceService;
+use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Requests\ClockInRequest;
 use Modules\Attendance\Requests\ClockOutRequest;
 use Modules\Attendance\Requests\GetAttendanceRequest;
@@ -19,6 +20,7 @@ class AttendanceController extends Controller
 {
     public function __construct(
         private AttendanceService $attendanceService,
+        private AttendanceConstraintService $constraintService,
         private AttendancePresenter $attendancePresenter,
     ) {}
 
@@ -28,7 +30,32 @@ class AttendanceController extends Controller
     public function clockIn(ClockInRequest $request): JsonResponse
     {
         $clockInDTO = $request->createClockInDTO();
+        
+        // Validate constraints before clocking in
+        $user = auth()->user();
+        $mockAttendance = new \Modules\Attendance\Models\Attendance([
+            'user_id' => $user->id,
+            'company_id' => $user->company_id,
+            'clock_in_time' => now(),
+        ]);
+        
+        $violations = $this->constraintService->validateAttendance($mockAttendance, $request->all());
+        
+        if (!empty($violations)) {
+            return Json::error(
+                message: 'Clock-in blocked due to constraint violations',
+                data: ['violations' => $violations],
+                statusCode: 422
+            );
+        }
+        
         $attendance = $this->attendanceService->clockIn($clockInDTO);
+        
+        // Process any violations that occurred during clock-in
+        $actualViolations = $this->constraintService->validateAttendance($attendance, $request->all());
+        if (!empty($actualViolations)) {
+            $this->constraintService->processViolations($attendance, $actualViolations);
+        }
         
         return Json::item(
             (new AttendancePresenter($attendance))->getData(),
@@ -43,6 +70,12 @@ class AttendanceController extends Controller
     {
         $clockOutDTO = $request->createClockOutDTO();
         $attendance = $this->attendanceService->clockOut($clockOutDTO);
+        
+        // Validate constraints after clocking out
+        $violations = $this->constraintService->validateAttendance($attendance, $request->all());
+        if (!empty($violations)) {
+            $this->constraintService->processViolations($attendance, $violations);
+        }
         
         return Json::item(
             (new AttendancePresenter($attendance))->getData(),
