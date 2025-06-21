@@ -7,12 +7,17 @@ Employee Attendance System - Flutter Mobile App
 USER (via Cascade AI)
 
 ## 3. Date
-2025-06-18
+**Created:** 2025-06-18  
+**Last Updated:** 2025-06-21
 
 ## 4. Problem Statement / Goal
 *   Provide a convenient and efficient native mobile experience (iOS and Android) for employees to perform essential attendance and leave management tasks on the go.
 *   Enable supervisors to quickly manage team leave requests from their mobile devices.
-*   Ensure secure and reliable integration with the Contsrix_Core_Api backend.
+*   **API Integration:** RESTful API integration with the Contsrix_Core_Api backend following these patterns:
+    * Response handling aligned with backend Json::item() and Json::items() format
+    * Request payloads structured to match backend Form Request expectations
+    * Proper handling of pagination metadata from backend responses
+    * JWT token management with automatic refresh capabilities
 *   Focus on core functionalities suitable for a mobile context, prioritizing ease of use and quick interactions.
 
 ## 5. Target Audience / User Stories
@@ -35,6 +40,22 @@ USER (via Cascade AI)
 *   (Optional) I want a simplified view of my team members' current clock-in status (e.g., who is currently working).
 
 ## 6. Proposed Solution / Key Features
+
+### 6.0. Architecture & Implementation Approach
+
+#### Mobile App Architecture
+* **State Management:** BLoC pattern for separation of UI, business logic, and data layers
+* **Dependency Injection:** GetIt for service locator pattern and dependency management
+* **API Integration:** Dio HTTP client with interceptors for JWT handling
+* **Local Storage:** Secure storage for authentication tokens and offline data
+* **Code Organization:** Feature-based folder structure aligning with backend modules
+
+#### API Integration Strategy
+* **API Client:** Dio-based client with interceptors for authentication and error handling
+* **Response Handling:** Standardized handling of Json responses from backend
+* **DTO Mapping:** Mobile models matching backend DTOs for consistent data structure
+* **Error Handling:** Comprehensive error handling for API failures with user-friendly messages
+* **Offline Support:** Local caching of essential data with synchronization capabilities
 
 ### 6.1. Home/Dashboard Screen
 *   Prominent Clock In/Out button (changes contextually based on current status).
@@ -74,14 +95,64 @@ USER (via Cascade AI)
 *   Logout functionality.
 *   About section with app version and support contact.
 
-### 6.6. Push Notifications
+### 6.6. API Endpoints
+
+#### Authentication Endpoints
+- `POST /api/auth/login` - Authenticate user and receive JWT token
+- `POST /api/auth/refresh` - Refresh JWT token
+- `POST /api/auth/logout` - Invalidate current JWT token
+
+#### Attendance Endpoints
+- `POST /api/attendance/clock-in` - Record employee clock-in
+- `POST /api/attendance/clock-out` - Record employee clock-out
+- `POST /api/attendance/break/start` - Start break period
+- `POST /api/attendance/break/end` - End break period
+- `GET /api/attendance/status` - Get current attendance status
+- `GET /api/attendance/history` - Get attendance history with pagination
+
+#### Leave Management Endpoints
+- `GET /api/leave-types` - List available leave types
+- `GET /api/leave-balance` - Get employee leave balance
+- `POST /api/leave-requests` - Submit new leave request
+- `GET /api/leave-requests` - List leave requests with pagination
+- `GET /api/leave-requests/{id}` - Get specific leave request details
+- `PUT /api/leave-requests/{id}` - Update leave request
+- `DELETE /api/leave-requests/{id}` - Cancel leave request
+
+#### Supervisor Endpoints
+- `GET /api/attendance/team` - Get team attendance (for supervisors)
+- `GET /api/leave-requests/pending-approvals` - View pending leave requests requiring approval
+- `POST /api/leave-requests/{id}/approve` - Approve leave request
+- `POST /api/leave-requests/{id}/reject` - Reject leave request
+
+#### Attendance Constraints Endpoints
+- `POST /api/attendance-constraints/validate` - Validate attendance against constraints
+- `GET /api/attendance-constraints/violations` - List constraint violations for current user
+
+### 6.7. Push Notifications
 *   **For Employees:**
     *   Leave request submitted/approved/rejected.
     *   (Optional) Reminders to clock in/out if not done by a certain time (based on work schedule, if available).
 *   **For Supervisors:**
     *   New leave request submitted by a team member requiring approval.
 
-### 6.7. Security
+### 6.7. Attendance Constraints Compliance
+* **Pre-Clock Validation:**
+  * Validate attendance actions against applicable constraints before submission
+  * Show clear feedback when constraints would be violated
+  * Provide override request workflow for exceptional situations
+
+* **Constraint Violation Handling:**
+  * Receive and display constraint violation notifications
+  * Allow employees to provide explanations for violations
+  * Track violation status and resolution process
+
+* **Compliance Dashboard:**
+  * Personal compliance status overview
+  * Historical compliance metrics and trends
+  * Actionable insights to improve compliance
+
+### 6.8. Security
 *   Secure login using credentials from Contsrix_Core_Api.
 *   Secure storage of JWT/auth tokens (e.g., using `flutter_secure_storage`).
 *   (Optional) Biometric authentication (Fingerprint/Face ID) integration using `local_auth` or similar.
@@ -109,10 +180,15 @@ USER (via Cascade AI)
 
 ## 9. Technical Considerations / Constraints
 *   **Framework:** Flutter (latest stable version).
+*   **State Management:** BLoC pattern with flutter_bloc package.
+*   **API Client:** Dio HTTP client with interceptors for authentication, error handling, and response transformation.
+*   **Local Storage:** flutter_secure_storage for sensitive data and Hive for offline data storage.
+*   **Form Validation:** Implement validation rules matching backend Form Request validation.
 *   **Target Platforms:** iOS (e.g., version 12+) and Android (e.g., API level 21+ Lollipop).
 *   **State Management:** BLoC/Cubit or Riverpod (Provider might be too simple for growing complexity, especially with offline sync).
 *   **API Communication:** `dio` package for HTTP requests, with interceptors for JWT token handling, logging, and error management.
 *   **Authentication:** Integrate with Contsrix_Core_Api's JWT. Secure token storage using `flutter_secure_storage`.
+*   **Error Handling:** Standardized error handling for API errors that properly processes CustomException responses from the backend.
 *   **Navigation:** `go_router` for declarative routing.
 *   **Local Storage (for offline mode):** `sqflite` for structured data or `isar` / `hive` for NoSQL-like storage. `isar` is often preferred for complex querying and speed.
 *   **Push Notifications:** Firebase Cloud Messaging (FCM).
@@ -123,7 +199,33 @@ USER (via Cascade AI)
 *   **Build & Distribution:** CI/CD pipeline for automated builds and deployment to app stores (e.g., Codemagic, GitHub Actions with Fastlane).
 *   **Code Quality:** Effective Dart linting rules, strong mode, null safety.
 
-## 10. Out of Scope
+## 10. Implementation Roadmap
+
+### 10.1. Phase 1: Core Functionality (Sprint 1-2)
+* Authentication and user profile
+* Clock in/out functionality with basic validation
+* View attendance status and history
+* Simple leave request submission
+
+### 10.2. Phase 2: Advanced Features (Sprint 3-4)
+* Offline mode support
+* Push notifications integration
+* Complete leave management workflow
+* Biometric authentication
+
+### 10.3. Phase 3: Compliance and Optimization (Sprint 5-6)
+* Attendance constraints compliance features
+* Performance optimization
+* Enhanced security features
+* UX improvements based on user feedback
+
+### 10.4. Phase 4: Integration and Enhancement (Sprint 7-8)
+* Integration with device features (camera, location)
+* Advanced offline capabilities
+* Analytics and reporting features
+* Final polishing and stabilization
+
+## 11. Out of Scope
 *   Full administrative features available on the React web frontend (e.g., managing leave types, company-wide attendance policies, comprehensive reporting). The mobile app focuses on core employee and supervisor tasks.
 *   Advanced reporting or analytics (users will be directed to the web frontend for these).
 *   Tablet-specific UI optimizations (initial focus on phone layouts).
@@ -136,3 +238,32 @@ USER (via Cascade AI)
 *   Are there any Mobile Device Management (MDM) policies or security constraints that the app needs to comply with?
 *   How should data conflicts be handled if offline actions contradict server-side changes made while the device was offline?
 *   Specific requirements for error logging or crash reporting from the mobile app (e.g., Sentry, Firebase Crashlytics)?
+
+## 12. Next Steps
+
+1. **Review and Approval:** Stakeholder review of this PRD
+2. **UI/UX Design:** Create detailed wireframes and UI designs for the mobile app
+3. **Technical Specification:** Detailed technical design document
+4. **Development Planning:** Sprint planning and task breakdown
+5. **Implementation:** Begin development following the implementation roadmap
+6. **Testing:** Comprehensive testing on various devices and OS versions
+7. **Deployment:** Beta testing followed by app store submission
+
+---
+
+**Document Status:** Draft  
+**Version:** 1.1  
+**Last Updated By:** abou7agar
+
+---
+
+*This PRD serves as the foundation for the Employee Attendance System Flutter Mobile App development. All stakeholders should review and provide feedback before development begins.*
+
+---
+
+## 13. Changelog
+
+| Date | Version | Author | Changes |
+|------|---------|--------|--------|
+| 2025-06-18 | 1.0 | abou7agar | Initial document creation |
+| 2025-06-21 | 1.1 | abou7agar | Enhanced with implementation details, architecture approach, constraints compliance, implementation roadmap |

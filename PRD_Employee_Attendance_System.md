@@ -13,7 +13,7 @@
 
 ## 3. Date
 **Created:** June 18, 2025  
-**Last Updated:** June 18, 2025
+**Last Updated:** June 21, 2025
 
 ## 4. Problem Statement / Goal
 
@@ -83,6 +83,22 @@ Create a comprehensive, automated attendance management system that:
 - As an **admin**, I want to backup attendance data so that information is protected
 
 ## 6. Proposed Solution / Key Features
+
+### 6.0 System Architecture Overview
+
+#### API-First Approach
+- **RESTful API Design:** Comprehensive API endpoints following REST principles
+- **API Versioning:** Support for versioned APIs to ensure backward compatibility
+- **API Documentation:** OpenAPI/Swagger documentation with examples
+- **API Rate Limiting:** Protection against abuse and overuse
+
+#### Modular Architecture
+- **Module Isolation:** Attendance module as a self-contained component
+- **Service Layer:** Business logic encapsulated in dedicated services
+- **Repository Pattern:** Data access abstracted through repositories
+- **DTO Pattern:** Data Transfer Objects for clean data handling
+- **Form Request Validation:** Centralized validation rules in Form Requests
+- **Presenter Pattern:** Consistent data presentation through presenters
 
 ### 6.1 Core Attendance Features
 
@@ -175,7 +191,28 @@ Create a comprehensive, automated attendance management system that:
 - **Bulk Rule Application:** Apply constraint rules to groups of employees efficiently
 - **Rule Testing Environment:** Test new constraints before applying them to production
 
-### 6.4 Reporting & Analytics
+### 6.4 Notification System
+
+#### Event-Based Notifications
+- **Attendance Status Alerts:** Notifications for missed check-ins, late arrivals
+- **Leave Request Updates:** Status changes for leave requests (approved, rejected, pending)
+- **Manager Alerts:** Team attendance summaries and exception reports
+- **Compliance Warnings:** Alerts for potential labor law violations
+- **System Notifications:** Maintenance and update notifications
+
+#### Notification Channels
+- **Email Notifications:** Formatted email alerts with action links
+- **In-App Notifications:** Real-time system notifications within the application
+- **Webhook Support:** Push notifications to external systems
+- **Scheduled Digests:** Daily/weekly attendance summaries
+
+#### Notification Preferences
+- **User-Level Settings:** Customizable notification preferences per user
+- **Role-Based Defaults:** Default notification settings by role
+- **Do Not Disturb:** Time-based notification suppression
+- **Critical Alerts:** Override settings for urgent notifications
+
+### 6.5 Reporting & Analytics
 
 #### Standard Reports
 - **Individual Attendance Reports:** Detailed employee attendance history
@@ -192,7 +229,7 @@ Create a comprehensive, automated attendance management system that:
 - **Compliance Reporting:** Reports for labor law compliance
 - **Custom Dashboards:** Configurable dashboards for different user roles
 
-### 6.5 Multi-tenant Architecture
+### 6.6 Multi-tenant Architecture
 
 #### Company-specific Configuration
 - **Attendance Policies:** Customizable rules per company/tenant
@@ -206,6 +243,72 @@ Create a comprehensive, automated attendance management system that:
 - **Role-based Access:** Permissions scoped to tenant level
 - **Audit Trails:** Tenant-specific activity logging
 - **Backup Strategies:** Tenant-aware data backup and recovery
+
+### 6.7 API Endpoints
+
+#### Authentication Endpoints
+- `POST /api/auth/login` - Authenticate user and receive JWT token
+- `POST /api/auth/refresh` - Refresh JWT token
+- `POST /api/auth/logout` - Invalidate current JWT token
+
+#### Attendance Endpoints
+- `POST /api/attendance/clock-in` - Record employee clock-in
+- `POST /api/attendance/clock-out` - Record employee clock-out
+- `POST /api/attendance/break/start` - Start break period
+- `POST /api/attendance/break/end` - End break period
+- `GET /api/attendance/status` - Get current attendance status
+- `GET /api/attendance/history` - Get attendance history
+- `GET /api/attendance/team` - Get team attendance (for managers)
+
+#### Leave Management Endpoints
+- `GET /api/leave-types` - List available leave types
+- `GET /api/leave-balance` - Get employee leave balance
+- `POST /api/leave-requests` - Submit new leave request
+- `GET /api/leave-requests` - List leave requests
+- `GET /api/leave-requests/{id}` - Get specific leave request details
+- `PUT /api/leave-requests/{id}` - Update leave request
+- `DELETE /api/leave-requests/{id}` - Cancel leave request
+- `POST /api/leave-requests/{id}/approve` - Approve leave request
+- `POST /api/leave-requests/{id}/reject` - Reject leave request
+- `GET /api/leave-requests/calendar` - View leave calendar
+
+#### Attendance Constraints Endpoints
+- `GET /api/attendance-constraints` - List attendance constraints
+- `POST /api/attendance-constraints` - Create new constraint
+- `GET /api/attendance-constraints/{id}` - Get constraint details
+- `PUT /api/attendance-constraints/{id}` - Update constraint
+- `DELETE /api/attendance-constraints/{id}` - Delete constraint
+- `POST /api/attendance-constraints/validate` - Validate attendance against constraints
+- `GET /api/attendance-constraints/violations` - List constraint violations
+- `POST /api/attendance-constraints/violations/{id}/resolve` - Resolve violation
+- `POST /api/attendance-constraints/violations/{id}/dismiss` - Dismiss violation
+
+#### Reporting Endpoints
+- `GET /api/reports/attendance` - Generate attendance reports
+- `GET /api/reports/overtime` - Generate overtime reports
+- `GET /api/reports/leave` - Generate leave utilization reports
+- `GET /api/reports/violations` - Generate constraint violation reports
+- `GET /api/statistics/attendance` - Get attendance statistics
+
+### 6.8 Data Models
+
+#### Core Models
+- **Attendance**: Track individual attendance records
+- **AttendanceBreak**: Track break periods within attendance
+- **LeaveType**: Define different types of leave
+- **LeaveRequest**: Track leave requests and approvals
+- **LeaveBalance**: Track available leave days per employee
+- **AttendanceConstraint**: Define attendance rules and restrictions
+- **AttendanceConstraintViolation**: Track constraint violations
+
+#### Relationships
+- **User-Attendance**: One-to-many relationship between users and attendance records
+- **Attendance-Break**: One-to-many relationship between attendance and breaks
+- **User-LeaveRequest**: One-to-many relationship between users and leave requests
+- **LeaveType-LeaveRequest**: One-to-many relationship between leave types and requests
+- **User-LeaveBalance**: One-to-many relationship between users and leave balances
+- **LeaveType-LeaveBalance**: One-to-many relationship between leave types and balances
+- **Constraint-Violation**: One-to-many relationship between constraints and violations
 
 ## 7. Acceptance Criteria
 
@@ -296,6 +399,33 @@ Create a comprehensive, automated attendance management system that:
 - **Payroll Accuracy:** 99% reduction in payroll discrepancies due to attendance errors
 
 ## 9. Technical Considerations / Constraints
+
+### 9.0 Implementation Patterns
+
+#### DTO Pattern Implementation
+- **Data Transfer Objects:** Use constructor property promotion with public properties
+- **DTO Methods:** Include toArray() method and getter methods for all properties
+- **Form Request Integration:** Form requests should have methods to create DTOs
+- **Service Parameters:** Services should receive DTOs, not raw validated arrays
+
+#### JSON Response Pattern
+- **Response Format:** Use BasePackage\Shared\Presenters\Json class
+- **Single Item Responses:** Use Json::item($data, message: "message")
+- **Collection Responses:** Use Json::items($data, message: "message")
+- **Success Messages:** Use Json::success("message") for operations without data return
+- **Pagination:** Include pagination metadata in collection responses
+
+#### Exception Handling
+- **Custom Exceptions:** Extend App\Exceptions\CustomException
+- **Exception Properties:** Include statusCode property in all exceptions
+- **Controller Pattern:** No try-catch blocks in controllers (handled by exception handler)
+- **Validation Errors:** Use Laravel's built-in validation exception handling
+
+#### Repository Pattern
+- **Base Repository:** Extend from existing BaseRepository
+- **Model Binding:** Use dependency injection to bind repositories
+- **Query Scopes:** Implement query scopes for common filtering operations
+- **UUID Handling:** Proper handling of UUID primary keys
 
 ### 9.1 Architecture Requirements
 
@@ -398,9 +528,55 @@ Create a comprehensive, automated attendance management system that:
 - **Push Notifications:** Mobile push notification system
 - **Geofencing:** Advanced location-based attendance restrictions
 
-## 11. Open Questions / Points for Discussion
+## 11. Testing Strategy
 
-### 11.1 Business Logic Questions
+### 11.1 Unit Testing
+- **Service Tests:** Test all service methods in isolation
+- **Repository Tests:** Test repository methods with database transactions
+- **DTO Tests:** Validate DTO creation and conversion methods
+- **Validation Tests:** Test Form Request validation rules
+
+### 11.2 Integration Testing
+- **API Endpoint Tests:** Test all API endpoints with authentication
+- **Database Integration:** Test database operations and relationships
+- **Service Integration:** Test services working together
+- **Multi-tenant Tests:** Verify tenant isolation works correctly
+
+### 11.3 Performance Testing
+- **Load Testing:** Verify system performance under expected load
+- **Stress Testing:** Identify breaking points under extreme conditions
+- **Database Performance:** Test query performance with large datasets
+- **API Response Times:** Measure and optimize API response times
+
+### 11.4 Security Testing
+- **Authentication Tests:** Verify JWT authentication works correctly
+- **Authorization Tests:** Test role-based access control
+- **Data Isolation:** Verify tenant data isolation
+- **Input Validation:** Test against common security vulnerabilities
+
+## 12. Deployment Strategy
+
+### 12.1 Database Migrations
+- **Migration Files:** Create all necessary migration files
+- **Seeders:** Provide seeders for initial data
+- **Rollback Plan:** Ensure migrations can be rolled back safely
+- **Multi-tenant Support:** Migrations should work with tenant databases
+
+### 12.2 Staged Deployment
+- **Development Environment:** Initial development and testing
+- **Staging Environment:** Pre-production testing with realistic data
+- **Production Environment:** Controlled rollout to production
+- **Monitoring:** Implement monitoring for early issue detection
+
+### 12.3 Documentation
+- **API Documentation:** Complete OpenAPI/Swagger documentation
+- **Code Documentation:** PHPDoc comments for all classes and methods
+- **Deployment Guide:** Step-by-step deployment instructions
+- **User Guide:** Documentation for API consumers
+
+## 13. Open Questions / Points for Discussion
+
+### 13.1 Business Logic Questions
 1. **Overtime Calculation Rules:**
    - What are the specific overtime calculation rules? (e.g., daily vs. weekly overtime)
    - Should overtime be calculated automatically or require approval?
@@ -416,7 +592,7 @@ Create a comprehensive, automated attendance management system that:
    - How should remote work attendance be handled?
    - What grace period should be allowed for late arrivals?
 
-### 11.2 Technical Implementation Questions
+### 13.2 Technical Implementation Questions
 1. **Data Retention:**
    - How long should attendance data be retained?
    - What are the archiving requirements for old attendance records?
@@ -432,7 +608,7 @@ Create a comprehensive, automated attendance management system that:
    - Should reports be generated in real-time or scheduled?
    - What level of customization should be available for reports?
 
-### 11.3 Integration Questions
+### 13.3 Integration Questions
 1. **Existing System Integration:**
    - How should the attendance system integrate with existing user roles?
    - Should attendance data be synchronized with external systems?
@@ -445,7 +621,7 @@ Create a comprehensive, automated attendance management system that:
 
 ---
 
-## Next Steps
+## 14. Next Steps
 
 1. **Review and Approval:** Stakeholder review of this PRD
 2. **Technical Specification:** Detailed technical design document
@@ -459,8 +635,17 @@ Create a comprehensive, automated attendance management system that:
 
 **Document Status:** Draft  
 **Approval Required:** Yes  
-**Next Review Date:** TBD
+**Next Review Date:** July 5, 2025
 
 ---
 
 *This PRD serves as the foundation for the Employee Attendance Management System development. All stakeholders should review and provide feedback before development begins.*
+
+---
+
+## 15. Changelog
+
+| Date | Version | Author | Changes |
+|------|---------|--------|--------|
+| June 18, 2025 | 1.0 | abou7agar | Initial document creation |
+| June 21, 2025 | 1.1 | abou7agar | Enhanced with API endpoints, data models, implementation patterns, testing strategy, and deployment strategy |

@@ -7,11 +7,16 @@ Employee Attendance System - React Frontend
 USER (via Cascade AI)
 
 ## 3. Date
-2025-06-18
+**Created:** 2025-06-18  
+**Last Updated:** 2025-06-21
 
 ## 4. Problem Statement / Goal
 *   Provide a comprehensive, user-friendly web-based interface for employees, supervisors, and HR personnel to manage all aspects of employee attendance and leave requests.
-*   Ensure seamless and real-time integration with the Contsrix_Core_Api backend, leveraging its existing functionalities and data structures.
+*   **API Integration:** RESTful API integration with the Contsrix_Core_Api backend following these patterns:
+    * Response handling aligned with backend Json::item() and Json::items() format
+    * Request payloads structured to match backend Form Request expectations
+    * Proper handling of pagination metadata from backend responses
+    * JWT token management with automatic refresh capabilities, leveraging its existing functionalities and data structures.
 *   Streamline attendance tracking, simplify leave management processes, and provide actionable insights through reports.
 
 ## 5. Target Audience / User Stories
@@ -46,6 +51,22 @@ USER (via Cascade AI)
 *   I want to view audit logs for critical actions within the system (e.g., manual attendance changes, leave balance adjustments) for accountability.
 
 ## 6. Proposed Solution / Key Features
+
+### 6.0. Architecture & Implementation Approach
+
+#### Frontend Architecture
+* **Component Structure:** Modular component architecture with reusable UI components
+* **State Management:** Redux Toolkit for global state management with slice pattern
+* **API Integration:** Custom React hooks for API calls with standardized response handling
+* **Form Handling:** Formik with Yup validation schema matching backend Form Request validation
+* **Code Organization:** Feature-based folder structure aligning with backend modules
+
+#### API Integration Strategy
+* **API Client:** Axios-based client with interceptors for JWT handling and error processing
+* **Response Handling:** Standardized handling of Json responses from backend
+* **DTO Mapping:** Frontend models matching backend DTOs for consistent data structure
+* **Error Handling:** Comprehensive error handling for API failures with user-friendly messages
+* **Pagination:** Standardized pagination component consuming backend pagination metadata
 
 ### 6.1. Dashboard
 *   Personalized overview based on user role.
@@ -95,7 +116,30 @@ USER (via Cascade AI)
 *   **Company Leave Calendar (HR/Supervisor):**
     *   View approved leaves across the company or specific teams/departments.
 
-### 6.5. Reporting Module
+### 6.5. Attendance Constraints Management
+
+* **Constraint Configuration:**
+  * Interface for creating and managing attendance constraints (location, time, device, role, behavioral, security, compliance)
+  * JSON schema-based configuration editor for constraint parameters
+  * Visual indicators for constraint priority and status
+
+* **Constraint Assignment:**
+  * Assign constraints to departments, roles, or individual employees
+  * Bulk assignment capabilities with effective date ranges
+  * Conflict detection when assigning multiple constraints
+
+* **Violation Management:**
+  * Dashboard for viewing all constraint violations
+  * Filtering by severity, status, constraint type, and employee
+  * Resolution workflow with approval process
+  * Audit trail for all violation resolutions
+
+* **Constraint Testing:**
+  * Sandbox environment to test constraint configurations
+  * Simulation tools to verify constraint behavior
+  * Validation against historical attendance data
+
+### 6.6. Reporting Module
 *   **Standard Reports:**
     *   Daily/Weekly/Monthly Attendance Report (total hours, overtime, lateness, absences).
     *   Leave Taken Report (by type, employee, department).
@@ -112,7 +156,72 @@ USER (via Cascade AI)
     *   Configure attendance policies (grace periods, rounding rules for clock-ins, overtime thresholds).
     *   Configure leave policies.
 
-### 6.7. Notifications
+### 6.7. API Endpoints
+
+#### Authentication Endpoints
+- `POST /api/auth/login` - Authenticate user and receive JWT token
+- `POST /api/auth/refresh` - Refresh JWT token
+- `POST /api/auth/logout` - Invalidate current JWT token
+
+#### Attendance Endpoints
+- `POST /api/attendance/clock-in` - Record employee clock-in
+- `POST /api/attendance/clock-out` - Record employee clock-out
+- `POST /api/attendance/break/start` - Start break period
+- `POST /api/attendance/break/end` - End break period
+- `GET /api/attendance/status` - Get current attendance status
+- `GET /api/attendance/history` - Get attendance history with pagination
+- `GET /api/attendance/team` - Get team attendance (for managers)
+- `GET /api/attendance/late-arrivals` - Get late arrival records with filtering
+- `GET /api/attendance/early-departures` - Get early departure records with filtering
+- `GET /api/attendance/overtime-records` - Get overtime records with filtering
+
+#### Leave Management Endpoints
+- `GET /api/leave-types` - List available leave types
+- `POST /api/leave-types` - Create new leave type (HR only)
+- `PUT /api/leave-types/{id}` - Update leave type (HR only)
+- `DELETE /api/leave-types/{id}` - Delete leave type (HR only)
+- `GET /api/leave-balance` - Get employee leave balance
+- `PUT /api/leave-balance/{id}` - Adjust leave balance (HR only)
+- `POST /api/leave-requests` - Submit new leave request
+- `GET /api/leave-requests` - List leave requests with pagination and filtering
+- `GET /api/leave-requests/{id}` - Get specific leave request details
+- `PUT /api/leave-requests/{id}` - Update leave request
+- `DELETE /api/leave-requests/{id}` - Cancel leave request
+- `POST /api/leave-requests/{id}/approve` - Approve leave request
+- `POST /api/leave-requests/{id}/reject` - Reject leave request
+- `GET /api/leave-requests/pending-approvals` - View pending leave requests requiring approval
+- `GET /api/leave-requests/calendar` - View leave calendar
+- `GET /api/leave-requests/check-conflicts` - Check for leave request conflicts
+
+#### Attendance Constraints Endpoints
+- `GET /api/attendance-constraints` - List attendance constraints with filtering
+- `POST /api/attendance-constraints` - Create new constraint
+- `GET /api/attendance-constraints/{id}` - Get constraint details
+- `PUT /api/attendance-constraints/{id}` - Update constraint
+- `DELETE /api/attendance-constraints/{id}` - Delete constraint
+- `POST /api/attendance-constraints/validate` - Validate attendance against constraints
+- `GET /api/attendance-constraints/violations` - List constraint violations with filtering
+- `POST /api/attendance-constraints/violations/{id}/resolve` - Resolve violation
+- `POST /api/attendance-constraints/violations/{id}/dismiss` - Dismiss violation
+- `GET /api/attendance-constraints/statistics` - Get constraint statistics
+
+#### Reporting Endpoints
+- `GET /api/reports/attendance` - Generate attendance reports with filtering
+- `GET /api/reports/overtime` - Generate overtime reports with filtering
+- `GET /api/reports/leave` - Generate leave utilization reports with filtering
+- `GET /api/reports/violations` - Generate constraint violation reports with filtering
+- `GET /api/statistics/attendance` - Get attendance statistics
+
+### 6.8. Administration Module
+*   **Standard Reports:**
+    *   Daily/Weekly/Monthly Attendance Report (total hours, overtime, lateness, absences).
+    *   Leave Taken Report (by type, employee, department).
+    *   Leave Balance Report.
+    *   Overtime Report.
+*   **Customizable Filters:** Date range, employee, department, leave type, status.
+*   **Export Options:** CSV, PDF.
+
+### 6.8. Notifications
 *   In-app notifications for:
     *   Leave request submission confirmation.
     *   Leave request status updates (approved, rejected).
@@ -140,7 +249,10 @@ USER (via Cascade AI)
 
 ## 9. Technical Considerations / Constraints
 *   **Framework:** React (latest stable version, e.g., React 18+).
-*   **State Management:** Redux Toolkit or Zustand (preferred for scalability over Context API for complex global state).
+*   **State Management:** Redux Toolkit with slice pattern for modular state management.
+*   **Form Management:** Formik with Yup validation schemas that mirror backend Form Request validation rules.
+*   **API Client:** Axios with interceptors for authentication, error handling, and response transformation.
+*   **UI Component Library:** Material-UI (MUI) v5+ for consistent design system implementation.
 *   **Styling:** Tailwind CSS or Material UI (MUI). Decision based on desired design flexibility vs. pre-built components.
 *   **API Communication:** Axios for HTTP requests, with interceptors for JWT token handling and error management.
 *   **Authentication & Authorization:** Integrate seamlessly with Contsrix_Core_Api's JWT mechanism. Frontend will store tokens securely (e.g., HttpOnly cookies if SSR is involved, or secure browser storage for SPA).
@@ -154,17 +266,55 @@ USER (via Cascade AI)
 *   **Code Quality:** ESLint, Prettier, TypeScript (strongly recommended over JavaScript for type safety and maintainability).
 *   **Deployment:** Dockerized container, CI/CD pipeline.
 
-## 10. Out of Scope
+## 10. Implementation Roadmap
+
+### 10.1. Phase 1: Core Functionality (Sprint 1-2)
+* Authentication and user profile
+* Dashboard with key metrics
+* Basic attendance management (clock in/out, history view)
+* Simple leave request submission and approval
+
+### 10.2. Phase 2: Advanced Features (Sprint 3-4)
+* Complete leave management system
+* Team attendance views for supervisors
+* Basic reporting capabilities
+* Notification system
+
+### 10.3. Phase 3: Administrative Features (Sprint 5-6)
+* Attendance constraints management
+* Advanced reporting and analytics
+* HR administrative functions
+* System configuration
+
+### 10.4. Phase 4: Optimization and Enhancement (Sprint 7-8)
+* Performance optimization
+* UX improvements based on user feedback
+* Advanced filtering and search capabilities
+* Integration with other system modules
+
+## 11. Out of Scope
 *   Direct payroll processing or integration (system will provide data for payroll).
 *   Advanced Business Intelligence (BI) or predictive analytics dashboards.
 *   Native mobile application (this is covered by a separate PRD for Flutter).
 *   Offline functionality for the web application.
 *   Shift scheduling or rostering features (may be a future module).
 
-## 11. Open Questions / Points for Discussion
+## 12. Open Questions / Points for Discussion
 *   Are there existing UI/UX design guidelines, mockups, or a design system for Contsrix products to adhere to?
 *   Specific requirements for geolocation capture (accuracy, user consent mechanism, storage)?
 *   Detailed notification preferences (e.g., email notifications in addition to in-app)?
 *   Are there any existing shared React component libraries within New Vision 2050 that should be leveraged?
 *   What are the specific data retention policies for attendance and leave records that the frontend might need to consider (e.g., for displaying historical data)?
 *   Branding guidelines (logos, color schemes)?
+
+## 13. Next Steps
+* Review and finalize the PRD with all stakeholders.
+* Begin designing the UI/UX based on the agreed-upon design system and branding guidelines.
+* Start implementing the core functionality in Phase 1.
+
+## 14. Changelog
+
+| Date | Version | Author | Changes |
+|------|---------|--------|--------|
+| 2025-06-18 | 1.0 | abou7agar | Initial document creation |
+| 2025-06-21 | 1.1 | abou7agar | Enhanced with implementation details, architecture approach, constraints management, implementation roadmap |
