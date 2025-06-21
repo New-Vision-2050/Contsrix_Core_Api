@@ -11,6 +11,7 @@ use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\DTO\ClockOutDTO;
 use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
+use Ramsey\Uuid\Uuid;
 
 class AttendanceService
 {
@@ -100,7 +101,7 @@ class AttendanceService
             'notes' => $attendance->notes . ($notes ? "\nBreak started: " . $notes : '')
         ];
 
-        return $this->attendanceRepository->update($attendance->id, $updateData);
+        return $this->attendanceRepository->updateAttendance(Uuid::fromString($attendance->id), $updateData);
     }
 
     /**
@@ -123,7 +124,7 @@ class AttendanceService
             'notes' => $attendance->notes . ($notes ? "\nBreak ended: " . $notes : '')
         ];
 
-        return $this->attendanceRepository->update($attendance->id, $updateData);
+        return $this->attendanceRepository->updateAttendance(Uuid::fromString($attendance->id), $updateData);
     }
 
     /**
@@ -135,11 +136,19 @@ class AttendanceService
     }
 
     /**
-     * Get attendance history
+     * Get attendance history with filtering and pagination
      */
-    public function getAttendanceHistory(array $filters): Collection
+    public function getAttendanceHistory(array $filters, ?int $page = null, ?int $perPage = 10): array
     {
-        return $this->attendanceRepository->getAttendanceHistory($filters);
+        return $this->attendanceRepository->getAttendanceHistory($filters, $page, $perPage);
+    }
+
+    /**
+     * Get attendance list with filtering and pagination
+     */
+    public function getAttendanceList(array $filters, ?int $page = null, ?int $perPage = 10): array
+    {
+        return $this->attendanceRepository->getAttendanceList($filters, $page, $perPage);
     }
 
     /**
@@ -174,12 +183,9 @@ class AttendanceService
      */
     public function updateAttendance(string $attendanceId, array $data): Attendance
     {
-        $attendance = $this->attendanceRepository->findById($attendanceId);
+        $uuid = Uuid::fromString($attendanceId);
+        $attendance = $this->attendanceRepository->getAttendance($uuid);
         
-        if (!$attendance) {
-            throw AttendanceException::attendanceNotFound();
-        }
-
         // Check if attendance is from previous days and prevent modification
         if (Carbon::parse($attendance->clock_in_time)->isYesterday() || Carbon::parse($attendance->clock_in_time)->isPast()) {
             if (!Carbon::parse($attendance->clock_in_time)->isToday()) {
@@ -187,7 +193,7 @@ class AttendanceService
             }
         }
 
-        return $this->attendanceRepository->update($attendanceId, $data);
+        return $this->attendanceRepository->updateAttendance($uuid, $data);
     }
 
     /**
@@ -195,24 +201,21 @@ class AttendanceService
      */
     public function approveAttendance(string $attendanceId, string $approvedBy, ?string $notes = null): Attendance
     {
-        $attendance = $this->attendanceRepository->findById($attendanceId);
+        $uuid = Uuid::fromString($attendanceId);
+        $attendance = $this->attendanceRepository->getAttendance($uuid);
         
-        if (!$attendance) {
-            throw AttendanceException::attendanceNotFound();
-        }
-
         if ($attendance->status === 'approved') {
             throw AttendanceException::attendanceAlreadyApproved();
         }
 
-        $updateData = [
+        $data = [
             'status' => 'approved',
             'approved_by' => $approvedBy,
             'approved_at' => now(),
-            'notes' => $attendance->notes . ($notes ? "\nApproval notes: " . $notes : '')
+            'approval_notes' => $notes,
         ];
 
-        return $this->attendanceRepository->update($attendanceId, $updateData);
+        return $this->attendanceRepository->updateAttendance($uuid, $data);
     }
 
     /**
@@ -220,18 +223,21 @@ class AttendanceService
      */
     public function rejectAttendance(string $attendanceId, string $rejectedBy, string $reason): Attendance
     {
-        $attendance = $this->attendanceRepository->findById($attendanceId);
+        $uuid = Uuid::fromString($attendanceId);
+        $attendance = $this->attendanceRepository->getAttendance($uuid);
         
-        if (!$attendance) {
-            throw AttendanceException::attendanceNotFound();
+        if ($attendance->status === 'approved') {
+            throw AttendanceException::cannotRejectApprovedAttendance();
         }
 
-        $updateData = [
+        $data = [
             'status' => 'rejected',
-            'notes' => $attendance->notes . "\nRejected by: " . $rejectedBy . "\nReason: " . $reason
+            'approved_by' => $rejectedBy,
+            'approved_at' => now(),
+            'approval_notes' => $reason,
         ];
 
-        return $this->attendanceRepository->update($attendanceId, $updateData);
+        return $this->attendanceRepository->updateAttendance($uuid, $data);
     }
 
     /**
@@ -239,26 +245,47 @@ class AttendanceService
      */
     public function deleteAttendance(string $attendanceId): bool
     {
-        $attendance = $this->attendanceRepository->findById($attendanceId);
+        $uuid = Uuid::fromString($attendanceId);
+        $attendance = $this->attendanceRepository->getAttendance($uuid);
         
-        if (!$attendance) {
-            throw AttendanceException::attendanceNotFound();
-        }
-
         if ($attendance->status === 'approved') {
             throw AttendanceException::cannotDeleteApprovedAttendance();
         }
 
-        return $this->attendanceRepository->delete($attendanceId);
+        return $this->attendanceRepository->deleteAttendance($uuid);
     }
 
     /**
-     * Get team attendance for supervisors
+     * Get team attendance with filtering and pagination (for supervisors)
      */
-    public function getTeamAttendance(string $supervisorId, array $filters): Collection
+    public function getTeamAttendance(string $supervisorId, array $filters, ?int $page = null, ?int $perPage = 10): array
     {
-        // This would typically involve getting team members under the supervisor
-        // For now, we'll return all attendance records with filters
-        return $this->attendanceRepository->getAttendanceHistory($filters);
+        // Add supervisor's team filter logic here if needed
+        // For now, just use the filters as provided
+        return $this->attendanceRepository->getAttendanceHistory($filters, $page, $perPage);
+    }
+
+    /**
+     * Get late arrivals with filtering and pagination
+     */
+    public function getLateArrivals(array $filters, ?int $page = null, ?int $perPage = 10): array
+    {
+        return $this->attendanceRepository->getLateArrivals($filters, $page, $perPage);
+    }
+
+    /**
+     * Get early departures with filtering and pagination
+     */
+    public function getEarlyDepartures(array $filters, ?int $page = null, ?int $perPage = 10): array
+    {
+        return $this->attendanceRepository->getEarlyDepartures($filters, $page, $perPage);
+    }
+
+    /**
+     * Get overtime records with filtering and pagination
+     */
+    public function getOvertimeRecords(array $filters, ?int $page = null, ?int $perPage = 10): array
+    {
+        return $this->attendanceRepository->getOvertimeRecords($filters, $page, $perPage);
     }
 }

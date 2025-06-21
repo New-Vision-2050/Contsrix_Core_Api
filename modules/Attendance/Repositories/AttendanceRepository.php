@@ -4,34 +4,72 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Repositories;
 
+use BasePackage\Shared\Repositories\BaseRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
+use Ramsey\Uuid\UuidInterface;
 
-class AttendanceRepository
+/**
+ * @property Attendance $model
+ * @method Attendance findOneOrFail($id)
+ * @method Attendance findOneByOrFail(array $data)
+ */
+class AttendanceRepository extends BaseRepository
 {
-    /**
-     * Create new attendance record
-     */
-    public function create(array $data): Attendance
+    public function __construct(Attendance $model)
     {
-        return Attendance::create($data);
+        parent::__construct($model);
     }
 
     /**
-     * Find attendance by ID
+     * Get attendance list with filters and pagination
      */
-    public function findById(string $id): ?Attendance
+    public function getAttendanceList(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        return Attendance::find($id);
+        $query = $this->model->newQuery()->with(['user', 'company']);
+
+        // Apply filters using the filter method
+        if (!empty($filters)) {
+            $query->filter($filters);
+        }
+
+        $query->orderBy('clock_in_time', 'desc');
+
+        if ($page) {
+            return $this->getPaginationData($query, $page, $perPage);
+        }
+
+        return [
+            'data' => $query->get(),
+            'pagination' => null
+        ];
+    }
+
+    /**
+     * Get attendance by ID
+     */
+    public function getAttendance(UuidInterface $id): Attendance
+    {
+        return $this->findOneByOrFail([
+            'id' => $id->toString(),
+        ]);
+    }
+
+    /**
+     * Create new attendance record
+     */
+    public function createAttendance(array $data): Attendance
+    {
+        return $this->create($data);
     }
 
     /**
      * Update attendance record
      */
-    public function update(string $id, array $data): Attendance
+    public function updateAttendance(UuidInterface $id, array $data): Attendance
     {
-        $attendance = $this->findById($id);
+        $attendance = $this->getAttendance($id);
         $attendance->update($data);
         
         // Recalculate work hours if clock times are updated
@@ -46,10 +84,9 @@ class AttendanceRepository
     /**
      * Delete attendance record
      */
-    public function delete(string $id): bool
+    public function deleteAttendance(UuidInterface $id): bool
     {
-        $attendance = $this->findById($id);
-        return $attendance ? $attendance->delete() : false;
+        return $this->delete($id);
     }
 
     /**
@@ -64,50 +101,27 @@ class AttendanceRepository
     }
 
     /**
-     * Get attendance history with filters
+     * Get attendance history with filters and pagination
      */
-    public function getAttendanceHistory(array $filters): Collection
+    public function getAttendanceHistory(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        $query = Attendance::query()->with(['user', 'company']);
+        $query = $this->model->newQuery()->with(['user', 'company']);
 
-        // Apply filters
-        if (isset($filters['user_id'])) {
-            $query->where('user_id', $filters['user_id']);
+        // Apply filters using the filter method
+        if (!empty($filters)) {
+            $query->filter($filters);
         }
 
-        if (isset($filters['company_id'])) {
-            $query->where('company_id', $filters['company_id']);
-        }
-
-        if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (isset($filters['start_date'])) {
-            $query->whereDate('clock_in_time', '>=', $filters['start_date']);
-        }
-
-        if (isset($filters['end_date'])) {
-            $query->whereDate('clock_in_time', '<=', $filters['end_date']);
-        }
-
-        if (isset($filters['is_late'])) {
-            $query->where('is_late', $filters['is_late']);
-        }
-
-        if (isset($filters['is_early_departure'])) {
-            $query->where('is_early_departure', $filters['is_early_departure']);
-        }
-
-        // Default ordering
         $query->orderBy('clock_in_time', 'desc');
 
-        // Apply pagination if specified
-        if (isset($filters['per_page'])) {
-            return $query->paginate($filters['per_page']);
+        if ($page) {
+            return $this->getPaginationData($query, $page, $perPage);
         }
 
-        return $query->get();
+        return [
+            'data' => $query->get(),
+            'pagination' => null
+        ];
     }
 
     /**
@@ -132,69 +146,66 @@ class AttendanceRepository
     }
 
     /**
-     * Get late arrivals
+     * Get late arrivals with filters and pagination
      */
-    public function getLateArrivals(array $filters = []): Collection
+    public function getLateArrivals(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        $query = Attendance::where('is_late', true)->with(['user']);
+        $filters['isLate'] = true;
+        
+        $query = $this->model->newQuery()->with(['user', 'company']);
+        $query->filter($filters);
+        $query->orderBy('clock_in_time', 'desc');
 
-        if (isset($filters['company_id'])) {
-            $query->where('company_id', $filters['company_id']);
+        if ($page) {
+            return $this->getPaginationData($query, $page, $perPage);
         }
 
-        if (isset($filters['start_date'])) {
-            $query->whereDate('clock_in_time', '>=', $filters['start_date']);
-        }
-
-        if (isset($filters['end_date'])) {
-            $query->whereDate('clock_in_time', '<=', $filters['end_date']);
-        }
-
-        return $query->orderBy('clock_in_time', 'desc')->get();
+        return [
+            'data' => $query->get(),
+            'pagination' => null
+        ];
     }
 
     /**
-     * Get early departures
+     * Get early departures with filters and pagination
      */
-    public function getEarlyDepartures(array $filters = []): Collection
+    public function getEarlyDepartures(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        $query = Attendance::where('is_early_departure', true)->with(['user']);
+        $filters['isEarlyLeave'] = true;
+        
+        $query = $this->model->newQuery()->with(['user', 'company']);
+        $query->filter($filters);
+        $query->orderBy('clock_in_time', 'desc');
 
-        if (isset($filters['company_id'])) {
-            $query->where('company_id', $filters['company_id']);
+        if ($page) {
+            return $this->getPaginationData($query, $page, $perPage);
         }
 
-        if (isset($filters['start_date'])) {
-            $query->whereDate('clock_in_time', '>=', $filters['start_date']);
-        }
-
-        if (isset($filters['end_date'])) {
-            $query->whereDate('clock_in_time', '<=', $filters['end_date']);
-        }
-
-        return $query->orderBy('clock_in_time', 'desc')->get();
+        return [
+            'data' => $query->get(),
+            'pagination' => null
+        ];
     }
 
     /**
-     * Get overtime records
+     * Get overtime records with filters and pagination
      */
-    public function getOvertimeRecords(array $filters = []): Collection
+    public function getOvertimeRecords(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        $query = Attendance::where('overtime_hours', '>', 0)->with(['user']);
+        $filters['overtimeHoursFrom'] = 0.01; // Greater than 0
+        
+        $query = $this->model->newQuery()->with(['user', 'company']);
+        $query->filter($filters);
+        $query->orderBy('overtime_hours', 'desc');
 
-        if (isset($filters['company_id'])) {
-            $query->where('company_id', $filters['company_id']);
+        if ($page) {
+            return $this->getPaginationData($query, $page, $perPage);
         }
 
-        if (isset($filters['start_date'])) {
-            $query->whereDate('clock_in_time', '>=', $filters['start_date']);
-        }
-
-        if (isset($filters['end_date'])) {
-            $query->whereDate('clock_in_time', '<=', $filters['end_date']);
-        }
-
-        return $query->orderBy('overtime_hours', 'desc')->get();
+        return [
+            'data' => $query->get(),
+            'pagination' => null
+        ];
     }
 
     /**
@@ -246,5 +257,20 @@ class AttendanceRepository
     public function bulkUpdate(array $attendanceIds, array $data): int
     {
         return Attendance::whereIn('id', $attendanceIds)->update($data);
+    }
+
+    /**
+     * Helper method to get pagination data
+     */
+    private function getPaginationData($query, int $page, int $perPage): array
+    {
+        $count = $query->count();
+        $data = $query->forPage($page, $perPage)->get();
+        $pagination = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'data' => $data,
+            'pagination' => $pagination['pagination'],
+        ];
     }
 }

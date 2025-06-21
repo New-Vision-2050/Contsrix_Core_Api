@@ -6,6 +6,7 @@ namespace Modules\Attendance\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Attendance\Models\AttendanceConstraint;
+use Modules\Attendance\DTO\CreateAttendanceConstraintDTO;
 
 class CreateAttendanceConstraintRequest extends FormRequest
 {
@@ -178,5 +179,28 @@ class CreateAttendanceConstraintRequest extends FormRequest
                 }
                 break;
         }
+    }
+
+    /**
+     * Create DTO from validated request data.
+     */
+    public function createConstraintDTO(string $companyId, string $createdBy): CreateAttendanceConstraintDTO
+    {
+        $validated = $this->validated();
+        
+        return new CreateAttendanceConstraintDTO(
+            constraint_type: $validated['constraint_type'],
+            name: $validated['constraint_name'],
+            description: $validated['notes'] ?? '',
+            config: $validated['constraint_config'],
+            company_id: $companyId,
+            created_by: $createdBy,
+            user_id: $validated['user_id'] ?? null,
+            department_id: $validated['department_id'] ?? null,
+            priority: $validated['priority'] ?? 1,
+            is_active: $validated['is_active'] ?? true,
+            effective_from: $validated['start_date'] ?? null,
+            effective_to: $validated['end_date'] ?? null,
+        );
     }
 }

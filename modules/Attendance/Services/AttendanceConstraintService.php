@@ -335,6 +335,53 @@ class AttendanceConstraintService
     }
 
     /**
+     * Validate attendance data against applicable constraints without an Attendance object.
+     * Used for pre-validation before clock-in.
+     *
+     * @param array $attendanceData Array containing user_id, clock_in_time, and other attendance data
+     * @return array List of constraint violations if any
+     */
+    public function validateAttendanceData(array $attendanceData): array
+    {
+        $violations = [];
+        $user = User::find($attendanceData['user_id']);
+        
+        if (!$user) {
+            return [
+                [
+                    'violation_type' => 'system_error',
+                    'severity' => AttendanceConstraintViolation::SEVERITY_HIGH,
+                    'message' => 'User not found',
+                    'details' => ['user_id' => $attendanceData['user_id']]
+                ]
+            ];
+        }
+        
+        // Get all applicable constraints for the user
+        $constraints = $this->getApplicableConstraints($user);
+        
+        foreach ($constraints as $constraint) {
+            // Create a temporary attendance object for validation
+            $tempAttendance = new Attendance([
+                'company_id' => $user->company_id,
+                'user_id' => $user->id,
+                'clock_in_time' => Carbon::parse($attendanceData['clock_in_time']),
+                'clock_in_location' => $attendanceData['clock_in_location'] ?? null,
+                'ip_address' => $attendanceData['ip_address'] ?? null
+            ]);
+            
+            $violation = $this->validateSingleConstraint($tempAttendance, $constraint, $attendanceData);
+            
+            if ($violation) {
+                $violation['constraint_id'] = $constraint->id;
+                $violations[] = $violation;
+            }
+        }
+        
+        return $violations;
+    }
+    
+    /**
      * Additional validation methods would be implemented here for:
      * - validateOfficeVerification
      * - validateEarlyPrevention

@@ -5,146 +5,121 @@ declare(strict_types=1);
 namespace Modules\Attendance\Controllers;
 
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Models\AttendanceConstraintViolation;
 use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Repositories\AttendanceConstraintRepository;
+use Modules\Attendance\Repositories\AttendanceConstraintViolationRepository;
 use Modules\Attendance\Requests\CreateAttendanceConstraintRequest;
 use Modules\Attendance\Requests\UpdateAttendanceConstraintRequest;
+use Modules\Attendance\Requests\ResolveViolationRequest;
+use Modules\Attendance\Requests\DismissViolationRequest;
+use Modules\Attendance\Requests\FilterConstraintsRequest;
+use Modules\Attendance\Requests\GetViolationsRequest;
+use Modules\Attendance\Requests\GetStatisticsRequest;
+use Modules\Attendance\Requests\ValidateAttendanceRequest;
+use Modules\Attendance\Requests\BulkConstraintRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Ramsey\Uuid\Uuid;
 
 class AttendanceConstraintController extends Controller
 {
     protected AttendanceConstraintService $constraintService;
+    protected AttendanceConstraintRepository $constraintRepository;
+    protected AttendanceConstraintViolationRepository $violationRepository;
 
-    public function __construct(AttendanceConstraintService $constraintService)
-    {
+    public function __construct(
+        AttendanceConstraintService $constraintService,
+        AttendanceConstraintRepository $constraintRepository,
+        AttendanceConstraintViolationRepository $violationRepository,
+    ) {
         $this->constraintService = $constraintService;
+        $this->constraintRepository = $constraintRepository;
+        $this->violationRepository = $violationRepository;
     }
 
     /**
-     * Display a listing of attendance constraints.
+     * Display a listing of constraints with filtering and pagination.
      */
-    public function index(Request $request): JsonResponse
+    public function index(FilterConstraintsRequest $request): JsonResponse
     {
-        $query = AttendanceConstraint::with(['user', 'creator', 'updater'])
-            ->where('company_id', Auth::user()->company_id);
+        $filterDTO = $request->createFilterConstraintDTO(Auth::user()->company_id);
 
-        // Apply filters
-        if ($request->has('constraint_type')) {
-            $query->byType($request->constraint_type);
+        $result = $this->constraintRepository->getConstraintList(
+            $filterDTO->toArray(),
+            $filterDTO->getPage(),
+            $filterDTO->getPerPage()
+        );
+
+        if ($result['pagination']) {
+            return Json::items(
+                                    $result['data'],
+                paginationSettings: $result['pagination'],
+                message:            'Constraints retrieved successfully'
+            );
         }
 
-        if ($request->has('constraint_name')) {
-            $query->byName($request->constraint_name);
-        }
-
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
-
-        if ($request->has('user_id')) {
-            $query->forUser($request->user_id);
-        }
-
-        $constraints = $query->byPriority()
-            ->paginate($request->get('per_page', 15));
-
-        return response()->json([
-            'success' => true,
-            'data' => $constraints,
-            'meta' => [
-                'constraint_types' => AttendanceConstraint::getConstraintTypes(),
-            ]
-        ]);
+        return Json::items($result['data'], message: 'Constraints retrieved successfully');
     }
 
     /**
-     * Store a newly created attendance constraint.
+     * Store a newly created constraint.
      */
     public function store(CreateAttendanceConstraintRequest $request): JsonResponse
     {
-        $constraint = AttendanceConstraint::create([
-            'company_id' => Auth::user()->company_id,
-            'user_id' => $request->user_id,
-            'department_id' => $request->department_id,
-            'constraint_type' => $request->constraint_type,
-            'constraint_name' => $request->constraint_name,
-            'constraint_config' => $request->constraint_config,
-            'is_active' => $request->is_active ?? true,
-            'priority' => $request->priority ?? 1,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'created_by' => Auth::id(),
-            'notes' => $request->notes,
-        ]);
+        $constraintDTO = $request->createConstraintDTO(
+            Auth::user()->company_id,
+            Auth::id()
+        );
 
+        $constraint = $this->constraintRepository->createConstraint($constraintDTO->toArray());
         $constraint->load(['user', 'creator']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Attendance constraint created successfully',
-            'data' => $constraint
-        ], 201);
+        return Json::item($constraint, message: 'Constraint created successfully');
     }
 
     /**
      * Display the specified attendance constraint.
      */
-    public function show(AttendanceConstraint $constraint): JsonResponse
+    public function show(string $id): JsonResponse
     {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($id));
         $constraint->load(['user', 'creator', 'updater']);
 
-        return response()->json([
-            'success' => true,
-            'data' => $constraint
-        ]);
+        return Json::item($constraint, message: 'Constraint retrieved successfully');
     }
 
     /**
-     * Update the specified attendance constraint.
+     * Update the specified constraint.
      */
-    public function update(UpdateAttendanceConstraintRequest $request, AttendanceConstraint $constraint): JsonResponse
+    public function update(UpdateAttendanceConstraintRequest $request, string $id): JsonResponse
     {
-        $constraint->update([
-            'user_id' => $request->user_id,
-            'department_id' => $request->department_id,
-            'constraint_type' => $request->constraint_type,
-            'constraint_name' => $request->constraint_name,
-            'constraint_config' => $request->constraint_config,
-            'is_active' => $request->is_active,
-            'priority' => $request->priority,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'updated_by' => Auth::id(),
-            'notes' => $request->notes,
-        ]);
+        $updateDTO = $request->createUpdateConstraintDTO(Auth::id());
 
+        $constraint = $this->constraintRepository->updateConstraint(
+            Uuid::fromString($id),
+            $updateDTO->toArray()
+        );
         $constraint->load(['user', 'creator', 'updater']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Attendance constraint updated successfully',
-            'data' => $constraint
-        ]);
+        return Json::item($constraint, message: 'Constraint updated successfully');
     }
 
     /**
      * Remove the specified attendance constraint.
      */
-    public function destroy(AttendanceConstraint $constraint): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
-        $constraint->delete();
+        $this->constraintRepository->deleteConstraint(Uuid::fromString($id));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Attendance constraint deleted successfully'
-        ]);
+        return Json::success('Attendance constraint deleted successfully');
     }
 
     /**
-     * Get constraint types and their available names.
+     * Get constraint types and their available constraint names.
      */
     public function getConstraintTypes(): JsonResponse
     {
@@ -158,93 +133,70 @@ class AttendanceConstraintController extends Controller
             ];
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $typeDetails
-        ]);
+        return Json::item($typeDetails, message: 'Constraint types retrieved successfully');
     }
 
     /**
-     * Get violations for attendance constraints.
+     * Get violations with filtering and pagination.
      */
-    public function getViolations(Request $request): JsonResponse
+    public function getViolations(GetViolationsRequest $request): JsonResponse
     {
-        $query = AttendanceConstraintViolation::with(['user', 'attendance', 'constraint', 'resolver'])
-            ->where('company_id', Auth::user()->company_id);
+        $filterDTO = $request->createFilterViolationDTO(Auth::user()->company_id);
 
-        // Apply filters
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        $result = $this->violationRepository->getViolationList(
+            $filterDTO->toArray(),
+            $filterDTO->getPage(),
+            $filterDTO->getPerPage()
+        );
+
+        $meta = [
+            'violation_types' => AttendanceConstraintViolation::getViolationTypes(),
+            'severity_levels' => AttendanceConstraintViolation::getSeverityLevels(),
+            'status_options' => AttendanceConstraintViolation::getStatusOptions()
+        ];
+
+        if ($result['pagination']) {
+            return Json::items(
+                                    $result['data'],
+                extraItems:         $meta,
+                paginationSettings: $result['pagination'],
+                message:            'Violations retrieved successfully'
+            );
         }
 
-        if ($request->has('severity_level')) {
-            $query->bySeverity($request->severity_level);
-        }
-
-        if ($request->has('violation_type')) {
-            $query->byType($request->violation_type);
-        }
-
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->user_id);
-        }
-
-        if ($request->has('unresolved') && $request->boolean('unresolved')) {
-            $query->unresolved();
-        }
-
-        if ($request->has('critical') && $request->boolean('critical')) {
-            $query->critical();
-        }
-
-        $violations = $query->latest()
-            ->paginate($request->get('per_page', 15));
-
-        return response()->json([
-            'success' => true,
-            'data' => $violations,
-            'meta' => [
-                'violation_types' => AttendanceConstraintViolation::getViolationTypes(),
-                'severity_levels' => AttendanceConstraintViolation::getSeverityLevels(),
-                'statuses' => AttendanceConstraintViolation::getStatuses(),
-            ]
-        ]);
+        return Json::items($result['data'], extraItems: $meta, message: 'Violations retrieved successfully');
     }
 
     /**
      * Resolve a constraint violation.
      */
-    public function resolveViolation(Request $request, AttendanceConstraintViolation $violation): JsonResponse
+    public function resolveViolation(ResolveViolationRequest $request, string $violationId): JsonResponse
     {
-        $request->validate([
-            'resolution_notes' => 'nullable|string|max:1000'
-        ]);
+        $resolveDTO = $request->createResolveViolationDTO($violationId, Auth::id());
 
-        $violation->resolve(Auth::id(), $request->resolution_notes);
+        $violation = $this->violationRepository->resolveViolation(
+            Uuid::fromString($resolveDTO->getViolationId()),
+            $resolveDTO->getResolvedBy(),
+            $resolveDTO->getResolutionNotes()
+        );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Violation resolved successfully',
-            'data' => $violation->fresh(['resolver'])
-        ]);
+        return Json::item($violation, message: 'Violation resolved successfully');
     }
 
     /**
      * Dismiss a constraint violation.
      */
-    public function dismissViolation(Request $request, AttendanceConstraintViolation $violation): JsonResponse
+    public function dismissViolation(DismissViolationRequest $request, string $violationId): JsonResponse
     {
-        $request->validate([
-            'resolution_notes' => 'nullable|string|max:1000'
-        ]);
+        $dismissDTO = $request->createDismissViolationDTO($violationId, Auth::id());
 
-        $violation->dismiss(Auth::id(), $request->resolution_notes);
+        $violation = $this->violationRepository->dismissViolation(
+            Uuid::fromString($dismissDTO->getViolationId()),
+            $dismissDTO->getDismissedBy(),
+            $dismissDTO->getDismissalReason()
+        );
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Violation dismissed successfully',
-            'data' => $violation->fresh(['resolver'])
-        ]);
+        return Json::item($violation, message: 'Violation dismissed successfully');
     }
 
     /**
@@ -272,14 +224,11 @@ class AttendanceConstraintController extends Controller
 
         $violations = $this->constraintService->validateAttendance($mockAttendance, $request->all());
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'applicable_constraints' => $constraints,
-                'violations' => $violations,
-                'can_clock_in' => empty($violations)
-            ]
-        ]);
+        return Json::item([
+            'applicable_constraints' => $constraints,
+            'violations' => $violations,
+            'can_clock_in' => empty($violations)
+        ], message: 'Validation completed');
     }
 
     /**
@@ -300,11 +249,7 @@ class AttendanceConstraintController extends Controller
                 'updated_by' => Auth::id()
             ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => "Successfully updated {$updated} constraints",
-            'data' => ['updated_count' => $updated]
-        ]);
+        return Json::success("Successfully updated {$updated} constraints");
     }
 
     /**
@@ -330,9 +275,100 @@ class AttendanceConstraintController extends Controller
                 ->pluck('count', 'violation_type'),
         ];
 
-        return response()->json([
-            'success' => true,
-            'data' => $stats
-        ]);
+        return Json::item($stats, message: 'Statistics retrieved successfully');
+    }
+
+    /**
+     * Validate attendance against constraints.
+     */
+    public function validate(ValidateAttendanceRequest $request): JsonResponse
+    {
+        $validateDTO = $request->createValidateAttendanceDTO();
+        
+        $violations = $this->constraintService->validateAttendanceData($validateDTO->toArray());
+
+        return Json::item([
+            'is_valid' => empty($violations),
+            'violations' => $violations
+        ], message: 'Validation completed');
+    }
+
+    /**
+     * Get constraint violations with filtering and pagination.
+     */
+    public function violations(GetViolationsRequest $request): JsonResponse
+    {
+        $filterDTO = $request->createFilterViolationDTO(Auth::user()->company_id);
+
+        $result = $this->violationRepository->getViolationList(
+            $filterDTO->toArray(),
+            $filterDTO->getPage(),
+            $filterDTO->getPerPage()
+        );
+
+        if ($result['pagination']) {
+            return Json::items(
+                                    $result['data'],
+                paginationSettings: $result['pagination'],
+                message:            'Violations retrieved successfully'
+            );
+        }
+
+        return Json::items($result['data'], message: 'Violations retrieved successfully');
+    }
+
+    /**
+     * Get constraint statistics.
+     */
+    public function statistics(GetStatisticsRequest $request): JsonResponse
+    {
+        $filterDTO = $request->createFilterStatisticsDTO(Auth::user()->company_id);
+
+        $constraintStats = $this->constraintRepository->getConstraintStatistics($filterDTO->toArray());
+        $violationStats = $this->violationRepository->getViolationStatistics($filterDTO->toArray());
+
+        $stats = [
+            'constraints' => $constraintStats,
+            'violations' => $violationStats,
+            'summary' => $this->violationRepository->getViolationsSummary($filterDTO->toArray())
+        ];
+
+        return Json::item($stats, message: 'Statistics retrieved successfully');
+    }
+
+    /**
+     * Bulk activate constraints.
+     */
+    public function bulkActivate(BulkConstraintRequest $request): JsonResponse
+    {
+        $bulkDTO = $request->createBulkConstraintIdsDTO();
+        
+        $updated = $this->constraintRepository->bulkActivate($bulkDTO->getConstraintIds());
+
+        return Json::success("Successfully activated {$updated} constraints");
+    }
+
+    /**
+     * Bulk deactivate constraints.
+     */
+    public function bulkDeactivate(BulkConstraintRequest $request): JsonResponse
+    {
+        $bulkDTO = $request->createBulkConstraintIdsDTO();
+        
+        $updated = $this->constraintRepository->bulkDeactivate($bulkDTO->getConstraintIds());
+
+        return Json::success("Successfully deactivated {$updated} constraints");
+    }
+
+    /**
+     * Bulk delete constraints.
+     */
+    public function bulkDelete(BulkConstraintRequest $request): JsonResponse
+    {
+        $bulkDTO = $request->createBulkConstraintIdsDTO();
+        
+        $deleted = $this->constraintRepository->bulkDelete($bulkDTO->getConstraintIds());
+
+        return Json::success("Successfully deleted {$deleted} constraints");
     }
 }

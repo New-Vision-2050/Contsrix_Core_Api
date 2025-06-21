@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Attendance\DTO\FilterAttendanceDTO;
 
 class GetAttendanceRequest extends FormRequest
 {
@@ -92,5 +93,25 @@ class GetAttendanceRequest extends FormRequest
         }
 
         return $validated;
+    }
+
+    /**
+     * Create DTO from validated request data.
+     */
+    public function createFilterAttendanceDTO(string $companyId): FilterAttendanceDTO
+    {
+        $validated = $this->validated();
+        
+        return new FilterAttendanceDTO(
+            company_id: $companyId,
+            user_id: $validated['user_id'] ?? null,
+            status: $validated['status'] ?? null,
+            start_date: $validated['start_date'] ?? null,
+            end_date: $validated['end_date'] ?? null,
+            late_arrival: $validated['is_late'] ?? null,
+            early_departure: $validated['is_early_departure'] ?? null,
+            page: $validated['page'] ?? null,
+            per_page: $validated['per_page'] ?? null,
+        );
     }
 }
