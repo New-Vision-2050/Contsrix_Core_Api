@@ -8,7 +8,7 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class AttendanceConstraintFilter extends SearchModelFilter
 {
-    public $relations = ['user', 'company'];
+    public $relations = ['user', 'company', 'branch'];
 
     public function name($name)
     {
@@ -38,6 +38,18 @@ class AttendanceConstraintFilter extends SearchModelFilter
     public function departmentId($departmentId)
     {
         return $this->where('department_id', $departmentId);
+    }
+
+    public function branchId($branchId)
+    {
+        return $this->where('branch_id', $branchId);
+    }
+
+    public function branchName($branchName)
+    {
+        return $this->whereHas('branch', function ($query) use ($branchName) {
+            $query->where('name', 'LIKE', "%{$branchName}%");
+        });
     }
 
     public function isActive($isActive)

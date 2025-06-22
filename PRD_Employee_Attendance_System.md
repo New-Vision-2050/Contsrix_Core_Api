@@ -135,6 +135,12 @@ Create a comprehensive, automated attendance management system that:
 
 ### 6.3 Attendance Constraints System (محددات الحضور)
 
+#### Branch-Based Constraints
+- **Branch Association:** All constraints are associated with specific branches from the management hierarchy
+- **Branch Hierarchy:** Constraints can be inherited from parent branches or overridden at child branches
+- **Branch-Specific Rules:** Different branches can have different constraint configurations based on local needs
+- **Branch Manager Control:** Branch managers can manage constraints specific to their branch
+
 #### Location-based Constraints
 - **Geofencing:** Define allowed geographical areas for clock-in/out operations
 - **IP Address Restrictions:** Limit attendance tracking to specific IP addresses or ranges
@@ -157,11 +163,11 @@ Create a comprehensive, automated attendance management system that:
 - **Browser Restrictions:** Limit web-based attendance to approved browsers
 
 #### Role-based Constraints
-- **Department-specific Rules:** Different attendance rules for different departments
-- **Employee Level Restrictions:** Varying constraints based on employee hierarchy
-- **Probationary Employee Rules:** Special attendance rules for new employees
-- **Contract Type Constraints:** Different rules for full-time, part-time, and contract employees
-- **Supervisor Override Permissions:** Allow supervisors to bypass certain constraints when needed
+- **Branch-Level Assignment:** Apply constraints to specific branches in the management hierarchy
+- **User-Level Assignment:** Apply constraints to specific employees within a branch
+- **Department-Level Assignment:** Apply constraints to entire departments within a branch
+- **Role-Based Assignment:** Apply constraints based on employee roles within a branch
+- **Company-Wide Assignment:** Apply constraints to all employees in a company, respecting branch hierarchy
 
 #### Behavioral Constraints
 - **Consecutive Days Limit:** Prevent employees from working excessive consecutive days
@@ -186,9 +192,10 @@ Create a comprehensive, automated attendance management system that:
 
 #### Configuration and Management
 - **Flexible Rule Engine:** Allow HR administrators to configure custom constraint rules
-- **Exception Management:** System for handling and approving constraint exceptions
-- **Temporary Rule Modifications:** Support for temporary changes to attendance constraints
-- **Bulk Rule Application:** Apply constraint rules to groups of employees efficiently
+- **Branch Selection:** Tools for selecting which branches a constraint applies to
+- **Constraint Assignment:** Tools for assigning constraints to users, departments, or roles within branches
+- **Constraint Testing:** Ability to test constraints before applying them
+- **Bulk Rule Application:** Apply constraint rules to groups of employees or branches efficiently
 - **Rule Testing Environment:** Test new constraints before applying them to production
 
 ### 6.4 Notification System

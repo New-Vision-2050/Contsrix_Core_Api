@@ -211,4 +211,17 @@ class AttendanceConstraintRepository extends BaseRepository
             'pagination' => $pagination['pagination'],
         ];
     }
+
+    /**
+     * Bulk assign constraints to a branch
+     */
+    public function bulkUpdateBranch(array $constraintIds, string $branchId, string $updatedBy): int
+    {
+        return $this->model->whereIn('id', $constraintIds)
+            ->update([
+                'branch_id' => $branchId,
+                'updated_by' => $updatedBy,
+                'updated_at' => now(),
+            ]);
+    }
 }

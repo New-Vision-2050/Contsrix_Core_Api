@@ -128,6 +128,8 @@ USER (via Cascade AI)
 #### Attendance Constraints Endpoints
 - `POST /api/attendance-constraints/validate` - Validate attendance against constraints
 - `GET /api/attendance-constraints/violations` - List constraint violations for current user
+- `GET /api/attendance-constraints/branches/{branchId}` - Get constraints for user's current branch
+- `GET /api/management-hierarchy/branches/current` - Get user's current branch information
 
 ### 6.7. Push Notifications
 *   **For Employees:**
@@ -136,23 +138,33 @@ USER (via Cascade AI)
 *   **For Supervisors:**
     *   New leave request submitted by a team member requiring approval.
 
-### 6.7. Attendance Constraints Compliance
+### 6.8. Attendance Constraints Compliance
+* **Branch-Based Constraints:**
+  * Automatically identify applicable branch constraints based on user location and branch assignment
+  * Display branch-specific rules and requirements
+  * Support for branch hierarchy with inherited constraints
+  * Branch-specific notifications and compliance requirements
+
 * **Pre-Clock Validation:**
-  * Validate attendance actions against applicable constraints before submission
-  * Show clear feedback when constraints would be violated
-  * Provide override request workflow for exceptional situations
+  * Validate attendance actions against applicable branch constraints before submission
+  * Clear feedback on constraint violations with explanation
+  * Override workflow for supervisors when exceptions are needed
+  * Branch-specific validation rules and feedback
 
-* **Constraint Violation Handling:**
-  * Receive and display constraint violation notifications
-  * Allow employees to provide explanations for violations
-  * Track violation status and resolution process
+* **Violation Handling:**
+  * Push notifications for constraint violations with branch context
+  * In-app explanation submission for violations
+  * Status tracking for violation resolution
+  * Branch-specific violation reporting
 
-* **Compliance Dashboard:**
-  * Personal compliance status overview
-  * Historical compliance metrics and trends
+* **Personal Compliance Dashboard:**
+  * View personal compliance metrics and history by branch
+  * Insights on common violation patterns
+  * Branch-specific compliance statistics
+  * Tips for improving compliance within branch context
   * Actionable insights to improve compliance
 
-### 6.8. Security
+### 6.9. Security
 *   Secure login using credentials from Contsrix_Core_Api.
 *   Secure storage of JWT/auth tokens (e.g., using `flutter_secure_storage`).
 *   (Optional) Biometric authentication (Fingerprint/Face ID) integration using `local_auth` or similar.

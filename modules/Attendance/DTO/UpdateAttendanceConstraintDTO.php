@@ -14,8 +14,11 @@ class UpdateAttendanceConstraintDTO
         public ?array $config = null,
         public ?string $user_id = null,
         public ?string $department_id = null,
+        public ?array $branch_ids = null,
+        public ?array $branch_locations = null,
         public ?int $priority = null,
         public ?bool $is_active = null,
+        public ?bool $inherit_from_parent = null,
         public ?string $effective_from = null,
         public ?string $effective_to = null,
     ) {}
@@ -42,11 +45,20 @@ class UpdateAttendanceConstraintDTO
         if ($this->department_id !== null) {
             $data['department_id'] = $this->department_id;
         }
+        if ($this->branch_ids !== null) {
+            $data['branch_ids'] = $this->branch_ids;
+        }
+        if ($this->branch_locations !== null) {
+            $data['branch_locations'] = $this->branch_locations;
+        }
         if ($this->priority !== null) {
             $data['priority'] = $this->priority;
         }
         if ($this->is_active !== null) {
             $data['is_active'] = $this->is_active;
+        }
+        if ($this->inherit_from_parent !== null) {
+            $data['inherit_from_parent'] = $this->inherit_from_parent;
         }
         if ($this->effective_from !== null) {
             $data['effective_from'] = $this->effective_from;
@@ -93,6 +105,16 @@ class UpdateAttendanceConstraintDTO
         return $this->department_id;
     }
 
+    public function getBranchIds(): ?array
+    {
+        return $this->branch_ids;
+    }
+
+    public function getBranchLocations(): ?array
+    {
+        return $this->branch_locations;
+    }
+
     public function getPriority(): ?int
     {
         return $this->priority;
@@ -101,6 +123,11 @@ class UpdateAttendanceConstraintDTO
     public function isActive(): ?bool
     {
         return $this->is_active;
+    }
+
+    public function isInheritFromParent(): ?bool
+    {
+        return $this->inherit_from_parent;
     }
 
     public function getEffectiveFrom(): ?string

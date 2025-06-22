@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Modules\Attendance\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 use Modules\Attendance\Models\AttendanceConstraint;
-use Modules\Attendance\DTO\CreateAttendanceConstraintDTO;
+use Modules\Attendance\DTOs\CreateAttendanceConstraintDTO;
+use Modules\Attendance\DataClasses\MultiplePeriodsConfig;
+use InvalidArgumentException;
 
 class CreateAttendanceConstraintRequest extends FormRequest
 {
@@ -24,8 +27,17 @@ class CreateAttendanceConstraintRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'nullable|uuid|exists:users,id',
-            'department_id' => 'nullable|uuid|exists:departments,id',
+            'user_id' => ['nullable', 'uuid', 'exists:users,id'],
+            'department_id' => ['nullable', 'string', 'max:255'],
+            'branch_ids' => ['nullable', 'array'],
+            'branch_ids.*' => ['uuid', 'exists:management_hierarchies,id'],
+            'branch_locations' => ['nullable', 'array'],
+            'branch_locations.*' => ['array'],
+            'branch_locations.*.name' => ['required_with:branch_locations.*', 'string', 'max:255'],
+            'branch_locations.*.address' => ['nullable', 'string', 'max:500'],
+            'branch_locations.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'branch_locations.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'branch_locations.*.radius' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'constraint_type' => [
                 'required',
                 'string',
@@ -34,7 +46,8 @@ class CreateAttendanceConstraintRequest extends FormRequest
             'constraint_name' => 'required|string|max:255',
             'constraint_config' => 'required|array',
             'is_active' => 'boolean',
-            'priority' => 'integer|min:1|max:10',
+            'inherit_from_parent' => ['boolean'],
+            'priority' => ['nullable', 'integer', 'min:1', 'max:10'],
             'start_date' => 'nullable|date|after_or_equal:today',
             'end_date' => 'nullable|date|after:start_date',
             'notes' => 'nullable|string|max:1000',
@@ -144,6 +157,10 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     $validator->errors()->add('constraint_config.max_break_duration', 'Maximum break duration is required and must be numeric.');
                 }
                 break;
+                
+            case AttendanceConstraint::TIME_MULTIPLE_PERIODS:
+                $this->validateMultiplePeriodsConfig($validator, $config);
+                break;
         }
     }
 
@@ -182,6 +199,42 @@ class CreateAttendanceConstraintRequest extends FormRequest
     }
 
     /**
+     * Validate multiple periods constraint configuration.
+     */
+    protected function validateMultiplePeriodsConfig($validator, array $config): void
+    {
+        try {
+            // Use the data class for strict validation
+            MultiplePeriodsConfig::fromArray($config);
+        } catch (InvalidArgumentException $e) {
+            $validator->errors()->add('constraint_config', 'Multiple periods configuration error: ' . $e->getMessage());
+            return;
+        }
+
+        // Additional business logic validation can be added here
+        $multiplePeriodsConfig = MultiplePeriodsConfig::fromArray($config);
+        
+        // Validate reasonable work hours
+        $weeklyHours = $multiplePeriodsConfig->getTotalWeeklyWorkHours();
+        if ($weeklyHours > 80) {
+            $validator->errors()->add('constraint_config', "Weekly work hours ({$weeklyHours}) exceed reasonable limits (80 hours).");
+        }
+
+        // Validate at least one enabled day
+        if (count($multiplePeriodsConfig->getEnabledDays()) === 0) {
+            $validator->errors()->add('constraint_config', 'At least one day must be enabled in the weekly schedule.');
+        }
+
+        // Check for potential scheduling conflicts with cross-day periods
+        if ($multiplePeriodsConfig->hasCrossDayPeriods()) {
+            $validationIssues = $multiplePeriodsConfig->weeklySchedule->validate();
+            foreach ($validationIssues as $issue) {
+                $validator->errors()->add('constraint_config', $issue);
+            }
+        }
+    }
+
+    /**
      * Create DTO from validated request data.
      */
     public function createConstraintDTO(string $companyId, string $createdBy): CreateAttendanceConstraintDTO
@@ -197,8 +250,11 @@ class CreateAttendanceConstraintRequest extends FormRequest
             created_by: $createdBy,
             user_id: $validated['user_id'] ?? null,
             department_id: $validated['department_id'] ?? null,
+            branch_ids: $validated['branch_ids'] ?? [],
+            branch_locations: $validated['branch_locations'] ?? null,
             priority: $validated['priority'] ?? 1,
             is_active: $validated['is_active'] ?? true,
+            inherit_from_parent: $validated['inherit_from_parent'] ?? false,
             effective_from: $validated['start_date'] ?? null,
             effective_to: $validated['end_date'] ?? null,
         );

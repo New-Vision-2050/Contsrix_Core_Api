@@ -371,4 +371,51 @@ class AttendanceConstraintController extends Controller
 
         return Json::success("Successfully deleted {$deleted} constraints");
     }
+
+    /**
+     * Get constraints for a specific branch.
+     */
+    public function getConstraintsByBranch(string $branchId): JsonResponse
+    {
+        $companyId = Auth::user()->company_id;
+        $constraints = $this->constraintService->getConstraintsForBranch($branchId, $companyId);
+
+        return Json::items($constraints, message: 'Branch constraints retrieved successfully');
+    }
+
+    /**
+     * Get inherited constraints for a branch.
+     */
+    public function getInheritedConstraints(string $branchId): JsonResponse
+    {
+        $companyId = Auth::user()->company_id;
+        
+        $constraints = AttendanceConstraint::where('company_id', $companyId)
+            ->where('inherit_from_parent', true)
+            ->whereHas('branch', function ($query) use ($branchId) {
+                // Get constraints from parent branches
+                $query->where('id', '!=', $branchId);
+            })
+            ->with(['branch', 'user', 'creator'])
+            ->get();
+
+        return Json::items($constraints, message: 'Inherited constraints retrieved successfully');
+    }
+
+    /**
+     * Bulk assign constraints to a branch.
+     */
+    public function bulkAssignToBranch(string $branchId, BulkConstraintRequest $request): JsonResponse
+    {
+        $bulkDTO = $request->createBulkConstraintIdsDTO();
+        $updatedBy = Auth::id();
+        
+        $updated = $this->constraintRepository->bulkUpdateBranch(
+            $bulkDTO->getConstraintIds(),
+            $branchId,
+            $updatedBy
+        );
+
+        return Json::success("Successfully assigned {$updated} constraints to branch");
+    }
 }

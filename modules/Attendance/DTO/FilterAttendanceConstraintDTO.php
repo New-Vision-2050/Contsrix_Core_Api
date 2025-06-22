@@ -12,6 +12,8 @@ class FilterAttendanceConstraintDTO
         public ?string $name = null,
         public ?string $user_id = null,
         public ?string $department_id = null,
+        public ?int $branch_id = null,
+        public ?string $branch_name = null,
         public ?int $priority_from = null,
         public ?int $priority_to = null,
         public ?string $effective_from = null,
@@ -39,6 +41,12 @@ class FilterAttendanceConstraintDTO
         }
         if ($this->department_id !== null) {
             $data['department_id'] = $this->department_id;
+        }
+        if ($this->branch_id !== null) {
+            $data['branch_id'] = $this->branch_id;
+        }
+        if ($this->branch_name !== null) {
+            $data['branch_name'] = $this->branch_name;
         }
         if ($this->priority_from !== null) {
             $data['priority_from'] = $this->priority_from;
@@ -91,6 +99,16 @@ class FilterAttendanceConstraintDTO
     public function getDepartmentId(): ?string
     {
         return $this->department_id;
+    }
+
+    public function getBranchId(): ?int
+    {
+        return $this->branch_id;
+    }
+
+    public function getBranchName(): ?string
+    {
+        return $this->branch_name;
     }
 
     public function getPriorityFrom(): ?int

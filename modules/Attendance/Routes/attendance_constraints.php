@@ -45,6 +45,19 @@ Route::middleware(['auth:api', 'tenant'])->prefix('attendance/constraints')->gro
         ->middleware('permission:validate_attendance_constraints')
         ->name('attendance.constraints.validate');
     
+    // Branch-based Constraint Routes
+    Route::get('/branches/{branchId}', [AttendanceConstraintController::class, 'getConstraintsByBranch'])
+        ->middleware('permission:view_attendance_constraints')
+        ->name('attendance.constraints.by-branch');
+    
+    Route::post('/branches/{branchId}/bulk-assign', [AttendanceConstraintController::class, 'bulkAssignToBranch'])
+        ->middleware('permission:create_attendance_constraints')
+        ->name('attendance.constraints.bulk-assign-branch');
+    
+    Route::get('/branches/{branchId}/inherited', [AttendanceConstraintController::class, 'getInheritedConstraints'])
+        ->middleware('permission:view_attendance_constraints')
+        ->name('attendance.constraints.inherited');
+    
     // Violation Management Routes
     Route::get('/violations', [AttendanceConstraintController::class, 'getViolations'])
         ->middleware('permission:view_attendance_violations')

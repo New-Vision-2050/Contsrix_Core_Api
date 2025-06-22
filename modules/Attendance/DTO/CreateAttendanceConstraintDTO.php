@@ -15,8 +15,11 @@ class CreateAttendanceConstraintDTO
         public string $created_by,
         public ?string $user_id = null,
         public ?string $department_id = null,
+        public ?array $branch_ids = null,
+        public ?array $branch_locations = null,
         public ?int $priority = 1,
         public bool $is_active = true,
+        public bool $inherit_from_parent = false,
         public ?string $effective_from = null,
         public ?string $effective_to = null,
     ) {}
@@ -25,17 +28,20 @@ class CreateAttendanceConstraintDTO
     {
         return [
             'constraint_type' => $this->constraint_type,
-            'name' => $this->name,
+            'constraint_name' => $this->name,
             'description' => $this->description,
-            'config' => $this->config,
+            'constraint_config' => $this->config,
             'company_id' => $this->company_id,
             'created_by' => $this->created_by,
             'user_id' => $this->user_id,
             'department_id' => $this->department_id,
+            'branch_ids' => $this->branch_ids,
+            'branch_locations' => $this->branch_locations,
             'priority' => $this->priority,
             'is_active' => $this->is_active,
-            'effective_from' => $this->effective_from,
-            'effective_to' => $this->effective_to,
+            'inherit_from_parent' => $this->inherit_from_parent,
+            'start_date' => $this->effective_from,
+            'end_date' => $this->effective_to,
         ];
     }
 
@@ -79,6 +85,16 @@ class CreateAttendanceConstraintDTO
         return $this->department_id;
     }
 
+    public function getBranchIds(): ?array
+    {
+        return $this->branch_ids;
+    }
+
+    public function getBranchLocations(): ?array
+    {
+        return $this->branch_locations;
+    }
+
     public function getPriority(): int
     {
         return $this->priority;
@@ -89,13 +105,8 @@ class CreateAttendanceConstraintDTO
         return $this->is_active;
     }
 
-    public function getEffectiveFrom(): ?string
+    public function isInheritFromParent(): bool
     {
-        return $this->effective_from;
-    }
-
-    public function getEffectiveTo(): ?string
-    {
-        return $this->effective_to;
+        return $this->inherit_from_parent;
     }
 }

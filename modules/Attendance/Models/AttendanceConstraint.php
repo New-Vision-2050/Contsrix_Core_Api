@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class AttendanceConstraint extends Model implements Auditable
@@ -35,10 +36,13 @@ class AttendanceConstraint extends Model implements Auditable
         'company_id',
         'user_id',
         'department_id',
+        'branch_ids',
+        'branch_locations',
         'constraint_type',
         'constraint_name',
         'constraint_config',
         'is_active',
+        'inherit_from_parent',
         'priority',
         'start_date',
         'end_date',
@@ -52,10 +56,13 @@ class AttendanceConstraint extends Model implements Auditable
         'company_id' => UuidCast::class,
         'user_id' => UuidCast::class,
         'department_id' => UuidCast::class,
+        'branch_ids' => 'array',
+        'branch_locations' => 'array',
         'created_by' => UuidCast::class,
         'updated_by' => UuidCast::class,
         'constraint_config' => 'array',
         'is_active' => 'boolean',
+        'inherit_from_parent' => 'boolean',
         'priority' => 'integer',
         'start_date' => 'date',
         'end_date' => 'date',
@@ -91,6 +98,7 @@ class AttendanceConstraint extends Model implements Auditable
     const TIME_LATE_RESTRICTION = 'late_restriction';
     const TIME_BREAK_LIMITS = 'break_limits';
     const TIME_OVERTIME_APPROVAL = 'overtime_approval';
+    const TIME_MULTIPLE_PERIODS = 'multiple_periods';
 
     // Constraint name constants for device
     const DEVICE_AUTHORIZED_ONLY = 'authorized_only';
@@ -144,6 +152,118 @@ class AttendanceConstraint extends Model implements Auditable
     }
 
     /**
+     * Get the branches that this constraint applies to (if branch-specific).
+     */
+    public function branches()
+    {
+        if (empty($this->branch_ids)) {
+            return collect();
+        }
+        
+        return ManagementHierarchy::whereIn('id', $this->branch_ids)->get();
+    }
+
+    /**
+     * Check if constraint applies to a specific branch.
+     */
+    public function appliesToBranch(string $branchId): bool
+    {
+        // Company-wide constraints apply to all branches
+        if (empty($this->branch_ids)) {
+            return true;
+        }
+        
+        // Check if branch is in the list
+        return in_array($branchId, $this->branch_ids);
+    }
+
+    /**
+     * Add a branch to this constraint.
+     */
+    public function addBranch(string $branchId): void
+    {
+        $branchIds = $this->branch_ids ?? [];
+        
+        if (!in_array($branchId, $branchIds)) {
+            $branchIds[] = $branchId;
+            $this->branch_ids = $branchIds;
+            $this->save();
+        }
+    }
+
+    /**
+     * Remove a branch from this constraint.
+     */
+    public function removeBranch(string $branchId): void
+    {
+        $branchIds = $this->branch_ids ?? [];
+        
+        $branchIds = array_filter($branchIds, fn($id) => $id !== $branchId);
+        $this->branch_ids = array_values($branchIds);
+        
+        // Also remove the location for this branch
+        $this->removeBranchLocation($branchId);
+        
+        $this->save();
+    }
+
+    /**
+     * Set location for a specific branch.
+     */
+    public function setBranchLocation(string $branchId, array $location): void
+    {
+        $branchLocations = $this->branch_locations ?? [];
+        $branchLocations[$branchId] = $location;
+        $this->branch_locations = $branchLocations;
+        $this->save();
+    }
+
+    /**
+     * Get location for a specific branch.
+     */
+    public function getBranchLocation(string $branchId): ?array
+    {
+        $branchLocations = $this->branch_locations ?? [];
+        return $branchLocations[$branchId] ?? null;
+    }
+
+    /**
+     * Remove location for a specific branch.
+     */
+    public function removeBranchLocation(string $branchId): void
+    {
+        $branchLocations = $this->branch_locations ?? [];
+        unset($branchLocations[$branchId]);
+        $this->branch_locations = $branchLocations;
+    }
+
+    /**
+     * Get all branch locations.
+     */
+    public function getAllBranchLocations(): array
+    {
+        return $this->branch_locations ?? [];
+    }
+
+    /**
+     * Set multiple branch locations at once.
+     */
+    public function setBranchLocations(array $branchLocations): void
+    {
+        $this->branch_locations = $branchLocations;
+        $this->save();
+    }
+
+    /**
+     * Check if a branch has a custom location set.
+     */
+    public function hasBranchLocation(string $branchId): bool
+    {
+        $branchLocations = $this->branch_locations ?? [];
+        return isset($branchLocations[$branchId]);
+    }
+
+    /**
      * Get the user who created this constraint.
      */
     public function creator(): BelongsTo
@@ -192,6 +312,49 @@ class AttendanceConstraint extends Model implements Auditable
             $q->where('user_id', $userId)
               ->orWhereNull('user_id'); // Include company-wide constraints
         });
+    }
+
+    /**
+     * Scope to get constraints for a specific branch.
+     */
+    public function scopeForBranch($query, string $branchId)
+    {
+        return $query->where(function ($q) use ($branchId) {
+            $q->whereJsonContains('branch_ids', $branchId)
+              ->orWhereNull('branch_ids'); // Include company-wide constraints
+        });
+    }
+
+    /**
+     * Scope to get constraints applicable to a branch (including inherited).
+     */
+    public function scopeApplicableToBranch($query, string $branchId)
+    {
+        return $query->where(function ($q) use ($branchId) {
+            $q->whereJsonContains('branch_ids', $branchId)
+              ->orWhere(function ($subQ) use ($branchId) {
+                  // Include constraints from parent branches if inheritance is enabled
+                  $subQ->where('inherit_from_parent', true)
+                       ->whereJsonContains('branch_ids', $branchId);
+              })
+              ->orWhereNull('branch_ids'); // Include company-wide constraints
+        });
+    }
+
+    /**
+     * Scope to get only branch-specific constraints (excluding company-wide).
+     */
+    public function scopeBranchSpecific($query)
+    {
+        return $query->whereNotNull('branch_ids');
+    }
+
+    /**
+     * Scope to get only company-wide constraints.
+     */
+    public function scopeCompanyWide($query)
+    {
+        return $query->whereNull('branch_ids');
     }
 
     /**
@@ -250,6 +413,7 @@ class AttendanceConstraint extends Model implements Auditable
                 self::TIME_LATE_RESTRICTION => 'Late Clock-out Restrictions',
                 self::TIME_BREAK_LIMITS => 'Break Time Limits',
                 self::TIME_OVERTIME_APPROVAL => 'Overtime Approval Requirements',
+                self::TIME_MULTIPLE_PERIODS => 'Multiple Periods per Day',
             ],
             self::TYPE_DEVICE => [
                 self::DEVICE_AUTHORIZED_ONLY => 'Authorized Device Registration',
