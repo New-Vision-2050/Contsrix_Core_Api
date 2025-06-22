@@ -7,6 +7,7 @@ namespace Modules\Attendance\Tests\Unit\Services;
 use PHPUnit\Framework\TestCase;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Carbon\Carbon;
+use Modules\Attendance\DataClasses\TimePeriod;
 use ReflectionClass;
 
 class AttendanceConstraintServiceTest extends TestCase
@@ -126,15 +127,16 @@ class AttendanceConstraintServiceTest extends TestCase
 
         Carbon::setTestNow(Carbon::create(2024, 1, 15, 10, 30, 0)); // 10:30 AM
         
-        $period = [
-            'start_time' => '09:00',
-            'end_time' => '12:00',
-            'spans_next_day' => false,
-            'grace_before' => 0,
-            'grace_after' => 0
-        ];
+        $period = new TimePeriod(
+            'Test Period',
+            '09:00',
+            '12:00',
+            false,
+            0,
+            0
+        );
 
-        $result = $this->callProtectedMethod($this->service, 'isTimeWithinPeriod', [Carbon::now(), $period]);
+        $result = $this->callProtectedMethod($this->service, 'isTimeWithinPeriod', [Carbon::now()->format('H:i'), $period]);
         $this->assertTrue($result, 'Time within period should return true');
 
         Carbon::setTestNow();
@@ -155,15 +157,16 @@ class AttendanceConstraintServiceTest extends TestCase
 
         Carbon::setTestNow(Carbon::create(2024, 1, 15, 8, 50, 0)); // 8:50 AM (10 minutes before start)
         
-        $period = [
-            'start_time' => '09:00',
-            'end_time' => '12:00',
-            'spans_next_day' => false,
-            'grace_before' => 15, // 15 minutes grace before
-            'grace_after' => 15
-        ];
+        $period = new TimePeriod(
+            'Test Period',
+            '09:00',
+            '12:00',
+            false,
+            15, // 15 minutes grace before
+            15
+        );
 
-        $result = $this->callProtectedMethod($this->service, 'isTimeWithinPeriod', [Carbon::now(), $period]);
+        $result = $this->callProtectedMethod($this->service, 'isTimeWithinPeriod', [Carbon::now()->format('H:i'), $period]);
         $this->assertTrue($result, 'Time within grace period should return true');
 
         Carbon::setTestNow();
@@ -184,15 +187,16 @@ class AttendanceConstraintServiceTest extends TestCase
 
         Carbon::setTestNow(Carbon::create(2024, 1, 15, 23, 30, 0)); // 11:30 PM
         
-        $period = [
-            'start_time' => '22:00', // 10 PM
-            'end_time' => '06:00',   // 6 AM next day
-            'spans_next_day' => true,
-            'grace_before' => 0,
-            'grace_after' => 0
-        ];
+        $period = new TimePeriod(
+            'Test Period',
+            '22:00', // 10 PM
+            '06:00',   // 6 AM next day
+            true,
+            0,
+            0
+        );
 
-        $result = $this->callProtectedMethod($this->service, 'isTimeWithinPeriod', [Carbon::now(), $period]);
+        $result = $this->callProtectedMethod($this->service, 'isTimeWithinPeriod', [Carbon::now()->format('H:i'), $period]);
         $this->assertTrue($result, 'Time within cross-day period should return true');
 
         Carbon::setTestNow();

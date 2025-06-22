@@ -118,38 +118,32 @@ USER (via Cascade AI)
 
 ### 6.5. Attendance Constraints Management
 
-* **Constraint Configuration:**
-  * Interface for creating and managing attendance constraints (location, time, device, role, behavioral, security, compliance)
-  * JSON schema-based configuration editor for constraint parameters
-  * Visual indicators for constraint priority and status
-  * Branch-specific constraint settings and overrides
+* **Constraint Configuration (Admin/HR):**
+  * Interface for creating and managing attendance constraints. 
+  * **Currently Implemented Types:** `Location` (Geofencing, IP Restriction, Custom Branch Locations), `Time` (Shift Enforcement, Multiple Periods).
+  * **Future Scope:** `Device`, `Role-based`, `Behavioral`, `Security`, and `Compliance` constraints are planned for future releases.
+  * Configuration editor for constraint parameters (e.g., setting coordinates and radius for geofencing).
+  * Visual indicators for constraint priority and status (active/inactive).
 
 * **Branch-Based Management:**
-  * Constraints are associated with specific branches from the management hierarchy
-  * Branch selector to filter and manage constraints by branch
-  * Branch hierarchy visualization showing constraint inheritance
-  * Override controls for branch managers to customize constraints
-  * Branch-specific reporting and compliance monitoring
+  * Constraints are associated with specific branches from the management hierarchy.
+  * Support for custom location data (`branch_locations`) on a per-branch basis within a single constraint.
+  * Branch selector to filter and manage constraints by branch.
+  * UI to visualize constraint inheritance from parent branches.
 
 * **Constraint Assignment:**
-  * Assign constraints to branches in the management hierarchy
-  * Further refine by departments, roles, or individual employees within branches
-  * Bulk assignment capabilities with effective date ranges
-  * Conflict detection when assigning multiple constraints
-  * Branch inheritance controls (inherit from parent or override)
+  * Assign constraints to branches in the management hierarchy.
+  * **Future Scope:** Granular assignment to departments, roles, or individual employees within branches.
+  * Bulk assignment capabilities with effective date ranges.
 
 * **Violation Management:**
-  * Dashboard for viewing all constraint violations
-  * Filtering by branch, severity, status, constraint type, and employee
-  * Resolution workflow with approval process
-  * Audit trail for all violation resolutions
-  * Branch-level violation statistics and trends
+  * Dashboard for viewing all constraint violations.
+  * Filtering by branch, severity, status, constraint type, and employee.
+  * Workflow for supervisors/HR to review, comment on, and resolve violations.
+  * Complete audit trail for all violation resolutions.
 
-* **Constraint Testing:**
-  * Sandbox environment to test constraint configurations
-  * Branch-specific simulation tools to verify constraint behavior
-  * Validation against historical attendance data
-  * Branch comparison tools to analyze constraint effectiveness
+* **Constraint Testing (Future Scope):**
+  * A sandbox environment to test constraint configurations is planned for a future release.
 
 ### 6.6. Reporting Module
 *   **Standard Reports:**
@@ -169,6 +163,18 @@ USER (via Cascade AI)
     *   Configure leave policies.
 
 ### 6.7. API Endpoints
+
+#### Attendance Constraints Endpoints
+- `GET /api/attendance/constraints` - List all constraints with filtering
+- `POST /api/attendance/constraints` - Create a new constraint
+- `GET /api/attendance/constraints/{id}` - Get details of a specific constraint
+- `PUT /api/attendance/constraints/{id}` - Update a constraint
+- `DELETE /api/attendance/constraints/{id}` - Delete a constraint
+- `GET /api/attendance/constraints/violations` - List all constraint violations with filtering
+- `POST /api/attendance/constraints/violations/{id}/resolve` - Resolve a specific violation
+
+#### Management Hierarchy Endpoints
+- `GET /api/management-hierarchy/branches` - List all branches for assignment
 
 #### Authentication Endpoints
 - `POST /api/auth/login` - Authenticate user and receive JWT token

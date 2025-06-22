@@ -126,10 +126,10 @@ USER (via Cascade AI)
 - `POST /api/leave-requests/{id}/reject` - Reject leave request
 
 #### Attendance Constraints Endpoints
-- `POST /api/attendance-constraints/validate` - Validate attendance against constraints
-- `GET /api/attendance-constraints/violations` - List constraint violations for current user
-- `GET /api/attendance-constraints/branches/{branchId}` - Get constraints for user's current branch
-- `GET /api/management-hierarchy/branches/current` - Get user's current branch information
+- `POST /api/attendance-constraints/validate` - **(Critical)** Pre-validate clock-in data (GPS, IP) against constraints.
+- `GET /api/attendance-constraints/violations` - List constraint violations for the current user.
+- `POST /api/attendance-constraints/violations/{id}/explain` - Submit an explanation for a violation.
+- `GET /api/attendance/constraints` - Get active constraints for the user's branch to display rules in the UI.
 
 ### 6.7. Push Notifications
 *   **For Employees:**
@@ -139,30 +139,25 @@ USER (via Cascade AI)
     *   New leave request submitted by a team member requiring approval.
 
 ### 6.8. Attendance Constraints Compliance
-* **Branch-Based Constraints:**
-  * Automatically identify applicable branch constraints based on user location and branch assignment
-  * Display branch-specific rules and requirements
-  * Support for branch hierarchy with inherited constraints
-  * Branch-specific notifications and compliance requirements
 
-* **Pre-Clock Validation:**
-  * Validate attendance actions against applicable branch constraints before submission
-  * Clear feedback on constraint violations with explanation
-  * Override workflow for supervisors when exceptions are needed
-  * Branch-specific validation rules and feedback
+* **Pre-Clock-In Validation (Critical Flow):**
+  * Before submitting the final clock-in, the app **must** perform a pre-validation check.
+  * **Flow:**
+    1. User taps 'Clock In'.
+    2. App captures required data (e.g., GPS coordinates via `geolocator`).
+    3. App calls `POST /api/attendance-constraints/validate` with the captured data.
+    4. **If validation passes:** The app proceeds to call `POST /api/attendance/clock-in`.
+    5. **If validation fails:** The app **must not** proceed with clock-in. It should display a clear, user-friendly error message from the API response (e.g., "Clock-in failed: You are outside the 50m radius for the 'Main Office' location.").
+
+* **Displaying Branch Rules:**
+  * On the main clock-in screen, the app should fetch and display a summary of active constraints for the user's branch (e.g., "Geofencing active," "IP restriction active"). This proactively informs the user.
 
 * **Violation Handling:**
-  * Push notifications for constraint violations with branch context
-  * In-app explanation submission for violations
-  * Status tracking for violation resolution
-  * Branch-specific violation reporting
+  * Users can view a list of their past violations.
+  * Provide an interface for users to submit an explanation for a violation, which supervisors can review on the web dashboard.
 
-* **Personal Compliance Dashboard:**
-  * View personal compliance metrics and history by branch
-  * Insights on common violation patterns
-  * Branch-specific compliance statistics
-  * Tips for improving compliance within branch context
-  * Actionable insights to improve compliance
+* **Personal Compliance Dashboard (Future Scope / Web-First):**
+  * A detailed compliance dashboard is a feature for the web application. The mobile app will focus on the core pre-validation and violation notification flow.
 
 ### 6.9. Security
 *   Secure login using credentials from Contsrix_Core_Api.

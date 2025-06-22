@@ -601,4 +601,16 @@ class AttendanceConstraintService
      * - validateSecurityConstraint
      * - validateComplianceConstraint
      */
+
+    /**
+     * Convert HH:MM time string to minutes since midnight.
+     */
+    protected function timeToMinutes(string $timeString): int
+    {
+        if (!preg_match('/^(\d{2}):(\d{2})$/', $timeString, $parts)) {
+            // Return 0 or throw an exception for invalid format
+            return 0;
+        }
+        return (int)$parts[1] * 60 + (int)$parts[2];
+    }
 }
