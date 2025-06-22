@@ -31,9 +31,22 @@ class Permission extends SpatiePermission
 
     protected $keyType = 'string';
 
+    protected $fillable = [
+        'name',
+        'guard_name',
+        'company_id'
+    ];
 
     public function getRelationshipToPrimaryModel(): string
     {
         return "roles";
+    }
+
+    /**
+     * Get the company that owns the permission.
+     */
+    public function company()
+    {
+        return $this->belongsTo('Modules\Company\CompanyCore\Models\Company', 'company_id');
     }
 }
