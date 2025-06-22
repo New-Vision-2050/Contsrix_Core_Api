@@ -19,12 +19,12 @@ class CompanyObserver
     public function created(Company $company): void
     {
         // Create default job types and titles for the company
-        $this->createDefaultJobTypesAndTitles($company);
-        
+//        $this->createDefaultJobTypesAndTitles($company);
+
         // Copy permissions from the first company to the new company
-        $this->copyPermissionsToNewCompany($company);
+//        $this->copyPermissionsToNewCompany($company);
     }
-    
+
     /**
      * Create default job types and titles for a new company
      */
@@ -35,9 +35,9 @@ class CompanyObserver
             companyId: Uuid::fromString($company->id),
             status: 1
         );
-    
+
         $jobType = app(JobTypeCRUDService::class)->createWithCompany($createJobTypeWithCompanyDTO);
-    
+
         JobTitle::create([
             'type' => 'general_manager',
             'name' => ['ar' => 'مدير عام', 'en' => 'General Manager'],
@@ -47,7 +47,7 @@ class CompanyObserver
             'company_id' => $company->id,
         ]);
     }
-    
+
     /**
      * Copy permissions from the first company to a new company
      */
@@ -57,7 +57,7 @@ class CompanyObserver
         if (Company::count() <= 1) {
             return;
         }
-        
+
         try {
             // Get the permissions service and copy permissions to the new company
             $permissionService = app(PermissionCRUDService::class);
