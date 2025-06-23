@@ -9,18 +9,21 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Modules\Subscription\Enums\PackageBillingCycleEnum;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use BasePackage\Shared\Traits\HasTranslations;
 
 class Package extends Model
 {
     use UuidTrait;
     use BaseFilterable;
+    use HasTranslations;
 
+    public array $translatable = ['name'];
     public $incrementing = false;
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
+        
         'price',
         'billing_cycle',
         'is_active'
