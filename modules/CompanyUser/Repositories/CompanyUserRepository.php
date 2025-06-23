@@ -426,7 +426,7 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Create branch association
      */
-    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany, int $branchId): void
+    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany,  $branchId): void
     {
         $this->companyUserManagementHierarchyRepository->updateOrCreate(
             [
@@ -491,8 +491,8 @@ class CompanyUserRepository extends BaseRepository
         $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyId])->first();
         if(isset($companyUserData["job_title_id"])&&$companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
         {
-            $companyId = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
-            if($companyId != $companyId )
+            $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
+            if($companyId != $companyIdJobTitle )
             {
                 $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
             }
