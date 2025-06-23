@@ -19,6 +19,7 @@ use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Modules\User\Repositories\UserRepository;
 use RabbitMQ\Jobs\BroadcastMessage;
@@ -31,6 +32,7 @@ class ClientCRUDService
     public function __construct(
         private CompanyUserRepository $repository,
         private UserRepository        $userRepository,
+        private CompanyUserCRUDService $companyUserCRUDService
     )
     {
     }
@@ -38,8 +40,14 @@ class ClientCRUDService
     public function create(CreateClientDTO $createClientDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO, SetUserAddressDTO $userAddressDTO)
     {
 
+        $companyUser = $this->repository->findByEmail($createClientDTO->getEmail());
 
-        $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(),$createClientDTO->clientDetailToArray());
+        $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createClientDTO->getBranchIds());
+
+
+
+
+        $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(), $createClientDTO->clientDetailToArray());
 
 
         //here i do not email up till now
@@ -88,7 +96,6 @@ class ClientCRUDService
             email: $email,
         );
     }
-
 
 
 }

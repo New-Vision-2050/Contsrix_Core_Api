@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Services\Employee;
 
+use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ class EmployeeCRUDService
     public function __construct(
         private CompanyUserRepository $repository,
         private UserRepository        $userRepository,
+        private CompanyUserCRUDService $companyUserCRUDService
     )
     {
     }
@@ -39,6 +41,9 @@ class EmployeeCRUDService
     public function create(CreateEmployeeDTO $createEmployeeDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
 
+        $companyUser = $this->repository->findByEmail($createEmployeeDTO->getEmail());
+
+        $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createEmployeeDTO->getBranchId());
 
 
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(),$createEmployeeDTO->getBranchId());

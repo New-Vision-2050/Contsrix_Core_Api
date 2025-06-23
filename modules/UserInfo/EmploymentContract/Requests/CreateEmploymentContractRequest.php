@@ -33,7 +33,8 @@ class CreateEmploymentContractRequest extends FormRequest
             'country_id' => 'required|string',
             'right_terminate_id' => 'required|string',
 
-            'file' => 'nullable',
+            'file' => 'nullable|array',
+            'file.*' => 'nullable',
         ];
     }
 

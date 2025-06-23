@@ -65,9 +65,9 @@ class QualificationController extends Controller
 
         $createdItem = $this->qualificationService->create($createCreateQualificationDTO);
 
-        $this->qualificationService->uploadFile($createdItem,$request);
+        $itemData =  $this->qualificationService->uploadFile($createdItem,$request);
 
-        $presenter = new QualificationPresenter($createdItem);
+        $presenter = new QualificationPresenter($itemData);
 
         return Json::item($presenter->getData());
     }
@@ -78,9 +78,9 @@ class QualificationController extends Controller
        $this->updateQualificationHandler->handle($command);
         $item = $this->qualificationService->get($command->getId());
 
-   return     $this->qualificationService->uploadFile($item,$request);
+        $itemData = $this->qualificationService->uploadFile($item,$request);
 
-        $presenter = new QualificationPresenter($item);
+        $presenter = new QualificationPresenter($itemData);
 
         return Json::item( $presenter->getData());
     }

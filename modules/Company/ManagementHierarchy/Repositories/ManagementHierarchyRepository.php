@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Repositories;
 
+use App\Exceptions\CustomException;
 use App\Scopes\CustomTenantScope;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -13,6 +14,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
+use function PHPUnit\Framework\throwException;
 
 /**
  * @property ManagementHierarchy $model
@@ -28,7 +30,12 @@ class ManagementHierarchyRepository extends BaseRepository
     public function __construct(ManagementHierarchy $model)
     {
         parent::__construct($model);
-        $this->nextId = $model->query()->orderBy("id", "desc")->withoutGlobalScope(CustomTenantScope::class)->first()->id + 1;
+        $last = $model->query()
+            ->orderBy("id", "desc")
+            ->withoutGlobalScope(CustomTenantScope::class)
+            ->first();
+
+        $this->nextId = $last ? $last->id + 1 : 1;
     }
 
     public function getManagementHierarchyList(?int $page, ?int $perPage = 10): Collection
@@ -43,6 +50,13 @@ class ManagementHierarchyRepository extends BaseRepository
         if (request()->has("parent_children_id")) {
             $managementHierarchy = $this->model->where("id", request()->parent_children_id)->where("company_id", $company->id)->first();
 
+        }
+        if (request()->has("branch_id")) {
+            return $this->model->where("company_id", $company->id)->where("type", "management")->whereHas("detail", function ($query) {
+
+                $query->where("branch_id", request()->branch_id);
+
+            })->get();
         }
 
         return $this->model->filter(request()->all())
@@ -96,8 +110,8 @@ class ManagementHierarchyRepository extends BaseRepository
             DB::beginTransaction();
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
-            $this->nextId = $this->nextId+1;
-            $this->createManagement(["company_id" => $managementHierarchy->company_id,"parent_id"=>$managementHierarchy->id, "is_main"=>1,"name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management","manager_id"=>$managementHierarchy->manager_id,"phone"=>$managementHierarchy->phone,"phone_code"=>$managementHierarchy->phone_code, "email"=>$managementHierarchy->email], ["description"=>"الادارة العامة","branch_id"=>$managementHierarchy->id],[]);
+            $this->nextId = $this->nextId + 1;
+            $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id], []);
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
@@ -118,16 +132,16 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function createManagement(array $managementData, array $managementDetail,?array $deputyManagers ): ManagementHierarchy
+    public function createManagement(array $managementData, array $managementDetail, ?array $deputyManagers): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
-            $detail =$managementHierarchy->detail()->create($managementDetail);
-            if($deputyManagers != null&&count($deputyManagers)>0){
-                foreach ($deputyManagers as $deputyManager){
-                    ManagementHierarchyDetailManager::create( ["deputy_manager_id"=>$deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
+            $detail = $managementHierarchy->detail()->create($managementDetail);
+            if ($deputyManagers != null && count($deputyManagers) > 0) {
+                foreach ($deputyManagers as $deputyManager) {
+                    ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
 
                 }
 
@@ -163,6 +177,33 @@ class ManagementHierarchyRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->find($id);
+            if (isset($branchData["parent_id"]) && $branchData["parent_id"] != null && $id != $branchData["parent_id"]) {
+                $flag = 0;
+                $swapBranch = $this->findOneBy(["id" => $branchData["parent_id"]]);
+                //check circular
+                while ($swapBranch != null) {
+
+                    if ($swapBranch->id == $id) {
+
+                        $flag = 1;
+                        break;
+                    }
+                    $swapBranch = $swapBranch->parent;
+                }
+                $swapBranch = $this->findOneBy(["id" => $branchData["parent_id"]]);
+
+                if ($flag == 1) {
+                    //circular
+                    $parentId = $managementHierarchy->parent_id;
+                    $swapBranch->update(["parent_id" => null]);
+                    $managementHierarchy->update(["parent_id" => $branchData["parent_id"]]);
+                    $swapBranch->update(["parent_id" => $parentId]);
+                } else {
+                    $managementHierarchy->update(["parent_id" => $branchData["parent_id"]]);
+                }
+            }
+            unset($branchData["parent_id"]);
+
             $managementHierarchy->update($branchData);
             $managementHierarchy->fresh();
 
@@ -199,7 +240,7 @@ class ManagementHierarchyRepository extends BaseRepository
                 ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
 
                 // Create new deputy managers
-                if ($deputyManagers!=null&&count($deputyManagers) > 0) {
+                if ($deputyManagers != null && count($deputyManagers) > 0) {
                     foreach ($deputyManagers as $deputyManager) {
                         ManagementHierarchyDetailManager::create([
                             'deputy_manager_id' => $deputyManager,
@@ -227,8 +268,7 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         $managementHierarchy = $this->findOneOrFail($id);
         //not allow to delete main management or main branch pu by default main branch has children
-        if($managementHierarchy->is_main == 1)
-        {
+        if ($managementHierarchy->is_main == 1) {
             return true;
         }
 
@@ -336,11 +376,11 @@ class ManagementHierarchyRepository extends BaseRepository
         $lowerUsers = collect([$user]); // Add the user as an option
 
         // Find all hierarchies where the user has management responsibilities in a single query
-        $hierarchyQuery = $this->model->where(function($query) use ($userId) {
+        $hierarchyQuery = $this->model->where(function ($query) use ($userId) {
             // Where user is a direct manager
             $query->where('manager_id', $userId)
                 // Or where user has a related management hierarchy
-                ->orWhere('id', function($subQuery) use ($userId) {
+                ->orWhere('id', function ($subQuery) use ($userId) {
                     $subQuery->select('management_hierarchy_id')
                         ->from('users')
                         ->where('id', $userId)
@@ -387,7 +427,7 @@ class ManagementHierarchyRepository extends BaseRepository
         // Now that we have all hierarchy IDs (original + descendants),
 
         // 1. Get managers with a single query
-        $managerUsers = User::whereIn('id', function($query) use ($descendantIds) {
+        $managerUsers = User::whereIn('id', function ($query) use ($descendantIds) {
             $query->select('manager_id')
                 ->from('management_hierarchies')
                 ->whereIn('id', $descendantIds)
@@ -397,7 +437,7 @@ class ManagementHierarchyRepository extends BaseRepository
             ->get();
 
         // 2. Get deputy managers with a single query
-        $deputyUsers = User::whereIn('id', function($query) use ($descendantIds) {
+        $deputyUsers = User::whereIn('id', function ($query) use ($descendantIds) {
             $query->select('deputy_manager_id')
                 ->from('management_hierarchy_deputy_managers')
                 ->join('management_hierarchy_details', 'management_hierarchy_details.id', '=', 'management_hierarchy_deputy_managers.management_hierarchy_detail_id')

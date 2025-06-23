@@ -18,6 +18,7 @@ use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Modules\User\Presenters\BrokerPresenter;
 use Modules\User\Repositories\UserRepository;
@@ -29,15 +30,18 @@ class BrokerCRUDService
 
 
     public function __construct(
-        private CompanyUserRepository $repository,
-        private UserRepository        $userRepository,
+        private CompanyUserRepository  $repository,
+        private UserRepository         $userRepository,
+        private CompanyUserCRUDService $companyUserCRUDService
     )
     {
     }
 
     public function create(CreateBrokerDTO $createBrokerDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO, SetUserAddressDTO $userAddressDTO)
     {
+        $companyUser = $this->repository->findByEmail($createBrokerDTO->getEmail());
 
+        $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createBrokerDTO->getBranchIds());
 
         $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray());
 

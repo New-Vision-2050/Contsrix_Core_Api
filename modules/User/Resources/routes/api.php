@@ -10,7 +10,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/get-by-email-with-branches', [UserController::class, 'getUserByGlobalId']);
 
     Route::get('/available-tenants-for-auth-user', [UserController::class, 'getAvailableTenantsForAuthUser'])->name("tenants-for-user");
-    Route::get('/admin-users', [UserController::class, 'getAdminUsers'])/*->middleware("permission:user.list")*/->name("users.admin-list");
+    Route::get('/admin-users', [UserController::class, 'getAdminUsers'])->name("users.admin-list");
     Route::post('/', [UserController::class, 'store'])/*->middleware("permission:user.create")*/;
     Route::get('/me', [UserController::class, 'me']);
     Route::get('/my-permissions', [UserController::class, 'getMyPermissions']);

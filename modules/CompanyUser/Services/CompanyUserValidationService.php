@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\Validator;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
+use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\User\Presenters\UserBranchesPresenter;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 
@@ -46,21 +48,53 @@ class CompanyUserValidationService
         return $this;
     }
 
+    private function getRolesAndPermissions($companyUserCompany)
+    {
+
+        $rolesWithBranches = [];
+
+        foreach (CompanyUserRole::values() as $availableRole) {
+            $branches = []; // Initialize branches as an empty array for each role
+            foreach ($companyUserCompany as $roleWithBranches) {
+                if ($roleWithBranches->getRawOriginal("role") == $availableRole) {
+                    $branches = $roleWithBranches->managementHierarchy ? ManagementHierarchySimpleDataPresenter::collection($roleWithBranches->managementHierarchy) : [];
+                }
+            }
+            if ($branches == null) {
+                $branches = [];
+            }
+            $rolesWithBranches[] = [
+                'role' => $availableRole,
+                'branches' => $branches
+            ];
+        }
+        return $rolesWithBranches;
+
+    }
+
     public function validateEmail()
     {
         if ($user = $this->repository->findByEmail(request()->email)) {
             $userInCompany = $this->userRepository->findOneBy(["email" => request()->email, "company_id" => tenant("id")]);
             $role = request()->has("role") ? request()->role : 1;
             $companyUserCompany = $this->userRepository->getUserByGlobalIdWithBranches($userInCompany?->global_company_user_id, $role);
-
+            tenancy()->end();
             $this->errors[] = [
                 'sentence' => __("validation.user-email-error", ["name" => $user->name]),
                 'sub_title' => 'email',
                 'status' => 0,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
-                "branches" => $companyUserCompany?->managementHierarchy?ManagementHierarchySimpleDataPresenter::collection($companyUserCompany?->managementHierarchy):[],
+                "roles" => $this->getRolesAndPermissions($companyUserCompany),
+
                 'validate' => 'required',
-                'id' => $user->id
+                'id' => $user->id,
+                "email"=>$user->email,
+                "phone"=>$user?->users()?->first()?->phone,
+                "phone_code"=>$user?->users()?->first()?->phone_code,
+                "name"=>$user->name,
+                "job_title_id"=>$user->job_title_id,
+                "identity"=>$user->identity ,
+                "country_id"=>$user->country_id
             ];
         } else {
             $this->errors[] = [
@@ -72,6 +106,7 @@ class CompanyUserValidationService
                 'validate' => 'required'
             ];
         }
+
         return $this;
     }
 
@@ -102,11 +137,8 @@ class CompanyUserValidationService
         }
         return $this;
     }
-
     public function get()
     {
         return $this->errors;
     }
-
-
 }

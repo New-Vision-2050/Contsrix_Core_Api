@@ -46,7 +46,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
     use SoftDeletes;
 
-//    public array $translatable = [];
+    //    public array $translatable = [];
     protected $primaryKey = "id";
     public $incrementing = false;
 
@@ -86,7 +86,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
         ];
     }
 
-     /**
+    /**
      * Get attributes available for sub-entities excluding sensitive fields (like password).
      *
      * @return array
@@ -94,13 +94,20 @@ class User extends Authenticatable implements JWTSubject, Auditable
      */
     public static function getSubEntitiesAvailableAttributes()
     {
-       return [
+        return [
             'name',
             'email',
             'phone',
             "companies",
-            'user-type'
-       ];
+            'user-type',
+            "data_status",
+            "branch",
+            "job_title",
+            "residence",
+            "broker",
+            "number_of_projects",
+            "end_date",
+        ];
     }
 
     protected static function newFactory(): UserFactory
@@ -130,17 +137,17 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
     public function companyUser()
     {
-        return $this->belongsTo(CompanyUser::class , 'global_company_user_id' , 'global_id' );
+        return $this->belongsTo(CompanyUser::class, 'global_company_user_id', 'global_id');
     }
 
     public function companyUserCompanies()
     {
-        return $this->hasMany(CompanyUserCompany::class,"global_company_user_id" , "global_company_user_id" );
+        return $this->hasMany(CompanyUserCompany::class, "global_company_user_id", "global_company_user_id");
     }
 
     public function roleAndBranches()
     {
-        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class,"user_id","id");
+        return $this->hasMany(CompanyUserCompanyManagementHierarchy::class, "user_id", "id");
     }
 
 
@@ -161,9 +168,9 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'id', // Local key on User table
             'management_hierarchy_id' // Local key on CompanyUserCompanyManagementHierarchy table
         )
-        ->join('company_users_companies', 'company_users_company_management_hierarchies.company_user_company_id', '=', 'company_users_companies.id')
-        ->select('management_hierarchies.*')
-        ->distinct();
+            ->join('company_users_companies', 'company_users_company_management_hierarchies.company_user_company_id', '=', 'company_users_companies.id')
+            ->select('management_hierarchies.*')
+            ->distinct();
 
         // Apply role filter if provided
         if ($role !== null) {
@@ -189,6 +196,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function branch()
     {
         return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
-        ->where('type', operator: 'branch');
+            ->where('type', operator: 'branch');
     }
 }

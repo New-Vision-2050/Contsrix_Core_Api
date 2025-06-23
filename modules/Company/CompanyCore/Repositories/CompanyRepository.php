@@ -123,7 +123,7 @@ class CompanyRepository extends BaseRepository
 
     public function isUserNameExists(string $userName): bool
     {
-        return $this->model->where('user_name', $userName)->exists();
+        return $this->model->query()->withTrashed()->where('user_name', $userName)->exists();
     }
 
     public function isNameExists(string $name): bool
@@ -208,5 +208,13 @@ class CompanyRepository extends BaseRepository
     public function getLastCreatedCompany(): ?Company
     {
         return $this->model->latest('created_at')->with($this->relations)->first();
+    }
+
+    /**
+     * Count records by criteria
+     */
+    public function countWhere(array $conditions): int
+    {
+        return $this->model->where($conditions)->count();
     }
 }

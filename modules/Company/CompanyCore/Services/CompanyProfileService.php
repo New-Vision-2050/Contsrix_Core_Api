@@ -43,6 +43,7 @@ class CompanyProfileService
         private StateRepository                   $stateRepository,
         private CountryRepository                 $countryRepository,
 
+
     )
     {
     }
@@ -54,7 +55,7 @@ class CompanyProfileService
             data: $companyDataRequestDTO->toArray() + ["id" => $companyDataRequestDTO->getId()],
             requestType: "companyOfficialDataUpdate",
             action: ["ar" => "طلب تعديل البيانات الرسميه للشركة", "en" => "Company official data update request"],
-            notes: $companyDataRequestDTO->getNotes()
+            notes: $companyDataRequestDTO->getNotes(), file:$companyDataRequestDTO->getFile()
         );
         return $adminRequest;
 
@@ -287,18 +288,25 @@ class CompanyProfileService
 
     public function assignLogo(AssignLogoToCompanyDTO $assignLogoToCompanyDTO)
     {
+        $logoFile = $assignLogoToCompanyDTO->getLogo();
+        $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
 
-        $result = $this->checkImage($assignLogoToCompanyDTO->getLogo());
+        if (!$logoFile instanceof \Illuminate\Http\UploadedFile || !$logoFile->isValid()) {
+            $company->clearMediaCollection('logo');
+            return $company;
+        }
+
+        $result = $this->checkImage($logoFile);
         if (!$result) {
             throw new \Exception(__("validation.logo-not-valid"), 400);
         }
-        $company = $this->companyRepository->find($assignLogoToCompanyDTO->getId());
+
         $company->clearMediaCollection('logo');
 
-        $this->fileUploadService->uploadFile($company, $assignLogoToCompanyDTO->getLogo(), 'company', 'logo');
+        $this->fileUploadService->uploadFile($company, $logoFile, 'company', 'logo', 'public', null, 'logo');
+
         return $company;
     }
-
     public function updateLegalDataRequest(RequestUpdateLegalCompanyDataRequestDTO $companyDataRequestDTO)
     {
 //        return

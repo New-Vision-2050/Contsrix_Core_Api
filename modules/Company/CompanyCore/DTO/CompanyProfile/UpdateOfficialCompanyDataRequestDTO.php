@@ -14,7 +14,9 @@ class UpdateOfficialCompanyDataRequestDTO
         private string $countryId,
         private string $companyTypeId,
         private string $companyFieldId,
-        private ?string $notes
+        private ?string $notes,
+        private mixed $file = null
+
     ) {
     }
 
@@ -25,6 +27,11 @@ class UpdateOfficialCompanyDataRequestDTO
     public function getName(): ?string
     {
         return $this->name;
+    }
+
+    public function getFile()
+    {
+        return $this->file;
     }
 
 

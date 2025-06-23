@@ -23,7 +23,18 @@ class UpdateOfficialCompanyData extends FormRequest
             'company_type_id' => 'required|exists:company_types,id',
         ];
     }
-
+    public function messages(): array
+    {
+        return [
+            'name_en.required' => __('validation.company_official.name_required'),
+            'email.required' => __('validation.company_official.email_required'),
+            'email.email' => __('validation.company_official.email_valid'),
+            'phone.required' => __('validation.company_official.phone_required'),
+            'branch_name.required' => __('validation.company_official.branch_required'),
+            'company_type_id.required' => __('validation.company_official.company_type_required'),
+            'company_type_id.exists' => __('validation.company_official.company_type_exists'),
+        ];
+    }
     public function createUpdateOfficialCompanyDataCommand(): UpdateOfficialCompanyDataCommand
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();

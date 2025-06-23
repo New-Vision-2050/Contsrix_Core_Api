@@ -9,7 +9,7 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateCompanyLegalDataCommand
 {
     public function __construct(
-        private array         $data
+        private ?array         $data
 
     )
     {
@@ -17,8 +17,8 @@ class UpdateCompanyLegalDataCommand
 
 
 
-    public function toArray(): array
+    public function toArray(): ?array
     {
-        return $this->data;
+        return $this->data ??[];
     }
 }

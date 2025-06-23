@@ -54,6 +54,8 @@ class SetCompanyAddressRequest extends FormRequest
             buildingNumber: $this->get('building_number'),
             addtionalPhone: $this->get('additional_phone'),
             postalCode: $this->get('postal_code'),
+            latitude: $this->get("latitude"),
+            longitude: $this->get("longitude")
         );
     }
 }
