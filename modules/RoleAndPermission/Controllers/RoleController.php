@@ -18,6 +18,7 @@ use Modules\RoleAndPermission\Requests\DeleteRoleRequest;
 use Modules\RoleAndPermission\Requests\GetPermissionRequest;
 use Modules\RoleAndPermission\Requests\GetRoleListRequest;
 use Modules\RoleAndPermission\Requests\GetRoleRequest;
+use Modules\RoleAndPermission\Requests\SetStatusRoleRequest;
 use Modules\RoleAndPermission\Requests\UpdateRoleRequest;
 use Modules\RoleAndPermission\Services\RoleCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -94,5 +95,25 @@ class RoleController extends Controller
         $this->deleteRoleHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    /**
+     * Set the status of a role (activate or deactivate).
+     *
+     * @param SetStatusRoleRequest $request
+     * @return JsonResponse
+     */
+    public function setStatus(SetStatusRoleRequest $request): JsonResponse
+    {
+        $role = $this->roleService->setStatus(
+            Uuid::fromString($request->getRoleId()), 
+            $request->getStatus()
+        );
+
+        $message = $request->getStatus() ? 'Role activated successfully.' : 'Role deactivated successfully.';
+
+        $presenter = new RolePresenter($role);
+
+        return Json::item($presenter->getData(), message: $message);
     }
 }

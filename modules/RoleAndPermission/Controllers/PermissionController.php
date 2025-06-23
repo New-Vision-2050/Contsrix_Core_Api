@@ -14,6 +14,7 @@ use Modules\RoleAndPermission\Requests\CreatePermissionRequest;
 use Modules\RoleAndPermission\Requests\DeletePermissionRequest;
 use Modules\RoleAndPermission\Requests\GetPermissionListRequest;
 use Modules\RoleAndPermission\Requests\GetPermissionRequest;
+use Modules\RoleAndPermission\Requests\SetStatusPermissionRequest;
 use Modules\RoleAndPermission\Requests\UpdatePermissionRequest;
 use Modules\RoleAndPermission\Services\PermissionCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -77,5 +78,23 @@ class PermissionController extends Controller
         return Json::deleted();
     }
 
+    /**
+     * Set the status of a permission (activate or deactivate).
+     *
+     * @param SetStatusPermissionRequest $request
+     * @return JsonResponse
+     */
+    public function setStatus(SetStatusPermissionRequest $request): JsonResponse
+    {
+        $permission = $this->permissionService->setStatus(
+            $request->getPermissionId(), 
+            $request->getStatus()
+        );
 
+        $message = $request->getStatus() ? 'Permission activated successfully.' : 'Permission deactivated successfully.';
+
+        $presenter = new PermissionPresenter($permission);
+
+        return Json::item($presenter->getData(), message: $message);
+    }
 }

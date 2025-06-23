@@ -38,24 +38,24 @@ class PermissionCRUDService
             id: $id,
         );
     }
-    
+
     /**
      * Copy all permissions from one company to another
-     * 
+     *
      * @param UuidInterface|string|null $sourceCompanyId The source company ID to copy from (if null, uses the first company)
      * @param UuidInterface|string $targetCompanyId The target company ID to copy to
      * @return Collection The collection of created permission instances
      */
-    public function copyPermissionsToCompany($sourceCompanyId = null, $targetCompanyId): Collection
+    public function copyPermissionsToCompany($targetCompanyId,$sourceCompanyId = null): Collection
     {
         // Convert string IDs to UuidInterface if needed
         if (is_string($targetCompanyId)) {
             $targetCompanyId = Uuid::fromString($targetCompanyId);
         }
-        
+
         // Find the source company (default to the first company if not specified)
         $sourceCompanyPermissions = Permission::query();
-        
+
         if ($sourceCompanyId) {
             if (is_string($sourceCompanyId)) {
                 $sourceCompanyId = Uuid::fromString($sourceCompanyId);
@@ -71,11 +71,11 @@ class PermissionCRUDService
                 $sourceCompanyPermissions->whereNull('company_id');
             }
         }
-        
+
         // Get all permissions from source company
         $permissions = $sourceCompanyPermissions->get();
         $createdPermissions = collect();
-        
+
         // Copy each permission to the target company
         foreach ($permissions as $permission) {
             // Create new permission record for the target company with the same name and guard
@@ -93,16 +93,16 @@ class PermissionCRUDService
                     'status' => $permission->status ?? true
                 ]
             );
-            
+
             $createdPermissions->push($newPermission);
         }
-        
+
         return $createdPermissions;
     }
-    
+
     /**
      * Get permissions for a specific company
-     * 
+     *
      * @param UuidInterface|string $companyId The company ID
      * @return Collection Collection of permissions belonging to the company
      */
@@ -111,7 +111,26 @@ class PermissionCRUDService
         if (is_string($companyId)) {
             $companyId = Uuid::fromString($companyId);
         }
-        
+
         return Permission::where('company_id', $companyId->toString())->get();
+    }
+
+    /**
+     * Set the status of a permission.
+     *
+     * @param UuidInterface|string $id The ID of the permission.
+     * @param bool $status The new status.
+     * @return Permission
+     */
+    public function setStatus($id, bool $status): Permission
+    {
+        if (is_string($id)) {
+            $id = Uuid::fromString($id);
+        }
+
+        $permission = $this->repository->getPermission($id);
+        $this->repository->update($id, ['status' => $status]);
+
+        return $permission->refresh();
     }
 }

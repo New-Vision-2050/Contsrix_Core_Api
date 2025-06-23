@@ -39,4 +39,23 @@ class RoleCRUDService
             id: $id,
         );
     }
+
+    /**
+     * Set the status of a role.
+     *
+     * @param UuidInterface|string $id The ID of the role.
+     * @param bool $status The new status.
+     * @return Role
+     */
+    public function setStatus($id, bool $status): Role
+    {
+        if (is_string($id)) {
+            $id = \Ramsey\Uuid\Uuid::fromString($id);
+        }
+
+        $role = $this->repository->getRole($id);
+        $this->repository->update($id, ['status' => $status]);
+
+        return $role->refresh();
+    }
 }

@@ -12,6 +12,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/{id}/assign-permissions', [RoleController::class, 'assignPermissionToRole']);
     Route::put('/{id}', [RoleController::class, 'update']);
     Route::delete('/{id}', [RoleController::class, 'delete']);
+    Route::patch('/{id}/status', [RoleController::class, 'setStatus']);
 });
 
 
@@ -22,5 +23,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/{id}', [PermissionController::class, 'show']);
     Route::put('/{id}', [PermissionController::class, 'update']);
     Route::delete('/{id}', [PermissionController::class, 'delete']);
+    Route::patch('/{id}/status', [PermissionController::class, 'setStatus']);
 
 });
