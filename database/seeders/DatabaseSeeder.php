@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
@@ -11,9 +12,9 @@ use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\SubEntity\Database\Seeders\RegistrationFormsSeeder;
 use Modules\SubEntity\Database\Seeders\SubEntityDatabaseSeeder;
-use Modules\Subscription\Database\Seeders\ModuleDatabaseSeeder;
+use Modules\SubscriptionSystem\Subscription\Database\Seeders\ModuleDatabaseSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
-use Modules\Subscription\Database\Seeders\FeatureDatabaseSeeder;
+use Modules\SubscriptionSystem\Subscription\Database\Seeders\FeatureDatabaseSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
@@ -43,7 +44,6 @@ use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationS
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsNewSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
-use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -97,11 +97,10 @@ class DatabaseSeeder extends Seeder
         $this->call(RegistrationFormsSeeder::class);
         $this->call(SubEntityDatabaseSeeder::class);
         $this->call(BankTypeAccountSeederTableSeeder::class);
-        $this->call(SeedersMaritalStatusSeederTableSeeder::class);
         $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
         $this->call(AcademicSpecializationsUpdateSeederTableSeeder::class);
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
-        $this->call(ModuleDatabaseSeeder::class);
-        $this->call(FeatureDatabaseSeeder::class);
+        $this->call(ModuleStructureSeeder::class);
+        // $this->call(FeatureDatabaseSeeder::class);
     }
 }
