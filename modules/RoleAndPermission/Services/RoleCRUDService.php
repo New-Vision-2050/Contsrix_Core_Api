@@ -12,6 +12,8 @@ use Modules\RoleAndPermission\Models\Role;
 use Modules\RoleAndPermission\Repositories\RoleAndPermissionRepository;
 use Modules\RoleAndPermission\Repositories\RoleRepository;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Support\Facades\App;
+use Illuminate\Validation\ValidationException;
 
 class RoleCRUDService
 {
@@ -46,6 +48,7 @@ class RoleCRUDService
      * @param UuidInterface|string $id The ID of the role.
      * @param bool $status The new status.
      * @return Role
+     * @throws ValidationException If attempting to deactivate a role with assigned users
      */
     public function setStatus($id, bool $status): Role
     {
@@ -54,6 +57,17 @@ class RoleCRUDService
         }
 
         $role = $this->repository->getRole($id);
+        
+        // If trying to deactivate the role, check if any users have this role
+        if ($status === false) {
+            // Check if role has any users assigned using repository method
+            if ($this->repository->roleHasUsers($id)) {
+                throw ValidationException::withMessages([
+                    'status' => [__('validation.custom.role.cannot_deactivate')]
+                ]);
+            }
+        }
+        
         $this->repository->update($id, ['status' => $status]);
 
         return $role->refresh();

@@ -68,4 +68,19 @@ class RoleRepository extends BaseRepository
         return $role;
     }
 
+    /**
+     * Check if a role has any assigned users
+     *
+     * @param UuidInterface $id The role ID
+     * @return bool True if the role has any assigned users, false otherwise
+     */
+    public function roleHasUsers(UuidInterface $id): bool
+    {
+        $roleId = $id->toString();
+        $count = DB::table('model_has_roles')
+            ->where('role_id', $roleId)
+            ->count();
+            
+        return $count > 0;
+    }
 }

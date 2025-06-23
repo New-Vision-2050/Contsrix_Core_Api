@@ -7,6 +7,7 @@ namespace Modules\RoleAndPermission\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Modules\RoleAndPermission\Handlers\AssignPermissionsToRoleHandler;
 use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
@@ -105,15 +106,19 @@ class RoleController extends Controller
      */
     public function setStatus(SetStatusRoleRequest $request): JsonResponse
     {
-        $role = $this->roleService->setStatus(
-            Uuid::fromString($request->getRoleId()), 
-            $request->getStatus()
-        );
+        try {
+            $role = $this->roleService->setStatus(
+                Uuid::fromString($request->getRoleId()), 
+                $request->getStatus()
+            );
 
-        $message = $request->getStatus() ? 'Role activated successfully.' : 'Role deactivated successfully.';
+            $message = $request->getStatus() ? 'Role activated successfully.' : 'Role deactivated successfully.';
 
-        $presenter = new RolePresenter($role);
+            $presenter = new RolePresenter($role);
 
-        return Json::item($presenter->getData(), message: $message);
+            return Json::item($presenter->getData(), message: $message);
+        } catch (ValidationException $e) {
+            return Json::error($e->errors()['status'][0] ?? 'Cannot update role status', 422);
+        }
     }
 }

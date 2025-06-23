@@ -20,6 +20,20 @@ class SetStatusRoleRequest extends FormRequest
         ];
     }
 
+    /**
+     * Get custom error messages for validator errors.
+     *
+     * @return array
+     */
+    public function messages(): array
+    {
+        return [
+            'status.required' => __('validation.required', ['attribute' => 'status']),
+            'status.boolean' => __('validation.boolean', ['attribute' => 'status']),
+            'role_has_users' => __('validation.custom.role.cannot_deactivate'),
+        ];
+    }
+
     public function getRoleId(): string
     {
         return $this->route('id');
