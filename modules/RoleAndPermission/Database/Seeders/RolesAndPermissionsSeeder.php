@@ -24,26 +24,18 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run()
     {
         Model::unguard();
-        
+
         // Get current company ID or use the first company
         $companyId = tenant("id") ?? Company::query()->first()?->id;
-        
-        // Handle global permissions for non-tenanted environment
-        if (!tenant()) {
-            // Add permissions for user module
-            $this->call(UserPermissionsTableSeeder::class);
-            
-            // Seed default permissions to all companies
-            $this->seedDefaultPermissionsToAllCompanies();
-        } else {
-            // For tenant environment, ensure this tenant has permissions
-            $this->ensureCompanyHasPermissions($companyId);
-        }
+
+        $this->ensureCompanyHasPermissions($companyId);
+
+
 
         // Create roles for the current company
         $this->createCompanyRoles($companyId);
     }
-    
+
     /**
      * Create standard roles for a company and assign permissions
      *
@@ -54,26 +46,34 @@ class RolesAndPermissionsSeeder extends Seeder
         if (!$companyId) {
             return;
         }
-        
+
         // Create super-admin role
         $superAdminRole = Role::firstOrCreate(
             ["name" => "super-admin", "company_id" => $companyId],
-            ["name" => "super-admin", "company_id" => $companyId]
+            [
+                "name" => "super-admin",
+                "company_id" => $companyId,
+                "status" => true
+            ]
         );
-        
+
         // Create admin role
         $adminRole = Role::firstOrCreate(
             ["name" => "admin", "company_id" => $companyId],
-            ["name" => "admin", "company_id" => $companyId]
+            [
+                "name" => "admin",
+                "company_id" => $companyId,
+                "status" => true
+            ]
         );
-        
+
         // Get all permissions for this company
         $permissions = Permission::where('company_id', $companyId)->get();
-        
+
         // Assign permissions to roles
         $superAdminRole->syncPermissions($permissions);
         $adminRole->syncPermissions($permissions);
-        
+
         // Assign super-admin role to the first user if not in tenant environment
         if (!tenant()) {
             $user = User::first();
@@ -83,22 +83,22 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
     }
-    
+
     /**
      * Seed default permissions to all companies
      */
     protected function seedDefaultPermissionsToAllCompanies(): void
     {
         $companies = Company::all();
-        
+
         foreach ($companies as $company) {
             $this->ensureCompanyHasPermissions($company->id);
         }
     }
-    
+
     /**
      * Ensure a company has all required permissions
-     * 
+     *
      * @param string|null $companyId The company ID
      */
     protected function ensureCompanyHasPermissions(?string $companyId): void
@@ -106,30 +106,31 @@ class RolesAndPermissionsSeeder extends Seeder
         if (!$companyId) {
             return;
         }
-        
+
         // Define default permissions by module
         $defaultPermissions = $this->getDefaultPermissions();
-        
+
         foreach ($defaultPermissions as $permission) {
             Permission::firstOrCreate(
                 [
                     'name' => $permission,
-                    'guard_name' => 'web',
+                    'guard_name' => 'api',
                     'company_id' => $companyId
                 ],
                 [
                     'id' => Uuid::uuid4()->toString(),
                     'name' => $permission,
-                    'guard_name' => 'web',
-                    'company_id' => $companyId
+                    'guard_name' => 'api',
+                    'company_id' => $companyId,
+                    'status' => true
                 ]
             );
         }
     }
-    
+
     /**
      * Get the default permissions for the system
-     * 
+     *
      * @return array
      */
     private function getDefaultPermissions(): array
@@ -137,16 +138,17 @@ class RolesAndPermissionsSeeder extends Seeder
         return [
             // User module permissions
             'user.view',
+            'user.list',
             'user.create',
             'user.edit',
             'user.delete',
-            
+
             // Company module permissions
             'company.view',
             'company.create',
             'company.edit',
             'company.delete',
-            
+
             // Role and Permission module permissions
             'role.view',
             'role.create',
@@ -154,7 +156,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'role.delete',
             'permission.view',
             'permission.assign',
-            
+
             // Add more default permissions for your modules here
         ];
     }

@@ -89,7 +89,8 @@ class PermissionCRUDService
                     'id' => Uuid::uuid4()->toString(),
                     'name' => $permission->name,
                     'guard_name' => $permission->guard_name,
-                    'company_id' => $targetCompanyId->toString()
+                    'company_id' => $targetCompanyId->toString(),
+                    'status' => $permission->status ?? true
                 ]
             );
             

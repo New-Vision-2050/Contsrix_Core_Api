@@ -37,4 +37,10 @@ class Role extends SpatieRole
         'company_id' => "string",
     ];
 
+    protected $fillable = [
+        'name',
+        'guard_name',
+        'company_id',
+        'status'
+    ];
 }
