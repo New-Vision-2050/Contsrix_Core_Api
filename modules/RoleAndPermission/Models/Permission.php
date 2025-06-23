@@ -9,6 +9,8 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\Subscription\Models\Feature;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
@@ -50,5 +52,16 @@ class Permission extends SpatiePermission
     public function company()
     {
         return $this->belongsTo('Modules\Company\CompanyCore\Models\Company', 'company_id');
+    }
+    
+    /**
+     * Get the features associated with this permission
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function features(): BelongsToMany
+    {
+        return $this->belongsToMany(Feature::class, 'feature_permission', 'permission_id', 'feature_id')
+            ->withTimestamps();
     }
 }
