@@ -426,7 +426,7 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Create branch association
      */
-    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany, int $branchId): void
+    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany,  $branchId): void
     {
         $this->companyUserManagementHierarchyRepository->updateOrCreate(
             [
