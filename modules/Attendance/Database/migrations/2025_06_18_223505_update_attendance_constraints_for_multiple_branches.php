@@ -34,6 +34,9 @@ return new class extends Migration
             });
 
         Schema::table('attendance_constraints', function (Blueprint $table) {
+            // Drop the foreign key constraint before dropping the column
+            $table->dropForeign(['branch_id']);
+
             // Drop the old branch_id column
             $table->dropColumn('branch_id');
             
@@ -67,6 +70,11 @@ return new class extends Migration
             $table->dropIndex('idx_company_branch_ids');
             $table->dropColumn('branch_ids');
             $table->dropColumn('branch_locations');
+        });
+
+        // Re-add the foreign key constraint
+        Schema::table('attendance_constraints', function (Blueprint $table) {
+            $table->foreign('branch_id')->references('id')->on('management_hierarchies')->onDelete('cascade');
         });
     }
 };

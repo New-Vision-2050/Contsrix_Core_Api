@@ -40,6 +40,7 @@ class AttendanceServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->register(RouteServiceProvider::class);
+        $this->app->register(ConstraintServiceProvider::class);
     }
 
     /**

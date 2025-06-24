@@ -18,6 +18,8 @@ use Modules\Attendance\Requests\UpdateAttendanceRequest;
 use Modules\Attendance\Requests\FilterAttendanceRequest;
 use Modules\Attendance\Presenters\AttendancePresenter;
 
+use Modules\Attendance\Models\AttendanceConstraint;
+
 class AttendanceController extends Controller
 {
     public function __construct(
@@ -110,6 +112,17 @@ class AttendanceController extends Controller
             $request->user()->id,
             $request->input('notes')
         );
+
+        // Validate break time limits
+        $violationData = $this->constraintService->validateBreakEnd($attendance);
+
+        if ($violationData) {
+            // If a violation is found, create a record for it
+            $constraint = AttendanceConstraint::find($violationData['constraint_id']);
+            if ($constraint) {
+                $this->constraintService->createViolation($attendance, $constraint, $violationData);
+            }
+        }
 
         return Json::item(
             (new AttendancePresenter($attendance))->getData(),

@@ -4,21 +4,59 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Services;
 
+use Modules\Attendance\Contracts\TimeConstraintServiceInterface;
+use Modules\Attendance\Contracts\LocationConstraintServiceInterface;
+use Modules\Attendance\Contracts\DeviceConstraintServiceInterface;
+use Modules\Attendance\Contracts\RoleConstraintServiceInterface;
+use Modules\Attendance\Contracts\BehavioralConstraintServiceInterface;
+use Modules\Attendance\Contracts\SecurityConstraintServiceInterface;
+use Modules\Attendance\Contracts\ComplianceConstraintServiceInterface;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Models\AttendanceConstraintViolation;
 use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
-use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-use Modules\Attendance\DataClasses\MultiplePeriodsConfig;
-use InvalidArgumentException;
 
+/**
+ * Main attendance constraint service that acts as a facade coordinating specialized constraint services.
+ * This service maintains backward compatibility while delegating validation to specialized services.
+ */
 class AttendanceConstraintService
 {
+    protected TimeConstraintServiceInterface $timeConstraintService;
+    protected LocationConstraintServiceInterface $locationConstraintService;
+    protected DeviceConstraintServiceInterface $deviceConstraintService;
+    protected RoleConstraintServiceInterface $roleConstraintService;
+    protected BehavioralConstraintServiceInterface $behavioralConstraintService;
+    protected SecurityConstraintServiceInterface $securityConstraintService;
+    protected ComplianceConstraintServiceInterface $complianceConstraintService;
+
+    public function __construct(
+        TimeConstraintServiceInterface $timeConstraintService,
+        LocationConstraintServiceInterface $locationConstraintService,
+        DeviceConstraintServiceInterface $deviceConstraintService,
+        RoleConstraintServiceInterface $roleConstraintService,
+        BehavioralConstraintServiceInterface $behavioralConstraintService,
+        SecurityConstraintServiceInterface $securityConstraintService,
+        ComplianceConstraintServiceInterface $complianceConstraintService
+    ) {
+        $this->timeConstraintService = $timeConstraintService;
+        $this->locationConstraintService = $locationConstraintService;
+        $this->deviceConstraintService = $deviceConstraintService;
+        $this->roleConstraintService = $roleConstraintService;
+        $this->behavioralConstraintService = $behavioralConstraintService;
+        $this->securityConstraintService = $securityConstraintService;
+        $this->complianceConstraintService = $complianceConstraintService;
+    }
+
     /**
      * Validate attendance against all applicable constraints.
+     * 
+     * @param Attendance $attendance The attendance record to validate
+     * @param array $requestData Additional request data for validation
+     * @return array Array of violations found during validation
      */
     public function validateAttendance(Attendance $attendance, array $requestData = []): array
     {
@@ -29,9 +67,26 @@ class AttendanceConstraintService
         $constraints = $this->getApplicableConstraints($user);
         
         foreach ($constraints as $constraint) {
-            $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData);
-            if ($violation) {
-                $violations[] = $violation;
+            try {
+                $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData);
+                if ($violation) {
+                    $violations[] = $violation;
+                    
+                    // Create violation record
+                    $this->createViolationRecord($attendance, $constraint, $violation);
+                    
+                    // Check if this violation should block attendance
+                    if ($this->shouldBlockAttendance($constraint, $violation)) {
+                        // Add blocking flag to violation
+                        $violation['blocks_attendance'] = true;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Error validating constraint', [
+                    'constraint_id' => $constraint->id,
+                    'attendance_id' => $attendance->id,
+                    'error' => $e->getMessage()
+                ]);
             }
         }
         
@@ -40,577 +95,310 @@ class AttendanceConstraintService
 
     /**
      * Get all constraints applicable to a user.
+     * 
+     * @param User $user The user to get constraints for
+     * @return Collection Collection of applicable constraints
      */
     public function getApplicableConstraints(User $user): Collection
     {
-        // Get user's branch if they belong to one
         $userBranch = $user->managementHierarchy;
         
         return AttendanceConstraint::where('company_id', $user->company_id)
             ->where(function ($query) use ($user, $userBranch) {
-                // Company-wide constraints (no specific user, department, or branch)
-                $query->whereNull('user_id')
-                      ->whereNull('department_id')
-                      ->whereNull('branch_id');
-                
-                // User-specific constraints
-                $query->orWhere('user_id', $user->id);
-                
-                // Department-specific constraints
-                if ($user->department_id) {
-                    $query->orWhere('department_id', $user->department_id);
-                }
+                // Global constraints (no branch restrictions)
+                $query->whereNull('branch_locations')
+                    ->orWhere('branch_locations', '[]')
+                    ->orWhere('branch_locations', '');
                 
                 // Branch-specific constraints
                 if ($userBranch) {
-                    $query->orWhere('branch_id', $userBranch->id);
-                    
-                    // Include inherited constraints from parent branches
-                    $query->orWhere(function ($subQuery) use ($userBranch) {
-                        $subQuery->where('inherit_from_parent', true)
-                                 ->whereIn('branch_id', $this->getParentBranchIds($userBranch));
-                    });
+                    $query->orWhereJsonContains('branch_locations', [
+                        'branch_id' => $userBranch->id
+                    ]);
                 }
             })
-            ->active()
-            ->byPriority()
-            ->get()
-            ->filter(function ($constraint) {
-                return $this->isConstraintValidForDate($constraint);
-            });
-    }
-
-    /**
-     * Get parent branch IDs for inheritance.
-     */
-    private function getParentBranchIds(ManagementHierarchy $branch): array
-    {
-        $parentIds = [];
-        $currentBranch = $branch;
-        
-        // Traverse up the hierarchy to get all parent branches
-        while ($currentBranch->parent_id) {
-            $parent = ManagementHierarchy::find($currentBranch->parent_id);
-            if ($parent && $parent->type === 'branch') {
-                $parentIds[] = $parent->id;
-                $currentBranch = $parent;
-            } else {
-                break;
-            }
-        }
-        
-        return $parentIds;
-    }
-
-    /**
-     * Check if constraint is valid for the current date.
-     */
-    private function isConstraintValidForDate(AttendanceConstraint $constraint): bool
-    {
-        $today = Carbon::today();
-        
-        if ($constraint->start_date && $today->lt($constraint->start_date)) {
-            return false;
-        }
-        
-        if ($constraint->end_date && $today->gt($constraint->end_date)) {
-            return false;
-        }
-        
-        return true;
-    }
-
-    /**
-     * Get constraints for a specific branch (including inherited).
-     */
-    public function getConstraintsForBranch(string $branchId, string $companyId): Collection
-    {
-        $branch = ManagementHierarchy::find($branchId);
-        
-        if (!$branch || $branch->type !== 'branch') {
-            return collect();
-        }
-        
-        return AttendanceConstraint::where('company_id', $companyId)
-            ->applicableToBranch($branchId)
-            ->active()
-            ->byPriority()
-            ->get()
-            ->filter(function ($constraint) {
-                return $this->isConstraintValidForDate($constraint);
-            });
+            ->where('is_active', true)
+            ->get();
     }
 
     /**
      * Validate a single constraint against attendance.
+     * 
+     * @param Attendance $attendance The attendance record to validate
+     * @param AttendanceConstraint $constraint The constraint to validate against
+     * @param array $requestData Additional request data for validation
+     * @return bool|array Returns false if no violation, or violation details if constraint is violated
      */
-    protected function validateSingleConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData): ?array
+    public function validateSingleConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData = []): bool|array
     {
-        switch ($constraint->constraint_type) {
-            case AttendanceConstraint::TYPE_LOCATION:
-                return $this->validateLocationConstraint($attendance, $constraint, $requestData);
-            
+        $config = $constraint->config ?? [];
+        
+        // Delegate to appropriate specialized service based on constraint type
+        switch ($constraint->type) {
             case AttendanceConstraint::TYPE_TIME:
-                return $this->validateTimeConstraint($attendance, $constraint, $requestData);
-            
-            case AttendanceConstraint::TYPE_DEVICE:
-                return $this->validateDeviceConstraint($attendance, $constraint, $requestData);
-            
-            case AttendanceConstraint::TYPE_ROLE:
-                return $this->validateRoleConstraint($attendance, $constraint, $requestData);
-            
-            case AttendanceConstraint::TYPE_BEHAVIORAL:
-                return $this->validateBehavioralConstraint($attendance, $constraint, $requestData);
-            
-            case AttendanceConstraint::TYPE_SECURITY:
-                return $this->validateSecurityConstraint($attendance, $constraint, $requestData);
-            
-            case AttendanceConstraint::TYPE_COMPLIANCE:
-                return $this->validateComplianceConstraint($attendance, $constraint, $requestData);
-            
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Validate location-based constraints.
-     */
-    protected function validateLocationConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData): ?array
-    {
-        $config = $constraint->constraint_config;
-        
-        switch ($constraint->constraint_name) {
-            case AttendanceConstraint::LOCATION_GEOFENCING:
-                return $this->validateGeofencing($attendance, $config, $requestData);
-            
-            case AttendanceConstraint::LOCATION_IP_RESTRICTION:
-                return $this->validateIpRestriction($attendance, $config, $requestData);
-            
-            case AttendanceConstraint::LOCATION_OFFICE_VERIFICATION:
-                return $this->validateOfficeVerification($attendance, $config, $requestData);
-            
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Validate geofencing constraint.
-     */
-    protected function validateGeofencing(Attendance $attendance, array $config, array $requestData): ?array
-    {
-        if (!isset($requestData['latitude']) || !isset($requestData['longitude'])) {
-            return [
-                'constraint_type' => AttendanceConstraint::TYPE_LOCATION,
-                'violation_type' => AttendanceConstraintViolation::TYPE_LOCATION_VIOLATION,
-                'severity' => AttendanceConstraintViolation::SEVERITY_HIGH,
-                'message' => 'Location data required for geofencing validation',
-                'details' => ['missing_location_data' => true]
-            ];
-        }
-
-        $userLat = (float) $requestData['latitude'];
-        $userLng = (float) $requestData['longitude'];
-        
-        foreach ($config['allowed_zones'] ?? [] as $zone) {
-            $distance = $this->calculateDistance(
-                $userLat, $userLng,
-                $zone['latitude'], $zone['longitude']
-            );
-            
-            if ($distance <= $zone['radius']) {
-                return null; // Within allowed zone
-            }
-        }
-        
-        return [
-            'constraint_type' => AttendanceConstraint::TYPE_LOCATION,
-            'violation_type' => AttendanceConstraintViolation::TYPE_LOCATION_VIOLATION,
-            'severity' => AttendanceConstraintViolation::SEVERITY_HIGH,
-            'message' => 'User location outside allowed geofenced areas',
-            'details' => [
-                'user_location' => ['lat' => $userLat, 'lng' => $userLng],
-                'allowed_zones' => $config['allowed_zones']
-            ]
-        ];
-    }
-
-    /**
-     * Validate IP restriction constraint.
-     */
-    protected function validateIpRestriction(Attendance $attendance, array $config, array $requestData): ?array
-    {
-        $userIp = $requestData['ip_address'] ?? request()->ip();
-        $allowedIps = $config['allowed_ips'] ?? [];
-        $allowedRanges = $config['allowed_ranges'] ?? [];
-        
-        // Check exact IP matches
-        if (in_array($userIp, $allowedIps)) {
-            return null;
-        }
-        
-        // Check IP ranges
-        foreach ($allowedRanges as $range) {
-            if ($this->ipInRange($userIp, $range)) {
-                return null;
-            }
-        }
-        
-        return [
-            'constraint_type' => AttendanceConstraint::TYPE_LOCATION,
-            'violation_type' => AttendanceConstraintViolation::TYPE_LOCATION_VIOLATION,
-            'severity' => AttendanceConstraintViolation::SEVERITY_MEDIUM,
-            'message' => 'Access from unauthorized IP address',
-            'details' => [
-                'user_ip' => $userIp,
-                'allowed_ips' => $allowedIps,
-                'allowed_ranges' => $allowedRanges
-            ]
-        ];
-    }
-
-    /**
-     * Validate time-based constraints.
-     */
-    protected function validateTimeConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData): ?array
-    {
-        $config = $constraint->constraint_config;
-        
-        switch ($constraint->constraint_name) {
-            case AttendanceConstraint::TIME_SHIFT_ENFORCEMENT:
-                return $this->validateShiftEnforcement($attendance, $config);
-            
-            case AttendanceConstraint::TIME_EARLY_PREVENTION:
-                return $this->validateEarlyPrevention($attendance, $config);
-            
-            case AttendanceConstraint::TIME_OVERTIME_APPROVAL:
-                return $this->validateOvertimeApproval($attendance, $config);
-            
-            case AttendanceConstraint::TIME_MULTIPLE_PERIODS:
-                return $this->validateMultiplePeriods($attendance, $config);
-            
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Validate shift enforcement constraint.
-     */
-    protected function validateShiftEnforcement(Attendance $attendance, array $config): ?array
-    {
-        $shiftStart = Carbon::parse($config['shift_start_time']);
-        $shiftEnd = Carbon::parse($config['shift_end_time']);
-        $gracePeriod = $config['grace_period_minutes'] ?? 0;
-        
-        $clockInTime = $attendance->clock_in_time;
-        
-        if ($clockInTime->lt($shiftStart->subMinutes($gracePeriod))) {
-            return [
-                'constraint_type' => AttendanceConstraint::TYPE_TIME,
-                'violation_type' => AttendanceConstraintViolation::TYPE_TIME_VIOLATION,
-                'severity' => AttendanceConstraintViolation::SEVERITY_MEDIUM,
-                'message' => 'Clock-in time is before allowed shift start time',
-                'details' => [
-                    'clock_in_time' => $clockInTime->toISOString(),
-                    'shift_start_time' => $shiftStart->toISOString(),
-                    'grace_period_minutes' => $gracePeriod
-                ]
-            ];
-        }
-        
-        return null;
-    }
-
-    /**
-     * Validate device-based constraints.
-     */
-    protected function validateDeviceConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData): ?array
-    {
-        $config = $constraint->constraint_config;
-        
-        switch ($constraint->constraint_name) {
-            case AttendanceConstraint::DEVICE_AUTHORIZED_ONLY:
-                return $this->validateAuthorizedDevice($attendance, $config, $requestData);
-            
-            case AttendanceConstraint::DEVICE_SINGLE_POLICY:
-                return $this->validateSingleDevicePolicy($attendance, $config, $requestData);
-            
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Create a constraint violation record.
-     */
-    public function createViolation(Attendance $attendance, AttendanceConstraint $constraint, array $violationData): AttendanceConstraintViolation
-    {
-        return AttendanceConstraintViolation::create([
-            'company_id' => $attendance->company_id,
-            'user_id' => $attendance->user_id,
-            'attendance_id' => $attendance->id,
-            'constraint_id' => $constraint->id,
-            'violation_type' => $violationData['violation_type'],
-            'violation_details' => $violationData['details'] ?? [],
-            'severity_level' => $violationData['severity'],
-            'status' => AttendanceConstraintViolation::STATUS_PENDING,
-            'auto_resolved' => false,
-            'notification_sent' => false,
-        ]);
-    }
-
-    /**
-     * Process all violations and create records.
-     */
-    public function processViolations(Attendance $attendance, array $violations): Collection
-    {
-        $violationRecords = collect();
-        
-        foreach ($violations as $violation) {
-            $constraint = AttendanceConstraint::find($violation['constraint_id']);
-            if ($constraint) {
-                $violationRecord = $this->createViolation($attendance, $constraint, $violation);
-                $violationRecords->push($violationRecord);
+                return $this->timeConstraintService->validateTimeConstraint($attendance, $config);
                 
-                // Log the violation
-                Log::warning('Attendance constraint violation detected', [
-                    'user_id' => $attendance->user_id,
-                    'constraint_type' => $violation['constraint_type'],
-                    'violation_type' => $violation['violation_type'],
-                    'severity' => $violation['severity'],
-                    'message' => $violation['message']
+            case AttendanceConstraint::TYPE_LOCATION:
+                return $this->locationConstraintService->validateLocationConstraint($attendance, $config);
+                
+            case AttendanceConstraint::TYPE_DEVICE:
+                return $this->deviceConstraintService->validateDeviceConstraint($attendance, $config);
+                
+            case AttendanceConstraint::TYPE_ROLE:
+                return $this->roleConstraintService->validateRoleConstraint($attendance, $config);
+                
+            case AttendanceConstraint::TYPE_BEHAVIORAL:
+                return $this->behavioralConstraintService->validateBehavioralConstraint($attendance, $config);
+                
+            case AttendanceConstraint::TYPE_SECURITY:
+                return $this->securityConstraintService->validateSecurityConstraint($attendance, $config);
+                
+            case AttendanceConstraint::TYPE_COMPLIANCE:
+                return $this->complianceConstraintService->validateComplianceConstraint($attendance, $config);
+                
+            default:
+                Log::warning('Unknown constraint type encountered', [
+                    'constraint_id' => $constraint->id,
+                    'type' => $constraint->type
                 ]);
-            }
+                return false;
         }
-        
-        return $violationRecords;
     }
 
     /**
-     * Calculate distance between two coordinates (Haversine formula).
+     * Validate constraints before clock-in (pre-validation).
+     * 
+     * @param User $user The user attempting to clock in
+     * @param array $requestData Request data including location, device info, etc.
+     * @return array Array of violations that would prevent clock-in
      */
-    protected function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
-    {
-        $earthRadius = 6371000; // Earth's radius in meters
-        
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-        
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLng / 2) * sin($dLng / 2);
-        
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
-        return $earthRadius * $c;
-    }
-
-    /**
-     * Check if IP is within a given range.
-     */
-    protected function ipInRange(string $ip, string $range): bool
-    {
-        if (strpos($range, '/') === false) {
-            return $ip === $range;
-        }
-        
-        list($subnet, $mask) = explode('/', $range);
-        
-        $ipLong = ip2long($ip);
-        $subnetLong = ip2long($subnet);
-        $maskLong = -1 << (32 - $mask);
-        
-        return ($ipLong & $maskLong) === ($subnetLong & $maskLong);
-    }
-
-    /**
-     * Validate attendance data against applicable constraints without an Attendance object.
-     * Used for pre-validation before clock-in.
-     *
-     * @param array $attendanceData Array containing user_id, clock_in_time, and other attendance data
-     * @return array List of constraint violations if any
-     */
-    public function validateAttendanceData(array $attendanceData): array
+    public function validatePreClockIn(User $user, array $requestData = []): array
     {
         $violations = [];
-        $user = User::find($attendanceData['user_id']);
-        
-        if (!$user) {
-            return [
-                [
-                    'violation_type' => 'system_error',
-                    'severity' => AttendanceConstraintViolation::SEVERITY_HIGH,
-                    'message' => 'User not found',
-                    'details' => ['user_id' => $attendanceData['user_id']]
-                ]
-            ];
-        }
-        
-        // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
         
         foreach ($constraints as $constraint) {
-            // Create a temporary attendance object for validation
-            $tempAttendance = new Attendance([
-                'company_id' => $user->company_id,
-                'user_id' => $user->id,
-                'clock_in_time' => Carbon::parse($attendanceData['clock_in_time']),
-                'clock_in_location' => $attendanceData['clock_in_location'] ?? null,
-                'ip_address' => $attendanceData['ip_address'] ?? null
-            ]);
-            
-            $violation = $this->validateSingleConstraint($tempAttendance, $constraint, $attendanceData);
-            
-            if ($violation) {
-                $violation['constraint_id'] = $constraint->id;
-                $violations[] = $violation;
+            // Only validate constraints that can be checked before attendance record creation
+            if ($this->canValidatePreClockIn($constraint)) {
+                try {
+                    // Create a temporary attendance object for validation
+                    $tempAttendance = new Attendance([
+                        'user_id' => $user->id,
+                        'clock_in_time' => now(),
+                        'location' => $requestData['location'] ?? null,
+                        'device_info' => $requestData['device_info'] ?? null,
+                    ]);
+                    $tempAttendance->user = $user;
+                    
+                    $violation = $this->validateSingleConstraint($tempAttendance, $constraint, $requestData);
+                    if ($violation) {
+                        $violations[] = $violation;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Error in pre-clock-in validation', [
+                        'constraint_id' => $constraint->id,
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
         }
         
         return $violations;
     }
-    
-    /**
-     * Validate multiple periods constraint.
-     */
-    protected function validateMultiplePeriods(Attendance $attendance, array $config): ?array
-    {
-        try {
-            // Parse config using data class for type safety
-            $multiplePeriodsConfig = MultiplePeriodsConfig::fromArray($config);
-        } catch (InvalidArgumentException $e) {
-            return [
-                'constraint_type' => AttendanceConstraint::TYPE_TIME,
-                'violation_type' => AttendanceConstraintViolation::TYPE_TIME_VIOLATION,
-                'severity' => AttendanceConstraintViolation::SEVERITY_HIGH,
-                'message' => 'Invalid multiple periods configuration: ' . $e->getMessage(),
-                'details' => [
-                    'config_error' => $e->getMessage(),
-                    'clock_in_time' => $attendance->clock_in_time->format('H:i'),
-                ],
-            ];
-        }
 
-        $clockInTime = $attendance->clock_in_time;
-        $dayOfWeek = strtolower($clockInTime->format('l')); // e.g., 'sunday', 'monday'
+    /**
+     * Check if a constraint can be validated before clock-in.
+     * 
+     * @param AttendanceConstraint $constraint The constraint to check
+     * @return bool True if constraint can be pre-validated
+     */
+    private function canValidatePreClockIn(AttendanceConstraint $constraint): bool
+    {
+        // Constraints that can be validated before creating attendance record
+        $preValidatableTypes = [
+            AttendanceConstraint::TYPE_TIME,
+            AttendanceConstraint::TYPE_LOCATION,
+            AttendanceConstraint::TYPE_DEVICE,
+            AttendanceConstraint::TYPE_ROLE,
+            AttendanceConstraint::TYPE_SECURITY,
+        ];
         
-        // Get the day schedule
-        $daySchedule = $multiplePeriodsConfig->getDaySchedule($dayOfWeek);
-        
-        // Check if the day is configured
-        if ($daySchedule === null) {
-            return [
-                'constraint_type' => AttendanceConstraint::TYPE_TIME,
-                'violation_type' => AttendanceConstraintViolation::TYPE_TIME_VIOLATION,
-                'severity' => AttendanceConstraintViolation::SEVERITY_HIGH,
-                'message' => "No schedule configured for {$dayOfWeek}",
-                'details' => [
-                    'day_of_week' => $dayOfWeek,
-                    'clock_in_time' => $clockInTime->format('H:i'),
-                    'configured_days' => $multiplePeriodsConfig->getEnabledDays(),
-                ],
-            ];
+        return in_array($constraint->type, $preValidatableTypes);
+    }
+
+    /**
+     * Create a violation record for tracking and reporting.
+     * 
+     * @param Attendance $attendance The attendance record
+     * @param AttendanceConstraint $constraint The violated constraint
+     * @param array $violationDetails Details of the violation
+     * @return AttendanceConstraintViolation The created violation record
+     */
+    public function createViolationRecord(Attendance $attendance, AttendanceConstraint $constraint, array $violationDetails): AttendanceConstraintViolation
+    {
+        return AttendanceConstraintViolation::create([
+            'attendance_id' => $attendance->id,
+            'constraint_id' => $constraint->id,
+            'user_id' => $attendance->user_id,
+            'company_id' => $attendance->user->company_id,
+            'violation_type' => $violationDetails['constraint_type'] ?? $constraint->type,
+            'severity' => $violationDetails['severity'] ?? 'medium',
+            'message' => $violationDetails['message'] ?? 'Constraint violation detected',
+            'details' => $violationDetails['details'] ?? [],
+            'status' => 'pending',
+            'detected_at' => now(),
+        ]);
+    }
+
+    /**
+     * Check if a violation should block attendance.
+     * 
+     * @param AttendanceConstraint $constraint The constraint that was violated
+     * @param array $violation The violation details
+     * @return bool True if attendance should be blocked
+     */
+    private function shouldBlockAttendance(AttendanceConstraint $constraint, array $violation): bool
+    {
+        // Block attendance for high severity violations
+        if (($violation['severity'] ?? 'medium') === 'high') {
+            return true;
         }
         
-        // Check if the day is enabled
-        if (!$daySchedule->enabled) {
-            return [
-                'constraint_type' => AttendanceConstraint::TYPE_TIME,
-                'violation_type' => AttendanceConstraintViolation::TYPE_TIME_VIOLATION,
-                'severity' => AttendanceConstraintViolation::SEVERITY_HIGH,
-                'message' => "Attendance not allowed on {$dayOfWeek}",
-                'details' => [
-                    'day_of_week' => $dayOfWeek,
-                    'clock_in_time' => $clockInTime->format('H:i'),
-                    'enabled_days' => $multiplePeriodsConfig->getEnabledDays(),
-                ],
-            ];
+        // Block attendance for specific constraint types that are critical
+        $blockingTypes = [
+            AttendanceConstraint::TYPE_SECURITY,
+            AttendanceConstraint::TYPE_COMPLIANCE,
+        ];
+        
+        return in_array($constraint->type, $blockingTypes);
+    }
+
+    /**
+     * Resolve a constraint violation.
+     * 
+     * @param int $violationId The violation ID to resolve
+     * @param string $resolution Resolution notes
+     * @param int $resolvedBy User ID of who resolved the violation
+     * @return bool True if successfully resolved
+     */
+    public function resolveViolation(int $violationId, string $resolution, int $resolvedBy): bool
+    {
+        $violation = AttendanceConstraintViolation::find($violationId);
+        
+        if (!$violation) {
+            return false;
         }
         
-        // Check if clock-in time falls within any allowed period
-        $clockInTimeString = $clockInTime->format('H:i');
+        $violation->update([
+            'status' => 'resolved',
+            'resolution' => $resolution,
+            'resolved_by' => $resolvedBy,
+            'resolved_at' => now(),
+        ]);
         
-        foreach ($daySchedule->periods as $period) {
-            if ($this->isTimeWithinPeriod($clockInTimeString, $period)) {
-                // Valid clock-in time found
-                return null;
-            }
+        return true;
+    }
+
+    /**
+     * Dismiss a constraint violation.
+     * 
+     * @param int $violationId The violation ID to dismiss
+     * @param string $reason Reason for dismissal
+     * @param int $dismissedBy User ID of who dismissed the violation
+     * @return bool True if successfully dismissed
+     */
+    public function dismissViolation(int $violationId, string $reason, int $dismissedBy): bool
+    {
+        $violation = AttendanceConstraintViolation::find($violationId);
+        
+        if (!$violation) {
+            return false;
         }
         
-        // No valid period found
+        $violation->update([
+            'status' => 'dismissed',
+            'resolution' => $reason,
+            'resolved_by' => $dismissedBy,
+            'resolved_at' => now(),
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Get violation statistics for a company.
+     * 
+     * @param int $companyId The company ID
+     * @param Carbon|null $startDate Start date for statistics
+     * @param Carbon|null $endDate End date for statistics
+     * @return array Statistics array
+     */
+    public function getViolationStatistics(int $companyId, ?Carbon $startDate = null, ?Carbon $endDate = null): array
+    {
+        $query = AttendanceConstraintViolation::where('company_id', $companyId);
+        
+        if ($startDate) {
+            $query->where('detected_at', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->where('detected_at', '<=', $endDate);
+        }
+        
+        $violations = $query->get();
+        
         return [
-            'constraint_type' => AttendanceConstraint::TYPE_TIME,
-            'violation_type' => AttendanceConstraintViolation::TYPE_TIME_VIOLATION,
-            'severity' => AttendanceConstraintViolation::SEVERITY_MEDIUM,
-            'message' => "Clock-in time outside allowed periods for {$dayOfWeek}",
-            'details' => [
-                'day_of_week' => $dayOfWeek,
-                'clock_in_time' => $clockInTimeString,
-                'allowed_periods' => array_map(function($period) {
-                    return [
-                        'name' => $period->name,
-                        'start_time' => $period->startTime,
-                        'end_time' => $period->endTime,
-                        'spans_next_day' => $period->spansNextDay,
-                        'effective_start' => $period->getEffectiveStartTime(),
-                        'effective_end' => $period->getEffectiveEndTime(),
-                    ];
-                }, $daySchedule->periods),
+            'total_violations' => $violations->count(),
+            'by_severity' => [
+                'high' => $violations->where('severity', 'high')->count(),
+                'medium' => $violations->where('severity', 'medium')->count(),
+                'low' => $violations->where('severity', 'low')->count(),
             ],
+            'by_status' => [
+                'pending' => $violations->where('status', 'pending')->count(),
+                'resolved' => $violations->where('status', 'resolved')->count(),
+                'dismissed' => $violations->where('status', 'dismissed')->count(),
+            ],
+            'by_type' => $violations->groupBy('violation_type')->map->count()->toArray(),
+            'resolution_rate' => $violations->count() > 0 
+                ? ($violations->whereIn('status', ['resolved', 'dismissed'])->count() / $violations->count()) * 100 
+                : 0,
         ];
     }
 
     /**
-     * Check if a time falls within a period (including grace periods).
+     * Get violations for a specific user.
+     * 
+     * @param int $userId The user ID
+     * @param string|null $status Filter by status
+     * @param int $limit Number of violations to return
+     * @return Collection Collection of violations
      */
-    protected function isTimeWithinPeriod(string $timeString, $period): bool
+    public function getUserViolations(int $userId, ?string $status = null, int $limit = 50): Collection
     {
-        // Convert time to minutes since midnight
-        $timeMinutes = $this->timeToMinutes($timeString);
+        $query = AttendanceConstraintViolation::where('user_id', $userId)
+            ->with(['attendance', 'constraint'])
+            ->orderBy('detected_at', 'desc');
         
-        // Get effective period boundaries including grace periods
-        $effectiveStartMinutes = $this->timeToMinutes($period->getEffectiveStartTime());
-        $effectiveEndMinutes = $this->timeToMinutes($period->getEffectiveEndTime());
-        
-        if ($period->spansNextDay) {
-            // For cross-day periods, check if time is after start OR before end
-            return $timeMinutes >= $effectiveStartMinutes || $timeMinutes <= $effectiveEndMinutes;
-        } else {
-            // For same-day periods, check if time is between start and end
-            // Handle grace period overflow/underflow
-            if ($effectiveStartMinutes > $effectiveEndMinutes) {
-                // Grace periods caused overflow (e.g., 23:45 to 00:15 next day)
-                return $timeMinutes >= $effectiveStartMinutes || $timeMinutes <= $effectiveEndMinutes;
-            } else {
-                return $timeMinutes >= $effectiveStartMinutes && $timeMinutes <= $effectiveEndMinutes;
-            }
+        if ($status) {
+            $query->where('status', $status);
         }
+        
+        return $query->limit($limit)->get();
     }
 
     /**
-     * Additional validation methods would be implemented here for:
-     * - validateOfficeVerification
-     * - validateEarlyPrevention
-     * - validateOvertimeApproval
-     * - validateAuthorizedDevice
-     * - validateSingleDevicePolicy
-     * - validateRoleConstraint
-     * - validateBehavioralConstraint
-     * - validateSecurityConstraint
-     * - validateComplianceConstraint
+     * Get violations for a specific attendance record.
+     * 
+     * @param int $attendanceId The attendance ID
+     * @return Collection Collection of violations
      */
-
-    /**
-     * Convert HH:MM time string to minutes since midnight.
-     */
-    protected function timeToMinutes(string $timeString): int
+    public function getAttendanceViolations(int $attendanceId): Collection
     {
-        if (!preg_match('/^(\d{2}):(\d{2})$/', $timeString, $parts)) {
-            // Return 0 or throw an exception for invalid format
-            return 0;
-        }
-        return (int)$parts[1] * 60 + (int)$parts[2];
+        return AttendanceConstraintViolation::where('attendance_id', $attendanceId)
+            ->with(['constraint'])
+            ->orderBy('detected_at', 'desc')
+            ->get();
     }
 }

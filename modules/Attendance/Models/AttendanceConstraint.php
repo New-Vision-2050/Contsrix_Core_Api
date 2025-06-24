@@ -99,6 +99,8 @@ class AttendanceConstraint extends Model implements Auditable
     const TIME_BREAK_LIMITS = 'break_limits';
     const TIME_OVERTIME_APPROVAL = 'overtime_approval';
     const TIME_MULTIPLE_PERIODS = 'multiple_periods';
+    public const TIME_LATE_CLOCK_OUT = 'late_clock_out';
+    public const TIME_BREAK_TIME_LIMITS = 'break_time_limits';
 
     // Constraint name constants for device
     const DEVICE_AUTHORIZED_ONLY = 'authorized_only';
@@ -134,6 +136,7 @@ class AttendanceConstraint extends Model implements Auditable
     const COMPLIANCE_INDUSTRY_RULES = 'industry_rules';
     const COMPLIANCE_GOVERNMENT_REPORTING = 'government_reporting';
     const COMPLIANCE_DOCUMENTATION = 'documentation';
+    const COMPLIANCE_OFFICE_VERIFICATION = 'office_verification';
 
     /**
      * Get the company that owns the constraint.

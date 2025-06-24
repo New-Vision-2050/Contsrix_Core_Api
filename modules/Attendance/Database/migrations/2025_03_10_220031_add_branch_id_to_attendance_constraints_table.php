@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendance_constraints', function (Blueprint $table) {
-            $table->unsignedBigInteger('branch_id')->nullable()->after('department_id');
+            $table->uuid('branch_id')->nullable()->after('department_id');
             $table->boolean('inherit_from_parent')->default(false)->after('is_active');
             
             // Add index for branch-based queries
