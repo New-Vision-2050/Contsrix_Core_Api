@@ -23,6 +23,7 @@ class UserPresenter extends AbstractPresenter
             'name' => $this->user->name,
             'email' => $this->user->email,
             'is_super_admin' => $this->user->hasRole("super-admin")||$this->user->is_owner?1:0,
+
             'phone' => $this->user->phone,
         ];
     }

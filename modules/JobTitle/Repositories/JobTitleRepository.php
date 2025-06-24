@@ -24,9 +24,42 @@ class JobTitleRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function withoutScopePaginated(array $conditions = [], $page = 1, $perPage = 10)
+    public function withoutScopePaginated(array $conditions = [], $page = 1, $perPage = 10, ?string $sort = null,string $order = 'asc')
     {
         $query = $this->model->withoutGlobalScope("active")->where($conditions)->filter(request()->all());
+
+
+        if ($sort) {
+            switch ($sort) {
+                case 'name':
+                    $query->orderByTranslation('name', $order);
+                break;
+
+                case 'user_count':
+                $query->withCount('userProfissional')->orderBy('user_profissional_count', $order);
+                    break;
+
+                case 'job_type.name':
+                $query->orderByRelation(
+                    relatedTable: 'job_types',
+                    foreignKey: 'job_type_id',
+                    orderField: 'name',
+                    order: $order,
+                    ownerKey: 'id',
+                    translated: true,
+                    relatedModelClass: \Modules\Shared\JobType\Models\JobType::class
+                );
+                    break;
+
+                case 'status':
+                    $query->orderBy($sort, $order);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
@@ -34,7 +67,6 @@ class JobTitleRepository extends BaseRepository
             'data' => $paginatedData
         ]);
     }
-
     public function getJobTitleList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);

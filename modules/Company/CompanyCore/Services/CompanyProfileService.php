@@ -22,6 +22,7 @@ use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyLegalDataRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyOfficialDocumentRepository;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Country\Repositories\CityRepository;
@@ -32,6 +33,7 @@ use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Uuid;
 class CompanyProfileService
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(
         private AdminRequestRepository            $adminRequestRepository,
         private FileUploadService                 $fileUploadService,
@@ -153,6 +155,68 @@ class CompanyProfileService
         return [$country, $state, $city];
 
 
+    }
+
+    /**
+     * Get the company legal data
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCompanyLegalDataForCompany()
+    {
+        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+
+        $companyLegalData = $this->companyLegalDataRepository->findBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+        return $companyLegalData;
+    }
+
+    /**
+     * Get the company address with formatted country, state, and city data
+     *
+     * @return mixed
+     */
+    public function getCompanyAddressForCompany()
+    {
+        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+
+        $address = $this->companyAddressRepository->findOneBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+
+        if ($address) {
+            $address->country_name = $address->country?->name;
+            $address->state_name = $address->state?->name;
+            $address->city_name = $address->city?->name;
+            $address->country_lat = $address->country?->latitude;
+            $address->country_long = $address->country?->longitude;
+            $address->country_iso2 = $address->country?->iso2;
+            unset($address->country);
+            unset($address->state);
+            unset($address->city);
+        }
+
+        return $address;
+    }
+
+    /**
+     * Get the company official documents
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCompanyOfficialDocumentsForCompany()
+    {
+        [$company , $branch] =$this->declareCompanyAndBranchUsingRequest();
+        $companyOfficialDocuments = $this->companyOfficialDocumentRepository->findBy(["company_id"=>$company->id , "management_hierarchy_id"=>$branch->id]);
+        return $companyOfficialDocuments;
+    }
+
+    /**
+     * Get the company branches
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCompanyBranchesForCompany()
+    {
+        $company = $this->companyRepository->getCurrentCompany();
+        return $company->branches;
     }
 
     public function geoCodingUsingNationalAddressKSA(GeoCodingDTO $geoCodingDTO)
