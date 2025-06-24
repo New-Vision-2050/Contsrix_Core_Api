@@ -20,34 +20,37 @@ use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Presenters\UserRolesPresenter;
+use Modules\User\Services\UserCRUDService;
 use Ramsey\Uuid\Uuid;
 
 class BrokerController extends Controller
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
-        private BrokerCRUDService $brokerCRUDService,
+        private BrokerCRUDService        $brokerCRUDService,
+        private UserCRUDService          $userCRUDService,
         private UpdateCompanyUserHandler $updateCompanyUserHandler,
         private DeleteCompanyUserHandler $deleteCompanyUserHandler,
-    ) {
+    )
+    {
     }
 
     public function index(GetBrokerRequest $request): JsonResponse
     {
         $list = $this->brokerCRUDService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10),
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10),
         );
 
 
-        return Json::items(UserRolesPresenter::collection($list['data'],CompanyUserRole::BROKER->value),paginationSettings: $list['pagination']);
+        return Json::items(UserRolesPresenter::collection($list['data'], CompanyUserRole::BROKER->value), paginationSettings: $list['pagination']);
     }
-
 
 
     public function store(CreateBrokerRequest $request): JsonResponse
     {
-        $createdItem = $this->brokerCRUDService->create($request->createCreateBrokerDTO(), $request->createCreateCompanyUserCompanyRoleDTO(),$request->createSetUserAddressDTO());
+        $createdItem = $this->brokerCRUDService->create($request->createCreateBrokerDTO(), $request->createCreateCompanyUserCompanyRoleDTO(), $request->createSetUserAddressDTO());
 
         $presenter = new CompanyUserPresenter($createdItem);
 
