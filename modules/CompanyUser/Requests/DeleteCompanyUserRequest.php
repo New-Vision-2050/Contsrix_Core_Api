@@ -13,7 +13,7 @@ class DeleteCompanyUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => ['required', 'uuid', 'exists:company_users,id', new CanDeleteCompanyUserRule()],
+            'id' => [ new CanDeleteCompanyUserRule($this->route('id')) ],
         ];
     }
 }

@@ -11,9 +11,11 @@ use Modules\User\Models\User;
 class CanDeleteCompanyUserRule implements Rule
 {
     private string $message = '';
-    
-    public function __construct()
+    private $id;
+
+    public function __construct($id)
     {
+        $this->id = $id;
     }
 
     /**
@@ -26,7 +28,7 @@ class CanDeleteCompanyUserRule implements Rule
     public function passes($attribute, $value): bool
     {
         // Get the company user being deleted
-        $companyUserToDelete = CompanyUser::find($value);
+        $companyUserToDelete = CompanyUser::find($this->id);
         if (!$companyUserToDelete) {
             $this->message = __('validation.exists', ['attribute' => 'company user']);
             return false;
@@ -49,7 +51,7 @@ class CanDeleteCompanyUserRule implements Rule
         $isOwner = User::where('global_company_user_id', $companyUserToDelete->global_id)
             ->where('is_owner', true)
             ->exists();
-            
+
         if ($isOwner) {
             $this->message = __('validation.cannot_delete_company_owner');
             return false;
