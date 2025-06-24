@@ -20,7 +20,7 @@ use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Modules\Company\CompanyType\Models\CompanyType;
-use Modules\Subscription\Models\CompanyPackagePivot;
+use Modules\SubscriptionSystem\Subscription\Models\CompanyPackagePivot;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 

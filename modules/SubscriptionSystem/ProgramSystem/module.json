@@ -1,0 +1,14 @@
+{
+    "name": "ProgramSystem",
+    "alias": "programsystem",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\SubscriptionSystem\\ProgramSystem\\Providers\\ProgramSystemServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\SubscriptionSystem"
+}
