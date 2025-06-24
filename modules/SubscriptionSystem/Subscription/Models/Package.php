@@ -6,6 +6,7 @@ namespace Modules\SubscriptionSystem\Subscription\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
+use Modules\SubscriptionSystem\Modules\Models\Module;
 use Modules\SubscriptionSystem\Subscription\Enums\PackageBillingCycleEnum;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -23,7 +24,7 @@ class Package extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        
+
         'price',
         'billing_cycle',
         'is_active'

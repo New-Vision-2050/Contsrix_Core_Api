@@ -142,16 +142,40 @@ class RolesAndPermissionsSeeder extends Seeder
             'user.create',
             'user.edit',
             'user.delete',
+            'user.export',
+
+            'client.view',
+            'client.list',
             'client.create',
             'client.edit',
+            'client.delete',
+            'client.export',
 
-            'user.delete',
+
+            'broker.view',
+            'broker.list',
+            'broker.create',
+            'broker.edit',
+            'broker.delete',
+            'broker.export',
+
+
+            'employee.view',
+            'employee.list',
+            'employee.create',
+            'employee.edit',
+            'employee.delete',
+            'employee.export',
+
 
             // Company module permissions
             'company.view',
+            'company.list',
             'company.create',
             'company.edit',
             'company.delete',
+            'company.login-as-admin',
+            'company.export',
 
             // Role and Permission module permissions
             'role.view',
@@ -160,6 +184,68 @@ class RolesAndPermissionsSeeder extends Seeder
             'role.delete',
             'permission.view',
             'permission.assign',
+
+            "identifier.list",
+            "login-way.create",
+            "login-way.update",
+            "login-way.view",
+            "login-way.delete",
+            "login-way.activate",
+
+            "driver.view",
+            "driver.update",
+
+            "organization.branch.view",
+            "organization.management.view",
+            "organization.users.view",
+
+            "organization.job-title.create",
+            "organization.job-title.update",
+            "organization.job-title.delete",
+            "organization.job-title.list",
+            "organization.job-title.activate",
+            "organization.job-title.export",
+
+
+            "organization.job-type.create",
+            "organization.job-type.update",
+            "organization.job-type.delete",
+            "organization.job-type.list",
+            "organization.job-type.activate",
+            "organization.job-type.export",
+            "organization.branch.create",
+            "organization.branch.update",
+            "organization.branch.delete",
+            "organization.management.create",
+            "organization.management.update",
+            "organization.management.delete",
+
+
+            "company-profile.official-data.update",
+            "company-profile.official-data.request-update",
+
+
+            "company-profile.legal-data.update",
+            "company-profile.legal-data.request-update",
+
+
+            "company-profile.address.update",
+            "company-profile.address.request-update",
+
+            "company-profile.branch.list",
+            "company-profile.branch.view",
+
+
+
+
+
+            "company-profile.official-document.create",
+            "company-profile.official-document.update",
+            "company-profile.official-document.delete",
+
+
+
+
 
             // Add more default permissions for your modules here
         ];
