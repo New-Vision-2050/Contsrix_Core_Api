@@ -617,10 +617,38 @@ class CompanyUserRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $companyUser = $this->findOneBy(["id" => $id]);
+            
+            if (!$companyUser) {
+                throw new CustomException(__("validation.company_user_not_found"), 400);
+            }
+            
+            // Check if trying to delete admin account
+            if ($companyUser->email === 'admin@constrix-nv.com') {
+                throw new CustomException(__("validation.admin_account_cannot_be_deleted"), 400);
+            }
+
+            // Check if trying to delete self
+            $currentUserId = auth()->user()->global_company_user_id ?? null;
+            if ($currentUserId && $currentUserId === $companyUser->global_id) {
+                throw new CustomException(__("validation.cannot_delete_yourself"), 400);
+            }
+
+            // Check if trying to delete company owner
+            $isOwner = \Modules\User\Models\User::where('global_company_user_id', $companyUser->global_id)
+                ->where('is_owner', true)
+                ->exists();
+                
+            if ($isOwner) {
+                throw new CustomException(__("validation.cannot_delete_company_owner"), 400);
+            }
+
             $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id]);
             $this->delete($id);
             DB::commit();
 
+        } catch (CustomException $e) {
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception(__("validation.delete-not-successful"), 500);
@@ -628,8 +656,7 @@ class CompanyUserRepository extends BaseRepository
         return true;
     }
 
-    public
-    function getIdsWithRelations($ids = [], $relations = [])
+    public function getIdsWithRelations($ids = [], $relations = [])
     {
         return $this->model->with($relations)->whereIn("id", $ids)->get();
     }
