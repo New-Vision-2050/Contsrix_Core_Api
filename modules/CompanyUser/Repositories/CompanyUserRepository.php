@@ -617,11 +617,11 @@ class CompanyUserRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $companyUser = $this->findOneBy(["id" => $id]);
-            
+
             if (!$companyUser) {
                 throw new CustomException(__("validation.company_user_not_found"), 400);
             }
-            
+
             // Check if trying to delete admin account
             if ($companyUser->email === 'admin@constrix-nv.com') {
                 throw new CustomException(__("validation.admin_account_cannot_be_deleted"), 400);
@@ -637,7 +637,7 @@ class CompanyUserRepository extends BaseRepository
             $isOwner = \Modules\User\Models\User::where('global_company_user_id', $companyUser->global_id)
                 ->where('is_owner', true)
                 ->exists();
-                
+
             if ($isOwner) {
                 throw new CustomException(__("validation.cannot_delete_company_owner"), 400);
             }
@@ -649,9 +649,6 @@ class CompanyUserRepository extends BaseRepository
         } catch (CustomException $e) {
             DB::rollBack();
             throw $e;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw new \Exception(__("validation.delete-not-successful"), 500);
         }
         return true;
     }
