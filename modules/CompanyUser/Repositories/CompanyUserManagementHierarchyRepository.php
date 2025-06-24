@@ -32,7 +32,7 @@ class CompanyUserManagementHierarchyRepository extends BaseRepository
     /**
      * Get user branches by criteria
      */
-    public function getUserInBranches( $globalId, int $role, array $branchIds)
+    public function getUserInBranches( $globalId,  $role, array $branchIds)
     {
         return $this->model->whereIn("management_hierarchy_id", $branchIds)
             ->whereHas("companyUserCompany", function ($query) use ($globalId, $role) {
