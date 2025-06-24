@@ -53,6 +53,18 @@ class CompanyUserCRUDService
     }
 
 
+    public function sendEmailAssignToCompanyToUser($user , $companyId)
+    {
+        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id, "company_id" => $companyId]);
+        $data = [
+            "name" => $userInCompany->name,
+            "company_name" => $userInCompany->company?->name,
+            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain
+        ];
+        $userInCompany->notify(new SendDomainForUser($data));
+    }
+
+
     public function list(int $page = 1, int $perPage = 10): array
     {
 
