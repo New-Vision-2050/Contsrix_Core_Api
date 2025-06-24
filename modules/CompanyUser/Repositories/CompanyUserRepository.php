@@ -368,6 +368,8 @@ class CompanyUserRepository extends BaseRepository
                 "company_id" => $companyId,
                 "parent_id" => null
             ]);
+            $user->assignRole('super-admin');//assign super admin role for first user
+
 
             $branch->update(["manager_id" => $user->id]);
 
@@ -426,7 +428,7 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Create branch association
      */
-    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany, int $branchId): void
+    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany,  $branchId): void
     {
         $this->companyUserManagementHierarchyRepository->updateOrCreate(
             [
@@ -491,8 +493,8 @@ class CompanyUserRepository extends BaseRepository
         $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyId])->first();
         if(isset($companyUserData["job_title_id"])&&$companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
         {
-            $companyId = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
-            if($companyId != $companyId )
+            $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
+            if($companyId != $companyIdJobTitle )
             {
                 $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
             }
@@ -522,7 +524,7 @@ class CompanyUserRepository extends BaseRepository
         ];
 
         // Create or update professional data
-       $userProfessionalData = UserProfessionalData::query()->withoutTenancy()->where([
+       $userProfessionalData = $this->userProfessionalDataRepository->model->withoutTenancy()->where([
             'global_id' => $user->global_company_user_id,
             'company_id' => $companyId,
         ])->first();
