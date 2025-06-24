@@ -408,7 +408,8 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Handle branch assignments for company user
      */
-    private function handleBranchAssignments(User $user, CompanyUserCompany $companyUserCompany, array $companyRole, ?array $branches): int
+    private function handleBranchAssignments(User $user, CompanyUserCompany $companyUserCompany, array $companyRole, ?array $branches):mixed
+
     {
         // Remove existing associations
         $this->companyUserManagementHierarchyRepository->deleteWhere(["company_user_company_id" => $companyUserCompany->id]);
