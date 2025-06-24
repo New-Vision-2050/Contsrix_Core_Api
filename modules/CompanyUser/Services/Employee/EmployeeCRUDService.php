@@ -48,6 +48,8 @@ class EmployeeCRUDService
 
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(),$createEmployeeDTO->getBranchId());
 
+        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user , $companyRoleDTO->getCompanyId());
+
         //here i do not email up till now
 //        $data = [
 //            "name" => $userInCompany->name,
