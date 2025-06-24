@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Shared\JobType\Models;
 
+use App\Traits\SortableByTranslation;
+use App\Traits\SortsByRelation;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,7 +24,8 @@ class JobType extends Model
     use BelongsToTenant;
     use HasTranslations;
     //use SoftDeletes;
-
+    use SortableByTranslation;
+    use SortsByRelation;
     public array $translatable = ['name'];
 
     public $incrementing = false;
