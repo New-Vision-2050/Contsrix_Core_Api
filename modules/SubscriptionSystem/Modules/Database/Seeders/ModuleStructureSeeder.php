@@ -49,11 +49,10 @@ class ModuleStructureSeeder extends Seeder
         $createFeature(['en' => 'Add User',     'ar' => 'اضافة مستخدم'], 'add-user', $users->id);
 
         /** Program Management Submodules */
-        $mainTables = $createModule(['en' => 'Main Tables', 'ar' => 'الجداول الرئيسية'], 'program-management-main-tables', $programsRoot->id);
-        $createFeature(['en' => 'Sub Tables',     'ar' => 'الجداول الفرعيه'], 'program-management-sub-tables', $mainTables->id);
-        $createFeature(['en' => 'Table Structure','ar' => 'هيكل الجدول'], 'program-management-main-tables-table-structure', $mainTables->id);
-        $createFeature(['en' => 'Table Content',  'ar' => 'محتويات الجدول'], 'program-management-main-tables-table-content', $mainTables->id);
-        $createFeature(['en' => 'Table Settings', 'ar' => 'اعدادات الجدول'], 'program-management-main-tables-table-settings', $mainTables->id);
+        $createFeature(['en' => 'Sub Tables',     'ar' => 'الجداول الفرعيه'], 'program-management-sub-tables', $programsRoot->id);
+        $createFeature(['en' => 'Table Structure','ar' => 'هيكل الجدول'], 'program-management-main-tables-table-structure', $programsRoot->id);
+        $createFeature(['en' => 'Table Content',  'ar' => 'محتويات الجدول'], 'program-management-main-tables-table-content', $programsRoot->id);
+        $createFeature(['en' => 'Table Settings', 'ar' => 'اعدادات الجدول'], 'program-management-main-tables-table-settings', $programsRoot->id);
 
         /** Settings Submodules */
         $userProfileSettings = $createModule(['en' => 'User Profile Settings', 'ar' => 'الملف الشخصي'], 'user-profile-settings', $settingsRoot->id);
@@ -90,7 +89,7 @@ class ModuleStructureSeeder extends Seeder
         $createFeature(['en' => 'User Status',        'ar' => 'حالة المستخدم'],     'user-status', $userProcedures->id);
         $createFeature(['en' => 'SMS Messages',       'ar' => 'الرسائل النصية'],   'sms-messages', $userProcedures->id);
         $createFeature(['en' => 'Social Platforms',   'ar' => 'منصات التواصل'],    'social-platforms', $userProcedures->id);
-        
+
 
         $userProfileFeatures = [
             ['name' => ['en' => 'Personal Data',      'ar' => 'البيانات الشخصية'],   'slug' => 'personal-data'],
@@ -141,5 +140,7 @@ class ModuleStructureSeeder extends Seeder
         $createFeature(['en' => 'Job Data',         'ar' => 'البيانات الوظيفية'],   'job-data', $jobContractual->id);
 
         $createFeature(['en' => 'Allowances',       'ar' => 'الامتيازات والبدلات'], 'allowances', $financialPrivileges->id);
+
+        //TODO : integerate with permissions
     }
 }

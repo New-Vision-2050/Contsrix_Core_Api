@@ -142,6 +142,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'user.create',
             'user.edit',
             'user.delete',
+            'client.create',
+            'client.edit',
+
+            'user.delete',
 
             // Company module permissions
             'company.view',
