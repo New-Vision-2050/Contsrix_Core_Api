@@ -10,6 +10,15 @@ class CreatePackageDTO
 {
     public function __construct(
         public string $name,
+        public float $price,
+        public string $currencyId,
+        public string $billingCycle,
+        public ?int $trialPeriod,
+        public ?string $trialPeriodType,
+        public bool $isActive,
+        public array $businessTypeIds,
+        public array $countryIds,
+        public array $programSystemIds
     ) {
     }
 
@@ -17,6 +26,12 @@ class CreatePackageDTO
     {
         return [
             'name' => $this->name,
+            'price' => $this->price,
+            'currency_id' => $this->currencyId,
+            'billing_cycle' => $this->billingCycle,
+            'trial_period' => $this->trialPeriod,
+            'trial_period_type' => $this->trialPeriodType,
+            'is_active' => $this->isActive, 
         ];
     }
 }

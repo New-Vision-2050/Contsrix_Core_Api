@@ -11,8 +11,8 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->string('slug');
             // Module relation (nullable, UUID)
-            $table->uuid('program_id');
-            $table->foreign('program_id')->references('id')->on('programs')->cascadeOnDelete();
+            $table->uuid('module_id');
+            $table->foreign('module_id')->references('id')->on('modules')->cascadeOnDelete();
             $table->timestamps();
         });
     }

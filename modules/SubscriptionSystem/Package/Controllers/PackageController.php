@@ -46,7 +46,7 @@ class PackageController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function store(CreatePackageRequest $request): JsonResponse
+    public function store(CreatePackageRequest $request)//: JsonResponse
     {
         $createdItem = $this->packageService->create($request->createCreatePackageDTO());
 

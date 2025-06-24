@@ -17,9 +17,23 @@ class PackageCRUDService
     ) {
     }
 
-    public function create(CreatePackageDTO $createPackageDTO): Package
+    public function create(CreatePackageDTO $createPackageDTO)//: Package
     {
-         return $this->repository->createPackage($createPackageDTO->toArray());
+        $package = $this->repository->createPackage($createPackageDTO->toArray());
+
+        // 2. Sync all many-to-many relationships
+        if (!empty($createPackageDTO->businessTypeIds)) {
+            $package->businessTypes()->sync($createPackageDTO->businessTypeIds);
+        }
+        if (!empty($createPackageDTO->countryIds)) {
+            $package->countries()->sync($createPackageDTO->countryIds);
+        }
+        if (!empty($createPackageDTO->programSystemIds)) {
+            $package->programSystems()->sync($createPackageDTO->programSystemIds);
+        }
+        
+        // Eager load relationships for the response
+        return $package->load(['businessTypes', 'countries', 'programSystems']);    
     }
 
     public function list(int $page = 1, int $perPage = 10): array

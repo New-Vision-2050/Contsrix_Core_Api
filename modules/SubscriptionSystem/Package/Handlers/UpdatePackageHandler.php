@@ -16,6 +16,20 @@ class UpdatePackageHandler
 
     public function handle(UpdatePackageCommand $updatePackageCommand)
     {
-        $this->repository->updatePackage($updatePackageCommand->getId(), $updatePackageCommand->toArray());
-    }
+        $package = $this->repository->findOneOrFail($updatePackageCommand->getId());
+
+        $packageData = $updatePackageCommand->toPackageArray();
+        if (!empty($packageData)) {
+            $package->update($packageData);
+        }
+        
+        if ($updatePackageCommand->businessTypeIds !== null) {
+            $package->businessTypes()->sync($updatePackageCommand->businessTypeIds);
+        }
+        if ($updatePackageCommand->countryIds !== null) {
+            $package->countries()->sync($updatePackageCommand->countryIds);
+        }
+        if ($updatePackageCommand->programSystemIds !== null) {
+            $package->programSystems()->sync($updatePackageCommand->programSystemIds);
+        }    }
 }

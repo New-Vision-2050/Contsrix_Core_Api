@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
@@ -102,5 +103,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
         $this->call(ModuleStructureSeeder::class);
         // $this->call(FeatureDatabaseSeeder::class);
+        $this->call(BusinessTypeSeederTableSeeder::class);
+        
     }
 }
