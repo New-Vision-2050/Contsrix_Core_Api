@@ -291,7 +291,7 @@ return [
         'file_required' => 'A file is required.',
         'file_mimes' => 'The file must be one of the following types: pdf, jpeg, jpg, png, doc, docx.',
         'regestration_number_required' => 'The registration number is required for this type.',
-
+        'start_date_less_than_8_days' => 'The start date must be at least 8 days before the end date.',
     ],
     'company' => [
         'name_required' => 'Company name is required.',
