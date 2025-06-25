@@ -123,6 +123,9 @@ class CompanyProfileService
         }
         [$neighborhood, $route] = $this->getTranslatedNighborhoodAndRoute($geoCodingDTO->getLatitude(), $geoCodingDTO->getLongitude());
 
+        if(empty($state) && !empty($city) && !empty($country)){
+            $state = $city->state;
+        }
         return [
             $country,
             $state,
