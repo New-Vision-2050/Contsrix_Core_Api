@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
+use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
@@ -103,6 +105,8 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
         $this->call(BanksOtherModulesSeederTableSeeder::class);
         $this->call(UniversitiesOtherSeederTableSeeder::class);
+        $this->call(ModuleStructureSeeder::class);
+        $this->call(BusinessTypeSeederTableSeeder::class);
         
     }
 }
