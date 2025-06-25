@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
+use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
 use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
@@ -12,9 +14,7 @@ use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\SubEntity\Database\Seeders\RegistrationFormsSeeder;
 use Modules\SubEntity\Database\Seeders\SubEntityDatabaseSeeder;
-use Modules\SubscriptionSystem\Subscription\Database\Seeders\ModuleDatabaseSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
-use Modules\SubscriptionSystem\Subscription\Database\Seeders\FeatureDatabaseSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
@@ -35,7 +35,6 @@ use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
-use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
 use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
@@ -109,7 +108,10 @@ class DatabaseSeeder extends Seeder
         $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
         $this->call(AcademicSpecializationsUpdateSeederTableSeeder::class);
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
-        $this->call(ModuleStructureSeeder::class);
+        $this->call(BanksOtherModulesSeederTableSeeder::class);
+        $this->call(UniversitiesOtherSeederTableSeeder::class);
+
+//        $this->call(ModuleStructureSeeder::class);
         // $this->call(FeatureDatabaseSeeder::class);
     }
 }

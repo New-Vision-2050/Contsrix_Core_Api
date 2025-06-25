@@ -119,7 +119,10 @@ class CompanyUserRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $companyUser = $this->findOneByOrFail(['id' => $companyUserId]);
+            $companyUser = $this->findOneBy(['id' => $companyUserId]);
+            $this->canDelete($companyUser);
+
+
             $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId, "role" => $role]);
             if ($this->companyUserCompanyRepository->countWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]) == 0) {
                 $this->userRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]);
@@ -407,7 +410,8 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Handle branch assignments for company user
      */
-    private function handleBranchAssignments(User $user, CompanyUserCompany $companyUserCompany, array $companyRole, ?array $branches): int
+    private function handleBranchAssignments(User $user, CompanyUserCompany $companyUserCompany, array $companyRole, ?array $branches):mixed
+
     {
         // Remove existing associations
         $this->companyUserManagementHierarchyRepository->deleteWhere(["company_user_company_id" => $companyUserCompany->id]);
@@ -613,25 +617,57 @@ class CompanyUserRepository extends BaseRepository
         return true;
     }
 
+    public function canDelete($companyUser = null)
+    {
+        if (!$companyUser) {
+            throw new CustomException(__("validation.company_user_not_found"), 400);
+        }
+
+        // Check if trying to delete admin account
+        if ($companyUser->email === 'admin@constrix-nv.com') {
+            throw new CustomException(__("validation.admin_account_cannot_be_deleted"), 400);
+        }
+
+        // Check if trying to delete self
+        $currentUserId = auth()->user()->global_company_user_id ?? null;
+        if ($currentUserId && $currentUserId === $companyUser->global_id) {
+            throw new CustomException(__("validation.cannot_delete_yourself"), 400);
+        }
+
+        // Check if trying to delete company owner
+        $isOwner = \Modules\User\Models\User::where('global_company_user_id', $companyUser->global_id)
+            ->where('is_owner', true)
+            ->exists();
+
+        if ($isOwner) {
+            throw new CustomException(__("validation.cannot_delete_company_owner"), 400);
+        }
+
+        return true;
+
+    }
+
     public
     function deleteCompanyUser(UuidInterface $id): bool
     {
         try {
             DB::beginTransaction();
             $companyUser = $this->findOneBy(["id" => $id]);
+
+            $this->canDelete($companyUser);
+
             $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id]);
             $this->delete($id);
             DB::commit();
 
-        } catch (\Exception $e) {
+        } catch (CustomException $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.delete-not-successful"), 500);
+            throw $e;
         }
         return true;
     }
 
-    public
-    function getIdsWithRelations($ids = [], $relations = [])
+    public function getIdsWithRelations($ids = [], $relations = [])
     {
         return $this->model->with($relations)->whereIn("id", $ids)->get();
     }

@@ -44,15 +44,9 @@ class BrokerCRUDService
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createBrokerDTO->getBranchIds());
 
         $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray());
+        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
 
 
-        //here i do not email up till now
-//        $data = [
-//            "name" => $userInCompany->name,
-//            "company_name" => $userInCompany->company?->name,
-//            "domain_name" => $userInCompany->company?->domains()->first()?->domain
-//        ];
-//        $userInCompany->notify(new SendDomainForUser($data));
 
         try {
             event(new UserCreated($createBrokerDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
