@@ -23,11 +23,35 @@ class RolePresenter extends AbstractPresenter
         $modified = [];
         foreach ($permissions as $permission) {
             $permission->is_active = $this->role->permissions()->where("name", $permission->name)->first() ? true : false;
-            $modified[] = ["id" => $permission->id, "name" => $permission->name,"permission"=>explode('.', $permission->name)[1], "is_active" => $permission->is_active];
+
+            // Extract the permission name parts
+            $nameParts = explode('.', $permission->name);
+
+            // Initialize the translated name
+            $translatedName = '';
+
+            // Apply translation logic like the Blade template
+            if (count($nameParts) >= 2) {
+                // Skip the first part (module name) and translate the rest
+                for ($i = 0; $i < count($nameParts); $i++) {
+                    $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
+                }
+            } elseif (count($nameParts) == 1) {
+                $translatedName = __('names.' . $nameParts[0]);
+            } else {
+                $translatedName = __('names.' . $permission->name);
+            }
+
+            $modified[] = [
+                "id" => $permission->id,
+                "key" => $permission->name,
+                "name" => $translatedName,
+                "is_active" => $permission->is_active
+            ];
         }
         $modified = collect($modified)->groupBy(function($query) {
-        return explode('.', $query["name"])[0];
-    })->toArray();;
+            return explode('.', $query["key"])[0];
+        })->toArray();
         return [
             'id' => $this->role->id,
             'name' => $this->role->name,
