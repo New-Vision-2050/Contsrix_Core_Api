@@ -13,10 +13,6 @@ return new class extends Migration
             $table->json('name');
             $table->string('slug');
             $table->boolean('is_active')->default(true);
-<<<<<<< HEAD
-=======
-            
->>>>>>> 7be6c72c (merge with stage (first version ))
             $table->uuid('parent_id')->nullable();
             $table->foreign('parent_id')->references('id')->on('programs')->onDelete('cascade');
             $table->unique(['parent_id', 'slug']);
