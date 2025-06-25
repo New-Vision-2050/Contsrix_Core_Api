@@ -287,7 +287,7 @@ return [
     */
 
     'cache' => [
-        'enabled' => env('MODULE_CACHE_ENABLED', env('APP_ENV') == 'production'),
+        'enabled' => env('MODULE_CACHE_ENABLED', false),
         'driver' => 'file',
         'key' => 'laravel-modules',
         'lifetime' => null,
