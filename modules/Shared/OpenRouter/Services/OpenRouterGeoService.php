@@ -17,21 +17,28 @@ class OpenRouterGeoService
      * @param GeoCodingDTO $geoCodingDTO
      * @return array
      */
-    public function getLocationFromOpenRouter(GeoCodingDTO $geoCodingDTO): array
+    public function getLocationFromOpenRouter(GeoCodingDTO $geoCodingDTO,$cities): array
     {
         try {
             // Get API credentials from config
             $apiKey = env('OPENROUTER_API_KEY');
-            $apiUrl = env('OPENROUTER_API_URL', 'https://openrouter.ai/api/v1/geo');
-            
-            // Prepare request data
+            $apiUrl = env('OPENROUTER_API_URL', 'https://openrouter.ai/api/v1/chat/completions');
+
+            // Prepare request data for OpenRouter chat completions API
             $requestData = [
-                'latitude' => $geoCodingDTO->getLatitude(),
-                'longitude' => $geoCodingDTO->getLongitude(),
-                'language' => 'en',
-                'stream' => true // Enable streaming
+                "model" => "google/gemini-2.0-flash-lite-001", // or any other model you prefer
+                "messages" => [
+                    [
+                        "role" => "assistant",
+                        "content" => "check this latlng and match with this list of cities - Latitude: ".$geoCodingDTO->getLatitude() . ", Longitude: " . $geoCodingDTO->getLongitude().'Please match with one of this cities at the end only return as city_id and state_id :'."$cities"
+                    ]
+                ],
+                "stream" => false, // Disable streaming for easier parsing
+                "max_tokens" => 500,
+                "temperature" => 0.1,
+                "response_format" => ["type" => "json_object"],
             ];
-            
+
             // Use curl for better control over the request
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $apiUrl);
@@ -43,13 +50,13 @@ class OpenRouterGeoService
                 'Content-Type: application/json',
                 'Accept: application/json'
             ]);
-            
+
             // Execute the request
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
-            
+
             // Check for curl errors
             if ($response === false) {
                 Log::error('OpenRouter API connection error: ' . $error);
@@ -59,7 +66,7 @@ class OpenRouterGeoService
                     'data' => null
                 ];
             }
-            
+
             // Check for HTTP errors
             if ($httpCode < 200 || $httpCode >= 300) {
                 Log::error('OpenRouter API HTTP error: ' . $httpCode . ' - ' . $response);
@@ -69,7 +76,7 @@ class OpenRouterGeoService
                     'data' => $response ? json_decode($response, true) : null
                 ];
             }
-            
+
             // Process the response
             $data = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -80,11 +87,20 @@ class OpenRouterGeoService
                     'data' => $response
                 ];
             }
-            
+
+            // Extract the content from the OpenRouter response
+            $locationContent = '';
+            if (isset($data['choices'][0]['message']['content'])) {
+                $locationContent = $data['choices'][0]['message']['content'];
+            }
+
             return [
                 'success' => true,
                 'message' => 'Location data retrieved successfully',
-                'data' => $data
+                'data' => [
+                    'raw_response' => $data,
+                    'location_content' => $locationContent
+                ]
             ];
         } catch (Exception $e) {
             Log::error('OpenRouter API exception: ' . $e->getMessage());

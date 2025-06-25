@@ -28,8 +28,10 @@ use Modules\Country\Repositories\CityRepository;
 use Modules\Country\Repositories\CountryRepository;
 use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Shared\OpenRouter\Services\OpenRouterGeoService;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Uuid;
+
 class CompanyProfileService
 {
     public function __construct(
@@ -42,6 +44,7 @@ class CompanyProfileService
         private CityRepository                    $cityRepository,
         private StateRepository                   $stateRepository,
         private CountryRepository                 $countryRepository,
+        private OpenRouterGeoService              $openRouterGeoService,
 
 
     )
@@ -81,29 +84,29 @@ class CompanyProfileService
 
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
-
+        $isAiSupported = false  ;
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
         $neighborhood = "";
-        $city = "";
-        $state = "";
-
-        $country = "";
+        $cityName = "";
+        $stateName = "";
+        $countryShortName = "";
         $postalCode = "";
         $route = "";
+
         foreach ($response['results'] as $key => $value) {
             if ($value['types'][0] == "political") {
                 $neighborhood = $value["address_components"][0]["long_name"];
             }
             if ($value['types'][0] == "locality") {
-                $city = $value["address_components"][0]["long_name"];
+                $cityName = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "administrative_area_level_1") {
-                $state = $value["address_components"][0]["long_name"];
+                $stateName = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "country") {
-                $country = $value["address_components"][0]["long_name"];
+                $countryShortName = $value["address_components"][0]["short_name"];
             }
 
             if ($value['types'][0] == "postal_code") {
@@ -113,9 +116,11 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
-        [$country, $state, $city] = $this->getFromDB($country, $city, $state);
-        if ($country) {
+        [$country, $state, $city] = $this->getFromDB($countryShortName, $cityName, $stateName);
+        // Use OpenRouter to get location data for additional verification
 
+
+        if ($country) {
             if ((!request()->has("in_general")|| request()->in_general == 0) &&($country->id != $geoCodingDTO->getBranch()->address->country_id)) {
                 throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
 
@@ -126,15 +131,33 @@ class CompanyProfileService
         if(empty($state) && !empty($city) && !empty($country)){
             $state = $city->state;
         }
-        return [
+        if(empty($state) || empty($city)){
+            try {
+                $data = $this->openRouterGeoService->getLocationFromOpenRouter(
+                    $geoCodingDTO,
+                    $this->cityRepository->getCitiesForCountryWithState(
+                        $country->id
+                    )
+                );
+                $locationData = (json_decode($data['data']['location_content'], true)[0]);
+                $city = $this->cityRepository->getCity($locationData['city_id']);
+                $state = $this->stateRepository->getState($locationData['state_id']);
+                $isAiSupported = true;
+            }catch (\Exception $e){
+
+            }
+        }
+        // Return the location data along with comparison results
+        $locationData = [
             $country,
             $state,
             $city,
             $neighborhood,
             $postalCode,
             $route,
+            $isAiSupported
         ];
-
+        return $locationData;
     }
 
     private function getFromDB($country, $city, $state)

@@ -71,7 +71,10 @@ class CountryRepository extends BaseRepository
 
     public function findBySimplifiedWay($simplifiedName):?Country
     {
-        $country = $this->model->whereRaw('LOWER(name) = ?', [$simplifiedName])->first();
+        $country = $this->model
+            ->whereRaw('LOWER(iso2) = ?', [$simplifiedName])
+            ->orWhereRaw('LOWER(iso3) = ?', [$simplifiedName])
+            ->first();
         return $country;
 
     }
