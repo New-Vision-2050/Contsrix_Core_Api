@@ -41,6 +41,12 @@ class PermissionController extends Controller
         return Json::items( PermissionPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
+    public function permissionAsLookup(GetPermissionListRequest $request): JsonResponse
+    {
+        $list = $this->permissionService->listPermissionAsLookup();
+        return Json::item($list);
+    }
+
     public function show(GetPermissionRequest $request): JsonResponse
     {
         $item = $this->permissionService->get(Uuid::fromString($request->route('id')));
@@ -87,7 +93,7 @@ class PermissionController extends Controller
     public function setStatus(SetStatusPermissionRequest $request): JsonResponse
     {
         $permission = $this->permissionService->setStatus(
-            $request->getPermissionId(), 
+            $request->getPermissionId(),
             $request->getStatus()
         );
 

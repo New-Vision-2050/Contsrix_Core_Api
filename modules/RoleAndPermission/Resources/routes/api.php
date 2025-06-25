@@ -18,6 +18,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class],"prefix"=>"permissions"], function () {
     Route::get('/', [PermissionController::class, 'index']);
+    Route::get('/lookup', [PermissionController::class, 'permissionAsLookup']);
     Route::post('/', [PermissionController::class, 'store']);
 
     Route::get('/{id}', [PermissionController::class, 'show']);
