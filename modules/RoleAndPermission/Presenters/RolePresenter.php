@@ -33,7 +33,7 @@ class RolePresenter extends AbstractPresenter
             // Apply translation logic like the Blade template
             if (count($nameParts) >= 2) {
                 // Skip the first part (module name) and translate the rest
-                for ($i = 0; $i < count($nameParts); $i++) {
+                for ($i = count($nameParts)-1; $i >=0; $i--) {
                     $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
                 }
             } elseif (count($nameParts) == 1) {
