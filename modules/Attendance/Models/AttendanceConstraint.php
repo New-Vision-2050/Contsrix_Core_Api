@@ -91,6 +91,7 @@ class AttendanceConstraint extends Model implements Auditable
     const LOCATION_OFFICE_VERIFICATION = 'office_verification';
     const LOCATION_REMOTE_ZONES = 'remote_zones';
     const LOCATION_MULTI_LOCATION = 'multi_location';
+    const LOCATION_RADIUS_ENFORCEMENT = 'radius_enforcement';
 
     // Constraint name constants for time
     const TIME_SHIFT_ENFORCEMENT = 'shift_enforcement';

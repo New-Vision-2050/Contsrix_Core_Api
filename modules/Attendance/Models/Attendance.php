@@ -248,4 +248,41 @@ class Attendance extends Model implements Auditable
 
         return "{$hours}h {$minutes}m";
     }
+    
+    /**
+     * End the current shift automatically based on constraint enforcement
+     *
+     * @param string $method The method used to end the shift (e.g., 'auto_radius_enforcement', 'auto_time_limit')
+     * @param string $notes Additional notes about why the shift was ended
+     * @param bool $markAbsent Whether to mark the day as absent in attendance records
+     * @return bool Whether the shift was successfully ended
+     */
+    public function endShift(string $method, string $notes, bool $markAbsent = false): bool
+    {
+        if (!$this->isActive()) {
+            return false; // Cannot end an inactive or already completed shift
+        }
+        
+        // Set clock out time to current time
+        $this->clock_out_time = Carbon::now();
+        $this->status = self::STATUS_COMPLETED;
+        $this->shift_end_method = $method;
+        
+        // Append notes with timestamp
+        $timestamp = Carbon::now()->format('Y-m-d H:i:s');
+        $existingNotes = $this->notes ? $this->notes . "\n\n" : '';
+        $this->notes = $existingNotes . "[{$timestamp}] Auto-ended: {$notes}";
+        
+        // If configured to mark day as absent
+        if ($markAbsent) {
+            $this->is_absent = true;
+            $this->absence_reason = "Automatically marked absent due to constraint violation: {$method}";
+        }
+        
+        // Calculate work hours after ending the shift
+        $this->calculateWorkHours();
+        
+        // Save changes
+        return $this->save();
+    }
 }

@@ -6,17 +6,26 @@ namespace Modules\Attendance\Tests\Unit\Services\Specialized;
 
 use PHPUnit\Framework\TestCase;
 use Modules\Attendance\Services\LocationConstraintService;
+use Modules\Attendance\Services\RadiusEnforcementService;
+use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 
 class LocationConstraintServiceTest extends TestCase
 {
     private LocationConstraintService $service;
+    private AttendanceService $attendanceService;
+    private RadiusEnforcementService $radiusService;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new LocationConstraintService();
+        $this->attendanceService = $this->createMock(AttendanceService::class);
+        $this->radiusService = $this->createMock(RadiusEnforcementService::class);
+        $this->service = new LocationConstraintService(
+            $this->attendanceService,
+            $this->radiusService
+        );
     }
 
     /**

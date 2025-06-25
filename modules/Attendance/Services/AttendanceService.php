@@ -288,4 +288,50 @@ class AttendanceService
     {
         return $this->attendanceRepository->getOvertimeRecords($filters, $page, $perPage);
     }
+
+    /**
+     * End shift automatically based on constraint enforcement
+     *
+     * @param string $attendanceId ID of the attendance record to end
+     * @param string $method The method used to end the shift (e.g., 'auto_radius_enforcement', 'auto_time_limit')
+     * @param string $notes Additional notes about why the shift was ended
+     * @param bool $markAbsent Whether to mark the day as absent in attendance records
+     * @return Attendance|bool The updated attendance record or false if the operation failed
+     */
+    public function endShiftAutomatically(string $attendanceId, string $method, string $notes, bool $markAbsent = false): Attendance|bool
+    {
+        $uuid = Uuid::fromString($attendanceId);
+        $attendance = $this->attendanceRepository->getAttendance($uuid);
+        
+        if (!$attendance || !$attendance->isActive()) {
+            return false; // Cannot end an inactive or already completed shift
+        }
+        
+        // Set clock out time to current time
+        $timestamp = Carbon::now();
+        $updateData = [
+            'clock_out_time' => $timestamp,
+            'status' => Attendance::STATUS_COMPLETED,
+            'shift_end_method' => $method,
+            'notes' => ($attendance->notes ? $attendance->notes . "\n\n" : '') . 
+                      "[{$timestamp->format('Y-m-d H:i:s')}] Auto-ended: {$notes}"
+        ];
+        
+        // If configured to mark day as absent
+        if ($markAbsent) {
+            $updateData['is_absent'] = true;
+            $updateData['absence_reason'] = "Automatically marked absent due to constraint violation: {$method}";
+        }
+        
+        // Update the attendance record
+        $attendance = $this->attendanceRepository->updateAttendance($uuid, $updateData);
+        
+        // Calculate work hours after ending the shift
+        if ($attendance) {
+            $attendance->calculateWorkHours();
+            $attendance->save();
+        }
+        
+        return $attendance;
+    }
 }
