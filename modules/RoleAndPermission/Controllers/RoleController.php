@@ -13,6 +13,7 @@ use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
+use Modules\RoleAndPermission\Presenters\RoleWithPermissionPresenter;
 use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
 use Modules\RoleAndPermission\Requests\DeleteRoleRequest;
@@ -48,7 +49,7 @@ class RoleController extends Controller
     {
         $item = $this->roleService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new RolePresenter($item);
+        $presenter = new RoleWithPermissionPresenter($item);
 
         return Json::item($presenter->getData());
     }
@@ -108,7 +109,7 @@ class RoleController extends Controller
     {
         try {
             $role = $this->roleService->setStatus(
-                Uuid::fromString($request->getRoleId()), 
+                Uuid::fromString($request->getRoleId()),
                 $request->getStatus()
             );
 

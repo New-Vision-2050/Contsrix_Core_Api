@@ -39,7 +39,7 @@ class SetStatusRoleRequest extends FormRequest
         return $this->route('id');
     }
 
-    public function getStatus(): bool
+    public function getStatus()
     {
         return $this->get('status');
     }

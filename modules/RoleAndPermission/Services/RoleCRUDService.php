@@ -50,14 +50,14 @@ class RoleCRUDService
      * @return Role
      * @throws ValidationException If attempting to deactivate a role with assigned users
      */
-    public function setStatus($id, bool $status): Role
+    public function setStatus($id,  $status): Role
     {
         if (is_string($id)) {
             $id = \Ramsey\Uuid\Uuid::fromString($id);
         }
 
         $role = $this->repository->getRole($id);
-        
+
         // If trying to deactivate the role, check if any users have this role
         if ($status === false) {
             // Check if role has any users assigned using repository method
@@ -67,7 +67,7 @@ class RoleCRUDService
                 ]);
             }
         }
-        
+
         $this->repository->update($id, ['status' => $status]);
 
         return $role->refresh();
