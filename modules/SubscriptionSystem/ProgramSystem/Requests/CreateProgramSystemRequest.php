@@ -18,6 +18,11 @@ class CreateProgramSystemRequest extends FormRequest
             'features' => 'required|array',
             'features.*.feature_id' => 'required|uuid|exists:features,id',
             'features.*.module_id' => 'required|uuid|exists:modules,id',
+
+            'company_fields' => 'nullable|array',
+            'company_fields.*' => 'uuid|exists:company_fields,id',
+            'business_types' => 'nullable|array',
+            'business_types.*' => 'uuid|exists:business_types,id',
         ];
     }
 
@@ -26,6 +31,8 @@ class CreateProgramSystemRequest extends FormRequest
         return new CreateProgramSystemDTO(
             name: $this->get('name'),
             features: $this->get('features', []),
+            companyFields: $this->get('company_fields', []),
+            businessTypes: $this->get('business_types', []),
         );
     }
 }

@@ -47,4 +47,16 @@ class ProgramSystemRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function toggleIsActive(UuidInterface $id): ProgramSystem
+    {
+        $programSystem = $this->getProgramSystem($id);
+
+        $programSystem->update([
+            'is_active' => !$programSystem->is_active,
+        ]);
+
+        return $programSystem->refresh();
+    }
+
 }

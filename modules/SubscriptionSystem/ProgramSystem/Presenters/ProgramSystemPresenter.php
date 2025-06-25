@@ -21,11 +21,22 @@ class ProgramSystemPresenter extends AbstractPresenter
         return [
             'id' => $this->programSystem->id,
             'name' => $this->programSystem->name,
+            'is_active' => $this->programSystem->is_active,
             'features' => $this->programSystem->features->map(fn($feature) => [
                 'id' => $feature->id,
                 'name' => $feature->name,
                 'module_id' => $feature->pivot->module_id,
-            ])
+            ]),
+            
+            'company_fields' => $this->programSystem->companyFields->map(fn($field) => [
+                'id' => $field->id,
+                'name' => $field->name,
+            ]),
+
+            'business_types' => $this->programSystem->businessTypes->map(fn($type) => [
+                'id' => $type->id,
+                'name' => $type->name,
+            ]),
         ];
     }
 }

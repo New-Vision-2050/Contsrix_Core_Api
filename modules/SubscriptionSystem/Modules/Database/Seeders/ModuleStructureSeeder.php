@@ -10,9 +10,11 @@ use Illuminate\Support\Str;
 use Modules\SubscriptionSystem\Feature\Models\Feature;
 use Modules\SubscriptionSystem\Modules\Models\Module;
 use Spatie\Permission\Models\Permission;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class ModuleStructureSeeder extends Seeder
 {
+    use SeedOnce;
     public function run(): void
     {
         $createModule = function (array $name, string $slug, ?string $parentId = null) {
