@@ -42,6 +42,7 @@ class AdminRequestCRUDService
 
         $sequence = count($this->repository->getAllForSerialNumber()) + 1;
 
+
         return "REQ-{$year}{$month}-" . str_pad((string)$sequence, 5, '0', STR_PAD_LEFT);
     }
 }

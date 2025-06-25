@@ -69,7 +69,18 @@ class CompanyUserRepository extends BaseRepository
 
                 $query->where("companies.id", $companyId);
             });
-        });//TODO filter with branches very important
+        })->when($branchId != null, function ($query) use ($branchId, $type) {
+            $query->whereHas('users', function ($userQuery) use ($branchId, $type) {
+                $userQuery->whereHas('companyUserCompanyManagementHierarchies', function ($hierarchyQuery) use ($branchId, $type) {
+                    $hierarchyQuery->where('management_hierarchy_id', $branchId)
+                        ->when($type != null, function ($q) use ($type) {
+                            $q->whereHas('companyUserCompany', function ($companyUserCompanyQuery) use ($type) {
+                                $companyUserCompanyQuery->where('role', $type);
+                            });
+                        });
+                });
+            });
+        });
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
@@ -212,6 +223,7 @@ class CompanyUserRepository extends BaseRepository
 
             // Create or update company user role
             $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore($companyRole + ["global_company_user_id" => $companyUser->global_id]);
+
 
             // Handle branch assignments
             $mainBranchId = $this->handleBranchAssignments($user, $companyUserCompany, $companyRole, $branches);
@@ -423,6 +435,7 @@ class CompanyUserRepository extends BaseRepository
             // Create single branch association for employee
             $this->createBranchAssociation($user, $companyUserCompany, $mainBranchData['branchId']);
         }
+
 
         return $mainBranchData['branchId'];
     }

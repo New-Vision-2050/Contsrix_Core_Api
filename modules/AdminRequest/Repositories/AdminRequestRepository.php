@@ -52,6 +52,7 @@ class AdminRequestRepository extends BaseRepository
     }
 
     public function getAllForSerialNumber()
+
     {
        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
         return $this->model->where("company_id", $company->id)->get();
