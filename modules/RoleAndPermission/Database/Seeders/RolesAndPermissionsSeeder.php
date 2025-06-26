@@ -31,7 +31,6 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->ensureCompanyHasPermissions($companyId);
 
 
-
         // Create roles for the current company
         $this->createCompanyRoles($companyId);
     }
@@ -74,14 +73,14 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdminRole->syncPermissions($permissions);
         $adminRole->syncPermissions($permissions);
 
-        // Assign super-admin role to the first user if not in tenant environment
-        if (!tenant()) {
-            $user = User::first();
-            if ($user) {
-                setPermissionsTeamId($companyId);
-                $user->assignRole('super-admin');
-            }
+        // Assign super-admin role to the first userZ
+
+        $user = User::first();
+        if ($user) {
+            setPermissionsTeamId($companyId);
+            $user->assignRole('super-admin');
         }
+
     }
 
     /**
@@ -236,15 +235,9 @@ class RolesAndPermissionsSeeder extends Seeder
             "company-profile.branch.view",
 
 
-
-
-
             "company-profile.official-document.create",
             "company-profile.official-document.update",
             "company-profile.official-document.delete",
-
-
-
 
 
             // Add more default permissions for your modules here
