@@ -26,7 +26,7 @@ class VerficationDataRepository extends BaseRepository
     {
         $user = $this->userRepository->getUser($userId);
 
-        return $this->updateOrCreate(["user_id"=>$userId], ["user_id"=>$userId,"token"=> hash('sha256', time() . str()->random(8) .$user->email ),"data"=>$data,"expires_at"=>Carbon::now()->addMinutes(5)]);
+        return $this->updateOrCreate(["user_id"=>$userId], ["user_id"=>$userId,"token"=> hash('sha256', time() . str()->random(8) .$user->email ),"data"=>$data,"expires_at"=>Carbon::now()->addMinutes(10)]);
     }
 
     public function validateToken($token)
