@@ -16,7 +16,6 @@ use Modules\Setting\Models\Driver;
 class City extends Model
 {
     use HasFactory;
-    use UuidTrait;
     use BaseFilterable;
 
     //use HasTranslations;
@@ -24,7 +23,6 @@ class City extends Model
 
     //public array $translatable = [];
 
-    public $incrementing = false;
 
     protected $table = 'cities';
 
@@ -71,15 +69,15 @@ class City extends Model
     public function getFullAddressAttribute(): string
     {
         $address = $this->name;
-        
+
         if ($this->state) {
             $address .= ', ' . $this->state->name;
         }
-        
+
         if ($this->country) {
             $address .= ', ' . $this->country->name;
         }
-        
+
         return $address;
     }
 
@@ -124,21 +122,21 @@ class City extends Model
     public function distanceTo($latitude, $longitude): float
     {
         $earthRadius = 6371; // Earth's radius in kilometers
-        
+
         $latFrom = deg2rad((float) $this->latitude);
         $lonFrom = deg2rad((float) $this->longitude);
         $latTo = deg2rad((float) $latitude);
         $lonTo = deg2rad((float) $longitude);
-        
+
         $latDelta = $latTo - $latFrom;
         $lonDelta = $lonTo - $lonFrom;
-        
+
         $a = sin($latDelta / 2) * sin($latDelta / 2) +
              cos($latFrom) * cos($latTo) *
              sin($lonDelta / 2) * sin($lonDelta / 2);
-        
+
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
+
         return $earthRadius * $c;
     }
 }

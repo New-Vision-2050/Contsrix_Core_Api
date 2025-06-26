@@ -28,6 +28,15 @@ class StateRepository extends BaseRepository
         return $this->paginatedList(['status' => 1], $page, $perPage);
     }
 
+    public function getStatesWithCities($countryId = null)
+    {
+        return $this->model->with('cities:id,name,state_id')
+            ->where('country_id', $countryId)
+            ->where('flag', 1)
+            ->orderBy('name')
+            ->get(['id','name']);
+    }
+
     public function getState($id): State
     {
         return $this->findOneByOrFail([
