@@ -104,14 +104,15 @@ class CompanyProfileController extends Controller
                 $city,
                 $neighborhood,
                 $postalCode,
-
-                $route
+                $route,
+                $aiSupported
             ] = $this->companyProfileService->geoCoding($geoCodingDTO);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(),httpStatus:  $e->getCode());
 
         }
-        return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route))->getData());
+
+        return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route,$aiSupported))->getData());
     }
 
     /**

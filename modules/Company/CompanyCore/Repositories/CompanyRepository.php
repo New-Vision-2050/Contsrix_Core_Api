@@ -209,4 +209,12 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->latest('created_at')->with($this->relations)->first();
     }
+
+    /**
+     * Count records by criteria
+     */
+    public function countWhere(array $conditions): int
+    {
+        return $this->model->where($conditions)->count();
+    }
 }

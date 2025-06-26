@@ -18,7 +18,12 @@ class DeleteCompanyUserHandler
 
     public function handle(UuidInterface $id)
     {
+
         $this->repository->deleteCompanyUser($id);
-        event(new UserDeleted(["id"=>$id]));
+        try {
+            event(new UserDeleted(["id" => $id]));
+        } catch (\Exception $e) {
+            //do nothing
+        }
     }
 }
