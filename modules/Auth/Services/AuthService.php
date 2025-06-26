@@ -338,7 +338,7 @@ class AuthService
         }
         tenancy()->end();
         tenancy()->initialize($company->id);
-        $user = $this->userCRUDService->getUserByIdentifier("admin@constrix-nv.com");
+        $user = $this->userCRUDService->getUserBy(['email' => "admin@constrix-nv.com"]);
         if (empty($user)) {
             $user = User::firstOrCreate(
                 ['email' => 'admin@constrix-nv.com',],
