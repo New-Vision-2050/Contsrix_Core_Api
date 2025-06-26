@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
 use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
@@ -40,9 +41,11 @@ use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSe
 use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\UpdatePrivilegeModulesSeederTableSeeder;
 use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
-use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsNewSeederTableSeeder;
+use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
+use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
+use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -98,13 +101,14 @@ class DatabaseSeeder extends Seeder
         $this->call(RegistrationFormsSeeder::class);
         $this->call(SubEntityDatabaseSeeder::class);
         $this->call(BankTypeAccountSeederTableSeeder::class);
+        $this->call(SeedersMaritalStatusSeederTableSeeder::class);
         $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
         $this->call(AcademicSpecializationsUpdateSeederTableSeeder::class);
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
         $this->call(BanksOtherModulesSeederTableSeeder::class);
         $this->call(UniversitiesOtherSeederTableSeeder::class);
+        $this->call(ModuleStructureSeeder::class);
+        $this->call(BusinessTypeSeederTableSeeder::class);
 
-//        $this->call(ModuleStructureSeeder::class);
-        // $this->call(FeatureDatabaseSeeder::class);
     }
 }
