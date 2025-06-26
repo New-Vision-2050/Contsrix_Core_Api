@@ -167,6 +167,46 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.employee.export',
 
 
+
+            'user-profile.personal-information.update',
+            'user-profile.contact-information.update',
+            'user-profile.passport-information.update',
+
+            'user-profile.bank-information.create',
+            'user-profile.bank-information.update',
+            'user-profile.bank-information.delete',
+
+            'user-profile.contact-information.update',
+            'user-profile.address-information.update',
+
+
+            'user-profile.marital-status.create',
+            'user-profile.marital-status.update',
+            'user-profile.marital-status.delete',
+
+            'user-profile.social-media-account.update',
+
+            'user-profile.border-number-information.update',
+
+
+            'user-profile.work-license.update',
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // Company module permissions
             'companies.company.view',
             'companies.company.list',
@@ -238,6 +278,9 @@ class RolesAndPermissionsSeeder extends Seeder
             "company-profile.official-document.create",
             "company-profile.official-document.update",
             "company-profile.official-document.delete",
+
+
+
 
 
             // Add more default permissions for your modules here

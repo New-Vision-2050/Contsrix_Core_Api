@@ -51,6 +51,18 @@ return [
     'legal-data' => 'البيانات القانونية',
     'address' => 'العنوان',
     'official-document' => 'وثيقة رسمية',
+
+    // User Profile
+    'user-profile' => 'الملف الشخصي للمستخدم',
+    'personal-information' => 'المعلومات الشخصية',
+    'contact-information' => 'معلومات الاتصال',
+    'passport-information' => 'معلومات جواز السفر',
+    'bank-information' => 'المعلومات البنكية',
+    'address-information' => 'معلومات العنوان',
+    'marital-status' => 'الحالة الاجتماعية',
+    'social-media-account' => 'حسابات التواصل الاجتماعي',
+    'border-number-information' => 'معلومات رقم الحدود',
+    'work-license' => 'رخصة العمل',
     
     // Module names
     'settings' => 'الإعدادات',
