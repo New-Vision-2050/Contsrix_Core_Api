@@ -192,6 +192,8 @@ class CompanyRepository extends BaseRepository
         ]))->first();
     }
 
+
+
     public function getAllWithRelations(array $relations = []): Collection
     {
         $query = $this->model->with($relations)->where(['is_central_company' => 0]);
