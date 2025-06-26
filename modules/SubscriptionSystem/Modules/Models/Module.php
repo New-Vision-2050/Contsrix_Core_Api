@@ -46,15 +46,15 @@ class Module extends Model
         return $this->hasMany(Feature::class);
     }
 
-    /**
-     * Get the packages that include this module.
-     *
-     * @return BelongsToMany<Package>
-     */
-    public function packages(): BelongsToMany
-    {
-        return $this->belongsToMany(Package::class);
-    }
+    // /**
+    //  * Get the packages that include this module.
+    //  *
+    //  * @return BelongsToMany<Package>
+    //  */
+    // public function packages(): BelongsToMany
+    // {
+    //     return $this->belongsToMany(Package::class);
+    // }
 
     public function children(): HasMany
     {

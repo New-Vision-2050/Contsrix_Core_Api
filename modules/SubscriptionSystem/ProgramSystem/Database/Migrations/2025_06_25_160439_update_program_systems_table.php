@@ -10,10 +10,9 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('modules', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('slug');
-            $table->timestamps();
+        Schema::table('program_systems', function (Blueprint $table) {
+            
+            $table->tinyInteger('is_active')->default(1);
         });
     }
 };

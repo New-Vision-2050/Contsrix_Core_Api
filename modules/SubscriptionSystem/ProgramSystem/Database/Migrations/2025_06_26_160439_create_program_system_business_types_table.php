@@ -10,9 +10,10 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('modules', function (Blueprint $table) {
+        Schema::create('program_system_business_types', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('slug');
+            $table->foreignUuid('program_system_id')->constrained('program_systems')->onDelete('cascade');
+            $table->foreignUuid('business_type_id')->constrained('business_types')->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -10,10 +10,12 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('modules', function (Blueprint $table) {
+        Schema::create('program_system_company_field', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('slug');
+            $table->foreignUuid('program_system_id')->constrained('program_systems')->onDelete('cascade');
+            $table->foreignUuid('company_field_id')->constrained('company_fields')->onDelete('cascade');
             $table->timestamps();
         });
+
     }
 };

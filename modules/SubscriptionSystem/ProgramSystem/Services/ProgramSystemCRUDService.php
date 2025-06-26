@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Modules\SubscriptionSystem\ProgramSystem\DTO\CreateProgramSystemDTO;
 use Modules\SubscriptionSystem\ProgramSystem\Models\ProgramSystem;
 use Modules\SubscriptionSystem\ProgramSystem\Repositories\ProgramSystemRepository;
+use PhpParser\Node\Stmt\Return_;
 use Ramsey\Uuid\UuidInterface;
 
 class ProgramSystemCRUDService
@@ -19,7 +20,7 @@ class ProgramSystemCRUDService
 
     public function create(CreateProgramSystemDTO $createProgramSystemDTO): ProgramSystem
     {
-        $programSystem =$this->repository->createProgramSystem($createProgramSystemDTO->toArray());
+        $programSystem = $this->repository->createProgramSystem($createProgramSystemDTO->toArray());
 
          foreach ($createProgramSystemDTO->features as $item) {
             $programSystem->features()->attach($item['feature_id'], [
@@ -27,9 +28,21 @@ class ProgramSystemCRUDService
             ]);
         }
 
+        foreach ($createProgramSystemDTO->companyFields as $id) {
+            $programSystem->companyFields()->attach($id);
+        }
+
+        foreach ($createProgramSystemDTO->businessTypes as $id) {
+            $programSystem->businessTypes()->attach($id);
+        }
+
         return $programSystem;
     }
+    public function toggleIsActive(UuidInterface $id): ProgramSystem
+    {
+      return  $this->repository->toggleIsActive($id);
 
+    }
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(

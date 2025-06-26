@@ -2,17 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Modules\SubscriptionSystem\ProgramSystem\DTO;
+namespace Modules\Company\BusinessType\DTO;
 
 use Ramsey\Uuid\UuidInterface;
 
-class CreateProgramSystemDTO
+class CreateBusinessTypeDTO
 {
     public function __construct(
-        public array $name,
-        public array $features,
-        public array $companyFields = [],
-        public array $businessTypes = [],
+        public string $name,
+        public string $description
     ) {
     }
 
@@ -20,6 +18,7 @@ class CreateProgramSystemDTO
     {
         return [
             'name' => $this->name,
+            'description'=> $this->description
         ];
     }
 }
