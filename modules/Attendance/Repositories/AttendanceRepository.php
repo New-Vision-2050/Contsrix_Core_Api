@@ -71,13 +71,13 @@ class AttendanceRepository extends BaseRepository
     {
         $attendance = $this->getAttendance($id);
         $attendance->update($data);
-        
+
         // Recalculate work hours if clock times are updated
         if (isset($data['clock_out_time']) || isset($data['break_end_time'])) {
             $attendance->calculateWorkHours();
             $attendance->save();
         }
-        
+
         return $attendance->fresh();
     }
 
@@ -92,7 +92,7 @@ class AttendanceRepository extends BaseRepository
     /**
      * Get current active attendance for user
      */
-    public function getCurrentAttendance(string $userId): ?Attendance
+    public function getCurrentAttendance(UuidInterface $userId): ?Attendance
     {
         return Attendance::where('user_id', $userId)
             ->whereDate('clock_in_time', today())
@@ -151,7 +151,7 @@ class AttendanceRepository extends BaseRepository
     public function getLateArrivals(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
         $filters['isLate'] = true;
-        
+
         $query = $this->model->newQuery()->with(['user', 'company']);
         $query->filter($filters);
         $query->orderBy('clock_in_time', 'desc');
@@ -172,7 +172,7 @@ class AttendanceRepository extends BaseRepository
     public function getEarlyDepartures(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
         $filters['isEarlyLeave'] = true;
-        
+
         $query = $this->model->newQuery()->with(['user', 'company']);
         $query->filter($filters);
         $query->orderBy('clock_in_time', 'desc');
@@ -193,7 +193,7 @@ class AttendanceRepository extends BaseRepository
     public function getOvertimeRecords(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
         $filters['overtimeHoursFrom'] = 0.01; // Greater than 0
-        
+
         $query = $this->model->newQuery()->with(['user', 'company']);
         $query->filter($filters);
         $query->orderBy('overtime_hours', 'desc');

@@ -6,6 +6,8 @@ namespace Modules\Attendance\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Attendance\DTO\ClockOutDTO;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 class ClockOutRequest extends FormRequest
 {
@@ -104,11 +106,11 @@ class ClockOutRequest extends FormRequest
     public function validated($key = null, $default = null): array
     {
         $validated = parent::validated($key, $default);
-        
+
         // Ensure user and company IDs are included
         $validated['user_id'] = auth()->id();
         $validated['company_id'] = auth()->user()->company_id ?? tenant('id');
-        
+
         return $validated;
     }
 
@@ -118,10 +120,10 @@ class ClockOutRequest extends FormRequest
     public function createClockOutDTO(): ClockOutDTO
     {
         $validated = $this->validated();
-        
+
         return new ClockOutDTO(
-            user_id: $validated['user_id'],
-            company_id: $validated['company_id'],
+            user_id: Uuid::fromString((string)$validated['user_id']),
+            company_id: Uuid::fromString((string) $validated['company_id']),
             clock_out_time: $validated['clock_out_time'],
             location: $validated['location'] ?? null,
             notes: $validated['notes'] ?? null,

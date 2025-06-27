@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\DTO;
 
+use Ramsey\Uuid\UuidInterface;
+
 class ClockInDTO
 {
     public function __construct(
-        public string $user_id,
-        public string $company_id,
+        public UuidInterface $user_id,
+        public UuidInterface $company_id,
         public string $clock_in_time,
         public ?array $location = null,
         public ?string $notes = null,
@@ -29,12 +31,12 @@ class ClockInDTO
         ];
     }
 
-    public function getUserId(): string
+    public function getUserId(): UuidInterface
     {
         return $this->user_id;
     }
 
-    public function getCompanyId(): string
+    public function getCompanyId(): UuidInterface
     {
         return $this->company_id;
     }

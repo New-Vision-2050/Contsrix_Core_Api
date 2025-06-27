@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendance_constraints', function (Blueprint $table) {
-            $table->uuid('branch_id')->nullable()->after('department_id');
+            $table->unsignedBigInteger('branch_id')->nullable()->after('department_id');
             $table->boolean('inherit_from_parent')->default(false)->after('is_active');
-            
+
             // Add index for branch-based queries
             $table->index(['company_id', 'branch_id', 'is_active']);
             $table->index(['branch_id', 'constraint_type']);
-            
+
             // Foreign key constraint to management_hierarchies table
             $table->foreign('branch_id')->references('id')->on('management_hierarchies')->onDelete('cascade');
         });

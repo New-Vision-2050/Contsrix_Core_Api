@@ -11,67 +11,66 @@ class AttendancePresenter extends AbstractPresenter
 {
     public function __construct(private Attendance $attendance)
     {
-        parent::__construct($attendance);
     }
 
-    public function getData(): array
+    public function present(bool $isListing = false): array
     {
         return [
             'id' => $this->attendance->id,
             'user_id' => $this->attendance->user_id,
             'company_id' => $this->attendance->company_id,
-            
+
             // Clock times
             'clock_in_time' => $this->attendance->clock_in_time?->format('Y-m-d H:i:s'),
             'clock_out_time' => $this->attendance->clock_out_time?->format('Y-m-d H:i:s'),
             'break_start_time' => $this->attendance->break_start_time?->format('Y-m-d H:i:s'),
             'break_end_time' => $this->attendance->break_end_time?->format('Y-m-d H:i:s'),
-            
+
             // Calculated hours
             'total_work_hours' => (float) $this->attendance->total_work_hours,
             'total_break_hours' => (float) $this->attendance->total_break_hours,
             'overtime_hours' => (float) $this->attendance->overtime_hours,
-            
+
             // Status flags
             'is_late' => $this->attendance->is_late,
             'is_early_departure' => $this->attendance->is_early_departure,
             'late_minutes' => $this->attendance->late_minutes,
             'early_departure_minutes' => $this->attendance->early_departure_minutes,
-            
+
             // Status and approval
             'status' => $this->attendance->status,
             'approved_by' => $this->attendance->approved_by,
             'approved_at' => $this->attendance->approved_at?->format('Y-m-d H:i:s'),
-            
+
             // Location data
             'clock_in_location' => $this->attendance->clock_in_location,
             'clock_out_location' => $this->attendance->clock_out_location,
-            
+
             // Additional info
             'notes' => $this->attendance->notes,
             'ip_address' => $this->attendance->ip_address,
-            
+
             // Timestamps
             'created_at' => $this->attendance->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->attendance->updated_at?->format('Y-m-d H:i:s'),
-            
+
             // Relationships
             'user' => $this->attendance->user ? [
                 'id' => $this->attendance->user->id,
                 'name' => $this->attendance->user->name,
                 'email' => $this->attendance->user->email,
             ] : null,
-            
+
             'company' => $this->attendance->company ? [
                 'id' => $this->attendance->company->id,
                 'name' => $this->attendance->company->name,
             ] : null,
-            
+
             'approved_by_user' => $this->attendance->approvedBy ? [
                 'id' => $this->attendance->approvedBy->id,
                 'name' => $this->attendance->approvedBy->name,
             ] : null,
-            
+
             // Computed properties
             'work_date' => $this->attendance->clock_in_time?->format('Y-m-d'),
             'is_on_break' => $this->attendance->break_start_time && !$this->attendance->break_end_time,

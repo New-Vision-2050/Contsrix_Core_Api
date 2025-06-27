@@ -26,7 +26,7 @@ class AttendanceService
     {
         // Check if user is already clocked in
         $existingAttendance = $this->attendanceRepository->getCurrentAttendance($clockInDTO->getUserId());
-        
+
         if ($existingAttendance && !$existingAttendance->clock_out_time) {
             throw AttendanceException::alreadyClockedIn();
         }
@@ -53,7 +53,7 @@ class AttendanceService
     {
         // Get current attendance
         $attendance = $this->attendanceRepository->getCurrentAttendance($clockOutDTO->getUserId());
-        
+
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
@@ -65,7 +65,7 @@ class AttendanceService
         // Validate clock out time
         $clockOutTime = Carbon::parse($clockOutDTO->getClockOutTime());
         $clockInTime = Carbon::parse($attendance->clock_in_time);
-        
+
         if ($clockOutTime->lt($clockInTime)) {
             throw AttendanceException::invalidClockOutTime();
         }
@@ -78,7 +78,8 @@ class AttendanceService
             'status' => 'completed'
         ];
 
-        return $this->attendanceRepository->update($attendance->id, $updateData);
+         $this->attendanceRepository->update($attendance->id, $updateData);
+         return $attendance->refresh();
     }
 
     /**
@@ -87,7 +88,7 @@ class AttendanceService
     public function startBreak(string $userId, ?string $notes = null): Attendance
     {
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
-        
+
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
@@ -110,7 +111,7 @@ class AttendanceService
     public function endBreak(string $userId, ?string $notes = null): Attendance
     {
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
-        
+
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
@@ -185,7 +186,7 @@ class AttendanceService
     {
         $uuid = Uuid::fromString($attendanceId);
         $attendance = $this->attendanceRepository->getAttendance($uuid);
-        
+
         // Check if attendance is from previous days and prevent modification
         if (Carbon::parse($attendance->clock_in_time)->isYesterday() || Carbon::parse($attendance->clock_in_time)->isPast()) {
             if (!Carbon::parse($attendance->clock_in_time)->isToday()) {
@@ -203,7 +204,7 @@ class AttendanceService
     {
         $uuid = Uuid::fromString($attendanceId);
         $attendance = $this->attendanceRepository->getAttendance($uuid);
-        
+
         if ($attendance->status === 'approved') {
             throw AttendanceException::attendanceAlreadyApproved();
         }
@@ -225,7 +226,7 @@ class AttendanceService
     {
         $uuid = Uuid::fromString($attendanceId);
         $attendance = $this->attendanceRepository->getAttendance($uuid);
-        
+
         if ($attendance->status === 'approved') {
             throw AttendanceException::cannotRejectApprovedAttendance();
         }
@@ -247,7 +248,7 @@ class AttendanceService
     {
         $uuid = Uuid::fromString($attendanceId);
         $attendance = $this->attendanceRepository->getAttendance($uuid);
-        
+
         if ($attendance->status === 'approved') {
             throw AttendanceException::cannotDeleteApprovedAttendance();
         }
@@ -302,36 +303,36 @@ class AttendanceService
     {
         $uuid = Uuid::fromString($attendanceId);
         $attendance = $this->attendanceRepository->getAttendance($uuid);
-        
+
         if (!$attendance || !$attendance->isActive()) {
             return false; // Cannot end an inactive or already completed shift
         }
-        
+
         // Set clock out time to current time
         $timestamp = Carbon::now();
         $updateData = [
             'clock_out_time' => $timestamp,
             'status' => Attendance::STATUS_COMPLETED,
             'shift_end_method' => $method,
-            'notes' => ($attendance->notes ? $attendance->notes . "\n\n" : '') . 
+            'notes' => ($attendance->notes ? $attendance->notes . "\n\n" : '') .
                       "[{$timestamp->format('Y-m-d H:i:s')}] Auto-ended: {$notes}"
         ];
-        
+
         // If configured to mark day as absent
         if ($markAbsent) {
             $updateData['is_absent'] = true;
             $updateData['absence_reason'] = "Automatically marked absent due to constraint violation: {$method}";
         }
-        
+
         // Update the attendance record
         $attendance = $this->attendanceRepository->updateAttendance($uuid, $updateData);
-        
+
         // Calculate work hours after ending the shift
         if ($attendance) {
             $attendance->calculateWorkHours();
             $attendance->save();
         }
-        
+
         return $attendance;
     }
 }

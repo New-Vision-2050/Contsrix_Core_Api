@@ -7,6 +7,7 @@ namespace Modules\Attendance\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Attendance\DTO\ClockInDTO;
+use Ramsey\Uuid\Uuid;
 
 class ClockInRequest extends FormRequest
 {
@@ -105,11 +106,11 @@ class ClockInRequest extends FormRequest
     public function validated($key = null, $default = null): array
     {
         $validated = parent::validated($key, $default);
-        
+
         // Ensure user and company IDs are included
         $validated['user_id'] = auth()->id();
         $validated['company_id'] = auth()->user()->company_id ?? tenant('id');
-        
+
         return $validated;
     }
 
@@ -119,10 +120,10 @@ class ClockInRequest extends FormRequest
     public function createClockInDTO(): ClockInDTO
     {
         $validated = $this->validated();
-        
+
         return new ClockInDTO(
-            user_id: $validated['user_id'],
-            company_id: $validated['company_id'],
+            user_id: Uuid::fromString((string) $validated['user_id']),
+            company_id: Uuid::fromString((string) $validated['company_id']),
             clock_in_time: $validated['clock_in_time'],
             location: $validated['location'] ?? null,
             notes: $validated['notes'] ?? null,
