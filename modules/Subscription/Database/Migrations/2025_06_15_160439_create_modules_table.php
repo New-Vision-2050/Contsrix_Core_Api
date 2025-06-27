@@ -12,9 +12,20 @@ return new class extends Migration
     {
         Schema::create('modules', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->uuid('module_id')->nullable(); // parent module
             $table->json('name');
-            $table->string('slug');
+            $table->string('slug')->unique();
             $table->timestamps();
+
+            $table->foreign('module_id')
+                  ->references('id')
+                  ->on('modules')
+                  ->onDelete('cascade');
         });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('modules');
     }
 };
