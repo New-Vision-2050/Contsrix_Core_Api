@@ -6,7 +6,6 @@ namespace Modules\Company\ManagementHierarchy\Models;
 
 use App\Traits\CalculateTreeManagementHierarchy;
 use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Cache;
@@ -35,17 +34,16 @@ class ManagementHierarchy extends Model
     //use SoftDeletes;
 
     //public array $translatable = [];
-    protected $primaryKey = 'id';
 
     protected $table = "management_hierarchies";
 
     protected $with = ["user"];
 
-    public $incrementing = false;
+    public $incrementing = true;
 
+    protected $keyType = 'int';
 
     protected $fillable = [
-        "id",
         'name',
         'parent_id',
         'company_id',
