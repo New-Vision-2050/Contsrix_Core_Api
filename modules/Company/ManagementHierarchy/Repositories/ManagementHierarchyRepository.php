@@ -47,11 +47,7 @@ class ManagementHierarchyRepository extends BaseRepository
     public function getAll()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-        $managementHierarchy = null;
-        if (request()->has("parent_children_id")) {
-            $managementHierarchy = $this->model->where("id", request()->parent_children_id)->where("company_id", $company->id)->first();
 
-        }
         if (request()->has("branch_id")) {
             return $this->model->where("company_id", $company->id)->where("type", "management")->whereHas("detail", function ($query) {
 
@@ -60,11 +56,31 @@ class ManagementHierarchyRepository extends BaseRepository
             })->get();
         }
 
-        return $this->model->filter(request()->all())
-            ->when(request()->has("parent_children_id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
-                $query->whereSelfOrDescendantOf($managementHierarchy);
+        $query = $this->model->filter(request()->all());
 
-            })->where("company_id", $company->id)->get();
+        if (request()->has("parent_children_id")) {
+            $parentNode = $this->model->where("id", request()->parent_children_id)
+                ->where("company_id", $company->id)
+                ->first();
+
+            if ($parentNode) {
+                $query->whereSelfOrDescendantOf($parentNode);
+            }
+        }
+
+        if (request()->has("ignore_branch_id")) {
+            $ignoredNode = $this->model->where("id", request()->ignore_branch_id)
+                ->where("company_id", $company->id)
+                ->first();
+
+            if ($ignoredNode) {
+                $query->whereDoesntHave("detail",function ($q) use ($ignoredNode) {
+                    $q->where("branch_id",request()->ignore_branch_id);
+                });
+            }
+        }
+
+        return $query->where("company_id", $company->id)->get();
     }
 
     public function getTree()

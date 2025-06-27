@@ -23,4 +23,9 @@ class ManagementHierarchyFilter extends SearchModelFilter
     {
         return $this->where('parent_id', $parentId);
     }
+
+    public function isMain($isMain)
+    {
+        return $this->where('is_main', $isMain);
+    }
 }
