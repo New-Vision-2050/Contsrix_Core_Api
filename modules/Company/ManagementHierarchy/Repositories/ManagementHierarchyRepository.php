@@ -331,6 +331,60 @@ class ManagementHierarchyRepository extends BaseRepository
     }
 
     /**
+     * Get detail for a management hierarchy
+     *
+     * @param int|string $managementHierarchyId
+     * @return \Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail|null
+     */
+    public function getDetail($managementHierarchyId)
+    {
+        return ManagementHierarchyDetail::where('management_hierarchy_id', $managementHierarchyId)->first();
+    }
+
+    /**
+     * Get deputy managers for a management hierarchy detail
+     *
+     * @param string|int $detailId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getDeputyManagers($detailId)
+    {
+        return ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->get();
+    }
+
+    /**
+     * Delete deputy managers for a management hierarchy detail
+     *
+     * @param string|int $detailId
+     * @return bool
+     */
+    public function deleteDeputyManagers($detailId)
+    {
+        return ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
+    }
+
+    /**
+     * Get linked departments by reference department ID
+     *
+     * @param string|int $referenceDepartmentId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getLinkedDepartmentsByReference($referenceDepartmentId)
+    {
+        $linkedDepartmentIds = ManagementHierarchyDetail::where('reference_department_id', $referenceDepartmentId)
+            ->pluck('management_hierarchy_id');
+        
+        if ($linkedDepartmentIds->isEmpty()) {
+            return collect([]);
+        }
+        
+        return $this->model
+            ->whereIn('id', $linkedDepartmentIds)
+            ->with(['detail', 'parent'])
+            ->get();
+    }
+
+    /**
      * Get count statistics for hierarchies by type
      *
      * @param string $type The hierarchy type (branch, management, department)
@@ -458,7 +512,5 @@ class ManagementHierarchyRepository extends BaseRepository
             ->merge($deputyUsers)
             ->merge($directUserChildren)
             ->unique('id');
-
-
     }
 }
