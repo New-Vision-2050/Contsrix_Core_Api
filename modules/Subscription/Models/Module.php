@@ -33,16 +33,6 @@ class Module extends Model
     ];
 
     /**
-     * Get all of the features for the Module
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function features(): HasMany
-    {
-        return $this->hasMany(Feature::class);
-    }
-
-    /**
      * Get the packages that include this module.
      *
      * @return BelongsToMany<Package>

@@ -6,8 +6,9 @@ namespace Modules\Subscription\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
-use Modules\Subscription\Enums\PackageBillingCycleEnum;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Subscription\Enums\PackageBillingCycleEnum;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Package extends Model
@@ -33,6 +34,16 @@ class Package extends Model
         'is_active' => 'boolean',
         'price' => 'decimal:2',
     ];
+
+    /**
+     * Get all of the features for the Module
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function features(): HasMany
+    {
+        return $this->hasMany(Feature::class);
+    }
 
     /**
      * Get the modules associated with the package.
