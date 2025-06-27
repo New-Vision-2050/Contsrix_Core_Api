@@ -10,6 +10,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -373,11 +374,11 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         $linkedDepartmentIds = ManagementHierarchyDetail::where('reference_department_id', $referenceDepartmentId)
             ->pluck('management_hierarchy_id');
-        
+
         if ($linkedDepartmentIds->isEmpty()) {
             return collect([]);
         }
-        
+
         return $this->model
             ->whereIn('id', $linkedDepartmentIds)
             ->with(['detail', 'parent'])
