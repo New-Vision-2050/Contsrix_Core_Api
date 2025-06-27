@@ -17,4 +17,9 @@ return new class extends Migration {
             $table->primary(['company_access_program_id', 'company_field_id']);
         });
     }
+
+    public function down()
+    {
+        Schema::dropIfExists('company_access_program_field');
+    }
 };
