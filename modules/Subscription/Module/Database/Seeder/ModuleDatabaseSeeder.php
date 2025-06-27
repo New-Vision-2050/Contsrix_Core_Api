@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Subscription\Database\Seeders;
+namespace Modules\Subscription\Module\Database\Seeder;
 
 use Illuminate\Database\Seeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Subscription\Models\Module;
+use Modules\Subscription\Module\Models\Module;
 
 class ModuleDatabaseSeeder extends Seeder
 {

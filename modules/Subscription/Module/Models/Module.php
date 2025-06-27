@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Subscription\Models;
+namespace Modules\Subscription\Module\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
+use Modules\Subscription\Models\Package;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

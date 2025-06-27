@@ -7,6 +7,7 @@ namespace Modules\Subscription\Models;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Subscription\Module\Models\Module;
 use Modules\Subscription\Enums\FeatureLimitTypeEnum;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
