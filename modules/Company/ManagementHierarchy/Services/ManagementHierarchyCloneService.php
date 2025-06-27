@@ -87,7 +87,7 @@ class ManagementHierarchyCloneService
             }
             
             // Clone the department
-            $clonedDepartment = $this->cloneDepartment($sourceDepartment, $parentId, $branchId, $dto->cloneManagers);
+            $clonedDepartment = $this->cloneDepartment($sourceDepartment, $parentId, $branchId, $dto->cloneManagers, $dto->overrideParams);
             
             // Link the departments
             $this->linkDepartments($sourceDepartment->id, $clonedDepartment->id);
@@ -112,9 +112,10 @@ class ManagementHierarchyCloneService
      * @param string|int $parentId The ID of the parent (management or department)
      * @param string|int $branchId The ID of the branch
      * @param bool $cloneManagers Whether to clone manager assignments
+     * @param array $overrides Optional override parameters for the cloned department
      * @return ManagementHierarchy The newly created department
      */
-    private function cloneDepartment(ManagementHierarchy $sourceDepartment, $parentId, $branchId, bool $cloneManagers = true): ManagementHierarchy
+    private function cloneDepartment(ManagementHierarchy $sourceDepartment, $parentId, $branchId, bool $cloneManagers = true, array $overrides = []): ManagementHierarchy
     {
         // Create department data array
         $departmentData = [
@@ -126,6 +127,9 @@ class ManagementHierarchyCloneService
             'is_active' => $sourceDepartment->is_active,
             'manager_id' => $sourceDepartment->manager_id, // Clone the manager assignment
         ];
+        
+        // Apply override parameters
+        $departmentData = array_merge($departmentData, $overrides);
         
         // Create department detail data array
         $departmentDetail = [];

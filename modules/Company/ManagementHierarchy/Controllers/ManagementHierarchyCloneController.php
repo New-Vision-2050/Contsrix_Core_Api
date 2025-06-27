@@ -31,6 +31,7 @@ class ManagementHierarchyCloneController extends Controller
             'target_parent_id' => 'required_without:target_branch_id|nullable|string',
             'clone_sub_departments' => 'boolean',
             'clone_managers' => 'boolean',
+            'override_params' => 'array|nullable',
         ]);
 
         try {
@@ -39,7 +40,8 @@ class ManagementHierarchyCloneController extends Controller
                 targetBranchId: $request->input('target_branch_id'),
                 targetParentId: $request->input('target_parent_id'),
                 cloneSubDepartments: $request->input('clone_sub_departments', true),
-                cloneManagers: $request->input('clone_managers', true)
+                cloneManagers: $request->input('clone_managers', true),
+                overrideParams: $request->input('override_params')
             );
 
             $clonedDepartment = $this->cloneService->cloneDepartmentToBranch($dto);
