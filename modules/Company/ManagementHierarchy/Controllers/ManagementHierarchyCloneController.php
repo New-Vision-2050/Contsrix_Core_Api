@@ -28,7 +28,7 @@ class ManagementHierarchyCloneController extends Controller
         $request->validate([
             'source_department_id' => 'required',
             'target_branch_id' => 'required_without:target_parent_id',
-            'target_parent_id' => 'required_without:target_branch_id|nullable|string',
+            'target_parent_id' => 'required_without:target_branch_id|nullable',
             'clone_sub_departments' => 'boolean',
             'clone_managers' => 'boolean',
             'override_params' => 'array|nullable',
@@ -38,7 +38,7 @@ class ManagementHierarchyCloneController extends Controller
             $dto = new CloneDepartmentDTO(
                 sourceDepartmentId: $request->input('source_department_id'),
                 targetBranchId: $request->input('target_branch_id'),
-                targetParentId: $request->input('target_parent_id'),
+                targetParentId: (string) $request->input('target_parent_id'),
                 cloneSubDepartments: $request->input('clone_sub_departments', true),
                 cloneManagers: $request->input('clone_managers', true),
                 overrideParams: $request->input('override_params')
