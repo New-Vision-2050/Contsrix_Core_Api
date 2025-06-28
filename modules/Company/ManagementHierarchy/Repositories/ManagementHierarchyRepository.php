@@ -49,11 +49,14 @@ class ManagementHierarchyRepository extends BaseRepository
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
         if (request()->has("branch_id")) {
-            return $this->model->where("company_id", $company->id)->where("type", "management")->whereHas("detail", function ($query) {
-
-                $query->where("branch_id", request()->branch_id);
-
-            })->get();
+            return $this->model->filter(request()->all())
+                ->where("company_id", $company->id)
+                ->where("type", "management")
+                ->whereHas("detail",
+                function ($query) {
+                    $query->where("branch_id", request()->branch_id);
+                }
+            )->get();
         }
 
         $query = $this->model->filter(request()->all());
