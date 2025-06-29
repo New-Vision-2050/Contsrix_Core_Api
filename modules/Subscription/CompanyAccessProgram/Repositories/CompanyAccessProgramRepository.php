@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\CompanyAccessProgram\Repositories;
 
-use BasePackage\Shared\Repositories\BaseRepository;
-use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Database\Eloquent\Collection;
+use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
+use Modules\Subscription\CompanyAccessProgram\DTO\CreateCompanyAccessProgramDTO;
 
 /**
  * @property CompanyAccessProgram $model
@@ -33,9 +34,33 @@ class CompanyAccessProgramRepository extends BaseRepository
         ]);
     }
 
-    public function createCompanyAccessProgram(array $data): CompanyAccessProgram
+    public function createCompanyAccessProgram(CreateCompanyAccessProgramDTO $createCompanyAccessProgramDTO): CompanyAccessProgram
     {
-        return $this->create($data);
+        $program = $this->model->create([
+            'name' => $createCompanyAccessProgramDTO->name,
+        ]);
+
+        // Sync modules
+        if (!empty($createCompanyAccessProgramDTO->modules)) {
+            $program->modules()->sync($createCompanyAccessProgramDTO->modules);
+        }
+
+        // Sync company fields
+        if (!empty($createCompanyAccessProgramDTO->companyFields)) {
+            $program->companyFields()->sync($createCompanyAccessProgramDTO->companyFields);
+        }
+
+        // Sync company types
+        if (!empty($createCompanyAccessProgramDTO->companyTypes)) {
+            $program->companyTypes()->sync($createCompanyAccessProgramDTO->companyTypes);
+        }
+
+        // Sync countries
+        if (!empty($createCompanyAccessProgramDTO->countries)) {
+            $program->countries()->sync($createCompanyAccessProgramDTO->countries);
+        }
+
+        return $program;
     }
 
     public function updateCompanyAccessProgram(UuidInterface $id, array $data): bool
