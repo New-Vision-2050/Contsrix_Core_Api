@@ -8,6 +8,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
+use Modules\Program\Models\Program;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\SubscriptionSystem\Feature\Models\Feature;
 use Modules\SubscriptionSystem\Feature\Models\FeaturePermission;
@@ -20,7 +21,7 @@ class ModuleStructureSeeder extends Seeder
     public function run(): void
     {
         $createModule = function (array $name, string $slug, ?string $parentId = null) {
-            return Module::updateOrCreate(
+            return Program::updateOrCreate(
                 ['slug' => $slug],
                 [
                     'name' => $name,

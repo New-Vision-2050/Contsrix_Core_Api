@@ -12,6 +12,7 @@ use BasePackage\Shared\Traits\HasTranslations;
 use Modules\SubscriptionSystem\Modules\Models\Module;
 use Modules\SubscriptionSystem\ProgramSystem\Models\ProgramSystem;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\Program\Models\Program;
 use Modules\RoleAndPermission\Models\Permission;
 
 class Feature extends Model
@@ -43,9 +44,9 @@ class Feature extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function module(): BelongsTo
+    public function program(): BelongsTo
     {
-        return $this->belongsTo(Module::class);
+        return $this->belongsTo(Program::class);
     }
     public function programSystems()
     {

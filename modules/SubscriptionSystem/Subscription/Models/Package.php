@@ -11,6 +11,7 @@ use Modules\SubscriptionSystem\Subscription\Enums\PackageBillingCycleEnum;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use BasePackage\Shared\Traits\HasTranslations;
+use Modules\Program\Models\Program;
 
 class Package extends Model
 {
@@ -43,9 +44,9 @@ class Package extends Model
      *
      * @return BelongsToMany<Module>
      */
-    public function modules(): BelongsToMany
+    public function programs(): BelongsToMany
     {
-        return $this->belongsToMany(Module::class);
+        return $this->belongsToMany(Program::class);
     }
 
     public function companies(): BelongsToMany

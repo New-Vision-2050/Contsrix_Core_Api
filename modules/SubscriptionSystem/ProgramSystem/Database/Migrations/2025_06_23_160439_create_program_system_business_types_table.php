@@ -10,11 +10,14 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('program_system_business_types', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('program_system_id')->constrained('program_systems')->onDelete('cascade');
-            $table->foreignUuid('business_type_id')->constrained('business_types')->onDelete('cascade');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('program_system_business_types')) {
+
+            Schema::create('program_system_business_types', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->foreignUuid('program_system_id')->constrained('program_systems')->onDelete('cascade');
+                $table->foreignUuid('business_type_id')->constrained('business_types')->onDelete('cascade');
+                $table->timestamps();
+            });
+        }
     }
 };
