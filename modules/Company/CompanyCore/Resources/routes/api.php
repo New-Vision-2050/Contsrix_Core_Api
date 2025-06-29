@@ -43,8 +43,8 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
         Route::prefix("legal-data")->group(function () {
             Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "requestUpdateLegalDataRequest"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_REQUEST_UPDATE());
             Route::post("/update", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateCompanyLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_UPDATE());
-            Route::post("/create-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createLegalData"]);
-            Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteLegalData"]);
+            Route::post("/create-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_CREATE());
+            Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_DELETE());
         });
 
         Route::post("assign-logo", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "setCompanyLogo"]);

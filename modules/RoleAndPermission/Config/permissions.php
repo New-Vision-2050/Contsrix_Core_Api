@@ -131,6 +131,8 @@ return [
         'COMPANY_PROFILE_OFFICIAL_DATA_UPDATE' => 'company-profile.official-data.update',
         'COMPANY_PROFILE_OFFICIAL_DATA_REQUEST_UPDATE' => 'company-profile.official-data.request-update',
         'COMPANY_PROFILE_LEGAL_DATA_UPDATE' => 'company-profile.legal-data.update',
+        'COMPANY_PROFILE_LEGAL_DATA_CREATE' => 'company-profile.legal-data.create',
+        'COMPANY_PROFILE_LEGAL_DATA_DELETE' => 'company-profile.legal-data.delete',
         'COMPANY_PROFILE_LEGAL_DATA_REQUEST_UPDATE' => 'company-profile.legal-data.request-update',
         'COMPANY_PROFILE_ADDRESS_UPDATE' => 'company-profile.address.update',
         'COMPANY_PROFILE_ADDRESS_REQUEST_UPDATE' => 'company-profile.address.request-update',
