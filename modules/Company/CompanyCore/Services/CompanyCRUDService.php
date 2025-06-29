@@ -75,6 +75,11 @@ class CompanyCRUDService
         return $this->repository->getByHost($host);
     }
 
+    public function getCompanyByIdentifierCode($identifierCode)
+    {
+        return $this->repository->getByIdentifierCode($identifierCode);
+    }
+
 //    public function export(?array $companyIds = null): string
 //    {
 //        $relations = [
