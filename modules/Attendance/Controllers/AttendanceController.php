@@ -131,6 +131,31 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Get attendance status information
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getStatus(Request $request): JsonResponse
+    {
+        $attendanceId = $request->input('attendance_id');
+
+        if (!$attendanceId) {
+            // If no specific attendance ID is provided, return current attendance status
+            $attendance = $this->attendanceService->getCurrentAttendance($request->user()->id);
+        } else {
+            // If an attendance ID is provided, return that specific attendance
+            $attendance = $this->attendanceService->getAttendance(Uuid::fromString($attendanceId));
+        }
+
+        if (!$attendance) {
+            return Json::error('No active attendance found', 404);
+        }
+
+        return Json::item(new AttendancePresenter($attendance));
+    }
+
+    /**
      * Get current attendance status
      */
     public function getCurrentStatus(Request $request): JsonResponse

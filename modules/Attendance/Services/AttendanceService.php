@@ -12,6 +12,7 @@ use Modules\Attendance\DTO\ClockOutDTO;
 use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 class AttendanceService
 {
@@ -131,9 +132,17 @@ class AttendanceService
     /**
      * Get current attendance for user
      */
-    public function getCurrentAttendance(string $userId): ?Attendance
+    public function getCurrentAttendance(UuidInterface $userId): ?Attendance
     {
         return $this->attendanceRepository->getCurrentAttendance($userId);
+    }
+
+    /**
+     * Get attendance by ID
+     */
+    public function getAttendance(UuidInterface $attendanceId): ?Attendance
+    {
+        return $this->attendanceRepository->getAttendance($attendanceId);
     }
 
     /**

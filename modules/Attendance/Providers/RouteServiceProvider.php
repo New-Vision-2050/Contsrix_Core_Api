@@ -36,6 +36,7 @@ class RouteServiceProvider extends ServiceProvider
     public function map()
     {
         $this->mapApiRoutes();
+        $this->mapConstraintRoutes();
     }
 
     /**
@@ -48,8 +49,23 @@ class RouteServiceProvider extends ServiceProvider
     protected function mapApiRoutes()
     {
         Route::prefix('api/v1')
-            ->middleware(['api', 'auth:api'])
+            ->middleware(['api', 'auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])
             ->namespace($this->moduleNamespace)
             ->group(module_path('Attendance', 'Resources/routes/api.php'));
+    }
+
+    /**
+     * Define the "constraints" routes for the application.
+     *
+     * These routes are for attendance constraints functionality.
+     *
+     * @return void
+     */
+    protected function mapConstraintRoutes()
+    {
+        Route::prefix('api/v1')
+            ->middleware(['api', 'auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])
+            ->namespace($this->moduleNamespace)
+            ->group(module_path('Attendance', 'Routes/attendance_constraints.php'));
     }
 }
