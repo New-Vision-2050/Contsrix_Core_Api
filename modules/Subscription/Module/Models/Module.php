@@ -58,4 +58,12 @@ class Module extends Model
     {
         return $this->hasMany(self::class, 'module_id');
     }
+
+    /**
+     * Scope to get only top-level (parent) modules.
+     */
+    public function scopeIsParent($query)
+    {
+        return $query->whereNull('module_id');
+    }
 }

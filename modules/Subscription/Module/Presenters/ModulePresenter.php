@@ -21,6 +21,10 @@ class ModulePresenter extends AbstractPresenter
         return [
             'id' => $this->module->id,
             'name' => $this->module->name,
+            'children' => $this->module->children
+                ->map(fn(Module $child) => (new self($child))->present($isListing))
+                ->values()
+                ->all(),
         ];
     }
 }

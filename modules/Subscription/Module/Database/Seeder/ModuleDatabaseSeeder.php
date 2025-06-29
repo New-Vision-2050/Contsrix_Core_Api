@@ -38,14 +38,50 @@ class ModuleDatabaseSeeder extends Seeder
             [
                 'name' => ['en' => 'users', 'ar' => 'المستخدمين'],
                 'slug' => 'users',
+                'children' => [
+                    [
+                        'name' => ['en' => 'clients', 'ar' => 'العملاء'],
+                        'slug' => 'clients',
+                    ],
+                    [
+                        'name' => ['en' => 'employees', 'ar' => 'الموظفين'],
+                        'slug' => 'employees',
+                    ],
+                    [
+                        'name' => ['en' => 'brokers', 'ar' => 'الوسطاء'],
+                        'slug' => 'brokers',
+                    ],
+                ],
             ],
         ];
 
+       $this->createModules($modules);
+    }
 
-        foreach ($modules as $module) {
-            Module::firstOrCreate(
-                ['name' => $module['name'], 'slug' => $module['slug']]
+    /**
+     * Recursively create modules and their children.
+     *
+     * @param array $modules
+     * @param string|null $parentId
+     * @return void
+     */
+    protected function createModules(array $modules, ?string $parentId = null): void
+    {
+        foreach ($modules as $moduleData) {
+            $children = $moduleData['children'] ?? [];
+            unset($moduleData['children']);
+
+            $module = Module::firstOrCreate(
+                ['slug' => $moduleData['slug']],
+                [
+                    'name' => $moduleData['name'],
+                    'module_id' => $parentId,
+                ]
             );
+
+            if (!empty($children)) {
+                $this->createModules($children, $module->id);
+            }
         }
     }
 }
