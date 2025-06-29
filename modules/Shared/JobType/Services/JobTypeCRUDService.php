@@ -27,10 +27,15 @@ class JobTypeCRUDService
          return $this->repository->createJobType($createJobTypeWithCompanyDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10 , $sort ,$order): array
     {
-        return $this->repository->withoutScopePaginated( page: $page,
-            perPage: $perPage);
+        return $this->repository->withoutScopePaginated(
+            page: $page,
+            perPage: $perPage,
+            conditions: [],
+            sort: $sort,
+            order: $order
+        );
     }
 
     public function listAll(): Collection
