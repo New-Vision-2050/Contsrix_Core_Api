@@ -13,11 +13,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->enum("type",["branch","management","department"])->default("branch");
-<<<<<<< HEAD
             $table->foreignUuid("company_id")->index()->constrained('companies')->cascadeOnDelete();
-=======
-            $table->uuid("company_id")->index();
->>>>>>> 7be6c72c (merge with stage (first version ))
             $table->text('path')->nullable();
 
             $table->timestamps();

@@ -10,6 +10,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -46,24 +47,43 @@ class ManagementHierarchyRepository extends BaseRepository
     public function getAll()
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-        $managementHierarchy = null;
-        if (request()->has("parent_children_id")) {
-            $managementHierarchy = $this->model->where("id", request()->parent_children_id)->where("company_id", $company->id)->first();
 
-        }
         if (request()->has("branch_id")) {
-            return $this->model->where("company_id", $company->id)->where("type", "management")->whereHas("detail", function ($query) {
-
-                $query->where("branch_id", request()->branch_id);
-
-            })->get();
+            return $this->model->filter(request()->all())
+                ->where("company_id", $company->id)
+                ->where("type", "management")
+                ->whereHas("detail",
+                function ($query) {
+                    $query->where("branch_id", request()->branch_id);
+                }
+            )->get();
         }
 
-        return $this->model->filter(request()->all())
-            ->when(request()->has("parent_children_id") && $managementHierarchy, function ($query) use ($managementHierarchy) {
-                $query->whereSelfOrDescendantOf($managementHierarchy);
+        $query = $this->model->filter(request()->all());
 
-            })->where("company_id", $company->id)->get();
+        if (request()->has("parent_children_id")) {
+            $parentNode = $this->model->where("id", request()->parent_children_id)
+                ->where("company_id", $company->id)
+                ->first();
+
+            if ($parentNode) {
+                $query->whereSelfOrDescendantOf($parentNode);
+            }
+        }
+
+        if (request()->has("ignore_branch_id")) {
+            $ignoredNode = $this->model->where("id", request()->ignore_branch_id)
+                ->where("company_id", $company->id)
+                ->first();
+
+            if ($ignoredNode) {
+                $query->whereDoesntHave("detail",function ($q) use ($ignoredNode) {
+                    $q->where("branch_id",request()->ignore_branch_id);
+                });
+            }
+        }
+
+        return $query->where("company_id", $company->id)->get();
     }
 
     public function getTree()
@@ -331,6 +351,60 @@ class ManagementHierarchyRepository extends BaseRepository
     }
 
     /**
+     * Get detail for a management hierarchy
+     *
+     * @param int|string $managementHierarchyId
+     * @return \Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail|null
+     */
+    public function getDetail($managementHierarchyId)
+    {
+        return ManagementHierarchyDetail::where('management_hierarchy_id', $managementHierarchyId)->first();
+    }
+
+    /**
+     * Get deputy managers for a management hierarchy detail
+     *
+     * @param string|int $detailId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getDeputyManagers($detailId)
+    {
+        return ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->get();
+    }
+
+    /**
+     * Delete deputy managers for a management hierarchy detail
+     *
+     * @param string|int $detailId
+     * @return bool
+     */
+    public function deleteDeputyManagers($detailId)
+    {
+        return ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
+    }
+
+    /**
+     * Get linked departments by reference department ID
+     *
+     * @param string|int $referenceDepartmentId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getLinkedDepartmentsByReference($referenceDepartmentId)
+    {
+        $linkedDepartmentIds = ManagementHierarchyDetail::where('reference_department_id', $referenceDepartmentId)
+            ->pluck('management_hierarchy_id');
+
+        if ($linkedDepartmentIds->isEmpty()) {
+            return collect([]);
+        }
+
+        return $this->model
+            ->whereIn('id', $linkedDepartmentIds)
+            ->with(['detail', 'parent'])
+            ->get();
+    }
+
+    /**
      * Get count statistics for hierarchies by type
      *
      * @param string $type The hierarchy type (branch, management, department)
@@ -458,7 +532,5 @@ class ManagementHierarchyRepository extends BaseRepository
             ->merge($deputyUsers)
             ->merge($directUserChildren)
             ->unique('id');
-
-
     }
 }

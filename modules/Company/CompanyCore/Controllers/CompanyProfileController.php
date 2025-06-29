@@ -19,15 +19,12 @@ use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyLegalDataHa
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanyOfficialDocumentHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateCompanySetAddressHandler;
 use Modules\Company\CompanyCore\Handlers\CompanyProfile\UpdateOfficialCompanyDataHandler;
-<<<<<<< HEAD
+use Modules\Company\CompanyCore\Presenters\AddressPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyLegalDataPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyOfficialDocumentPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
-=======
-use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
->>>>>>> 7be6c72c (merge with stage (first version ))
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyLegalDataRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\CreateCompanyOfficialDocumentRequest;
 use Modules\Company\CompanyCore\Requests\CompanyProfile\GetLocationByLatLongRequest;
@@ -45,12 +42,9 @@ use Ramsey\Uuid\Uuid;
 
 class CompanyProfileController extends Controller
 {
-<<<<<<< HEAD
     use PreDeclareComapnyAndBranchDependOnReqeuest;
 
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function __construct(
         private UpdateOfficialCompanyDataHandler          $updateOfficialCompanyDataHandler,
         private CompanyCRUDService                        $companyService,
@@ -60,32 +54,21 @@ class CompanyProfileController extends Controller
         private DeleteCompanyOfficialDocumentHandler      $deleteCompanyOfficialDocumentHandler,
         private DeleteCompanyOfficialDocumentMediaHandler $deleteCompanyOfficialDocumentMediaHandler,
         private UpdateCompanySetAddressHandler            $updateCompanySetAddressHandler,
-<<<<<<< HEAD
         private DeleteCompanyLegalDataHandler             $deleteCompanyLegalDataHandler,
-=======
-        private DeleteCompanyLegalDataHandler             $deleteCompanyLegalDataHandler
->>>>>>> 7be6c72c (merge with stage (first version ))
     )
     {
     }
 
-<<<<<<< HEAD
     /**
      * @param UpdateOfficialCompanyData $request
      * @return JsonResponse
      * @throws \Exception
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 
     public function updateOfficialData(UpdateOfficialCompanyData $request)
     {
         $command = $request->createUpdateOfficialCompanyDataCommand();
         $this->updateOfficialCompanyDataHandler->handle($command);
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 
         $item = $this->companyService->get($command->getId());
 
@@ -94,7 +77,6 @@ class CompanyProfileController extends Controller
         return Json::item($presenter->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param UpdateOfficialCompanyDataRequest $request
      * @return JsonResponse
@@ -103,80 +85,56 @@ class CompanyProfileController extends Controller
     public function updateOfficialDataRequest(UpdateOfficialCompanyDataRequest $request)
     {
         $adminRequest = $this->companyProfileService->updateCompanyProfileRequest($request->createUpdateOfficialCompanyDataRequestDTO());
-        $this->companyService->clearCahe();
-=======
-    public function updateOfficialDataRequest(UpdateOfficialCompanyDataRequest $request)
-    {
-        $adminRequest = $this->companyProfileService->updateCompanyProfileRequest($request->createUpdateOfficialCompanyDataRequestDTO());
->>>>>>> 7be6c72c (merge with stage (first version ))
 
         return Json::item((new AdminRequestPresenter($adminRequest))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param GetLocationByLatLongRequest $request
      * @return JsonResponse
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function getAddressFromMap(getLocationByLatLongRequest $request)
     {
         try {
             $geoCodingDTO = $request->createGeoCodingDTO();
-<<<<<<< HEAD
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
             [
                 $country,
                 $state,
                 $city,
                 $neighborhood,
                 $postalCode,
-<<<<<<< HEAD
-
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
-                $route
+                $route,
+                $aiSupported
             ] = $this->companyProfileService->geoCoding($geoCodingDTO);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(),httpStatus:  $e->getCode());
 
         }
-        return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route))->getData());
+
+        return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route,$aiSupported))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param SetCompanyLogoRequest $request
      * @return JsonResponse
      * @throws \Exception
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function setCompanyLogo(setCompanyLogoRequest $request)
     {
         $logo = $request->createAssignLogoToCompanyDTO();
         $this->companyProfileService->assignLogo($logo);
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         $presenter = new CompanyPresenter($company);
 
         return Json::item($presenter->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param Request $request
      * @return JsonResponse
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function validateCompanyLogo(Request $request)
     {
         $logo = $request->logo;
@@ -189,7 +147,6 @@ class CompanyProfileController extends Controller
         }
     }
 
-<<<<<<< HEAD
     /**
      * @param CreateCompanyLegalDataRequest $request
      * @return JsonResponse
@@ -198,89 +155,61 @@ class CompanyProfileController extends Controller
     public function createLegalData(CreateCompanyLegalDataRequest $request)
     {
         $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
-        $this->companyService->clearCahe();
 
-=======
-    public function createLegalData(CreateCompanyLegalDataRequest $request)
-    {
-        $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
->>>>>>> 7be6c72c (merge with stage (first version ))
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
 
     }
 
-<<<<<<< HEAD
     /**
      * @param RequestUpdateLegalCompanyDataRequest $request
      * @return JsonResponse
      * @throws \Exception
      */
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function requestUpdateLegalDataRequest(RequestUpdateLegalCompanyDataRequest $request)
     {
         $legalDataRequest = $this->companyProfileService->updateLegalDataRequest($request->createUpdateLegalCompanyDataRequestDTO());
         return Json::item((new AdminRequestPresenter($legalDataRequest))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param SetCompanyAddressRequest $request
      * @return JsonResponse
      * @throws \Exception
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function setAddress(SetCompanyAddressRequest $request)
     {
         $command = $request->createSetCompanyAddressCommand();
         $this->updateCompanySetAddressHandler->handle($command);
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 
         $company = $this->companyService->getCurrentCompanyLoggedIn();
 
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param UpdateCompanyLegalDataRequest $request
      * @return JsonResponse
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function updateCompanyLegalData(UpdateCompanyLegalDataRequest $request)
     {
         $command = $request->createUpdateLegalCompanyDataCommand();
         $this->updateCompanyLegalDataHandler->handle($command);
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param CreateCompanyOfficialDocumentRequest $request
      * @return JsonResponse
      * @throws \Exception
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function createOfficialDocument(CreateCompanyOfficialDocumentRequest $request)
     {
         $this->companyProfileService->createCompanyOfficialDocument($request->createCreateCompanyOfficialDocumentDTO());
         $company = $this->companyService->getCurrentCompanyLoggedIn();
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
 
         return Json::item((new CompanyPresenter($company))->getData());
     }
@@ -289,65 +218,40 @@ class CompanyProfileController extends Controller
      * @param UpdateCompanyOfficialDocumentRequest $request
      * @return JsonResponse
      */
-=======
-        return Json::item((new CompanyPresenter($company))->getData());
-    }
-
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function updateOfficialDocument(UpdateCompanyOfficialDocumentRequest $request)
     {
         $command = $request->createUpdateCompanyOfficialDocumentCommand();
         $this->updateCompanyOfficialDocumentHandler->handle($command);
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param Request $request
      * @return JsonResponse
      */
-=======
-
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function deleteOfficialDocument(Request $request)
     {
 
         $this->deleteCompanyOfficialDocumentHandler->handle(Uuid::fromString($request->route("id")));
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param Request $request
      * @return JsonResponse
      */
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
     public function deleteOfficialDocumentMedia(Request $request)
     {
 
         $this->deleteCompanyOfficialDocumentMediaHandler->handle(Uuid::fromString($request->route("id")), $request->route("media_id"));
-<<<<<<< HEAD
-        $this->companyService->clearCahe();
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
     }
 
-<<<<<<< HEAD
     /**
      * @param Request $request
      * @return JsonResponse
@@ -366,7 +270,7 @@ class CompanyProfileController extends Controller
     public function getCompanyAddress(): JsonResponse
     {
         $address = $this->companyProfileService->getCompanyAddressForCompany();
-        return Json::item($address);
+        return Json::item((new AddressPresenter($address))->getData());
     }
 
     /**
@@ -389,12 +293,5 @@ class CompanyProfileController extends Controller
     {
         $branches = $this->companyProfileService->getCompanyBranchesForCompany();
         return Json::items(ManagementHierarchyPresenter::collection($branches));
-=======
-    public function deleteLegalData(Request $request)
-    {
-        $this->deleteCompanyLegalDataHandler->handle(Uuid::fromString($request->route("id")));
-        $company = $this->companyService->getCurrentCompanyLoggedIn();
-        return Json::item((new CompanyPresenter($company))->getData());
->>>>>>> 7be6c72c (merge with stage (first version ))
     }
 }

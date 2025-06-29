@@ -16,10 +16,6 @@ use Modules\Setting\Models\Driver;
 class City extends Model
 {
     use HasFactory;
-<<<<<<< HEAD
-=======
-    use UuidTrait;
->>>>>>> 7be6c72c (merge with stage (first version ))
     use BaseFilterable;
 
     //use HasTranslations;
@@ -27,7 +23,6 @@ class City extends Model
 
     //public array $translatable = [];
 
-<<<<<<< HEAD
 
     protected $table = 'cities';
 
@@ -43,22 +38,10 @@ class City extends Model
         'longitude',
         'flag',
         'wikiDataId'
-=======
-    public $incrementing = false;
-
-    protected $table = 'cities';
-
-
-    protected $keyType = 'string';
-
-    protected $fillable = [
-
->>>>>>> 7be6c72c (merge with stage (first version ))
     ];
 
     protected $casts = [
         'id' => 'string',
-<<<<<<< HEAD
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'flag' => 'integer'
@@ -156,19 +139,4 @@ class City extends Model
 
         return $earthRadius * $c;
     }
-=======
-    ];
-
-    public function state()
-    {
-        return $this->belongsTo(State::class,"state_id");
-
-    }
-    public function country()
-    {
-        return $this->belongsTo(Country::class , "country_id");
-    }
-
-
->>>>>>> 7be6c72c (merge with stage (first version ))
 }

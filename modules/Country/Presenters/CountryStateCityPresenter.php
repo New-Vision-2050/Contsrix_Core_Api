@@ -19,7 +19,6 @@ class CountryStateCityPresenter extends AbstractPresenter
     private $route;
 
 
-<<<<<<< HEAD
     public function __construct(
         $country = null,
         $state = null,
@@ -29,10 +28,6 @@ class CountryStateCityPresenter extends AbstractPresenter
         $route = null,
         private $aiSupported = null
     ) {
-=======
-    public function __construct( $country = null, $state = null, $city = null,$neighborhood=null, $postalCode=null, $route=null)
-    {
->>>>>>> 7be6c72c (merge with stage (first version ))
         $this->country = $country;
         $this->state = $state;
         $this->city = $city;
@@ -59,11 +54,7 @@ class CountryStateCityPresenter extends AbstractPresenter
             ],
             "neighborhood" => $this->neighborhood,
             "postal_code" => $this->postalCode,
-<<<<<<< HEAD
             "route" => $this->route
-=======
-            "route" => $this->route,
->>>>>>> 7be6c72c (merge with stage (first version ))
 
 
         ];

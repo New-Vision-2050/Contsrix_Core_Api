@@ -22,19 +22,14 @@ class CityRepository extends BaseRepository
         parent::__construct($model);
     }
 
-<<<<<<< HEAD
     /**
      * Get paginated list of cities
      */
     public function getCityList(?int $page, ?int $perPage = 10): Collection
-=======
-    public function getCountryList(?int $page, ?int $perPage = 10): Collection
->>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->paginatedList(['status' => 1], $page, $perPage);
     }
 
-<<<<<<< HEAD
     /**
      * Get city by ID
      */
@@ -49,45 +44,26 @@ class CityRepository extends BaseRepository
      * Create a new city
      */
     public function createCity(array $data): City
-=======
-    public function getCity(UuidInterface $id): City
-    {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
-    }
-
-    public function createCountry(array $data): City
->>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->create($data);
     }
 
-<<<<<<< HEAD
     /**
      * Update city by ID
      */
     public function updateCity(UuidInterface $id, array $data): bool
-=======
-    public function updateCountry(UuidInterface $id, array $data): bool
->>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->update($id, $data);
     }
 
-<<<<<<< HEAD
     /**
      * Delete city by ID
      */
     public function deleteCity(UuidInterface $id): bool
-=======
-    public function deleteCountry(UuidInterface $id): bool
->>>>>>> 7be6c72c (merge with stage (first version ))
     {
         return $this->delete($id);
     }
 
-<<<<<<< HEAD
     /**
      * Find city by simplified name (case-insensitive)
      */
@@ -295,12 +271,5 @@ class CityRepository extends BaseRepository
             ->where('flag', 1)
             ->orderBy('name')
             ->get();
-=======
-    public function findBySimplifiedWay($simplifiedName):?City
-    {
-        $city = $this->model->whereRaw('LOWER(name) = ?', [$simplifiedName])->first();
-        return $city;
-
->>>>>>> 7be6c72c (merge with stage (first version ))
     }
 }

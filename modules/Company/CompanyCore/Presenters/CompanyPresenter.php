@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\CompanyField\Presenters\CompanyFieldPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 
 class CompanyPresenter extends AbstractPresenter
 {
@@ -80,32 +81,18 @@ class CompanyPresenter extends AbstractPresenter
                 "name" => $this->company->mainBranch?->name
             ],
 
-<<<<<<< HEAD
             // These data points are now available through separate API endpoints
-            // Access via: /api/company-profile/company-legal-data
+            // Access via: /api/companies/company-profile/company-legal-data
             // "company_legal_data" => CompanyLegalDataPresenter::collection($this->company->companyLegalData),
 
-            // Access via: /api/company-profile/company-address
+            // Access via: /api/companies/company-profile/company-address
             // "company_address" => $this->appendDateToAddress($this->company?->companyAddress),
 
-            // Access via: /api/company-profile/company-official-documents
+            // Access via: /api/companies/company-profile/company-official-documents
             // "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
 
-            // Access via: /api/company-profile/company-branches
-            // "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
-=======
-            //TODO we will separate in new api
-            "company_legal_data" => CompanyLegalDataPresenter::collection($this->company->companyLegalData),
-
-            //TODO we will separate in new api
-            "company_address" => $this->appendDateToAddress($this->company?->companyAddress),
-
-            //TODO we will separate in new api
-            "company_official_documents" => CompanyOfficialDocumentPresenter::collection($this->company->companyOfficialDocuments),
-
-            //TODO we will separate in new api
-            "branches" => ManagementHierarchyPresenter::collection($this->company->branches),
->>>>>>> 7be6c72c (merge with stage (first version ))
+            // Access via: /api/companies/company-profile/company-branches
+             "branches" => ManagementHierarchySimpleDataPresenter::collection($this->company->branches),
 
             "created_at" => $this->company->created_at,
         ];

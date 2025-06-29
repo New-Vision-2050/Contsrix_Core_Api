@@ -6,10 +6,6 @@ namespace Modules\Country\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-<<<<<<< HEAD
-use Illuminate\Support\Facades\Auth;
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 use Modules\Country\Models\City;
 use Modules\Country\Models\State;
 use Normalizer;
@@ -73,26 +69,12 @@ class CountryRepository extends BaseRepository
         return $data;
     }
 
-<<<<<<< HEAD
-    public function getStateWithBranchAuthUser()
-    {
-       $countryId = Auth::user()?->userProfessionalData?->branch?->address?->country_id;
-
-       $data = State::query()->where("country_id", $countryId)->get();
-       return $data;
-
-}
     public function findBySimplifiedWay($simplifiedName):?Country
     {
         $country = $this->model
             ->whereRaw('LOWER(iso2) = ?', [$simplifiedName])
             ->orWhereRaw('LOWER(iso3) = ?', [$simplifiedName])
             ->first();
-=======
-    public function findBySimplifiedWay($simplifiedName):?Country
-    {
-        $country = $this->model->whereRaw('LOWER(name) = ?', [$simplifiedName])->first();
->>>>>>> 7be6c72c (merge with stage (first version ))
         return $country;
 
     }

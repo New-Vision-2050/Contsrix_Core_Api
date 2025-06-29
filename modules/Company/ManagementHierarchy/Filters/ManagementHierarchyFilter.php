@@ -12,11 +12,7 @@ class ManagementHierarchyFilter extends SearchModelFilter
 
     public function name($name)
     {
-<<<<<<< HEAD
         return $this->where('name','LIKE', "%{$name}%");
-=======
-        return $this->where('name', $name);
->>>>>>> 7be6c72c (merge with stage (first version ))
     }
 
     public function type($type)
@@ -27,12 +23,9 @@ class ManagementHierarchyFilter extends SearchModelFilter
     {
         return $this->where('parent_id', $parentId);
     }
-<<<<<<< HEAD
 
     public function isMain($isMain)
     {
         return $this->where('is_main', $isMain);
     }
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 }

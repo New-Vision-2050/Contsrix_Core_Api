@@ -31,14 +31,12 @@ class Management extends Model
         'latitude',
         'longitude',
         'is_main',
-        'users_count',
     ];
 
     protected $casts = [
         'is_main' => 'boolean',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
-        'users_count' => 'integer',
     ];
 
     /**
