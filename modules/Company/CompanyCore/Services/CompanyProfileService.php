@@ -29,8 +29,10 @@ use Modules\Country\Repositories\CityRepository;
 use Modules\Country\Repositories\CountryRepository;
 use Modules\Country\Repositories\StateRepository;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Shared\OpenRouter\Services\OpenRouterGeoService;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Uuid;
+
 class CompanyProfileService
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
@@ -44,6 +46,7 @@ class CompanyProfileService
         private CityRepository                    $cityRepository,
         private StateRepository                   $stateRepository,
         private CountryRepository                 $countryRepository,
+        private OpenRouterGeoService              $openRouterGeoService,
 
 
     )
@@ -83,29 +86,29 @@ class CompanyProfileService
 
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
-
+        $isAiSupported = false  ;
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
         $neighborhood = "";
-        $city = "";
-        $state = "";
-
-        $country = "";
+        $cities = [];
+        $stateName = "";
+        $countryShortName = "";
         $postalCode = "";
         $route = "";
+
         foreach ($response['results'] as $key => $value) {
             if ($value['types'][0] == "political") {
                 $neighborhood = $value["address_components"][0]["long_name"];
             }
-            if ($value['types'][0] == "locality") {
-                $city = $value["address_components"][0]["long_name"];
+            if ($value['types'][0] == "administrative_area_level_2" || $value['types'][0] == "locality") {
+                $cities[] = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "administrative_area_level_1") {
-                $state = $value["address_components"][0]["long_name"];
+                $stateName = $value["address_components"][0]["long_name"];
             }
 
             if ($value['types'][0] == "country") {
-                $country = $value["address_components"][0]["long_name"];
+                $countryShortName = $value["address_components"][0]["short_name"];
             }
 
             if ($value['types'][0] == "postal_code") {
@@ -115,9 +118,11 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
-        [$country, $state, $city] = $this->getFromDB($country, $city, $state);
-        if ($country) {
+        $cityName = implode(',',$cities);
+        [$country, $state, $city] = $this->getFromDB($countryShortName, $cityName, $stateName);
+        // Use OpenRouter to get location data for additional verification
 
+        if ($country) {
             if ((!request()->has("in_general")|| request()->in_general == 0) &&($country->id != $geoCodingDTO->getBranch()->address->country_id)) {
                 throw new \Exception(__("validation.you-must-change-location-or-update-country"), 422);
 
@@ -125,15 +130,50 @@ class CompanyProfileService
         }
         [$neighborhood, $route] = $this->getTranslatedNighborhoodAndRoute($geoCodingDTO->getLatitude(), $geoCodingDTO->getLongitude());
 
-        return [
+        if(empty($state) && !empty($city) && !empty($country)){
+            $state = $city->state;
+        }
+        if(empty($state) || empty($city) || true){
+            try {
+                $data = $this->openRouterGeoService->getLocationFromOpenRouter(
+                    $geoCodingDTO,
+                    $this->stateRepository->getStatesWithCities(
+                        $country->id
+                    ),
+                    $cityName,
+                    $stateName
+                );
+
+                $locationData = (json_decode($data['data']['location_content'], true));
+
+                if($locationData['recommended_city']['add_or_rename']) {
+                    $state = $this->stateRepository->getState($locationData['state_id']);
+                    $locationData['recommended_city']['state_code'] = $state->iso2;
+                    $locationData['recommended_city']['state_id'] = $state->id;
+                    $locationData['recommended_city']['country_id'] = $country->id;
+                    $locationData['recommended_city']['country_code'] = $country->iso2;
+                    $city = $this->cityRepository->createCity($locationData['recommended_city']);
+                }
+                else{
+                    $city = $this->cityRepository->getCity($locationData['city_id']);
+                }
+
+                $state = $city->state;
+                $isAiSupported = true;
+            }catch (\Exception $e){
+            }
+        }
+        // Return the location data along with comparison results
+        $locationData = [
             $country,
             $state,
             $city,
             $neighborhood,
             $postalCode,
             $route,
+            $isAiSupported
         ];
-
+        return $locationData;
     }
 
     private function getFromDB($country, $city, $state)
