@@ -56,10 +56,10 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
         });
 
         // Separated API endpoints for company data
-        Route::get("company-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyLegalData"])->permission(Permission::COMPANY_VIEW());
-        Route::get("company-address", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyAddress"])->permission(Permission::COMPANY_VIEW());
-        Route::get("company-official-documents", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyOfficialDocuments"])->permission(Permission::COMPANY_VIEW());
-        Route::get("company-branches", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyBranches"])->permission(Permission::COMPANY_VIEW());
+        Route::get("company-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyLegalData"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
+        Route::get("company-address", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyAddress"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
+        Route::get("company-official-documents", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyOfficialDocuments"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
+        Route::get("company-branches", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyBranches"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
 
     });
 });

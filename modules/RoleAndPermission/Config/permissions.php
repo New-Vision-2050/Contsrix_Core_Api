@@ -99,6 +99,7 @@ return [
         'LOGIN_WAY_VIEW' => 'settings.login-way.view',
         'LOGIN_WAY_DELETE' => 'settings.login-way.delete',
         'LOGIN_WAY_ACTIVATE' => 'settings.login-way.activate',
+        'COMPANY_PROFILE_VIEW' => 'settings.company-profile.view',
         'DRIVER_VIEW' => 'settings.driver.view',
         'DRIVER_UPDATE' => 'settings.driver.update',
 
