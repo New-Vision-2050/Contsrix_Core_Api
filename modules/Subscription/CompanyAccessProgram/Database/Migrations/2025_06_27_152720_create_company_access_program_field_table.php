@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->uuid('company_access_program_id');
             $table->uuid('company_field_id');
 
-            $table->foreign('company_access_program_id')->references('id')->on('company_access_program')->onDelete('cascade');
+            $table->foreign('company_access_program_id')->references('id')->on('company_access_programs')->onDelete('cascade');
             $table->foreign('company_field_id')->references('id')->on('company_fields')->onDelete('cascade');
 
             $table->primary(['company_access_program_id', 'company_field_id']);

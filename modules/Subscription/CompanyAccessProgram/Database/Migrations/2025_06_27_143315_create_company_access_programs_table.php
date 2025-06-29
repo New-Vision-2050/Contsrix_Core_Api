@@ -7,9 +7,9 @@ use Illuminate\Database\Schema\Blueprint;
 return new class extends Migration {
     public function up()
     {
-        Schema::create('company_access_program', function (Blueprint $table) {
+        Schema::create('company_access_programs', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name');
+            $table->string('name')->unique();
             $table->timestamps();
         });
     }

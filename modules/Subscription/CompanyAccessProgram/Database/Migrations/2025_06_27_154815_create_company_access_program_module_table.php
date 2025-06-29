@@ -13,7 +13,7 @@ return new class extends Migration {
 
             $table->foreign('company_access_program_id')
                 ->references('id')
-                ->on('company_access_program')
+                ->on('company_access_programs')
                 ->onDelete('cascade');
 
             $table->foreign('module_id')
