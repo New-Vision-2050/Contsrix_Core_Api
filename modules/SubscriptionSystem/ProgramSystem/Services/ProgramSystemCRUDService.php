@@ -24,7 +24,7 @@ class ProgramSystemCRUDService
 
          foreach ($createProgramSystemDTO->features as $item) {
             $programSystem->features()->attach($item['feature_id'], [
-                'module_id' => $item['module_id'],
+                'program_id' => $item['program_id'],
             ]);
         }
         
@@ -36,12 +36,19 @@ class ProgramSystemCRUDService
             $programSystem->businessTypes()->attach($id);
         }
 
+        foreach ($createProgramSystemDTO->companyFields as $id) {
+            $programSystem->companyFields()->attach($id);
+        }
+
+        foreach ($createProgramSystemDTO->businessTypes as $id) {
+            $programSystem->businessTypes()->attach($id);
+        }
+
         return $programSystem;
     }
     public function toggleIsActive(UuidInterface $id): ProgramSystem
     {
       return  $this->repository->toggleIsActive($id);
-  
     }
     public function list(int $page = 1, int $perPage = 10): array
     {

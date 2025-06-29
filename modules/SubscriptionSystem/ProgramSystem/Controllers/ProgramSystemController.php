@@ -17,6 +17,7 @@ use Modules\SubscriptionSystem\ProgramSystem\Requests\GetProgramSystemListReques
 use Modules\SubscriptionSystem\ProgramSystem\Requests\GetProgramSystemRequest;
 use Modules\SubscriptionSystem\ProgramSystem\Requests\UpdateProgramSystemRequest;
 use Modules\SubscriptionSystem\ProgramSystem\Services\ProgramSystemCRUDService;
+use Modules\SubscriptionSystem\ProgramSystem\Services\ProgramSystemWidgetService;
 use Ramsey\Uuid\Uuid;
 
 class ProgramSystemController extends Controller
@@ -25,6 +26,7 @@ class ProgramSystemController extends Controller
         private ProgramSystemCRUDService $programSystemService,
         private UpdateProgramSystemHandler $updateProgramSystemHandler,
         private DeleteProgramSystemHandler $deleteProgramSystemHandler,
+        private ProgramSystemWidgetService $programSystemWidgetService
     ) {
     }
 
@@ -37,6 +39,13 @@ class ProgramSystemController extends Controller
 
         return Json::items(ProgramSystemIndexPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
+
+    public function widget(GetProgramSystemListRequest $request): JsonResponse
+    {
+        $list = $this->programSystemWidgetService->widget();
+        return Json::item(['program' => $list]);
+    }
+
 
     public function list(GetProgramSystemListRequest $request): JsonResponse
     {
@@ -80,11 +89,12 @@ class ProgramSystemController extends Controller
     public function toggleIsActive(GetProgramSystemRequest $request): JsonResponse
     {
         $item = $this->programSystemService->toggleIsActive(Uuid::fromString($request->route('id')));
-    
+
         $presenter = new ProgramSystemIndexPresenter($item);
-    
+
         return Json::item($presenter->getData());
     }
+
     public function delete(DeleteProgramSystemRequest $request): JsonResponse
     {
         $this->deleteProgramSystemHandler->handle(Uuid::fromString($request->route('id')));

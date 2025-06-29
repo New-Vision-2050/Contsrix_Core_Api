@@ -1,0 +1,14 @@
+{
+    "name": "Subscription",
+    "alias": "subscription",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\SubscriptionSystem\\Subscription\\Providers\\SubscriptionServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

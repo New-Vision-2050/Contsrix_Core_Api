@@ -339,7 +339,7 @@ class CompanyUserRepository extends BaseRepository
                 "global_company_user_id" => $companyUser->global_id
             ]);
 
-            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->count();
+            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner",1)->count();
             $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
 
             if ($existingUser) {
@@ -383,6 +383,8 @@ class CompanyUserRepository extends BaseRepository
                 "company_id" => $companyId,
                 "parent_id" => null
             ]);
+            $user->assignRole('super-admin');//assign super admin role for first user
+
 
             $branch->update(["manager_id" => $user->id]);
 

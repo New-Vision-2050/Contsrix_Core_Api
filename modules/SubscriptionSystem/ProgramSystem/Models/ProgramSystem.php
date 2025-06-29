@@ -49,8 +49,8 @@ class ProgramSystem extends Model
             Feature::class,
             'program_system_feature'
         )
-        ->using(ProgramSystemFeature::class) 
-        ->withPivot('module_id')->withTimestamps();
+        ->using(ProgramSystemFeature::class)
+        ->withPivot('program_id')->withTimestamps();
     }
     public function companyFields()
     {
@@ -61,7 +61,6 @@ class ProgramSystem extends Model
         ->using(ProgramSystemCompanyField::class)
         ->withTimestamps();
     }
-    
     public function businessTypes()
     {
         return $this->belongsToMany(

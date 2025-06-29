@@ -47,4 +47,31 @@ class FeatureRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    /**
+     * Get all permissions associated with a set of features
+     *
+     * @param array $featureIds
+     * @return \Illuminate\Support\Collection
+     */
+    public function getPermissionsByFeatures(array $featureIds): Collection
+    {
+        // Check if featureIds is empty
+        if (empty($featureIds)) {
+            return collect([]);
+        }
+
+        // Get all features with their permissions
+        $features = Feature::whereIn('id', $featureIds)
+            ->with('permissions')
+            ->get();
+
+        // Collect all permissions from all features
+        $permissions = collect();
+        foreach ($features as $feature) {
+            $permissions = $permissions->merge($feature->permissions);
+        }
+
+        return $permissions;
+    }
 }

@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\SubscriptionSystem\Modules\Models\Module;
 use Modules\SubscriptionSystem\ProgramSystem\Models\ProgramSystem;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\Program\Models\Program;
+use Modules\RoleAndPermission\Models\Permission;
 
 class Feature extends Model
 {
@@ -26,7 +29,7 @@ class Feature extends Model
     protected $fillable = [
         // 'name',
         'slug',
-        'module_id'
+        'program_id'
     ];
     public array $translatable = ['name'];
 
@@ -41,15 +44,26 @@ class Feature extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function module(): BelongsTo
+    public function program(): BelongsTo
     {
-        return $this->belongsTo(Module::class);
+        return $this->belongsTo(Program::class);
     }
     public function programSystems()
     {
         return $this->belongsToMany(
             ProgramSystem::class,
             'program_system_feature'
-        )->withPivot('module_id')->withTimestamps();
+        )->withPivot('program_id')->withTimestamps();
+    }
+
+    /**
+     * Get the permissions associated with this feature
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'feature_permission', 'feature_id', 'permission_id')
+            ->withTimestamps();
     }
 }

@@ -1,0 +1,14 @@
+{
+    "name": "Package",
+    "alias": "package",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\SubscriptionSystem\\Package\\Providers\\PackageServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\SubscriptionSystem"
+}

@@ -14,9 +14,9 @@ class FeatureFilter extends SearchModelFilter
         {
             return $this->where('name', $name);
         }
-        public function module($module)
+        public function program($program)
         {
-            return $this->where('module_id', $module);
+            return $this->where('program_id', $program);
         }
         
 }

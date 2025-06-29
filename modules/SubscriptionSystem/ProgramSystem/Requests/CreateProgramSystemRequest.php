@@ -17,7 +17,7 @@ class CreateProgramSystemRequest extends FormRequest
             'name.ar' => ['required', 'string', 'max:255'],
             'features' => 'required|array',
             'features.*.feature_id' => 'required|uuid|exists:features,id',
-            'features.*.module_id' => 'required|uuid|exists:modules,id',
+            'features.*.program_id' => 'required|uuid|exists:modules,id',
 
             'company_fields' => 'nullable|array',
             'company_fields.*' => 'uuid|exists:company_fields,id',
