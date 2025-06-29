@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Modules\Subscription\CompanyAccessProgram\Models;
 
 use Modules\Country\Models\Country;
+use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
+use Modules\SubEntity\Models\SubEntity;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\Subscription\Module\Models\Module;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Modules\Subscription\CompanyAccessProgram\Database\factories\CompanyAccessProgramFactory;
 
 class CompanyAccessProgram extends Model
 {
@@ -31,21 +31,6 @@ class CompanyAccessProgram extends Model
     protected $casts = [
         'id' => 'string',
     ];
-
-    protected static function newFactory(): CompanyAccessProgramFactory
-    {
-        return CompanyAccessProgramFactory::new();
-    }
-
-    public function modules(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            Module::class,
-            'company_access_program_module',
-            'company_access_program_id',
-            'module_id'
-        );
-    }
 
     public function companyFields(): BelongsToMany
     {
@@ -74,6 +59,26 @@ class CompanyAccessProgram extends Model
             'company_access_program_country',
             'company_access_program_id',
             'country_id'
+        );
+    }
+
+    public function programs(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Program::class,
+            'company_access_program_program',
+            'company_access_program_id',
+            'program_id'
+        );
+    }
+
+    public function subEntities(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            SubEntity::class,
+            'company_access_program_sub_entity',
+            'company_access_program_id',
+            'sub_entity_id'
         );
     }
 }

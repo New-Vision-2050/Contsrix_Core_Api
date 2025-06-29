@@ -7,26 +7,26 @@ use Illuminate\Database\Schema\Blueprint;
 return new class extends Migration {
     public function up()
     {
-        Schema::create('company_access_program_module', function (Blueprint $table) {
+        Schema::create('company_access_program_program', function (Blueprint $table) {
             $table->uuid('company_access_program_id');
-            $table->uuid('module_id');
+            $table->uuid('program_id');
 
             $table->foreign('company_access_program_id')
                 ->references('id')
                 ->on('company_access_programs')
                 ->onDelete('cascade');
 
-            $table->foreign('module_id')
+            $table->foreign('program_id')
                 ->references('id')
-                ->on('modules')
+                ->on('programs')
                 ->onDelete('cascade');
 
-            $table->primary(['company_access_program_id', 'module_id']);
+            $table->unique(['company_access_program_id', 'program_id'], 'cap_program_unique');
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('company_access_program_module');
+        Schema::dropIfExists('company_access_program_program');
     }
 };
