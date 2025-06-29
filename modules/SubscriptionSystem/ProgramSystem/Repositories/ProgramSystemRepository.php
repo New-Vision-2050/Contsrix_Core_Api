@@ -58,5 +58,15 @@ class ProgramSystemRepository extends BaseRepository
 
         return $programSystem->refresh();
     }
+    public function countStatistics()
+    {
+        $programSystem = $this->model->count();
+        $programSystemActive = $this->model->where('is_active', 1)->count();
+
+        return [
+            'total' => $programSystem,
+            'active' => $programSystemActive,
+        ];
+    }
 
 }

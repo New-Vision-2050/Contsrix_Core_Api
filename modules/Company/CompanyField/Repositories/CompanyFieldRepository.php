@@ -47,4 +47,9 @@ class CompanyFieldRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function countFieldsUsedInPrograms(): int
+    {
+        return $this->model->whereHas('programSystems')->count();
+    }
 }
