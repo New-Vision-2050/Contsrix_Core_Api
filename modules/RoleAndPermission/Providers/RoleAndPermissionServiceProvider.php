@@ -26,7 +26,7 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         $this->registerTranslations();
-        //$this->registerConfig();
+        $this->registerConfig();
         $this->registerMigrations();
         $this->registerCommands();
         Gate::before(function ($user, $ability) {
@@ -56,5 +56,12 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands($this->commands);
         }
+    }
+
+    protected function registerConfig(): void
+    {
+        $this->mergeConfigFrom(
+            $this->getModulePath() . '/Config/permissions.php', 'permissions'
+        );
     }
 }
