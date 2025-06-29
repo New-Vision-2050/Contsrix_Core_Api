@@ -23,29 +23,38 @@ class StateRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getCountryList(?int $page, ?int $perPage = 10): Collection
+    public function getStateList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList(['status' => 1], $page, $perPage);
     }
 
-    public function getCity(UuidInterface $id): State
+    public function getStatesWithCities($countryId = null)
+    {
+        return $this->model->with('cities:id,name,state_id')
+            ->where('country_id', $countryId)
+            ->where('flag', 1)
+            ->orderBy('name')
+            ->get(['id','name']);
+    }
+
+    public function getState($id): State
     {
         return $this->findOneByOrFail([
-            'id' => $id->toString(),
+            'id' => $id,
         ]);
     }
 
-    public function createCountry(array $data): State
+    public function createState(array $data): State
     {
         return $this->create($data);
     }
 
-    public function updateCountry(UuidInterface $id, array $data): bool
+    public function updateState(UuidInterface $id, array $data): bool
     {
         return $this->update($id, $data);
     }
 
-    public function deleteCountry(UuidInterface $id): bool
+    public function deleteState(UuidInterface $id): bool
     {
         return $this->delete($id);
     }

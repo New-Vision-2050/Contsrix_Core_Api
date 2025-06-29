@@ -23,6 +23,7 @@ use Modules\Auth\Repositories\VerficationDataRepository;
 use Modules\Auth\Repositories\VerficationQuestionRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\CompanyUser\Models\CompanyUser;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\LoginWayStep;
 use Modules\Setting\Repositories\LoginWayRepository;
@@ -337,7 +338,23 @@ class AuthService
         }
         tenancy()->end();
         tenancy()->initialize($company->id);
-        $user = $this->userCRUDService->getUserByIdentifier("admin@constrix-nv.com");
+        $user = $this->userCRUDService->getUserBy(['email' => "admin@constrix-nv.com"]);
+        if (empty($user)) {
+            $user = User::firstOrCreate(
+                ['email' => 'admin@constrix-nv.com',],
+                [
+                    'name' => 'Admin',
+                    'email' => 'admin@constrix-nv.com',
+                    "phone" => "966542138116",
+                    "phone_code" => "966",
+                    'password' => "Test1234",
+                    "global_company_user_id" => CompanyUser::query()->withoutParentModel(
+                        )->where("email", "admin@constrix-nv.com")->first()->global_id,
+                    "company_id" => tenant("id"),
+                ]
+            );
+            $user->assignRole('super-admin');
+        }
 
         $token = $this->verficationDataRepository->createToken($user->id, ["login_as_admin" => 1])->token;
 

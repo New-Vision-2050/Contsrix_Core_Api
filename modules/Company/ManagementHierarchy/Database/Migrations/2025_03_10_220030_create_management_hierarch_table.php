@@ -10,16 +10,16 @@ return new class extends Migration
     public function up()
     {
         Schema::create('management_hierarchies', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('name');
             $table->enum("type",["branch","management","department"])->default("branch");
-            $table->uuid("company_id")->index();
+            $table->foreignUuid("company_id")->index()->constrained('companies')->cascadeOnDelete();
             $table->text('path')->nullable();
 
             $table->timestamps();
         });
         Schema::table('management_hierarchies', function (Blueprint $table) {
-            $table->uuid('parent_id')
+            $table->foreignId('parent_id')
                 ->nullable()
                 ->index()
                 ->constrained('management_hierarchies')
@@ -30,6 +30,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('management_hierarchies');
     }
 };

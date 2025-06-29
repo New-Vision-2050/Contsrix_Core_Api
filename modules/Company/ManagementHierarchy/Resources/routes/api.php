@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyCloneController;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyController;
 use Modules\Company\ManagementHierarchy\Controllers\WidgetsController;
 use Modules\RoleAndPermission\Enums\Permission;
@@ -25,6 +26,11 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{id}', [ManagementHierarchyController::class, 'show'])->permission(Permission::ORGANIZATION_BRANCH_VIEW() . '|' . Permission::ORGANIZATION_MANAGEMENT_VIEW());
     Route::put('/{id}', [ManagementHierarchyController::class, 'update'])->permission(Permission::ORGANIZATION_BRANCH_UPDATE() . '|' . Permission::ORGANIZATION_MANAGEMENT_UPDATE());
     Route::delete('/{id}', [ManagementHierarchyController::class, 'delete'])->permission(Permission::ORGANIZATION_BRANCH_DELETE() . '|' . Permission::ORGANIZATION_MANAGEMENT_DELETE());
+
+    // Department cloning routes
+    Route::post('/clone-department', [ManagementHierarchyCloneController::class, 'cloneDepartment']);
+    Route::get('/linked-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'getLinkedDepartments']);
+    Route::post('/sync-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'syncLinkedDepartments']);
 
     // Widgets API - single endpoint for all widgets
 });
