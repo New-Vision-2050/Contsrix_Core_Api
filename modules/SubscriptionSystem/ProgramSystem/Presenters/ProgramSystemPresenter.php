@@ -27,7 +27,6 @@ class ProgramSystemPresenter extends AbstractPresenter
                 'name' => $feature->name,
                 'module_id' => $feature->pivot->module_id,
             ]),
-
             'company_fields' => $this->programSystem->companyFields->map(fn($field) => [
                 'id' => $field->id,
                 'name' => $field->name,

@@ -61,7 +61,6 @@ class ProgramSystem extends Model
         ->using(ProgramSystemCompanyField::class)
         ->withTimestamps();
     }
-
     public function businessTypes()
     {
         return $this->belongsToMany(

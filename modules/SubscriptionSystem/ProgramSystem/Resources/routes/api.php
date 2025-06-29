@@ -9,7 +9,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::post('/', [ProgramSystemController::class, 'store']);
     Route::get('/{id}', [ProgramSystemController::class, 'show']);
     Route::put('/{id}', [ProgramSystemController::class, 'update']);
-
     Route::put('/{id}/toggle-status', [ProgramSystemController::class, 'toggleIsActive']);
     Route::delete('/{id}', [ProgramSystemController::class, 'delete']);
 });

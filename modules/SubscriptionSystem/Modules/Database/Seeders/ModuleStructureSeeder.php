@@ -12,9 +12,11 @@ use Modules\RoleAndPermission\Models\Permission;
 use Modules\SubscriptionSystem\Feature\Models\Feature;
 use Modules\SubscriptionSystem\Feature\Models\FeaturePermission;
 use Modules\SubscriptionSystem\Modules\Models\Module;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class ModuleStructureSeeder extends Seeder
 {
+    use SeedOnce;
     public function run(): void
     {
         $createModule = function (array $name, string $slug, ?string $parentId = null) {
