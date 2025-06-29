@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Modules\SubscriptionSystem\Feature\Controllers;
 
-use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\SubscriptionSystem\Feature\Handlers\DeleteFeatureHandler;
 use Modules\SubscriptionSystem\Feature\Handlers\UpdateFeatureHandler;
 use Modules\SubscriptionSystem\Feature\Presenters\FeaturePresenter;
 use Modules\SubscriptionSystem\Feature\Requests\CreateFeatureRequest;
 use Modules\SubscriptionSystem\Feature\Requests\DeleteFeatureRequest;
 use Modules\SubscriptionSystem\Feature\Requests\GetFeatureListRequest;
+use Modules\SubscriptionSystem\Feature\Requests\GetFeaturePermissionsRequest;
 use Modules\SubscriptionSystem\Feature\Requests\GetFeatureRequest;
 use Modules\SubscriptionSystem\Feature\Requests\UpdateFeatureRequest;
 use Modules\SubscriptionSystem\Feature\Services\FeatureCRUDService;
@@ -72,5 +74,19 @@ class FeatureController extends Controller
         $this->deleteFeatureHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+    /**
+     * Get non-redundant permissions for a set of features
+     *
+     * @param GetFeaturePermissionsRequest $request
+     * @return JsonResponse
+     */
+    public function getFeaturePermissions(GetFeaturePermissionsRequest $request): JsonResponse
+    {
+        $featureIds = $request->getFeatureIds();
+        $permissions = $this->featureService->getNonRedundantPermissionsByFeatures($featureIds);
+
+
+        return Json::items(PermissionPresenter::collection($permissions), message: 'Permissions retrieved successfully');
     }
 }

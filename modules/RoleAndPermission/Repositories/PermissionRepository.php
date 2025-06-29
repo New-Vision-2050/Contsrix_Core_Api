@@ -27,6 +27,11 @@ class PermissionRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function getPermissionsWithoutPagination()
+    {
+        return $this->model->get();
+    }
+
     public function getPermission(UuidInterface $id): Permission
     {
         return $this->findOneByOrFail([

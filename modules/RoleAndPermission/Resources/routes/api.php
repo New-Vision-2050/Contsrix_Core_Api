@@ -2,10 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\RoleAndPermission\Controllers\PermissionController;
-use Modules\RoleAndPermission\Controllers\RoleAndPermissionController;
 use Modules\RoleAndPermission\Controllers\RoleController;
 
-Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class],"prefix"=>"roles"], function () {
     Route::get('/', [RoleController::class, 'index']);
     Route::post('/', [RoleController::class, 'store']);
     Route::get('/{id}', [RoleController::class, 'show']);
@@ -13,15 +12,18 @@ Route::group(['middleware' => ['auth:api'],"prefix"=>"roles"], function () {
     Route::post('/{id}/assign-permissions', [RoleController::class, 'assignPermissionToRole']);
     Route::put('/{id}', [RoleController::class, 'update']);
     Route::delete('/{id}', [RoleController::class, 'delete']);
+    Route::patch('/{id}/status', [RoleController::class, 'setStatus']);
 });
 
 
-Route::group(['middleware' => ['auth:api'],"prefix"=>"permissions"], function () {
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class],"prefix"=>"permissions"], function () {
     Route::get('/', [PermissionController::class, 'index']);
+    Route::get('/lookup', [PermissionController::class, 'permissionAsLookup']);
     Route::post('/', [PermissionController::class, 'store']);
 
     Route::get('/{id}', [PermissionController::class, 'show']);
     Route::put('/{id}', [PermissionController::class, 'update']);
     Route::delete('/{id}', [PermissionController::class, 'delete']);
+    Route::patch('/{id}/status', [PermissionController::class, 'setStatus']);
 
 });

@@ -36,4 +36,19 @@ class FeatureCRUDService
             id: $id,
         );
     }
+
+    /**
+     * Get non-redundant permissions for a set of features
+     *
+     * @param array $featureIds
+     * @return Collection
+     */
+    public function getNonRedundantPermissionsByFeatures(array $featureIds): Collection
+    {
+        // Get permissions for all the features
+        $allPermissions = $this->repository->getPermissionsByFeatures($featureIds);
+
+        // Remove redundant permissions (duplicates)
+        return $allPermissions->unique('id');
+    }
 }

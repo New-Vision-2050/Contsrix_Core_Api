@@ -89,11 +89,12 @@ class ProgramSystemController extends Controller
     public function toggleIsActive(GetProgramSystemRequest $request): JsonResponse
     {
         $item = $this->programSystemService->toggleIsActive(Uuid::fromString($request->route('id')));
-    
+
         $presenter = new ProgramSystemIndexPresenter($item);
-    
+
         return Json::item($presenter->getData());
     }
+
     public function delete(DeleteProgramSystemRequest $request): JsonResponse
     {
         $this->deleteProgramSystemHandler->handle(Uuid::fromString($request->route('id')));

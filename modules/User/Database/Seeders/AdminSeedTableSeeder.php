@@ -57,7 +57,7 @@ class AdminSeedTableSeeder extends Seeder
                     "management_hierarchy_id"=>2 //main management in main company
                 ]
             );
-            $user->assignRole('super-admin');
+
         }
     //}
 }
