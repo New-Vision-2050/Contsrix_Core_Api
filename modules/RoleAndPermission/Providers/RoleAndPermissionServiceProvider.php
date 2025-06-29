@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\RoleAndPermission\Commands\SyncCompanyPermissionsCommand;
+use Modules\RoleAndPermission\Console\Commands\SyncPermissionsCommand;
+use Modules\RoleAndPermission\Console\Commands\PermissionCacheCommand;
+use Modules\RoleAndPermission\Middleware\AdvancedPermissionMiddleware;
+use Modules\RoleAndPermission\Services\PermissionService;
+use Modules\RoleAndPermission\Services\PermissionAuditService;
 
 class RoleAndPermissionServiceProvider extends ModuleServiceProvider
 {
@@ -17,6 +22,8 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
      */
     protected $commands = [
         SyncCompanyPermissionsCommand::class,
+        SyncPermissionsCommand::class,
+        PermissionCacheCommand::class,
     ];
 
     public static function getModuleName(): string
@@ -29,6 +36,8 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         $this->registerMigrations();
         $this->registerCommands();
+        $this->registerMiddleware();
+        
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super-admin') ||  $user->hasRole('admin') ? true : null;
         });
@@ -41,12 +50,23 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
 
             return $this->middleware("permission:" . implode('|', $permissions));
         });
+
+        // Register advanced permission macro
+        IlluminateRoute::macro('advancedPermission', function (...$permissions) {
+            $permissions = collect($permissions)
+                ->flatten()
+                ->map(fn ($permission) => $permission instanceof \UnitEnum ? $permission->value : $permission)
+                ->all();
+
+            return $this->middleware("advanced.permission:" . implode('|', $permissions));
+        });
     }
 
     public function register(): void
     {
         $this->registerConfig(); // Moved here to load before routes
         $this->registerRoutes();
+        $this->registerServices();
     }
 
     public function mapRoutes(): void
@@ -66,6 +86,29 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands($this->commands);
         }
+    }
+
+    /**
+     * Register middleware
+     */
+    protected function registerMiddleware(): void
+    {
+        $router = $this->app['router'];
+        $router->aliasMiddleware('advanced.permission', AdvancedPermissionMiddleware::class);
+    }
+
+    /**
+     * Register services
+     */
+    protected function registerServices(): void
+    {
+        $this->app->singleton(PermissionService::class, function ($app) {
+            return new PermissionService();
+        });
+
+        $this->app->singleton(PermissionAuditService::class, function ($app) {
+            return new PermissionAuditService();
+        });
     }
 
     protected function registerConfig(): void

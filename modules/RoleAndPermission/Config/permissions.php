@@ -9,6 +9,10 @@ return [
         'USER_EDIT' => 'users.user.edit',
         'USER_DELETE' => 'users.user.delete',
         'USER_EXPORT' => 'users.user.export',
+        'USER_IMPORT' => 'users.user.import',
+        'USER_BULK_DELETE' => 'users.user.bulk-delete',
+        'USER_ACTIVATE' => 'users.user.activate',
+        'USER_DEACTIVATE' => 'users.user.deactivate',
 
         'CLIENT_VIEW' => 'users.client.view',
         'CLIENT_LIST' => 'users.client.list',
@@ -16,6 +20,8 @@ return [
         'CLIENT_EDIT' => 'users.client.edit',
         'CLIENT_DELETE' => 'users.client.delete',
         'CLIENT_EXPORT' => 'users.client.export',
+        'CLIENT_IMPORT' => 'users.client.import',
+        'CLIENT_BULK_DELETE' => 'users.client.bulk-delete',
 
         'BROKER_VIEW' => 'users.broker.view',
         'BROKER_LIST' => 'users.broker.list',
@@ -23,6 +29,8 @@ return [
         'BROKER_EDIT' => 'users.broker.edit',
         'BROKER_DELETE' => 'users.broker.delete',
         'BROKER_EXPORT' => 'users.broker.export',
+        'BROKER_IMPORT' => 'users.broker.import',
+        'BROKER_BULK_DELETE' => 'users.broker.bulk-delete',
 
         'EMPLOYEE_VIEW' => 'users.employee.view',
         'EMPLOYEE_LIST' => 'users.employee.list',
@@ -30,6 +38,8 @@ return [
         'EMPLOYEE_EDIT' => 'users.employee.edit',
         'EMPLOYEE_DELETE' => 'users.employee.delete',
         'EMPLOYEE_EXPORT' => 'users.employee.export',
+        'EMPLOYEE_IMPORT' => 'users.employee.import',
+        'EMPLOYEE_BULK_DELETE' => 'users.employee.bulk-delete',
 
         // User Profile module permissions
         'USER_PROFILE_DATA_VIEW' => 'user-profile.data.view',
@@ -79,6 +89,10 @@ return [
         'COMPANY_DELETE' => 'companies.company.delete',
         'COMPANY_LOGIN_AS_ADMIN' => 'companies.company.login-as-admin',
         'COMPANY_EXPORT' => 'companies.company.export',
+        'COMPANY_IMPORT' => 'companies.company.import',
+        'COMPANY_BULK_DELETE' => 'companies.company.bulk-delete',
+        'COMPANY_ACTIVATE' => 'companies.company.activate',
+        'COMPANY_DEACTIVATE' => 'companies.company.deactivate',
 
         // Role and Permission module permissions
         'ROLE_LIST' => 'settings.role.list',
@@ -86,6 +100,8 @@ return [
         'ROLE_CREATE' => 'settings.role.create',
         'ROLE_EDIT' => 'settings.role.edit',
         'ROLE_DELETE' => 'settings.role.delete',
+        'ROLE_ASSIGN' => 'settings.role.assign',
+        'ROLE_CLONE' => 'settings.role.clone',
 
         'PERMISSION_LIST' => 'settings.permission.list',
         'PERMISSION_CREATE' => 'settings.permission.create',
@@ -108,11 +124,16 @@ return [
         'ORGANIZATION_BRANCH_CREATE' => 'organization.branch.create',
         'ORGANIZATION_BRANCH_UPDATE' => 'organization.branch.update',
         'ORGANIZATION_BRANCH_DELETE' => 'organization.branch.delete',
+        'ORGANIZATION_BRANCH_LIST' => 'organization.branch.list',
+        'ORGANIZATION_BRANCH_EXPORT' => 'organization.branch.export',
         'ORGANIZATION_MANAGEMENT_VIEW' => 'organization.management.view',
         'ORGANIZATION_MANAGEMENT_CREATE' => 'organization.management.create',
         'ORGANIZATION_MANAGEMENT_UPDATE' => 'organization.management.update',
         'ORGANIZATION_MANAGEMENT_DELETE' => 'organization.management.delete',
+        'ORGANIZATION_MANAGEMENT_LIST' => 'organization.management.list',
+        'ORGANIZATION_MANAGEMENT_EXPORT' => 'organization.management.export',
         'ORGANIZATION_USERS_VIEW' => 'organization.users.view',
+        'ORGANIZATION_USERS_LIST' => 'organization.users.list',
         'ORGANIZATION_JOB_TITLE_VIEW' => 'organization.job-title.view',
         'ORGANIZATION_JOB_TITLE_CREATE' => 'organization.job-title.create',
         'ORGANIZATION_JOB_TITLE_UPDATE' => 'organization.job-title.update',
@@ -129,16 +150,22 @@ return [
         'ORGANIZATION_JOB_TYPE_EXPORT' => 'organization.job-type.export',
 
         // Company Profile module permissions
+        'COMPANY_PROFILE_OFFICIAL_DATA_VIEW' => 'company-profile.official-data.view',
         'COMPANY_PROFILE_OFFICIAL_DATA_UPDATE' => 'company-profile.official-data.update',
         'COMPANY_PROFILE_OFFICIAL_DATA_REQUEST_UPDATE' => 'company-profile.official-data.request-update',
+        'COMPANY_PROFILE_LEGAL_DATA_VIEW' => 'company-profile.legal-data.view',
+        'COMPANY_PROFILE_LEGAL_DATA_LIST' => 'company-profile.legal-data.list',
         'COMPANY_PROFILE_LEGAL_DATA_UPDATE' => 'company-profile.legal-data.update',
         'COMPANY_PROFILE_LEGAL_DATA_CREATE' => 'company-profile.legal-data.create',
         'COMPANY_PROFILE_LEGAL_DATA_DELETE' => 'company-profile.legal-data.delete',
         'COMPANY_PROFILE_LEGAL_DATA_REQUEST_UPDATE' => 'company-profile.legal-data.request-update',
+        'COMPANY_PROFILE_ADDRESS_VIEW' => 'company-profile.address.view',
         'COMPANY_PROFILE_ADDRESS_UPDATE' => 'company-profile.address.update',
         'COMPANY_PROFILE_ADDRESS_REQUEST_UPDATE' => 'company-profile.address.request-update',
         'COMPANY_PROFILE_BRANCH_LIST' => 'company-profile.branch.list',
         'COMPANY_PROFILE_BRANCH_VIEW' => 'company-profile.branch.view',
+        'COMPANY_PROFILE_OFFICIAL_DOCUMENT_VIEW' => 'company-profile.official-document.view',
+        'COMPANY_PROFILE_OFFICIAL_DOCUMENT_LIST' => 'company-profile.official-document.list',
         'COMPANY_PROFILE_OFFICIAL_DOCUMENT_CREATE' => 'company-profile.official-document.create',
         'COMPANY_PROFILE_OFFICIAL_DOCUMENT_UPDATE' => 'company-profile.official-document.update',
         'COMPANY_PROFILE_OFFICIAL_DOCUMENT_DELETE' => 'company-profile.official-document.delete',
@@ -150,6 +177,8 @@ return [
         'COUNTRY_EDIT' => 'country.country.edit',
         'COUNTRY_DELETE' => 'country.country.delete',
         'COUNTRY_EXPORT' => 'country.country.export',
+        'COUNTRY_IMPORT' => 'country.country.import',
+        'COUNTRY_BULK_DELETE' => 'country.country.bulk-delete',
 
         'STATE_VIEW' => 'country.state.view',
         'STATE_LIST' => 'country.state.list',
@@ -157,6 +186,8 @@ return [
         'STATE_EDIT' => 'country.state.edit',
         'STATE_DELETE' => 'country.state.delete',
         'STATE_EXPORT' => 'country.state.export',
+        'STATE_IMPORT' => 'country.state.import',
+        'STATE_BULK_DELETE' => 'country.state.bulk-delete',
 
         'CITY_VIEW' => 'country.city.view',
         'CITY_LIST' => 'country.city.list',
@@ -164,9 +195,109 @@ return [
         'CITY_EDIT' => 'country.city.edit',
         'CITY_DELETE' => 'country.city.delete',
         'CITY_EXPORT' => 'country.city.export',
+        'CITY_IMPORT' => 'country.city.import',
+        'CITY_BULK_DELETE' => 'country.city.bulk-delete',
+    ],
 
+    // Permission metadata for enhanced management
+    'permission_groups' => [
+        'users' => [
+            'label' => 'User Management',
+            'description' => 'Permissions for managing users, clients, brokers, and employees',
+            'icon' => 'users',
+            'color' => '#3B82F6',
+            'permissions' => [
+                'user' => ['USER_VIEW', 'USER_LIST', 'USER_CREATE', 'USER_EDIT', 'USER_DELETE', 'USER_EXPORT', 'USER_IMPORT', 'USER_BULK_DELETE', 'USER_ACTIVATE', 'USER_DEACTIVATE'],
+                'client' => ['CLIENT_VIEW', 'CLIENT_LIST', 'CLIENT_CREATE', 'CLIENT_EDIT', 'CLIENT_DELETE', 'CLIENT_EXPORT', 'CLIENT_IMPORT', 'CLIENT_BULK_DELETE'],
+                'broker' => ['BROKER_VIEW', 'BROKER_LIST', 'BROKER_CREATE', 'BROKER_EDIT', 'BROKER_DELETE', 'BROKER_EXPORT', 'BROKER_IMPORT', 'BROKER_BULK_DELETE'],
+                'employee' => ['EMPLOYEE_VIEW', 'EMPLOYEE_LIST', 'EMPLOYEE_CREATE', 'EMPLOYEE_EDIT', 'EMPLOYEE_DELETE', 'EMPLOYEE_EXPORT', 'EMPLOYEE_IMPORT', 'EMPLOYEE_BULK_DELETE'],
+            ]
+        ],
+        'user-profile' => [
+            'label' => 'User Profile',
+            'description' => 'Permissions for managing user profile information',
+            'icon' => 'user-circle',
+            'color' => '#10B981',
+        ],
+        'companies' => [
+            'label' => 'Company Management',
+            'description' => 'Permissions for managing companies and corporate data',
+            'icon' => 'building',
+            'color' => '#F59E0B',
+        ],
+        'company-profile' => [
+            'label' => 'Company Profile',
+            'description' => 'Permissions for managing company profile and legal documents',
+            'icon' => 'document-text',
+            'color' => '#8B5CF6',
+        ],
+        'organization' => [
+            'label' => 'Organization Structure',
+            'description' => 'Permissions for managing organizational hierarchy and job positions',
+            'icon' => 'office-building',
+            'color' => '#EF4444',
+        ],
+        'settings' => [
+            'label' => 'System Settings',
+            'description' => 'Permissions for system configuration and role management',
+            'icon' => 'cog',
+            'color' => '#6B7280',
+        ],
+        'country' => [
+            'label' => 'Location Management',
+            'description' => 'Permissions for managing countries, states, and cities',
+            'icon' => 'globe',
+            'color' => '#06B6D4',
+        ],
+    ],
 
+    // Permission hierarchies and dependencies
+    'permission_hierarchies' => [
+        'ADMIN' => ['*'], // Super admin access
+        'MANAGER' => [
+            'users.*',
+            'companies.*.view',
+            'companies.*.list',
+            'company-profile.*',
+            'organization.*',
+        ],
+        'SUPERVISOR' => [
+            'users.*.view',
+            'users.*.list',
+            'companies.*.view',
+            'organization.*.view',
+        ],
+        'USER' => [
+            'user-profile.*',
+            'companies.company.view',
+        ],
+    ],
 
+    // Critical permissions that require extra confirmation
+    'critical_permissions' => [
+        'USER_DELETE',
+        'USER_BULK_DELETE', 
+        'COMPANY_DELETE',
+        'COMPANY_BULK_DELETE',
+        'ROLE_DELETE',
+        'PERMISSION_DELETE',
+        'COMPANY_LOGIN_AS_ADMIN',
+    ],
 
-    ]
+    // Actions that can be applied to resources
+    'actions' => [
+        'view' => ['label' => 'View', 'description' => 'Can view the resource', 'color' => '#10B981'],
+        'list' => ['label' => 'List', 'description' => 'Can list/browse resources', 'color' => '#3B82F6'],
+        'create' => ['label' => 'Create', 'description' => 'Can create new resources', 'color' => '#F59E0B'],
+        'edit' => ['label' => 'Edit', 'description' => 'Can modify existing resources', 'color' => '#8B5CF6'],
+        'update' => ['label' => 'Update', 'description' => 'Can update existing resources', 'color' => '#8B5CF6'],
+        'delete' => ['label' => 'Delete', 'description' => 'Can delete resources', 'color' => '#EF4444'],
+        'export' => ['label' => 'Export', 'description' => 'Can export data', 'color' => '#06B6D4'],
+        'import' => ['label' => 'Import', 'description' => 'Can import data', 'color' => '#84CC16'],
+        'bulk-delete' => ['label' => 'Bulk Delete', 'description' => 'Can delete multiple resources at once', 'color' => '#DC2626'],
+        'activate' => ['label' => 'Activate', 'description' => 'Can activate resources', 'color' => '#059669'],
+        'deactivate' => ['label' => 'Deactivate', 'description' => 'Can deactivate resources', 'color' => '#D97706'],
+        'assign' => ['label' => 'Assign', 'description' => 'Can assign resources to others', 'color' => '#7C3AED'],
+        'clone' => ['label' => 'Clone', 'description' => 'Can duplicate resources', 'color' => '#0891B2'],
+    ],
 ];
