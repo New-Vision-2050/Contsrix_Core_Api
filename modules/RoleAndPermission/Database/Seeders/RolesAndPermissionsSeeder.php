@@ -202,7 +202,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'user-profile.salary-information.update',
 
 
-
             'user-profile.qualification.create',
             'user-profile.qualification.update',
             'user-profile.qualification.delete',
@@ -220,6 +219,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'user-profile.certificates.create',
             'user-profile.certificates.update',
             'user-profile.certificates.delete',
+
+
+            'user-profile.pedestals.create',
+            'user-profile.pedestals.update',
+            'user-profile.pedestals.delete',
 
 
             'user-profile.work-license.update',
