@@ -1,0 +1,11 @@
+{
+    "name": "OpenRouter",
+    "alias": "openrouter",
+    "description": "OpenRouter module for geolocation and mapping services",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\OpenRouter\\Providers\\OpenRouterServiceProvider"
+    ],
+    "files": []
+}
