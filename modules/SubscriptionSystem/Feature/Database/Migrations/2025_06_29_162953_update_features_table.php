@@ -1,29 +1,41 @@
-<?php declare(strict_types=1);
+<?php 
+declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration {
     public function up(): void
     {
-        // حذف البيانات قبل التعديل
-        // DB::table('feature_permission')->delete();
-        // DB::table('features')->delete();
+        if (Schema::hasColumn('features', 'module_id')) {
+            Schema::table('features', function (Blueprint $table) {
+                // Drop the foreign key first!
+                $table->dropForeign(['module_id']);
+            });
 
-        // تعديل الجدول
-        Schema::table('features', function (Blueprint $table) {
-            // إذا العمود module_id موجود احذفه، وسيسقط معه المفتاح الأجنبي تلقائيًا
-            if (Schema::hasColumn('features', 'module_id')) {
+            Schema::table('features', function (Blueprint $table) {
+                // Now drop the column
                 $table->dropColumn('module_id');
-            }
+            });
+        }
 
-            // إضافة العمود program_id مع المفتاح الأجنبي
+        Schema::table('features', function (Blueprint $table) {
             $table->uuid('program_id')->after('slug');
             $table->foreign('program_id')->references('id')->on('programs')->cascadeOnDelete();
         });
     }
 
- 
+    public function down(): void
+    {
+        Schema::table('features', function (Blueprint $table) {
+            if (Schema::hasColumn('features', 'program_id')) {
+                $table->dropForeign(['program_id']);
+                $table->dropColumn('program_id');
+            }
+
+            $table->uuid('module_id')->nullable()->after('slug');
+            $table->foreign('module_id')->references('id')->on('modules')->cascadeOnDelete();
+        });
+    }
 };

@@ -40,7 +40,7 @@ class ValidModuleFeatures implements ValidationRule
             // Feature must exist and belong to module
             $featureExists = DB::table('features')
                 ->where('id', $featureId)
-                ->where('module_id', $this->moduleId)
+                ->where('program_id', $this->moduleId)
                 ->exists();
 
             if (!$featureExists) {

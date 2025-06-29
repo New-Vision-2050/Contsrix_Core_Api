@@ -50,7 +50,7 @@ class ProgramSystem extends Model
             'program_system_feature'
         )
         ->using(ProgramSystemFeature::class)
-        ->withPivot('module_id')->withTimestamps();
+        ->withPivot('program_id')->withTimestamps();
     }
     public function companyFields()
     {

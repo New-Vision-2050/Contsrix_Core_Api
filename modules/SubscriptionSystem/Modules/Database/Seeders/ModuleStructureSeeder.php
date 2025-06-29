@@ -37,7 +37,7 @@ class ModuleStructureSeeder extends Seeder
                 [
                     'name' => $name,
                     'slug' => $slug,
-                    'module_id' => $moduleId
+                    'program_id' => $moduleId
                 ]
             );
         };

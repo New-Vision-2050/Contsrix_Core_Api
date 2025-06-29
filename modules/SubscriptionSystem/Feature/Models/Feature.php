@@ -29,7 +29,7 @@ class Feature extends Model
     protected $fillable = [
         // 'name',
         'slug',
-        'module_id'
+        'program_id'
     ];
     public array $translatable = ['name'];
 
@@ -53,7 +53,7 @@ class Feature extends Model
         return $this->belongsToMany(
             ProgramSystem::class,
             'program_system_feature'
-        )->withPivot('module_id')->withTimestamps();
+        )->withPivot('program_id')->withTimestamps();
     }
 
     /**

@@ -24,7 +24,7 @@ class ProgramSystemCRUDService
 
          foreach ($createProgramSystemDTO->features as $item) {
             $programSystem->features()->attach($item['feature_id'], [
-                'module_id' => $item['module_id'],
+                'program_id' => $item['program_id'],
             ]);
         }
         
