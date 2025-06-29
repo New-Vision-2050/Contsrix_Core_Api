@@ -44,7 +44,9 @@ class JobTitleController extends Controller
     {
         $list = $this->jobTitleService->list(
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int) $request->get('per_page', 10),
+            $request->get('sort'),
+            $request->get('order', 'asc'),
         );
 
         return Json::items(JobTitlePresenter::collection($list['data']), paginationSettings: $list['pagination']);

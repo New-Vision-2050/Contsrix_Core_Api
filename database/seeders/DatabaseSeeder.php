@@ -116,5 +116,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ModuleStructureSeeder::class);
         $this->call(BusinessTypeSeederTableSeeder::class);
 
+
     }
 }
