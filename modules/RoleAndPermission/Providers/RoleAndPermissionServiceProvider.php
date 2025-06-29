@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Providers;
 
+use Illuminate\Routing\Route as IlluminateRoute;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
@@ -17,7 +18,7 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
     protected $commands = [
         SyncCompanyPermissionsCommand::class,
     ];
-    
+
     public static function getModuleName(): string
     {
         return 'RoleAndPermission';
@@ -26,16 +27,25 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         $this->registerTranslations();
-        $this->registerConfig();
         $this->registerMigrations();
         $this->registerCommands();
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super-admin') ||  $user->hasRole('admin') ? true : null;
         });
+
+        IlluminateRoute::macro('permission', function (...$permissions) {
+            $permissions = collect($permissions)
+                ->flatten()
+                ->map(fn ($permission) => $permission instanceof \UnitEnum ? $permission->value : $permission)
+                ->all();
+
+            return $this->middleware("permission:" . implode('|', $permissions));
+        });
     }
 
     public function register(): void
     {
+        $this->registerConfig(); // Moved here to load before routes
         $this->registerRoutes();
     }
 
@@ -45,7 +55,7 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
     }
-    
+
     /**
      * Register commands.
      *

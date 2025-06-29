@@ -1,38 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Modules\RoleAndPermission\Enums;
 
-use Illuminate\Support\Facades\Config;
+use ReflectionClass;
 
-class Permission
+/**
+ * @method static string SUPER_ADMIN()
+ * @method static string ADMIN()
+ */
+enum Permission: string
 {
-    /**
-     * Dynamically retrieve a permission string from the config file.
-     *
-     * @param $name
-     * @param $arguments
-     * @return mixed
-     * @throws \Exception
-     */
     public static function __callStatic($name, $arguments)
     {
-        $key = 'permissions.permissions.' . $name;
-        $permission = Config::get($key);
-
-        if (!$permission) {
+        $permissions = config('permissions.permissions');
+        if (!isset($permissions[$name])) {
             throw new \Exception("Permission constant '{$name}' not found in config file.");
         }
 
-        return $permission;
+        return $permissions[$name];
     }
 
-    /**
-     * Get all permission values.
-     *
-     * @return array
-     */
     public static function all(): array
     {
-        return array_values(Config::get('permissions.permissions', []));
+        return array_values(config('permissions.permissions'));
+    }
+
+    public static function getAllPermissions(): array
+    {
+        $reflectionClass = new ReflectionClass(self::class);
+
+        return $reflectionClass->getConstants();
     }
 }

@@ -37,7 +37,7 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
 
         foreach ($permissions as $permission) {
             if ($user->hasPermissionTo($permission, $authGuard)) {
-                $permissionModel = Permission::where('namnote', $permission)
+                $permissionModel = Permission::where('name', $permission)
                     ->where('company_id', $user->company_id)
                     ->first();
 
