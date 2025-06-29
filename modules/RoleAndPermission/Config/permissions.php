@@ -81,10 +81,16 @@ return [
         'COMPANY_EXPORT' => 'companies.company.export',
 
         // Role and Permission module permissions
+        'ROLE_LIST' => 'settings.role.list',
         'ROLE_VIEW' => 'settings.role.view',
         'ROLE_CREATE' => 'settings.role.create',
         'ROLE_EDIT' => 'settings.role.edit',
         'ROLE_DELETE' => 'settings.role.delete',
+
+        'PERMISSION_LIST' => 'settings.permission.list',
+        'PERMISSION_CREATE' => 'settings.permission.create',
+        'PERMISSION_EDIT' => 'settings.permission.edit',
+        'PERMISSION_DELETE' => 'settings.permission.delete',
         'PERMISSION_VIEW' => 'settings.permission.view',
         'PERMISSION_ASSIGN' => 'settings.permission.assign',
         'IDENTIFIER_LIST' => 'settings.identifier.list',
