@@ -49,7 +49,7 @@ use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializatio
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
 use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFake2DatabaseSeeder;
-use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFake3DatabaseSeeder;
+use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFake4DatabaseSeeder;
 use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFakeDatabaseSeeder;
 
 
@@ -120,7 +120,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(ProgramStructureSeeder::class);
         $this->call(BusinessTypeSeederTableSeeder::class);
 
-        $this->call(FeatureFake3DatabaseSeeder::class);
+        $this->call(FeatureFake4DatabaseSeeder::class);
 
 
 
