@@ -48,6 +48,7 @@ use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializatio
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
+use Modules\SubscriptionSystem\Modules\Database\Seeders\ProgramStructureSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -113,7 +114,7 @@ class DatabaseSeeder extends Seeder
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
 
-        $this->call(ModuleStructureSeeder::class);
+        $this->call(ProgramStructureSeeder::class);
         $this->call(BusinessTypeSeederTableSeeder::class);
 
 

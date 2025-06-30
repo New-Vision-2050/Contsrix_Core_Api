@@ -15,7 +15,7 @@ use Modules\SubscriptionSystem\Feature\Models\FeaturePermission;
 use Modules\SubscriptionSystem\Modules\Models\Module;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class ModuleStructureSeeder extends Seeder
+class ProgramStructureSeeder extends Seeder
 {
     use SeedOnce;
     public function run(): void
