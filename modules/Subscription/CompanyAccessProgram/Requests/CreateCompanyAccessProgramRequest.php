@@ -6,8 +6,8 @@ namespace Modules\Subscription\CompanyAccessProgram\Requests;
 
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\Subscription\CompanyAccessProgram\Rules\ValidModuleTree;
 use Modules\Subscription\CompanyAccessProgram\DTO\CreateCompanyAccessProgramDTO;
+use Modules\Subscription\CompanyAccessProgram\Rules\ValidProgramStructure;
 
 class CreateCompanyAccessProgramRequest extends FormRequest
 {
@@ -15,38 +15,26 @@ class CreateCompanyAccessProgramRequest extends FormRequest
     {
         return [
             'name' => 'required|string|unique:company_access_programs,name',
-            'modules.*' => 'nullable|array',
-            'modules.*.*' => 'uuid',
-            'modules' => ['required', 'array', new ValidModuleTree()],
-
+            'programs' => ['required', 'array', new ValidProgramStructure()],
             'company_fields' => 'nullable|array',
-            'company_fields.*' => [
-                'uuid',
-                Rule::exists('company_fields', 'id')
-            ],
-
+            'company_fields.*' => ['uuid', Rule::exists('company_fields', 'id')],
             'company_types' => 'nullable|array',
-            'company_types.*' => [
-                'uuid',
-                Rule::exists('company_types', 'id')
-            ],
-
+            'company_types.*' => ['uuid', Rule::exists('company_types', 'id')],
             'countries' => 'nullable|array',
-            'countries.*' => [
-                'integer',
-                Rule::exists('countries', 'id')
-            ],
+            'countries.*' => ['integer', Rule::exists('countries', 'id')],
         ];
     }
+
 
     public function createCreateCompanyAccessProgramDTO(): CreateCompanyAccessProgramDTO
     {
         return new CreateCompanyAccessProgramDTO(
             name: $this->get('name'),
-            modules: $this->get('modules', []),
+            rawPrograms: $this->get('programs', []),
             companyFields: $this->get('company_fields', []),
             companyTypes: $this->get('company_types', []),
             countries: $this->get('countries', []),
         );
     }
+
 }
