@@ -13,17 +13,19 @@ return new class extends Migration {
                 // Drop the foreign key first!
                 $table->dropForeign(['module_id']);
             });
-
+    
             Schema::table('features', function (Blueprint $table) {
                 // Now drop the column
                 $table->dropColumn('module_id');
             });
         }
-
-        Schema::table('features', function (Blueprint $table) {
-            $table->uuid('program_id')->after('slug');
-            $table->foreign('program_id')->references('id')->on('programs')->cascadeOnDelete();
-        });
+    
+        if (!Schema::hasColumn('features', 'program_id')) {
+            Schema::table('features', function (Blueprint $table) {
+                $table->uuid('program_id')->after('slug');
+                $table->foreign('program_id')->references('id')->on('programs')->cascadeOnDelete();
+            });
+        }
     }
 
     public function down(): void
