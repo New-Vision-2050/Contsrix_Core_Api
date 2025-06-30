@@ -33,6 +33,11 @@ class AttendanceException extends CustomException
         return new self('You are not currently on break.', 400);
     }
 
+    public static function alreadyOnBreak(): self
+    {
+        return new self('You are already on break. Please end your current break first.', 400);
+    }
+
     public static function attendanceNotFound(): self
     {
         return new self('Attendance record not found.', 404);

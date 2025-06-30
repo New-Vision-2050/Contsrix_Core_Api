@@ -16,15 +16,13 @@ class AttendancePresenter extends AbstractPresenter
     public function present(bool $isListing = false): array
     {
         return [
-            'id' => $this->attendance->id,
-            'user_id' => $this->attendance->user_id,
-            'company_id' => $this->attendance->company_id,
+            'id' => $this->attendance->id ? (string)$this->attendance->id : null,
+            'user_id' => $this->attendance->user_id ? (string)$this->attendance->user_id : null,
+            'company_id' => $this->attendance->company_id ? (string)$this->attendance->company_id : null,
 
             // Clock times
             'clock_in_time' => $this->attendance->clock_in_time?->format('Y-m-d H:i:s'),
             'clock_out_time' => $this->attendance->clock_out_time?->format('Y-m-d H:i:s'),
-            'break_start_time' => $this->attendance->break_start_time?->format('Y-m-d H:i:s'),
-            'break_end_time' => $this->attendance->break_end_time?->format('Y-m-d H:i:s'),
 
             // Calculated hours
             'total_work_hours' => (float) $this->attendance->total_work_hours,
@@ -39,7 +37,7 @@ class AttendancePresenter extends AbstractPresenter
 
             // Status and approval
             'status' => $this->attendance->status,
-            'approved_by' => $this->attendance->approved_by,
+            'approved_by' => $this->attendance?->approved_by ? $this->attendance?->approved_by : null,
             'approved_at' => $this->attendance->approved_at?->format('Y-m-d H:i:s'),
 
             // Location data
@@ -56,45 +54,69 @@ class AttendancePresenter extends AbstractPresenter
 
             // Relationships
             'user' => $this->attendance->user ? [
-                'id' => $this->attendance->user->id,
+                'id' => $this->attendance->user->id ? (string)$this->attendance->user->id : null,
                 'name' => $this->attendance->user->name,
                 'email' => $this->attendance->user->email,
             ] : null,
 
             'company' => $this->attendance->company ? [
-                'id' => $this->attendance->company->id,
+                'id' => $this->attendance->company->id ? (string)$this->attendance->company->id : null,
                 'name' => $this->attendance->company->name,
             ] : null,
 
-            'approved_by_user' => $this->attendance->approvedBy ? [
-                'id' => $this->attendance->approvedBy->id,
+            'approved_by_user' => $this->attendance?->approvedBy ? [
+                'id' => $this->attendance->approvedBy->id ? (string)$this->attendance->approvedBy->id : null,
                 'name' => $this->attendance->approvedBy->name,
             ] : null,
 
+            // Breaks data
+            'breaks' => $this->formatBreaks(),
+
             // Computed properties
             'work_date' => $this->attendance->clock_in_time?->format('Y-m-d'),
-            'is_on_break' => $this->attendance->break_start_time && !$this->attendance->break_end_time,
-            'is_clocked_in' => $this->attendance->clock_in_time && !$this->attendance->clock_out_time,
-            'duration_formatted' => $this->formatDuration($this->attendance->total_work_hours),
-            'break_duration_formatted' => $this->formatDuration($this->attendance->total_break_hours),
-            'overtime_formatted' => $this->formatDuration($this->attendance->overtime_hours),
+            'is_on_break' => $this->attendance->isOnBreak(),
+            'is_clocked_in' => $this->attendance->isActive(),
+            'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
+            'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
+            'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),
         ];
     }
 
     /**
-     * Format duration in hours to human readable format
+     * Format breaks data for the response
      */
-    private function formatDuration(?float $hours): string
+    private function formatBreaks(): array
     {
-        if (!$hours || $hours <= 0) {
-            return '0h 0m';
+        $breaks = [];
+
+        foreach ($this->attendance->breaks as $break) {
+            $breaks[] = [
+                'id' => (string)$break->id,
+                'start_time' => $break->start_time?->format('Y-m-d H:i:s'),
+                'end_time' => $break->end_time?->format('Y-m-d H:i:s'),
+                'duration_minutes' => $break->duration_minutes,
+                'duration_formatted' => $break->getFormattedDuration(),
+                'notes' => $break->notes,
+                'is_active' => $break->isActive(),
+            ];
         }
 
-        $totalMinutes = (int) ($hours * 60);
-        $hoursFormatted = intval($totalMinutes / 60);
-        $minutesFormatted = $totalMinutes % 60;
+        return $breaks;
+    }
 
-        return "{$hoursFormatted}h {$minutesFormatted}m";
+    /**
+     * Format hours as "Xh Ym"
+     */
+    private function formatDuration(float $hours): string
+    {
+        $h = floor($hours);
+        $m = round(($hours - $h) * 60);
+
+        if ($h > 0) {
+            return "{$h}h {$m}m";
+        }
+
+        return "{$m}m";
     }
 
     /**
@@ -103,7 +125,7 @@ class AttendancePresenter extends AbstractPresenter
     public function getSummaryData(): array
     {
         return [
-            'id' => $this->attendance->id,
+            'id' => $this->attendance->id ? (string)$this->attendance->id : null,
             'work_date' => $this->attendance->clock_in_time?->format('Y-m-d'),
             'clock_in_time' => $this->attendance->clock_in_time?->format('H:i'),
             'clock_out_time' => $this->attendance->clock_out_time?->format('H:i'),
@@ -112,7 +134,7 @@ class AttendancePresenter extends AbstractPresenter
             'status' => $this->attendance->status,
             'is_late' => $this->attendance->is_late,
             'is_early_departure' => $this->attendance->is_early_departure,
-            'duration_formatted' => $this->formatDuration($this->attendance->total_work_hours),
+            'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
         ];
     }
 

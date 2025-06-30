@@ -17,15 +17,14 @@ use Modules\Attendance\Requests\GetAttendanceRequest;
 use Modules\Attendance\Requests\UpdateAttendanceRequest;
 use Modules\Attendance\Requests\FilterAttendanceRequest;
 use Modules\Attendance\Presenters\AttendancePresenter;
-
+use Modules\Attendance\Presenters\AttendanceBreakPresenter;
 use Modules\Attendance\Models\AttendanceConstraint;
 
 class AttendanceController extends Controller
 {
     public function __construct(
         private AttendanceService $attendanceService,
-        private AttendanceConstraintService $constraintService,
-        private AttendancePresenter $attendancePresenter,
+        private AttendanceConstraintService $constraintService
     ) {}
 
     /**
@@ -58,11 +57,19 @@ class AttendanceController extends Controller
         // Process any violations that occurred during clock-in
         $actualViolations = $this->constraintService->validateAttendance($attendance, $request->all());
         if (!empty($actualViolations)) {
-            $this->constraintService->processViolations($attendance, $actualViolations);
+            // Process each violation individually
+            foreach ($actualViolations as $violationData) {
+                if (isset($violationData['constraint_id'])) {
+                    $constraint = AttendanceConstraint::find($violationData['constraint_id']);
+                    if ($constraint) {
+                        $this->constraintService->createViolation($attendance, $constraint, $violationData);
+                    }
+                }
+            }
         }
 
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            (new AttendancePresenter($attendance))->present(),
             message: 'Successfully clocked in'
         );
     }
@@ -78,11 +85,19 @@ class AttendanceController extends Controller
         // Validate constraints after clocking out
         $violations = $this->constraintService->validateAttendance($attendance, $request->all());
         if (!empty($violations)) {
-            $this->constraintService->processViolations($attendance, $violations);
+            // Process each violation individually
+            foreach ($violations as $violationData) {
+                if (isset($violationData['constraint_id'])) {
+                    $constraint = AttendanceConstraint::find($violationData['constraint_id']);
+                    if ($constraint) {
+                        $this->constraintService->createViolation($attendance, $constraint, $violationData);
+                    }
+                }
+            }
         }
 
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            (new AttendancePresenter($attendance))->present(),
             message: 'Successfully clocked out'
         );
     }
@@ -97,8 +112,10 @@ class AttendanceController extends Controller
             $request->input('notes')
         );
 
+        $presenter = new AttendancePresenter($attendance);
+
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            $presenter->present(),
             message: 'Break started successfully'
         );
     }
@@ -124,8 +141,10 @@ class AttendanceController extends Controller
             }
         }
 
+        $presenter = new AttendancePresenter($attendance);
+
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            $presenter->present(),
             message: 'Break ended successfully'
         );
     }
@@ -167,7 +186,7 @@ class AttendanceController extends Controller
         }
 
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            (new AttendancePresenter($attendance))->present(),
             message: 'Current attendance status retrieved'
         );
     }
@@ -220,7 +239,7 @@ class AttendanceController extends Controller
         $attendance = $this->attendanceService->updateAttendance($attendanceId, $request->validated());
 
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            (new AttendancePresenter($attendance))->present(),
             message: 'Attendance updated successfully'
         );
     }
@@ -237,7 +256,7 @@ class AttendanceController extends Controller
         );
 
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            (new AttendancePresenter($attendance))->present(),
             message: 'Attendance approved successfully'
         );
     }
@@ -254,7 +273,7 @@ class AttendanceController extends Controller
         );
 
         return Json::item(
-            (new AttendancePresenter($attendance))->getData(),
+            (new AttendancePresenter($attendance))->present(),
             message: 'Attendance rejected successfully'
         );
     }
@@ -398,5 +417,18 @@ class AttendanceController extends Controller
         }
 
         return Json::items($presentedData, message: 'Overtime records retrieved successfully');
+    }
+
+    /**
+     * Get breaks for a specific attendance record
+     */
+    public function getBreaks(Request $request, string $attendanceId): JsonResponse
+    {
+        $breaks = $this->attendanceService->getBreaks($attendanceId);
+
+        return Json::collection(
+            $breaks,
+            message: 'Attendance breaks retrieved successfully'
+        );
     }
 }

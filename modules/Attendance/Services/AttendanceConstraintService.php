@@ -401,4 +401,102 @@ class AttendanceConstraintService
             ->orderBy('detected_at', 'desc')
             ->get();
     }
+
+    /**
+     * Validate break end against constraints.
+     * 
+     * @param Attendance $attendance The attendance record with break end
+     * @return bool|array Returns false if no violation, or violation details if constraint is violated
+     */
+    public function validateBreakEnd(Attendance $attendance): bool|array
+    {
+        if (!$attendance->break_start_time || !$attendance->break_end_time) {
+            return false;
+        }
+
+        // Get all applicable constraints for the user
+        $constraints = $this->getApplicableConstraints($attendance->user);
+        
+        // Filter for break-related constraints
+        $breakConstraints = $constraints->filter(function ($constraint) {
+            return $constraint->type === AttendanceConstraint::TYPE_TIME && 
+                   ($constraint->config['subtype'] ?? '') === AttendanceConstraint::TIME_BREAK_LIMITS;
+        });
+        
+        if ($breakConstraints->isEmpty()) {
+            return false;
+        }
+        
+        // Check each break constraint
+        foreach ($breakConstraints as $constraint) {
+            $config = $constraint->config ?? [];
+            
+            // Calculate break duration
+            $breakStartTime = Carbon::parse($attendance->break_start_time);
+            $breakEndTime = Carbon::parse($attendance->break_end_time);
+            $breakDurationMinutes = $breakStartTime->diffInMinutes($breakEndTime);
+            
+            // Check if break duration exceeds maximum allowed
+            $maxBreakDuration = (int)($config['max_break_duration_minutes'] ?? 0);
+            if ($maxBreakDuration > 0 && $breakDurationMinutes > $maxBreakDuration) {
+                return [
+                    'constraint_id' => $constraint->id,
+                    'constraint_type' => AttendanceConstraint::TIME_BREAK_LIMITS,
+                    'severity' => $config['severity'] ?? 'medium',
+                    'message' => "Break duration ({$breakDurationMinutes} minutes) exceeds maximum allowed ({$maxBreakDuration} minutes)",
+                    'details' => [
+                        'break_start_time' => $breakStartTime->toDateTimeString(),
+                        'break_end_time' => $breakEndTime->toDateTimeString(),
+                        'break_duration_minutes' => $breakDurationMinutes,
+                        'max_allowed_minutes' => $maxBreakDuration,
+                        'excess_minutes' => $breakDurationMinutes - $maxBreakDuration
+                    ]
+                ];
+            }
+            
+            // Check if minimum break duration is enforced
+            $minBreakDuration = (int)($config['min_break_duration_minutes'] ?? 0);
+            if ($minBreakDuration > 0 && $breakDurationMinutes < $minBreakDuration) {
+                return [
+                    'constraint_id' => $constraint->id,
+                    'constraint_type' => AttendanceConstraint::TIME_BREAK_LIMITS,
+                    'severity' => $config['severity'] ?? 'low',
+                    'message' => "Break duration ({$breakDurationMinutes} minutes) is less than minimum required ({$minBreakDuration} minutes)",
+                    'details' => [
+                        'break_start_time' => $breakStartTime->toDateTimeString(),
+                        'break_end_time' => $breakEndTime->toDateTimeString(),
+                        'break_duration_minutes' => $breakDurationMinutes,
+                        'min_required_minutes' => $minBreakDuration,
+                        'shortage_minutes' => $minBreakDuration - $breakDurationMinutes
+                    ]
+                ];
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Create a violation record for an attendance constraint.
+     * 
+     * @param Attendance $attendance The attendance record
+     * @param AttendanceConstraint $constraint The constraint that was violated
+     * @param array $violationData Details of the violation
+     * @return AttendanceConstraintViolation The created violation record
+     */
+    public function createViolation(Attendance $attendance, AttendanceConstraint $constraint, array $violationData): AttendanceConstraintViolation
+    {
+        return AttendanceConstraintViolation::create([
+            'attendance_id' => $attendance->id,
+            'constraint_id' => $constraint->id,
+            'user_id' => $attendance->user_id,
+            'company_id' => $attendance->company_id,
+            'violation_type' => $violationData['constraint_type'] ?? $constraint->type,
+            'severity' => $violationData['severity'] ?? 'medium',
+            'message' => $violationData['message'] ?? 'Constraint violation detected',
+            'details' => $violationData['details'] ?? [],
+            'status' => 'pending',
+            'detected_at' => now(),
+        ]);
+    }
 }

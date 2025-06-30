@@ -11,8 +11,10 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Attendance\Models\AttendanceBreak;
 use OwenIt\Auditing\Contracts\Auditable;
 use Carbon\Carbon;
 
@@ -57,10 +59,10 @@ class Attendance extends Model implements Auditable
     ];
 
     protected $casts = [
-        'id' => UuidCast::class,
-        'user_id' => UuidCast::class,
-        'company_id' => UuidCast::class,
-        'approved_by' => UuidCast::class,
+        'id' =>'string',
+        'user_id' => 'string',
+        'company_id' => 'string',
+        'approved_by' => 'string',
         'clock_in_time' => 'datetime',
         'clock_out_time' => 'datetime',
         'break_start_time' => 'datetime',
@@ -100,7 +102,7 @@ class Attendance extends Model implements Auditable
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -108,7 +110,7 @@ class Attendance extends Model implements Auditable
      */
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(Company::class);
     }
 
     /**
@@ -128,11 +130,85 @@ class Attendance extends Model implements Auditable
     }
 
     /**
+     * Get all breaks for this attendance record.
+     */
+    public function breaks(): HasMany
+    {
+        return $this->hasMany(AttendanceBreak::class);
+    }
+
+    /**
+     * Get the currently active break, if any.
+     */
+    public function activeBreak()
+    {
+        return $this->breaks()->whereNotNull('start_time')->whereNull('end_time')->first();
+    }
+
+    /**
+     * Get all completed breaks for this attendance record.
+     */
+    public function completedBreaks()
+    {
+        return $this->breaks()->whereNotNull('start_time')->whereNotNull('end_time')->get();
+    }
+
+    /**
+     * Check if the employee is currently on break.
+     */
+    public function isOnBreak(): bool
+    {
+        // Check if there's an active break in the breaks relationship
+        $activeBreak = $this->activeBreak();
+        if ($activeBreak) {
+            return true;
+        }
+        
+        // No longer check legacy break fields
+        return false;
+    }
+
+    /**
+     * Calculate total break duration in minutes.
+     */
+    public function calculateTotalBreakMinutes(): int
+    {
+        $totalMinutes = 0;
+        
+        // Add minutes from completed breaks
+        foreach ($this->completedBreaks() as $break) {
+            $totalMinutes += $break->duration_minutes;
+        }
+        
+        // No longer include legacy break fields in calculations
+        
+        return $totalMinutes;
+    }
+
+    /**
+     * Calculate total break hours.
+     */
+    public function calculateTotalBreakHours(): float
+    {
+        return round($this->calculateTotalBreakMinutes() / 60, 2);
+    }
+
+    /**
+     * Update total break hours in the model.
+     */
+    public function updateTotalBreakHours(): self
+    {
+        $this->total_break_hours = $this->calculateTotalBreakHours();
+        return $this;
+    }
+
+    /**
      * Scope to filter by date range.
      */
     public function scopeDateRange($query, $startDate, $endDate)
     {
-        return $query->whereBetween('clock_in_time', [$startDate, $endDate]);
+        return $query->whereDate('clock_in_time', '>=', $startDate)
+            ->whereDate('clock_in_time', '<=', $endDate);
     }
 
     /**
@@ -156,8 +232,7 @@ class Attendance extends Model implements Auditable
      */
     public function scopeActive($query)
     {
-        return $query->where('status', self::STATUS_ACTIVE)
-                    ->whereNull('clock_out_time');
+        return $query->whereNull('clock_out_time');
     }
 
     /**
@@ -165,8 +240,7 @@ class Attendance extends Model implements Auditable
      */
     public function scopeCompleted($query)
     {
-        return $query->where('status', self::STATUS_COMPLETED)
-                    ->whereNotNull('clock_out_time');
+        return $query->whereNotNull('clock_out_time');
     }
 
     /**
@@ -248,7 +322,7 @@ class Attendance extends Model implements Auditable
 
         return "{$hours}h {$minutes}m";
     }
-    
+
     /**
      * End the current shift automatically based on constraint enforcement
      *
@@ -262,26 +336,26 @@ class Attendance extends Model implements Auditable
         if (!$this->isActive()) {
             return false; // Cannot end an inactive or already completed shift
         }
-        
+
         // Set clock out time to current time
         $this->clock_out_time = Carbon::now();
         $this->status = self::STATUS_COMPLETED;
         $this->shift_end_method = $method;
-        
+
         // Append notes with timestamp
         $timestamp = Carbon::now()->format('Y-m-d H:i:s');
         $existingNotes = $this->notes ? $this->notes . "\n\n" : '';
         $this->notes = $existingNotes . "[{$timestamp}] Auto-ended: {$notes}";
-        
+
         // If configured to mark day as absent
         if ($markAbsent) {
             $this->is_absent = true;
             $this->absence_reason = "Automatically marked absent due to constraint violation: {$method}";
         }
-        
+
         // Calculate work hours after ending the shift
         $this->calculateWorkHours();
-        
+
         // Save changes
         return $this->save();
     }

@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
-use Modules\Attendance\DTO\ClockInDTO;
-use Modules\Attendance\DTO\ClockOutDTO;
+use Modules\Attendance\Models\AttendanceBreak;
 use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
+use Modules\Attendance\DTO\ClockInDTO;
+use Modules\Attendance\DTO\ClockOutDTO;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 class AttendanceService
 {
     public function __construct(
-        private AttendanceRepository $attendanceRepository
+        private AttendanceRepository $attendanceRepository,
     ) {}
 
     /**
@@ -84,47 +85,98 @@ class AttendanceService
     }
 
     /**
-     * Start break
+     * Start a break for the current attendance record.
+     *
+     * @param UuidInterface|string $userId User ID
+     * @param string|null $notes Optional notes
+     * @return Attendance
+     * @throws AttendanceException
      */
-    public function startBreak(string $userId, ?string $notes = null): Attendance
+    public function startBreak(UuidInterface|string $userId, ?string $notes = null): Attendance
     {
+        if (is_string($userId)) {
+            $userId = Uuid::fromString($userId);
+        }
+        
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
 
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
 
-        if ($attendance->break_start_time && !$attendance->break_end_time) {
-            throw AttendanceException::onBreak();
+        if ($attendance->isOnBreak()) {
+            throw AttendanceException::alreadyOnBreak();
         }
 
-        $updateData = [
-            'break_start_time' => now(),
-            'notes' => $attendance->notes . ($notes ? "\nBreak started: " . $notes : '')
-        ];
+        // Create a new break record
+        $break = new AttendanceBreak([
+            'attendance_id' => $attendance->id,
+            'company_id' => $attendance->company_id,
+            'start_time' => now(),
+            'notes' => $notes
+        ]);
+        $break->save();
 
-        return $this->attendanceRepository->updateAttendance(Uuid::fromString($attendance->id), $updateData);
+        // Update attendance notes if provided
+        $updateData = [];
+        if ($notes) {
+            $updateData['notes'] = $attendance->notes . "\nBreak started: " . $notes;
+        }
+
+        // Only update if we have data to update
+        if (!empty($updateData)) {
+            return $this->attendanceRepository->updateAttendance(Uuid::fromString($attendance->id), $updateData);
+        }
+        
+        return $attendance->refresh();
     }
 
     /**
-     * End break
+     * End the current break for an attendance record.
+     *
+     * @param UuidInterface|string $userId User ID
+     * @param string|null $notes Optional notes
+     * @return Attendance
+     * @throws AttendanceException
      */
-    public function endBreak(string $userId, ?string $notes = null): Attendance
+    public function endBreak(UuidInterface|string $userId, ?string $notes = null): Attendance
     {
+        if (is_string($userId)) {
+            $userId = Uuid::fromString($userId);
+        }
+        
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
 
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
 
-        if (!$attendance->break_start_time || $attendance->break_end_time) {
+        if (!$attendance->isOnBreak()) {
             throw AttendanceException::notOnBreak();
         }
 
+        // Find and update the active break
+        $activeBreak = $attendance->activeBreak();
+        if ($activeBreak) {
+            $activeBreak->end_time = now();
+            $activeBreak->calculateDuration();
+            if ($notes) {
+                $activeBreak->notes = ($activeBreak->notes ? $activeBreak->notes . "\n" : '') . "End: " . $notes;
+            }
+            $activeBreak->save();
+            
+            // Update total break hours in attendance record
+            $attendance->updateTotalBreakHours();
+        }
+
+        // Update attendance notes if provided
         $updateData = [
-            'break_end_time' => now(),
-            'notes' => $attendance->notes . ($notes ? "\nBreak ended: " . $notes : '')
+            'total_break_hours' => $attendance->total_break_hours,
         ];
+        
+        if ($notes) {
+            $updateData['notes'] = $attendance->notes . "\nBreak ended: " . $notes;
+        }
 
         return $this->attendanceRepository->updateAttendance(Uuid::fromString($attendance->id), $updateData);
     }
@@ -343,5 +395,39 @@ class AttendanceService
         }
 
         return $attendance;
+    }
+
+    /**
+     * Get all breaks for a specific attendance record.
+     *
+     * @param UuidInterface|string $attendanceId Attendance ID
+     * @return array
+     */
+    public function getBreaks(UuidInterface|string $attendanceId): array
+    {
+        if (is_string($attendanceId)) {
+            $attendanceId = Uuid::fromString($attendanceId);
+        }
+        
+        $attendance = $this->attendanceRepository->getAttendanceById($attendanceId);
+        
+        if (!$attendance) {
+            return [];
+        }
+        
+        $breaks = [];
+        foreach ($attendance->breaks as $break) {
+            $breaks[] = [
+                'id' => (string)$break->id,
+                'start_time' => $break->start_time?->format('Y-m-d H:i:s'),
+                'end_time' => $break->end_time?->format('Y-m-d H:i:s'),
+                'duration_minutes' => $break->duration_minutes,
+                'duration_formatted' => $break->getFormattedDuration(),
+                'notes' => $break->notes,
+                'is_active' => $break->isActive(),
+            ];
+        }
+        
+        return $breaks;
     }
 }

@@ -65,9 +65,9 @@ class GetAttendanceRequest extends FormRequest
         }
 
         // If user_id is not provided, use the authenticated user's ID
-        if (!$this->has('user_id') && $this->user()) {
-            $this->merge(['user_id' => $this->user()->id]);
-        }
+        //if (!$this->has('user_id') && $this->user()) {
+        //    $this->merge(['user_id' => $this->user()->id->toString()]);
+        //}
 
         // Convert boolean strings to actual booleans
         if ($this->has('is_late') && is_string($this->input('is_late'))) {
@@ -85,7 +85,7 @@ class GetAttendanceRequest extends FormRequest
     public function getFilters(): array
     {
         $validated = $this->validated();
-        
+
         // Apply default date range if not provided (last 30 days)
         if (!isset($validated['start_date']) && !isset($validated['end_date'])) {
             $validated['start_date'] = now()->subDays(30)->toDateString();
@@ -101,7 +101,7 @@ class GetAttendanceRequest extends FormRequest
     public function createFilterAttendanceDTO(string $companyId): FilterAttendanceDTO
     {
         $validated = $this->validated();
-        
+
         return new FilterAttendanceDTO(
             company_id: $companyId,
             user_id: $validated['user_id'] ?? null,
