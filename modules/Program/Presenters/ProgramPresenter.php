@@ -23,16 +23,30 @@ class ProgramPresenter extends AbstractPresenter
             'id' => $this->program->id,
             'name' => $this->program->name[app()->getLocale()],
             'slug' => $this->program->slug,
+            'features' => $this->getFeatures(),
+
         ];
     }
-
+    public function getFeatures(): array
+    {
+        return $this->program->features->map(function ($feature) {
+            return [
+                'id' => $feature->id,
+                'name' => $feature->name,
+                'slug' => $feature->slug,
+                'created_at' => $feature->created_at?->toIso8601String(),
+            ];
+        })->toArray();
+    }
     protected function getWithSubEntities(bool $isListing = false): array
     {
         return [
             'id' => $this->program->id,
             'name' => $this->program->name[app()->getLocale()],
             'slug' => $this->program->slug,
-            'sub_entities' => SubEntityPresenter::collection($this->program->subEntities)
+            'sub_entities' => SubEntityPresenter::collection($this->program->subEntities),
+            'features' => $this->getFeatures(),
+
         ];
     }
 

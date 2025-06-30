@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Channels\SmsChannel;
 use App\Http\Controllers\HelperClass\MailClass;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,7 +26,10 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
     public function boot(): void
-    {
+    {    Factory::guessFactoryNamesUsing(function (string $modelName) {
+        // تحويل اسم الموديل إلى مسار الفاكتوري داخل الـ Modules
+        return str_replace('Models', 'Database\\factories', $modelName) . 'Factory';
+    });
         Notification::extend('sms', function ($app) {
             return new SmsChannel();
         });
