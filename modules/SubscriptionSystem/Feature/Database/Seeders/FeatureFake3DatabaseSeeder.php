@@ -12,7 +12,7 @@ use Modules\SubEntity\Models\SubEntity;
 use Modules\SubscriptionSystem\Feature\Models\Feature;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class FeatureFake2DatabaseSeeder extends Seeder
+class FeatureFake3DatabaseSeeder extends Seeder
 {
     use SeedOnce;
 
@@ -26,7 +26,7 @@ class FeatureFake2DatabaseSeeder extends Seeder
             return;
         }
 
-        foreach ($programs->take(10) as $program) {
+        foreach ($programs as $program) {
             Feature::create([
                 'id' => Str::uuid(),
                 'name' => [
