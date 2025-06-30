@@ -17,6 +17,8 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Attendance\Models\AttendanceBreak;
 use OwenIt\Auditing\Contracts\Auditable;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class Attendance extends Model implements Auditable
 {
@@ -325,6 +327,11 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to filter by date range.
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string|Carbon $startDate
+     * @param string|Carbon $endDate
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDateRange($query, $startDate, $endDate)
     {
@@ -334,6 +341,10 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to filter by user.
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $userId
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, $userId)
     {
@@ -342,6 +353,10 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to filter by company.
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $companyId
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForCompany($query, $companyId)
     {
@@ -350,18 +365,24 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to get active attendance (not clocked out yet).
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
     {
-        return $query->whereNull('clock_out_time');
+        return $query->where('status', self::STATUS_ACTIVE)->whereNull('clock_out_time');
     }
 
     /**
      * Scope to get completed attendance records.
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCompleted($query)
     {
-        return $query->whereNotNull('clock_out_time');
+        return $query->where('status', self::STATUS_COMPLETED)->whereNotNull('clock_out_time');
     }
 
     /**
@@ -475,6 +496,8 @@ class Attendance extends Model implements Auditable
 
     /**
      * Get formatted work duration.
+     * 
+     * @return string
      */
     public function getFormattedWorkDuration(): string
     {
@@ -482,7 +505,20 @@ class Attendance extends Model implements Auditable
             return '0h 0m';
         }
 
-        $totalMinutes = Carbon::parse($this->clock_out_time)->diffInMinutes(Carbon::parse($this->clock_in_time));
+        // Get company's timezone
+        $timezone = $this->company?->timezone ?? config('app.timezone');
+        
+        // Parse times with timezone
+        $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
+        $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
+
+        // Calculate break minutes
+        $breakMinutes = $this->calculateTotalBreakMinutes();
+        
+        // Calculate total minutes excluding breaks
+        $totalMinutes = $clockOut->diffInMinutes($clockIn) - $breakMinutes;
+        $totalMinutes = max(0, $totalMinutes); // Ensure we don't have negative minutes
+        
         $hours = intval($totalMinutes / 60);
         $minutes = $totalMinutes % 60;
 
@@ -505,7 +541,17 @@ class Attendance extends Model implements Auditable
 
         // Set clock out time to current time
         $this->clock_out_time = Carbon::now();
-        $this->status = self::STATUS_COMPLETED;
+        
+        try {
+            $this->validateStatusTransition(self::STATUS_COMPLETED);
+            $this->status = self::STATUS_COMPLETED;
+        } catch (\InvalidArgumentException $e) {
+            // Log the error but continue with the shift ending
+            \Log::warning("Invalid status transition when ending shift: {$e->getMessage()}");
+            // Force the status to completed
+            $this->status = self::STATUS_COMPLETED;
+        }
+        
         $this->shift_end_method = $method;
 
         // Append notes with timestamp
@@ -517,6 +563,14 @@ class Attendance extends Model implements Auditable
         if ($markAbsent) {
             $this->is_absent = true;
             $this->absence_reason = "Automatically marked absent due to constraint violation: {$method}";
+        }
+
+        // End any active breaks
+        $activeBreak = $this->activeBreak();
+        if ($activeBreak) {
+            $activeBreak->end_time = Carbon::now();
+            $activeBreak->calculateDuration();
+            $activeBreak->save();
         }
 
         // Calculate break hours first
