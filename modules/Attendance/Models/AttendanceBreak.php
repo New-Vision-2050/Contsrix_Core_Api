@@ -94,6 +94,7 @@ class AttendanceBreak extends Model
     {
         if (!$this->start_time || !$this->end_time) {
             $this->duration_minutes = 0;
+            $this->save();
             return 0;
         }
 
@@ -102,6 +103,7 @@ class AttendanceBreak extends Model
         $durationMinutes = (int) $endTime->diffInMinutes($startTime);
         
         $this->duration_minutes = $durationMinutes;
+        $this->save();
         return $durationMinutes;
     }
 

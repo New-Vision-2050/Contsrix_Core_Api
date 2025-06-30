@@ -177,10 +177,12 @@ class Attendance extends Model implements Auditable
         
         // Add minutes from completed breaks
         foreach ($this->completedBreaks() as $break) {
-            $totalMinutes += $break->duration_minutes;
+            // If duration_minutes is not set, calculate it from start/end time
+            if ($break->duration_minutes === null && $break->start_time && $break->end_time) {
+                $break->calculateDuration();
+            }
+            $totalMinutes += $break->duration_minutes ?? 0;
         }
-        
-        // No longer include legacy break fields in calculations
         
         return $totalMinutes;
     }
@@ -190,7 +192,10 @@ class Attendance extends Model implements Auditable
      */
     public function calculateTotalBreakHours(): float
     {
-        return round($this->calculateTotalBreakMinutes() / 60, 2);
+        $hours = round($this->calculateTotalBreakMinutes() / 60, 2);
+        $this->total_break_hours = $hours;
+        $this->save();
+        return $hours;
     }
 
     /**
@@ -199,6 +204,7 @@ class Attendance extends Model implements Auditable
     public function updateTotalBreakHours(): self
     {
         $this->total_break_hours = $this->calculateTotalBreakHours();
+        $this->save();
         return $this;
     }
 
@@ -268,6 +274,7 @@ class Attendance extends Model implements Auditable
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
+            $this->save();
             return 0.0;
         }
 
@@ -295,6 +302,7 @@ class Attendance extends Model implements Auditable
         $standardHours = 8.0;
         $this->overtime_hours = $workHours > $standardHours ? round($workHours - $standardHours, 2) : 0.0;
 
+        $this->save();
         return $workHours;
     }
 
@@ -353,6 +361,9 @@ class Attendance extends Model implements Auditable
             $this->absence_reason = "Automatically marked absent due to constraint violation: {$method}";
         }
 
+        // Calculate break hours first
+        $this->updateTotalBreakHours();
+        
         // Calculate work hours after ending the shift
         $this->calculateWorkHours();
 

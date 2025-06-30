@@ -80,8 +80,12 @@ class AttendanceService
             'status' => 'completed'
         ];
 
-         $this->attendanceRepository->update($attendance->id, $updateData);
-         return $attendance->refresh();
+        $this->attendanceRepository->update($attendance->id, $updateData);
+        
+        // Calculate and save work hours
+        $attendance->calculateWorkHours();
+        
+        return $attendance->refresh();
     }
 
     /**
