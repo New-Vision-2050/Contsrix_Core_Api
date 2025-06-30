@@ -98,6 +98,40 @@ class Attendance extends Model implements Auditable
     const STATUS_REJECTED = 'rejected';
 
     /**
+     * Valid status transitions
+     */
+    private const STATUS_TRANSITIONS = [
+        self::STATUS_ACTIVE => [
+            self::STATUS_COMPLETED,
+            self::STATUS_PENDING_APPROVAL,
+        ],
+        self::STATUS_COMPLETED => [
+            self::STATUS_PENDING_APPROVAL,
+        ],
+        self::STATUS_PENDING_APPROVAL => [
+            self::STATUS_APPROVED,
+            self::STATUS_REJECTED,
+        ],
+    ];
+
+    /**
+     * Validate status transition
+     */
+    public function validateStatusTransition(string $newStatus): void
+    {
+        if (!in_array($newStatus, array_merge(...self::STATUS_TRANSITIONS), true)) {
+            throw new \InvalidArgumentException('Invalid status');
+        }
+
+        if (!isset(self::STATUS_TRANSITIONS[$this->status]) || 
+            !in_array($newStatus, self::STATUS_TRANSITIONS[$this->status], true)) {
+            throw new \InvalidArgumentException(
+                "Cannot transition from {$this->status} to {$newStatus}"
+            );
+        }
+    }
+
+    /**
      * Get the user that owns the attendance record.
      */
     public function user(): BelongsTo
@@ -140,7 +174,7 @@ class Attendance extends Model implements Auditable
     /**
      * Get the currently active break, if any.
      */
-    public function activeBreak()
+    public function activeBreak(): ?AttendanceBreak
     {
         return $this->breaks()->whereNotNull('start_time')->whereNull('end_time')->first();
     }
@@ -148,7 +182,7 @@ class Attendance extends Model implements Auditable
     /**
      * Get all completed breaks for this attendance record.
      */
-    public function completedBreaks()
+    public function completedBreaks(): Collection
     {
         return $this->breaks()->whereNotNull('start_time')->whereNotNull('end_time')->get();
     }
@@ -209,6 +243,87 @@ class Attendance extends Model implements Auditable
     }
 
     /**
+     * Validate attendance times
+     */
+    public function validateTimes(): void
+    {
+        if ($this->clock_in_time && $this->clock_out_time && 
+            Carbon::parse($this->clock_out_time)->lt(Carbon::parse($this->clock_in_time))) {
+            throw new \InvalidArgumentException('Clock out time cannot be before clock in time');
+        }
+
+        foreach ($this->breaks as $break) {
+            if ($break->start_time && $break->end_time && 
+                Carbon::parse($break->end_time)->lt(Carbon::parse($break->start_time))) {
+                throw new \InvalidArgumentException('Break end time cannot be before start time');
+            }
+
+            if ($break->start_time && $this->clock_in_time && 
+                Carbon::parse($break->start_time)->lt(Carbon::parse($this->clock_in_time))) {
+                throw new \InvalidArgumentException('Break cannot start before clock in time');
+            }
+
+            if ($break->end_time && $this->clock_out_time && 
+                Carbon::parse($break->end_time)->gt(Carbon::parse($this->clock_out_time))) {
+                throw new \InvalidArgumentException('Break cannot end after clock out time');
+            }
+        }
+    }
+
+    /**
+     * Validate location data
+     */
+    public function validateLocation(): void
+    {
+        if ($this->clock_in_location) {
+            if (!is_array($this->clock_in_location) || 
+                !isset($this->clock_in_location['latitude']) || 
+                !isset($this->clock_in_location['longitude'])) {
+                throw new \InvalidArgumentException('Invalid clock in location format');
+            }
+        }
+
+        if ($this->clock_out_location) {
+            if (!is_array($this->clock_out_location) || 
+                !isset($this->clock_out_location['latitude']) || 
+                !isset($this->clock_out_location['longitude'])) {
+                throw new \InvalidArgumentException('Invalid clock out location format');
+            }
+        }
+    }
+
+    /**
+     * Validate IP address
+     */
+    public function validateIp(): void
+    {
+        if ($this->ip_address && !filter_var($this->ip_address, FILTER_VALIDATE_IP)) {
+            throw new \InvalidArgumentException('Invalid IP address format');
+        }
+    }
+
+    /**
+     * Validate user agent
+     */
+    public function validateUserAgent(): void
+    {
+        if ($this->user_agent && strlen($this->user_agent) > 255) {
+            throw new \InvalidArgumentException('User agent string too long');
+        }
+    }
+
+    /**
+     * Validate all data before saving
+     */
+    public function validate(): void
+    {
+        $this->validateTimes();
+        $this->validateLocation();
+        $this->validateIp();
+        $this->validateUserAgent();
+    }
+
+    /**
      * Scope to filter by date range.
      */
     public function scopeDateRange($query, $startDate, $endDate)
@@ -266,6 +381,30 @@ class Attendance extends Model implements Auditable
     }
 
     /**
+     * Check if the attendance record is pending approval.
+     */
+    public function isPendingApproval(): bool
+    {
+        return $this->status === self::STATUS_PENDING_APPROVAL;
+    }
+
+    /**
+     * Check if the attendance record is approved.
+     */
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    /**
+     * Check if the attendance record is rejected.
+     */
+    public function isRejected(): bool
+    {
+        return $this->status === self::STATUS_REJECTED;
+    }
+
+    /**
      * Calculate total work hours and update the model.
      */
     public function calculateWorkHours(): float
@@ -278,30 +417,49 @@ class Attendance extends Model implements Auditable
             return 0.0;
         }
 
-        $clockIn = Carbon::parse($this->clock_in_time);
-        $clockOut = Carbon::parse($this->clock_out_time);
+        // Get company's timezone
+        $timezone = $this->company?->timezone ?? config('app.timezone');
+        
+        // Parse times with timezone
+        $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
+        $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
+
+        // Calculate total time in minutes
         $totalMinutes = $clockOut->diffInMinutes($clockIn);
 
-        // Calculate break time if exists
+        // Calculate break time
         $breakMinutes = 0;
-        if ($this->break_start_time && $this->break_end_time) {
-            $breakStart = Carbon::parse($this->break_start_time);
-            $breakEnd = Carbon::parse($this->break_end_time);
-            $breakMinutes = $breakEnd->diffInMinutes($breakStart);
-            $this->total_break_hours = round($breakMinutes / 60, 2);
-        } else {
-            $this->total_break_hours = 0.0;
+        foreach ($this->completedBreaks() as $break) {
+            if ($break->start_time && $break->end_time) {
+                $breakStart = Carbon::parse($break->start_time)->setTimezone($timezone);
+                $breakEnd = Carbon::parse($break->end_time)->setTimezone($timezone);
+                $breakMinutes += $breakEnd->diffInMinutes($breakStart);
+            }
         }
 
         // Calculate actual work hours (excluding breaks)
         $workMinutes = $totalMinutes - $breakMinutes;
         $workHours = round($workMinutes / 60, 2);
+        
+        // Update model values
         $this->total_work_hours = $workHours;
+        $this->total_break_hours = round($breakMinutes / 60, 2);
 
         // Calculate overtime (assuming 8 hours standard)
         $standardHours = 8.0;
         $this->overtime_hours = $workHours > $standardHours ? round($workHours - $standardHours, 2) : 0.0;
 
+        // Check for late arrival (if clock in is after 9:00 AM)
+        $this->is_late = $clockIn->hour > 9 || ($clockIn->hour === 9 && $clockIn->minute > 0);
+        $this->late_minutes = $this->is_late ? $clockIn->diffInMinutes(Carbon::parse($this->clock_in_time)->setTimezone($timezone)->setHour(9)->setMinute(0)) : 0;
+
+        // Check for early departure (if clock out is before 5:00 PM)
+        $this->is_early_departure = $clockOut->hour < 17 || ($clockOut->hour === 17 && $clockOut->minute < 0);
+        $this->early_departure_minutes = $this->is_early_departure ? Carbon::parse($this->clock_out_time)->setTimezone($timezone)->setHour(17)->setMinute(0)->diffInMinutes($clockOut) : 0;
+
+        // Validate data before saving
+        $this->validate();
+        
         $this->save();
         return $workHours;
     }

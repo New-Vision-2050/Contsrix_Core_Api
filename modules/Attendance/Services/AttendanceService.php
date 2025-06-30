@@ -259,7 +259,17 @@ class AttendanceService
             }
         }
 
-        return $this->attendanceRepository->updateAttendance($uuid, $data);
+        // Update the attendance record
+        $attendance = $this->attendanceRepository->updateAttendance($uuid, $data);
+
+        // Recalculate work hours if clock times were updated
+        if (isset($data['clock_in_time']) || isset($data['clock_out_time'])) {
+            $attendance->updateTotalBreakHours();
+            $attendance->calculateWorkHours();
+            $attendance->save();
+        }
+
+        return $attendance;
     }
 
     /**
@@ -281,7 +291,15 @@ class AttendanceService
             'approval_notes' => $notes,
         ];
 
-        return $this->attendanceRepository->updateAttendance($uuid, $data);
+        // Update the attendance record
+        $attendance = $this->attendanceRepository->updateAttendance($uuid, $data);
+
+        // Recalculate work hours after approval
+        $attendance->updateTotalBreakHours();
+        $attendance->calculateWorkHours();
+        $attendance->save();
+
+        return $attendance;
     }
 
     /**
@@ -373,6 +391,14 @@ class AttendanceService
             return false; // Cannot end an inactive or already completed shift
         }
 
+        // Validate clock out time
+        $clockOutTime = Carbon::now();
+        $clockInTime = Carbon::parse($attendance->clock_in_time);
+        
+        if ($clockOutTime->lt($clockInTime)) {
+            throw AttendanceException::invalidClockOutTime();
+        }
+
         // Set clock out time to current time
         $timestamp = Carbon::now();
         $updateData = [
@@ -392,8 +418,10 @@ class AttendanceService
         // Update the attendance record
         $attendance = $this->attendanceRepository->updateAttendance($uuid, $updateData);
 
-        // Calculate work hours after ending the shift
+        // Calculate break hours first
         if ($attendance) {
+            $attendance->updateTotalBreakHours();
+            // Calculate work hours after ending the shift
             $attendance->calculateWorkHours();
             $attendance->save();
         }
