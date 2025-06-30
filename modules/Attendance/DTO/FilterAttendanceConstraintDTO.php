@@ -22,14 +22,14 @@ class FilterAttendanceConstraintDTO
         public ?string $user_email = null,
         public ?string $company_name = null,
         public ?bool $is_active = null,
-        public ?int $page = null,
-        public ?int $per_page = null,
+        public ?int $page = 1,
+        public ?int $per_page = 10,
     ) {}
 
     public function toArray(): array
     {
         $data = ['company_id' => $this->company_id];
-        
+
         if ($this->constraint_type !== null) {
             $data['constraint_type'] = $this->constraint_type;
         }

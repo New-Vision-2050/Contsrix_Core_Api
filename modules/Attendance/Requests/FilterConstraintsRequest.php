@@ -63,7 +63,7 @@ class FilterConstraintsRequest extends FormRequest
     public function createFilterConstraintDTO(string $companyId): FilterAttendanceConstraintDTO
     {
         $validated = $this->validated();
-        
+
         return new FilterAttendanceConstraintDTO(
             company_id: $companyId,
             constraint_type: $validated['constraint_type'] ?? null,
@@ -78,8 +78,8 @@ class FilterConstraintsRequest extends FormRequest
             user_email: $validated['user_email'] ?? null,
             company_name: $validated['company_name'] ?? null,
             is_active: $validated['is_active'] ?? null,
-            page: $validated['page'] ?? null,
-            per_page: $validated['per_page'] ?? null,
+            page: $validated['page'] ?? 1,
+            per_page: $validated['per_page'] ?? 10,
         );
     }
 }

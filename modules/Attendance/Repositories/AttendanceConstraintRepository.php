@@ -24,7 +24,7 @@ class AttendanceConstraintRepository extends BaseRepository
     /**
      * Get constraint list with filters and pagination
      */
-    public function getConstraintList(array $filters = [], ?int $page = null, ?int $perPage = 10): array
+    public function getConstraintList(array $filters = [], ?int $page = 1, ?int $perPage = 10): array
     {
         $query = $this->model->newQuery()->with(['user', 'company']);
 
@@ -35,14 +35,8 @@ class AttendanceConstraintRepository extends BaseRepository
 
         $query->orderBy('priority', 'desc')->orderBy('created_at', 'desc');
 
-        if ($page) {
             return $this->getPaginationData($query, $page, $perPage);
-        }
 
-        return [
-            'data' => $query->get(),
-            'pagination' => null
-        ];
     }
 
     /**

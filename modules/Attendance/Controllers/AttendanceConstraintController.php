@@ -56,13 +56,13 @@ class AttendanceConstraintController extends Controller
 
         if ($result['pagination']) {
             return Json::items(
-                                    $result['data'],
+                mainItems:          $result['data'],
                 paginationSettings: $result['pagination'],
                 message:            'Constraints retrieved successfully'
             );
         }
 
-        return Json::items($result['data'], message: 'Constraints retrieved successfully');
+        return Json::items(mainItems: $result['data'], message: 'Constraints retrieved successfully');
     }
 
     /**
@@ -284,7 +284,7 @@ class AttendanceConstraintController extends Controller
     public function validate(ValidateAttendanceRequest $request): JsonResponse
     {
         $validateDTO = $request->createValidateAttendanceDTO();
-        
+
         $violations = $this->constraintService->validateAttendanceData($validateDTO->toArray());
 
         return Json::item([
@@ -342,7 +342,7 @@ class AttendanceConstraintController extends Controller
     public function bulkActivate(BulkConstraintRequest $request): JsonResponse
     {
         $bulkDTO = $request->createBulkConstraintIdsDTO();
-        
+
         $updated = $this->constraintRepository->bulkActivate($bulkDTO->getConstraintIds());
 
         return Json::success("Successfully activated {$updated} constraints");
@@ -354,7 +354,7 @@ class AttendanceConstraintController extends Controller
     public function bulkDeactivate(BulkConstraintRequest $request): JsonResponse
     {
         $bulkDTO = $request->createBulkConstraintIdsDTO();
-        
+
         $updated = $this->constraintRepository->bulkDeactivate($bulkDTO->getConstraintIds());
 
         return Json::success("Successfully deactivated {$updated} constraints");
@@ -366,7 +366,7 @@ class AttendanceConstraintController extends Controller
     public function bulkDelete(BulkConstraintRequest $request): JsonResponse
     {
         $bulkDTO = $request->createBulkConstraintIdsDTO();
-        
+
         $deleted = $this->constraintRepository->bulkDelete($bulkDTO->getConstraintIds());
 
         return Json::success("Successfully deleted {$deleted} constraints");
@@ -389,7 +389,7 @@ class AttendanceConstraintController extends Controller
     public function getInheritedConstraints(string $branchId): JsonResponse
     {
         $companyId = Auth::user()->company_id;
-        
+
         $constraints = AttendanceConstraint::where('company_id', $companyId)
             ->where('inherit_from_parent', true)
             ->whereHas('branch', function ($query) use ($branchId) {
@@ -409,7 +409,7 @@ class AttendanceConstraintController extends Controller
     {
         $bulkDTO = $request->createBulkConstraintIdsDTO();
         $updatedBy = Auth::id();
-        
+
         $updated = $this->constraintRepository->bulkUpdateBranch(
             $bulkDTO->getConstraintIds(),
             $branchId,
