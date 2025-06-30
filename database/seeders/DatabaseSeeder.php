@@ -48,9 +48,8 @@ use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializatio
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
-use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureDatabaseSeeder;
-use Modules\SubscriptionSystem\Feature\Models\Feature;
-use Modules\SubscriptionSystem\Modules\Database\Seeders\ProgramStructureSeeder;
+use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFakeDatabaseSeeder;
+
 
 class DatabaseSeeder extends Seeder
 {
@@ -119,7 +118,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(ProgramStructureSeeder::class);
         $this->call(BusinessTypeSeederTableSeeder::class);
 
-        $this->call(FeatureDatabaseSeeder::class);
+        $this->call(FeatureFakeDatabaseSeeder::class);
 
 
 
