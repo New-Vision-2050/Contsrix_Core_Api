@@ -55,8 +55,10 @@ class Feature extends Model
     {
         return $this->belongsToMany(
             ProgramSystem::class,
-            'program_system_feature'
-        )->withPivot('program_id')->withTimestamps();
+            'program_system_feature',
+            'feature_id',
+            'program_system_id'
+        )->withTimestamps();
     }
 
     /**
