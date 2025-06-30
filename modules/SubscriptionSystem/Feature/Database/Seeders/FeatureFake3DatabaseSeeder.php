@@ -22,10 +22,6 @@ class FeatureFake3DatabaseSeeder extends Seeder
         $programs = Program::get();
         $subEntities = SubEntity::get();
 
-        if ($programs->isEmpty() || $subEntities->isEmpty()) {
-            return;
-        }
-
         foreach ($programs as $program) {
             Feature::create([
                 'id' => Str::uuid(),
