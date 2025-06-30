@@ -11,7 +11,9 @@ use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\SubEntity\Database\factories\SubEntityFactory;
+use Modules\SubscriptionSystem\Feature\Models\Feature;
 
 class SubEntity extends Model
 {
@@ -145,5 +147,9 @@ class SubEntity extends Model
         }
 
         return $current->super_entity;
+    }
+        public function features(): MorphMany
+    {
+        return $this->morphMany(Feature::class, 'featureable');
     }
 }

@@ -14,6 +14,7 @@ use Modules\SubscriptionSystem\Package\Models\Package;
 use Modules\SubscriptionSystem\ProgramSystem\Database\factories\ProgramSystemFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ProgramSystem extends Model
 {
@@ -70,6 +71,7 @@ class ProgramSystem extends Model
         ->using(ProgramSystemBusinessType::class)
         ->withTimestamps();
     }
+
     // public function packages()
     // {
     //     return $this->belongsToMany(

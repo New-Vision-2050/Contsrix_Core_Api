@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\Program\Database\factories\ProgramFactory;
 use Modules\SubEntity\Models\SubEntity;
+use Modules\SubscriptionSystem\Feature\Models\Feature;
 use Spatie\LaravelPackageTools\Concerns\Package\HasTranslations as PackageHasTranslations;
 
 class Program extends Model
@@ -59,5 +61,10 @@ class Program extends Model
 
     public function subEntities() {
         return $this->hasMany(SubEntity::class, 'main_program_id')->where('is_active', true);
+    }
+
+    public function features(): MorphMany
+    {
+        return $this->morphMany(Feature::class, 'featureable');
     }
 }

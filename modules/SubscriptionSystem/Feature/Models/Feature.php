@@ -12,11 +12,13 @@ use BasePackage\Shared\Traits\HasTranslations;
 use Modules\SubscriptionSystem\Modules\Models\Module;
 use Modules\SubscriptionSystem\ProgramSystem\Models\ProgramSystem;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Modules\Program\Models\Program;
 use Modules\RoleAndPermission\Models\Permission;
-
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Feature extends Model
 {
+    use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
@@ -66,4 +68,9 @@ class Feature extends Model
         return $this->belongsToMany(Permission::class, 'feature_permission', 'feature_id', 'permission_id')
             ->withTimestamps();
     }
+    public function featureable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
 }

@@ -27,6 +27,18 @@ class SubEntityPresenter extends AbstractPresenter
         $this->companiesCount = Company::count();
     }
 
+    public function getFeatures(): array
+    {
+        return $this->subEntity->features->map(function ($feature) {
+            return [
+                'id' => $feature->id,
+                'name' => $feature->name,
+                'slug' => $feature->slug,
+                'created_at' => $feature->created_at?->toIso8601String(),
+            ];
+        })->toArray();
+    }
+
     protected function present(bool $isListing = false): array
     {
         return [
@@ -44,6 +56,7 @@ class SubEntityPresenter extends AbstractPresenter
             'optional_attributes' => $this->formatAttributes($this->subEntity->optional_attributes),
             'attributes_count' => $this->subEntity->attributes_count,
             'usage_count' => $this->companiesCount,
+            'features' => $this->getFeatures(),
             'created_at' => $this->subEntity->created_at?->toIso8601String(),
             'updated_at' => $this->subEntity->updated_at?->toIso8601String(),
         ];
