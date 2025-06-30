@@ -16,7 +16,7 @@ class ProgramSystemWidgetService
 {
     public function __construct(
         private ProgramSystemRepository $repository,
-        private CompanyFieldRepository $companyFieldRepository
+        private CompanyFieldRepository $companyFieldRepository,
     ) {
     }
     public function widget()
@@ -29,6 +29,7 @@ class ProgramSystemWidgetService
             'total_programs' => $programStats['total'],
             'active_programs' => $programStats['active'],
             'company_fields_in_use' => $usedFieldsCount,
+            'package_in_use' => 0
         ];
     }
 }
