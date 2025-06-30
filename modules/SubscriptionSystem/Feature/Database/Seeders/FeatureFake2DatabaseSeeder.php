@@ -6,17 +6,19 @@ namespace Modules\SubscriptionSystem\Feature\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Laravel\Telescope\Watchers\FetchesStackTrace;
 use Modules\Program\Models\Program;
 use Modules\SubEntity\Models\SubEntity;
 use Modules\SubscriptionSystem\Feature\Models\Feature;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class FeatureFakeDatabaseSeeder extends Seeder
+class FeatureFake2DatabaseSeeder extends Seeder
 {
     use SeedOnce;
 
     public function run(): void
     {
+        // Feature::truncate();
         $programs = Program::get();
         $subEntities = SubEntity::get();
 
