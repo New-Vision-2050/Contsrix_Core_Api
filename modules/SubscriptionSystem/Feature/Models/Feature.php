@@ -31,7 +31,8 @@ class Feature extends Model
     protected $fillable = [
         // 'name',
         'slug',
-        'program_id'
+        'featureable_type',
+        'featureable_id'
     ];
     public array $translatable = ['name'];
 

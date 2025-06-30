@@ -21,6 +21,7 @@ class FeaturePresenter extends AbstractPresenter
         return [
             'id' => $this->feature->id,
             'name' => $this->feature->name,
+            'featureable' => $this->feature->featureable
         ];
     }
 }
