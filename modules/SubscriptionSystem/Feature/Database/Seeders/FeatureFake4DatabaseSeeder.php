@@ -12,13 +12,13 @@ use Modules\SubEntity\Models\SubEntity;
 use Modules\SubscriptionSystem\Feature\Models\Feature;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class FeatureFake3DatabaseSeeder extends Seeder
+class FeatureFake4DatabaseSeeder extends Seeder
 {
     use SeedOnce;
 
     public function run(): void
     {
-        // Feature::truncate();
+         Feature::query()->delete();
         $programs = Program::get();
         $subEntities = SubEntity::get();
 
