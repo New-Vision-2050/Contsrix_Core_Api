@@ -43,8 +43,8 @@ class Handler
             default => response()->json([
                 'success' => false,
                 'message' => 'Something went wrong, please try again later.',
-                'error' => $e->getMessage() , // Hide error details in production
-                "trace"=> $e->getTrace() , // Hide error details in production <==>
+                'error' => env('APP_DEBUG') ? $e->getMessage() : null, // Hide error details in production
+                "trace"=>env('APP_DEBUG') ? $e->getTrace() : null, // Hide error details in production <==>
             ], 500),
         };
     }
