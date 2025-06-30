@@ -22,18 +22,8 @@ class ProgramSystemCRUDService
     {
         $programSystem = $this->repository->createProgramSystem($createProgramSystemDTO->toArray());
 
-         foreach ($createProgramSystemDTO->features as $item) {
-            $programSystem->features()->attach($item['feature_id'], [
-                'program_id' => $item['program_id'],
-            ]);
-        }
-        
-        foreach ($createProgramSystemDTO->companyFields as $id) {
-            $programSystem->companyFields()->attach($id);
-        }
-        
-        foreach ($createProgramSystemDTO->businessTypes as $id) {
-            $programSystem->businessTypes()->attach($id);
+        foreach ($createProgramSystemDTO->features as $featureId) {
+            $programSystem->features()->attach($featureId);
         }
 
         foreach ($createProgramSystemDTO->companyFields as $id) {

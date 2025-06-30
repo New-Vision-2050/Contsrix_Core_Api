@@ -30,9 +30,7 @@ class ProgramSystem extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = [
-        'is_active',
-    ];
+    protected $fillable = ['is_active', 'name'];
 
 
     protected $casts = [
@@ -48,10 +46,12 @@ class ProgramSystem extends Model
     {
         return $this->belongsToMany(
             Feature::class,
-            'program_system_feature'
+            'program_system_feature',
+            'program_system_id',
+            'feature_id'
         )
         ->using(ProgramSystemFeature::class)
-        ->withPivot('program_id')->withTimestamps();
+        ->withTimestamps();
     }
     public function companyFields()
     {
