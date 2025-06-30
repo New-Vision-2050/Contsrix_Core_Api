@@ -11,6 +11,7 @@ use Modules\ActivityLog\Models\ActivityLog;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\Branch;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -46,6 +47,7 @@ class CompanyOfficialDocument extends Model implements HasMedia
         'end_date',
         'notification_date',
         "management_hierarchy_id",
+        "branch_id",
         "company_legal_data_id"
     ];
 
@@ -60,7 +62,7 @@ class CompanyOfficialDocument extends Model implements HasMedia
 
     public function branch()
     {
-        return $this->belongsTo(ManagementHierarchy::class,"management_hierarchy_id","id");
+        return $this->belongsTo(Branch::class, "branch_id", "id");
     }
 
     public function getRelationshipToPrimaryModel(): string

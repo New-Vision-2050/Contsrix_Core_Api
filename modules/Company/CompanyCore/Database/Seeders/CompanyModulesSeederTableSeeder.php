@@ -15,6 +15,8 @@ use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Database\Seeders\CompanyRegistrationTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\ManagementHierarchy\Models\Branch;
+use Modules\Company\ManagementHierarchy\Models\Management;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUserCompany;
@@ -103,14 +105,17 @@ class CompanyModulesSeederTableSeeder extends Seeder
         }
         $branchId = 1;
 
-        ManagementHierarchy::query()->firstOrCreate(["id" => $branchId], ["id" => $branchId,"manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch", "is_first_branch" => 1, "is_main" => 1]);
-        $mainBranch = ManagementHierarchy::query()->find($branchId);
+        $branch = Branch::query()->firstOrCreate(["id" => $branchId], ["id" => $branchId,"manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code, "company_id" => $id, "name" => "الفرع الرئيسي", "is_first_branch" => 1, "is_main" => 1]);
+
+        ManagementHierarchy::query()->firstOrCreate(["id" => $branchId], ["id" => $branchId,"manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code, "company_id" => $id, "name" => "الفرع الرئيسي", "type" => "branch", "is_first_branch" => 1, "is_main" => 1, 'manageable_type' => Branch::class, 'manageable_id' => $branch->id]);
+        $mainBranchManagementHierarchy = ManagementHierarchy::query()->find($branchId);
 
         $managementId = 2;
+       $management = Management::query()->firstOrCreate(["id" => $managementId], ["id" => $managementId, "manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code,"company_id" => $id, "name" => "الادارة الرئيسيه", "is_main" => 1,"parent_id"=>$branch->id]);
 
-        ManagementHierarchy::query()->firstOrCreate(["id" => $managementId], ["id" => $managementId, "manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code,"company_id" => $id, "name" => "الادارة الرئيسيه", "type" => "management", "is_first_branch" => 0, "is_main" => 1,"parent_id"=>$branchId]);
-        $management = ManagementHierarchy::query()->find($managementId);
-        $management->detail()->create(["description"=>"الادارة الرئيسييه","branch_id"=>$branchId]);
+        ManagementHierarchy::query()->firstOrCreate(["id" => $managementId], ["id" => $managementId, "manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code,"company_id" => $id, "name" => "الادارة الرئيسيه", "type" => "management", "is_first_branch" => 0, "is_main" => 1,"parent_id"=>$branch->id, 'manageable_type' => Management::class, 'manageable_id' => $management->id]);
+        $managementManagementHierarchy = ManagementHierarchy::query()->find($managementId);
+        $managementManagementHierarchy->detail()->create(["description"=>"الادارة الرئيسييه","branch_id"=>$branchId]);
 
 
         $companyAddressId = Uuid::uuid5($namespace, "new-vision-address")->toString();
@@ -119,7 +124,8 @@ class CompanyModulesSeederTableSeeder extends Seeder
             "id" => $companyAddressId,
             "company_id" => $id,
             "country_id" => $country->id,
-            "management_hierarchy_id" => $mainBranch->id
+            "management_hierarchy_id" => $mainBranchManagementHierarchy->id,
+            "branch_id" => $branch->id,
 
         ]);
 

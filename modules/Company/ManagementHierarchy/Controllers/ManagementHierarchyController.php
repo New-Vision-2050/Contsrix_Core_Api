@@ -90,6 +90,7 @@ class ManagementHierarchyController extends Controller
     {
         $createdItem = $this->managementHierarchyService->createBranch($request->createCreateBranchDTO());
 
+
         $presenter = new ManagementHierarchyPresenter($createdItem);
 
         return Json::item($presenter->getData());

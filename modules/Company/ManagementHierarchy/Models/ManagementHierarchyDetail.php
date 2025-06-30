@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\ManagementHierarchy\Database\factories\ManagementHierarchyFactory;
-use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\Management;
 use Modules\User\Models\User;
+use BasePackage\Shared\Traits\BaseFilterable;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -42,6 +44,7 @@ class ManagementHierarchyDetail extends Model
         "description",
         "reference_user_id",
         "management_hierarchy_id",
+        "management_id",
         "branch_id"
     ];
 
@@ -69,6 +72,14 @@ class ManagementHierarchyDetail extends Model
     public function managementHierarchy()
     {
         return $this->belongsTo(ManagementHierarchy::class, "management_hierarchy_id");
+    }
+
+    /**
+     * Get the management this detail belongs to
+     */
+    public function management()
+    {
+        return $this->belongsTo(Management::class, "management_id");
     }
 
     /**

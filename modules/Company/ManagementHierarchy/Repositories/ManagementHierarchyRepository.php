@@ -10,9 +10,12 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\Company\ManagementHierarchy\Models\Branch;
+use Modules\Company\ManagementHierarchy\Models\Management;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 use Modules\User\Models\User;
-use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
 use function PHPUnit\Framework\throwException;
 
@@ -104,23 +107,37 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function createBranch(array $branchData, array $addressData): ManagementHierarchy
+    public function createBranch(array $branchData, array $addressData)
     {
         try {
-            DB::beginTransaction();
-            $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
+        DB::beginTransaction();
 
-            $this->nextId = $this->nextId + 1;
-            $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id], []);
+        // Create Branch directly
+        $branch = Branch::create($branchData + ['is_active' => true]);
 
-            $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
+        $managementHierarchy = $this->create($branchData + ["id" => $this->nextId, 'manageable_type' => Branch::class,
+                'manageable_id' => $branch->id]);
 
+
+        // Create main management for this branch
+        $this->nextId = $this->nextId + 1;
+
+        $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id], []);
+
+
+        // Create address for branch using branch_id directly
+        if (!empty($addressData)) {
+            $branch->address()->create($addressData + [
+                    "company_id" => $branch->company_id,
+                    "branch_id" => $branch->id,
+                    "management_hierarchy_id"=>$managementHierarchy->id
+                ]);
+        }
 
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 500);
-
         }
         return $managementHierarchy;
     }
@@ -132,29 +149,39 @@ class ManagementHierarchyRepository extends BaseRepository
         return $managementHierarchy;
     }
 
-    public function createManagement(array $managementData, array $managementDetail, ?array $deputyManagers): ManagementHierarchy
+    public function createManagement(array $managementData, array $managementDetail, ?array $deputyManagers)
     {
-
         try {
-            DB::beginTransaction();
-            $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
-            $detail = $managementHierarchy->detail()->create($managementDetail);
-            if ($deputyManagers != null && count($deputyManagers) > 0) {
-                foreach ($deputyManagers as $deputyManager) {
-                    ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
+        DB::beginTransaction();
 
-                }
+        // Create Management directly
+        $management = Management::create($managementData + ['is_active' => true]);
 
+
+        $managementHierarchy = $this->create($managementData + ["id" => $this->nextId, 'manageable_type' => Management::class,
+                'manageable_id' => $management->id]);
+
+
+        // Create management detail
+        $detail = $management->detail()->create($managementDetail + ['management_id' => $management->id, "management_hierarchy_id" => $managementHierarchy->id]);
+
+        if ($deputyManagers != null && count($deputyManagers) > 0) {
+            foreach ($deputyManagers as $deputyManager) {
+                ManagementHierarchyDetailManager::create([
+                    "deputy_manager_id" => $deputyManager,
+                    "management_hierarchy_detail_id" => $detail->id
+                ]);
             }
+        }
+
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 500);
-
         }
         return $managementHierarchy;
     }
-
 
     public function createDepartment(array $departmentData, array $departmentDetail): ManagementHierarchy
     {
@@ -223,64 +250,83 @@ class ManagementHierarchyRepository extends BaseRepository
         try {
             DB::beginTransaction();
 
-            // Update management hierarchy
-            $managementHierarchy = $this->findOneOrFail($id);
-            $managementHierarchy->update($managementData);
+            $management = Management::findOrFail($id);
 
-            // Update management detail
-            if ($managementHierarchy->detail) {
-                $managementHierarchy->detail->update($managementDetail);
-            } else {
-                $managementHierarchy->detail()->create($managementDetail);
+            // Handle parent_id changes for circular reference check
+            if (isset($managementData["parent_id"]) && $managementData["parent_id"] != null && $id != $managementData["parent_id"]) {
+                $flag = 0;
+                $swapManagement = Management::findOrFail($managementData["parent_id"]);
+
+                // Check circular reference
+                while ($swapManagement != null) {
+                    if ($swapManagement->id == $id) {
+                        $flag = 1;
+                        break;
+                    }
+                    $swapManagement = $swapManagement->parent;
+                }
+
+                $swapManagement = Management::findOrFail($managementData["parent_id"]);
+
+                if ($flag == 1) {
+                    // Circular - handle swap
+                    $parentId = $management->parent_id;
+                    $swapManagement->update(["parent_id" => null]);
+                    $management->update(["parent_id" => $managementData["parent_id"]]);
+                    $swapManagement->update(["parent_id" => $parentId]);
+                } else {
+                    $management->update(["parent_id" => $managementData["parent_id"]]);
+                }
             }
 
-            // Delete existing deputy managers and create new ones
-            if ($managementHierarchy->detail) {
-                $detailId = $managementHierarchy->detail->id;
-                ManagementHierarchyDetailManager::where('management_hierarchy_detail_id', $detailId)->delete();
+            unset($managementData["parent_id"]);
 
-                // Create new deputy managers
-                if ($deputyManagers != null && count($deputyManagers) > 0) {
-                    foreach ($deputyManagers as $deputyManager) {
-                        ManagementHierarchyDetailManager::create([
-                            'deputy_manager_id' => $deputyManager,
-                            'management_hierarchy_detail_id' => $detailId
-                        ]);
-                    }
+            // Update management
+            $management->update($managementData);
+
+            // Update detail
+            $management->detail()->delete();
+            $detail = $management->detail()->create($managementDetail + ['management_id' => $management->id]);
+
+            // Update deputy managers
+            if ($deputyManagers != null && count($deputyManagers) > 0) {
+                foreach ($deputyManagers as $deputyManager) {
+                    ManagementHierarchyDetailManager::create([
+                        "deputy_manager_id" => $deputyManager,
+                        "management_hierarchy_detail_id" => $detail->id
+                    ]);
                 }
             }
 
             DB::commit();
-            return true;
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 500);
         }
+        return true;
     }
 
-    /**
-     * Check if a management hierarchy has any children
-     *
-     * @param int $id The ID of the management hierarchy to check
-     * @return bool True if it has children, false otherwise
-     */
-    public function hasChildren(int $id): bool
+    public function updateBranch(int $id, array $branchData, array $addressData): Branch
     {
-        $managementHierarchy = $this->findOneOrFail($id);
-        //not allow to delete main management or main branch pu by default main branch has children
-        if ($managementHierarchy->is_main == 1) {
-            return true;
-        }
+        try {
+            DB::beginTransaction();
 
-        // Check for direct management hierarchy children
-        $childrenCount = $this->model->where('parent_id', $id)->count();
-        if ($childrenCount > 0) {
-            return true;
-        }
+            $branch = Branch::findOrFail($id);
+            $branch->update($branchData);
 
-        // Check for user children/employees
-        $userChildrenCount = $managementHierarchy->directUserChildren()->count();
-        return $userChildrenCount > 0;
+            // Update address through ManagementHierarchy relationship
+            $managementHierarchy = $branch->managementHierarchy;
+            if ($managementHierarchy) {
+                $managementHierarchy->address()->delete();
+                $managementHierarchy->address()->create($addressData + ["company_id" => $branch->company_id]);
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+        }
+        return $branch;
     }
 
     public function deleteManagementHierarchy(int $id): bool
@@ -458,7 +504,30 @@ class ManagementHierarchyRepository extends BaseRepository
             ->merge($deputyUsers)
             ->merge($directUserChildren)
             ->unique('id');
+    }
 
+    /**
+     * Check if a management hierarchy has any children
+     *
+     * @param int $id The ID of the management hierarchy to check
+     * @return bool True if it has children, false otherwise
+     */
+    public function hasChildren(int $id): bool
+    {
+        $managementHierarchy = $this->findOneOrFail($id);
+        //not allow to delete main management or main branch pu by default main branch has children
+        if ($managementHierarchy->is_main == 1) {
+            return true;
+        }
 
+        // Check for direct management hierarchy children
+        $childrenCount = $this->model->where('parent_id', $id)->count();
+        if ($childrenCount > 0) {
+            return true;
+        }
+
+        // Check for user children/employees
+        $userChildrenCount = $managementHierarchy->directUserChildren()->count();
+        return $userChildrenCount > 0;
     }
 }

@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Modules\Company\ManagementHierarchy\Listeners\CreateHierarchyListener;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\Branch;
+use Modules\Company\ManagementHierarchy\Models\Management;
+use Modules\Company\ManagementHierarchy\Observers\BranchObserver;
+use Modules\Company\ManagementHierarchy\Observers\ManagementObserver;
 
 class ManagementHierarchyServiceProvider extends ModuleServiceProvider
 {

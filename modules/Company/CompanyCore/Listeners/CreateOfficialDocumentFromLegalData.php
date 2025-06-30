@@ -45,6 +45,7 @@ class CreateOfficialDocumentFromLegalData
             'company_legal_data_id' => $legalData->id,
             'company_id' => $legalData->company_id,
             'management_hierarchy_id' => $legalData->management_hierarchy_id,
+            "branch_id" => $legalData->branch_id
         ]);
 
         $this->syncMediaToDocument($legalData, $officialDocument);

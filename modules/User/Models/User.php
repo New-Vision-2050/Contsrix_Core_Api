@@ -21,6 +21,7 @@ use BasePackage\Shared\Traits\HasTranslations;
 use Modules\SubEntity\Models\RegistrationForm;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\Branch;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -28,7 +29,6 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -42,7 +42,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use HasRoles;
     use \OwenIt\Auditing\Auditable;
     use CustomBelongsToTenant;
-
 
     use SoftDeletes;
 
@@ -63,6 +62,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
         "company_id",
         "is_owner",
         "management_hierarchy_id",
+        "branch_id",
         "status",
         "message_address"
     ];
@@ -195,7 +195,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
 
     public function branch()
     {
-        return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
-            ->where('type', operator: 'branch');
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 }

@@ -19,6 +19,8 @@ use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
+use Modules\Company\ManagementHierarchy\Models\Branch;
+use Modules\Company\ManagementHierarchy\Models\Management;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -51,6 +53,8 @@ class ManagementHierarchy extends Model
         'company_id',
         'path',
         "type",
+        "manageable_type",
+        "manageable_id",
         "manager_id",
         "phone",
         "phone_code",
@@ -111,7 +115,29 @@ class ManagementHierarchy extends Model
         ); // Ensure no duplicate users are returned
     }
 
+    /**
+     * Get the polymorphic manageable model (Branch or Management).
+     */
+    public function manageable()
+    {
+        return $this->morphTo();
+    }
 
+    /**
+     * Get the branch relationship (only for branches).
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'manageable_id');
+    }
+
+    /**
+     * Get the management relationship (only for managements).
+     */
+    public function management()
+    {
+        return $this->belongsTo(Management::class, 'manageable_id');
+    }
 
     protected static function newFactory(): ManagementHierarchyFactory
     {

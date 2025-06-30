@@ -10,9 +10,9 @@ use Modules\User\Models\User;
 
 class ManagementHierarchyPresenter extends AbstractPresenter
 {
-    private ManagementHierarchy $managementHierarchy;
+    private  $managementHierarchy;
 
-    public function __construct(ManagementHierarchy $managementHierarchy)
+    public function __construct( $managementHierarchy)
     {
         $this->managementHierarchy = $managementHierarchy;
     }

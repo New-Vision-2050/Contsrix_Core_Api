@@ -15,6 +15,7 @@ use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\Branch;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
@@ -49,6 +50,7 @@ class CompanyLegalData extends Model implements HasMedia
         "start_date",
         "end_date",
         "management_hierarchy_id",
+        "branch_id",
 
     ];
     protected $casts = [
@@ -79,7 +81,7 @@ class CompanyLegalData extends Model implements HasMedia
 
     public function branch()
     {
-        return $this->belongsTo(ManagementHierarchy::class,"management_hierarchy_id","id");
+        return $this->belongsTo(Branch::class, "branch_id", "id");
     }
 
 

@@ -15,6 +15,7 @@ use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\Branch;
 use Modules\Country\Models\City;
 use Modules\Country\Models\Country;
 use Modules\Country\Models\State;
@@ -22,7 +23,6 @@ use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
-
 
 class CompanyAddress extends Model
 {
@@ -54,7 +54,8 @@ class CompanyAddress extends Model
         "building_number",
         "additional_phone",
         "postal_code",
-        "management_hierarchy_id"
+        "management_hierarchy_id",
+        "branch_id"
 
     ];
     protected $casts = [
@@ -76,7 +77,7 @@ class CompanyAddress extends Model
     }
     public function branch()
     {
-        return $this->belongsTo(ManagementHierarchy::class,"management_hierarchy_id","id");
+        return $this->belongsTo(Branch::class, "branch_id", "id");
     }
 
     public function getRelationshipToPrimaryModel(): string
