@@ -118,7 +118,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(ProgramStructureSeeder::class);
         $this->call(BusinessTypeSeederTableSeeder::class);
 
-$programs = Feature::factory()->count(3)->create();
+         Feature::factory()->count(3)->create();
 
 
 
