@@ -4,22 +4,16 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Presenters;
 
-use BasePackage\Shared\Presenters\BasePresenter;
+use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class ManagementHierarchyLookupsPresenter extends BasePresenter
+class ManagementHierarchyLookupsPresenter extends AbstractPresenter
 {
     public function __construct(
         private array $lookups
     ) {
     }
 
-    public function getData(): array
-    {
-        return [
-            'job_types' => $this->getJobTypes(),
-            'job_titles' => $this->getJobTitles(),
-        ];
-    }
+
 
     private function getJobTypes(): array
     {
@@ -45,4 +39,11 @@ class ManagementHierarchyLookupsPresenter extends BasePresenter
             ];
         })->toArray();
     }
+
+    protected function present(bool $isListing = false): ?array
+    {
+        return [
+            'job_types' => $this->getJobTypes(),
+            'job_titles' => $this->getJobTitles(),
+        ];    }
 }

@@ -4,41 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Presenters;
 
-use BasePackage\Shared\Presenters\BasePresenter;
+use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Shared\JobType\Presenters\JobTypePresenter;
 use Modules\JobTitle\Presenters\JobTitlePresenter;
 use Modules\User\Presenters\UserPresenter;
 
-class ManagementWithRelationsPresenter extends BasePresenter
+class ManagementWithRelationsPresenter extends AbstractPresenter
 {
     public function __construct(
         private ManagementHierarchy $managementHierarchy
     ) {
     }
 
-    public function getData(): array
-    {
-        return [
-            'id' => $this->managementHierarchy->id,
-            'name' => $this->managementHierarchy->name,
-            'parent_id' => $this->managementHierarchy->parent_id,
-            'company_id' => $this->managementHierarchy->company_id,
-            'is_main' => $this->managementHierarchy->is_main,
-            'is_active' => $this->managementHierarchy->is_active,
-            'type' => $this->managementHierarchy->type,
-            'users_count' => $this->managementHierarchy->users_count,
-            'manager' => $this->managementHierarchy->user ? 
-                (new UserPresenter($this->managementHierarchy->user))->getData() : null,
-            'detail' => $this->getDetail(),
-            'job_types' => $this->getJobTypes(),
-            'job_titles' => $this->getJobTitles(),
-            'related_branches' => $this->getRelatedBranches(),
-            'deputy_managers' => $this->getDeputyManagers(),
-            'created_at' => $this->managementHierarchy->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->managementHierarchy->updated_at?->format('Y-m-d H:i:s'),
-        ];
-    }
+
 
     private function getDetail(): ?array
     {
@@ -114,5 +93,29 @@ class ManagementWithRelationsPresenter extends BasePresenter
         return $this->managementHierarchy->deputyManagers->map(function ($user) {
             return (new UserPresenter($user))->getData();
         })->toArray();
+    }
+
+    protected function present(bool $isListing = false): ?array
+    {
+        return [
+            'id' => $this->managementHierarchy->id,
+            'name' => $this->managementHierarchy->name,
+            'parent_id' => $this->managementHierarchy->parent_id,
+            'company_id' => $this->managementHierarchy->company_id,
+            'is_main' => $this->managementHierarchy->is_main,
+            'is_active' => $this->managementHierarchy->is_active,
+            'type' => $this->managementHierarchy->type,
+            'users_count' => $this->managementHierarchy->users_count,
+            'manager' => $this->managementHierarchy->user ?
+                (new UserPresenter($this->managementHierarchy->user))->getData() : null,
+            'detail' => $this->getDetail(),
+            'job_types' => $this->getJobTypes(),
+            'job_titles' => $this->getJobTitles(),
+            'related_branches' => $this->getRelatedBranches(),
+            'deputy_managers' => $this->getDeputyManagers(),
+            'created_at' => $this->managementHierarchy->created_at?->format('Y-m-d H:i:s'),
+            'updated_at' => $this->managementHierarchy->updated_at?->format('Y-m-d H:i:s'),
+        ];
+
     }
 }
