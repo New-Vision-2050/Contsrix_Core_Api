@@ -588,4 +588,67 @@ class ManagementHierarchyRepository extends BaseRepository
             ->where('company_id', $company->id)->filter(request()->all())
             ->get();
     }
+
+    /**
+     * Create management with related job types, job titles, and branches
+     */
+    public function createManagementWithRelations(
+        array $managementData,
+        array $managementDetail,
+        ?array $deputyManagers,
+        array $jobTypes = [],
+        array $jobTitles = [],
+        array $branches = []
+    ): ManagementHierarchy {
+        try {
+            DB::beginTransaction();
+
+            // Create the management hierarchy
+
+
+            $managementHierarchy = $this->createManagement($managementData , $managementDetail, $deputyManagers);
+
+
+            // Sync job types
+            if (!empty($jobTypes)) {
+                $managementHierarchy->jobTypes()->sync($jobTypes);
+            }
+
+            // Sync job titles
+            if (!empty($jobTitles)) {
+                $managementHierarchy->jobTitles()->sync($jobTitles);
+            }
+
+            // Sync related branches
+            if (!empty($branches)) {
+                $managementHierarchy->relatedBranches()->sync($branches);
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $managementHierarchy->load(['jobTypes', 'jobTitles', 'relatedBranches', 'detail']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+
+        return $managementHierarchy;
+    }
+
+    /**
+     * Get branches for lookup (type = 'branch')
+     */
+    public function getBranchesLookup(): Collection
+    {
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+
+        return $this->model
+            ->where('type', 'branch')
+            ->where('company_id', $company->id)
+            ->where('is_active', 1)
+            ->select(['id', 'name'])
+            ->get();
+    }
 }

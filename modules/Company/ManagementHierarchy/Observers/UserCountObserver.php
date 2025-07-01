@@ -13,7 +13,7 @@ class UserCountObserver
     /**
      * Handle the User "created" event.
      *
-     * @param  \Modules\User\Models\User  $user
+     * @param \Modules\User\Models\User $user
      * @return void
      */
     public function created(User $user): void
@@ -26,7 +26,7 @@ class UserCountObserver
     /**
      * Handle the User "updated" event.
      *
-     * @param  \Modules\User\Models\User  $user
+     * @param \Modules\User\Models\User $user
      * @return void
      */
     public function updated(User $user): void
@@ -52,7 +52,7 @@ class UserCountObserver
     /**
      * Handle the User "deleted" event.
      *
-     * @param  \Modules\User\Models\User  $user
+     * @param \Modules\User\Models\User $user
      * @return void
      */
     public function deleted(User $user): void
@@ -65,7 +65,7 @@ class UserCountObserver
     /**
      * Handle the User "restored" event.
      *
-     * @param  \Modules\User\Models\User  $user
+     * @param \Modules\User\Models\User $user
      * @return void
      */
     public function restored(User $user): void
@@ -81,7 +81,7 @@ class UserCountObserver
      */
     private function recalculateUsersCountForHierarchy($hierarchyId): void
     {
-        $hierarchyId = (int) $hierarchyId; // Convert to int
+        $hierarchyId = (int)$hierarchyId; // Convert to int
         $hierarchy = ManagementHierarchy::find($hierarchyId);
 
         if (!$hierarchy) {
@@ -126,7 +126,7 @@ class UserCountObserver
                 } elseif ($hierarchyToUpdate->type === 'management') {
                     // For management hierarchies, handle copied vs non-copied
                     $detail = $hierarchyToUpdate->detail;
-                    
+
                     if ($detail && $detail->is_copied == 1) {
                         // If this is a copied hierarchy, update the source hierarchy in managements table
                         $sourceHierarchy = ManagementHierarchy::find($detail->reference_department_id);
@@ -135,7 +135,7 @@ class UserCountObserver
                             $totalUsersFromClones = $sourceHierarchy->clones->sum(function ($clone) {
                                 return $clone->managementHierarchy ? ($clone->managementHierarchy->users_count ?? 0) : 0;
                             });
-                            
+
                             // Update the source hierarchy's record in managements table
                             DB::table('managements')
                                 ->where('management_hierarchy_id', $sourceHierarchy->id)

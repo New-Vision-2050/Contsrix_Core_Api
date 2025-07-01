@@ -14,6 +14,8 @@ use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\ManagementHierarchy\Database\factories\ManagementHierarchyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
+use Modules\Shared\JobType\Models\JobType;
+use Modules\JobTitle\Models\JobTitle;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -234,5 +236,59 @@ class ManagementHierarchy extends Model
     {
         $this->users_count--;
         $this->save();
+    }
+
+    // Pivot table relationships
+
+    /**
+     * The job types that belong to the management hierarchy.
+     */
+    public function jobTypes()
+    {
+        return $this->belongsToMany(
+            JobType::class,
+            'management_hierarchy_job_types',
+            'management_hierarchy_id',
+            'job_type_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * The job titles that belong to the management hierarchy.
+     */
+    public function jobTitles()
+    {
+        return $this->belongsToMany(
+            JobTitle::class,
+            'management_hierarchy_job_titles',
+            'management_hierarchy_id',
+            'job_title_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * The branches that belong to the management hierarchy.
+     */
+    public function relatedBranches()
+    {
+        return $this->belongsToMany(
+            ManagementHierarchy::class,
+            'management_hierarchy_branches',
+            'management_hierarchy_id',
+            'branch_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Management hierarchies that have this hierarchy as a related branch.
+     */
+    public function relatedToManagements()
+    {
+        return $this->belongsToMany(
+            ManagementHierarchy::class,
+            'management_hierarchy_branches',
+            'branch_id',
+            'management_hierarchy_id'
+        )->withTimestamps();
     }
 }
