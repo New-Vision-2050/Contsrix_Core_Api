@@ -39,7 +39,7 @@ class ManagementHierarchyCloneController extends Controller
                 sourceDepartmentId: $request->input('source_department_id'),
                 targetBranchId: $request->input('target_branch_id'),
                 targetParentId: (string) $request->input('target_parent_id'),
-                cloneSubDepartments: $request->input('clone_sub_departments', true),
+                cloneSubDepartments: $request->input('clone_sub_departments', false),
                 cloneManagers: $request->input('clone_managers', true),
                 overrideParams: $request->input('override_params')
             );
@@ -118,4 +118,5 @@ class ManagementHierarchyCloneController extends Controller
             ], 500);
         }
     }
+
 }

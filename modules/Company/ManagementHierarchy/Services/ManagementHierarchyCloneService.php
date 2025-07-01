@@ -134,6 +134,7 @@ class ManagementHierarchyCloneService
                 'reference_user_id' => $sourceDepartment->detail->reference_user_id,
                 'branch_id' => $branchId,
                 'reference_department_id' => $sourceDepartment->id,
+                "is_copied" => 1
             ];
         }
 

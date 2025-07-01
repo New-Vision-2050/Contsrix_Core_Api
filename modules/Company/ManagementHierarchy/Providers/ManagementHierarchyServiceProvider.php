@@ -11,6 +11,8 @@ use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Modules\Company\ManagementHierarchy\Listeners\CreateHierarchyListener;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Observers\ManagementHierarchyObserver;
+use Modules\Company\ManagementHierarchy\Observers\UserCountObserver;
+use Modules\User\Models\User;
 
 class ManagementHierarchyServiceProvider extends ModuleServiceProvider
 {
@@ -27,6 +29,7 @@ class ManagementHierarchyServiceProvider extends ModuleServiceProvider
 
         Event::listen(CompanyCreatedEvent::class,CreateHierarchyListener::class );
         ManagementHierarchy::observe(ManagementHierarchyObserver::class);
+        User::observe(UserCountObserver::class);
     }
 
     public function register(): void

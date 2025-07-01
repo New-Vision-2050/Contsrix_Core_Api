@@ -131,7 +131,20 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
             $this->nextId = $this->nextId + 1;
-            $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id], []);
+            //here we will clone main management
+            $mainBranch = $this->findOneBy([
+                "company_id" => $managementHierarchy->company_id,
+                "parent_id" => null,
+                "is_main" => 1,
+                "type" => "branch"
+            ]);
+            $mainManagement = $this->findOneBy([
+                "company_id" => $managementHierarchy->company_id,
+                "parent_id" => $mainBranch->id,
+                "is_main" => 1,
+                "type" => "management"
+            ]);
+            $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id,"reference_department_id"=>$mainManagement->id,"is_copied"=>1], []);
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
@@ -158,7 +171,7 @@ class ManagementHierarchyRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
-            $detail = $managementHierarchy->detail()->create($managementDetail);
+            $detail = $managementHierarchy->detail()->create(array_merge(["reference_department_id"=>$managementHierarchy->id,"is_copied"=>0],$managementDetail));
             if ($deputyManagers != null && count($deputyManagers) > 0) {
                 foreach ($deputyManagers as $deputyManager) {
                     ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
@@ -532,5 +545,47 @@ class ManagementHierarchyRepository extends BaseRepository
             ->merge($deputyUsers)
             ->merge($directUserChildren)
             ->unique('id');
+    }
+
+    /**
+     * Get management hierarchies where detail.is_copied = 0 with detail.managementHierarchy relationship (paginated)
+     *
+     * @param int $page
+     * @param int $perPage
+     * @return array
+     */
+    public function getNonCopiedHierarchies(int $page = 1, int $perPage = 10): array
+    {
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+
+        $query = $this->model->with(['detail.managementHierarchy', 'user', 'company', 'clones.managementHierarchy'])
+            ->whereHas('detail', function ($query) {
+                $query->where('is_copied', 0);
+            })->filter(request()->all())
+            ->where('company_id', $company->id);
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return array_merge($paginationArray, [
+            'data' => $paginatedData
+        ]);
+    }
+
+    /**
+     * Get all management hierarchies where detail.is_copied = 0 with detail.managementHierarchy relationship (without pagination)
+     *
+     * @return Collection
+     */
+    public function getAllNonCopiedHierarchies(): Collection
+    {
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+
+        return $this->model->with(['detail.managementHierarchy', 'user', 'company', 'clones.managementHierarchy'])
+            ->whereHas('detail', function ($query) {
+                $query->where('is_copied', 0);
+            })
+            ->where('company_id', $company->id)->filter(request()->all())
+            ->get();
     }
 }

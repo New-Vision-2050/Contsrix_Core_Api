@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        Model::unguard();
+        // Removed Model::unguard() to ensure observers work properly
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
