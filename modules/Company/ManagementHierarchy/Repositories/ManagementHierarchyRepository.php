@@ -146,13 +146,21 @@ class ManagementHierarchyRepository extends BaseRepository
                 "is_main" => 1,
                 "type" => "branch"
             ]);
-            $mainManagement = $this->findOneBy([
-                "company_id" => $managementHierarchy->company_id,
-                "parent_id" => $mainBranch->id,
-                "is_main" => 1,
-                "type" => "management"
-            ]);
-            $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id,"reference_department_id"=>$mainManagement->id,"is_copied"=>1], []);
+            if($mainBranch){
+                $mainManagement = $this->findOneBy([
+                    "company_id" => $managementHierarchy->company_id,
+                    "parent_id" => $mainBranch->id,
+                    "is_main" => 1,
+                    "type" => "management"
+                ]);
+                $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id,"reference_department_id"=>$mainManagement->id,"is_copied"=>1], []);
+
+            }else
+            {
+                $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id], []);
+
+            }
+
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
