@@ -32,6 +32,7 @@ class Branch extends Model
         'longitude',
         'is_first_branch',
         'is_main',
+        'users_count',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class Branch extends Model
         'is_main' => 'boolean',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
+        'users_count' => 'integer',
     ];
 
     /**
