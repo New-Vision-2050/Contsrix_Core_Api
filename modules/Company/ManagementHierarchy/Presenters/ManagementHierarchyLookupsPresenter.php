@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Modules\Company\ManagementHierarchy\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\JobTitle\Models\JobTitle;
+use Modules\JobTitle\Presenters\JobTitlePresenter;
+use Modules\Shared\JobType\Models\JobType;
+use Modules\Shared\JobType\Presenters\JobTypePresenter;
 
 class ManagementHierarchyLookupsPresenter extends AbstractPresenter
 {
@@ -17,27 +21,12 @@ class ManagementHierarchyLookupsPresenter extends AbstractPresenter
 
     private function getJobTypes(): array
     {
-        return $this->lookups['job_types']->map(function ($jobType) {
-            return [
-                'id' => $jobType->id,
-                'name' => $jobType->name,
-                'status' => $jobType->status,
-            ];
-        })->toArray();
+        return JobTypePresenter::collection($this->lookups['job_types']);
     }
 
     private function getJobTitles(): array
     {
-        return $this->lookups['job_titles']->map(function ($jobTitle) {
-            return [
-                'id' => $jobTitle->id,
-                'name' => $jobTitle->name,
-                'type' => $jobTitle->type,
-                'description' => $jobTitle->description,
-                'status' => $jobTitle->status,
-                'job_type_id' => $jobTitle->job_type_id,
-            ];
-        })->toArray();
+        return JobTitlePresenter::collection($this->lookups['job_titles']);
     }
 
     protected function present(bool $isListing = false): ?array
