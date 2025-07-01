@@ -43,6 +43,7 @@ use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyLookupsService;
 use Modules\Company\ManagementHierarchy\Services\NonCopiedHierarchiesService;
+use Modules\JobTitle\Presenters\JobTitlePresenter;
 use Modules\Shared\Currency\Requests\GetUsersLowLevelRequest;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
@@ -343,10 +344,30 @@ class ManagementHierarchyController extends Controller
 
     }
 
+
+    public function getJobTitles(Request $request): JsonResponse
+    {
+        try {
+            $jobTypeIds = $request->input('job_type_ids');
+            if ($jobTypeIds !== null) {
+                if (str_contains($jobTypeIds, ","))
+                {
+                    $jobTypeIds = explode(',', $jobTypeIds);
+                }else{
+                    $jobTypeIds = [$jobTypeIds];
+                }
+            }
+            $jobTitles = $this->lookupsService->getJobTitles($jobTypeIds);
+            return Json::items( JobTitlePresenter::collection($jobTitles));
+        } catch (Exception $e) {
+            return Json::error($e->getMessage(), 400);
+        }
+    }
+
     /**
      * Get lookups data for management hierarchy creation
      */
-    public function getLookupsForChoises(GetLookupsRequest $request): JsonResponse
+    public function getLookupsForChoices(GetLookupsRequest $request): JsonResponse
     {
         try {
             $jobTypeIds = $request->input('job_type_ids');
@@ -360,9 +381,7 @@ class ManagementHierarchyController extends Controller
             }
             $lookups = $this->lookupsService->getAllLookups($jobTypeIds);
 
-            return Json::item(
-                 (new ManagementHierarchyLookupsPresenter($lookups))->getData(),
-            );
+            return Json::items( ManagementHierarchyLookupsPresenter::collection($lookups['job_titles']));
         } catch (Exception $e) {
             return Json::error($e->getMessage(), 400);
         }
