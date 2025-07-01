@@ -21,13 +21,17 @@ use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleData
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementWithRelationsPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyLookupsPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\NonCopiedHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementRequest;
+use Modules\Company\ManagementHierarchy\Requests\CreateManagementWithRelationsRequest;
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\GetLookupsRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyLookupRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
@@ -37,6 +41,7 @@ use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
+use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyLookupsService;
 use Modules\Company\ManagementHierarchy\Services\NonCopiedHierarchiesService;
 use Modules\Shared\Currency\Requests\GetUsersLowLevelRequest;
 use Modules\User\Models\User;
@@ -49,6 +54,7 @@ class ManagementHierarchyController extends Controller
     public function __construct(
         private ManagementHierarchyCRUDService   $managementHierarchyService,
         private NonCopiedHierarchiesService      $nonCopiedHierarchiesService,
+        private ManagementHierarchyLookupsService $lookupsService,
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
@@ -323,4 +329,34 @@ class ManagementHierarchyController extends Controller
         }
     }
 
+    /**
+     * Create a new management with job types, job titles, and branches relations
+     */
+    public function createManagementWithLookupsForChoise(CreateManagementWithRelationsRequest $request): JsonResponse
+    {
+            $createManagementWithRelationsDTO = $request->createCreateManagementWithRelationsDTO();
+            $managementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoise($createManagementWithRelationsDTO);
+
+            return Json::success(
+                data: (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
+            );
+
+    }
+
+    /**
+     * Get lookups data for management hierarchy creation
+     */
+    public function getLookupsForChoises(GetLookupsRequest $request): JsonResponse
+    {
+        try {
+            $jobTypeIds = $request->input('job_type_ids');
+            $lookups = $this->lookupsService->getAllLookups($jobTypeIds);
+
+            return Json::success(
+                data: (new ManagementHierarchyLookupsPresenter($lookups))->getData(),
+            );
+        } catch (Exception $e) {
+            return Json::error($e->getMessage(), 400);
+        }
+    }
 }
