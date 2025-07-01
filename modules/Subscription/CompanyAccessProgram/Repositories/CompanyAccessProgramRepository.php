@@ -40,9 +40,14 @@ class CompanyAccessProgramRepository extends BaseRepository
             'name' => $createCompanyAccessProgramDTO->name,
         ]);
 
-        // Sync modules
-        if (!empty($createCompanyAccessProgramDTO->modules)) {
-            $program->modules()->sync($createCompanyAccessProgramDTO->modules);
+        // Sync programs
+        if (!empty($createCompanyAccessProgramDTO->programs)) {
+            $program->programs()->sync($createCompanyAccessProgramDTO->programs);
+        }
+
+        // Sync sub_entities
+        if (!empty($createCompanyAccessProgramDTO->sub_entities)) {
+            $program->subEntities()->sync($createCompanyAccessProgramDTO->subEntities);
         }
 
         // Sync company fields
@@ -71,5 +76,10 @@ class CompanyAccessProgramRepository extends BaseRepository
     public function deleteCompanyAccessProgram(UuidInterface $id): bool
     {
         return $this->delete($id);
+    }
+
+    public function getPackageFormMeta(string $id): CompanyAccessProgram {
+        return $this->model->where('id', $id)
+        ->with('companyFields:id,name', 'countries:id,name,currency,currency_name,currency_symbol', 'companyTypes:id,name')->firstOrFail();
     }
 }

@@ -36,4 +36,11 @@ class CompanyAccessProgramCRUDService
             id: $id,
         );
     }
+
+     public function getPackageFormMeta(string $id): CompanyAccessProgram
+    {
+        return $this->repository->getPackageFormMeta(
+            id: $id,
+        );
+    }
 }

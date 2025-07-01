@@ -9,4 +9,5 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/{id}', [CompanyAccessProgramController::class, 'show']);
     Route::put('/{id}', [CompanyAccessProgramController::class, 'update']);
     Route::delete('/{id}', [CompanyAccessProgramController::class, 'delete']);
+    Route::get('/{id}/package-form-meta', [CompanyAccessProgramController::class, 'getPackageFormMeta']);
 });
