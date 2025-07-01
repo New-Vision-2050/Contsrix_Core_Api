@@ -13,8 +13,8 @@
     "broker": "الوسيط",
     "number_of_projects": "عدد المشاريع",
     "end_date": "تاريخ الانتهاء",
-    "monthly": "شهري",
-    "yearly": "سنوي",
-    "weekly": "أسبوعي",
-    "one_time": "لمرة واحدة"
+    "month": "شهر",
+    "year": "سنة",
+    "week": "أسبوع",
+    "day": "يوم"
 }
