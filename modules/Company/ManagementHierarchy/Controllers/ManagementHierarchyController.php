@@ -381,7 +381,7 @@ class ManagementHierarchyController extends Controller
             }
             $lookups = $this->lookupsService->getAllLookups($jobTypeIds);
 
-            return Json::items( ManagementHierarchyLookupsPresenter::collection($lookups['job_titles']));
+            return Json::items( JobTitlePresenter::collection($lookups['job_titles']));
         } catch (Exception $e) {
             return Json::error($e->getMessage(), 400);
         }
