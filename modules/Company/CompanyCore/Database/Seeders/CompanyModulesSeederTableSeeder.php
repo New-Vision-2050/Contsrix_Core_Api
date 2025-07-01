@@ -109,7 +109,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
 
         ManagementHierarchy::query()->firstOrCreate(["id" => $managementId], ["id" => $managementId, "manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code,"company_id" => $id, "name" => "الادارة الرئيسيه", "type" => "management", "is_first_branch" => 0, "is_main" => 1,"parent_id"=>$branchId]);
         $management = ManagementHierarchy::query()->find($managementId);
-        $management->detail()->create(["description"=>"الادارة الرئيسييه","branch_id"=>$branchId]);
+        $management->detail()->create(["description"=>"الادارة الرئيسييه","branch_id"=>$branchId,"is_copied"=>0 , "reference_department_id"=>$management->id]);
 
 
         $companyAddressId = Uuid::uuid5($namespace, "new-vision-address")->toString();
@@ -136,7 +136,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         // Manually trigger users_count recalculation for created hierarchies
         $this->recalculateUsersCount();
     }
-    
+
     /**
      * Manually recalculate users_count for all hierarchies
      * This ensures correct counts after seeding

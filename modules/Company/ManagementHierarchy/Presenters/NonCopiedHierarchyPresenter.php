@@ -26,7 +26,6 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
             'type' => $this->managementHierarchy->type,
             'parent_id' => $this->managementHierarchy->parent_id,
             'company_id' => $this->managementHierarchy->company_id,
-            'path' => $this->managementHierarchy->path,
             'is_active' => $this->managementHierarchy->is_active,
             'is_main' => $this->managementHierarchy->is_main,
             'manager' => $this->managementHierarchy->user ? (new UserPresenter($this->managementHierarchy->user))->present() : null,
@@ -37,29 +36,19 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
                 'reference_user_id' => $this->managementHierarchy->detail->reference_user_id,
                 'reference_department_id' => $this->managementHierarchy->detail->reference_department_id,
                 'branch_id' => $this->managementHierarchy->detail->branch_id,
-                'management_hierarchy' => $this->managementHierarchy->detail->managementHierarchy ? [
-                    'id' => $this->managementHierarchy->detail->managementHierarchy->id,
-                    'name' => $this->managementHierarchy->detail->managementHierarchy->name,
-                    'type' => $this->managementHierarchy->detail->managementHierarchy->type,
-                    'parent_id' => $this->managementHierarchy->detail->managementHierarchy->parent_id,
-                ] : null,
+
             ] : null,
-            'copies' => $this->managementHierarchy->clones?->map(function ($clone) {
-                return [
-                    'id' => $clone->id,
-                    'description' => $clone->description,
-                    'is_copied' => $clone->is_copied,
-                    'management_hierarchy' => $clone->managementHierarchy ?
-                        (new ManagementHierarchyPresenter($clone->managementHierarchy))->present() : null,
-                ];
-            })->toArray(),
-            'total_copies_users_count' => $this->managementHierarchy->clones->sum(function ($clone) {
+//            'copies' => $this->managementHierarchy->clones?->map(function ($clone) {
+//                return [
+//                    'id' => $clone->id,
+//                    'description' => $clone->description,
+//                    'is_copied' => $clone->is_copied,
+//                ];
+//            })->toArray(),
+            'users_count' => $this->managementHierarchy->clones->sum(function ($clone) {
                 return $clone->managementHierarchy ? ($clone->managementHierarchy->users_count ?? 0) : 0;
-            }),
-            'company' => $this->managementHierarchy->company ? [
-                'id' => $this->managementHierarchy->company->id,
-                'name' => $this->managementHierarchy->company->name,
-            ] : null,
+            })
+
         ];
     }
 }
