@@ -111,6 +111,11 @@ class ManagementHierarchyDetail extends Model
         return $this->belongsTo(ManagementHierarchy::class, "reference_department_id", "id");
     }
 
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class, "branch_id", "id");
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "managementHierarchy";

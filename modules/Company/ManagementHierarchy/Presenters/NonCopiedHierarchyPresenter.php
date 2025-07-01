@@ -36,6 +36,7 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
                 'reference_user_id' => $this->managementHierarchy->detail->reference_user_id,
                 'reference_department_id' => $this->managementHierarchy->detail->reference_department_id,
                 'branch_id' => $this->managementHierarchy->detail->branch_id,
+                "branch" => $this->managementHierarchy->detail->branch ? (new ManagementHierarchySimpleDataPresenter($this->managementHierarchy->detail->branch))->present() : null
 
             ] : null,
 //            'copies' => $this->managementHierarchy->clones?->map(function ($clone) {
