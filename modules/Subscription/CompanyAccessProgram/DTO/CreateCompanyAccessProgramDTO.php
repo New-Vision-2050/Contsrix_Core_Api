@@ -31,31 +31,45 @@ class CreateCompanyAccessProgramDTO
      * @param array<string, mixed> $programsInput
      * @return array{0: array<string>, 1: array<string>}
      */
-    protected function normalizePrograms(array $programsInput): array
+    protected function normalizePrograms(array $input): array
     {
         $programs = [];
         $subEntities = [];
 
         $traverse = function (array $nodes) use (&$traverse, &$programs, &$subEntities) {
-            foreach ($nodes as $programId => $data) {
+            foreach ($nodes as $programId => $programData) {
                 $programs[] = $programId;
 
-                if (!empty($data['sub_entities'])) {
-                    foreach ($data['sub_entities'] as $subId) {
-                        $subEntities[] = $subId;
+                if (!empty($programData['sub_entities']) && is_array($programData['sub_entities'])) {
+                    foreach ($programData['sub_entities'] as $subEntityId) {
+                        $subEntities[] = $subEntityId;
                     }
                 }
 
-                if (!empty($data['children'])) {
-                    $traverse($data['children']);
+                if (!empty($programData['children']) && is_array($programData['children'])) {
+                    $traverse($programData['children']);
+                }
+
+                foreach ($programData as $key => $childNode) {
+                    if (
+                        is_array($childNode) &&
+                        isset($childNode['sub_entities']) &&
+                        !in_array($key, ['sub_entities', 'children'], true)
+                    ) {
+                        $programs[] = $key;
+                        foreach ($childNode['sub_entities'] as $subEntityId) {
+                            $subEntities[] = $subEntityId;
+                        }
+                    }
                 }
             }
         };
 
-        $traverse($programsInput);
+        $traverse($input);
 
         return [array_unique($programs), array_unique($subEntities)];
     }
+
 
     public function toArray(): array
     {

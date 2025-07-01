@@ -17,6 +17,8 @@ use Modules\Subscription\CompanyAccessProgram\Requests\CreateCompanyAccessProgra
 use Modules\Subscription\CompanyAccessProgram\Requests\DeleteCompanyAccessProgramRequest;
 use Modules\Subscription\CompanyAccessProgram\Requests\UpdateCompanyAccessProgramRequest;
 use Modules\Subscription\CompanyAccessProgram\Requests\GetCompanyAccessProgramListRequest;
+use Modules\Subscription\CompanyAccessProgram\Handlers\UpdateCompanyAccessProgramStatusHandler;
+use Modules\Subscription\CompanyAccessProgram\Requests\UpdateCompanyAccessProgramStatusRequest;
 use Modules\Subscription\CompanyAccessProgram\Presenters\CompanyAccessProgramPackageFormMetaPresenter;
 
 class CompanyAccessProgramController extends Controller
@@ -24,6 +26,7 @@ class CompanyAccessProgramController extends Controller
     public function __construct(
         private CompanyAccessProgramCRUDService $companyAccessProgramService,
         private UpdateCompanyAccessProgramHandler $updateCompanyAccessProgramHandler,
+        private UpdateCompanyAccessProgramStatusHandler $updateCompanyAccessProgramStatusHandler,
         private DeleteCompanyAccessProgramHandler $deleteCompanyAccessProgramHandler,
     ) {
     }
@@ -36,6 +39,13 @@ class CompanyAccessProgramController extends Controller
         );
 
         return Json::items(CompanyAccessProgramPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function counts(GetCompanyAccessProgramListRequest $request): JsonResponse
+    {
+        $counts = $this->companyAccessProgramService->counts();
+
+        return Json::item($counts);
     }
 
     public function show(GetCompanyAccessProgramRequest $request): JsonResponse
@@ -60,6 +70,18 @@ class CompanyAccessProgramController extends Controller
     {
         $command = $request->createUpdateCompanyAccessProgramCommand();
         $this->updateCompanyAccessProgramHandler->handle($command);
+
+        $item = $this->companyAccessProgramService->get($command->getId());
+
+        $presenter = new CompanyAccessProgramPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+        public function updateStatus(UpdateCompanyAccessProgramStatusRequest $request): JsonResponse
+    {
+        $command = $request->createUpdateCompanyAccessProgramStatusCommand();
+        $this->updateCompanyAccessProgramStatusHandler->handle($command);
 
         $item = $this->companyAccessProgramService->get($command->getId());
 

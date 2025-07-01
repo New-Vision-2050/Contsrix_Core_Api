@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Subscription\CompanyAccessProgram\Repositories;
 
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
@@ -46,7 +47,7 @@ class CompanyAccessProgramRepository extends BaseRepository
         }
 
         // Sync sub_entities
-        if (!empty($createCompanyAccessProgramDTO->sub_entities)) {
+        if (!empty($createCompanyAccessProgramDTO->subEntities)) {
             $program->subEntities()->sync($createCompanyAccessProgramDTO->subEntities);
         }
 
@@ -78,8 +79,54 @@ class CompanyAccessProgramRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getPackageFormMeta(string $id): CompanyAccessProgram {
+    public function getPackageFormMeta(string $id): CompanyAccessProgram
+    {
         return $this->model->where('id', $id)
-        ->with('companyFields:id,name', 'countries:id,name,currency,currency_name,currency_symbol', 'companyTypes:id,name')->firstOrFail();
+            ->with('companyFields:id,name', 'countries:id,name,currency,currency_name,currency_symbol', 'companyTypes:id,name')->firstOrFail();
+    }
+
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc'
+    ) {
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all())->where($conditions);
+        } else {
+            $query = $this->model->where($conditions);
+        }
+
+        $query->withCount(['programs', 'subEntities', 'companyFields', 'packages']);
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->orderBy($orderBy, $sortBy)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        // dd($paginatedData);
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
+
+    public function counts(): array
+    {
+        $totalPrograms = $this->model::count();
+
+        $activePrograms = $this->model::where('is_active', true)->count();
+
+        $distinctCompanyFields = DB::table('company_access_program_field')
+            ->distinct('company_field_id')
+            ->count('company_field_id');
+
+        $activePackages = \Modules\Subscription\Package\Models\Package::where('is_active', true)->count();
+
+        return [
+            'total_company_access_programs' => $totalPrograms,
+            'active_company_access_programs' => $activePrograms,
+            'company_fields' => $distinctCompanyFields,
+            'active_packages' => $activePackages,
+        ];
     }
 }

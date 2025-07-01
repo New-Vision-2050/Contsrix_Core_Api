@@ -19,7 +19,7 @@ class CompanyAccessProgramCRUDService
 
     public function create(CreateCompanyAccessProgramDTO $createCompanyAccessProgramDTO): CompanyAccessProgram
     {
-         return $this->repository->createCompanyAccessProgram($createCompanyAccessProgramDTO);
+        return $this->repository->createCompanyAccessProgram($createCompanyAccessProgramDTO);
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -37,10 +37,15 @@ class CompanyAccessProgramCRUDService
         );
     }
 
-     public function getPackageFormMeta(string $id): CompanyAccessProgram
+    public function getPackageFormMeta(string $id): CompanyAccessProgram
     {
         return $this->repository->getPackageFormMeta(
             id: $id,
         );
+    }
+
+    public function counts(): array
+    {
+        return $this->repository->counts();
     }
 }

@@ -14,6 +14,8 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Subscription\Package\Models\Package;
 
 class CompanyAccessProgram extends Model
 {
@@ -26,10 +28,12 @@ class CompanyAccessProgram extends Model
 
     protected $fillable = [
         'name',
+        'is_active',
     ];
 
     protected $casts = [
         'id' => 'string',
+        'is_active' => 'bool',
     ];
 
     public function companyFields(): BelongsToMany
@@ -80,5 +84,10 @@ class CompanyAccessProgram extends Model
             'company_access_program_id',
             'sub_entity_id'
         );
+    }
+
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class);
     }
 }
