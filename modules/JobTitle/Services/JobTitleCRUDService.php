@@ -22,11 +22,14 @@ class JobTitleCRUDService
          return $this->repository->createJobTitle($createJobTitleDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10,$sort =null,$order= 'asc'): array
     {
         return $this->repository->withoutScopePaginated(
             page: $page,
             perPage: $perPage,
+            conditions: [],
+            sort: $sort,
+            order: $order
         );
     }
 

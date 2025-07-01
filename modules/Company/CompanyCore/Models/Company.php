@@ -4,37 +4,58 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
-use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\HasTranslations;
-use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Modules\AdminRequest\Models\AdminRequest;
-use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
-use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\Company\CompanyField\Models\CompanyField;
-use Modules\Company\CompanyType\Models\CompanyType;
-use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
-use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
-use Stancl\Tenancy\Database\Concerns\HasDatabase;
-use Stancl\Tenancy\Database\Concerns\HasDomains;
-use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
-
+use Stancl\Tenancy\DatabaseConfig;
+use Modules\Country\Models\Country;
+use App\Traits\CustomBelongsToTenant;
+use Illuminate\Database\Eloquent\Model;
+use BasePackage\Shared\Traits\UuidTrait;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\AdminRequest\Models\AdminRequest;
+use BasePackage\Shared\Traits\HasTranslations;
+use Stancl\Tenancy\Contracts\TenantWithDatabase;
+use Stancl\Tenancy\Database\Concerns\HasDomains;
+use Stancl\Tenancy\Database\Concerns\HasDatabase;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\SubscriptionSystem\Subscription\Models\CompanyPackagePivot;
+use Modules\Company\CompanyField\Models\CompanyField;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 use Stancl\Tenancy\Database\Concerns\HasScopedValidationRules;
-use Stancl\Tenancy\Contracts\TenantWithDatabase;
-use Stancl\Tenancy\DatabaseConfig;
+use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
 
 /**
+ * Class Company
+ *
+ * Represents a company entity in the system.
+ *
+ * @property string $id Unique identifier for the company.
+ * @property string $name Name of the company.
+ * @property string $user_name Username associated with the company.
+ * @property string $email Email address of the company.
+ * @property string $phone Phone number of the company.
+ * @property string $country_id ID of the country the company is located in.
+ * @property string $company_type_id ID representing the type of the company.
+ * @property string $company_field_id ID representing the field of the company.
+ * @property string $general_manager_id ID of the general manager of the company.
+ * @property bool $is_active Indicates if the company is active.
+ * @property bool $complete_data Indicates if all required data for the company is complete.
+ * @property string $date_activate Date when the company was activated.
+ * @property string $serial_no Serial number associated with the company.
+ * @property string $image_path Path to the company's image.
+ *
+ * @method static CompanyFactory factory(...$parameters)
  * @method  __call(string $method, array $parameters)
  * @method  __callStatic(string $method, array $parameters)
  */
@@ -54,11 +75,11 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public array $translatable = ["name"];
 
-//    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner"];
+    //    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner"];
 
     public $incrementing = false;
     protected $table = 'companies';
-//    protected $connection = "mysql";
+    //    protected $connection = "mysql";
 
 
     protected $keyType = 'string';
@@ -213,7 +234,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public function owner()
     {
-        return $this->hasOne(User::class)->where("is_owner",1);
+        return $this->hasOne(User::class)->where("is_owner", 1);
     }
 
     public function users()
@@ -235,5 +256,18 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
             $model->serial_no = $serial;
         });
+    }
+
+    public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(
+            \Modules\Subscription\Models\Package::class,
+            'company_package',
+            'company_id',
+            'package_id'
+        )
+            ->using(CompanyPackagePivot::class)
+            ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
+            ->withTimestamps();
     }
 }

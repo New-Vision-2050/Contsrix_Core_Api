@@ -61,6 +61,7 @@ class AdminSeedTableSeeder extends Seeder
             
             // Manually trigger users_count recalculation since seeder bypasses observers
             $this->recalculateUsersCount();
+
         }
     //}
     

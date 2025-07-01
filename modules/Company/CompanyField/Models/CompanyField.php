@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\CompanyField\Database\factories\CompanyFieldFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\SubscriptionSystem\ProgramSystem\Models\ProgramSystem;
+use Modules\SubscriptionSystem\ProgramSystem\Models\ProgramSystemCompanyField;
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class CompanyField extends Model
@@ -37,5 +39,14 @@ class CompanyField extends Model
     protected static function newFactory(): CompanyFieldFactory
     {
         return CompanyFieldFactory::new();
+    }
+
+    public function programSystems()
+    {
+        return $this->belongsToMany(
+            ProgramSystem::class,
+            'program_system_company_field'
+        )
+        ->using(ProgramSystemCompanyField::class);
     }
 }

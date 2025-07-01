@@ -3,10 +3,12 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
+use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
@@ -37,15 +39,19 @@ use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
+use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
 use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
+use Modules\Shared\Privilege\Database\Seeders\UpdatePrivilegeModulesSeederTableSeeder;
 use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsNewSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
-use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
-use Modules\Shared\Privilege\Database\Seeders\UpdatePrivilegeModulesSeederTableSeeder;
+use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFake2DatabaseSeeder;
+use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFake4DatabaseSeeder;
+use Modules\SubscriptionSystem\Feature\Database\Seeders\FeatureFakeDatabaseSeeder;
+
 
 class DatabaseSeeder extends Seeder
 {
@@ -57,12 +63,14 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CurrencySeederTable::class);
 //        $this->call(UniversitiesTableSeeder::class);
-        $this->call(RolesAndPermissionsSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(LanguagesTableSeeder::class);
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(AdminSeedTableSeeder::class);
         $this->call(CompanyModulesSeederTableSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
+
+
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
         $this->call(QuestionSettingTableSeeder::class);
@@ -105,9 +113,16 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
         $this->call(BanksOtherModulesSeederTableSeeder::class);
         $this->call(UniversitiesOtherSeederTableSeeder::class);
-     
+
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
-        
-    }
+
+        // $this->call(ProgramStructureSeeder::class);
+        $this->call(BusinessTypeSeederTableSeeder::class);
+
+        $this->call(FeatureFake4DatabaseSeeder::class);
+
+
+
+}
 }
