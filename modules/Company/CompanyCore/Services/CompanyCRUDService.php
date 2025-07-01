@@ -27,7 +27,7 @@ class CompanyCRUDService
     public function create(CreateCompanyDTO $createCompanyDTO): Company
     {
         $requestCompanyDTO = $createCompanyDTO->toArray();
-        try {
+//        try {
             DB::beginTransaction();
             $company = $this->repository->createCompany($requestCompanyDTO);
             // dd($createCompanyDTO->companyFieldId);
@@ -36,10 +36,10 @@ class CompanyCRUDService
 //            CheckCompanyActivity::dispatch($company->id)->delay(now()->addHours(24));
             event(new CompanyCreatedEvent($company));
             DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw new \Exception($e->getMessage(), 400);
-        }
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            throw new \Exception($e->getMessage(), 400);
+//        }
 
         return $company;
     }
