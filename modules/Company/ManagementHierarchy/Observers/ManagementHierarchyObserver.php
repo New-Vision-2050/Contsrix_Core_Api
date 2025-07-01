@@ -109,6 +109,7 @@ class ManagementHierarchyObserver
             'longitude' => $managementHierarchy->longitude,
             'is_first_branch' => $managementHierarchy->is_first_branch??0, // Specific to branches
             'is_main' => $managementHierarchy->is_main??0,
+            'users_count' => $managementHierarchy->users_count??0,
         ];
     }
 }

@@ -41,12 +41,16 @@ class ManagementHierarchyDetail extends Model
         "id",
         "description",
         "reference_user_id",
+        "reference_department_id",
         "management_hierarchy_id",
-        "branch_id"
+        "branch_id",
+        "is_copied"
     ];
 
     protected $casts = [
         'reference_user_id' => 'string',
+        'reference_department_id' => 'string',
+        'is_copied' => 'boolean',
     ];
 
 
@@ -94,9 +98,22 @@ class ManagementHierarchyDetail extends Model
         );
     }
 
-    public function referanceUser()
+    public function referenceUser()
     {
-        return $this->belongsTo(User::class , "reference_user_id");
+        return $this->belongsTo(User::class, "reference_user_id", "id");
+    }
+
+    /**
+     * Get the reference department if this department was cloned
+     */
+    public function referenceDepartment()
+    {
+        return $this->belongsTo(ManagementHierarchy::class, "reference_department_id", "id");
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class, "branch_id", "id");
     }
 
     public function getRelationshipToPrimaryModel(): string
