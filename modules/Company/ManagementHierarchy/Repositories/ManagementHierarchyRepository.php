@@ -134,7 +134,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
     public function createBranch(array $branchData, array $addressData): ManagementHierarchy
     {
-//        try {
+        try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
@@ -166,11 +166,11 @@ class ManagementHierarchyRepository extends BaseRepository
 
 
             DB::commit();
-//        } catch (\Exception $e) {
-//            DB::rollBack();
-//            throw new \Exception($e->getMessage(), 500);
-//
-//        }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage(), 500);
+
+        }
         return $managementHierarchy;
     }
 
