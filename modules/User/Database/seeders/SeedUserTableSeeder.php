@@ -17,7 +17,7 @@ class SeedUserTableSeeder extends Seeder
      */
     public function run()
     {
-        dd('Seeder is running');
+        // Removed dd() to allow proper seeder execution
         Model::unguard();
 
         User::factory()->create([

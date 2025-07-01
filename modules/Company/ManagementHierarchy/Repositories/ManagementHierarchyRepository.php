@@ -158,7 +158,7 @@ class ManagementHierarchyRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
-            $detail = $managementHierarchy->detail()->create($managementDetail);
+            $detail = $managementHierarchy->detail()->create($managementDetail+["reference_department_id"=>$managementHierarchy->id]);
             if ($deputyManagers != null && count($deputyManagers) > 0) {
                 foreach ($deputyManagers as $deputyManager) {
                     ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);

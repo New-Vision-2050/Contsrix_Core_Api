@@ -56,10 +56,18 @@ class ManagementHierarchy extends Model
         "latitude",
         "longitude",
         "is_first_branch",
-        "is_main"
+        "is_main",
+        "users_count"
     ];
 
-
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'users_count' => 'integer',
+    ];
 
     public function company()
     {
@@ -198,5 +206,27 @@ class ManagementHierarchy extends Model
 
         //merging are put unique id
         return $manager->merge($deputyManagers)->merge($childrenUsers)->unique('id');
+    }
+
+    public function getUsersCountAttribute(): int
+    {
+        return (int) ($this->attributes['users_count'] ?? 0);
+    }
+
+    public function setUsersCountAttribute($value)
+    {
+        $this->attributes['users_count'] = $value;
+    }
+
+    public function incrementUsersCount()
+    {
+        $this->users_count++;
+        $this->save();
+    }
+
+    public function decrementUsersCount()
+    {
+        $this->users_count--;
+        $this->save();
     }
 }

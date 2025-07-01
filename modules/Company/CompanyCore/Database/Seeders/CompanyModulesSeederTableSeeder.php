@@ -12,9 +12,9 @@ use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyField\Database\Seeders\CompanyFieldSeederTableSeeder;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Modules\Company\CompanyType\Database\Seeders\CompanyTypeSeederTableSeeder;
+use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyRegistrationType\Database\Seeders\CompanyRegistrationTypeSeederTableSeeder;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
-use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Models\CompanyUserCompany;
@@ -24,7 +24,6 @@ use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Ranium\SeedOnce\Traits\SeedOnce;
-
 
 class CompanyModulesSeederTableSeeder extends Seeder
 {
@@ -41,7 +40,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
      */
     public function run()
     {
-        Model::unguard();
+        // Removed Model::unguard() to ensure observers work properly
         $this->call(CompanyFieldSeederTableSeeder::class);
         $this->call(CompanyTypeSeederTableSeeder::class);
         $this->call(CompanyRegistrationTypeSeederTableSeeder::class);
@@ -134,5 +133,17 @@ class CompanyModulesSeederTableSeeder extends Seeder
             'role' => CompanyUserRole::EMPLOYEE->value
         ]);
 
+        // Manually trigger users_count recalculation for created hierarchies
+        $this->recalculateUsersCount();
+    }
+    
+    /**
+     * Manually recalculate users_count for all hierarchies
+     * This ensures correct counts after seeding
+     */
+    private function recalculateUsersCount(): void
+    {
+        // Use Artisan command to recalculate counts
+        \Illuminate\Support\Facades\Artisan::call('recalculate:users-count');
     }
 }
