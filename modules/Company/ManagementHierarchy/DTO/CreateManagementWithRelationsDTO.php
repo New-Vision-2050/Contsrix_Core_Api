@@ -9,18 +9,18 @@ use Ramsey\Uuid\UuidInterface;
 class CreateManagementWithRelationsDTO
 {
     public function __construct(
-        public string $name,
-        public ?int $parentId,
-        public UuidInterface $companyId,
+        public string         $name,
+        public ?int           $parentId,
+        public UuidInterface  $companyId,
         public ?UuidInterface $managerId,
-        public ?string $description,
-        public int $isActive,
-        public array $jobTypes,
-        public array $jobTitles,
-        public array $branches,
-        public array $deputyManagerIds,
-        public int $branchId
-    ) {
+        public ?string        $description,
+        public int            $isActive,
+        public array          $jobTypes,
+        public array          $jobTitles,
+        public array          $branches,
+        public array          $deputyManagerIds,
+    )
+    {
     }
 
     public function managementToArray(): array
@@ -36,11 +36,16 @@ class CreateManagementWithRelationsDTO
         ];
     }
 
+    public function getParentId()
+    {
+        return $this->parentId;
+
+    }
+
     public function managementDetailToArray(): array
     {
         return [
             'description' => $this->description,
-            'branch_id' => $this->branchId
         ];
     }
 

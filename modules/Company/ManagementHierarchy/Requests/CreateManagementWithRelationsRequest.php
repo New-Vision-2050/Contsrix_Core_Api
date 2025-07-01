@@ -46,7 +46,6 @@ class CreateManagementWithRelationsRequest extends FormRequest
             jobTitles: $this->get('job_titles') ?? [],
             branches: $this->get('branches') ?? [],
             deputyManagerIds: $this->get('deputy_manager_ids') ?? [],
-            branchId: $branch->id
         );
     }
 }
