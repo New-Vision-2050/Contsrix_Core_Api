@@ -43,12 +43,14 @@ class ManagementHierarchyDetail extends Model
         "reference_user_id",
         "reference_department_id",
         "management_hierarchy_id",
-        "branch_id"
+        "branch_id",
+        "is_copied"
     ];
 
     protected $casts = [
         'reference_user_id' => 'string',
         'reference_department_id' => 'string',
+        'is_copied' => 'boolean',
     ];
 
 

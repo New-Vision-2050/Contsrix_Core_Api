@@ -21,6 +21,7 @@ use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleData
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\NonCopiedHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
@@ -30,11 +31,13 @@ use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyReques
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyLookupRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\GetNonCopiedHierarchiesRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
+use Modules\Company\ManagementHierarchy\Services\NonCopiedHierarchiesService;
 use Modules\Shared\Currency\Requests\GetUsersLowLevelRequest;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
@@ -45,6 +48,7 @@ class ManagementHierarchyController extends Controller
 {
     public function __construct(
         private ManagementHierarchyCRUDService   $managementHierarchyService,
+        private NonCopiedHierarchiesService      $nonCopiedHierarchiesService,
         private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
         private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
         private MakeBranchMainHandler            $makeBranchMainHandler,
@@ -275,6 +279,47 @@ class ManagementHierarchyController extends Controller
             );
         } catch (Exception $e) {
             return Json::error($e->getMessage(),400);
+        }
+    }
+
+    /**
+     * Get management hierarchies where detail.is_copied = 0 with detail.managementHierarchy relationship
+     *
+     * @param GetNonCopiedHierarchiesRequest $request
+     * @return JsonResponse
+     */
+    public function getNonCopiedHierarchies(GetNonCopiedHierarchiesRequest $request): JsonResponse
+    {
+        try {
+            $dto = $request->createGetNonCopiedHierarchiesDTO();
+
+            $hierarchies = $this->nonCopiedHierarchiesService->getNonCopiedHierarchies($dto);
+
+            return Json::items(
+                NonCopiedHierarchyPresenter::collection($hierarchies['data']),
+                $hierarchies['pagination'] ?? []
+            );
+        } catch (Exception $e) {
+            return Json::error($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Get all management hierarchies where detail.is_copied = 0 without pagination
+     *
+     * @param GetNonCopiedHierarchiesRequest $request
+     * @return JsonResponse
+     */
+    public function getAllNonCopiedHierarchies(GetNonCopiedHierarchiesRequest $request): JsonResponse
+    {
+        try {
+            $hierarchies = $this->nonCopiedHierarchiesService->getAllNonCopiedHierarchies();
+
+            return Json::items(
+                NonCopiedHierarchyPresenter::collection($hierarchies)
+            );
+        } catch (Exception $e) {
+            return Json::error($e->getMessage(), 400);
         }
     }
 

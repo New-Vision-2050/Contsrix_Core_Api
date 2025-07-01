@@ -84,6 +84,12 @@ class ManagementHierarchy extends Model
         return $this->hasMany(User::class,"management_hierarchy_id","id");
     }
 
+    public function clones()
+    {
+        return $this->hasMany(ManagementHierarchyDetail::class, 'reference_department_id', 'id');
+
+    }
+
 
     public function users()//get all users under hierarchy not in company
     {
