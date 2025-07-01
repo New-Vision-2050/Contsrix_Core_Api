@@ -52,14 +52,14 @@ use Ramsey\Uuid\Uuid;
 class ManagementHierarchyController extends Controller
 {
     public function __construct(
-        private ManagementHierarchyCRUDService   $managementHierarchyService,
-        private NonCopiedHierarchiesService      $nonCopiedHierarchiesService,
+        private ManagementHierarchyCRUDService    $managementHierarchyService,
+        private NonCopiedHierarchiesService       $nonCopiedHierarchiesService,
         private ManagementHierarchyLookupsService $lookupsService,
-        private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
-        private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
-        private MakeBranchMainHandler            $makeBranchMainHandler,
-        private UpdateBranchHandler              $updateBranchHandler,
-        private UpdateManagementHandler          $updateManagementHandler
+        private UpdateManagementHierarchyHandler  $updateManagementHierarchyHandler,
+        private DeleteManagementHierarchyHandler  $deleteManagementHierarchyHandler,
+        private MakeBranchMainHandler             $makeBranchMainHandler,
+        private UpdateBranchHandler               $updateBranchHandler,
+        private UpdateManagementHandler           $updateManagementHandler
     )
     {
     }
@@ -252,7 +252,7 @@ class ManagementHierarchyController extends Controller
         ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
         ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(false);
 
-        $presentedTree=ManagementHierarchyUserTreePresenter::collection($tree);
+        $presentedTree = ManagementHierarchyUserTreePresenter::collection($tree);
 
 
         try {
@@ -262,10 +262,10 @@ class ManagementHierarchyController extends Controller
                 $presentedTree = $presentedTree[0];
             }
         } catch (Exception $e) {
-            return Json::items(is_array($presentedTree)?$presentedTree:[$presentedTree]);
+            return Json::items(is_array($presentedTree) ? $presentedTree : [$presentedTree]);
 
         }
-        return Json::item(array_is_list($presentedTree)?$presentedTree:[$presentedTree]);
+        return Json::item(array_is_list($presentedTree) ? $presentedTree : [$presentedTree]);
     }
 
     /**
@@ -284,7 +284,7 @@ class ManagementHierarchyController extends Controller
                 UserPresenter::collection($lowerUsers)
             );
         } catch (Exception $e) {
-            return Json::error($e->getMessage(),400);
+            return Json::error($e->getMessage(), 400);
         }
     }
 
@@ -334,12 +334,12 @@ class ManagementHierarchyController extends Controller
      */
     public function createManagementWithLookupsForChoise(CreateManagementWithRelationsRequest $request): JsonResponse
     {
-            $createManagementWithRelationsDTO = $request->createCreateManagementWithRelationsDTO();
-            $managementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoise($createManagementWithRelationsDTO);
+        $createManagementWithRelationsDTO = $request->createCreateManagementWithRelationsDTO();
+        $managementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoise($createManagementWithRelationsDTO);
 
-            return Json::success(
-                data: (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
-            );
+        return Json::success(
+            data: (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
+        );
 
     }
 
@@ -350,6 +350,14 @@ class ManagementHierarchyController extends Controller
     {
         try {
             $jobTypeIds = $request->input('job_type_ids');
+            if ($jobTypeIds !== null) {
+                if (str_contains($jobTypeIds, ","))
+                {
+                    $jobTypeIds = explode(',', $jobTypeIds);
+                }else{
+                    $jobTypeIds = [$jobTypeIds];
+                }
+            }
             $lookups = $this->lookupsService->getAllLookups($jobTypeIds);
 
             return Json::success(

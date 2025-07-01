@@ -6,6 +6,7 @@ namespace Modules\Company\ManagementHierarchy\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Shared\JobType\Models\JobType;
 use Modules\Shared\JobType\Presenters\JobTypePresenter;
 use Modules\JobTitle\Presenters\JobTitlePresenter;
 use Modules\User\Presenters\UserPresenter;
@@ -37,34 +38,12 @@ class ManagementWithRelationsPresenter extends AbstractPresenter
 
     private function getJobTypes(): array
     {
-        return $this->managementHierarchy->jobTypes->map(function ($jobType) {
-            return [
-                'id' => $jobType->id,
-                'name' => $jobType->name,
-                'status' => $jobType->status,
-                'pivot' => [
-                    'created_at' => $jobType->pivot->created_at?->format('Y-m-d H:i:s'),
-                    'updated_at' => $jobType->pivot->updated_at?->format('Y-m-d H:i:s'),
-                ]
-            ];
-        })->toArray();
+        return JobTypePresenter::collection($this->managementHierarchy->jobTypes);
     }
 
     private function getJobTitles(): array
     {
-        return $this->managementHierarchy->jobTitles->map(function ($jobTitle) {
-            return [
-                'id' => $jobTitle->id,
-                'name' => $jobTitle->name,
-                'type' => $jobTitle->type,
-                'description' => $jobTitle->description,
-                'status' => $jobTitle->status,
-                'pivot' => [
-                    'created_at' => $jobTitle->pivot->created_at?->format('Y-m-d H:i:s'),
-                    'updated_at' => $jobTitle->pivot->updated_at?->format('Y-m-d H:i:s'),
-                ]
-            ];
-        })->toArray();
+        return JobTitlePresenter::collection($this->managementHierarchy->jobTitles);
     }
 
     private function getRelatedBranches(): array

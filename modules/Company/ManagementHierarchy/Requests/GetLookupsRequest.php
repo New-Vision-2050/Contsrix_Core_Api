@@ -22,8 +22,7 @@ class GetLookupsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'job_type_ids' => 'nullable|array',
-            'job_type_ids.*' => 'string|exists:job_types,id',
+            'job_type_ids' => 'nullable|string',
         ];
     }
 
@@ -34,19 +33,11 @@ class GetLookupsRequest extends FormRequest
     {
         return [
             'job_type_ids' => 'Job Type IDs',
-            'job_type_ids.*' => 'Job Type ID',
         ];
     }
 
     /**
      * Get custom messages for validator errors.
      */
-    public function messages(): array
-    {
-        return [
-            'job_type_ids.array' => 'Job type IDs must be an array.',
-            'job_type_ids.*.string' => 'Each job type ID must be a string.',
-            'job_type_ids.*.exists' => 'One or more job type IDs do not exist.',
-        ];
-    }
+
 }
