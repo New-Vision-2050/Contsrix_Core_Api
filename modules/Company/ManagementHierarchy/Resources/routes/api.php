@@ -17,7 +17,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/user-lower-levels', [ManagementHierarchyController::class, 'getUserLowerLevels']);
     Route::get('/non-copied', [ManagementHierarchyController::class, 'getNonCopiedHierarchies']);
     Route::get('/non-copied/all', [ManagementHierarchyController::class, 'getAllNonCopiedHierarchies']);
-    Route::get('/lookups', [ManagementHierarchyController::class, 'getLookups']);
+    Route::get('/lookups', [ManagementHierarchyController::class, 'getLookupsForChoises']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
     Route::post('/create-management-with-relations', [ManagementHierarchyController::class, 'createManagementWithLookupsForChoise']);

@@ -346,7 +346,7 @@ class ManagementHierarchyController extends Controller
     /**
      * Get lookups data for management hierarchy creation
      */
-    public function getLookups(GetLookupsRequest $request): JsonResponse
+    public function getLookupsForChoises(GetLookupsRequest $request): JsonResponse
     {
         try {
             $jobTypeIds = $request->input('job_type_ids');
