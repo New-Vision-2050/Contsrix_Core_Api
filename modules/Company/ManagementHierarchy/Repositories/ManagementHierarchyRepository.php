@@ -77,8 +77,16 @@ class ManagementHierarchyRepository extends BaseRepository
                 ->first();
 
             if ($ignoredNode) {
-                $query->whereDoesntHave("detail",function ($q) use ($ignoredNode) {
-                    $q->where("branch_id",request()->ignore_branch_id);
+                $query->where(function ($subQuery) use ($ignoredNode) {
+                    $subQuery->whereDoesntHave("detail", function ($q) {
+                        $q->where("branch_id", request()->ignore_branch_id);
+                    })
+                    ->whereHas("relatedBranches", function ($q) {
+                        $q->where("branch_id", request()->ignore_branch_id);
+                    })
+                    ->whereHas("detail", function ($q) {
+                        $q->where("is_copied", 0);
+                    });
                 });
             }
         }
