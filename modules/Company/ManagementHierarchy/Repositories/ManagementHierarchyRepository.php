@@ -561,13 +561,15 @@ class ManagementHierarchyRepository extends BaseRepository
         $query = $this->model->with(['detail.managementHierarchy', 'user', 'company', 'clones.managementHierarchy'])
             ->whereHas('detail', function ($query) {
                 $query->where('is_copied', 0);
-            })
+            })->filter(request()->all())
             ->where('company_id', $company->id);
 
-        return $this->paginated(
-            page: $page,
-            perPage: $perPage,
-        );
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return array_merge($paginationArray, [
+            'data' => $paginatedData
+        ]);
     }
 
     /**
@@ -583,7 +585,7 @@ class ManagementHierarchyRepository extends BaseRepository
             ->whereHas('detail', function ($query) {
                 $query->where('is_copied', 0);
             })
-            ->where('company_id', $company->id)
+            ->where('company_id', $company->id)->filter(request()->all())
             ->get();
     }
 }

@@ -288,7 +288,7 @@ class ManagementHierarchyController extends Controller
      * @param GetNonCopiedHierarchiesRequest $request
      * @return JsonResponse
      */
-    public function getNonCopiedHierarchies(GetNonCopiedHierarchiesRequest $request): JsonResponse
+    public function getNonCopiedHierarchies(GetNonCopiedHierarchiesRequest $request)
     {
         try {
             $dto = $request->createGetNonCopiedHierarchiesDTO();
