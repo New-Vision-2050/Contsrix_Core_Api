@@ -337,8 +337,8 @@ class ManagementHierarchyController extends Controller
         $createManagementWithRelationsDTO = $request->createCreateManagementWithRelationsDTO();
         $managementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoise($createManagementWithRelationsDTO);
 
-        return Json::success(
-            data: (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
+        return Json::item(
+             (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
         );
 
     }
@@ -360,8 +360,8 @@ class ManagementHierarchyController extends Controller
             }
             $lookups = $this->lookupsService->getAllLookups($jobTypeIds);
 
-            return Json::success(
-                data: (new ManagementHierarchyLookupsPresenter($lookups))->getData(),
+            return Json::item(
+                 (new ManagementHierarchyLookupsPresenter($lookups))->getData(),
             );
         } catch (Exception $e) {
             return Json::error($e->getMessage(), 400);
