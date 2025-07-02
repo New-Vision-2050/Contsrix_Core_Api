@@ -40,7 +40,7 @@ class ManagementHierarchyCRUDService
 
     public function createDepartment(CreateDepartmentDTO $createDepartmentDTO): ManagementHierarchy
     {
-         return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray());
+         return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray(),[],[]);
     }
 
     public function createManagementWithLookupsForChoise(CreateManagementWithRelationsDTO $createManagementWithRelationsDTO): ManagementHierarchy

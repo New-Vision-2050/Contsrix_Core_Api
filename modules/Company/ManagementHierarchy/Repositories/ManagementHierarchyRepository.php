@@ -206,13 +206,18 @@ class ManagementHierarchyRepository extends BaseRepository
     }
 
 
-    public function createDepartment(array $departmentData, array $departmentDetail): ManagementHierarchy
+    public function createDepartment(array $departmentData, array $departmentDetail, ?array $deputyManagers): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($departmentData + ["id" => $this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
-            $managementHierarchy->detail()->create($departmentDetail);
+            $managementHierarchy = $this->create($departmentData + ["id" => $this->nextId]);
+            $detail = $managementHierarchy->detail()->create(array_merge(["reference_department_id"=>$managementHierarchy->id,"is_copied"=>0],$departmentDetail));
+            if ($deputyManagers != null && count($deputyManagers) > 0) {
+                foreach ($deputyManagers as $deputyManager) {
+                    ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
+                }
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -645,6 +650,42 @@ class ManagementHierarchyRepository extends BaseRepository
 
             // Load relationships for response
             $managementHierarchy->load(['jobTypes', 'jobTitles', 'relatedBranches', 'detail']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+
+        return $managementHierarchy;
+    }
+
+
+
+    /**
+     * Create management with related job types, job titles, and branches
+     */
+    public function createDepartmentWithRelations(
+        array $departmentData,
+        array $departmentDetail,
+        ?array $deputyManagers,//not use put for future if ask
+        array $managements = []
+    ): ManagementHierarchy {
+        try {
+            DB::beginTransaction();
+
+            // Create the management hierarchy
+            $managementHierarchy = $this->createDepartment($departmentData , $departmentDetail, $deputyManagers);
+
+
+            // Sync managements
+            if (!empty($managements)) {
+                $managementHierarchy->relatedManagements()->sync($managements);
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $managementHierarchy->load(['relatedManagements', 'detail']);
 
         } catch (\Exception $e) {
             DB::rollBack();
