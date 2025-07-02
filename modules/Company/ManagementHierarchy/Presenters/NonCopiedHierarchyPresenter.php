@@ -22,6 +22,7 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->managementHierarchy->id,
+            'code_id' => $this->managementHierarchy->id,
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
             'parent_id' => $this->managementHierarchy->parent_id,
@@ -50,7 +51,7 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
 //            })->toArray(),
             'users_count' => $this->managementHierarchy->clones->sum(function ($clone) {
                 return $clone->managementHierarchy ? ($clone->managementHierarchy->users_count ?? 0) : 0;
-            }),
+            })
 
         ];
     }
