@@ -677,7 +677,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy = $this->createDepartment($departmentData , $departmentDetail, $deputyManagers);
 
 
-            // Sync job types
+            // Sync managements
             if (!empty($managements)) {
                 $managementHierarchy->relatedManagements()->sync($managements);
             }
