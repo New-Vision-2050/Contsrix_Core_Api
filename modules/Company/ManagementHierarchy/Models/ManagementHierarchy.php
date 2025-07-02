@@ -279,6 +279,21 @@ class ManagementHierarchy extends Model
         )->withTimestamps();
     }
 
+
+
+    /**
+     * The managements that belong to the management hierarchy.
+     */
+    public function relatedManagements()
+    {
+        return $this->belongsToMany(
+            ManagementHierarchy::class,
+            'management_hierarchy_managements',
+            'management_hierarchy_id',
+            'management_id'
+        )->withTimestamps();
+    }
+
     /**
      * Management hierarchies that have this hierarchy as a related branch.
      */

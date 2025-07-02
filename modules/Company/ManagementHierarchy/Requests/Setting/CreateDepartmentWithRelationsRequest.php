@@ -33,7 +33,7 @@ class CreateDepartmentWithRelationsRequest extends FormRequest
             parentId: $this->get('parent_id') ? (int)$this->get('parent_id') : null,
             companyId: Uuid::fromString($company->id),
             isActive: 1,
-            managements: $this->get('branches') ?? [],
+            managements: $this->get('managements') ?? [],
         );
     }
 }
