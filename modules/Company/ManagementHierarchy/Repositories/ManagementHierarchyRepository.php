@@ -82,11 +82,8 @@ class ManagementHierarchyRepository extends BaseRepository
                     $subQuery->whereDoesntHave("detail", function ($q) {
                         $q->where("branch_id", request()->ignore_branch_id);
                     })
-                        ->whereHas("relatedBranches", function ($q) {
+                        ->whereHas("detail.sourceManagementHierarchy.relatedBranches", function ($q) {
                             $q->where("branch_id", request()->ignore_branch_id);
-                        })
-                        ->whereHas("detail", function ($q) {
-                            $q->where("is_copied", 0);
                         });
                 });
             }
@@ -180,6 +177,11 @@ class ManagementHierarchyRepository extends BaseRepository
 
         $managementHierarchy = $this->create($managementHierarchyData + ["id" => $this->nextId]);
         return $managementHierarchy;
+    }
+
+    public function getSourceManagementHierarchy($sourceId)
+    {
+        return SourceManagementHierarchy::query()->find($sourceId);
     }
 
     public function createManagement(array $managementData, array $managementDetail, ?array $deputyManagers): ManagementHierarchy
