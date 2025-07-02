@@ -16,6 +16,8 @@ class SourceManagementHierarchy extends Model
 {
     use HasFactory;
 
+    use BelongsToTenant;
+
 
     protected $table = 'source_management_hierarchies';
 
