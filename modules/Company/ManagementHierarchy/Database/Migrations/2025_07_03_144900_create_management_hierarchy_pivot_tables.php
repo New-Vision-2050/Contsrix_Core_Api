@@ -58,7 +58,7 @@ return new class extends Migration
             $table->foreign('source_management_hierarchy_id', 'mh_branches_mh_id_foreign')
                   ->references('id')->on('source_management_hierarchies')->onDelete('cascade');
             $table->foreign('branch_id', 'mh_branches_branch_id_foreign')
-                  ->references('id')->on('source_management_hierarchies')->onDelete('cascade');
+                  ->references('id')->on('management_hierarchies')->onDelete('cascade');
 
             // Indexes
             $table->index(['source_management_hierarchy_id', 'branch_id'], 'mh_branches_composite_index');

@@ -682,31 +682,33 @@ class ManagementHierarchyRepository extends BaseRepository
         array  $departmentDetail,
         ?array $deputyManagers,//not use put for future if ask
         array  $managements = []
-    ): ManagementHierarchy
+    ): SourceManagementHierarchy
     {
         try {
             DB::beginTransaction();
 
             // Create the management hierarchy
-            $managementHierarchy = $this->createDepartment($departmentData, $departmentDetail, $deputyManagers);
+//            $managementHierarchy = $this->createDepartment($departmentData, $departmentDetail, $deputyManagers);
+            $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name"=>$departmentData["name"],"type"=>$departmentData["type"],"company_id"=>$departmentData["company_id"]]);
+
 
 
             // Sync managements
             if (!empty($managements)) {
-                $managementHierarchy->relatedManagements()->sync($managements);
+                $sourceManagementHierarchy->relatedManagements()->sync($managements);
             }
 
             DB::commit();
 
             // Load relationships for response
-            $managementHierarchy->load(['relatedManagements', 'detail']);
+            $sourceManagementHierarchy->load(['relatedManagements', 'details']);
 
         } catch (\Exception $e) {
             DB::rollBack();
             throw new CustomException($e->getMessage(), 500);
         }
 
-        return $managementHierarchy;
+        return $sourceManagementHierarchy;
     }
 
     /**

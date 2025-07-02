@@ -25,6 +25,8 @@ class SourceManagementHierarchy extends Model
     protected $fillable = [
         "name",
         "type",
+        "company_id",
+        "is_active",
     ];
 
 
