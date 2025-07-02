@@ -603,8 +603,7 @@ class ManagementHierarchyRepository extends BaseRepository
      *
      * @return Collection
      */
-    public
-    function getAllNonCopiedHierarchies(): Collection
+    public function getAllNonCopiedHierarchies(): Collection
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
@@ -619,8 +618,7 @@ class ManagementHierarchyRepository extends BaseRepository
     /**
      * Create management with related job types, job titles, and branches
      */
-    public
-    function createManagementWithRelations(
+    public function createManagementWithRelations(
         array  $managementData,
         array  $managementDetail,
         ?array $deputyManagers,
@@ -670,8 +668,7 @@ class ManagementHierarchyRepository extends BaseRepository
     /**
      * Create management with related job types, job titles, and branches
      */
-    public
-    function createDepartmentWithRelations(
+    public function createDepartmentWithRelations(
         array  $departmentData,
         array  $departmentDetail,
         ?array $deputyManagers,//not use put for future if ask
@@ -706,8 +703,7 @@ class ManagementHierarchyRepository extends BaseRepository
     /**
      * Get branches for lookup (type = 'branch')
      */
-    public
-    function getBranchesLookup(): Collection
+    public function getBranchesLookup(): Collection
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
