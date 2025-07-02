@@ -23,9 +23,4 @@ class SettingManagementHierarchyService
         return $this->repository->createDepartmentWithRelations($dto->departmentToArray(), $dto->departmentDetailToArray(), [], $dto->managements);
     }
 
-
-    public function getNonCopied(CreateDepartmentWithRelationsDTO $dto)
-    {
-        return $this->repository->createDepartmentWithRelations($dto->departmentToArray(), $dto->departmentDetailToArray(), [], $dto->managements);
-    }
 }
