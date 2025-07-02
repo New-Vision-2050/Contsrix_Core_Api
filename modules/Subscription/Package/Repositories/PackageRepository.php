@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\Package\Repositories;
 
-use BasePackage\Shared\Repositories\BaseRepository;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Subscription\Package\Models\Package;
+use BasePackage\Shared\Repositories\BaseRepository;
+use Modules\Subscription\Package\Models\PackageFeature;
 
 /**
  * @property Package $model
@@ -47,4 +49,32 @@ class PackageRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function upsertFeatures(string $packageId, array $features): void
+    {
+        $now = now();
+
+        $records = collect($features)
+            ->unique('permission_id')
+            ->map(function ($feature) use ($packageId, $now) {
+                return [
+                    'id' => Str::uuid()->toString(),
+                    'package_id' => $packageId,
+                    'permission_id' => $feature['permission_id'],
+                    'limit' => $feature['limit'] ?? null,
+                    'is_enabled' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            })
+            ->values()
+            ->all();
+
+        PackageFeature::upsert(
+            $records,
+            ['package_id', 'permission_id'],
+            ['limit', 'is_enabled', 'updated_at']
+        );
+    }
+
 }

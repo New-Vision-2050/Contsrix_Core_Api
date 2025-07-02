@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Subscription\Enums\PeriodUnitEnum;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -104,13 +105,13 @@ class Package extends Model
         );
     }
 
-    // /**
-    //  * Get all of the features for the Module
-    //  *
-    //  * @return \Illuminate\Database\Eloquent\Relations\HasMany
-    //  */
-    // public function features(): HasMany
-    // {
-    //     return $this->hasMany(Feature::class);
-    // }
+    /**
+     * Get all of the features for the Module
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function features(): HasMany
+    {
+        return $this->hasMany(PackageFeature::class);
+    }
 }

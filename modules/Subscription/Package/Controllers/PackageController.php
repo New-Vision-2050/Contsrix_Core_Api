@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\Package\Controllers;
 
-use BasePackage\Shared\Presenters\Json;
-use App\Http\Controllers\Controller;
+use Ramsey\Uuid\Uuid;
 use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
+use Modules\Subscription\Package\Requests\GetPackageRequest;
+use Modules\Subscription\Package\Presenters\PackagePresenter;
+use Modules\Subscription\Package\Services\PackageCRUDService;
 use Modules\Subscription\Package\Handlers\DeletePackageHandler;
 use Modules\Subscription\Package\Handlers\UpdatePackageHandler;
-use Modules\Subscription\Package\Presenters\PackagePresenter;
 use Modules\Subscription\Package\Requests\CreatePackageRequest;
 use Modules\Subscription\Package\Requests\DeletePackageRequest;
-use Modules\Subscription\Package\Requests\GetPackageListRequest;
-use Modules\Subscription\Package\Requests\GetPackageRequest;
 use Modules\Subscription\Package\Requests\UpdatePackageRequest;
-use Modules\Subscription\Package\Services\PackageCRUDService;
-use Ramsey\Uuid\Uuid;
+use Modules\Subscription\Package\Requests\GetPackageListRequest;
+use Modules\Subscription\Package\Requests\AttachPackageFeaturesRequest;
 
 class PackageController extends Controller
 {
@@ -64,7 +65,7 @@ class PackageController extends Controller
 
         $presenter = new PackagePresenter($item);
 
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeletePackageRequest $request): JsonResponse
@@ -72,5 +73,20 @@ class PackageController extends Controller
         $this->deletePackageHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function attachFeatures(AttachPackageFeaturesRequest $request): JsonResponse
+    {
+        $dto = $request->createAttachPackageFeaturesDTO();
+
+        // Transform to array for batch insert
+        $features = array_map(fn($f) => $f->toArray(), $dto->features);
+
+        $this->packageService->attachFeatures(
+            $dto->packageId,
+            $features,
+        );
+
+        return Json::success('Features attached successfully');
     }
 }
