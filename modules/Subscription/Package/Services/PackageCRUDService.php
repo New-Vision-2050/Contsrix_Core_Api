@@ -23,9 +23,10 @@ class PackageCRUDService
         return $this->repository->createPackage($createPackageDTO);
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10, array $filters = []): array
     {
         return $this->repository->paginated(
+            $filters,
             page: $page,
             perPage: $perPage,
         );

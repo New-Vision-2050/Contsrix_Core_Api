@@ -104,9 +104,25 @@ class PackageRepository extends BaseRepository
         string $sortBy = 'desc'
     ) {
         if (method_exists($this->model, 'scopeFilter')) {
-            $query = $this->model->filter(request()->all())->where($conditions);
+            $query = $this->model->filter(request()->all());
         } else {
-            $query = $this->model->where($conditions);
+            $query = $this->model->newQuery();
+        }
+
+        // Simple column filters
+        if (isset($conditions['is_active'])) {
+            $query->where('is_active', $conditions['is_active']);
+        }
+
+        if (!empty($conditions['name'])) {
+            $query->where('name', 'LIKE', '%' . $conditions['name'] . '%');
+        }
+
+        // // Relational filter
+        if (!empty($conditions['company_fields'])) {
+            $query->whereHas('companyFields', function ($q) use ($conditions) {
+                $q->whereIn('company_fields.id', $conditions['company_fields']);
+            });
         }
 
         $query->withCount(['features']);
