@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Models;
 
-use App\Casts\CompanyRoleCast;
 use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
-
-// use BasePackage\Shared\Traits\HasTranslations;
 
 class Permission extends SpatiePermission
 {
@@ -21,15 +18,35 @@ class Permission extends SpatiePermission
     use HasFactory;
     use BelongsToTenant;
 
-    // use HasTranslations;
-    // use SoftDeletes;
-
     public array $translatable = [];
 
     public $incrementing = false;
-    protected $primaryKey = "id";
-
+    protected $primaryKey = 'id';
     protected $keyType = 'string';
 
+    // Allow mass assignment for new columns
+    protected $fillable = [
+        'name',
+        'guard_name',
+        'resource',
+        'action',
+        'program_id',
+        'sub_entity_id',
+    ];
 
+    /**
+     * Relation to Program model (nullable).
+     */
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Program\Models\Program::class, 'program_id');
+    }
+
+    /**
+     * Relation to SubEntity model (nullable).
+     */
+    public function subEntity(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\SubEntity\Models\SubEntity::class, 'sub_entity_id');
+    }
 }
