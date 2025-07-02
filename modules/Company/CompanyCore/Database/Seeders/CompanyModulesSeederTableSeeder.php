@@ -107,7 +107,7 @@ class CompanyModulesSeederTableSeeder extends Seeder
         $mainBranch = ManagementHierarchy::query()->find($branchId);
 
         $managementId = 2;
-        $sourceManagementHierarchy = SourceManagementHierarchy::query()->create(["company_id" => $id, "name" => "الادارة الرئيسيه", "type" => "management"]);
+        $sourceManagementHierarchy = SourceManagementHierarchy::query()->create(["company_id" => $id, "name" => "الادارة العامة", "type" => "management"]);
         ManagementHierarchy::query()->firstOrCreate(["id" => $managementId], ["id" => $managementId, "manager_id"=>$general_manager->id->toString(),"phone"=>$general_manager->phone,"email"=>$general_manager->email,"phone_code"=>$general_manager->phone_code,"company_id" => $id, "name" => "الادارة الرئيسيه", "type" => "management", "is_first_branch" => 0, "is_main" => 1,"parent_id"=>$branchId]);
         $management = ManagementHierarchy::query()->find($managementId);
         $management->detail()->create(["description"=>"الادارة الرئيسييه","branch_id"=>$branchId,"is_copied"=>1 , "reference_department_id"=>$sourceManagementHierarchy->id]);
