@@ -64,7 +64,7 @@ class ManagementHierarchyObserver
         } elseif ($managementHierarchy->type === 'management') {
             // Check if this is a copied or non-copied hierarchy
             $isNonCopied = $managementHierarchy->detail && $managementHierarchy->detail->is_copied == 0;
-            
+
             if ($isNonCopied) {
                 // For non-copied hierarchies: create/update in managements table
                 unset($data['is_first_branch']);
@@ -91,7 +91,7 @@ class ManagementHierarchyObserver
             // Only delete management records that were created (non-copied ones)
             // Check if this management hierarchy had a non-copied detail when it was created
             $hasNonCopiedRecord = Management::where('management_hierarchy_id', $managementHierarchy->id)->exists();
-            
+
             if ($hasNonCopiedRecord) {
                 Management::where('management_hierarchy_id', $managementHierarchy->id)->delete();
             }
@@ -118,6 +118,7 @@ class ManagementHierarchyObserver
         // For updateOrCreate, if the record exists, its ID will be retained.
         // If it's new, we need a new UUID for the Branch/Management record itself.
         return [
+            "id"=> $managementHierarchy->id,
             'management_hierarchy_id' => $managementHierarchy->id, // This is the FK to the main table
             'name' => $managementHierarchy->name,
             'parent_id' => $managementHierarchy->parent_id,
