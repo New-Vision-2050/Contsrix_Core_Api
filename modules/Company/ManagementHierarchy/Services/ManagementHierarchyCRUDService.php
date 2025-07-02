@@ -9,6 +9,7 @@ use Modules\Company\ManagementHierarchy\DTO\CreateBranchDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateDepartmentDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
+use Modules\Company\ManagementHierarchy\DTO\CreateManagementWithRelationsDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Ramsey\Uuid\UuidInterface;
@@ -39,7 +40,20 @@ class ManagementHierarchyCRUDService
 
     public function createDepartment(CreateDepartmentDTO $createDepartmentDTO): ManagementHierarchy
     {
-         return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray());
+         return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray(),[],[]);
+    }
+
+    public function createManagementWithLookupsForChoise(CreateManagementWithRelationsDTO $createManagementWithRelationsDTO): ManagementHierarchy
+    {
+        $detail =$this->repository->getDetail($createManagementWithRelationsDTO->getParentId());
+        return $this->repository->createManagementWithRelations(
+            $createManagementWithRelationsDTO->managementToArray(),
+            $createManagementWithRelationsDTO->managementDetailToArray()+["branch_id"=>$detail->branch_id],
+            $createManagementWithRelationsDTO->getDeputyManagerIds(),
+            $createManagementWithRelationsDTO->getJobTypes(),
+            $createManagementWithRelationsDTO->getJobTitles(),
+            $createManagementWithRelationsDTO->getBranches()
+        );
     }
 
     public function list(int $page = 1, int $perPage = 10): array

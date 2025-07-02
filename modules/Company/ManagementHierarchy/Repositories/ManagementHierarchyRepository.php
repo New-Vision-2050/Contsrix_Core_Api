@@ -77,8 +77,16 @@ class ManagementHierarchyRepository extends BaseRepository
                 ->first();
 
             if ($ignoredNode) {
-                $query->whereDoesntHave("detail",function ($q) use ($ignoredNode) {
-                    $q->where("branch_id",request()->ignore_branch_id);
+                $query->where(function ($subQuery) use ($ignoredNode) {
+                    $subQuery->whereDoesntHave("detail", function ($q) {
+                        $q->where("branch_id", request()->ignore_branch_id);
+                    })
+                    ->whereHas("relatedBranches", function ($q) {
+                        $q->where("branch_id", request()->ignore_branch_id);
+                    })
+                    ->whereHas("detail", function ($q) {
+                        $q->where("is_copied", 0);
+                    });
                 });
             }
         }
@@ -132,19 +140,28 @@ class ManagementHierarchyRepository extends BaseRepository
 
             $this->nextId = $this->nextId + 1;
             //here we will clone main management
-            $mainBranch = $this->findOneBy([
-                "company_id" => $managementHierarchy->company_id,
-                "parent_id" => null,
-                "is_main" => 1,
-                "type" => "branch"
-            ]);
-            $mainManagement = $this->findOneBy([
-                "company_id" => $managementHierarchy->company_id,
-                "parent_id" => $mainBranch->id,
-                "is_main" => 1,
-                "type" => "management"
-            ]);
-            $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id,"reference_department_id"=>$mainManagement->id,"is_copied"=>1], []);
+
+            if(isset($branchData["is_main"]) && $branchData["is_main"] == 1){
+
+                $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id], []);
+
+            }else
+            {
+                $mainBranch = $this->findOneBy([
+                    "company_id" => $managementHierarchy->company_id,
+                    "parent_id" => null,
+                    "is_main" => 1,
+                    "type" => "branch"
+                ]);
+                $mainManagement = $this->findOneBy([
+                    "company_id" => $managementHierarchy->company_id,
+                    "parent_id" => $mainBranch->id,
+                    "is_main" => 1,
+                    "type" => "management"
+                ]);
+                $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id,"reference_department_id"=>$mainManagement->id,"is_copied"=>1], []);
+            }
+
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
@@ -189,13 +206,18 @@ class ManagementHierarchyRepository extends BaseRepository
     }
 
 
-    public function createDepartment(array $departmentData, array $departmentDetail): ManagementHierarchy
+    public function createDepartment(array $departmentData, array $departmentDetail, ?array $deputyManagers): ManagementHierarchy
     {
 
         try {
             DB::beginTransaction();
-            $managementHierarchy = $this->create($departmentData + ["id" => $this->nextId, "manager_id" => User::query()->where("is_owner", 1)->first()?->id]);
-            $managementHierarchy->detail()->create($departmentDetail);
+            $managementHierarchy = $this->create($departmentData + ["id" => $this->nextId]);
+            $detail = $managementHierarchy->detail()->create(array_merge(["reference_department_id"=>$managementHierarchy->id,"is_copied"=>0],$departmentDetail));
+            if ($deputyManagers != null && count($deputyManagers) > 0) {
+                foreach ($deputyManagers as $deputyManager) {
+                    ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
+                }
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -586,6 +608,105 @@ class ManagementHierarchyRepository extends BaseRepository
                 $query->where('is_copied', 0);
             })
             ->where('company_id', $company->id)->filter(request()->all())
+            ->get();
+    }
+
+    /**
+     * Create management with related job types, job titles, and branches
+     */
+    public function createManagementWithRelations(
+        array $managementData,
+        array $managementDetail,
+        ?array $deputyManagers,
+        array $jobTypes = [],
+        array $jobTitles = [],
+        array $branches = []
+    ): ManagementHierarchy {
+        try {
+            DB::beginTransaction();
+
+            // Create the management hierarchy
+
+
+            $managementHierarchy = $this->createManagement($managementData , $managementDetail, $deputyManagers);
+
+
+            // Sync job types
+            if (!empty($jobTypes)) {
+                $managementHierarchy->jobTypes()->sync($jobTypes);
+            }
+
+            // Sync job titles
+            if (!empty($jobTitles)) {
+                $managementHierarchy->jobTitles()->sync($jobTitles);
+            }
+
+            // Sync related branches
+            if (!empty($branches)) {
+                $managementHierarchy->relatedBranches()->sync($branches);
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $managementHierarchy->load(['jobTypes', 'jobTitles', 'relatedBranches', 'detail']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+
+        return $managementHierarchy;
+    }
+
+
+
+    /**
+     * Create management with related job types, job titles, and branches
+     */
+    public function createDepartmentWithRelations(
+        array $departmentData,
+        array $departmentDetail,
+        ?array $deputyManagers,//not use put for future if ask
+        array $managements = []
+    ): ManagementHierarchy {
+        try {
+            DB::beginTransaction();
+
+            // Create the management hierarchy
+            $managementHierarchy = $this->createDepartment($departmentData , $departmentDetail, $deputyManagers);
+
+
+            // Sync managements
+            if (!empty($managements)) {
+                $managementHierarchy->relatedManagements()->sync($managements);
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $managementHierarchy->load(['relatedManagements', 'detail']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+
+        return $managementHierarchy;
+    }
+
+    /**
+     * Get branches for lookup (type = 'branch')
+     */
+    public function getBranchesLookup(): Collection
+    {
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+
+        return $this->model
+            ->where('type', 'branch')
+            ->where('company_id', $company->id)
+            ->where('is_active', 1)
+            ->select(['id', 'name'])
             ->get();
     }
 }
