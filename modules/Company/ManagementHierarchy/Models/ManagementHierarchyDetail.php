@@ -54,6 +54,12 @@ class ManagementHierarchyDetail extends Model
     ];
 
 
+    public function sourceManagementHierarchy()
+    {
+        return $this->belongsTo(SourceManagementHierarchy::class, "reference_department_id", "id");
+    }
+
+
     //example for nested set
 
 //    public function users()

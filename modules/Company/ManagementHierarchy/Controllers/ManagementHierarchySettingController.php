@@ -98,6 +98,7 @@ class ManagementHierarchySettingController extends Controller
         try {
             $hierarchies = $this->nonCopiedHierarchiesService->getAllNonCopiedHierarchies();
 
+
             return Json::items(
                 NonCopiedHierarchyPresenter::collection($hierarchies)
             );
@@ -112,10 +113,10 @@ class ManagementHierarchySettingController extends Controller
     public function createManagementWithLookupsForChoise(CreateManagementWithRelationsRequest $request): JsonResponse
     {
         $createManagementWithRelationsDTO = $request->createCreateManagementWithRelationsDTO();
-        $managementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoise($createManagementWithRelationsDTO);
+        $sourceManagementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoise($createManagementWithRelationsDTO);
 
         return Json::item(
-            (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
+            (new ManagementWithRelationsPresenter($sourceManagementHierarchy))->getData(),
         );
 
     }

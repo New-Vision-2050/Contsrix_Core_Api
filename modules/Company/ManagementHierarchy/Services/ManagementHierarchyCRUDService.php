@@ -11,6 +11,7 @@ use Modules\Company\ManagementHierarchy\DTO\CreateManagementDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementWithRelationsDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Ramsey\Uuid\UuidInterface;
 
@@ -43,7 +44,7 @@ class ManagementHierarchyCRUDService
          return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray(),[],[]);
     }
 
-    public function createManagementWithLookupsForChoise(CreateManagementWithRelationsDTO $createManagementWithRelationsDTO): ManagementHierarchy
+    public function createManagementWithLookupsForChoise(CreateManagementWithRelationsDTO $createManagementWithRelationsDTO): SourceManagementHierarchy
     {
         $detail =$this->repository->getDetail($createManagementWithRelationsDTO->getParentId());
         return $this->repository->createManagementWithRelations(
