@@ -98,6 +98,7 @@ class ManagementHierarchySettingController extends Controller
         try {
             $hierarchies = $this->nonCopiedHierarchiesService->getAllNonCopiedHierarchies();
 
+
             return Json::items(
                 NonCopiedHierarchyPresenter::collection($hierarchies)
             );

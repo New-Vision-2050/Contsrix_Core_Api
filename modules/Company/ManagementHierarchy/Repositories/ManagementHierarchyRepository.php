@@ -585,10 +585,9 @@ class ManagementHierarchyRepository extends BaseRepository
         }
 
 
-        $query = $this->model->with(['detail.managementHierarchy', 'user', 'company', 'clones.managementHierarchy'])
-            ->whereHas('detail', function ($query) {
-                $query->where('is_copied', 0);
-            })->filter($filters)
+        $query = SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company'])->when(isset($filters["type"]), function ($query) use ($filters) {
+            $query->where("type", $filters["type"]);
+        })
             ->where('company_id', $company->id);
 
         $count = $query->count();
@@ -613,7 +612,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $filters["type"] = "management";
         }
 
-        return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'user', 'company'])
+        return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'company'])
 
             ->where('company_id', $company->id)->filter($filters)
             ->get();
