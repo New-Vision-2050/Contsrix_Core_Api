@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyCloneController;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyController;
+use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchySettingController;
 use Modules\Company\ManagementHierarchy\Controllers\WidgetsController;
 
 
@@ -15,13 +16,14 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/tree-direct-children', [ManagementHierarchyController::class, 'directChildrenTree']);
     Route::get('/user', [ManagementHierarchyController::class, 'hierarchies']);
     Route::get('/user-lower-levels', [ManagementHierarchyController::class, 'getUserLowerLevels']);
-    Route::get('/non-copied', [ManagementHierarchyController::class, 'getNonCopiedHierarchies']);
-    Route::get('/non-copied/all', [ManagementHierarchyController::class, 'getAllNonCopiedHierarchies']);
-    Route::get('/lookups', [ManagementHierarchyController::class, 'getLookupsForChoices']);
-    Route::get('/job_titles', [ManagementHierarchyController::class, 'getJobTitles']);
+    Route::get('/non-copied', [ManagementHierarchySettingController::class, 'getNonCopiedHierarchies']);
+    Route::get('/non-copied/all', [ManagementHierarchySettingController::class, 'getAllNonCopiedHierarchies']);
+    Route::get('/lookups', [ManagementHierarchySettingController::class, 'getLookupsForChoices']);
+    Route::get('/job_titles', [ManagementHierarchySettingController::class, 'getJobTitles']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
-    Route::post('/create-management-with-relations', [ManagementHierarchyController::class, 'createManagementWithLookupsForChoise']);
+    Route::post('/create-management-with-relations', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
+    Route::post('/create-department-with-relations', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
     Route::post('/create-department', [ManagementHierarchyController::class, 'createDepartment']);
     Route::post('/update-branch/{id}', [ManagementHierarchyController::class, 'updateBranch']);
     Route::put('/update-management/{id}', [ManagementHierarchyController::class, 'updateManagement']);
