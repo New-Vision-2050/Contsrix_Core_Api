@@ -22,4 +22,5 @@ class SettingManagementHierarchyService
     {
         return $this->repository->createDepartmentWithRelations($dto->departmentToArray(), $dto->departmentDetailToArray(), [], $dto->managements);
     }
+
 }
