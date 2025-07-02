@@ -140,7 +140,7 @@ class ManagementHierarchyRepository extends BaseRepository
             //here we will clone main management
 
             if (isset($branchData["is_main"]) && $branchData["is_main"] == 1) {
-                $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name"=>"الادارة الرئيسية","type"=>"management","company_id"=>$managementHierarchy->company_id]);
+                $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name"=>"الادارة العامة","type"=>"management","company_id"=>$managementHierarchy->company_id]);
 
                 $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة  ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id,"reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], []);
 
