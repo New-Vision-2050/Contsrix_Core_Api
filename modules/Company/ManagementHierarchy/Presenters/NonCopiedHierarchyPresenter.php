@@ -6,14 +6,15 @@ namespace Modules\Company\ManagementHierarchy\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\User\Presenters\UserPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 
 class NonCopiedHierarchyPresenter extends AbstractPresenter
 {
-    private ManagementHierarchy $managementHierarchy;
+    private SourceManagementHierarchy $managementHierarchy;
 
-    public function __construct(ManagementHierarchy $managementHierarchy)
+    public function __construct(SourceManagementHierarchy $managementHierarchy)
     {
         $this->managementHierarchy = $managementHierarchy;
     }
@@ -25,8 +26,9 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
             'code_id' => $this->managementHierarchy->id,
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
-            'parent_id' => $this->managementHierarchy->parent_id,
-            "management"=>$this->managementHierarchy->parent?->type == "management" ? (new ManagementHierarchySimpleDataPresenter($this->managementHierarchy->parent))->getData() : null,
+//            'parent_id' => $this->managementHierarchy->parent_id,
+//            "management"=>$this->managementHierarchy->parent?->type == "management" ? (new ManagementHierarchySimpleDataPresenter($this->managementHierarchy->parent))->getData() : null,
+        "management" => null,
 
             'company_id' => $this->managementHierarchy->company_id,
             'is_active' => $this->managementHierarchy->is_active,
