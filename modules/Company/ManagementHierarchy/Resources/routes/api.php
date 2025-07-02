@@ -23,7 +23,9 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
     Route::post('/create-management-with-relations', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
+    Route::put('/update-management-with-relations/{id}', [ManagementHierarchySettingController::class, 'updateManagementWithLookupsForChoise']);
     Route::post('/create-department-with-relations', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
+    Route::put('/update-department-with-relations/{id}', [ManagementHierarchySettingController::class, 'updateDepartmentWithManagementsForDropDown']);
     Route::post('/create-department', [ManagementHierarchyController::class, 'createDepartment']);
     Route::post('/update-branch/{id}', [ManagementHierarchyController::class, 'updateBranch']);
     Route::put('/update-management/{id}', [ManagementHierarchyController::class, 'updateManagement']);

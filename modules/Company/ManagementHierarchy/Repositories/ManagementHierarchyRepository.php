@@ -623,7 +623,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $filters["type"] = "management";
         }
 
-        return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'company'])
+        return SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company'])
 
             ->where('company_id', $company->id)->filter($filters)
             ->get();
@@ -713,6 +713,143 @@ class ManagementHierarchyRepository extends BaseRepository
 
             // Load relationships for response
             $sourceManagementHierarchy->load(['relatedManagements', 'details']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+
+        return $sourceManagementHierarchy;
+    }
+
+    /**
+     * Update a department management hierarchy with its relations
+     */
+    public function updateDepartmentWithRelations(
+        int    $departmentId,
+        array  $departmentData,
+        array  $departmentDetail,
+        ?array $deputyManagers, // not used but kept for future if needed
+        array  $managements = []
+    ): SourceManagementHierarchy
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the source management hierarchy
+            $sourceManagementHierarchy = SourceManagementHierarchy::with(['managementHierarchy'])
+                ->where('management_hierarchy_id', $departmentId)
+                ->firstOrFail();
+
+            // Update the management hierarchy
+            $managementHierarchy = $sourceManagementHierarchy->managementHierarchy;
+            $managementHierarchy->update($departmentData);
+
+            // Update or create the detail if needed
+            $managementHierarchy->detail()->updateOrCreate(
+                ['management_hierarchy_id' => $managementHierarchy->id],
+                $departmentDetail
+            );
+
+            // Sync managements (clear all and add new ones)
+            if (!empty($managements)) {
+                $sourceManagementHierarchy->relatedManagements()->sync($managements);
+            } else {
+                $sourceManagementHierarchy->relatedManagements()->detach();
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $sourceManagementHierarchy->load(['relatedManagements', 'details']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+
+        return $sourceManagementHierarchy;
+    }
+
+    /**
+     * Update a management hierarchy with its relations
+     */
+    public function updateManagementWithRelations(
+        int    $managementId,
+        array  $managementData,
+        array  $managementDetail,
+        ?array $deputyManagers,
+        array  $jobTypes = [],
+        array  $jobTitles = [],
+        array  $branches = []
+    ): SourceManagementHierarchy
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the source management hierarchy
+            $sourceManagementHierarchy = SourceManagementHierarchy::with(['managementHierarchy'])
+                ->where('id', $managementId)
+                ->firstOrFail();
+
+            // Update the source management hierarchy name
+            $sourceManagementHierarchy->update([
+                'name' => $managementData['name'],
+                'type' => $managementData['type'],
+                'company_id' => $managementData['company_id']
+            ]);
+
+            // Find the actual management hierarchy and update it
+            $managementHierarchy = $sourceManagementHierarchy->managementHierarchy;
+            if ($managementHierarchy) {
+                $managementHierarchy->update($managementData);
+
+                // Update or create the detail
+                $managementHierarchy->detail()->updateOrCreate(
+                    ['management_hierarchy_id' => $managementHierarchy->id],
+                    $managementDetail + ["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1]
+                );
+
+                // Update deputy managers if provided
+                if ($deputyManagers !== null) {
+                    // Clear existing deputy managers
+                    $managementHierarchy->deputyManagers()->delete();
+
+                    // Add new deputy managers
+                    foreach ($deputyManagers as $deputyManagerId) {
+                        $managementHierarchy->deputyManagers()->create([
+                            'management_hierarchy_id' => $managementHierarchy->id,
+                            'deputy_manager_id' => $deputyManagerId,
+                        ]);
+                    }
+                }
+            }
+
+            // Sync job types
+            if (!empty($jobTypes)) {
+                $sourceManagementHierarchy->jobTypes()->sync($jobTypes);
+            } else {
+                $sourceManagementHierarchy->jobTypes()->detach();
+            }
+
+            // Sync job titles
+            if (!empty($jobTitles)) {
+                $sourceManagementHierarchy->jobTitles()->sync($jobTitles);
+            } else {
+                $sourceManagementHierarchy->jobTitles()->detach();
+            }
+
+            // Sync related branches
+            if (!empty($branches)) {
+                $sourceManagementHierarchy->relatedBranches()->sync($branches);
+            } else {
+                $sourceManagementHierarchy->relatedBranches()->detach();
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $sourceManagementHierarchy->load(['jobTypes', 'jobTitles', 'relatedBranches', 'details']);
 
         } catch (\Exception $e) {
             DB::rollBack();

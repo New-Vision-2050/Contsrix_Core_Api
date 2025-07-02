@@ -10,6 +10,7 @@ use Modules\Company\ManagementHierarchy\DTO\CreateDepartmentDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\DTO\CreateManagementWithRelationsDTO;
+use Modules\Company\ManagementHierarchy\DTO\UpdateManagementWithRelationsDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
@@ -54,6 +55,20 @@ class ManagementHierarchyCRUDService
             $createManagementWithRelationsDTO->getJobTypes(),
             $createManagementWithRelationsDTO->getJobTitles(),
             $createManagementWithRelationsDTO->getBranches()
+        );
+    }
+
+    public function updateManagementWithLookupsForChoise(UpdateManagementWithRelationsDTO $updateManagementWithRelationsDTO): SourceManagementHierarchy
+    {
+        $detail = $this->repository->getDetail($updateManagementWithRelationsDTO->getParentId());
+        return $this->repository->updateManagementWithRelations(
+            $updateManagementWithRelationsDTO->getManagementId(),
+            $updateManagementWithRelationsDTO->managementToArray(),
+            $updateManagementWithRelationsDTO->managementDetailToArray() + ["branch_id" => $detail->branch_id],
+            $updateManagementWithRelationsDTO->getDeputyManagerIds(),
+            $updateManagementWithRelationsDTO->getJobTypes(),
+            $updateManagementWithRelationsDTO->getJobTitles(),
+            $updateManagementWithRelationsDTO->getBranches()
         );
     }
 
