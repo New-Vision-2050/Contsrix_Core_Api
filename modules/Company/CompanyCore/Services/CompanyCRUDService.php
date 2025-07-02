@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Repositories\CompanyAddressRepository;
 use Modules\Company\CompanyCore\DTO\CreateCompanyDTO;
 use Modules\Company\CompanyCore\Jobs\CheckCompanyActivity;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -18,6 +20,7 @@ use function PHPUnit\Framework\throwException;
 
 class CompanyCRUDService
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function __construct(
         private CompanyRepository        $repository,
     )
@@ -73,6 +76,11 @@ class CompanyCRUDService
     public function getCompanyByHost($host)
     {
         return $this->repository->getByHost($host);
+    }
+
+    public function getCompanyByIdentifierCode($identifierCode)
+    {
+        return $this->repository->getByIdentifierCode($identifierCode);
     }
 
 //    public function export(?array $companyIds = null): string
@@ -174,5 +182,14 @@ class CompanyCRUDService
             throw new \Exception(__('No companies found'), 404);
         }
         $this->repository->deleteCompany(Uuid::fromString($lastCompany->id));
+    }
+
+    public function clearCahe()
+    {
+        // Get current company and branch using the trait method
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        // Clear cache for current company logged in
+        $cacheKey = 'current_company_logged_in_' . $company->id . '_' . $branch->id;
+        Cache::forget($cacheKey);
     }
 }
