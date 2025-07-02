@@ -6,6 +6,7 @@ namespace Modules\Company\ManagementHierarchy\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\Shared\JobType\Models\JobType;
 use Modules\Shared\JobType\Presenters\JobTypePresenter;
 use Modules\JobTitle\Presenters\JobTitlePresenter;
@@ -14,7 +15,7 @@ use Modules\User\Presenters\UserPresenter;
 class ManagementWithRelationsPresenter extends AbstractPresenter
 {
     public function __construct(
-        private ManagementHierarchy $managementHierarchy
+        private SourceManagementHierarchy $managementHierarchy
     ) {
     }
 
