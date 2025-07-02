@@ -33,9 +33,24 @@ class CompanyAccessProgramController extends Controller
 
     public function index(GetCompanyAccessProgramListRequest $request): JsonResponse
     {
+        $filters = [];
+
+        if($request->has('status')) {
+            $filters['is_active'] = $request->boolean('status');
+        }
+
+        if($request->has('name')) {
+            $filters['name'] = $request->get('name');
+        }
+
+        if($request->has('company_fields')) {
+            $filters['company_fields'] = $request->input('company_fields');
+        }
+
         $list = $this->companyAccessProgramService->list(
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int) $request->get('per_page', 10),
+            $filters
         );
 
         return Json::items(CompanyAccessProgramPresenter::collection($list['data']), paginationSettings: $list['pagination']);
@@ -78,7 +93,7 @@ class CompanyAccessProgramController extends Controller
         return Json::item($presenter->getData());
     }
 
-        public function updateStatus(UpdateCompanyAccessProgramStatusRequest $request): JsonResponse
+    public function updateStatus(UpdateCompanyAccessProgramStatusRequest $request): JsonResponse
     {
         $command = $request->createUpdateCompanyAccessProgramStatusCommand();
         $this->updateCompanyAccessProgramStatusHandler->handle($command);

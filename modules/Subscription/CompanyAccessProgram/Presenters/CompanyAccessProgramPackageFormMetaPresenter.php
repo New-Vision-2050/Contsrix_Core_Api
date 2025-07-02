@@ -32,12 +32,12 @@ class CompanyAccessProgramPackageFormMetaPresenter extends AbstractPresenter
                 'id' => $type->id,
                 'name' => $type->name,
             ]),
-            'countries' => $this->companyAccessProgram->countries->map(fn($field) => [
-                'id' => $field->id,
-                'name' => $field->name,
-                'currency' => $field->currency,
-                'currency_name' => $field->currency_name,
-                'currency_symbol' => $field->currency_symbol,
+            'countries' => $this->companyAccessProgram->countries->map(fn($country) => [
+                'id' => $country->id,
+                'name' => $country->name,
+                'currency' => $country->currency,
+                'currency_name' => $country->currency_name,
+                'currency_symbol' => $country->currency_symbol,
             ]),
         ];
     }

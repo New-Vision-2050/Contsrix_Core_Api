@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Subscription\Enums\PeriodUnitEnum;
+use Modules\Company\CompanyCore\Models\Company;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
@@ -113,5 +114,17 @@ class Package extends Model
     public function features(): HasMany
     {
         return $this->hasMany(PackageFeature::class);
+    }
+
+    public function companies(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Company::class,
+            'company_package',
+            'package_id',
+            'company_id'
+        )
+            ->withTimestamps()
+            ->withPivot('subscribed_at', 'expires_at', 'is_active');
     }
 }
