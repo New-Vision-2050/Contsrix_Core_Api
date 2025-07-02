@@ -25,6 +25,8 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
             'name' => $this->managementHierarchy->name,
             'type' => $this->managementHierarchy->type,
             'parent_id' => $this->managementHierarchy->parent_id,
+            "management"=>$this->managementHierarchy->parent->type == "management" ? (new ManagementHierarchySimpleDataPresenter($this->managementHierarchy->parent))->getData() : null,
+
             'company_id' => $this->managementHierarchy->company_id,
             'is_active' => $this->managementHierarchy->is_active,
             'is_main' => $this->managementHierarchy->is_main,
@@ -48,7 +50,7 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
 //            })->toArray(),
             'users_count' => $this->managementHierarchy->clones->sum(function ($clone) {
                 return $clone->managementHierarchy ? ($clone->managementHierarchy->users_count ?? 0) : 0;
-            })
+            }),
 
         ];
     }
