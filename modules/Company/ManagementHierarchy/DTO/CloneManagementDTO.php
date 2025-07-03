@@ -30,7 +30,6 @@ class CloneManagementDTO
             'is_main' => 0,
             'company_id' => $this->companyId,
             'is_active' => 1,
-            "type" => "management",
             "manager_id" => $this->managerId
         ];
     }

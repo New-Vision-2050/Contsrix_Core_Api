@@ -29,6 +29,8 @@ class ManagementHierarchyCloneController extends Controller
         try {
             $clonedDepartment = $this->cloneService->cloneManagement($request->createCloneManagementDTO());
 
+            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Department cloned successfully',

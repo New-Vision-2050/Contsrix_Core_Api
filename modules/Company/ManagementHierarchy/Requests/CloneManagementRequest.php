@@ -19,7 +19,7 @@ class CloneManagementRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'source_department_id' => 'required|exists:source_management_hierarchies,id,type,management',
+            'source_department_id' => 'required|exists:source_management_hierarchies,id',
             'target_parent_id' => 'required_without:target_branch_id|nullable|exists:management_hierarchies,id,type,management',
             "deputy_manager_ids"=>"nullable|array",
             "deputy_manager_ids.*"=>"required|exists:users,id",
