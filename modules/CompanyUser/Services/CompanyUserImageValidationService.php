@@ -67,60 +67,75 @@ class CompanyUserImageValidationService
             return $errors;
         }
     }
-    public function checkImageTenant($image): int
-    {
+public function checkImageTenant($image): int
+{
+    try {
         $manager = new ImageManager(new Driver());
         $img = $manager->read($image);
         $width = $img->width();
         $height = $img->height();
 
-        $white = 0;
-        $color = 0;
+        $lightPixelCount = 0;
+        $totalSampledPixels = 0;
 
-        // Coordinates of the 4 corners
-        $corners = [
-            [0, 0],                    // top-left
-            [$width - 1, 0],           // top-right
-            [0, $height - 1],          // bottom-left
-            [$width - 1, $height - 1], // bottom-right
+        // A brightness of 255 is pure white. We'll consider anything above 230 as "very light".
+        // هذا هو الرقم الذي يمكنك تعديله. كلما قللته، زادت مرونة الكود.
+        $brightnessThreshold = 230;
+
+        // Coordinates of the 4 corners (offset slightly to avoid artifacts)
+        $pointsToCheck = [
+            [1, 1],                    // top-left
+            [$width - 2, 1],           // top-right
+            [1, $height - 2],          // bottom-left
+            [$width - 2, $height - 2], // bottom-right
         ];
 
-        foreach ($corners as [$x, $y]) {
+        // Add more sample points along the edges for better accuracy
+        $horizontalStep = floor($width / 10);
+        for ($i = $horizontalStep; $i < $width - $horizontalStep; $i += $horizontalStep) {
+            $pointsToCheck[] = [$i, 1];           // Top edge
+            $pointsToCheck[] = [$i, $height - 2]; // Bottom edge
+        }
+
+        $verticalStep = floor($height / 10);
+        for ($i = $verticalStep; $i < $height - $verticalStep; $i += $verticalStep) {
+            $pointsToCheck[] = [1, $i];           // Left edge
+            $pointsToCheck[] = [$width - 2, $i];  // Right edge
+        }
+
+        foreach ($pointsToCheck as [$x, $y]) {
+            // Pick the color of the pixel
             $rgb = $img->pickColor($x, $y)->toArray();
-            if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) { // allow slight variation
-                $white++;
-            } else {
-                $color++;
+
+            // --- The Key Change is Here ---
+            // Calculate the average brightness of the pixel
+            $brightness = ($rgb[0] + $rgb[1] + $rgb[2]) / 3;
+
+            // Check if the brightness is above our threshold
+            if ($brightness > $brightnessThreshold) {
+                $lightPixelCount++;
             }
+
+            $totalSampledPixels++;
         }
 
-        // Sample horizontal and vertical edges (skip corners)
-        for ($i = 10; $i < $width - 10; $i += 20) {
-            foreach ([0, $height - 1] as $y) {
-                $rgb = $img->pickColor($i, $y)->toArray();
-                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
-                    $white++;
-                } else {
-                    $color++;
-                }
-            }
+        // If no pixels were sampled, fail safely
+        if ($totalSampledPixels === 0) {
+            return 0;
         }
 
-        for ($i = 10; $i < $height - 10; $i += 20) {
-            foreach ([0, $width - 1] as $x) {
-                $rgb = $img->pickColor($x, $i)->toArray();
-                if ($rgb[0] >= 240 && $rgb[1] >= 240 && $rgb[2] >= 240) {
-                    $white++;
-                } else {
-                    $color++;
-                }
-            }
-        }
+        // Calculate the percentage of light pixels among those sampled
+        $percentage = ($lightPixelCount / $totalSampledPixels) * 100;
 
-        $percentage = ($white / ($white + $color)) * 100;
+        // If more than 80% of the sampled edge pixels are light, we approve it.
+        // يمكنك تعديل هذه النسبة أيضاً إذا أردت.
+        return $percentage > 80 ? 1 : 0;
 
-        return $percentage > 25 ? 1 : 0;
+    } catch (\Exception $e) {
+        // If anything goes wrong reading the image, assume it's invalid.
+        return 0;
     }
+}
 
 
 }
