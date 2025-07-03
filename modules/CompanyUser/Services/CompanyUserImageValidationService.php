@@ -39,9 +39,16 @@ class CompanyUserImageValidationService
                 }
 
                 list($width, $height) = getimagesize($image->getPathname());
+                $allowedWidth = 1920;
+                $allowedHeight = 1080;
+                $tolerance = 0.1;
 
+                $minWidth = $allowedWidth - ($allowedWidth * $tolerance);
+                $maxWidth = $allowedWidth + ($allowedWidth * $tolerance);
+                $minHeight = $allowedHeight - ($allowedHeight * $tolerance);
+                $maxHeight = $allowedHeight + ($allowedHeight * $tolerance);
                 // Validate dimensions
-                if ($width == 1920 && $height == 1080) {
+                if ($width >= $minWidth && $width <= $maxWidth && $height >= $minHeight && $height <= $maxHeight) {
                     array_push($errors, [
                         "sentence" => "الصورة مناسبة",
                         "sub_title" => null,
@@ -58,16 +65,16 @@ class CompanyUserImageValidationService
                 $serviceUser =  $this->checkImageTenant($image);
 
                 if ($serviceUser === 0) {
-                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => -1]);
+                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => $serviceUser, "status" => -1]);
                 } else {
-                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => null, "status" => 1]);
+                    array_push($errors, ["sentence" => "تأكد ان الخلفية بيضاء", "sub_title" => $serviceUser, "status" => 1]);
                 }
 
             }
             return $errors;
         }
     }
-    public function checkImageTenant($image): int
+    public function checkImageTenant($image)//: int
     {
         $manager = new ImageManager(new Driver());
         $img = $manager->read($image);
@@ -119,7 +126,7 @@ class CompanyUserImageValidationService
 
         $percentage = ($white / ($white + $color)) * 100;
 
-        return $percentage > 25 ? 1 : 0;
+        return $percentage >= 25 ? 1 : 0;
     }
 
 
