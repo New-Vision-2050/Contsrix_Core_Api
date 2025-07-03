@@ -17,7 +17,7 @@ class CreateManagementWithRelationsRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'parent_id' => 'required|integer|exists:management_hierarchies,id,type,management',
+            'parent_id' => 'required|integer|exists:source_management_hierarchies,id,type,management',
             'manager_id' => 'nullable|string|exists:users,id',
             'description' => 'nullable|string',
             'job_types' => 'nullable|array',

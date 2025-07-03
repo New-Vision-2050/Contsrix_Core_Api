@@ -46,10 +46,10 @@ class ManagementHierarchyCRUDService
 
     public function createManagementWithLookupsForChoise(CreateManagementWithRelationsDTO $createManagementWithRelationsDTO): SourceManagementHierarchy
     {
-        $detail =$this->repository->getDetail($createManagementWithRelationsDTO->getParentId());
+//        $detail =$this->repository->getDetail($createManagementWithRelationsDTO->getParentId());
         return $this->repository->createManagementWithRelations(
             $createManagementWithRelationsDTO->managementToArray(),
-            $createManagementWithRelationsDTO->managementDetailToArray()+["branch_id"=>$detail->branch_id],
+            $createManagementWithRelationsDTO->managementDetailToArray(),
             $createManagementWithRelationsDTO->getDeputyManagerIds(),
             $createManagementWithRelationsDTO->getJobTypes(),
             $createManagementWithRelationsDTO->getJobTitles(),
