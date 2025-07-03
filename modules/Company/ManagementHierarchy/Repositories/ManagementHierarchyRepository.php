@@ -179,7 +179,11 @@ class ManagementHierarchyRepository extends BaseRepository
 
 //        try {
             DB::beginTransaction();
-            $sourceManagementHierarchy = ManagementHierarchy::query()->where('id', $managementData['parent_id'])->first()->detail->sourceManagementHierarchy;
+            $parentManagementHierarchy = $this->findOneBy(['id'=> $managementData['parent_id']])->first();
+            $sourceManagementHierarchy = SourceManagementHierarchy::query()->first();
+            if($parentManagementHierarchy != null  && $parentManagementHierarchy->type == "management"){
+                $sourceManagementHierarchy=$parentManagementHierarchy->detail->sourceManagementHierarchy;
+            }
 //            $managementHierarchyId = ManagementHierarchyDetail::where('reference_department_id', $sourceManagementHierarchy->id)->value('management_hierarchy_id');
 //            $managementData['parent_id'] = $managementHierarchyId;
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
