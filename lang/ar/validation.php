@@ -176,6 +176,7 @@ return [
     "identity-or-passport-required" => "يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required" => "يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found" => "الشركة غير موجودة",
+    "company-not-active" => "الشركة غير نشطة",
     "branch-not-found" => "الفرع غير موجود",
     "integrity-error" => "البيانات غير موحدة ",
     "login-way-not-found" => "طريقة الدخول غير موجودة",
@@ -486,4 +487,7 @@ return [
     'date_end_date' => 'تاريخ انتهاء الشهادة يجب أن يكون تاريخًا صحيحًا.',
     'graduation_date_date' => 'يجب أن يكون تاريخ التخرج تاريخًا صحيحًا.',
 
+    'admin_account_cannot_be_deleted' => 'لا يمكن حذف حساب المسؤول.',
+    'cannot_delete_yourself' => 'لا يمكنك حذف حسابك الشخصي.',
+    'cannot_delete_company_owner' => 'لا يمكن حذف حساب مالك الشركة.',
 ];

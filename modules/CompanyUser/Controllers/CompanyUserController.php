@@ -179,6 +179,7 @@ class CompanyUserController extends Controller
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
         $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
+
         return Json::deleted();
     }
 

@@ -40,7 +40,7 @@ class AdminRequestCRUDService
         $year = Carbon::now()->format('Y');
         $month = Carbon::now()->format('m');
 
-        $sequence = count($this->repository->getAll()) + 1;
+        $sequence = count($this->repository->getAllForSerialNumber()) + 1;
 
         return "REQ-{$year}{$month}-" . str_pad((string)$sequence, 5, '0', STR_PAD_LEFT);
     }

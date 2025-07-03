@@ -6,7 +6,6 @@ namespace Modules\Company\ManagementHierarchy\Models;
 
 use App\Traits\CalculateTreeManagementHierarchy;
 use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Cache;
@@ -15,6 +14,8 @@ use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\ManagementHierarchy\Database\factories\ManagementHierarchyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
+use Modules\Shared\JobType\Models\JobType;
+use Modules\JobTitle\Models\JobTitle;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -35,17 +36,16 @@ class ManagementHierarchy extends Model
     //use SoftDeletes;
 
     //public array $translatable = [];
-    protected $primaryKey = 'id';
 
     protected $table = "management_hierarchies";
 
     protected $with = ["user"];
 
-    public $incrementing = false;
+    public $incrementing = true;
 
+    protected $keyType = 'int';
 
     protected $fillable = [
-        "id",
         'name',
         'parent_id',
         'company_id',
@@ -58,10 +58,18 @@ class ManagementHierarchy extends Model
         "latitude",
         "longitude",
         "is_first_branch",
-        "is_main"
+        "is_main",
+        "users_count"
     ];
 
-
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'users_count' => 'integer',
+    ];
 
     public function company()
     {
@@ -76,6 +84,12 @@ class ManagementHierarchy extends Model
     public function directUserChildren()
     {
         return $this->hasMany(User::class,"management_hierarchy_id","id");
+    }
+
+    public function clones()
+    {
+        return $this->hasMany(ManagementHierarchyDetail::class, 'reference_department_id', 'id');
+
     }
 
 
@@ -201,4 +215,29 @@ class ManagementHierarchy extends Model
         //merging are put unique id
         return $manager->merge($deputyManagers)->merge($childrenUsers)->unique('id');
     }
+
+    public function getUsersCountAttribute(): int
+    {
+        return (int) ($this->attributes['users_count'] ?? 0);
+    }
+
+    public function setUsersCountAttribute($value)
+    {
+        $this->attributes['users_count'] = $value;
+    }
+
+    public function incrementUsersCount()
+    {
+        $this->users_count++;
+        $this->save();
+    }
+
+    public function decrementUsersCount()
+    {
+        $this->users_count--;
+        $this->save();
+    }
+
+
+
 }

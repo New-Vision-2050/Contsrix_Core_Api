@@ -21,20 +21,29 @@ use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleData
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyUserTreePresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementWithRelationsPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyLookupsPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\NonCopiedHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateManagementRequest;
+use Modules\Company\ManagementHierarchy\Requests\CreateManagementWithRelationsRequest;
 use Modules\Company\ManagementHierarchy\Requests\DeleteManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\GetLookupsRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyListRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyLookupRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Requests\GetNonCopiedHierarchiesRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
+use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyLookupsService;
+use Modules\Company\ManagementHierarchy\Services\NonCopiedHierarchiesService;
+use Modules\JobTitle\Presenters\JobTitlePresenter;
 use Modules\Shared\Currency\Requests\GetUsersLowLevelRequest;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
@@ -44,12 +53,14 @@ use Ramsey\Uuid\Uuid;
 class ManagementHierarchyController extends Controller
 {
     public function __construct(
-        private ManagementHierarchyCRUDService   $managementHierarchyService,
-        private UpdateManagementHierarchyHandler $updateManagementHierarchyHandler,
-        private DeleteManagementHierarchyHandler $deleteManagementHierarchyHandler,
-        private MakeBranchMainHandler            $makeBranchMainHandler,
-        private UpdateBranchHandler              $updateBranchHandler,
-        private UpdateManagementHandler          $updateManagementHandler
+        private ManagementHierarchyCRUDService    $managementHierarchyService,
+        private NonCopiedHierarchiesService       $nonCopiedHierarchiesService,
+        private ManagementHierarchyLookupsService $lookupsService,
+        private UpdateManagementHierarchyHandler  $updateManagementHierarchyHandler,
+        private DeleteManagementHierarchyHandler  $deleteManagementHierarchyHandler,
+        private MakeBranchMainHandler             $makeBranchMainHandler,
+        private UpdateBranchHandler               $updateBranchHandler,
+        private UpdateManagementHandler           $updateManagementHandler
     )
     {
     }
@@ -242,7 +253,7 @@ class ManagementHierarchyController extends Controller
         ManagementHierarchyUserTreePresenter::setIncludeDeputyManagers(true);
         ManagementHierarchyUserTreePresenter::setSkipManagementMainNodes(false);
 
-        $presentedTree=ManagementHierarchyUserTreePresenter::collection($tree);
+        $presentedTree = ManagementHierarchyUserTreePresenter::collection($tree);
 
 
         try {
@@ -252,10 +263,10 @@ class ManagementHierarchyController extends Controller
                 $presentedTree = $presentedTree[0];
             }
         } catch (Exception $e) {
-            return Json::items(is_array($presentedTree)?$presentedTree:[$presentedTree]);
+            return Json::items(is_array($presentedTree) ? $presentedTree : [$presentedTree]);
 
         }
-        return Json::item(array_is_list($presentedTree)?$presentedTree:[$presentedTree]);
+        return Json::item(array_is_list($presentedTree) ? $presentedTree : [$presentedTree]);
     }
 
     /**
@@ -274,8 +285,10 @@ class ManagementHierarchyController extends Controller
                 UserPresenter::collection($lowerUsers)
             );
         } catch (Exception $e) {
-            return Json::error($e->getMessage(),400);
+            return Json::error($e->getMessage(), 400);
         }
     }
+
+
 
 }

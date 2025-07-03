@@ -3,6 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
+use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
+use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
+use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
@@ -99,6 +103,11 @@ class DatabaseSeeder extends Seeder
         $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
         $this->call(AcademicSpecializationsUpdateSeederTableSeeder::class);
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
-
+        $this->call(BanksOtherModulesSeederTableSeeder::class);
+        $this->call(UniversitiesOtherSeederTableSeeder::class);
+     
+        $this->call(MoroccanUniversitiesSeeder::class);
+        $this->call(MoroccanBanksSeeder::class);
+        
     }
 }
