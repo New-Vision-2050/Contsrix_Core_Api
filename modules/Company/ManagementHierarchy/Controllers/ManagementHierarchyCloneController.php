@@ -46,6 +46,8 @@ class ManagementHierarchyCloneController extends Controller
 
             $clonedDepartment = $this->cloneService->cloneDepartmentToBranch($dto);
 
+            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Department cloned successfully',
