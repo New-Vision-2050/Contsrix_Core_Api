@@ -34,4 +34,12 @@ class SettingManagementHierarchyService
         );
     }
 
+    /**
+     * Delete department with all related managements
+     */
+    public function deleteDepartmentWithRelation(int $departmentId): bool
+    {
+        return $this->repository->deleteDepartmentWithRelations($departmentId);
+    }
+
 }

@@ -857,6 +857,89 @@ class ManagementHierarchyRepository extends BaseRepository
     }
 
     /**
+     * Delete management with all related data (job types, job titles, branches, deputy managers)
+     */
+    public function deleteManagementWithRelations(int $managementId): bool
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the existing source management hierarchy
+            $sourceManagementHierarchy = SourceManagementHierarchy::findOrFail($managementId);
+
+            // Check if management has children before deleting
+            if ($sourceManagementHierarchy->details()->count() > 0) {
+                throw new CustomException('Cannot delete management hierarchy that has children.', 422);
+            }
+
+            // Detach all related job types
+            $sourceManagementHierarchy->jobTypes()->detach();
+
+            // Detach all related job titles
+            $sourceManagementHierarchy->jobTitles()->detach();
+
+            // Detach all related branches
+            $sourceManagementHierarchy->relatedBranches()->detach();
+
+//            // Get the management hierarchy to delete deputy managers
+//            $managementHierarchy = $sourceManagementHierarchy->managementHierarchy;
+//            if ($managementHierarchy && $managementHierarchy->detail) {
+//                // Delete deputy managers
+//                $this->deleteDeputyManagers($managementHierarchy->detail->id);
+//
+//                // Delete the management hierarchy detail
+//                $managementHierarchy->detail->delete();
+//
+//                // Delete the management hierarchy
+//                $managementHierarchy->delete();
+//            }
+
+            // Delete the source management hierarchy
+            $sourceManagementHierarchy->delete();
+
+            DB::commit();
+
+            return true;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Delete department with all related managements
+     */
+    public function deleteDepartmentWithRelations(int $departmentId): bool
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the existing source management hierarchy
+            $sourceManagementHierarchy = SourceManagementHierarchy::findOrFail($departmentId);
+
+            // Check if department has children before deleting
+            if ($sourceManagementHierarchy->details()->count() > 0) {
+                throw new CustomException('Cannot delete department hierarchy that has children.', 422);
+            }
+
+            // Detach all related managements
+            $sourceManagementHierarchy->relatedManagements()->detach();
+
+            // Delete the source management hierarchy
+            $sourceManagementHierarchy->delete();
+
+            DB::commit();
+
+            return true;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get branches for lookup (type = 'branch')
      */
     public function getBranchesLookup(): Collection

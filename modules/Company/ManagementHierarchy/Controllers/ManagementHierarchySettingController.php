@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Controllers;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Exception;
@@ -203,5 +204,50 @@ class ManagementHierarchySettingController extends Controller
         return Json::item(
             (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
         );
+    }
+
+    /**
+     * Delete a management with job types, job titles, and branches relations
+     */
+    public function deleteManagementWithLookupsForChoise(int $id): JsonResponse
+    {
+        try {
+            $result = $this->managementHierarchyService->deleteManagementWithLookupsForChoise($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Management hierarchy with relations deleted successfully',
+                'data' => ['deleted' => $result]
+            ]);
+
+        }catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete management hierarchy: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a department with managements
+     */
+    public function deleteDepartmentWithManagementsForDropDown(int $id): JsonResponse
+    {
+        try {
+            $result = $this->settingManagementHierarchyService->deleteDepartmentWithRelation($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Department hierarchy with relations deleted successfully',
+                'data' => ['deleted' => $result]
+            ]);
+
+        }
+        catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete department hierarchy: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

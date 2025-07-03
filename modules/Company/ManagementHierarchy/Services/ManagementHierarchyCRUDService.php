@@ -41,6 +41,14 @@ class ManagementHierarchyCRUDService
         );
     }
 
+    /**
+     * Delete management with all related data (job types, job titles, branches, deputy managers)
+     */
+    public function deleteManagementWithLookupsForChoise(int $managementId): bool
+    {
+        return $this->repository->deleteManagementWithRelations($managementId);
+    }
+
     public function createBranch(CreateBranchDTO $createBranchDTO): ManagementHierarchy
     {
          return $this->repository->createBranch($createBranchDTO->branchToArray(), $createBranchDTO->AddressToArray());
