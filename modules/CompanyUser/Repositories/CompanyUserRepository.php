@@ -193,6 +193,16 @@ class CompanyUserRepository extends BaseRepository
 
             DB::beginTransaction();
 
+            $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyId])->first();
+            if(isset($companyUserData["job_title_id"])&&$companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
+            {
+                $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
+                if($companyId != $companyIdJobTitle )
+                {
+                    $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
+                }
+            }
+
             // Find or create company user
             $companyUser = $this->findOrCreateCompanyUser(array_merge($companyUserData, $phone));
             $companyUser->phone = $phone['phone'];
