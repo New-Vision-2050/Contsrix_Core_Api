@@ -179,8 +179,11 @@ class ManagementHierarchyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
+            $sourceManagementHierarchy = SourceManagementHierarchy::query()->where('id',$managementData['parent_id'])->first();
+            $managementHierarchyId = ManagementHierarchyDetail::where('reference_department_id', $sourceManagementHierarchy->id)->value('management_hierarchy_id');
+            $managementData['parent_id'] = $managementHierarchyId;
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
-            $detail = $managementHierarchy->detail()->create(array_merge(["reference_department_id" => $managementHierarchy->id, "is_copied" => 0], $managementDetail));
+            $detail = $managementHierarchy->detail()->create(array_merge(["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 0], $managementDetail));
             if ($deputyManagers != null && count($deputyManagers) > 0) {
                 foreach ($deputyManagers as $deputyManager) {
                     ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
@@ -385,7 +388,7 @@ class ManagementHierarchyRepository extends BaseRepository
      */
     public function getDetail($managementHierarchyId)
     {
-        return ManagementHierarchyDetail::where('management_hierarchy_id', $managementHierarchyId)->first();
+        return ManagementHierarchyDetail::first();
     }
 
     /**
@@ -577,7 +580,8 @@ class ManagementHierarchyRepository extends BaseRepository
         }
 
 
-        $query = SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company'])->when(isset($filters["type"]), function ($query) use ($filters) {
+        $query = SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company'])
+            ->when(isset($filters["type"]), function ($query) use ($filters) {
             $query->where("type", $filters["type"]);
         })->when(request()->has("ignore_branch_id"), function ($query) {
             $query->where(function ($q){
@@ -642,8 +646,8 @@ class ManagementHierarchyRepository extends BaseRepository
             // Create the management hierarchy
 
             $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name"=>$managementData["name"],"type"=>$managementData["type"],"company_id"=>$managementData["company_id"]]);
-            $managementHierarchy = $this->createManagement($managementData, $managementDetail+["reference_department_id"=>$sourceManagementHierarchy->id,"is_copied"=>1], $deputyManagers);
 
+           $managementHierarchy = $this->createManagement($managementData, $managementDetail+["reference_department_id"=>$sourceManagementHierarchy->id,"is_copied"=>1], $deputyManagers);
 
 
             // Sync job types
