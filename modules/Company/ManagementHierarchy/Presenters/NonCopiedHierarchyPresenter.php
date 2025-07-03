@@ -28,7 +28,7 @@ class NonCopiedHierarchyPresenter extends AbstractPresenter
             'type' => $this->sourceManagementHierarchy->type,
 //            'parent_id' => $this->sourceManagementHierarchy->parent_id,
 //            "management"=>$this->sourceManagementHierarchy->parent?->type == "management" ? (new ManagementHierarchySimpleDataPresenter($this->sourceManagementHierarchy->parent))->getData() : null,
-            "management" => $this->sourceManagementHierarchy->managementHierarchies()->first()?->parent == "management" ? (new ManagementHierarchySimpleDataPresenter($this->sourceManagementHierarchy->managementHierarchies()->first()?->parent))->present() : null,
+            "management" => $this->sourceManagementHierarchy->managementHierarchies()->first()?->parent?->type == "management" ? (new ManagementHierarchySimpleDataPresenter($this->sourceManagementHierarchy->managementHierarchies()->first()?->parent))->present() : null,
 
             'company_id' => $this->sourceManagementHierarchy->company_id,
             'is_active' => $this->sourceManagementHierarchy->is_active,
