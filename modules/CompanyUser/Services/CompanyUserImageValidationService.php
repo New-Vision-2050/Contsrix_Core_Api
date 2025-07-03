@@ -41,7 +41,7 @@ class CompanyUserImageValidationService
                 list($width, $height) = getimagesize($image->getPathname());
                 $allowedWidth = 1920;
                 $allowedHeight = 1080;
-                $tolerance = 0.1; // يعني 10%
+                $tolerance = 0.1;
 
                 $minWidth = $allowedWidth - ($allowedWidth * $tolerance);
                 $maxWidth = $allowedWidth + ($allowedWidth * $tolerance);
