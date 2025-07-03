@@ -1,0 +1,26 @@
+{
+    "name": "Attendance",
+    "alias": "attendance",
+    "description": "Employee Attendance Management System - نظام إدارة الحضور والانصراف للموظفين",
+    "keywords": [
+        "attendance",
+        "employee",
+        "clock-in",
+        "clock-out",
+        "leave-management",
+        "overtime",
+        "reporting"
+    ],
+    "priority": 0,
+    "providers": [
+        "Modules\\Attendance\\Providers\\AttendanceServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [
+        "User",
+        "Company",
+        "RoleAndPermission"
+    ],
+    "namespace": "Modules"
+}
