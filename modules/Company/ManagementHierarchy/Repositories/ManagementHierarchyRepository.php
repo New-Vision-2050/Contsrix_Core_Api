@@ -179,7 +179,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $sourceManagementHierarchy = SourceManagementHierarchy::query()->where('id', $managementData['parent_id'])->first();
+            $sourceManagementHierarchy = ManagementHierarchy::query()->where('id', $managementData['parent_id'])->first()->detail->sourceManagementHierarchy;
 //            $managementHierarchyId = ManagementHierarchyDetail::where('reference_department_id', $sourceManagementHierarchy->id)->value('management_hierarchy_id');
 //            $managementData['parent_id'] = $managementHierarchyId;
             $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
@@ -643,11 +643,12 @@ class ManagementHierarchyRepository extends BaseRepository
         DB::beginTransaction();
 
         // Create the management hierarchy
+        $relatedSourceManagementHierarchy = SourceManagementHierarchy::query()->where('id', $managementData['parent_id'])->first();
+        $managementHierarchyId = ManagementHierarchyDetail::where(['reference_department_id' => $relatedSourceManagementHierarchy->id, "branch_id" => $managementDetail["branch_id"]])->first()->management_hierarchy_id;
+        $managementData['parent_id'] = $managementHierarchyId;//convert parent_id from source to management
 
         $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name" => $managementData["name"], "type" => $managementData["type"], "company_id" => $managementData["company_id"]]);
-        $sourceManagementHierarchy = SourceManagementHierarchy::query()->where('id', $managementData['parent_id'])->first();
-        $managementHierarchyId = ManagementHierarchyDetail::where(['reference_department_id' => $sourceManagementHierarchy->id, "branch_id" => $managementDetail["branch_id"]])->first()->management_hierarchy_id;
-        $managementData['parent_id'] = $managementHierarchyId;
+
 
         $managementHierarchy = $this->createManagement($managementData, $managementDetail + ["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $deputyManagers);
 
