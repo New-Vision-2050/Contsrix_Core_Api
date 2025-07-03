@@ -41,6 +41,11 @@ class SourceManagementHierarchy extends Model
         return $this->hasMany(ManagementHierarchyDetail::class, 'reference_department_id', 'id');
     }
 
+
+    public function parent()
+    {
+        return $this->belongsTo(SourceManagementHierarchy::class, 'parent_id');
+    }
     /**
      * Get management hierarchies through management details
      */

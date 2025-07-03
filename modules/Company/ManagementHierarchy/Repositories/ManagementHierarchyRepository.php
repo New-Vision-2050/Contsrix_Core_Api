@@ -641,8 +641,20 @@ class ManagementHierarchyRepository extends BaseRepository
 
             // Create the management hierarchy
 
-            $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name"=>$managementData["name"],"type"=>$managementData["type"],"company_id"=>$managementData["company_id"]]);
-            $managementHierarchy = $this->createManagement($managementData, $managementDetail+["reference_department_id"=>$sourceManagementHierarchy->id,"is_copied"=>1], $deputyManagers);
+            $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name"=>$managementData["name"],"type"=>$managementData["type"],"company_id"=>$managementData["company_id"],"parent_id"=>$managementData["parent_id"]]);
+        $mainBranch = $this->findOneBy([
+            "company_id" => $managementData["company_id"],
+            "parent_id" => null,
+            "is_main" => 1,
+            "type" => "branch"
+        ]);
+        $mainManagement = $this->findOneBy([
+            "company_id" => $managementData["company_id"],
+            "parent_id" => $mainBranch->id,
+            "is_main" => 1,
+            "type" => "management"
+        ]);
+            $managementHierarchy = $this->createManagement($managementData+["parent_id"=>$mainManagement->id], $managementDetail+["reference_department_id"=>$sourceManagementHierarchy->id,"is_copied"=>1], $deputyManagers);
 
 
 
