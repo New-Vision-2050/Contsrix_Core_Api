@@ -22,6 +22,18 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/job_titles', [ManagementHierarchySettingController::class, 'getJobTitles']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
+    Route::group(["prefix" => "management-with-relations"], function () {
+        Route::post('/', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
+        Route::put('/{id}', [ManagementHierarchySettingController::class, 'updateManagementWithLookupsForChoise']);
+        Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteManagementWithLookupsForChoise']);
+
+    });
+    Route::group(["prefix" => "department-with-relations"], function () {
+        Route::post('/', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
+        Route::put('/{id}', [ManagementHierarchySettingController::class, 'updateDepartmentWithManagementsForDropDown']);
+        Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteDepartmentWithManagementsForDropDown']);
+
+    });
     Route::post('/create-management-with-relations', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
     Route::post('/create-department-with-relations', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
     Route::post('/create-department', [ManagementHierarchyController::class, 'createDepartment']);
