@@ -8,6 +8,7 @@ use AWS\CRT\Auth\CredentialsProvider;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Company\ManagementHierarchy\DTO\CreateDepartmentWithRelationsDTO;
 use Modules\Company\ManagementHierarchy\DTO\GetNonCopiedHierarchiesDTO;
+use Modules\Company\ManagementHierarchy\DTO\UpdateDepartmentWithRelationsDTO;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 
 class SettingManagementHierarchyService
@@ -21,6 +22,16 @@ class SettingManagementHierarchyService
     public function createDepartmentWithRealtion(CreateDepartmentWithRelationsDTO $dto)
     {
         return $this->repository->createDepartmentWithRelations($dto->departmentToArray(), $dto->departmentDetailToArray(), [], $dto->managements);
+    }
+
+    public function updateDepartmentWithRelation(UpdateDepartmentWithRelationsDTO $dto)
+    {
+        return $this->repository->updateDepartmentWithRelations(
+            $dto->getDepartmentId(),
+            $dto->departmentToArray(), 
+            $dto->departmentDetailToArray(), 
+            $dto->getManagements()
+        );
     }
 
 }
