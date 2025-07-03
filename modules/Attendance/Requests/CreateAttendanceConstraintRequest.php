@@ -7,9 +7,10 @@ namespace Modules\Attendance\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Modules\Attendance\Models\AttendanceConstraint;
-use Modules\Attendance\DTOs\CreateAttendanceConstraintDTO;
+use Modules\Attendance\DTO\CreateAttendanceConstraintDTO;
 use Modules\Attendance\DataClasses\MultiplePeriodsConfig;
 use InvalidArgumentException;
+use Ramsey\Uuid\UuidInterface;
 
 class CreateAttendanceConstraintRequest extends FormRequest
 {
@@ -92,15 +93,15 @@ class CreateAttendanceConstraintRequest extends FormRequest
             case AttendanceConstraint::TYPE_LOCATION:
                 $this->validateLocationConfig($validator, $name, $config);
                 break;
-            
+
             case AttendanceConstraint::TYPE_TIME:
                 $this->validateTimeConfig($validator, $name, $config);
                 break;
-            
+
             case AttendanceConstraint::TYPE_DEVICE:
                 $this->validateDeviceConfig($validator, $name, $config);
                 break;
-            
+
             case AttendanceConstraint::TYPE_BEHAVIORAL:
                 $this->validateBehavioralConfig($validator, $name, $config);
                 break;
@@ -118,7 +119,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     $validator->errors()->add('constraint_config.allowed_zones', 'Allowed zones are required for geofencing.');
                     return;
                 }
-                
+
                 foreach ($config['allowed_zones'] as $index => $zone) {
                     if (!isset($zone['latitude']) || !is_numeric($zone['latitude'])) {
                         $validator->errors()->add("constraint_config.allowed_zones.{$index}.latitude", 'Latitude is required and must be numeric.');
@@ -131,7 +132,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     }
                 }
                 break;
-            
+
             case AttendanceConstraint::LOCATION_IP_RESTRICTION:
                 if (empty($config['allowed_ips']) && empty($config['allowed_ranges'])) {
                     $validator->errors()->add('constraint_config', 'Either allowed IPs or allowed IP ranges must be specified.');
@@ -151,13 +152,13 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     $validator->errors()->add('constraint_config', 'Shift start and end times are required.');
                 }
                 break;
-            
+
             case AttendanceConstraint::TIME_BREAK_LIMITS:
                 if (!isset($config['max_break_duration']) || !is_numeric($config['max_break_duration'])) {
                     $validator->errors()->add('constraint_config.max_break_duration', 'Maximum break duration is required and must be numeric.');
                 }
                 break;
-                
+
             case AttendanceConstraint::TIME_MULTIPLE_PERIODS:
                 $this->validateMultiplePeriodsConfig($validator, $config);
                 break;
@@ -189,7 +190,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     $validator->errors()->add('constraint_config.max_consecutive_days', 'Maximum consecutive days is required and must be a positive number.');
                 }
                 break;
-            
+
             case AttendanceConstraint::BEHAVIORAL_WEEKLY_HOURS:
                 if (!isset($config['max_weekly_hours']) || !is_numeric($config['max_weekly_hours']) || $config['max_weekly_hours'] <= 0) {
                     $validator->errors()->add('constraint_config.max_weekly_hours', 'Maximum weekly hours is required and must be a positive number.');
@@ -213,7 +214,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
 
         // Additional business logic validation can be added here
         $multiplePeriodsConfig = MultiplePeriodsConfig::fromArray($config);
-        
+
         // Validate reasonable work hours
         $weeklyHours = $multiplePeriodsConfig->getTotalWeeklyWorkHours();
         if ($weeklyHours > 80) {
@@ -237,10 +238,10 @@ class CreateAttendanceConstraintRequest extends FormRequest
     /**
      * Create DTO from validated request data.
      */
-    public function createConstraintDTO(string $companyId, string $createdBy): CreateAttendanceConstraintDTO
+    public function createConstraintDTO(UuidInterface $companyId, UuidInterface $createdBy): CreateAttendanceConstraintDTO
     {
         $validated = $this->validated();
-        
+
         return new CreateAttendanceConstraintDTO(
             constraint_type: $validated['constraint_type'],
             name: $validated['constraint_name'],

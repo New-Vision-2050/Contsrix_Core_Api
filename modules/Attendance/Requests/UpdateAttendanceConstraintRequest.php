@@ -7,6 +7,7 @@ namespace Modules\Attendance\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\DTO\UpdateAttendanceConstraintDTO;
+use Ramsey\Uuid\UuidInterface;
 
 class UpdateAttendanceConstraintRequest extends FormRequest
 {
@@ -96,10 +97,10 @@ class UpdateAttendanceConstraintRequest extends FormRequest
     /**
      * Create DTO from validated request data.
      */
-    public function createUpdateConstraintDTO(string $updatedBy): UpdateAttendanceConstraintDTO
+    public function createUpdateConstraintDTO(UuidInterface $updatedBy): UpdateAttendanceConstraintDTO
     {
         $validated = $this->validated();
-        
+
         return new UpdateAttendanceConstraintDTO(
             updated_by: $updatedBy,
             constraint_type: $validated['constraint_type'] ?? null,

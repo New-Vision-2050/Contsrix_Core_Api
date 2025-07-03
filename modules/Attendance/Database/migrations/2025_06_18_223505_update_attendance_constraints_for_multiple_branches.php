@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::table('attendance_constraints', function (Blueprint $table) {
             // Add new branch_ids column as JSON array
             $table->json('branch_ids')->nullable()->after('department_id');
-            
+
             // Add branch_locations column for custom locations per branch
             $table->json('branch_locations')->nullable()->after('branch_ids');
         });
@@ -39,9 +39,9 @@ return new class extends Migration
 
             // Drop the old branch_id column
             $table->dropColumn('branch_id');
-            
+
             // Add index for better JSON query performance
-            $table->index(['company_id', DB::raw('(CAST(branch_ids AS CHAR(255) ARRAY))')], 'idx_company_branch_ids');
+            $table->index('company_id', 'idx_company_branch_ids');
         });
     }
 
@@ -57,11 +57,11 @@ return new class extends Migration
 
         // Migrate data back from branch_ids to branch_id (take first element)
         DB::statement("
-            UPDATE attendance_constraints 
-            SET branch_id = CASE 
-                WHEN branch_ids IS NOT NULL AND JSON_LENGTH(branch_ids) > 0 
+            UPDATE attendance_constraints
+            SET branch_id = CASE
+                WHEN branch_ids IS NOT NULL AND JSON_LENGTH(branch_ids) > 0
                 THEN JSON_UNQUOTE(JSON_EXTRACT(branch_ids, '$[0]'))
-                ELSE NULL 
+                ELSE NULL
             END
         ");
 

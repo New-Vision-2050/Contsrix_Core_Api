@@ -19,7 +19,7 @@ use Modules\Attendance\Requests\FilterAttendanceRequest;
 use Modules\Attendance\Presenters\AttendancePresenter;
 use Modules\Attendance\Presenters\AttendanceBreakPresenter;
 use Modules\Attendance\Models\AttendanceConstraint;
-
+use Ramsey\Uuid\Uuid;
 class AttendanceController extends Controller
 {
     public function __construct(
@@ -170,8 +170,9 @@ class AttendanceController extends Controller
         if (!$attendance) {
             return Json::error('No active attendance found', 404);
         }
+        $presenter = new AttendancePresenter($attendance);
 
-        return Json::item(new AttendancePresenter($attendance));
+        return Json::item($presenter->getData());
     }
 
     /**
@@ -296,7 +297,7 @@ class AttendanceController extends Controller
         $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
 
         $result = $this->attendanceService->getTeamAttendance(
-            Auth::id(), // Pass the current user's ID as the supervisor ID
+Auth::id()->toString(),
             $filterDTO->toArray(), // Pass filters as the second parameter
             $filterDTO->getPage(),
             $filterDTO->getPerPage() ?? 10

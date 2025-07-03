@@ -9,13 +9,17 @@ use Modules\Attendance\Models\Attendance;
 
 class AttendancePresenter extends AbstractPresenter
 {
-    public function __construct(private Attendance $attendance)
+    private Attendance $attendance;
+    public function __construct(Attendance $attendance)
     {
+        $this->attendance = $attendance;
+
     }
 
     public function present(bool $isListing = false): array
     {
         return [
+
             'id' => $this->attendance->id ? (string)$this->attendance->id : null,
             'user_id' => $this->attendance->user_id ? (string)$this->attendance->user_id : null,
             'company_id' => $this->attendance->company_id ? (string)$this->attendance->company_id : null,
@@ -75,7 +79,7 @@ class AttendancePresenter extends AbstractPresenter
             // Computed properties
             'work_date' => $this->attendance->clock_in_time?->format('Y-m-d'),
             'is_on_break' => $this->attendance->isOnBreak(),
-            'is_clocked_in' => $this->attendance->isActive(),
+            'is_clocked_in' =>  (int) $this->attendance->isActive(),
             'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
             'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
             'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),

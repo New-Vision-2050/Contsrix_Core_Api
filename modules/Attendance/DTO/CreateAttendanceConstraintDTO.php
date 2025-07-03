@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 namespace Modules\Attendance\DTO;
-
+use Ramsey\Uuid\UuidInterface;
 class CreateAttendanceConstraintDTO
 {
     public function __construct(
@@ -11,8 +11,8 @@ class CreateAttendanceConstraintDTO
         public string $name,
         public string $description,
         public array $config,
-        public string $company_id,
-        public string $created_by,
+        public UuidInterface $company_id,
+        public UuidInterface $created_by,
         public ?string $user_id = null,
         public ?string $department_id = null,
         public ?array $branch_ids = null,

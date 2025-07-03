@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 namespace Modules\Attendance\DTO;
-
+use Ramsey\Uuid\UuidInterface;
 class UpdateAttendanceConstraintDTO
 {
     public function __construct(
-        public string $updated_by,
+        public UuidInterface $updated_by,
         public ?string $constraint_type = null,
         public ?string $name = null,
         public ?string $description = null,
@@ -26,7 +26,7 @@ class UpdateAttendanceConstraintDTO
     public function toArray(): array
     {
         $data = ['updated_by' => $this->updated_by];
-        
+
         if ($this->constraint_type !== null) {
             $data['constraint_type'] = $this->constraint_type;
         }

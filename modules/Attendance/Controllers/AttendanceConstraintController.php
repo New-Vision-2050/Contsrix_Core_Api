@@ -71,7 +71,7 @@ class AttendanceConstraintController extends Controller
     public function store(CreateAttendanceConstraintRequest $request): JsonResponse
     {
         $constraintDTO = $request->createConstraintDTO(
-            Auth::user()->company_id,
+            Uuid::fromString(Auth::user()->company_id),
             Auth::id()
         );
 
