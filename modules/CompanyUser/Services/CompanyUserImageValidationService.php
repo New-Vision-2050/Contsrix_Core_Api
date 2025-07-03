@@ -119,7 +119,7 @@ class CompanyUserImageValidationService
 
         $percentage = ($white / ($white + $color)) * 100;
 
-        return $percentage ;//> 70 ? 1 : 0;
+        return $percentage >= 25 ? 1 : 0;
     }
 
 
