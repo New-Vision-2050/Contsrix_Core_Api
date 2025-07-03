@@ -177,7 +177,7 @@ class ManagementHierarchyRepository extends BaseRepository
     public function createManagement(array $managementData, array $managementDetail, ?array $deputyManagers): ManagementHierarchy
     {
 
-        try {
+//        try {
             DB::beginTransaction();
             $sourceManagementHierarchy = ManagementHierarchy::query()->where('id', $managementData['parent_id'])->first()->detail->sourceManagementHierarchy;
 //            $managementHierarchyId = ManagementHierarchyDetail::where('reference_department_id', $sourceManagementHierarchy->id)->value('management_hierarchy_id');
@@ -192,11 +192,11 @@ class ManagementHierarchyRepository extends BaseRepository
 
             }
             DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw new \Exception($e->getMessage(), 500);
-
-        }
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            throw new \Exception($e->getMessage(), 500);
+//
+//        }
         return $managementHierarchy;
     }
 
@@ -390,6 +390,8 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         return ManagementHierarchyDetail::where('management_hierarchy_id', $managementHierarchyId)->first();
     }
+
+
 
     /**
      * Get deputy managers for a management hierarchy detail
@@ -642,10 +644,21 @@ class ManagementHierarchyRepository extends BaseRepository
 //        try {
         DB::beginTransaction();
 
+        $mainBranch = $this->findOneBy([
+            "company_id" => $managementData["company_id"],
+            "parent_id" => null,
+            "type" => "branch",
+            "is_main" => 1
+        ]);
+
+
         // Create the management hierarchy
         $relatedSourceManagementHierarchy = SourceManagementHierarchy::query()->where('id', $managementData['parent_id'])->first();
-        $managementHierarchyId = ManagementHierarchyDetail::where(['reference_department_id' => $relatedSourceManagementHierarchy->id, "branch_id" => $managementDetail["branch_id"]])->first()->management_hierarchy_id;
-        $managementData['parent_id'] = $managementHierarchyId;//convert parent_id from source to management
+        $detail = ManagementHierarchyDetail::where(['reference_department_id' => $relatedSourceManagementHierarchy->id, "branch_id" => $mainBranch->id])->first();
+
+        $managementData['parent_id'] = $detail->management_hierarchy_id;//convert parent_id from source to management
+        $managementDetail['branch_id'] = $mainBranch->id;
+
 
         $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name" => $managementData["name"], "type" => $managementData["type"], "company_id" => $managementData["company_id"]]);
 
