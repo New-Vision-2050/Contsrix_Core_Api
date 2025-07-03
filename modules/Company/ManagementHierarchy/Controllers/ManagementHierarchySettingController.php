@@ -224,7 +224,7 @@ class ManagementHierarchySettingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete management hierarchy: ' . $e->getMessage()
-            ], 400);
+            ], 500);
         }
     }
 

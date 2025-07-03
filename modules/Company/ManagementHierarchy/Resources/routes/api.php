@@ -24,13 +24,13 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
     Route::group(["prefix" => "management-with-relations"], function () {
         Route::post('/', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
-        Route::post('/{id}', [ManagementHierarchySettingController::class, 'updateManagementWithLookupsForChoise']);
+        Route::put('/{id}', [ManagementHierarchySettingController::class, 'updateManagementWithLookupsForChoise']);
         Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteManagementWithLookupsForChoise']);
 
     });
     Route::group(["prefix" => "department-with-relations"], function () {
         Route::post('/', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
-        Route::post('/{id}', [ManagementHierarchySettingController::class, 'updateDepartmentWithManagementsForDropDown']);
+        Route::put('/{id}', [ManagementHierarchySettingController::class, 'updateDepartmentWithManagementsForDropDown']);
         Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteDepartmentWithManagementsForDropDown']);
 
     });
