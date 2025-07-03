@@ -39,9 +39,16 @@ class CompanyUserImageValidationService
                 }
 
                 list($width, $height) = getimagesize($image->getPathname());
+                $allowedWidth = 1920;
+                $allowedHeight = 1080;
+                $tolerance = 0.1; // يعني 10%
 
+                $minWidth = $allowedWidth - ($allowedWidth * $tolerance);
+                $maxWidth = $allowedWidth + ($allowedWidth * $tolerance);
+                $minHeight = $allowedHeight - ($allowedHeight * $tolerance);
+                $maxHeight = $allowedHeight + ($allowedHeight * $tolerance);
                 // Validate dimensions
-                if ($width == 1920 && $height == 1080) {
+                if ($width >= $minWidth && $width <= $maxWidth && $height >= $minHeight && $height <= $maxHeight) {
                     array_push($errors, [
                         "sentence" => "الصورة مناسبة",
                         "sub_title" => null,
