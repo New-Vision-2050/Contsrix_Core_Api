@@ -13,9 +13,9 @@ class IdentityDataRequest extends FormRequest
     {
         return [
             'passport' => 'nullable|string',
-            'identity' => 'nullable|string',
-            'border_number' => 'nullable|string',
-            'entry_number' => 'nullable|string',
+            'identity' => 'nullable|string|numeric',
+            'border_number' => 'nullable|string|numeric',
+            'entry_number' => 'nullable|string|numeric',
 
             'passport_start_date'=>'nullable',
             'identity_start_date'=>'nullable',
@@ -35,7 +35,7 @@ class IdentityDataRequest extends FormRequest
 
             'work_permit_start_date'=>'nullable|string',
             'work_permit_end_date' => 'required_with:work_permit_start_date|date|after:work_permit_start_date',
-            'work_permit' => 'nullable',
+            'work_permit' => 'nullable|numeric',
         ];
     }
     public function messages(): array
