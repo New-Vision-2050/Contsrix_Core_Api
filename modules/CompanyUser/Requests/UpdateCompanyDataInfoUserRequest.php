@@ -6,13 +6,14 @@ namespace Modules\CompanyUser\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\Commands\UpdateCompanyUserDataInfoCommand;
+use Modules\CompanyUser\Rules\ArabicThreeWords;
 
 class UpdateCompanyDataInfoUserRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => ['required', 'string', new ArabicThreeWords()],
             "nickname"=> 'nullable',
             "gender"=> 'present|nullable',
             "is_default"=> 'present|nullable|in:0,1',
