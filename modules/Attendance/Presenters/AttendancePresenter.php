@@ -18,6 +18,8 @@ class AttendancePresenter extends AbstractPresenter
 
     public function present(bool $isListing = false): array
     {
+        $appliedConstraints = $this->formatAppliedConstraints();
+
         return [
 
              'id' => $this->attendance->id ? (string)$this->attendance->id : null,
@@ -90,15 +92,77 @@ class AttendancePresenter extends AbstractPresenter
             'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
             'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
             'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),
-            'applied_constraints' => $this->attendance->appliedConstraints->map(function ($constraint) {
-                return [
-                    'id' => (string)$constraint->id ?: null,
-                    'name' => $constraint->constraint_name ?: null,
-                ];
-            })->first(),
+            'applied_constraints' => $appliedConstraints,
+            // Use the result of the helper method to determine the day status.
+            'day_status' => $this->getDayStatus($appliedConstraints),
         ];
     }
+  /**
+     * Formats the applied constraints for the API response.
+     * This now correctly returns an array of ALL applied constraints.
+     *
+     * @return array
+     */
+    private function formatAppliedConstraints(): array
+    {
+        if (!$this->attendance->appliedConstraints) {
+            return [];
+        }
 
+        return $this->attendance->appliedConstraints->map(function ($constraint) {
+            return [
+                'id'     => (string) $constraint->id,
+                'name'   => $constraint->constraint_name,
+                'config' => $constraint->constraint_config, // Needed for day_status logic
+            ];
+        })->all(); // Use all() to get a clean, numerically-indexed array.
+    }
+
+    /**
+     * Determines if the attendance day was a Work Day, Weekend, or Holiday.
+     *
+     * @param array $appliedConstraints The formatted array of constraints.
+     * @return array An object containing the status and reason.
+     */
+    private function getDayStatus(array $appliedConstraints): array
+    {
+        $defaultStatus = ['status' => 'Undefined', 'reason' => 'No applicable time schedule found.'];
+
+        if (!$this->attendance->clock_in_time) {
+            return $defaultStatus;
+        }
+        $attendanceDate = $this->attendance->clock_in_time;
+
+        // Find the first constraint that has time rules.
+        $timeConstraint = collect($appliedConstraints)->first(function ($constraint) {
+            return isset($constraint['config']['time_rules']);
+        });
+        if (!$timeConstraint) {
+            return $defaultStatus;
+        }
+
+        $timeRules = $timeConstraint['config']['time_rules'];
+
+        // 1. Check for specific holidays.
+        foreach (($timeRules['holidays'] ?? []) as $holiday) {
+            if (isset($holiday['date']) && $attendanceDate->isSameDay($holiday['date'])) {
+                return ['status' => 'Holiday', 'reason' => $holiday['name']];
+            }
+        }
+
+        // 2. Check the weekly schedule.
+        $dayOfWeek = strtolower($attendanceDate->format('l'));
+        $dayConfig = $timeRules['weekly_schedule'][$dayOfWeek] ?? null;
+
+
+        if ($dayConfig) {
+            return $dayConfig['enabled']
+                ? ['status' => 'Work Day', 'reason' => 'Scheduled working day.']
+                : ['status' => 'Weekend / Off-day', 'reason' => 'Scheduled day off.'];
+        }
+
+        return ['status' => 'Undefined', 'reason' => 'Day not defined in schedule.'];
+    }
     /**
      * Format breaks data for the response
      */
