@@ -6,14 +6,22 @@ namespace Modules\Company\ManagementHierarchy\Services;
 
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Company\ManagementHierarchy\DTO\GetNonCopiedHierarchiesDTO;
+<<<<<<< HEAD
 use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+=======
+use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+>>>>>>> 4d33c9eb (merge roles with subscription)
 
 class NonCopiedHierarchiesService
 {
     public function __construct(
+<<<<<<< HEAD
         private ManagementHierarchyRepository $managementHierarchyRepository,
+=======
+        private ManagementHierarchyRepository $repository,
+>>>>>>> 4d33c9eb (merge roles with subscription)
     ) {
     }
 
@@ -25,7 +33,11 @@ class NonCopiedHierarchiesService
      */
     public function getNonCopiedHierarchies(GetNonCopiedHierarchiesDTO $dto): array
     {
+<<<<<<< HEAD
         return $this->managementHierarchyRepository->getNonCopiedHierarchies(
+=======
+        return $this->repository->getNonCopiedHierarchies(
+>>>>>>> 4d33c9eb (merge roles with subscription)
             page: $dto->page,
             perPage: $dto->perPage
         );
@@ -38,6 +50,7 @@ class NonCopiedHierarchiesService
      */
     public function getAllNonCopiedHierarchies(): Collection
     {
+<<<<<<< HEAD
         return $this->managementHierarchyRepository->getAllNonCopiedHierarchies();
     }
 
@@ -50,5 +63,8 @@ class NonCopiedHierarchiesService
     public function findNonCopiedHierarchyById( $id): ?SourceManagementHierarchy
     {
         return $this->managementHierarchyRepository->findNonCopiedHierarchyById($id);
+=======
+        return $this->repository->getAllNonCopiedHierarchies();
+>>>>>>> 4d33c9eb (merge roles with subscription)
     }
 }

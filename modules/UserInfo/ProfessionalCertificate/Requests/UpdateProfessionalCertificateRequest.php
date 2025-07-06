@@ -14,6 +14,7 @@ class UpdateProfessionalCertificateRequest extends FormRequest
     public function rules(): array
     {
         return [
+<<<<<<< HEAD
             'professional_bodie_id'=> 'required|string',
             'accreditation_name'=> 'required|string',
             'accreditation_number'=> 'required|string',
@@ -21,6 +22,15 @@ class UpdateProfessionalCertificateRequest extends FormRequest
             'date_obtain'=> 'required|date',
             'date_end'=> 'required|date',
             "file"=>"nullable|file",
+=======
+            'professional_bodie_id'=> 'nullable|string',
+            'accreditation_name'=> 'nullable|string',
+            'accreditation_number'=> 'nullable|string',
+            'accreditation_degree'=> 'nullable|string',
+            'date_obtain'=> 'nullable|date',
+            'date_end'=> 'nullable|date',
+            "file"=>"nullable",
+>>>>>>> 4d33c9eb (merge roles with subscription)
         ];
     }
 public function messages(): array
@@ -46,7 +56,11 @@ public function messages(): array
             accreditation_degree: $this->get('accreditation_degree'),
             date_obtain: $this->get('date_obtain'),
             date_end: $this->get('date_end'),
+<<<<<<< HEAD
             file: $this->file('file'),
+=======
+            file: $this->hasFile('file')?$this->file("file"):null,
+>>>>>>> 4d33c9eb (merge roles with subscription)
         );
     }
 }

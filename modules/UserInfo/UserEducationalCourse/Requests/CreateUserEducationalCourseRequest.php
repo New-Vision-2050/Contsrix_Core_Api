@@ -14,6 +14,7 @@ class CreateUserEducationalCourseRequest extends FormRequest
     {
         return [
             'user_id' => 'required|uuid',
+<<<<<<< HEAD
             'company_name' => 'required|string',
             'authority' => 'required|string',
             'name' => 'required|string',
@@ -21,6 +22,15 @@ class CreateUserEducationalCourseRequest extends FormRequest
             'certificate' => 'required|string',
             'date_obtain' => 'required|date',
             'date_end' => 'required|date',
+=======
+            'company_name' => 'nullable|string',
+            'authority' => 'nullable|string',
+            'name' => 'nullable|string',
+            'institute' => 'nullable|string',
+            'certificate' => 'nullable|string',
+            'date_obtain' => 'nullable|date',
+            'date_end' => 'nullable|date',
+>>>>>>> 4d33c9eb (merge roles with subscription)
             "file"=>"nullable|file",
         ];
     }

@@ -14,12 +14,21 @@ class CreateProfessionalCertificateRequest extends FormRequest
     {
         return [
             'user_id'=> 'required|string',
+<<<<<<< HEAD
             'professional_bodie_id'=> 'required|string',
             'accreditation_name'=> 'required|string',
             'accreditation_number'=> 'required|string',
             'accreditation_degree'=> 'required|string',
             'date_obtain'=> 'required|date',
             'date_end'=> 'required|date',
+=======
+            'professional_bodie_id'=> 'nullable|string',
+            'accreditation_name'=> 'nullable|string',
+            'accreditation_number'=> 'nullable|string',
+            'accreditation_degree'=> 'nullable|string',
+            'date_obtain'=> 'nullable|date',
+            'date_end'=> 'nullable|date',
+>>>>>>> 4d33c9eb (merge roles with subscription)
             "file"=>"nullable|file",
         ];
     }

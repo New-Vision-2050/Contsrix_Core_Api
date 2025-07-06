@@ -14,6 +14,7 @@ class UpdateUserEducationalCourseRequest extends FormRequest
     public function rules(): array
     {
         return [
+<<<<<<< HEAD
             'company_name' => 'required|string',
             'authority' => 'required|string',
             'name' => 'required|string',
@@ -22,6 +23,16 @@ class UpdateUserEducationalCourseRequest extends FormRequest
             'date_obtain' => 'required|date',
             'date_end' => 'required|date',
             "file"=>"nullable|file",
+=======
+            'company_name' => 'nullable|string',
+            'authority' => 'nullable|string',
+            'name' => 'nullable|string',
+            'institute' => 'nullable|string',
+            'certificate' => 'nullable|string',
+            'date_obtain' => 'nullable|date',
+            'date_end' => 'nullable|date',
+            "file"=>"nullable",
+>>>>>>> 4d33c9eb (merge roles with subscription)
         ];
     }
 
@@ -38,7 +49,11 @@ class UpdateUserEducationalCourseRequest extends FormRequest
             certificate: $this->get('certificate'),
             date_obtain: $this->get('date_obtain'),
             date_end: $this->get('date_end'),
+<<<<<<< HEAD
             file: $this->file('file'),
+=======
+            file: $this->hasFile("file") ? $this->file("file") : null,
+>>>>>>> 4d33c9eb (merge roles with subscription)
         );
     }
 }

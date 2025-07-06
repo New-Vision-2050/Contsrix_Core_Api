@@ -11,12 +11,21 @@ class UpdateProfessionalCertificateCommand
 {
     public function __construct(
         private UuidInterface $id,
+<<<<<<< HEAD
         private string $professional_bodie_id,
         private string $accreditation_name,
         private string $accreditation_number,
         private string $accreditation_degree,
         private string $date_obtain,
         private string $date_end,
+=======
+        private ?string $professional_bodie_id,
+        private ?string $accreditation_name,
+        private ?string $accreditation_number,
+        private ?string $accreditation_degree,
+        private ?string $date_obtain,
+        private ?string $date_end,
+>>>>>>> 4d33c9eb (merge roles with subscription)
         public ?UploadedFile $file
     ) {
     }

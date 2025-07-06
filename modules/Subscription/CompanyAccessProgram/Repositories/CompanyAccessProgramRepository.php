@@ -39,7 +39,10 @@ class CompanyAccessProgramRepository extends BaseRepository
     {
         $program = $this->model->create([
             'name' => $createCompanyAccessProgramDTO->name,
+<<<<<<< HEAD
             'is_active' => true
+=======
+>>>>>>> 4d33c9eb (merge roles with subscription)
         ]);
 
         // Sync programs

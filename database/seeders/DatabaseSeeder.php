@@ -36,7 +36,10 @@ use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
+<<<<<<< HEAD
 use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
+=======
+>>>>>>> 4d33c9eb (merge roles with subscription)
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
