@@ -20,7 +20,7 @@ class UpdateUserEducationalCourseCommand
         private string $certificate,
         private string $date_obtain,
         private string $date_end,
-        public UploadedFile $file
+        public ?UploadedFile $file
     ) {
     }
 
