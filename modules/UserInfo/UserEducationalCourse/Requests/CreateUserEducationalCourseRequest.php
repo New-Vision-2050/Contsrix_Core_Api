@@ -14,13 +14,13 @@ class CreateUserEducationalCourseRequest extends FormRequest
     {
         return [
             'user_id' => 'required|uuid',
-            'company_name' => 'nullable|string',
-            'authority' => 'nullable|string',
-            'name' => 'nullable|string',
-            'institute' => 'nullable|string',
-            'certificate' => 'nullable|string',
-            'date_obtain' => 'nullable|date',
-            'date_end' => 'nullable|date',
+            'company_name' => 'required|string',
+            'authority' => 'required|string',
+            'name' => 'required|string',
+            'institute' => 'required|string',
+            'certificate' => 'required|string',
+            'date_obtain' => 'required|date',
+            'date_end' => 'required|date',
             "file"=>"nullable|file",
         ];
     }

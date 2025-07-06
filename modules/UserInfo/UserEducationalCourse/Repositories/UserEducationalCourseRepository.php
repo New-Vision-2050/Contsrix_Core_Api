@@ -6,13 +6,10 @@ namespace Modules\UserInfo\UserEducationalCourse\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-<<<<<<< HEAD
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Nonstandard\Uuid;
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 use Ramsey\Uuid\UuidInterface;
 use Modules\UserInfo\UserEducationalCourse\Models\UserEducationalCourse;
 
@@ -23,16 +20,12 @@ use Modules\UserInfo\UserEducationalCourse\Models\UserEducationalCourse;
  */
 class UserEducationalCourseRepository extends BaseRepository
 {
-<<<<<<< HEAD
     public function __construct(
         UserEducationalCourse     $model,
         private FileUploadService $fileUploadService,
         private CompanyUserRepository $companyUserRepository
 
     )
-=======
-    public function __construct(UserEducationalCourse $model)
->>>>>>> 7be6c72c (merge with stage (first version ))
     {
         parent::__construct($model);
     }
@@ -53,7 +46,6 @@ class UserEducationalCourseRepository extends BaseRepository
         ]);
     }
 
-<<<<<<< HEAD
     public function createUserEducationalCourse(array $data, $file = null): UserEducationalCourse
     {
         $educationalCourse = $this->create($data);
@@ -95,15 +87,6 @@ class UserEducationalCourseRepository extends BaseRepository
         }
 
 
-=======
-    public function createUserEducationalCourse(array $data): UserEducationalCourse
-    {
-        return $this->create($data);
-    }
-
-    public function updateUserEducationalCourse(UuidInterface $id, array $data): bool
-    {
->>>>>>> 7be6c72c (merge with stage (first version ))
         return $this->update($id, $data);
     }
 

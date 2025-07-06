@@ -40,6 +40,7 @@ class PeriodSeederTableSeeder extends Seeder
         $periods = [
             ['ar' => 'شهري', 'en' => 'Monthly'],
             ['ar' => 'سنوي', 'en' => 'Annually'],
+            ['ar' => 'يومي', 'en' => 'Daily'],
         ];
 
         foreach ($periods as $index => $item) {

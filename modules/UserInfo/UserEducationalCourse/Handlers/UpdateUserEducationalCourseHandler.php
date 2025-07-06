@@ -16,10 +16,6 @@ class UpdateUserEducationalCourseHandler
 
     public function handle(UpdateUserEducationalCourseCommand $updateUserEducationalCourseCommand)
     {
-<<<<<<< HEAD
         $this->repository->updateUserEducationalCourse($updateUserEducationalCourseCommand->getId(), $updateUserEducationalCourseCommand->toArray(), $updateUserEducationalCourseCommand->file);
-=======
-        $this->repository->updateUserEducationalCourse($updateUserEducationalCourseCommand->getId(), $updateUserEducationalCourseCommand->toArray());
->>>>>>> 7be6c72c (merge with stage (first version ))
     }
 }

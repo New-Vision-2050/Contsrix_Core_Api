@@ -13,14 +13,14 @@ class UpdateUserEducationalCourseCommand
         private UuidInterface $id,
         private string $company_id,
         private string $global_id,
-        private ?string $company_name,
-        private ?string $authority,
-        private ?string $name,
-        private ?string $institute,
-        private ?string $certificate,
-        private ?string $date_obtain,
-        private ?string $date_end,
-        public ?UploadedFile $file
+        private string $company_name,
+        private string $authority,
+        private string $name,
+        private string $institute,
+        private string $certificate,
+        private string $date_obtain,
+        private string $date_end,
+        public UploadedFile $file
     ) {
     }
 
