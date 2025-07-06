@@ -15,6 +15,7 @@ use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Models\AttendanceConstraintViolation;
 use Modules\Attendance\Services\NotificationService;
+use Modules\Attendance\Services\ConstraintCacheService;
 use Modules\User\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -34,6 +35,7 @@ class AttendanceConstraintService
     protected SecurityConstraintServiceInterface $securityConstraintService;
     protected TimeConstraintServiceInterface $timeConstraintService;
     protected NotificationService $notificationService;
+    protected ConstraintCacheService $constraintCacheService;
 
     public function __construct(
         BehavioralConstraintServiceInterface $behavioralConstraintService,
@@ -44,6 +46,7 @@ class AttendanceConstraintService
         SecurityConstraintServiceInterface $securityConstraintService,
         TimeConstraintServiceInterface $timeConstraintService,
         NotificationService $notificationService = null,
+        ConstraintCacheService $constraintCacheService = null
     ) {
         $this->behavioralConstraintService = $behavioralConstraintService;
         $this->complianceConstraintService = $complianceConstraintService;
@@ -53,6 +56,7 @@ class AttendanceConstraintService
         $this->securityConstraintService = $securityConstraintService;
         $this->timeConstraintService = $timeConstraintService;
         $this->notificationService = $notificationService ?? app(NotificationService::class);
+        $this->constraintCacheService = $constraintCacheService ?? app(ConstraintCacheService::class);
     }
 
     /**
@@ -68,7 +72,7 @@ class AttendanceConstraintService
         $user = $attendance->user;
 
         // Get all applicable constraints for the user
-        $constraints = $this->getApplicableConstraints($user);
+        $constraints = $this->getConstraintsForUser($user);
         foreach ($constraints as $constraint) {
             try {
                 $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData);
@@ -97,18 +101,24 @@ class AttendanceConstraintService
     }
 
     /**
-     * Get all constraints applicable to a user.
-     *
-     * @param User $user The user to get constraints for
-     * @return Collection Collection of applicable constraints
+     * Get constraints that apply to a user or attendance record
      */
-    public function getApplicableConstraints(User $user): Collection
+    public function getConstraintsForUser(User $user): Collection
     {
+        // Check if constraints are cached for this user
+        $userConstraints = $this->constraintCacheService->getUserConstraints($user->id);
+        if (!empty($userConstraints)) {
+            return collect($userConstraints);
+        }
+
+        // Get user's branch if available
         $userBranch = $user->branch ?? null;
         $userBranchId = $userBranch ? (string) $userBranch->id : null;
 
-        $constraint = AttendanceConstraint::where('company_id', $user->company_id)
+        // Query for constraints
+        $constraints = AttendanceConstraint::where('company_id', $user->company_id)
             ->where(function ($query) use ($user, $userBranchId) {
+                // Global constraints (no user ID or branch ID)
                 $query->where(function ($q) {
                     $q->whereNull('user_id')
                         ->where(function ($subQ) {
@@ -116,14 +126,45 @@ class AttendanceConstraintService
                                 ->orWhereJsonLength('branch_ids', 0);
                         });
                 })
+                // User-specific constraints
                 ->orWhere('user_id', $user->id);
+                
+                // Branch-specific constraints if user has a branch
                 $query->when($userBranchId, function ($q) use ($userBranchId) {
-                    $q->orWhereJsonContains('branch_ids', $userBranchId);
+                    $q->orWhereRaw("JSON_CONTAINS(branch_ids, ?)", ['"' . $userBranchId . '"']);
                 });
             })
-            ->where('is_active', true)
+            ->where('active', true)
+            ->orderBy('priority', 'desc')
             ->get();
+            
+        // Cache each constraint individually
+        $constraints->each(function ($constraint) {
+            $this->constraintCacheService->cacheConstraint($constraint);
+        });
+            
+        return $constraints;
+    }
 
+    /**
+     * Get a specific constraint by ID with caching
+     */
+    public function getConstraintById(string $constraintId): ?AttendanceConstraint
+    {
+        // Try to get from cache first
+        $cachedConstraint = $this->constraintCacheService->getConstraint($constraintId);
+        if ($cachedConstraint) {
+            return $cachedConstraint;
+        }
+        
+        // If not in cache, get from database
+        $constraint = AttendanceConstraint::find($constraintId);
+        
+        // Cache the constraint if found
+        if ($constraint) {
+            $this->constraintCacheService->cacheConstraint($constraint);
+        }
+        
         return $constraint;
     }
 
@@ -181,7 +222,7 @@ class AttendanceConstraintService
     public function validatePreClockIn(User $user, array $requestData = []): array
     {
         $violations = [];
-        $constraints = $this->getApplicableConstraints($user);
+        $constraints = $this->getConstraintsForUser($user);
 
         foreach ($constraints as $constraint) {
             // Only validate constraints that can be checked before attendance record creation
@@ -443,7 +484,7 @@ class AttendanceConstraintService
         }
 
         // Get all applicable constraints for the user
-        $constraints = $this->getApplicableConstraints($attendance->user);
+        $constraints = $this->getConstraintsForUser($attendance->user);
 
         // Filter for break-related constraints
         $breakConstraints = $constraints->filter(function ($constraint) {
