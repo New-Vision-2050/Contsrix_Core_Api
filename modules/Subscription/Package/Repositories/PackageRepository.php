@@ -6,9 +6,11 @@ namespace Modules\Subscription\Package\Repositories;
 
 use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Subscription\Package\Models\Package;
 use BasePackage\Shared\Repositories\BaseRepository;
+use Modules\Subscription\Package\DTO\CreatePackageDTO;
 use Modules\Subscription\Package\Models\PackageFeature;
 
 /**
@@ -35,9 +37,26 @@ class PackageRepository extends BaseRepository
         ]);
     }
 
-    public function createPackage(array $data): Package
+    public function createPackage(CreatePackageDTO $createPackageDTO): Package
     {
-        return $this->create($data);
+        $package = $this->create($createPackageDTO->toArray());
+
+        // Sync company fields
+        if (!empty($createPackageDTO->companyFields)) {
+            $package->companyFields()->sync($createPackageDTO->companyFields);
+        }
+
+        // Sync company types
+        if (!empty($createPackageDTO->companyTypes)) {
+            $package->companyTypes()->sync($createPackageDTO->companyTypes);
+        }
+
+        // Sync countries
+        if (!empty($createPackageDTO->countries)) {
+            $package->countries()->sync($createPackageDTO->countries);
+        }
+
+        return $package;
     }
 
     public function updatePackage(UuidInterface $id, array $data): bool
@@ -76,5 +95,68 @@ class PackageRepository extends BaseRepository
             ['limit', 'is_enabled', 'updated_at']
         );
     }
+
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc'
+    ) {
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model->newQuery();
+        }
+
+        // Simple column filters
+        if (isset($conditions['is_active'])) {
+            $query->where('is_active', $conditions['is_active']);
+        }
+
+        if (!empty($conditions['name'])) {
+            $query->where('name', 'LIKE', '%' . $conditions['name'] . '%');
+        }
+
+        // // Relational filter
+        if (!empty($conditions['company_fields'])) {
+            $query->whereHas('companyFields', function ($q) use ($conditions) {
+                $q->whereIn('company_fields.id', $conditions['company_fields']);
+            });
+        }
+
+        $query->withCount(['features']);
+        $query->with(['companyFields:id,name', 'companyTypes:id,name', 'countries:id,name,currency,currency_name,currency_symbol']);
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->orderBy($orderBy, $sortBy)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
+
+    public function counts(): array
+    {
+        $counts = $this->model
+            ->selectRaw('COUNT(*) as total_packages')
+            ->selectRaw('COUNT(CASE WHEN is_active = true THEN 1 END) as active_packages')
+            ->selectRaw('COUNT(CASE WHEN is_active = false THEN 1 END) as inactive_packages')
+            ->first();
+
+        $totalCompanies = DB::table('company_package')
+            ->distinct('company_id')
+            ->count('company_id');
+
+        return [
+            'total_packages' => (int) $counts->total_packages,
+            'active_packages' => (int) $counts->active_packages,
+            'inactive_packages' => (int) $counts->inactive_packages,
+            'total_companies' => $totalCompanies,
+        ];
+    }
+
 
 }

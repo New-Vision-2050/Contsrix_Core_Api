@@ -4,37 +4,90 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\CompanyAccessProgram\Models;
 
-use BasePackage\Shared\Traits\UuidTrait;
+use Modules\Country\Models\Country;
+use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Modules\Subscription\CompanyAccessProgram\Database\factories\CompanyAccessProgramFactory;
+use Modules\SubEntity\Models\SubEntity;
+use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
-//use BasePackage\Shared\Traits\HasTranslations;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\CompanyField\Models\CompanyField;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Subscription\Package\Models\Package;
 
 class CompanyAccessProgram extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    //use HasTranslations;
-    //use SoftDeletes;
-
-    //public array $translatable = [];
 
     public $incrementing = false;
-
     protected $keyType = 'string';
 
     protected $fillable = [
         'name',
+        'is_active',
     ];
 
     protected $casts = [
         'id' => 'string',
+        'is_active' => 'bool',
     ];
 
-    protected static function newFactory(): CompanyAccessProgramFactory
+    public function companyFields(): BelongsToMany
     {
-        return CompanyAccessProgramFactory::new();
+        return $this->belongsToMany(
+            CompanyField::class,
+            'company_access_program_field',
+            'company_access_program_id',
+            'company_field_id'
+        );
+    }
+
+    public function companyTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            CompanyType::class,
+            'company_access_program_type',
+            'company_access_program_id',
+            'company_type_id'
+        );
+    }
+
+    public function countries(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Country::class,
+            'company_access_program_country',
+            'company_access_program_id',
+            'country_id'
+        );
+    }
+
+    public function programs(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Program::class,
+            'company_access_program_program',
+            'company_access_program_id',
+            'program_id'
+        );
+    }
+
+    public function subEntities(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            SubEntity::class,
+            'company_access_program_sub_entity',
+            'company_access_program_id',
+            'sub_entity_id'
+        );
+    }
+
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class);
     }
 }

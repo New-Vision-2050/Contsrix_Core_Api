@@ -9,14 +9,12 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission as SpatiePermission;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Permission extends SpatiePermission
 {
     use UuidTrait;
     use BaseFilterable;
     use HasFactory;
-//    use BelongsToTenant;
 
     public array $translatable = [];
 
@@ -28,7 +26,6 @@ class Permission extends SpatiePermission
     protected $fillable = [
         'name',
         'guard_name',
-        'key',
         'resource',
         'action',
         'program_id',
