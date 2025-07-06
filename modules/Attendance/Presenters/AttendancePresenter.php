@@ -25,8 +25,15 @@ class AttendancePresenter extends AbstractPresenter
             'company_id' => $this->attendance->company_id ? (string)$this->attendance->company_id : null,
 
             // Clock times
-            'clock_in_time' => $this->attendance->clock_in_time?->format('Y-m-d H:i:s'),
-            'clock_out_time' => $this->attendance->clock_out_time?->format('Y-m-d H:i:s'),
+            'clock_in_time' => $this->attendance->clock_in_time?->setTimezone(
+                new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
+            )->format('Y-m-d H:i:s'),
+
+            'clock_out_time' => $this->attendance->clock_out_time?->setTimezone(
+                new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
+            )->format('Y-m-d H:i:s'),
+
+            'timezone' => $this->attendance->timezone ?? null,
 
             // Calculated hours
             'total_work_hours' => (float) $this->attendance->total_work_hours,
