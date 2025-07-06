@@ -21,7 +21,7 @@ class UpdateUserEducationalCourseRequest extends FormRequest
             'certificate' => 'nullable|string',
             'date_obtain' => 'nullable|date',
             'date_end' => 'nullable|date',
-            "file"=>"nullable|file",
+            "file"=>"nullable",
         ];
     }
 
@@ -38,7 +38,7 @@ class UpdateUserEducationalCourseRequest extends FormRequest
             certificate: $this->get('certificate'),
             date_obtain: $this->get('date_obtain'),
             date_end: $this->get('date_end'),
-            file: $this->file('file'),
+            file: $this->hasFile("file") ? $this->file("file") : null,
         );
     }
 }
