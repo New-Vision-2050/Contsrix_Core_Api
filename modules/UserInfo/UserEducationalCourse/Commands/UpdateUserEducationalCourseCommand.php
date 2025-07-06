@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\UserEducationalCourse\Commands;
 
+use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 
 class UpdateUserEducationalCourseCommand
@@ -19,6 +20,7 @@ class UpdateUserEducationalCourseCommand
         private string $certificate,
         private string $date_obtain,
         private string $date_end,
+        public UploadedFile $file
     ) {
     }
 
