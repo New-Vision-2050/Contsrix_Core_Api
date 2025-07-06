@@ -58,13 +58,20 @@ class AttendanceConstraintService
      * @param array $requestData Additional request data for validation
      * @return array Array of violations found during validation
      */
-    public function validateAttendance(Attendance $attendance, array $requestData = []): array
+    public function validateAttendance(Attendance $attendance, array $requestData = [],bool $isDryRun = false): array
     {
         $violations = [];
         $user = $attendance->user;
 
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
+
+        if (!$isDryRun && $attendance->exists) {
+            $appliedConstraintIds = $constraints->pluck('id')
+                                                 ->map(fn($id) => (string) $id)
+                                                 ->all();
+            $attendance->appliedConstraints()->sync($appliedConstraintIds);
+        }
         foreach ($constraints as $constraint) {
             try {
                 $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData);

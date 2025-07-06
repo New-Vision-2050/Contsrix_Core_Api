@@ -57,7 +57,7 @@ class AttendanceController extends Controller
         $mockAttendance->setRelation('user', $user);
 
         // Validate the mock attendance object against all applicable constraints.
-        $violations = $this->constraintService->validateAttendance($mockAttendance, $request->all());
+        $violations = $this->constraintService->validateAttendance($mockAttendance, $request->all(),true);
         // If any blocking violations are found, stop the process and return an error.
         if (!empty($violations)) {
             return Json::error(

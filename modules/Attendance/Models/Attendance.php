@@ -613,4 +613,13 @@ class Attendance extends Model implements Auditable
         // Save changes
         return $this->save();
     }
+    public function appliedConstraints()
+    {
+        return $this->belongsToMany(
+            AttendanceConstraint::class,
+            'applied_attendance_constraints',
+            'attendance_id',
+            'constraint_id'
+        );
+    }
 }
