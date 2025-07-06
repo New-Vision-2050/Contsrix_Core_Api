@@ -12,14 +12,18 @@ use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\DTO\ClockOutDTO;
+use Modules\Attendance\DTO\GeolocationDTO;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Modules\Attendance\Services\LocationEnhancementService;
 
 class AttendanceService
 {
     public function __construct(
         private AttendanceRepository $attendanceRepository,
-    ) {}
+        private LocationEnhancementService $locationEnhancementService,
+    ) {
+    }
 
     /**
      * Clock in employee
@@ -45,7 +49,22 @@ class AttendanceService
             'status' => 'active'
         ];
 
-        return $this->attendanceRepository->create($attendanceData);
+        $attendance = $this->attendanceRepository->create($attendanceData);
+
+        // Enhance location data if available
+        if ($this->locationEnhancementService && $attendance->clock_in_location) {
+            try {
+                $this->locationEnhancementService->enhanceLocationData($attendance);
+            } catch (\Exception $e) {
+                // Log but continue even if enhancement fails
+                \Illuminate\Support\Facades\Log::error('Error enhancing clock-in location', [
+                    'attendance_id' => $attendance->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return $attendance;
     }
 
     /**
@@ -82,6 +101,20 @@ class AttendanceService
 
         $this->attendanceRepository->update($attendance->id, $updateData);
         $attendance->refresh();
+
+        // Enhance location data if available
+        if ($this->locationEnhancementService && $attendance->clock_out_location) {
+            try {
+                $this->locationEnhancementService->enhanceLocationData($attendance);
+            } catch (\Exception $e) {
+                // Log but continue even if enhancement fails
+                \Illuminate\Support\Facades\Log::error('Error enhancing clock-out location', [
+                    'attendance_id' => $attendance->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         // Calculate and save work hours
         $attendance->calculateWorkHours();
 

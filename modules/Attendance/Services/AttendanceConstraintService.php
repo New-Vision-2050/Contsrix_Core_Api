@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Services;
 
-use Modules\Attendance\Contracts\TimeConstraintServiceInterface;
-use Modules\Attendance\Contracts\LocationConstraintServiceInterface;
-use Modules\Attendance\Contracts\DeviceConstraintServiceInterface;
-use Modules\Attendance\Contracts\RoleConstraintServiceInterface;
 use Modules\Attendance\Contracts\BehavioralConstraintServiceInterface;
-use Modules\Attendance\Contracts\SecurityConstraintServiceInterface;
 use Modules\Attendance\Contracts\ComplianceConstraintServiceInterface;
+use Modules\Attendance\Contracts\DeviceConstraintServiceInterface;
+use Modules\Attendance\Contracts\LocationConstraintServiceInterface;
+use Modules\Attendance\Contracts\RoleConstraintServiceInterface;
+use Modules\Attendance\Contracts\SecurityConstraintServiceInterface;
+use Modules\Attendance\Contracts\TimeConstraintServiceInterface;
+use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Models\AttendanceConstraintViolation;
-use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Services\NotificationService;
 use Modules\User\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -25,30 +26,33 @@ use Carbon\Carbon;
  */
 class AttendanceConstraintService
 {
-    protected TimeConstraintServiceInterface $timeConstraintService;
-    protected LocationConstraintServiceInterface $locationConstraintService;
-    protected DeviceConstraintServiceInterface $deviceConstraintService;
-    protected RoleConstraintServiceInterface $roleConstraintService;
     protected BehavioralConstraintServiceInterface $behavioralConstraintService;
-    protected SecurityConstraintServiceInterface $securityConstraintService;
     protected ComplianceConstraintServiceInterface $complianceConstraintService;
+    protected DeviceConstraintServiceInterface $deviceConstraintService;
+    protected LocationConstraintServiceInterface $locationConstraintService;
+    protected RoleConstraintServiceInterface $roleConstraintService;
+    protected SecurityConstraintServiceInterface $securityConstraintService;
+    protected TimeConstraintServiceInterface $timeConstraintService;
+    protected NotificationService $notificationService;
 
     public function __construct(
-        TimeConstraintServiceInterface $timeConstraintService,
-        LocationConstraintServiceInterface $locationConstraintService,
-        DeviceConstraintServiceInterface $deviceConstraintService,
-        RoleConstraintServiceInterface $roleConstraintService,
         BehavioralConstraintServiceInterface $behavioralConstraintService,
+        ComplianceConstraintServiceInterface $complianceConstraintService,
+        DeviceConstraintServiceInterface $deviceConstraintService,
+        LocationConstraintServiceInterface $locationConstraintService,
+        RoleConstraintServiceInterface $roleConstraintService,
         SecurityConstraintServiceInterface $securityConstraintService,
-        ComplianceConstraintServiceInterface $complianceConstraintService
+        TimeConstraintServiceInterface $timeConstraintService,
+        NotificationService $notificationService = null,
     ) {
-        $this->timeConstraintService = $timeConstraintService;
-        $this->locationConstraintService = $locationConstraintService;
-        $this->deviceConstraintService = $deviceConstraintService;
-        $this->roleConstraintService = $roleConstraintService;
         $this->behavioralConstraintService = $behavioralConstraintService;
-        $this->securityConstraintService = $securityConstraintService;
         $this->complianceConstraintService = $complianceConstraintService;
+        $this->deviceConstraintService = $deviceConstraintService;
+        $this->locationConstraintService = $locationConstraintService;
+        $this->roleConstraintService = $roleConstraintService;
+        $this->securityConstraintService = $securityConstraintService;
+        $this->timeConstraintService = $timeConstraintService;
+        $this->notificationService = $notificationService ?? app(NotificationService::class);
     }
 
     /**
@@ -104,13 +108,13 @@ class AttendanceConstraintService
         $userBranchId = $userBranch ? (string) $userBranch->id : null;
 
         $constraint = AttendanceConstraint::where('company_id', $user->company_id)
-    ->where(function ($query) use ($user, $userBranchId) {
+            ->where(function ($query) use ($user, $userBranchId) {
                 $query->where(function ($q) {
                     $q->whereNull('user_id')
-                      ->where(function ($subQ) {
-                          $subQ->whereNull('branch_ids')
-                               ->orWhereJsonLength('branch_ids', 0);
-                      });
+                        ->where(function ($subQ) {
+                            $subQ->whereNull('branch_ids')
+                                ->orWhereJsonLength('branch_ids', 0);
+                        });
                 })
                 ->orWhere('user_id', $user->id);
                 $query->when($userBranchId, function ($q) use ($userBranchId) {
@@ -144,7 +148,7 @@ class AttendanceConstraintService
                 return $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
 
             case AttendanceConstraint::TYPE_DEVICE:
-                return $this->deviceConstraintService->validateDeviceConstraint($attendance,$config);
+                return $this->deviceConstraintService->validateDeviceConstraint($attendance, $config);
 
             case AttendanceConstraint::TYPE_ROLE:
                 return $this->roleConstraintService->validateRoleConstraint($attendance, $config);
@@ -239,7 +243,7 @@ class AttendanceConstraintService
      */
     public function createViolationRecord(Attendance $attendance, AttendanceConstraint $constraint, array $violationDetails): AttendanceConstraintViolation
     {
-        return AttendanceConstraintViolation::create([
+        $violation = AttendanceConstraintViolation::create([
             'attendance_id' => $attendance->id,
             'constraint_id' => $constraint->id,
             'user_id' => $attendance->user_id,
@@ -251,6 +255,18 @@ class AttendanceConstraintService
             'status' => 'pending',
             'detected_at' => now(),
         ]);
+
+        // Send real-time notification to managers
+        try {
+            $this->notificationService->notifyViolation($violation);
+        } catch (\Exception $e) {
+            Log::error('Failed to send violation notification', [
+                'violation_id' => $violation->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return $violation;
     }
 
     /**
@@ -298,6 +314,16 @@ class AttendanceConstraintService
             'resolved_by' => $resolvedBy,
             'resolved_at' => now(),
         ]);
+
+        // Notify about resolution
+        try {
+            $this->notificationService->notifyResolvedViolation($violation);
+        } catch (\Exception $e) {
+            Log::error('Failed to send resolution notification', [
+                'violation_id' => $violation->id,
+                'error' => $e->getMessage()
+            ]);
+        }
 
         return true;
     }
@@ -488,7 +514,7 @@ class AttendanceConstraintService
      */
     public function createViolation(Attendance $attendance, AttendanceConstraint $constraint, array $violationData): AttendanceConstraintViolation
     {
-        return AttendanceConstraintViolation::create([
+        $violation = AttendanceConstraintViolation::create([
             'attendance_id' => $attendance->id,
             'constraint_id' => $constraint->id,
             'user_id' => $attendance->user_id,
@@ -500,5 +526,17 @@ class AttendanceConstraintService
             'status' => 'pending',
             'detected_at' => now(),
         ]);
+
+        // Send real-time notification to managers
+        try {
+            $this->notificationService->notifyViolation($violation);
+        } catch (\Exception $e) {
+            Log::error('Failed to send violation notification', [
+                'violation_id' => $violation->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return $violation;
     }
 }
