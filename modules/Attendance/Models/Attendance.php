@@ -58,6 +58,8 @@ class Attendance extends Model implements Auditable
         'user_agent',
         'approved_by',
         'approved_at',
+        'verification_data',
+        'location_tracking'
     ];
 
     protected $casts = [
@@ -79,6 +81,8 @@ class Attendance extends Model implements Auditable
         'is_early_departure' => 'boolean',
         'clock_in_location' => 'array',
         'clock_out_location' => 'array',
+        'verification_data' => 'array',
+        'location_tracking' => 'array',
     ];
 
     protected $dates = [
@@ -125,7 +129,7 @@ class Attendance extends Model implements Auditable
             throw new \InvalidArgumentException('Invalid status');
         }
 
-        if (!isset(self::STATUS_TRANSITIONS[$this->status]) || 
+        if (!isset(self::STATUS_TRANSITIONS[$this->status]) ||
             !in_array($newStatus, self::STATUS_TRANSITIONS[$this->status], true)) {
             throw new \InvalidArgumentException(
                 "Cannot transition from {$this->status} to {$newStatus}"
@@ -199,7 +203,7 @@ class Attendance extends Model implements Auditable
         if ($activeBreak) {
             return true;
         }
-        
+
         // No longer check legacy break fields
         return false;
     }
@@ -210,7 +214,7 @@ class Attendance extends Model implements Auditable
     public function calculateTotalBreakMinutes(): int
     {
         $totalMinutes = 0;
-        
+
         // Add minutes from completed breaks
         foreach ($this->completedBreaks() as $break) {
             // If duration_minutes is not set, calculate it from start/end time
@@ -219,7 +223,7 @@ class Attendance extends Model implements Auditable
             }
             $totalMinutes += $break->duration_minutes ?? 0;
         }
-        
+
         return $totalMinutes;
     }
 
@@ -249,23 +253,23 @@ class Attendance extends Model implements Auditable
      */
     public function validateTimes(): void
     {
-        if ($this->clock_in_time && $this->clock_out_time && 
+        if ($this->clock_in_time && $this->clock_out_time &&
             Carbon::parse($this->clock_out_time)->lt(Carbon::parse($this->clock_in_time))) {
             throw new \InvalidArgumentException('Clock out time cannot be before clock in time');
         }
 
         foreach ($this->breaks as $break) {
-            if ($break->start_time && $break->end_time && 
+            if ($break->start_time && $break->end_time &&
                 Carbon::parse($break->end_time)->lt(Carbon::parse($break->start_time))) {
                 throw new \InvalidArgumentException('Break end time cannot be before start time');
             }
 
-            if ($break->start_time && $this->clock_in_time && 
+            if ($break->start_time && $this->clock_in_time &&
                 Carbon::parse($break->start_time)->lt(Carbon::parse($this->clock_in_time))) {
                 throw new \InvalidArgumentException('Break cannot start before clock in time');
             }
 
-            if ($break->end_time && $this->clock_out_time && 
+            if ($break->end_time && $this->clock_out_time &&
                 Carbon::parse($break->end_time)->gt(Carbon::parse($this->clock_out_time))) {
                 throw new \InvalidArgumentException('Break cannot end after clock out time');
             }
@@ -278,16 +282,16 @@ class Attendance extends Model implements Auditable
     public function validateLocation(): void
     {
         if ($this->clock_in_location) {
-            if (!is_array($this->clock_in_location) || 
-                !isset($this->clock_in_location['latitude']) || 
+            if (!is_array($this->clock_in_location) ||
+                !isset($this->clock_in_location['latitude']) ||
                 !isset($this->clock_in_location['longitude'])) {
                 throw new \InvalidArgumentException('Invalid clock in location format');
             }
         }
 
         if ($this->clock_out_location) {
-            if (!is_array($this->clock_out_location) || 
-                !isset($this->clock_out_location['latitude']) || 
+            if (!is_array($this->clock_out_location) ||
+                !isset($this->clock_out_location['latitude']) ||
                 !isset($this->clock_out_location['longitude'])) {
                 throw new \InvalidArgumentException('Invalid clock out location format');
             }
@@ -327,7 +331,7 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to filter by date range.
-     * 
+     *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param string|Carbon $startDate
      * @param string|Carbon $endDate
@@ -341,7 +345,7 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to filter by user.
-     * 
+     *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param string $userId
      * @return \Illuminate\Database\Eloquent\Builder
@@ -353,7 +357,7 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to filter by company.
-     * 
+     *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param string $companyId
      * @return \Illuminate\Database\Eloquent\Builder
@@ -365,7 +369,7 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to get active attendance (not clocked out yet).
-     * 
+     *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
@@ -376,7 +380,7 @@ class Attendance extends Model implements Auditable
 
     /**
      * Scope to get completed attendance records.
-     * 
+     *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
@@ -428,8 +432,9 @@ class Attendance extends Model implements Auditable
     /**
      * Calculate total work hours and update the model.
      */
-    public function calculateWorkHours(): float
+       public function calculateWorkHours(): float
     {
+        // 1. Pre-condition check
         if (!$this->clock_in_time || !$this->clock_out_time) {
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
@@ -438,49 +443,74 @@ class Attendance extends Model implements Auditable
             return 0.0;
         }
 
-        // Get company's timezone
-        $timezone = $this->company?->timezone ?? config('app.timezone');
-        
-        // Parse times with timezone
-        $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
-        $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
+        // 2. Timezone setup
+        $timezone = $this->company->timezone ?? config('app.timezone');
+        $clockIn = $this->clock_in_time->setTimezone($timezone);
+        $clockOut = $this->clock_out_time->setTimezone($timezone);
 
-        // Calculate total time in minutes
-        $totalMinutes = $clockOut->diffInMinutes($clockIn);
-
-        // Calculate break time
-        $breakMinutes = 0;
-        foreach ($this->completedBreaks() as $break) {
-            if ($break->start_time && $break->end_time) {
-                $breakStart = Carbon::parse($break->start_time)->setTimezone($timezone);
-                $breakEnd = Carbon::parse($break->end_time)->setTimezone($timezone);
-                $breakMinutes += $breakEnd->diffInMinutes($breakStart);
-            }
+        // 3. Validity check
+        if ($clockOut->isBefore($clockIn)) {
+            // If data is invalid, reset and save.
+            $this->total_work_hours = 0.0;
+            $this->total_break_hours = 0.0;
+            $this->overtime_hours = 0.0;
+            $this->save();
+            return 0.0;
         }
 
-        // Calculate actual work hours (excluding breaks)
-        $workMinutes = $totalMinutes - $breakMinutes;
-        $workHours = round($workMinutes / 60, 2);
-        
-        // Update model values
-        $this->total_work_hours = $workHours;
+        // --- CALCULATIONS ---
+
+        // 4. Calculate Total Break Duration
+        $breakMinutes = $this->calculateTotalBreakMinutes();
         $this->total_break_hours = round($breakMinutes / 60, 2);
 
-        // Calculate overtime (assuming 8 hours standard)
+        // 5. Calculate Net Work Duration
+        // Use `diffInMinutes` with `absolute` flag to ensure a positive result.
+        $totalGrossMinutes = $clockOut->diffInMinutes($clockIn, true);
+        $workMinutes = $totalGrossMinutes - $breakMinutes;
+        $workHours = $workMinutes > 0 ? round($workMinutes / 60, 2) : 0.0;
+        $this->total_work_hours = $workHours;
+
+        // 6. Calculate Overtime
         $standardHours = 8.0;
-        $this->overtime_hours = $workHours > $standardHours ? round($workHours - $standardHours, 2) : 0.0;
+        if ($workHours > $standardHours) {
+            $this->overtime_hours = round($workHours - $standardHours, 2);
+        } else {
+            $this->overtime_hours = 0.0;
+        }
 
-        // Check for late arrival (if clock in is after 9:00 AM)
-        $this->is_late = $clockIn->hour > 9 || ($clockIn->hour === 9 && $clockIn->minute > 0);
-        $this->late_minutes = $this->is_late ? $clockIn->diffInMinutes(Carbon::parse($this->clock_in_time)->setTimezone($timezone)->setHour(9)->setMinute(0)) : 0;
+        // 7. Calculate Lateness
+        // *** THE FIX FOR LATE MINUTES ***
+        // Create the scheduled start time based on the clock-in day.
+        $scheduledStartTime = $clockIn->copy()->setHour(9)->setMinute(0)->setSecond(0);
+        if ($clockIn->isAfter($scheduledStartTime)) {
+            $this->is_late = true;
+            // Calculate the difference correctly.
+            $this->late_minutes = $scheduledStartTime->diffInMinutes($clockIn, true);
+        } else {
+            $this->is_late = false;
+            $this->late_minutes = 0;
+        }
 
-        // Check for early departure (if clock out is before 5:00 PM)
-        $this->is_early_departure = $clockOut->hour < 17 || ($clockOut->hour === 17 && $clockOut->minute < 0);
-        $this->early_departure_minutes = $this->is_early_departure ? Carbon::parse($this->clock_out_time)->setTimezone($timezone)->setHour(17)->setMinute(0)->diffInMinutes($clockOut) : 0;
+        // 8. Calculate Early Departure
+        // *** THE FIX FOR EARLY DEPARTURE MINUTES ***
+        // Create the scheduled end time based on the clock-in day.
+        $scheduledEndTime = $clockIn->copy()->setHour(17)->setMinute(0)->setSecond(0);
+        if ($clockOut->isBefore($scheduledEndTime)) {
+            $this->is_early_departure = true;
+            // Calculate the difference correctly.
+            $this->early_departure_minutes = $clockOut->diffInMinutes($scheduledEndTime, true);
+        } else {
+            $this->is_early_departure = false;
+            $this->early_departure_minutes = 0;
+        }
 
-        // Validate data before saving
+        // 9. Validate data integrity before saving
+        // Note: The validate() method calls validateTimes(), which might be redundant here,
+        // but it's good for ensuring consistency.
         $this->validate();
-        
+
+        // 10. Persist all changes to the database
         $this->save();
         return $workHours;
     }
@@ -496,7 +526,7 @@ class Attendance extends Model implements Auditable
 
     /**
      * Get formatted work duration.
-     * 
+     *
      * @return string
      */
     public function getFormattedWorkDuration(): string
@@ -507,18 +537,18 @@ class Attendance extends Model implements Auditable
 
         // Get company's timezone
         $timezone = $this->company?->timezone ?? config('app.timezone');
-        
+
         // Parse times with timezone
         $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
         $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
 
         // Calculate break minutes
         $breakMinutes = $this->calculateTotalBreakMinutes();
-        
+
         // Calculate total minutes excluding breaks
         $totalMinutes = $clockOut->diffInMinutes($clockIn) - $breakMinutes;
         $totalMinutes = max(0, $totalMinutes); // Ensure we don't have negative minutes
-        
+
         $hours = intval($totalMinutes / 60);
         $minutes = $totalMinutes % 60;
 
@@ -541,7 +571,7 @@ class Attendance extends Model implements Auditable
 
         // Set clock out time to current time
         $this->clock_out_time = Carbon::now();
-        
+
         try {
             $this->validateStatusTransition(self::STATUS_COMPLETED);
             $this->status = self::STATUS_COMPLETED;
@@ -551,7 +581,7 @@ class Attendance extends Model implements Auditable
             // Force the status to completed
             $this->status = self::STATUS_COMPLETED;
         }
-        
+
         $this->shift_end_method = $method;
 
         // Append notes with timestamp
@@ -575,7 +605,7 @@ class Attendance extends Model implements Auditable
 
         // Calculate break hours first
         $this->updateTotalBreakHours();
-        
+
         // Calculate work hours after ending the shift
         $this->calculateWorkHours();
 

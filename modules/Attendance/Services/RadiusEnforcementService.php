@@ -19,20 +19,19 @@ class RadiusEnforcementService
     public function __construct(
         private AttendanceService $attendanceService
     ) {}
-    
+
     /**
      * Validate location radius enforcement constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
-     * @param AttendanceConstraint $constraint The constraint to validate against
+     * @param array $config The constraint to validate against
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
      */
-    public function validateRadiusEnforcement(Attendance $attendance, AttendanceConstraint $constraint): bool|array
+    public function validateRadiusEnforcement(Attendance $attendance, array $config): bool|array
     {
-        $config = $constraint->config;
         $branchId = $attendance->branch_id;
         $locationTracking = $attendance->location_tracking;
-        
+
         // Check if we have branch location configuration for this branch
         if (!isset($config['branch_locations'][$branchId])) {
             return [
@@ -45,7 +44,7 @@ class RadiusEnforcementService
                 ]
             ];
         }
-        
+
         // Skip validation if location tracking data is not available
         if (empty($locationTracking) || !is_array($locationTracking)) {
             return [
@@ -57,20 +56,20 @@ class RadiusEnforcementService
                 ]
             ];
         }
-        
+
         // Get branch location configuration
         $branchLocation = $config['branch_locations'][$branchId];
         $branchLat = (float)$branchLocation['latitude'];
         $branchLon = (float)$branchLocation['longitude'];
         $allowedRadius = (float)$branchLocation['radius'];
-        
+
         // Get enforcement configuration
         $enforcement = $config['enforcement'] ?? [];
         $timeThreshold = $enforcement['out_of_radius_time_threshold'] ?? 30; // Default 30 minutes
         $endShiftIfViolated = $enforcement['end_shift_if_violated'] ?? false;
         $markAbsentIfViolated = $enforcement['mark_absent_if_violated'] ?? false;
         $allowExceptions = $enforcement['allow_temporary_exceptions'] ?? false;
-        
+
         // Check for temporary exceptions
         if ($allowExceptions && !empty($attendance->exceptions)) {
             foreach ($attendance->exceptions as $exception) {
@@ -78,7 +77,7 @@ class RadiusEnforcementService
                     $exceptionStart = Carbon::parse($exception['start_time']);
                     $exceptionEnd = Carbon::parse($exception['end_time']);
                     $now = Carbon::now();
-                    
+
                     // If current time is within exception period, use temporary location instead
                     if ($now->between($exceptionStart, $exceptionEnd)) {
                         // Check if employee is within temporary location radius
@@ -87,19 +86,19 @@ class RadiusEnforcementService
                             $tempLat = (float)$tempLocation['latitude'];
                             $tempLon = (float)$tempLocation['longitude'];
                             $tempRadius = (float)$tempLocation['radius'];
-                            
+
                             // Check last known location against temporary location
                             $lastLocation = end($locationTracking);
                             $userLat = (float)$lastLocation['latitude'];
                             $userLon = (float)$lastLocation['longitude'];
-                            
+
                             $distance = $this->calculateDistance(
-                                $userLat, 
-                                $userLon, 
-                                $tempLat, 
+                                $userLat,
+                                $userLon,
+                                $tempLat,
                                 $tempLon
                             ) * 1000; // Convert to meters
-                            
+
                             // If within temporary location radius, no violation
                             if ($distance <= $tempRadius) {
                                 return false;
@@ -112,32 +111,32 @@ class RadiusEnforcementService
                 }
             }
         }
-        
+
         // Track time spent outside radius
         $timeOutsideRadius = 0;
         $firstOutsideTime = null;
         $lastInsideTime = null;
         $currentlyOutside = false;
         $outsideLocations = [];
-        
+
         // Sort location tracking data by timestamp
         usort($locationTracking, function($a, $b) {
             return strtotime($a['timestamp']) - strtotime($b['timestamp']);
         });
-        
+
         // Analyze location tracking data
         foreach ($locationTracking as $trackPoint) {
             $userLat = (float)$trackPoint['latitude'];
             $userLon = (float)$trackPoint['longitude'];
             $timestamp = Carbon::parse($trackPoint['timestamp']);
-            
+
             $distance = $this->calculateDistance(
-                $userLat, 
-                $userLon, 
-                $branchLat, 
+                $userLat,
+                $userLon,
+                $branchLat,
                 $branchLon
             ) * 1000; // Convert to meters
-            
+
             if ($distance > $allowedRadius) {
                 // Employee is outside allowed radius
                 $outsideLocations[] = [
@@ -146,7 +145,7 @@ class RadiusEnforcementService
                     'timestamp' => $timestamp->toDateTimeString(),
                     'distance' => $distance
                 ];
-                
+
                 if (!$currentlyOutside) {
                     // Just went outside radius
                     $firstOutsideTime = $timestamp;
@@ -163,28 +162,28 @@ class RadiusEnforcementService
                 $lastInsideTime = $timestamp;
             }
         }
-        
+
         // If still outside, calculate time from first outside to now
         if ($currentlyOutside && $firstOutsideTime) {
             $timeOutsideRadius += $firstOutsideTime->diffInMinutes(Carbon::now());
         }
-        
+
         // Check if time outside radius exceeds threshold
         if ($timeOutsideRadius > $timeThreshold) {
             // Violation detected - time outside radius exceeds threshold
-            
+
             // If configured to end shift automatically
             if ($endShiftIfViolated) {
                 // End the shift automatically using the AttendanceService
                 $this->attendanceService->endShiftAutomatically(
                     $attendance->id,
                     'auto_radius_enforcement',
-                    'Shift automatically ended due to being outside allowed radius for ' . 
+                    'Shift automatically ended due to being outside allowed radius for ' .
                     $timeOutsideRadius . ' minutes (threshold: ' . $timeThreshold . ' minutes)',
                     $markAbsentIfViolated // Pass the mark absent configuration directly to the service
                 );
             }
-            
+
             // Return violation details
             return [
                 'constraint_type' => AttendanceConstraint::LOCATION_RADIUS_ENFORCEMENT,
@@ -205,14 +204,14 @@ class RadiusEnforcementService
                 ]
             ];
         }
-        
+
         // No violation
         return false;
     }
-    
+
     /**
      * Calculate distance between two geographic points using Haversine formula.
-     * 
+     *
      * @param float $lat1 Latitude of first point
      * @param float $lon1 Longitude of first point
      * @param float $lat2 Latitude of second point
@@ -222,16 +221,16 @@ class RadiusEnforcementService
     private function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
     {
         $earthRadius = 6371; // Earth's radius in kilometers
-        
+
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
-        
+
         $a = sin($dLat / 2) * sin($dLat / 2) +
              cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
              sin($dLon / 2) * sin($dLon / 2);
-        
+
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-        
+
         return $earthRadius * $c;
     }
 }

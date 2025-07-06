@@ -81,10 +81,10 @@ class AttendanceService
         ];
 
         $this->attendanceRepository->update($attendance->id, $updateData);
-        
+        $attendance->refresh();
         // Calculate and save work hours
         $attendance->calculateWorkHours();
-        
+
         return $attendance->refresh();
     }
 
@@ -101,7 +101,7 @@ class AttendanceService
         if (is_string($userId)) {
             $userId = Uuid::fromString($userId);
         }
-        
+
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
 
         if (!$attendance) {
@@ -131,7 +131,7 @@ class AttendanceService
         if (!empty($updateData)) {
             return $this->attendanceRepository->updateAttendance(Uuid::fromString($attendance->id), $updateData);
         }
-        
+
         return $attendance->refresh();
     }
 
@@ -148,7 +148,7 @@ class AttendanceService
         if (is_string($userId)) {
             $userId = Uuid::fromString($userId);
         }
-        
+
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
 
         if (!$attendance) {
@@ -168,7 +168,7 @@ class AttendanceService
                 $activeBreak->notes = ($activeBreak->notes ? $activeBreak->notes . "\n" : '') . "End: " . $notes;
             }
             $activeBreak->save();
-            
+
             // Update total break hours in attendance record
             $attendance->updateTotalBreakHours();
         }
@@ -177,7 +177,7 @@ class AttendanceService
         $updateData = [
             'total_break_hours' => $attendance->total_break_hours,
         ];
-        
+
         if ($notes) {
             $updateData['notes'] = $attendance->notes . "\nBreak ended: " . $notes;
         }
@@ -275,9 +275,9 @@ class AttendanceService
     /**
      * Approve attendance record
      */
-    public function approveAttendance(string $attendanceId, string $approvedBy, ?string $notes = null): Attendance
+    public function approveAttendance(UuidInterface $attendanceId, UuidInterface $approvedBy, ?string $notes = null): Attendance
     {
-        $uuid = Uuid::fromString($attendanceId);
+        $uuid = $attendanceId;
         $attendance = $this->attendanceRepository->getAttendance($uuid);
 
         if ($attendance->status === 'approved') {
@@ -305,9 +305,9 @@ class AttendanceService
     /**
      * Reject attendance record
      */
-    public function rejectAttendance(string $attendanceId, string $rejectedBy, string $reason): Attendance
+    public function rejectAttendance(UuidInterface $attendanceId, UuidInterface $rejectedBy, string $reason): Attendance
     {
-        $uuid = Uuid::fromString($attendanceId);
+        $uuid = $attendanceId;
         $attendance = $this->attendanceRepository->getAttendance($uuid);
 
         if ($attendance->status === 'approved') {
@@ -342,7 +342,7 @@ class AttendanceService
     /**
      * Get team attendance with filtering and pagination (for supervisors)
      */
-    public function getTeamAttendance(string $supervisorId, array $filters, ?int $page = null, ?int $perPage = 10): array
+    public function getTeamAttendance(string $supervisorId, array $filters, ?int $page = 1, ?int $perPage = 10): array
     {
         // Add supervisor's team filter logic here if needed
         // For now, just use the filters as provided
@@ -394,7 +394,7 @@ class AttendanceService
         // Validate clock out time
         $clockOutTime = Carbon::now();
         $clockInTime = Carbon::parse($attendance->clock_in_time);
-        
+
         if ($clockOutTime->lt($clockInTime)) {
             throw AttendanceException::invalidClockOutTime();
         }
@@ -440,13 +440,13 @@ class AttendanceService
         if (is_string($attendanceId)) {
             $attendanceId = Uuid::fromString($attendanceId);
         }
-        
+
         $attendance = $this->attendanceRepository->getAttendanceById($attendanceId);
-        
+
         if (!$attendance) {
             return [];
         }
-        
+
         $breaks = [];
         foreach ($attendance->breaks as $break) {
             $breaks[] = [
@@ -459,7 +459,7 @@ class AttendanceService
                 'is_active' => $break->isActive(),
             ];
         }
-        
+
         return $breaks;
     }
 }

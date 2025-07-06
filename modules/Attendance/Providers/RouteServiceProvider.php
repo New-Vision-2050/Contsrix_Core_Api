@@ -37,6 +37,7 @@ class RouteServiceProvider extends ServiceProvider
     {
         $this->mapApiRoutes();
         $this->mapConstraintRoutes();
+        $this->mapHierarchyRoutes();
     }
 
     /**
@@ -67,5 +68,12 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware(['api', 'auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])
             ->namespace($this->moduleNamespace)
             ->group(module_path('Attendance', 'Routes/attendance_constraints.php'));
+    }
+        protected function mapHierarchyRoutes()
+    {
+        Route::prefix('api/v1')
+            ->middleware(['api', 'auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])
+            ->namespace($this->moduleNamespace)
+            ->group(module_path('Attendance', 'Routes/management_hierarchy.php'));
     }
 }

@@ -47,13 +47,13 @@ class LocationConstraintServiceTest extends TestCase
         // Same coordinates should return 0 distance
         $point1 = ['latitude' => 34.0522, 'longitude' => -118.2437];
         $point2 = ['latitude' => 34.0522, 'longitude' => -118.2437];
-        
+
         $distance = $this->callProtectedMethod($this->service, 'calculateDistance', [$point1, $point2]);
-        
+
         // Distance should be 0 meters for identical coordinates
         $this->assertEquals(0, $distance);
     }
-    
+
     /**
      * Test distance calculation - known distance
      */
@@ -62,14 +62,14 @@ class LocationConstraintServiceTest extends TestCase
         // Los Angeles to San Francisco (about 550-600km)
         $losAngeles = ['latitude' => 34.0522, 'longitude' => -118.2437];
         $sanFrancisco = ['latitude' => 37.7749, 'longitude' => -122.4194];
-        
+
         $distance = $this->callProtectedMethod($this->service, 'calculateDistance', [$losAngeles, $sanFrancisco]);
-        
+
         // Distance should be approximately 550-600 km (550000-600000 meters)
         $this->assertGreaterThan(550000, $distance);
         $this->assertLessThan(600000, $distance);
     }
-    
+
     /**
      * Test distance calculation - within radius
      */
@@ -78,13 +78,13 @@ class LocationConstraintServiceTest extends TestCase
         // Points that are 800 meters apart
         $officeLocation = ['latitude' => 34.0522, 'longitude' => -118.2437];
         $userLocation = ['latitude' => 34.0522, 'longitude' => -118.2529]; // About 800m west
-        
+
         $distance = $this->callProtectedMethod($this->service, 'calculateDistance', [$officeLocation, $userLocation]);
-        
+
         // Check if within 1000m radius
         $this->assertLessThan(1000, $distance);
     }
-    
+
     /**
      * Test location constraint validation - within radius
      */
@@ -95,7 +95,7 @@ class LocationConstraintServiceTest extends TestCase
         $attendance->method('__get')->willReturnMap([
             ['location', ['latitude' => 34.0522, 'longitude' => -118.2437]] // User's location
         ]);
-        
+
         // Create mock constraint with geofencing enabled
         $constraint = $this->createMock(AttendanceConstraint::class);
         $constraint->method('__get')->willReturnMap([
@@ -106,21 +106,21 @@ class LocationConstraintServiceTest extends TestCase
                 'allowed_locations' => [
                     [
                         'name' => 'Office',
-                        'latitude' => 34.0522, 
+                        'latitude' => 34.0522,
                         'longitude' => -118.2437,
                         'radius' => 100 // 100 meters radius
                     ]
                 ]
             ]]
         ]);
-        
+
         // Call the service method directly
         $result = $this->service->validateLocationConstraint($attendance, $constraint);
-        
+
         // No violation should be detected when user is within radius
         $this->assertFalse($result);
     }
-    
+
     /**
      * Test location constraint validation - outside radius
      */
@@ -131,7 +131,7 @@ class LocationConstraintServiceTest extends TestCase
         $attendance->method('__get')->willReturnMap([
             ['location', ['latitude' => 34.0622, 'longitude' => -118.2537]] // About 1.2 km away from office
         ]);
-        
+
         // Create mock constraint with geofencing enabled
         $constraint = $this->createMock(AttendanceConstraint::class);
         $constraint->method('__get')->willReturnMap([
@@ -142,17 +142,17 @@ class LocationConstraintServiceTest extends TestCase
                 'allowed_locations' => [
                     [
                         'name' => 'Office',
-                        'latitude' => 34.0522, 
+                        'latitude' => 34.0522,
                         'longitude' => -118.2437,
                         'radius' => 1000 // 1 km radius
                     ]
                 ]
             ]]
         ]);
-        
+
         // Call the service method directly
         $result = $this->service->validateLocationConstraint($attendance, $constraint);
-        
+
         // Verify violation was detected with correct details
         $this->assertIsArray($result);
         $this->assertEquals(AttendanceConstraint::LOCATION_GEOFENCING, $result['constraint_type']);
@@ -161,7 +161,7 @@ class LocationConstraintServiceTest extends TestCase
         $this->assertArrayHasKey('nearest_allowed_location', $result['details']);
         $this->assertArrayHasKey('distance', $result['details']);
     }
-    
+
     /**
      * Test IP range validation - exact IP match
      */
@@ -172,7 +172,7 @@ class LocationConstraintServiceTest extends TestCase
         $attendance->method('__get')->willReturnMap([
             ['ip_address', '192.168.1.25']
         ]);
-        
+
         // Create mock constraint with IP restriction
         $constraint = $this->createMock(AttendanceConstraint::class);
         $constraint->method('__get')->willReturnMap([
@@ -180,14 +180,14 @@ class LocationConstraintServiceTest extends TestCase
             ['subtype', AttendanceConstraint::LOCATION_IP_RESTRICTION],
             ['config', ['allowed_ip_ranges' => ['192.168.1.25']]]
         ]);
-        
+
         // Call the service method directly
         $result = $this->service->validateLocationConstraint($attendance, $constraint);
-        
+
         // No violation should be detected for exact IP match
         $this->assertFalse($result);
     }
-    
+
     /**
      * Test IP range validation - CIDR notation match
      */
@@ -198,7 +198,7 @@ class LocationConstraintServiceTest extends TestCase
         $attendance->method('__get')->willReturnMap([
             ['ip_address', '192.168.1.5']
         ]);
-        
+
         // Create mock constraint with CIDR IP restriction
         $constraint = $this->createMock(AttendanceConstraint::class);
         $constraint->method('__get')->willReturnMap([
@@ -206,14 +206,14 @@ class LocationConstraintServiceTest extends TestCase
             ['subtype', AttendanceConstraint::LOCATION_IP_RESTRICTION],
             ['config', ['allowed_ip_ranges' => ['192.168.1.0/24']]]
         ]);
-        
+
         // Call the service method directly
         $result = $this->service->validateLocationConstraint($attendance, $constraint);
-        
+
         // No violation should be detected for IP within CIDR range
         $this->assertFalse($result);
     }
-    
+
     /**
      * Test IP range validation - CIDR notation no match
      */
@@ -224,7 +224,7 @@ class LocationConstraintServiceTest extends TestCase
         $attendance->method('__get')->willReturnMap([
             ['ip_address', '10.0.0.1']
         ]);
-        
+
         // Create mock constraint with CIDR IP restriction
         $constraint = $this->createMock(AttendanceConstraint::class);
         $constraint->method('__get')->willReturnMap([
@@ -232,10 +232,10 @@ class LocationConstraintServiceTest extends TestCase
             ['subtype', AttendanceConstraint::LOCATION_IP_RESTRICTION],
             ['config', ['allowed_ip_ranges' => ['192.168.1.0/24']]]
         ]);
-        
+
         // Call the service method directly
         $result = $this->service->validateLocationConstraint($attendance, $constraint);
-        
+
         // Verify violation was detected with correct details
         $this->assertIsArray($result);
         $this->assertEquals(AttendanceConstraint::LOCATION_IP_RESTRICTION, $result['constraint_type']);
@@ -243,7 +243,7 @@ class LocationConstraintServiceTest extends TestCase
         $this->assertEquals('10.0.0.1', $result['details']['ip_address']);
         $this->assertArrayHasKey('allowed_ranges', $result['details']);
     }
-    
+
     /**
      * Test branch location validation - user within branch location radius
      */
@@ -255,7 +255,7 @@ class LocationConstraintServiceTest extends TestCase
             ['location', ['latitude' => 40.7128, 'longitude' => -74.0060]], // NYC coordinates
             ['branch_id', 'branch-1']
         ]);
-        
+
         // Create mock constraint with branch location
         $constraint = $this->createMock(AttendanceConstraint::class);
         $constraint->method('__get')->willReturnMap([
@@ -272,14 +272,14 @@ class LocationConstraintServiceTest extends TestCase
                 ]
             ]]
         ]);
-        
+
         // Call the service method directly
         $result = $this->service->validateLocationConstraint($attendance, $constraint);
-        
+
         // No violation should be detected for user at branch location
         $this->assertFalse($result);
     }
-    
+
     /**
      * Test branch location validation - user outside branch radius
      */
@@ -291,7 +291,7 @@ class LocationConstraintServiceTest extends TestCase
             ['location', ['latitude' => 40.7300, 'longitude' => -74.0200]], // ~2km from NYC office
             ['branch_id', 'branch-1']
         ]);
-        
+
         // Create mock constraint with branch location
         $constraint = $this->createMock(AttendanceConstraint::class);
         $constraint->method('__get')->willReturnMap([
@@ -308,10 +308,10 @@ class LocationConstraintServiceTest extends TestCase
                 ]
             ]]
         ]);
-        
+
         // Call the service method directly
         $result = $this->service->validateLocationConstraint($attendance, $constraint);
-        
+
         // Verify violation was detected with correct details
         $this->assertIsArray($result);
         $this->assertEquals(AttendanceConstraint::LOCATION_BRANCH, $result['constraint_type']);

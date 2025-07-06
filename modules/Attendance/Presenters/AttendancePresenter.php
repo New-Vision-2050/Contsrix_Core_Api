@@ -20,7 +20,7 @@ class AttendancePresenter extends AbstractPresenter
     {
         return [
 
-            'id' => $this->attendance->id ? (string)$this->attendance->id : null,
+             'id' => $this->attendance->id ? (string)$this->attendance->id : null,
             'user_id' => $this->attendance->user_id ? (string)$this->attendance->user_id : null,
             'company_id' => $this->attendance->company_id ? (string)$this->attendance->company_id : null,
 
@@ -34,7 +34,7 @@ class AttendancePresenter extends AbstractPresenter
             'overtime_hours' => (float) $this->attendance->overtime_hours,
 
             // Status flags
-            'is_late' => $this->attendance->is_late,
+            'is_late' => (int) $this->attendance->is_late,
             'is_early_departure' => $this->attendance->is_early_departure,
             'late_minutes' => $this->attendance->late_minutes,
             'early_departure_minutes' => $this->attendance->early_departure_minutes,

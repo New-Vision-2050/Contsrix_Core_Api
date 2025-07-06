@@ -93,7 +93,7 @@ class ClockInRequest extends FormRequest
 
         // Add request metadata
         $this->merge([
-            'ip_address' => $this->ip(),
+           // 'ip_address' => $this->ip(),
             'user_agent' => $this->userAgent(),
             'user_id' => auth()->id(),
             'company_id' => auth()->user()->company_id ?? tenant('id')
