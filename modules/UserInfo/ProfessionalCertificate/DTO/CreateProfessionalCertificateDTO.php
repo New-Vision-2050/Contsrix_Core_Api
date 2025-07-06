@@ -12,12 +12,12 @@ class CreateProfessionalCertificateDTO
     public function __construct(
         public string $company_id,
         public string $global_id,
-        public ?string $professional_bodie_id,
-        public ?string $accreditation_name,
-        public ?string $accreditation_number,
-        public ?string $accreditation_degree,
-        public ?string $date_obtain,
-        public ?string $date_end,
+        public string $professional_bodie_id,
+        public string $accreditation_name,
+        public string $accreditation_number,
+        public string $accreditation_degree,
+        public string $date_obtain,
+        public string $date_end,
         public ?UploadedFile $file
     ) {
     }

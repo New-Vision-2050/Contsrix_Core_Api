@@ -16,10 +16,6 @@ class UpdateProfessionalCertificateHandler
 
     public function handle(UpdateProfessionalCertificateCommand $updateProfessionalCertificateCommand)
     {
-<<<<<<< HEAD
         $this->repository->updateProfessionalCertificate($updateProfessionalCertificateCommand->getId(), $updateProfessionalCertificateCommand->toArray(), $updateProfessionalCertificateCommand->file);
-=======
-        $this->repository->updateProfessionalCertificate($updateProfessionalCertificateCommand->getId(), $updateProfessionalCertificateCommand->toArray());
->>>>>>> 7be6c72c (merge with stage (first version ))
     }
 }

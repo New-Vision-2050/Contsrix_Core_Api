@@ -19,11 +19,7 @@ class ProfessionalCertificateCRUDService
 
     public function create(CreateProfessionalCertificateDTO $createProfessionalCertificateDTO): ProfessionalCertificate
     {
-<<<<<<< HEAD
          return $this->repository->createProfessionalCertificate($createProfessionalCertificateDTO->toArray(), $createProfessionalCertificateDTO->file);
-=======
-         return $this->repository->createProfessionalCertificate($createProfessionalCertificateDTO->toArray());
->>>>>>> 7be6c72c (merge with stage (first version ))
     }
 
     public function list(UuidInterface $companyId,UuidInterface $globalId,int $page = 1, int $perPage = 10)//: array

@@ -11,12 +11,12 @@ class UpdateProfessionalCertificateCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private ?string $professional_bodie_id,
-        private ?string $accreditation_name,
-        private ?string $accreditation_number,
-        private ?string $accreditation_degree,
-        private ?string $date_obtain,
-        private ?string $date_end,
+        private string $professional_bodie_id,
+        private string $accreditation_name,
+        private string $accreditation_number,
+        private string $accreditation_degree,
+        private string $date_obtain,
+        private string $date_end,
         public ?UploadedFile $file
     ) {
     }
