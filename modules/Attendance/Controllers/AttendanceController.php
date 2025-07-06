@@ -224,8 +224,8 @@ class AttendanceController extends Controller
 
         $result = $this->attendanceService->getAttendanceHistory(
             $filterDTO->toArray(),
-            $filterDTO->getPage(),
-            $filterDTO->getPerPage() ?? 10
+            (int) $request->input('page',1),
+            (int) $request->input('per_page',10)
         );
 
         $presentedData = AttendancePresenter::collection($result['data']);
@@ -322,8 +322,8 @@ class AttendanceController extends Controller
         $list = $this->attendanceService->getTeamAttendance(
 Auth::id()->toString(),
             $filterDTO->toArray(), // Pass filters as the second parameter
-            $filterDTO->getPage()??1,
-            $filterDTO->getPerPage() ?? 10
+           (int) $request->input('page', 1), // Use request input for page, default to 1
+           (int) $request->input('per_page', 10) // Use request input for per_page, default to 10
         );
 
         return Json::items(AttendancePresenter::collection($list['data']), paginationSettings: $list['pagination']);

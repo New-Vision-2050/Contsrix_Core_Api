@@ -40,8 +40,8 @@ class FilterAttendanceRequest extends FormRequest
             'ip_address' => ['sometimes', 'string'],
             'late_arrival' => ['sometimes', 'boolean'],
             'early_departure' => ['sometimes', 'boolean'],
-            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'page' => ['sometimes', 'integer', 'min:1'],
+            // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 
@@ -73,7 +73,7 @@ class FilterAttendanceRequest extends FormRequest
     public function createFilterAttendanceDTO(string $companyId): FilterAttendanceDTO
     {
         $validated = $this->validated();
-        
+
         return new FilterAttendanceDTO(
             company_id: $companyId,
             user_id: $validated['user_id'] ?? null,
@@ -93,8 +93,8 @@ class FilterAttendanceRequest extends FormRequest
             ip_address: $validated['ip_address'] ?? null,
             late_arrival: $validated['late_arrival'] ?? null,
             early_departure: $validated['early_departure'] ?? null,
-            page: $validated['page'] ?? null,
-            per_page: $validated['per_page'] ?? null,
+            // page: $validated['page'] ?? null,
+            // per_page: $validated['per_page'] ?? null,
         );
     }
 }
