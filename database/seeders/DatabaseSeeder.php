@@ -21,6 +21,7 @@ use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
 use Modules\Shared\Period\Database\Seeders\PeriodSeederTableSeeder;
+use Modules\Subscription\Module\Database\Seeder\ModuleDatabaseSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksModulesSeederTableSeeder;
@@ -38,15 +39,15 @@ use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
+use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
 use Modules\Shared\TypeWorkingHour\Database\Seeders\TypeWorkingHourSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\UpdatePrivilegeModulesSeederTableSeeder;
 use Modules\Shared\AcademicQualification\Database\Seeders\AcademicQualificationSeederTableSeeder;
-use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsNewSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationssSeederTableSeeder;
+use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsNewSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
-use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder

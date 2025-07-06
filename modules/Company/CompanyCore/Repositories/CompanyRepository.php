@@ -40,6 +40,11 @@ class CompanyRepository extends BaseRepository
 
     }
 
+    public function getByIdentifierCode($identifierCode)
+    {
+        return $this->model->where("serial_no", $identifierCode)->where('is_active', 1)->firstOrFail();
+    }
+
     public function getCompany(UuidInterface $id): Company
     {
         return $this->findOneByOrFail([

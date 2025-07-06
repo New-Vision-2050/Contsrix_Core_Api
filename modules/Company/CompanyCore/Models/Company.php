@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
+use Modules\SubscriptionSystem\Subscription\Models\CompanyPackagePivot;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Stancl\Tenancy\DatabaseConfig;
@@ -20,7 +21,6 @@ use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Modules\Company\CompanyType\Models\CompanyType;
-use Modules\SubscriptionSystem\Subscription\Models\CompanyPackagePivot;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -261,7 +261,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(
-            \Modules\Subscription\Models\Package::class,
+            \Modules\Subscription\Package\Models\Package::class,
             'company_package',
             'company_id',
             'package_id'

@@ -49,7 +49,7 @@ class CompanyUserPresenter extends AbstractPresenter
             "companies" => CompanyUsersPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
             'Job_role' => '-',
             'date_appointment' => '-',
-            'branch'=>'-',
+            'branch'=>$this->companyUser->userProfessionalData?->branch != null ? $this->companyUser->userProfessionalData?->branch?->name :"-" ,
             'other_phone'=> $this->companyUser->other_phone??'-',
             'code_other_phone' => $this->companyUser->code_other_phone,
             'address' => $this->companyUser->address??'-',

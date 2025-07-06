@@ -36,7 +36,7 @@ class AdminSeedTableSeeder extends Seeder
                     'email' => 'admin@constrix-nv.com',
 
                     "currency_id"=> Country::query()->first()->id,
-                    "job_title_id"=>jobTitle::query()->first()->id,
+                    "job_title_id"=>JobTitle::query()->first()->id,
                     "country_id"=>Country::query()->first()->id,
                     "time_zone_id"=>Country::query()->first()->id,
                     "language_id"=>Language::query()->first()->id,
@@ -58,6 +58,18 @@ class AdminSeedTableSeeder extends Seeder
                 ]
             );
 
+            // Manually trigger users_count recalculation since seeder bypasses observers
+            $this->recalculateUsersCount();
         }
     //}
+
+    /**
+     * Manually recalculate users_count for all hierarchies
+     * This ensures correct counts after seeding
+     */
+    private function recalculateUsersCount(): void
+    {
+        // Use Artisan command to recalculate counts
+        \Illuminate\Support\Facades\Artisan::call('recalculate:users-count');
+    }
 }

@@ -9,13 +9,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\UserEducationalCourse\Database\factories\UserEducationalCourseFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class UserEducationalCourse extends Model
+class UserEducationalCourse extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use InteractsWithMedia;
     //use HasTranslations;
     //use SoftDeletes;
 

@@ -62,9 +62,17 @@ class ManagementHierarchyObserver
         if ($managementHierarchy->type === 'branch') {
             Branch::updateOrCreate(['management_hierarchy_id' => $managementHierarchy->id], $data);
         } elseif ($managementHierarchy->type === 'management') {
-            // Remove 'is_first_branch' as it's not in the managements table
-            unset($data['is_first_branch']);
-            Management::updateOrCreate(['management_hierarchy_id' => $managementHierarchy->id], $data);
+            // Check if this is a copied or non-copied hierarchy
+            $isNonCopied = $managementHierarchy->detail && $managementHierarchy->detail->is_copied == 0;
+
+            if ($isNonCopied) {
+                // For non-copied hierarchies: create/update in managements table
+                unset($data['is_first_branch']);
+                Management::updateOrCreate(['management_hierarchy_id' => $managementHierarchy->id], $data);
+            } else {
+                // For copied hierarchies: only update users_count in main table
+                $managementHierarchy->updateQuietly(['users_count' => $data['users_count']]);
+            }
         }
     }
 
@@ -80,7 +88,13 @@ class ManagementHierarchyObserver
         if ($type === 'branch') {
             Branch::where('management_hierarchy_id', $managementHierarchy->id)->delete();
         } elseif ($type === 'management') {
-            Management::where('management_hierarchy_id', $managementHierarchy->id)->delete();
+            // Only delete management records that were created (non-copied ones)
+            // Check if this management hierarchy had a non-copied detail when it was created
+            $hasNonCopiedRecord = Management::where('management_hierarchy_id', $managementHierarchy->id)->exists();
+
+            if ($hasNonCopiedRecord) {
+                Management::where('management_hierarchy_id', $managementHierarchy->id)->delete();
+            }
         }
     }
 
@@ -92,10 +106,19 @@ class ManagementHierarchyObserver
      */
     protected function prepareData(ManagementHierarchy $managementHierarchy): array
     {
+        // Calculate users_count from clones sum for management types
+        $usersCount = $managementHierarchy->users_count ?? 0;
+        if ($managementHierarchy->type === 'management') {
+            $usersCount = $managementHierarchy->clones->sum(function ($clone) {
+                return $clone->managementHierarchy ? ($clone->managementHierarchy->users_count ?? 0) : 0;
+            });
+        }
+
         // Ensure a UUID is generated if the related record is new
         // For updateOrCreate, if the record exists, its ID will be retained.
         // If it's new, we need a new UUID for the Branch/Management record itself.
         return [
+            "id"=> $managementHierarchy->id,
             'management_hierarchy_id' => $managementHierarchy->id, // This is the FK to the main table
             'name' => $managementHierarchy->name,
             'parent_id' => $managementHierarchy->parent_id,
@@ -109,6 +132,7 @@ class ManagementHierarchyObserver
             'longitude' => $managementHierarchy->longitude,
             'is_first_branch' => $managementHierarchy->is_first_branch??0, // Specific to branches
             'is_main' => $managementHierarchy->is_main??0,
+            'users_count' => $usersCount,
         ];
     }
 }

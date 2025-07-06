@@ -8,43 +8,28 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Company\ManagementHierarchy\DTO\CloneDepartmentDTO;
+use Modules\Company\ManagementHierarchy\Requests\CloneManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCloneService;
 
 class ManagementHierarchyCloneController extends Controller
 {
     public function __construct(
         private ManagementHierarchyCloneService $cloneService
-    ) {
+    )
+    {
     }
 
     /**
      * Clone a department from one branch to another
      *
-     * @param Request $request
      * @return JsonResponse
      */
-    public function cloneDepartment(Request $request): JsonResponse
+    public function cloneManagement(CloneManagementRequest $request)
     {
-        $request->validate([
-            'source_department_id' => 'required',
-            'target_branch_id' => 'required_without:target_parent_id',
-            'target_parent_id' => 'required_without:target_branch_id|nullable',
-            'clone_sub_departments' => 'boolean',
-            'clone_managers' => 'boolean',
-            'override_params' => 'array|nullable',
-        ]);
-
         try {
-            $dto = new CloneDepartmentDTO(
-                sourceDepartmentId: $request->input('source_department_id'),
-                targetBranchId: $request->input('target_branch_id'),
-                targetParentId: (string) $request->input('target_parent_id'),
-                cloneSubDepartments: $request->input('clone_sub_departments', true),
-                cloneManagers: $request->input('clone_managers', true),
-                overrideParams: $request->input('override_params')
-            );
+            $clonedDepartment = $this->cloneService->cloneManagement($request->createCloneManagementDTO());
 
-            $clonedDepartment = $this->cloneService->cloneDepartmentToBranch($dto);
+            
 
             return response()->json([
                 'success' => true,
@@ -118,4 +103,5 @@ class ManagementHierarchyCloneController extends Controller
             ], 500);
         }
     }
+
 }
