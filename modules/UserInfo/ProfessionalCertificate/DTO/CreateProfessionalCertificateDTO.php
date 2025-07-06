@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\ProfessionalCertificate\DTO;
 
+use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 
 class CreateProfessionalCertificateDTO
@@ -17,6 +18,7 @@ class CreateProfessionalCertificateDTO
         public string $accreditation_degree,
         public string $date_obtain,
         public string $date_end,
+        public ?UploadedFile $file
     ) {
     }
 

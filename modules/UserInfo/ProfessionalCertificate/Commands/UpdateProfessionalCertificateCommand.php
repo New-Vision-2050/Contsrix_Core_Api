@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\ProfessionalCertificate\Commands;
 
+use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 
 class UpdateProfessionalCertificateCommand
@@ -16,6 +17,7 @@ class UpdateProfessionalCertificateCommand
         private string $accreditation_degree,
         private string $date_obtain,
         private string $date_end,
+        public ?UploadedFile $file
     ) {
     }
 
