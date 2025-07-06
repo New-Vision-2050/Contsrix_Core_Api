@@ -111,7 +111,7 @@ class CompanyProfileController extends Controller
             return Json::error($e->getMessage(),httpStatus:  $e->getCode());
 
         }
-        
+
         return Json::item((new CountryStateCityPresenter($country,$state,$city,$neighborhood,$postalCode,$route,$aiSupported))->getData());
     }
 

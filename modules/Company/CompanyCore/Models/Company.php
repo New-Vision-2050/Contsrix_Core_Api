@@ -20,7 +20,7 @@ use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Modules\Company\CompanyType\Models\CompanyType;
-use Modules\SubscriptionSystem\Subscription\Models\CompanyPackagePivot;
+use Modules\Subscription\Models\CompanyPackagePivot;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -256,18 +256,5 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
             $model->serial_no = $serial;
         });
-    }
-
-    public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(
-            \Modules\Subscription\Models\Package::class,
-            'company_package',
-            'company_id',
-            'package_id'
-        )
-            ->using(CompanyPackagePivot::class)
-            ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
-            ->withTimestamps();
     }
 }
