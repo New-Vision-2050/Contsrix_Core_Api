@@ -59,7 +59,8 @@ class Attendance extends Model implements Auditable
         'approved_by',
         'approved_at',
         'verification_data',
-        'location_tracking'
+        'location_tracking',
+        'timezone'
     ];
 
     protected $casts = [

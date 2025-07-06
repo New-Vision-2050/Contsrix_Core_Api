@@ -42,7 +42,8 @@ class AttendanceService
             'notes' => $clockInDTO->getNotes(),
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
-            'status' => 'active'
+            'status' => 'active',
+            'timezone' => getTimeZoneByRequest()  ?? config('app.timezone'),
         ];
 
         return $this->attendanceRepository->create($attendanceData);
