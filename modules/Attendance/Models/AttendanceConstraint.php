@@ -458,4 +458,13 @@ class AttendanceConstraint extends Model implements Auditable
 
         return $constraints[$type] ?? [];
     }
+    public function appliedToAttendances()
+    {
+        return $this->belongsToMany(
+            Attendance::class,
+            'applied_attendance_constraints',
+            'constraint_id',
+            'attendance_id'
+        );
+    }
 }

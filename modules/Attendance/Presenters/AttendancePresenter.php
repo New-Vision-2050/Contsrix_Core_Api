@@ -90,6 +90,12 @@ class AttendancePresenter extends AbstractPresenter
             'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
             'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
             'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),
+            'applied_constraints' => $this->attendance->appliedConstraints->map(function ($constraint) {
+                return [
+                    'id' => (string)$constraint->id ?: null,
+                    'name' => $constraint->constraint_name ?: null,
+                ];
+            })->toArray(),
         ];
     }
 
@@ -169,4 +175,5 @@ class AttendancePresenter extends AbstractPresenter
             'status' => ucfirst($this->attendance->status),
         ];
     }
+
 }
