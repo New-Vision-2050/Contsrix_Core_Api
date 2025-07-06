@@ -24,7 +24,7 @@ class CreateEmploymentContractDTO
 
         public string $working_hours,
         public string $annual_leave,
-        public string $country_id,
+        public string $state_id,
         public string $right_terminate_id,
 
         public string $contract_duration_unit,
@@ -51,7 +51,7 @@ class CreateEmploymentContractDTO
 
             'working_hours' => $this->working_hours,
             'annual_leave' => $this->annual_leave,
-            'country_id' => $this->country_id,
+            'state_id' => $this->state_id,
             'right_terminate_id' => $this->right_terminate_id,
 
             'contract_duration_unit' => $this->contract_duration_unit,

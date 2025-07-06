@@ -50,6 +50,7 @@ class EmploymentContract extends Model implements HasMedia
         'working_hours',
         'annual_leave',
         'country_id',
+        'state_id',
         'right_terminate_id',//
 
         'contract_duration_unit',
