@@ -20,6 +20,7 @@ class UpdateProfessionalCertificateRequest extends FormRequest
             'accreditation_degree'=> 'required|string',
             'date_obtain'=> 'required|date',
             'date_end'=> 'required|date',
+            "file"=>"nullable|file",
         ];
     }
 public function messages(): array
@@ -45,6 +46,7 @@ public function messages(): array
             accreditation_degree: $this->get('accreditation_degree'),
             date_obtain: $this->get('date_obtain'),
             date_end: $this->get('date_end'),
+            file: $this->file('file'),
         );
     }
 }
