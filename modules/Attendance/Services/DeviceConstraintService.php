@@ -14,7 +14,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
     /**
      * Validate device constraints for attendance.
      * This is a dispatcher method that handles different types of device constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -23,38 +23,38 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
     {
         // Get constraint subtype
         $subtype = $config['subtype'] ?? '';
-        
+
         switch ($subtype) {
-            case AttendanceConstraint::DEVICE_WHITELIST:
-                return $this->validateDeviceWhitelist($attendance, $config);
-                
-            case AttendanceConstraint::DEVICE_BLACKLIST:
-                return $this->validateDeviceBlacklist($attendance, $config);
-                
-            case AttendanceConstraint::DEVICE_TYPE_RESTRICTION:
-                return $this->validateDeviceTypeRestriction($attendance, $config);
-                
-            case AttendanceConstraint::DEVICE_REGISTRATION:
-                return $this->validateDeviceRegistration($attendance, $config);
-                
-            case AttendanceConstraint::DEVICE_SECURITY_FEATURES:
-                return $this->validateDeviceSecurityFeatures($attendance, $config);
-                
+            // case AttendanceConstraint::DEVICE_WHITELIST:
+            //     return $this->validateDeviceWhitelist($attendance, $config);
+
+            // case AttendanceConstraint::DEVICE_BLACKLIST:
+            //     return $this->validateDeviceBlacklist($attendance, $config);
+
+            // case AttendanceConstraint::DEVICE_TYPE_RESTRICTION:
+            //     return $this->validateDeviceTypeRestriction($attendance, $config);
+
+            // case AttendanceConstraint::DEVICE_REGISTRATION:
+            //     return $this->validateDeviceRegistration($attendance, $config);
+
+            // case AttendanceConstraint::DEVICE_SECURITY_FEATURES:
+            //     return $this->validateDeviceSecurityFeatures($attendance, $config);
+
             case AttendanceConstraint::DEVICE_AUTHORIZED_ONLY:
                 return $this->validateAuthorizedOnly($attendance, $config);
-                
+
             case AttendanceConstraint::DEVICE_FINGERPRINTING:
                 return $this->validateFingerprinting($attendance, $config);
-                
+
             case AttendanceConstraint::DEVICE_SINGLE_POLICY:
                 return $this->validateSinglePolicy($attendance, $config);
-                
+
             case AttendanceConstraint::DEVICE_APP_RESTRICTIONS:
                 return $this->validateAppRestrictions($attendance, $config);
-                
+
             case AttendanceConstraint::DEVICE_BROWSER_RESTRICTIONS:
                 return $this->validateBrowserRestrictions($attendance, $config);
-                
+
             default:
                 return false;
         }
@@ -62,7 +62,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
 
     /**
      * Validate device whitelist constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -74,11 +74,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$whitelistEnabled) {
             return false;
         }
-        
+
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $deviceId = $deviceInfo['device_id'] ?? $attendance->device_id ?? null;
-        
+
         if (!$deviceId) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_WHITELIST,
@@ -90,10 +90,10 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         // Check against allowed devices
         $allowedDevices = $config['allowed_devices'] ?? [];
-        
+
         if (!in_array($deviceId, $allowedDevices)) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_WHITELIST,
@@ -105,13 +105,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         return false;
     }
 
     /**
      * Validate device blacklist constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -123,18 +123,18 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$blacklistEnabled) {
             return false;
         }
-        
+
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $deviceId = $deviceInfo['device_id'] ?? $attendance->device_id ?? null;
-        
+
         if (!$deviceId) {
             return false; // If no device ID, can't check blacklist
         }
-        
+
         // Check against blocked devices
         $blockedDevices = $config['blocked_devices'] ?? [];
-        
+
         if (in_array($deviceId, $blockedDevices)) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_BLACKLIST,
@@ -146,13 +146,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         return false;
     }
 
     /**
      * Validate device type restriction constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -162,7 +162,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $deviceType = $deviceInfo['device_type'] ?? $attendance->device_type ?? null;
-        
+
         if (!$deviceType) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_TYPE_RESTRICTION,
@@ -173,7 +173,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         // Check allowed device types
         if (isset($config['allowed_device_types']) && is_array($config['allowed_device_types'])) {
             if (!in_array($deviceType, $config['allowed_device_types'])) {
@@ -188,7 +188,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check blocked device types
         if (isset($config['blocked_device_types']) && is_array($config['blocked_device_types'])) {
             if (in_array($deviceType, $config['blocked_device_types'])) {
@@ -203,11 +203,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check operating system restrictions
         if (isset($config['allowed_operating_systems']) && is_array($config['allowed_operating_systems'])) {
             $operatingSystem = $deviceInfo['operating_system'] ?? $attendance->operating_system ?? null;
-            
+
             if (!$operatingSystem || !in_array($operatingSystem, $config['allowed_operating_systems'])) {
                 return [
                     'constraint_type' => AttendanceConstraint::DEVICE_TYPE_RESTRICTION,
@@ -220,13 +220,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         return false;
     }
 
     /**
      * Validate device registration constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -238,11 +238,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$registrationRequired) {
             return false;
         }
-        
+
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $deviceId = $deviceInfo['device_id'] ?? $attendance->device_id ?? null;
-        
+
         if (!$deviceId) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_REGISTRATION,
@@ -254,10 +254,10 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         // Check if device is registered
         $isRegistered = $attendance->device_registered ?? false;
-        
+
         if (!$isRegistered) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_REGISTRATION,
@@ -270,11 +270,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         // Check registration expiry
         if (isset($config['check_registration_expiry']) && $config['check_registration_expiry']) {
             $registrationExpiry = $attendance->device_registration_expiry ?? null;
-            
+
             if ($registrationExpiry && \Carbon\Carbon::parse($registrationExpiry)->isPast()) {
                 return [
                     'constraint_type' => AttendanceConstraint::DEVICE_REGISTRATION,
@@ -288,13 +288,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         return false;
     }
 
     /**
      * Validate device security features constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -303,11 +303,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
     {
         $violations = [];
         $deviceInfo = $attendance->device_info ?? [];
-        
+
         // Check screen lock requirement
         if (isset($config['screen_lock_required']) && $config['screen_lock_required']) {
             $hasScreenLock = $deviceInfo['has_screen_lock'] ?? $attendance->has_screen_lock ?? false;
-            
+
             if (!$hasScreenLock) {
                 $violations[] = [
                     'type' => 'missing_screen_lock',
@@ -315,11 +315,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check encryption requirement
         if (isset($config['encryption_required']) && $config['encryption_required']) {
             $isEncrypted = $deviceInfo['is_encrypted'] ?? $attendance->device_encrypted ?? false;
-            
+
             if (!$isEncrypted) {
                 $violations[] = [
                     'type' => 'missing_encryption',
@@ -327,11 +327,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check antivirus requirement
         if (isset($config['antivirus_required']) && $config['antivirus_required']) {
             $hasAntivirus = $deviceInfo['has_antivirus'] ?? $attendance->has_antivirus ?? false;
-            
+
             if (!$hasAntivirus) {
                 $violations[] = [
                     'type' => 'missing_antivirus',
@@ -339,12 +339,12 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check OS version requirement
         if (isset($config['min_os_version'])) {
             $osVersion = $deviceInfo['os_version'] ?? $attendance->os_version ?? null;
             $minOsVersion = $config['min_os_version'];
-            
+
             if (!$osVersion || version_compare($osVersion, $minOsVersion, '<')) {
                 $violations[] = [
                     'type' => 'outdated_os_version',
@@ -354,12 +354,12 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check app version requirement
         if (isset($config['min_app_version'])) {
             $appVersion = $deviceInfo['app_version'] ?? $attendance->app_version ?? null;
             $minAppVersion = $config['min_app_version'];
-            
+
             if (!$appVersion || version_compare($appVersion, $minAppVersion, '<')) {
                 $violations[] = [
                     'type' => 'outdated_app_version',
@@ -369,11 +369,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check jailbreak/root detection
         if (isset($config['block_rooted_devices']) && $config['block_rooted_devices']) {
             $isRooted = $deviceInfo['is_rooted'] ?? $attendance->device_rooted ?? false;
-            
+
             if ($isRooted) {
                 $violations[] = [
                     'type' => 'rooted_device',
@@ -381,11 +381,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check VPN detection
         if (isset($config['block_vpn_usage']) && $config['block_vpn_usage']) {
             $isUsingVpn = $deviceInfo['is_using_vpn'] ?? $attendance->using_vpn ?? false;
-            
+
             if ($isUsingVpn) {
                 $violations[] = [
                     'type' => 'vpn_usage',
@@ -393,7 +393,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         if (!empty($violations)) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_SECURITY_FEATURES,
@@ -404,13 +404,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         return false;
     }
 
     /**
      * Validate authorized device constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -422,11 +422,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$authorizedOnlyEnabled) {
             return false;
         }
-        
+
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $deviceId = $deviceInfo['device_id'] ?? $attendance->device_id ?? null;
-        
+
         if (!$deviceId) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_AUTHORIZED_ONLY,
@@ -435,7 +435,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 'details' => []
             ];
         }
-        
+
         // Check if device is authorized
         $authorizedDevices = $config['authorized_devices'] ?? [];
         if (!in_array($deviceId, $authorizedDevices)) {
@@ -449,13 +449,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         return false;
     }
 
     /**
      * Validate device fingerprinting constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -467,11 +467,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$fingerprintingEnabled) {
             return false;
         }
-        
+
         // Get device fingerprint
         $deviceInfo = $attendance->device_info ?? [];
         $fingerprint = $deviceInfo['fingerprint'] ?? null;
-        
+
         if (!$fingerprint) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_FINGERPRINTING,
@@ -480,7 +480,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 'details' => []
             ];
         }
-        
+
         // Validate fingerprint format and requirements
         $requiredFingerprint = $config['required_fingerprint'] ?? null;
         if ($requiredFingerprint && $fingerprint !== $requiredFingerprint) {
@@ -494,13 +494,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         return false;
     }
 
     /**
      * Validate single policy constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -512,23 +512,23 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$singlePolicyEnabled) {
             return false;
         }
-        
+
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $deviceId = $deviceInfo['device_id'] ?? $attendance->device_id ?? null;
         $userId = $attendance->user_id;
-        
+
         if (!$deviceId) {
             return false;
         }
-        
+
         // Check if another user is currently using this device
         $activeAttendance = Attendance::where('device_id', $deviceId)
             ->where('user_id', '!=', $userId)
             ->whereNull('clock_out_time')
             ->where('attendance_date', $attendance->attendance_date)
             ->first();
-        
+
         if ($activeAttendance) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_SINGLE_POLICY,
@@ -541,13 +541,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         return false;
     }
 
     /**
      * Validate app restrictions constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -559,11 +559,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$appRestrictionsEnabled) {
             return false;
         }
-        
+
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $appName = $deviceInfo['app_name'] ?? $deviceInfo['application'] ?? null;
-        
+
         if (!$appName) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_APP_RESTRICTIONS,
@@ -572,7 +572,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 'details' => []
             ];
         }
-        
+
         // Check allowed apps
         $allowedApps = $config['allowed_apps'] ?? [];
         if (!empty($allowedApps) && !in_array($appName, $allowedApps)) {
@@ -586,7 +586,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         // Check blocked apps
         $blockedApps = $config['blocked_apps'] ?? [];
         if (!empty($blockedApps) && in_array($appName, $blockedApps)) {
@@ -600,13 +600,13 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ]
             ];
         }
-        
+
         return false;
     }
 
     /**
      * Validate browser restrictions constraints.
-     * 
+     *
      * @param Attendance $attendance The attendance record to validate
      * @param array $config The constraint configuration
      * @return bool|array Returns false if no violation, or violation details if constraint is violated
@@ -618,11 +618,11 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
         if (!$browserRestrictionsEnabled) {
             return false;
         }
-        
+
         // Get device information
         $deviceInfo = $attendance->device_info ?? [];
         $browserName = $deviceInfo['browser'] ?? $deviceInfo['user_agent'] ?? null;
-        
+
         if (!$browserName) {
             return [
                 'constraint_type' => AttendanceConstraint::DEVICE_BROWSER_RESTRICTIONS,
@@ -631,7 +631,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 'details' => []
             ];
         }
-        
+
         // Check allowed browsers
         $allowedBrowsers = $config['allowed_browsers'] ?? [];
         if (!empty($allowedBrowsers)) {
@@ -642,7 +642,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                     break;
                 }
             }
-            
+
             if (!$browserAllowed) {
                 return [
                     'constraint_type' => AttendanceConstraint::DEVICE_BROWSER_RESTRICTIONS,
@@ -655,7 +655,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 ];
             }
         }
-        
+
         // Check blocked browsers
         $blockedBrowsers = $config['blocked_browsers'] ?? [];
         if (!empty($blockedBrowsers)) {
@@ -673,7 +673,7 @@ class DeviceConstraintService extends BaseConstraintService implements DeviceCon
                 }
             }
         }
-        
+
         return false;
     }
 }

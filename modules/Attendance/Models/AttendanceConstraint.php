@@ -163,7 +163,7 @@ class AttendanceConstraint extends Model implements Auditable
         if (empty($this->branch_ids)) {
             return collect();
         }
-        
+
         return ManagementHierarchy::whereIn('id', $this->branch_ids)->get();
     }
 
@@ -176,7 +176,7 @@ class AttendanceConstraint extends Model implements Auditable
         if (empty($this->branch_ids)) {
             return true;
         }
-        
+
         // Check if branch is in the list
         return in_array($branchId, $this->branch_ids);
     }
@@ -187,7 +187,7 @@ class AttendanceConstraint extends Model implements Auditable
     public function addBranch(string $branchId): void
     {
         $branchIds = $this->branch_ids ?? [];
-        
+
         if (!in_array($branchId, $branchIds)) {
             $branchIds[] = $branchId;
             $this->branch_ids = $branchIds;
@@ -201,13 +201,13 @@ class AttendanceConstraint extends Model implements Auditable
     public function removeBranch(string $branchId): void
     {
         $branchIds = $this->branch_ids ?? [];
-        
+
         $branchIds = array_filter($branchIds, fn($id) => $id !== $branchId);
         $this->branch_ids = array_values($branchIds);
-        
+
         // Also remove the location for this branch
         $this->removeBranchLocation($branchId);
-        
+
         $this->save();
     }
 
@@ -375,10 +375,10 @@ class AttendanceConstraint extends Model implements Auditable
     public function isValidForDate($date = null): bool
     {
         $checkDate = $date ? carbon($date) : now();
-        
+
         $startValid = !$this->start_date || $checkDate->gte($this->start_date);
         $endValid = !$this->end_date || $checkDate->lte($this->end_date);
-        
+
         return $this->is_active && $startValid && $endValid;
     }
 

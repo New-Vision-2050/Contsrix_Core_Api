@@ -67,4 +67,14 @@ class AttendanceException extends CustomException
     {
         return new self('Cannot delete approved attendance records.', 403);
     }
+
+    /**
+     * Thrown when a user tries to reject an attendance record that is already approved.
+     */
+    public static function cannotRejectApprovedAttendance(): self
+    {
+        // You can customize the message and HTTP status code as needed.
+        // 400 (Bad Request) or 409 (Conflict) are good choices.
+        return new self('Cannot reject an attendance record that has already been approved.', 409);
+    }
 }

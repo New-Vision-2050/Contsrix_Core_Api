@@ -6,6 +6,7 @@ use Modules\Attendance\Controllers\LeaveRequestController;
 use Modules\Attendance\Controllers\LeaveTypeController;
 use Modules\Attendance\Controllers\LeaveBalanceController;
 use Modules\Attendance\Controllers\AttendanceReportController;
+use Modules\Attendance\Controllers\LocationTrackingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +29,12 @@ Route::prefix('attendance')->group(function () {
     Route::post('clock-out', [AttendanceController::class, 'clockOut'])
         ->name('attendance.clock-out');
 
+    Route::get('live-tracking', [LocationTrackingController::class, 'getLiveTrackingData'])
+        ->name('attendance.live-tracking');
+
+    Route::post('{attendance}/track-location', [LocationTrackingController::class, 'store'])
+        ->name('attendance.track-location');
+        
     Route::post('start-break', [AttendanceController::class, 'startBreak'])
         ->name('attendance.start-break');
 

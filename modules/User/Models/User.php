@@ -196,6 +196,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function branch()
     {
         return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
-            ->where('type', operator: 'branch');
+            ->where('type','branch');
     }
 }

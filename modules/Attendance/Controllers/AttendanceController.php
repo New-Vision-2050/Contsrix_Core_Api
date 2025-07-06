@@ -30,20 +30,35 @@ class AttendanceController extends Controller
     /**
      * Clock in employee
      */
-    public function clockIn(ClockInRequest $request): JsonResponse
+   public function clockIn(ClockInRequest $request): JsonResponse
     {
+        // Create a clean Data Transfer Object from the validated request data.
         $clockInDTO = $request->createClockInDTO();
 
-        // Validate constraints before clocking in
+        // --- PRE-VALIDATION STEP ---
+        // Before creating an actual record, we run a simulation to check for blocking violations.
+
         $user = auth()->user();
-        $mockAttendance = new \Modules\Attendance\Models\Attendance([
-            'user_id' => $user->id,
-            'company_id' => $user->company_id,
-            'clock_in_time' => now(),
-        ]);
 
+        // Create a temporary "mock" attendance object. It's crucial to include all data
+        // from the request that might be needed for constraint validation (location, IP, verification data, etc.).
+        $mockAttendanceData = [
+            'user_id'             => $user->id,
+            'company_id'          => $user->company_id,
+            'clock_in_time'       => now(),
+            'clock_in_location'   => $request->input('location'),
+            'ip_address'          => $request->input('ip_address')?? $request->ip(),
+            'user_agent'          => $request->userAgent(),
+            'verification_data'   => $request->input('verification_data'), // Crucial for Office Verification
+        ];
+        $mockAttendance = new \Modules\Attendance\Models\Attendance($mockAttendanceData);
+        // Manually set the 'user' relation on the mock object, as it doesn't exist in the DB yet.
+        // This allows services to access `$attendance->user` without errors.
+        $mockAttendance->setRelation('user', $user);
+
+        // Validate the mock attendance object against all applicable constraints.
         $violations = $this->constraintService->validateAttendance($mockAttendance, $request->all());
-
+        // If any blocking violations are found, stop the process and return an error.
         if (!empty($violations)) {
             return Json::error(
                 description: 'Clock-in blocked due to constraint violations',
@@ -51,28 +66,36 @@ class AttendanceController extends Controller
                 httpStatus: 422
             );
         }
-
+        // --- EXECUTION STEP ---
+        // If pre-validation passes, create the actual attendance record in the database.
         $attendance = $this->attendanceService->clockIn($clockInDTO);
 
-        // Process any violations that occurred during clock-in
+        // --- POST-VALIDATION STEP ---
+        // After clock-in, re-validate to log any non-blocking violations (e.g., tardiness).
         $actualViolations = $this->constraintService->validateAttendance($attendance, $request->all());
+
         if (!empty($actualViolations)) {
-            // Process each violation individually
+            // Process each detected violation individually.
             foreach ($actualViolations as $violationData) {
+                // Ensure the violation data is valid before creating a record.
                 if (isset($violationData['constraint_id'])) {
                     $constraint = AttendanceConstraint::find($violationData['constraint_id']);
                     if ($constraint) {
+                        // Persist the violation record to the database for reporting.
                         $this->constraintService->createViolation($attendance, $constraint, $violationData);
                     }
                 }
             }
         }
 
+        // --- RESPONSE STEP ---
+        // If the process is successful, return a formatted response with the new attendance data.
         return Json::item(
             (new AttendancePresenter($attendance))->present(),
-            message: 'Successfully clocked in'
+            message: 'Successfully clocked in.'
         );
     }
+
 
     /**
      * Clock out employee
@@ -248,10 +271,10 @@ class AttendanceController extends Controller
     /**
      * Approve attendance record
      */
-    public function approve(Request $request, string $attendanceId): JsonResponse
+    public function approve(Request $request): JsonResponse
     {
         $attendance = $this->attendanceService->approveAttendance(
-            $attendanceId,
+            Uuid::fromString($request->route('attendanceId')),
             $request->user()->id,
             $request->input('notes')
         );
@@ -265,10 +288,10 @@ class AttendanceController extends Controller
     /**
      * Reject attendance record
      */
-    public function reject(Request $request, string $attendanceId): JsonResponse
+    public function reject(Request $request): JsonResponse
     {
         $attendance = $this->attendanceService->rejectAttendance(
-            $attendanceId,
+            Uuid::fromString($request->route('attendanceId')),
             $request->user()->id,
             $request->input('reason', 'No reason provided')
         );
@@ -292,28 +315,19 @@ class AttendanceController extends Controller
     /**
      * Get team attendance with filtering and pagination
      */
-    public function getTeamAttendance(FilterAttendanceRequest $request): JsonResponse
+    public function getTeamAttendance(FilterAttendanceRequest $request)//: JsonResponse
     {
         $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
 
-        $result = $this->attendanceService->getTeamAttendance(
+        $list = $this->attendanceService->getTeamAttendance(
 Auth::id()->toString(),
             $filterDTO->toArray(), // Pass filters as the second parameter
-            $filterDTO->getPage(),
+            $filterDTO->getPage()??1,
             $filterDTO->getPerPage() ?? 10
         );
 
-        $presentedData = AttendancePresenter::collection($result['data']);
+        return Json::items(AttendancePresenter::collection($list['data']), paginationSettings: $list['pagination']);
 
-        if ($result['pagination']) {
-            return Json::items(
-                mainItems:            $presentedData,
-                paginationSettings: $result['pagination'],
-                message:            'Team attendance retrieved successfully'
-            );
-        }
-
-        return Json::items($presentedData, message: 'Team attendance retrieved successfully');
     }
 
     /**

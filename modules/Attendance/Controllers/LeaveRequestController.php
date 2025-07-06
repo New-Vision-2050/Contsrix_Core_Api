@@ -35,9 +35,9 @@ class LeaveRequestController extends Controller
     {
         $filters = $request->validated();
         $leaveRequests = $this->leaveRequestService->getLeaveRequests($filters);
-        
+
         $presentedData = LeaveRequestPresenter::collection($leaveRequests);
-        
+
         return Json::items($presentedData, message: 'Leave requests retrieved successfully');
     }
 
@@ -48,7 +48,7 @@ class LeaveRequestController extends Controller
     {
         $createLeaveRequestDTO = $request->createLeaveRequestDTO();
         $leaveRequest = $this->leaveRequestService->createLeaveRequest($createLeaveRequestDTO);
-        
+
         return Json::item(
             (new LeaveRequestPresenter($leaveRequest))->getData(),
             message: 'Leave request created successfully'
@@ -61,7 +61,7 @@ class LeaveRequestController extends Controller
     public function show(string $leaveRequestId): JsonResponse
     {
         $leaveRequest = $this->leaveRequestService->getLeaveRequestById($leaveRequestId);
-        
+
         return Json::item(
             (new LeaveRequestPresenter($leaveRequest))->getData(),
             message: 'Leave request retrieved successfully'
@@ -75,7 +75,7 @@ class LeaveRequestController extends Controller
     {
         $updateLeaveRequestDTO = $request->createUpdateLeaveRequestDTO();
         $leaveRequest = $this->leaveRequestService->updateLeaveRequest($leaveRequestId, $updateLeaveRequestDTO);
-        
+
         return Json::item(
             (new LeaveRequestPresenter($leaveRequest))->getData(),
             message: 'Leave request updated successfully'
@@ -88,7 +88,7 @@ class LeaveRequestController extends Controller
     public function cancel(string $leaveRequestId): JsonResponse
     {
         $leaveRequest = $this->leaveRequestService->cancelLeaveRequest($leaveRequestId);
-        
+
         return Json::item(
             (new LeaveRequestPresenter($leaveRequest))->getData(),
             message: 'Leave request cancelled successfully'
@@ -101,13 +101,13 @@ class LeaveRequestController extends Controller
     public function approve(ApproveLeaveRequestRequest $request, string $leaveRequestId): JsonResponse
     {
         $approveDTO = $request->createApproveLeaveRequestDTO();
-        
+
         $leaveRequest = $this->leaveRequestService->approveLeaveRequest(
             $leaveRequestId,
             $approveDTO->getApproverId(),
             $approveDTO->getNotes()
         );
-        
+
         return Json::item(
             (new LeaveRequestPresenter($leaveRequest))->getData(),
             message: 'Leave request approved successfully'
@@ -120,13 +120,13 @@ class LeaveRequestController extends Controller
     public function reject(RejectLeaveRequestRequest $request, string $leaveRequestId): JsonResponse
     {
         $rejectDTO = $request->createRejectLeaveRequestDTO();
-        
+
         $leaveRequest = $this->leaveRequestService->rejectLeaveRequest(
             $leaveRequestId,
             $rejectDTO->getRejecterId(),
             $rejectDTO->getReason()
         );
-        
+
         return Json::item(
             (new LeaveRequestPresenter($leaveRequest))->getData(),
             message: 'Leave request rejected successfully'
@@ -139,7 +139,7 @@ class LeaveRequestController extends Controller
     public function destroy(string $leaveRequestId): JsonResponse
     {
         $this->leaveRequestService->deleteLeaveRequest($leaveRequestId);
-        
+
         return Json::success('Leave request deleted successfully');
     }
 
@@ -149,11 +149,11 @@ class LeaveRequestController extends Controller
     public function myRequests(MyLeaveRequestsRequest $request): JsonResponse
     {
         $filterDTO = $request->createMyLeaveRequestsFilterDTO();
-        
+
         $leaveRequests = $this->leaveRequestService->getLeaveRequests($filterDTO->toArray());
-        
+
         $presentedData = LeaveRequestPresenter::collection($leaveRequests);
-        
+
         return Json::items($presentedData, message: 'Your leave requests retrieved successfully');
     }
 
@@ -163,11 +163,11 @@ class LeaveRequestController extends Controller
     public function pendingApprovals(PendingApprovalsRequest $request): JsonResponse
     {
         $filterDTO = $request->createPendingApprovalsFilterDTO();
-        
+
         $leaveRequests = $this->leaveRequestService->getPendingApprovals($filterDTO->toArray());
-        
+
         $presentedData = LeaveRequestPresenter::collection($leaveRequests);
-        
+
         return Json::items($presentedData, message: 'Pending leave requests retrieved successfully');
     }
 
@@ -177,13 +177,13 @@ class LeaveRequestController extends Controller
     public function calendar(LeaveCalendarRequest $request): JsonResponse
     {
         $calendarDTO = $request->createLeaveCalendarDTO();
-        
+
         $calendar = $this->leaveRequestService->getLeaveCalendar(
             $calendarDTO->getStartDate(),
             $calendarDTO->getEndDate(),
             $calendarDTO->getCompanyId()
         );
-        
+
         return Json::item($calendar, message: 'Leave calendar retrieved successfully');
     }
 
@@ -193,14 +193,14 @@ class LeaveRequestController extends Controller
     public function checkConflicts(LeaveConflictCheckRequest $request): JsonResponse
     {
         $conflictDTO = $request->createLeaveConflictCheckDTO();
-        
+
         $conflicts = $this->leaveRequestService->checkLeaveConflicts(
             $conflictDTO->getUserId(),
             $conflictDTO->getStartDate(),
             $conflictDTO->getEndDate(),
             $conflictDTO->getExcludeRequestId()
         );
-        
+
         return Json::item([
             'has_conflicts' => !empty($conflicts),
             'conflicts' => $conflicts
@@ -213,13 +213,13 @@ class LeaveRequestController extends Controller
     public function getBalance(LeaveBalanceRequest $request): JsonResponse
     {
         $balanceDTO = $request->createLeaveBalanceDTO();
-        
+
         $balance = $this->leaveRequestService->getLeaveBalance(
             $balanceDTO->getUserId(),
             $balanceDTO->getLeaveTypeId(),
             $balanceDTO->getYear()
         );
-        
+
         return Json::item($balance, message: 'Leave balance retrieved successfully');
     }
 }
