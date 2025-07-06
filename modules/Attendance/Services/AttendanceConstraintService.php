@@ -126,45 +126,49 @@ class AttendanceConstraintService
     /**
      * Validate a single constraint against attendance.
      *
-     * @param Attendance $attendance The attendance record to validate
-     * @param AttendanceConstraint $constraint The constraint to validate against
-     * @param array $requestData Additional request data for validation
-     * @return bool|array Returns false if no violation, or violation details if constraint is violated
+     * This updated version treats a single constraint as a "ruleset" which can contain
+     * configurations for multiple rule types (e.g., location, time, device). It checks for the
+     * presence of specific keys within the 'constraint_config' JSON to determine which
+     * validations to run.
+     *
+     * @param Attendance $attendance The attendance record to validate.
+     * @param AttendanceConstraint $constraint The constraint object containing the ruleset.
+     * @param array $requestData Additional request data (currently unused here but kept for interface compatibility).
+     * @return bool|array Returns false if all applicable checks pass, or an array with details of the first violation found.
      */
     public function validateSingleConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData = []): bool|array
     {
+        // Get the entire configuration object for the constraint.
         $config = $constraint->constraint_config ?? [];
-        // Delegate to appropriate specialized service based on constraint type
-        // dd($config);
-        switch ($constraint->constraint_type) {
-            case AttendanceConstraint::TYPE_TIME:
-                return $this->timeConstraintService->validateTimeConstraint($attendance, $config);
 
-            case AttendanceConstraint::TYPE_LOCATION:
-                return $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
+        // Define a map linking config keys to their respective validation services.
+        // This makes the code cleaner and easier to extend.
+        $validationMap = [
+            'time_rules'       => fn() => $this->timeConstraintService->validateTimeConstraint($attendance, $config['time_rules']),
+            'location_rules'   => fn() => $this->locationConstraintService->validateLocationConstraint($attendance, $constraint), // This service expects the full constraint
+            'device_rules'     => fn() => $this->deviceConstraintService->validateDeviceConstraint($attendance, $config['device_rules']),
+            'behavioral_rules' => fn() => $this->behavioralConstraintService->validateBehavioralConstraint($attendance, $config['behavioral_rules']),
+            'security_rules'   => fn() => $this->securityConstraintService->validateSecurityConstraint($attendance, $config['security_rules']),
+            'compliance_rules' => fn() => $this->complianceConstraintService->validateComplianceConstraint($attendance, $config['compliance_rules']),
+            'role_rules'       => fn() => $this->roleConstraintService->validateRoleConstraint($attendance, $config['role_rules']),
+        ];
 
-            case AttendanceConstraint::TYPE_DEVICE:
-                return $this->deviceConstraintService->validateDeviceConstraint($attendance,$config);
+        // Iterate through the map and execute validation for any rules present in the config.
+        foreach ($validationMap as $configKey => $validationFunction) {
+            // Check if the specific rule configuration exists in the constraint.
+            if (isset($config[$configKey])) {
+                // Execute the corresponding validation function.
+                $violation = $validationFunction();
 
-            case AttendanceConstraint::TYPE_ROLE:
-                return $this->roleConstraintService->validateRoleConstraint($attendance, $config);
-
-            case AttendanceConstraint::TYPE_BEHAVIORAL:
-                return $this->behavioralConstraintService->validateBehavioralConstraint($attendance, $config);
-
-            case AttendanceConstraint::TYPE_SECURITY:
-                return $this->securityConstraintService->validateSecurityConstraint($attendance, $config);
-
-            case AttendanceConstraint::TYPE_COMPLIANCE:
-                return $this->complianceConstraintService->validateComplianceConstraint($attendance, $config);
-
-            default:
-                Log::warning('Unknown constraint type encountered', [
-                    'constraint_id' => $constraint->id,
-                    'type' => $constraint->type
-                ]);
-                return false;
+                // If a violation is found, stop immediately and return it.
+                if ($violation) {
+                    return $violation;
+                }
+            }
         }
+
+        // If the loop completes without finding any violations, all checks have passed.
+        return false;
     }
 
     /**
