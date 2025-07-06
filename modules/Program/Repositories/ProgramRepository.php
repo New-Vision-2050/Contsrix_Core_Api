@@ -47,7 +47,6 @@ class ProgramRepository extends BaseRepository
     {
         return $this->delete($id);
     }
-<<<<<<< HEAD
     public function selectList(): Collection
     {
         return $this->model::with([
@@ -63,6 +62,4 @@ class ProgramRepository extends BaseRepository
             ->get();
     }
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 }

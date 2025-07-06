@@ -10,8 +10,5 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::put('/{id}', [ProgramController::class, 'update']);
     Route::delete('/{id}', [ProgramController::class, 'delete']);
     Route::get('/sub_entities/list', [ProgramController::class, 'listWithSubEntities']);
-<<<<<<< HEAD
     Route::get('/sub_entities/select/list', [ProgramController::class, 'selectListWithSubEntities']);
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 });

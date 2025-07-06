@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Program\Controllers;
 
-<<<<<<< HEAD
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
@@ -19,21 +18,6 @@ use Modules\Program\Requests\DeleteProgramRequest;
 use Modules\Program\Requests\UpdateProgramRequest;
 use Modules\Program\Requests\GetProgramListRequest;
 use Modules\Program\Presenters\ProgramSelectListPresenter;
-=======
-use BasePackage\Shared\Presenters\Json;
-use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
-use Modules\Program\Handlers\DeleteProgramHandler;
-use Modules\Program\Handlers\UpdateProgramHandler;
-use Modules\Program\Presenters\ProgramPresenter;
-use Modules\Program\Requests\CreateProgramRequest;
-use Modules\Program\Requests\DeleteProgramRequest;
-use Modules\Program\Requests\GetProgramListRequest;
-use Modules\Program\Requests\GetProgramRequest;
-use Modules\Program\Requests\UpdateProgramRequest;
-use Modules\Program\Services\ProgramCRUDService;
-use Ramsey\Uuid\Uuid;
->>>>>>> 7be6c72c (merge with stage (first version ))
 
 class ProgramController extends Controller
 {
@@ -81,11 +65,7 @@ class ProgramController extends Controller
 
         $presenter = new ProgramPresenter($item);
 
-<<<<<<< HEAD
         return Json::item($presenter->getData());
-=======
-        return Json::item( $presenter->getData());
->>>>>>> 7be6c72c (merge with stage (first version ))
     }
 
     public function delete(DeleteProgramRequest $request): JsonResponse
@@ -105,7 +85,6 @@ class ProgramController extends Controller
         return Json::items(ProgramPresenter::collectionWithSubEntities($list['data']), paginationSettings: $list['pagination']);
     }
 
-<<<<<<< HEAD
     public function selectListWithSubEntities(): JsonResponse
     {
         $programs = $this->programService->selectList();
@@ -113,6 +92,4 @@ class ProgramController extends Controller
         return Json::items(ProgramSelectListPresenter::collection($programs));
     }
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 }
