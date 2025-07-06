@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\ProfessionalCertificate\DTO;
 
-<<<<<<< HEAD
 use Illuminate\Http\UploadedFile;
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 use Ramsey\Uuid\UuidInterface;
 
 class CreateProfessionalCertificateDTO
@@ -15,7 +12,6 @@ class CreateProfessionalCertificateDTO
     public function __construct(
         public string $company_id,
         public string $global_id,
-<<<<<<< HEAD
         public ?string $professional_bodie_id,
         public ?string $accreditation_name,
         public ?string $accreditation_number,
@@ -23,14 +19,6 @@ class CreateProfessionalCertificateDTO
         public ?string $date_obtain,
         public ?string $date_end,
         public ?UploadedFile $file
-=======
-        public string $professional_bodie_id,
-        public string $accreditation_name,
-        public string $accreditation_number,
-        public string $accreditation_degree,
-        public string $date_obtain,
-        public string $date_end,
->>>>>>> 7be6c72c (merge with stage (first version ))
     ) {
     }
 
