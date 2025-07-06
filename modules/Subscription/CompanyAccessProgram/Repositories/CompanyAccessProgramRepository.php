@@ -39,6 +39,7 @@ class CompanyAccessProgramRepository extends BaseRepository
     {
         $program = $this->model->create([
             'name' => $createCompanyAccessProgramDTO->name,
+            'is_active' => true
         ]);
 
         // Sync programs
