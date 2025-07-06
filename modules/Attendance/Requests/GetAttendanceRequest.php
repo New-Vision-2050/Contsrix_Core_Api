@@ -30,8 +30,8 @@ class GetAttendanceRequest extends FormRequest
             'status' => ['sometimes', 'string', 'in:active,completed,pending_approval,approved,rejected'],
             'is_late' => ['sometimes', 'boolean'],
             'is_early_departure' => ['sometimes', 'boolean'],
-            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
-            'page' => ['sometimes', 'integer', 'min:1'],
+            // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
     }
 
@@ -56,13 +56,13 @@ class GetAttendanceRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Set default values if not provided
-        if (!$this->has('per_page')) {
-            $this->merge(['per_page' => 20]);
-        }
+        // if (!$this->has('per_page')) {
+        //     $this->merge(['per_page' => 20]);
+        // }
 
-        if (!$this->has('page')) {
-            $this->merge(['page' => 1]);
-        }
+        // if (!$this->has('page')) {
+        //     $this->merge(['page' => 1]);
+        // }
 
         // If user_id is not provided, use the authenticated user's ID
         //if (!$this->has('user_id') && $this->user()) {
@@ -110,8 +110,8 @@ class GetAttendanceRequest extends FormRequest
             end_date: $validated['end_date'] ?? null,
             late_arrival: $validated['is_late'] ?? null,
             early_departure: $validated['is_early_departure'] ?? null,
-            page: $validated['page'] ?? null,
-            per_page: $validated['per_page'] ?? null,
+            // page: $validated['page'] ?? null,
+            // per_page: $validated['per_page'] ?? null,
         );
     }
 }

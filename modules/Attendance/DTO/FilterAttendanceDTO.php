@@ -25,14 +25,14 @@ class FilterAttendanceDTO
         public ?string $ip_address = null,
         public ?bool $late_arrival = null,
         public ?bool $early_departure = null,
-        public ?int $page = null,
-        public ?int $per_page = null,
+        // public ?int $page = null,
+        // public ?int $per_page = null,
     ) {}
 
     public function toArray(): array
     {
         $data = ['company_id' => $this->company_id];
-        
+
         if ($this->user_id !== null) {
             $data['user_id'] = $this->user_id;
         }
@@ -178,13 +178,13 @@ class FilterAttendanceDTO
         return $this->early_departure;
     }
 
-    public function getPage(): ?int
-    {
-        return $this->page;
-    }
+    // public function getPage(): ?int
+    // {
+    //     return $this->page;
+    // }
 
-    public function getPerPage(): ?int
-    {
-        return $this->per_page;
-    }
+    // public function getPerPage(): ?int
+    // {
+    //     return $this->per_page;
+    // }
 }
