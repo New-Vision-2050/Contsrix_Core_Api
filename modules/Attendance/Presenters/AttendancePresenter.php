@@ -95,7 +95,7 @@ class AttendancePresenter extends AbstractPresenter
                     'id' => (string)$constraint->id ?: null,
                     'name' => $constraint->constraint_name ?: null,
                 ];
-            })->toArray(),
+            })->first(),
         ];
     }
 
