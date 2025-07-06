@@ -6,6 +6,7 @@ namespace Modules\Country\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Modules\Country\Models\City;
 use Modules\Country\Models\State;
 use Normalizer;
@@ -69,6 +70,14 @@ class CountryRepository extends BaseRepository
         return $data;
     }
 
+    public function getStateWithBranchAuthUser()
+    {
+       $countryId = Auth::user()?->userProfessionalData?->branch?->address?->country_id;
+
+       $data = State::query()->where("country_id", $countryId)->get();
+       return $data;
+
+}
     public function findBySimplifiedWay($simplifiedName):?Country
     {
         $country = $this->model

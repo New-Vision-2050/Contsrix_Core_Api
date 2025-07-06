@@ -30,7 +30,7 @@ class CreateEmploymentContractRequest extends FormRequest
 
             'working_hours' => 'required|numeric',
             'annual_leave' => 'required|numeric',
-            'country_id' => 'required|string',
+            'state_id' => 'required|string',
             'right_terminate_id' => 'required|string',
 
             'file' => 'nullable|array',
@@ -56,7 +56,7 @@ class CreateEmploymentContractRequest extends FormRequest
 
             working_hours: $this->get('working_hours'),
             annual_leave: $this->get('annual_leave'),
-            country_id: $this->get('country_id'),
+            state_id: $this->get('state_id'),
             right_terminate_id: $this->get('right_terminate_id'),
 
             contract_duration_unit: $this->get('contract_duration_unit'),
