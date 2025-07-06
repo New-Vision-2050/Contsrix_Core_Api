@@ -14,26 +14,6 @@ class CreateEmploymentContractRequest extends FormRequest
         return [
             'user_id' => 'required|string',
 
-<<<<<<< HEAD
-            'contract_number' => 'nullable|string',
-            'start_date' => 'nullable|string',
-            'commencement_date' => 'nullable|string',
-            'contract_duration' => 'nullable|string',
-            'contract_duration_unit' => 'nullable|string',
-
-            'notice_period' => 'nullable|numeric',
-            'notice_period_unit' => 'nullable|string',
-            'probation_period' => 'nullable|numeric',
-            'probation_period_unit' => 'nullable|string',
-
-            'nature_work_id' => 'nullable|string',
-            'type_working_hour_id' => 'nullable|string',
-
-            'working_hours' => 'nullable|numeric',
-            'annual_leave' => 'nullable|numeric',
-            'state_id' => 'nullable|string',
-            'right_terminate_id' => 'nullable|string',
-=======
             'contract_number' => 'required|string',
             'start_date' => 'required|string',
             'commencement_date' => 'required|string',
@@ -50,9 +30,8 @@ class CreateEmploymentContractRequest extends FormRequest
 
             'working_hours' => 'required|numeric',
             'annual_leave' => 'required|numeric',
-            'country_id' => 'required|string',
+            'state_id' => 'required|string',
             'right_terminate_id' => 'required|string',
->>>>>>> 7be6c72c (merge with stage (first version ))
 
             'file' => 'nullable|array',
             'file.*' => 'nullable',
@@ -77,11 +56,7 @@ class CreateEmploymentContractRequest extends FormRequest
 
             working_hours: $this->get('working_hours'),
             annual_leave: $this->get('annual_leave'),
-<<<<<<< HEAD
             state_id: $this->get('state_id'),
-=======
-            country_id: $this->get('country_id'),
->>>>>>> 7be6c72c (merge with stage (first version ))
             right_terminate_id: $this->get('right_terminate_id'),
 
             contract_duration_unit: $this->get('contract_duration_unit'),

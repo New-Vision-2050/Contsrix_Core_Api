@@ -6,11 +6,8 @@ namespace Modules\UserInfo\EmploymentContract\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-<<<<<<< HEAD
 use Modules\Country\Repositories\CountryRepository;
 use Modules\Country\Repositories\StateRepository;
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 use Ramsey\Uuid\UuidInterface;
 use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
 
@@ -21,11 +18,7 @@ use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
  */
 class EmploymentContractRepository extends BaseRepository
 {
-<<<<<<< HEAD
     public function __construct(EmploymentContract $model,private StateRepository $stateRepository)
-=======
-    public function __construct(EmploymentContract $model)
->>>>>>> 7be6c72c (merge with stage (first version ))
     {
         parent::__construct($model);
     }
@@ -45,12 +38,9 @@ class EmploymentContractRepository extends BaseRepository
 
     public function createEmploymentContract(array $data): EmploymentContract
     {
-<<<<<<< HEAD
        $state = $this->stateRepository->findOneBy(["id" =>$data['state_id']]);
        $data["country_id"] = $state->country_id;
 
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
         $employmentContract = $this->model->where([
             'global_id' => $data['global_id'],
             'company_id' => $data['company_id'],

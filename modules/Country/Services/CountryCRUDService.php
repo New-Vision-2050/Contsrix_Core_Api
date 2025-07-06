@@ -50,13 +50,10 @@ class CountryCRUDService
         return $this->repository->getCountryWithSatesWithCities(request()->country_id,request()->state_id);
 
     }
-<<<<<<< HEAD
 
     public function getStatesByCountryBranch()
 
     {
        return $this->repository->getStateWithBranchAuthUser();
     }
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 }
