@@ -34,7 +34,7 @@ Route::prefix('attendance')->group(function () {
 
     Route::post('{attendance}/track-location', [LocationTrackingController::class, 'store'])
         ->name('attendance.track-location');
-        
+
     Route::post('start-break', [AttendanceController::class, 'startBreak'])
         ->name('attendance.start-break');
 
@@ -56,7 +56,7 @@ Route::prefix('attendance')->group(function () {
 
     // Team Attendance (for supervisors)
     Route::get('team', [AttendanceController::class, 'getTeamAttendance'])
-        ->middleware('permission:view-team-attendance')
+       // ->middleware('permission:view-team-attendance')
         ->name('attendance.team');
 
     // Attendance Management (HR/Admin)
