@@ -107,6 +107,11 @@ class SubEntity extends Model
         return $this->belongsTo(SubEntity::class, 'super_entity');
     }
 
+    public function children()
+    {
+        return $this->hasMany(self::class, 'super_entity')->where('is_active', true);
+    }
+
     public function registrationForm()
     {
         return $this->belongsTo(RegistrationForm::class, 'registration_form_id');
