@@ -28,7 +28,7 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -198,4 +198,16 @@ class User extends Authenticatable implements JWTSubject, Auditable
         return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
             ->where('type','branch');
     }
+        public function professionalData()
+    {
+        return $this->hasOneThrough(
+            UserProfessionalData::class,
+            CompanyUser::class,
+            'global_id',
+            'global_id',
+            'global_company_user_id',
+            'global_id'
+        );
+    }
+
 }
