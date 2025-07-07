@@ -6,10 +6,10 @@ namespace Modules\Company\ManagementHierarchy\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
-use Modules\Company\ManagementHierarchy\DTO\CreateManagementWithRelationsDTO;
+use Modules\Company\ManagementHierarchy\DTO\UpdateManagementWithRelationsDTO;
 use Ramsey\Uuid\Uuid;
 
-class CreateManagementWithRelationsRequest extends FormRequest
+class UpdateManagementWithRelationsRequest extends FormRequest
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
 
@@ -17,7 +17,7 @@ class CreateManagementWithRelationsRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'parent_id' => 'required|integer|exists:source_management_hierarchies,id,type,management',
+            'parent_id' => 'nullable|integer|exists:source_management_hierarchies,id,type,management',
             'manager_id' => 'nullable|string|exists:users,id',
             'description' => 'nullable|string',
             'job_types' => 'nullable|array',
@@ -28,20 +28,22 @@ class CreateManagementWithRelationsRequest extends FormRequest
             'branches.*' => 'required|integer|exists:management_hierarchies,id,type,branch',
             'deputy_manager_ids' => 'nullable|array',
             'deputy_manager_ids.*' => 'required|string|exists:users,id',
+            'is_active' => 'nullable|boolean',
         ];
     }
 
-    public function createCreateManagementWithRelationsDTO(): CreateManagementWithRelationsDTO
+    public function createUpdateManagementWithRelationsDTO(): UpdateManagementWithRelationsDTO
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
-        return new CreateManagementWithRelationsDTO(
+        return new UpdateManagementWithRelationsDTO(
+            managementId: (int)$this->route('id'),
             name: $this->get('name'),
             parentId: $this->get('parent_id') ? (int)$this->get('parent_id') : null,
             companyId: Uuid::fromString($company->id),
             managerId: $this->get('manager_id') ? Uuid::fromString($this->get('manager_id')) : null,
-            description: $this->get('description',""),
-            isActive: 1,
+            description: $this->get('description', ""),
+            isActive: $this->get('is_active', 1),
             jobTypes: $this->get('job_types') ?? [],
             jobTitles: $this->get('job_titles') ?? [],
             branches: $this->get('branches') ?? [],

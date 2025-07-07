@@ -25,7 +25,7 @@ class ManagementHierarchyCloneService
     {
         $sourceManagementHierarchy = $this->repository->getSourceManagementHierarchy($dto->sourceId);
         $detailTarget= $this->repository->getDetail($dto->taregtId);
-        return $this->repository->createManagement($dto->managementToArray()+["name"=>$sourceManagementHierarchy->name],$dto->managementDetailToArray()+["branch_id"=>$detailTarget->branch_id],$dto->getDeputyManagerIds());
+        return $this->repository->createManagement($dto->managementToArray()+["name"=>$sourceManagementHierarchy->name,"type"=>$sourceManagementHierarchy->type],$dto->managementDetailToArray()+["branch_id"=>$detailTarget->branch_id],$dto->getDeputyManagerIds());
 
     }
 
