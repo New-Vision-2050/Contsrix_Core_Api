@@ -232,6 +232,7 @@ class AttendanceService
             'total_days' => $attendances->count(),
             'total_attendant'=> $attendances->whereNotNull('clock_in_time')->count(),
             'total_absent_days' => $attendances->where('is_absent',1)->count(),
+            'total_holiday_days' => $attendances->where('is_holiday',1)->count(),
             'total_departures' => $attendances->whereNotNull('clock_out_time')->count(),
             'total_work_hours' => $attendances->sum('total_work_hours'),
             'total_overtime_hours' => $attendances->sum('overtime_hours'),
