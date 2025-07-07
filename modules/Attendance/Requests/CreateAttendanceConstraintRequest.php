@@ -17,10 +17,10 @@ class CreateAttendanceConstraintRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      */
-    public function authorize(): bool
-    {
-        return $this->user()->can('create_attendance_constraints');
-    }
+    // public function authorize(): bool
+    // {
+    //     return $this->user()->can('create_attendance_constraints');
+    // }
 
     /**
      * Get the validation rules that apply to the request.
