@@ -19,7 +19,7 @@ class UserEducationalCourseCRUDService
 
     public function create(CreateUserEducationalCourseDTO $createUserEducationalCourseDTO): UserEducationalCourse
     {
-         return $this->repository->createUserEducationalCourse($createUserEducationalCourseDTO->toArray());
+         return $this->repository->createUserEducationalCourse($createUserEducationalCourseDTO->toArray(), $createUserEducationalCourseDTO->file);
     }
 
     public function list(UuidInterface $companyId,UuidInterface $globalId,int $page = 1, int $perPage = 10): array
