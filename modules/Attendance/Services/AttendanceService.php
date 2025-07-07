@@ -221,7 +221,7 @@ class AttendanceService
     /**
      * Get attendance summary
      */
-    public function getAttendanceSummary(string $userId, ?string $startDate = null, ?string $endDate = null): array
+    public function getAttendanceSummary(UuidInterface $userId, ?string $startDate = null, ?string $endDate = null): array
     {
         $startDate = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
         $endDate = $endDate ? Carbon::parse($endDate) : now()->endOfMonth();

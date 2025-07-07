@@ -140,7 +140,7 @@ class AttendanceRepository extends BaseRepository
     /**
      * Get attendance by date range
      */
-    public function getAttendanceByDateRange(string $userId, Carbon $startDate, Carbon $endDate): Collection
+    public function getAttendanceByDateRange(UuidInterface $userId, Carbon $startDate, Carbon $endDate): Collection
     {
         return Attendance::where('user_id', $userId)
             ->whereBetween('clock_in_time', [$startDate, $endDate])
