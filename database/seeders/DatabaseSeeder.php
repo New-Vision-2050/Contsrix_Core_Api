@@ -113,9 +113,5 @@ class DatabaseSeeder extends Seeder
 
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
-
-        $this->call(ModuleStructureSeeder::class);
-        $this->call(BusinessTypeSeederTableSeeder::class);
-
     }
 }
