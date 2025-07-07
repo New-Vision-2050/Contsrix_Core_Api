@@ -202,6 +202,7 @@ return [
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
+    "management-not-found"=>"management not found",
     "company-not-active"=>"company not active",
     "branch-not-found"=>"branch not found",
     "integrity-error"=>"integrity error",
@@ -506,7 +507,7 @@ return [
     'date_end_required' => 'The certificate expiry date is required.',
     'date_end_date' => 'The certificate expiry date must be a valid date.',
     'graduation_date_date' => 'Graduation date must be a valid date.',
-    
+
     // Company user deletion validation messages
     'admin_account_cannot_be_deleted' => 'The admin account cannot be deleted.',
     'cannot_delete_yourself' => 'You cannot delete your own account.',
