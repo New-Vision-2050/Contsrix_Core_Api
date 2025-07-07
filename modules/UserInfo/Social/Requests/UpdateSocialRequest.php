@@ -14,7 +14,7 @@ class UpdateSocialRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "whatsapp" => 'nullable|url',
+            "whatsapp" => 'nullable',
             "facebook"=> 'nullable|url',
             "telegram"=> 'nullable|url',
             "instagram"=> 'nullable|url',
