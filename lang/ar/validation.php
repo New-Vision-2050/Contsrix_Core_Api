@@ -176,6 +176,7 @@ return [
     "identity-or-passport-required" => "يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required" => "يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found" => "الشركة غير موجودة",
+    "management-not-found" => "الادارة غير موجودة",
     "company-not-active" => "الشركة غير نشطة",
     "branch-not-found" => "الفرع غير موجود",
     "integrity-error" => "البيانات غير موحدة ",
