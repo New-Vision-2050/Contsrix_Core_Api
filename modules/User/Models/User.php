@@ -29,7 +29,7 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 

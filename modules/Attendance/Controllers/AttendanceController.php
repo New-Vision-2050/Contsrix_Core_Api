@@ -19,6 +19,7 @@ use Modules\Attendance\Requests\FilterAttendanceRequest;
 use Modules\Attendance\Presenters\AttendancePresenter;
 use Modules\Attendance\Presenters\AttendanceBreakPresenter;
 use Modules\Attendance\Models\AttendanceConstraint;
+use Modules\Attendance\Requests\AttendanceRequest;
 use Ramsey\Uuid\Uuid;
 class AttendanceController extends Controller
 {
@@ -329,7 +330,13 @@ Auth::id()->toString(),
         return Json::items(AttendancePresenter::collection($list['data']), paginationSettings: $list['pagination']);
 
     }
+    public function teamAttendance(AttendanceRequest $request)//: JsonResponse
+    {
+        $attendance = $this->attendanceService->getAttendance(Uuid::fromString($request->route('attendance')));
 
+        return Json::item((new AttendancePresenter($attendance))->present());
+
+    }
     /**
      * Display a listing of attendance records with filtering and pagination.
      */
