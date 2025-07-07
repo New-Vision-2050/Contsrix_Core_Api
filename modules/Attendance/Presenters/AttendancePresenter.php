@@ -101,6 +101,7 @@ class AttendancePresenter extends AbstractPresenter
                 'job_code' => $this->attendance->user->professionalData->job_code,
                 'department' => $this->attendance->user->professionalData->department?->name,
                 'branch' => $this->attendance->user->professionalData->branch?->name,
+                'management' => $this->attendance->user->professionalData->management?->name,
             ] : null,
         ];
     }
