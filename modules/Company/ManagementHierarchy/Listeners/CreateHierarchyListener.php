@@ -38,7 +38,8 @@ class CreateHierarchyListener
             "phone" => $event->data->phone,
             "email" => $event->data->email,
             "type" => "branch",
-            "is_first_branch" => 1
+            "is_first_branch" => 1,
+            "is_main" => 1
         ], [
             "company_id" => $event->data->id,
             "country_id" => $event->data->country_id

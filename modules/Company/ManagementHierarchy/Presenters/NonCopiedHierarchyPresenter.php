@@ -6,50 +6,99 @@ namespace Modules\Company\ManagementHierarchy\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\User\Presenters\UserPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 
 class NonCopiedHierarchyPresenter extends AbstractPresenter
 {
-    private ManagementHierarchy $managementHierarchy;
+    private SourceManagementHierarchy $sourceManagementHierarchy;
 
-    public function __construct(ManagementHierarchy $managementHierarchy)
+    public function __construct(SourceManagementHierarchy $sourceManagementHierarchy)
     {
-        $this->managementHierarchy = $managementHierarchy;
+        $this->sourceManagementHierarchy = $sourceManagementHierarchy;
     }
 
     protected function present(bool $isListing = false): array
     {
         return [
-            'id' => $this->managementHierarchy->id,
-            'name' => $this->managementHierarchy->name,
-            'type' => $this->managementHierarchy->type,
-            'parent_id' => $this->managementHierarchy->parent_id,
-            'company_id' => $this->managementHierarchy->company_id,
-            'is_active' => $this->managementHierarchy->is_active,
-            'is_main' => $this->managementHierarchy->is_main,
-            'manager' => $this->managementHierarchy->user ? (new UserPresenter($this->managementHierarchy->user))->present() : null,
-            'detail' => $this->managementHierarchy->detail ? [
-                'id' => $this->managementHierarchy->detail->id,
-                'description' => $this->managementHierarchy->detail->description,
-                'is_copied' => $this->managementHierarchy->detail->is_copied,
-                'reference_user_id' => $this->managementHierarchy->detail->reference_user_id,
-                'reference_department_id' => $this->managementHierarchy->detail->reference_department_id,
-                'branch_id' => $this->managementHierarchy->detail->branch_id,
-                "branch" => $this->managementHierarchy->detail->branch ? (new ManagementHierarchySimpleDataPresenter($this->managementHierarchy->detail->branch))->present() : null
+            'id' => $this->sourceManagementHierarchy->id,
+            'code_id' => $this->sourceManagementHierarchy->id,
+            'name' => $this->sourceManagementHierarchy->name,
+            'type' => $this->sourceManagementHierarchy->type,
+//            'parent_id' => $this->sourceManagementHierarchy->parent_id,
+//            "management"=>$this->sourceManagementHierarchy->parent?->type == "management" ? (new ManagementHierarchySimpleDataPresenter($this->sourceManagementHierarchy->parent))->getData() : null,
+            "management" => $this->sourceManagementHierarchy->managementHierarchies()->first()?->parent?->type == "management" ? (new ManagementHierarchySimpleDataPresenter($this->sourceManagementHierarchy->managementHierarchies()->first()?->parent))->present() : null,
+            "departments_count"=>$this->sourceManagementHierarchy->managementHierarchies->sum(function ($clone) {
+                return $clone->cacheHierarchyCounts()["department_count"]??0 ;
+            }),
+            "departments" => $this->getAllDepartmentsFromHierarchies(),
+//            "departments"=>ManagementHierarchySimpleDataPresenter::collection($this->sourceManagementHierarchy->managementHierarchies->where("type","department")),
+            'company_id' => $this->sourceManagementHierarchy->company_id,
+            'is_active' => $this->sourceManagementHierarchy->is_active,
+//            'is_main' => $this->sourceManagementHierarchy->is_main,
+//            'manager' => $this->sourceManagementHierarchy->user ? (new UserPresenter($this->sourceManagementHierarchy->user))->present() : null,
 
-            ] : null,
-//            'copies' => $this->managementHierarchy->clones?->map(function ($clone) {
+//            'copies' => $this->sourceManagementHierarchy->clones?->map(function ($clone) {
 //                return [
 //                    'id' => $clone->id,
 //                    'description' => $clone->description,
 //                    'is_copied' => $clone->is_copied,
 //                ];
 //            })->toArray(),
-            'users_count' => $this->managementHierarchy->clones->sum(function ($clone) {
-                return $clone->managementHierarchy ? ($clone->managementHierarchy->users_count ?? 0) : 0;
+            'users_count' => $this->sourceManagementHierarchy->managementHierarchies->sum(function ($clone) {
+                return $clone->users_count ?? 0;
             })
 
         ];
     }
+
+    /**
+     * Get all departments from all management hierarchies trees
+     */
+    private function getAllDepartmentsFromHierarchies(): array
+    {
+        $allDepartments = [];
+
+        // Get all management hierarchies related to this source
+        $managementHierarchies = $this->sourceManagementHierarchy->managementHierarchies()->with('children')->get();
+
+        foreach ($managementHierarchies as $hierarchy) {
+            // Get departments from this hierarchy tree
+            $departments = $this->collectDepartmentsFromTree($hierarchy);
+            $allDepartments = array_merge($allDepartments, $departments);
+        }
+
+        return $allDepartments;
+    }
+
+    /**
+     * Recursively collect all departments from a management hierarchy tree
+     */
+    private function collectDepartmentsFromTree($hierarchy): array
+    {
+        $departments = [];
+
+        // If this node is a department, add it to the collection
+        if ($hierarchy->type === 'department') {
+            $departments[] = [
+                'id' => $hierarchy->id,
+                'name' => $hierarchy->name,
+                'users_count' => $hierarchy->users_count ?? 0,
+                'is_active' => $hierarchy->is_active,
+            ];
+        }
+
+        // Recursively process children
+        if ($hierarchy->children && $hierarchy->children->count() > 0) {
+            foreach ($hierarchy->children as $child) {
+                $childDepartments = $this->collectDepartmentsFromTree($child);
+                $departments = array_merge($departments, $childDepartments);
+            }
+        }
+
+        return $departments;
+    }
+
+
 }

@@ -14,6 +14,8 @@ use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\ManagementHierarchy\Database\factories\ManagementHierarchyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
+use Modules\Shared\JobType\Models\JobType;
+use Modules\JobTitle\Models\JobTitle;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -235,4 +237,7 @@ class ManagementHierarchy extends Model
         $this->users_count--;
         $this->save();
     }
+
+
+
 }

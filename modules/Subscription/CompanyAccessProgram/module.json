@@ -1,0 +1,14 @@
+{
+    "name": "CompanyAccessProgram",
+    "alias": "companyaccessprogram",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Subscription\\CompanyAccessProgram\\Providers\\CompanyAccessProgramServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Subscription"
+}

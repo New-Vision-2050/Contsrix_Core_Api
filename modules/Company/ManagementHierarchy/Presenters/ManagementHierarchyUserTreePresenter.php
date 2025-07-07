@@ -22,10 +22,40 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
     private static bool $includeDeputyManagers = true;
     private static bool $includeDirectChildren = true;
     private static bool $skipManagementMainNodes = false;
+    
+    // Track users that have already been included in the tree to prevent duplication
+    private static array $includedUsers = [];
 
     public function __construct(ManagementHierarchy $managementHierarchy)
     {
         $this->managementHierarchy = $managementHierarchy;
+    }
+
+    /**
+     * Reset the included users tracking array
+     * Should be called at the start of each tree generation
+     */
+    public static function resetIncludedUsers(): void
+    {
+        self::$includedUsers = [];
+    }
+
+    /**
+     * Check if a user has already been included in the tree
+     */
+    private static function isUserIncluded( $userId): bool
+    {
+        return in_array($userId, self::$includedUsers);
+    }
+
+    /**
+     * Mark a user as included in the tree
+     */
+    private static function markUserAsIncluded( $userId): void
+    {
+        if (!self::isUserIncluded($userId)) {
+            self::$includedUsers[] = $userId;
+        }
     }
 
     public static function setIncludeManagers(bool $include): void
@@ -51,6 +81,10 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        // Reset tracking for new tree generation (only at root level)
+        if (empty(self::$includedUsers)) {
+            self::resetIncludedUsers();
+        }
 
         if ($this->managementHierarchy->type == "branch")
         {
@@ -63,6 +97,9 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         if (!$manager || !self::$includeManagers) {
             return $this->presentHierarchyWithoutManager();
         }
+
+        // Mark manager as included to prevent duplication
+        self::markUserAsIncluded($manager->id);
 
         // Present the manager as the root of this subtree
         $result = (new UserPresenter($manager))->getData();
@@ -120,6 +157,11 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
         if (self::$includeDirectChildren && $this->managementHierarchy->type!="branch") {
             $directUsers = $this->managementHierarchy->directUserChildren ?? collect([]);
             foreach ($directUsers as $user) {
+                // Skip this user if they're already included as a manager
+                if (self::isUserIncluded($user->id)) {
+                    continue;
+                }
+
                 // Present each direct report as a user with an empty children array
                 $userData = (new UserPresenter($user))->getData();
                 $userData['children'] = [];
@@ -129,6 +171,9 @@ class ManagementHierarchyUserTreePresenter extends AbstractPresenter
                     'type' => $this->managementHierarchy->type,
                 ];
                 $userData['type'] = "employee";
+
+                // Mark this user as included to prevent future duplication
+                self::markUserAsIncluded($user->id);
 
                 $children[] = $userData;
             }

@@ -6,6 +6,7 @@ namespace Modules\Company\ManagementHierarchy\Services;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Company\ManagementHierarchy\DTO\CloneDepartmentDTO;
+use Modules\Company\ManagementHierarchy\DTO\CloneManagementDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
@@ -17,6 +18,15 @@ class ManagementHierarchyCloneService
     public function __construct(
         private ManagementHierarchyRepository $repository,
     ) {
+    }
+
+
+    public function cloneManagement(CloneManagementDTO $dto)
+    {
+        $sourceManagementHierarchy = $this->repository->getSourceManagementHierarchy($dto->sourceId);
+        $detailTarget= $this->repository->getDetail($dto->taregtId);
+        return $this->repository->createManagement($dto->managementToArray()+["name"=>$sourceManagementHierarchy->name,"type"=>$sourceManagementHierarchy->type],$dto->managementDetailToArray()+["branch_id"=>$detailTarget->branch_id],$dto->getDeputyManagerIds());
+
     }
 
     /**
@@ -37,7 +47,7 @@ class ManagementHierarchyCloneService
             ]);
 
             // Load relationships
-            $sourceDepartment->load(['detail', 'detail.deputyManagerRelations']);
+            $sourceDepartment->load(['details', 'details.deputyManagerRelations']);
 
             // Determine the parent ID and branch ID for the cloned department
             $parentId = null;
@@ -139,7 +149,7 @@ class ManagementHierarchyCloneService
         }
 
         // Create the department using repository
-        $newDepartment = $this->repository->createDepartment($departmentData, $departmentDetail);
+        $newDepartment = $this->repository->createDepartment($departmentData, $departmentDetail,);
 
         // Clone deputy managers if requested
         if ($cloneManagers && $sourceDepartment->detail && $sourceDepartment->detail->deputyManagerRelations) {
