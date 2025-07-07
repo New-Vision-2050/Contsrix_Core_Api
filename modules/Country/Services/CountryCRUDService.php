@@ -50,4 +50,10 @@ class CountryCRUDService
         return $this->repository->getCountryWithSatesWithCities(request()->country_id,request()->state_id);
 
     }
+
+    public function getStatesByCountryBranch()
+
+    {
+       return $this->repository->getStateWithBranchAuthUser();
+    }
 }

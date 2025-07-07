@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Program\Controllers;
 
-use BasePackage\Shared\Presenters\Json;
-use App\Http\Controllers\Controller;
+use Ramsey\Uuid\Uuid;
 use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
+use Modules\Program\Requests\GetProgramRequest;
+use Modules\Program\Presenters\ProgramPresenter;
+use Modules\Program\Services\ProgramCRUDService;
 use Modules\Program\Handlers\DeleteProgramHandler;
 use Modules\Program\Handlers\UpdateProgramHandler;
-use Modules\Program\Presenters\ProgramPresenter;
 use Modules\Program\Requests\CreateProgramRequest;
 use Modules\Program\Requests\DeleteProgramRequest;
-use Modules\Program\Requests\GetProgramListRequest;
-use Modules\Program\Requests\GetProgramRequest;
 use Modules\Program\Requests\UpdateProgramRequest;
-use Modules\Program\Services\ProgramCRUDService;
-use Ramsey\Uuid\Uuid;
+use Modules\Program\Requests\GetProgramListRequest;
+use Modules\Program\Presenters\ProgramSelectListPresenter;
 
 class ProgramController extends Controller
 {
@@ -64,7 +65,7 @@ class ProgramController extends Controller
 
         $presenter = new ProgramPresenter($item);
 
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteProgramRequest $request): JsonResponse
@@ -82,6 +83,13 @@ class ProgramController extends Controller
         );
 
         return Json::items(ProgramPresenter::collectionWithSubEntities($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function selectListWithSubEntities(): JsonResponse
+    {
+        $programs = $this->programService->selectList();
+
+        return Json::items(ProgramSelectListPresenter::collection($programs));
     }
 
 }

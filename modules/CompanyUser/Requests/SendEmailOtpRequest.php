@@ -13,8 +13,16 @@ class SendEmailOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type'=>'required|in:email,phone',
-            'identifier' => 'required',
+            'type' => 'required|in:email,phone',
+            'identifier' => [
+                'required',
+                Rule::when($this->input('type') == 'email', [
+                    'email',
+                ]),
+                Rule::when($this->input('type') == 'phone', [
+                    'phone',
+                ]),
+            ],
         ];
     }
 

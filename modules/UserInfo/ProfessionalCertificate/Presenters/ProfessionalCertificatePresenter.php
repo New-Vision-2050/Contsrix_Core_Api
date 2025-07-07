@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\ProfessionalCertificate\Presenters;
 
+use Modules\Shared\Media\Presenters\MediaPresenter;
 use Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalCertificate;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
@@ -18,6 +19,7 @@ class ProfessionalCertificatePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $media = $this->professionalCertificate->getFirstMedia('upload');
         return [
             'id' => $this->professionalCertificate->id,
             'professional_bodie_id' => $this->professionalCertificate->professional_bodie_id,
@@ -27,6 +29,7 @@ class ProfessionalCertificatePresenter extends AbstractPresenter
             'accreditation_degree' => $this->professionalCertificate->accreditation_degree,
             'date_obtain' => $this->professionalCertificate->date_obtain,
             'date_end' => $this->professionalCertificate->date_end,
+            "file"=>$media != null ? (new MediaPresenter($media))->getData(): null,
         ];
     }
 }

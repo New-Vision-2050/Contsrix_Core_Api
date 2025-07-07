@@ -6,6 +6,10 @@ namespace Modules\UserInfo\UserEducationalCourse\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\Shared\Media\Services\FileUploadService;
+use Ramsey\Uuid\Nonstandard\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Modules\UserInfo\UserEducationalCourse\Models\UserEducationalCourse;
 
@@ -16,7 +20,12 @@ use Modules\UserInfo\UserEducationalCourse\Models\UserEducationalCourse;
  */
 class UserEducationalCourseRepository extends BaseRepository
 {
-    public function __construct(UserEducationalCourse $model)
+    public function __construct(
+        UserEducationalCourse     $model,
+        private FileUploadService $fileUploadService,
+        private CompanyUserRepository $companyUserRepository
+
+    )
     {
         parent::__construct($model);
     }
@@ -37,13 +46,47 @@ class UserEducationalCourseRepository extends BaseRepository
         ]);
     }
 
-    public function createUserEducationalCourse(array $data): UserEducationalCourse
+    public function createUserEducationalCourse(array $data, $file = null): UserEducationalCourse
     {
-        return $this->create($data);
+        $educationalCourse = $this->create($data);
+        $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($data['global_id']));
+        if ($file) {
+            $educationalCourse->clearMediaCollection('upload');
+            $companyName = Company::find($data['company_id'])?->name ?? 'UnknownCompany';
+            $path = $companyName . '/' . $user->name;
+
+            $this->fileUploadService->uploadFile(
+                $educationalCourse,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+        return $educationalCourse;
     }
 
-    public function updateUserEducationalCourse(UuidInterface $id, array $data): bool
+    public function updateUserEducationalCourse(UuidInterface $id, array $data , $file = null): bool
     {
+
+        $educationalCourse = $this->findOneBy(["id" => $id]);
+        $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($educationalCourse->global_id));
+        if ($file) {
+            $educationalCourse->clearMediaCollection('upload');
+            $companyName = Company::find($educationalCourse->company_id)?->name ?? 'UnknownCompany';
+            $path = $companyName . '/' . $user->name;
+
+            $this->fileUploadService->uploadFile(
+                $educationalCourse,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+
         return $this->update($id, $data);
     }
 
