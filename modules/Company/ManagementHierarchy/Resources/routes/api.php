@@ -26,22 +26,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::post('/', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
         Route::post('/{id}', [ManagementHierarchySettingController::class, 'updateManagementWithLookupsForChoise']);
         Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteManagementWithLookupsForChoise']);
-<<<<<<< HEAD
-=======
-
-    });
-    Route::group(["prefix" => "department-with-relations"], function () {
-        Route::post('/', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
-        Route::post('/{id}', [ManagementHierarchySettingController::class, 'updateDepartmentWithManagementsForDropDown']);
-        Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteDepartmentWithManagementsForDropDown']);
-
-    });
-    Route::post('/create-management-with-relations', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
-    Route::post('/create-department-with-relations', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
-    Route::post('/create-department', [ManagementHierarchyController::class, 'createDepartment']);
-    Route::post('/update-branch/{id}', [ManagementHierarchyController::class, 'updateBranch'])->permission(Permission::ORGANIZATION_BRANCH_UPDATE());
-    Route::put('/update-management/{id}', [ManagementHierarchyController::class, 'updateManagement'])->permission(Permission::ORGANIZATION_MANAGEMENT_UPDATE());
->>>>>>> 4d33c9eb (merge roles with subscription)
 
     });
     Route::group(["prefix" => "department-with-relations"], function () {
