@@ -202,6 +202,7 @@ class CompanyUserRepository extends BaseRepository
                     $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
                 }
             }
+
             // Find or create company user
             $companyUser = $this->findOrCreateCompanyUser(array_merge($companyUserData, $phone));
             $companyUser->phone = $phone['phone'];

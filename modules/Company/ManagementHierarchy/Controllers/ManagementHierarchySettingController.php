@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Company\ManagementHierarchy\Controllers;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Exception;
@@ -38,9 +39,11 @@ use Modules\Company\ManagementHierarchy\Requests\GetManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\GetNonCopiedHierarchiesRequest;
 use Modules\Company\ManagementHierarchy\Requests\MakeBranchMainRequest;
 use Modules\Company\ManagementHierarchy\Requests\Setting\CreateDepartmentWithRelationsRequest;
+use Modules\Company\ManagementHierarchy\Requests\Setting\UpdateDepartmentWithRelationsRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Requests\UpdateManagementRequest;
+use Modules\Company\ManagementHierarchy\Requests\UpdateManagementWithRelationsRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyLookupsService;
 use Modules\Company\ManagementHierarchy\Services\NonCopiedHierarchiesService;
@@ -177,5 +180,74 @@ class ManagementHierarchySettingController extends Controller
 
     }
 
+    /**
+     * Update a management with job types, job titles, and branches relations
+     */
+    public function updateManagementWithLookupsForChoise(UpdateManagementWithRelationsRequest $request): JsonResponse
+    {
+        $updateManagementWithRelationsDTO = $request->createUpdateManagementWithRelationsDTO();
+        $sourceManagementHierarchy = $this->managementHierarchyService->updateManagementWithLookupsForChoise($updateManagementWithRelationsDTO);
 
+        return Json::item(
+            (new ManagementWithRelationsPresenter($sourceManagementHierarchy))->getData(),
+        );
+    }
+
+    /**
+     * Update a department with managements
+     */
+    public function updateDepartmentWithManagementsForDropDown(UpdateDepartmentWithRelationsRequest $updateDepartmentWithRelationsRequest): JsonResponse
+    {
+        $updateDepartmentWithRelationsDTO = $updateDepartmentWithRelationsRequest->createUpdateDepartmentWithRelationsDTO();
+        $managementHierarchy = $this->settingManagementHierarchyService->updateDepartmentWithRelation($updateDepartmentWithRelationsDTO);
+
+        return Json::item(
+            (new ManagementWithRelationsPresenter($managementHierarchy))->getData(),
+        );
+    }
+
+    /**
+     * Delete a management with job types, job titles, and branches relations
+     */
+    public function deleteManagementWithLookupsForChoise(int $id): JsonResponse
+    {
+        try {
+            $result = $this->managementHierarchyService->deleteManagementWithLookupsForChoise($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Management hierarchy with relations deleted successfully',
+                'data' => ['deleted' => $result]
+            ]);
+
+        }catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete management hierarchy: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Delete a department with managements
+     */
+    public function deleteDepartmentWithManagementsForDropDown(int $id): JsonResponse
+    {
+        try {
+            $result = $this->settingManagementHierarchyService->deleteDepartmentWithRelation($id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Department hierarchy with relations deleted successfully',
+                'data' => ['deleted' => $result]
+            ]);
+
+        }
+        catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete department hierarchy: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
