@@ -47,6 +47,8 @@ class Attendance extends Model implements Auditable
         'total_break_hours',
         'overtime_hours',
         'is_late',
+        'is_absent',
+        'is_holiday',
         'is_early_departure',
         'late_minutes',
         'early_departure_minutes',

@@ -221,7 +221,7 @@ class AttendanceService
     /**
      * Get attendance summary
      */
-    public function getAttendanceSummary(string $userId, ?string $startDate = null, ?string $endDate = null): array
+    public function getAttendanceSummary(UuidInterface $userId, ?string $startDate = null, ?string $endDate = null): array
     {
         $startDate = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
         $endDate = $endDate ? Carbon::parse($endDate) : now()->endOfMonth();
@@ -230,11 +230,15 @@ class AttendanceService
 
         $summary = [
             'total_days' => $attendances->count(),
+            'total_attendant'=> $attendances->whereNotNull('clock_in_time')->count(),
+            'total_absent_days' => $attendances->where('is_absent',1)->count(),
+            'total_holiday_days' => $attendances->where('is_holiday',1)->count(),
+            'total_departures' => $attendances->whereNotNull('clock_out_time')->count(),
             'total_work_hours' => $attendances->sum('total_work_hours'),
             'total_overtime_hours' => $attendances->sum('overtime_hours'),
             'total_break_hours' => $attendances->sum('total_break_hours'),
-            'late_days' => $attendances->where('is_late', true)->count(),
-            'early_departures' => $attendances->where('is_early_departure', true)->count(),
+            'late_days' => $attendances->where('is_late',1)->count(),
+            'early_departures' => $attendances->where('is_early_departure',1)->count(),
             'average_work_hours' => $attendances->count() > 0 ? $attendances->avg('total_work_hours') : 0,
             'period' => [
                 'start_date' => $startDate->toDateString(),

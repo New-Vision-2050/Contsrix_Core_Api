@@ -21,7 +21,6 @@ class Role extends SpatieRole
     use BaseFilterable;
     use HasFactory;
     use BelongsToTenant;
-
 //    use HasUuids;
 
     // use HasTranslations;
@@ -34,6 +33,14 @@ class Role extends SpatieRole
     protected $keyType = 'string';
     protected $primaryKey = 'id';
 
+    protected $casts = [
+        'company_id' => "string",
+    ];
 
-
+    protected $fillable = [
+        'name',
+        'guard_name',
+        'company_id',
+        'status'
+    ];
 }

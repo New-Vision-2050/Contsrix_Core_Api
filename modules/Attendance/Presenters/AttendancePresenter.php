@@ -70,6 +70,9 @@ class AttendancePresenter extends AbstractPresenter
                 'id' => $this->attendance->user->id ? (string)$this->attendance->user->id : null,
                 'name' => $this->attendance->user->name,
                 'email' => $this->attendance->user->email,
+                'birthdate' => $this->attendance->user?->companyUser?->birthdate_gregorian ?? null,
+                'country' => $this->attendance->user->companyUser?->country?->name ?: null,
+                'gender' => $this->attendance->user->companyUser->gender,
             ] : null,
 
             'company' => $this->attendance->company ? [
@@ -95,6 +98,14 @@ class AttendancePresenter extends AbstractPresenter
             'applied_constraints' => $appliedConstraints,
             // Use the result of the helper method to determine the day status.
             'day_status' => $this->getDayStatus($appliedConstraints),
+            'professional_data' => $this->attendance->user?->professionalData ? [
+                'id' => (string) $this->attendance->user->professionalData->id,
+                'job_title' => $this->attendance->user->professionalData->jobTitle?->name,
+                'job_code' => $this->attendance->user->professionalData->job_code,
+                'department' => $this->attendance->user->professionalData->department?->name,
+                'branch' => $this->attendance->user->professionalData->branch?->name,
+                'management' => $this->attendance->user->professionalData->management?->name,
+            ] : null,
         ];
     }
   /**
