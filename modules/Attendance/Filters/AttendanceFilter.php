@@ -107,6 +107,7 @@ class AttendanceFilter extends SearchModelFilter
         });
     }
 
+
     public function companyName($name)
     {
         return $this->whereHas('company', function ($query) use ($name) {
@@ -146,5 +147,15 @@ class AttendanceFilter extends SearchModelFilter
             return $this->where('is_early_leave', true);
         }
         return $this->where('is_early_leave', false);
+    }
+
+    public function userSearch($term)
+    {
+        return $this->whereHas('user', function ($query) use ($term) {
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'LIKE', "%{$term}%")
+                ->orWhere('email', 'LIKE', "%{$term}%");
+            });
+        });
     }
 }
