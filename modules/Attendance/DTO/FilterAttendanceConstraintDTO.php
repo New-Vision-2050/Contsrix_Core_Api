@@ -22,8 +22,8 @@ class FilterAttendanceConstraintDTO
         public ?string $user_email = null,
         public ?string $company_name = null,
         public ?bool $is_active = null,
-        public ?int $page = 1,
-        public ?int $per_page = 10,
+        // public ?int $page = 1,
+        // public ?int $per_page = 10,
     ) {}
 
     public function toArray(): array
@@ -151,13 +151,13 @@ class FilterAttendanceConstraintDTO
         return $this->is_active;
     }
 
-    public function getPage(): ?int
-    {
-        return $this->page;
-    }
+    // public function getPage(): ?int
+    // {
+    //     return $this->page;
+    // }
 
-    public function getPerPage(): ?int
-    {
-        return $this->per_page;
-    }
+    // public function getPerPage(): ?int
+    // {
+    //     return $this->per_page;
+    // }
 }

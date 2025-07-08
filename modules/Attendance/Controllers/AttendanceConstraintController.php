@@ -50,8 +50,8 @@ class AttendanceConstraintController extends Controller
 
         $result = $this->constraintRepository->getConstraintList(
             $filterDTO->toArray(),
-            $filterDTO->getPage(),
-            $filterDTO->getPerPage()
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10)
         );
 
         if ($result['pagination']) {
