@@ -13,6 +13,7 @@ use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
+use Modules\RoleAndPermission\Presenters\RoleWidgetsPresenter;
 use Modules\RoleAndPermission\Presenters\RoleWithPermissionPresenter;
 use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
@@ -23,21 +24,23 @@ use Modules\RoleAndPermission\Requests\GetRoleRequest;
 use Modules\RoleAndPermission\Requests\SetStatusRoleRequest;
 use Modules\RoleAndPermission\Requests\UpdateRoleRequest;
 use Modules\RoleAndPermission\Services\RoleCRUDService;
+use Modules\RoleAndPermission\Services\RoleService;
 use Ramsey\Uuid\Uuid;
 
 class RoleController extends Controller
 {
     public function __construct(
-        private RoleCRUDService $roleService,
-        private UpdateRoleHandler $updateRoleHandler,
-        private AssignPermissionsToRoleHandler $assignPermissionsToRoleHandler,
-        private DeleteRoleHandler $deleteRoleHandler,
+        private readonly RoleCRUDService $roleCRUDService,
+        private readonly RoleService $roleService,
+        private readonly UpdateRoleHandler $updateRoleHandler,
+        private readonly AssignPermissionsToRoleHandler $assignPermissionsToRoleHandler,
+        private readonly DeleteRoleHandler $deleteRoleHandler,
     ) {
     }
 
     public function index(GetRoleListRequest $request): JsonResponse
     {
-        $list = $this->roleService->list(
+        $list = $this->roleCRUDService->list(
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
@@ -47,16 +50,18 @@ class RoleController extends Controller
 
     public function show(GetRoleRequest $request): JsonResponse
     {
-        $item = $this->roleService->get(Uuid::fromString($request->route('id')));
+        $item = $this->roleCRUDService->get(Uuid::fromString($request->route('id')));
 
         $presenter = new RoleWithPermissionPresenter($item);
 
         return Json::item($presenter->getData());
     }
 
+
+
     public function store(CreateRoleRequest $request): JsonResponse
     {
-        $createdItem = $this->roleService->create($request->createCreateRoleDTO(),$request->createCreatePermissionForRoleDTO());
+        $createdItem = $this->roleCRUDService->create($request->createCreateRoleDTO(),$request->createCreatePermissionForRoleDTO());
 
         $presenter = new RolePresenter($createdItem);
 
@@ -68,7 +73,7 @@ class RoleController extends Controller
         $command = $request->createUpdateRoleCommand();
         $this->updateRoleHandler->handle($command);
 
-        $item = $this->roleService->get($command->getId());
+        $item = $this->roleCRUDService->get($command->getId());
 
         $presenter = new RolePresenter($item);
 
@@ -85,7 +90,7 @@ class RoleController extends Controller
 
     public function getPermissions(GetPermissionRequest $request)
     {
-        $role = $this->roleService->get(Uuid::fromString($request->route('id')));
+        $role = $this->roleCRUDService->get(Uuid::fromString($request->route('id')));
         $permissionRepresenter = PermissionPresenter::collection($role->permissions);
         return Json::item("permissions", $permissionRepresenter);
     }
@@ -108,7 +113,7 @@ class RoleController extends Controller
     public function setStatus(SetStatusRoleRequest $request): JsonResponse
     {
         try {
-            $role = $this->roleService->setStatus(
+            $role = $this->roleCRUDService->setStatus(
                 Uuid::fromString($request->getRoleId()),
                 $request->getStatus()
             );
@@ -121,5 +126,14 @@ class RoleController extends Controller
         } catch (ValidationException $e) {
             return Json::error($e->errors()['status'][0] ?? 'Cannot update role status', 422);
         }
+    }
+
+    public function getRoleWidgetsData(): JsonResponse
+    {
+        $widgetsData = $this->roleService->getRoleWidgetsData();
+
+        return Json::item(
+            (new RoleWidgetsPresenter($widgetsData))->getData()
+        );
     }
 }
