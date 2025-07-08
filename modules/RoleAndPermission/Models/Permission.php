@@ -6,15 +6,20 @@ namespace Modules\RoleAndPermission\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\Subscription\Models\Feature;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission as SpatiePermission;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Permission extends SpatiePermission
 {
     use UuidTrait;
     use BaseFilterable;
     use HasFactory;
+    use BelongsToTenant;
 
     public array $translatable = [];
 
@@ -22,6 +27,12 @@ class Permission extends SpatiePermission
     protected $primaryKey = 'id';
     protected $keyType = 'string';
 
+
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "roles";
+    }
     // Allow mass assignment for new columns
     protected $fillable = [
         'name',
@@ -31,6 +42,15 @@ class Permission extends SpatiePermission
         'program_id',
         'sub_entity_id',
     ];
+
+    /**
+     * Get the company that owns the permission.
+     */
+    public function company()
+    {
+        return $this->belongsTo('Modules\Company\CompanyCore\Models\Company', 'company_id');
+    }
+
 
     /**
      * Relation to Program model (nullable).
