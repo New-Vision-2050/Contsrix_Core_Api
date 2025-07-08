@@ -16,6 +16,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     Route::group(['prefix' => 'roles'], function () {
         Route::get('/', [RoleController::class, 'index'])->permission(Permission::ROLE_VIEW());
+        Route::get('/widgets', [RoleController::class, 'getRoleWidgetsData'])->permission(Permission::ROLE_VIEW());
         Route::post('/', [RoleController::class, 'store'])->permission(Permission::ROLE_CREATE());
         Route::get('/{id}', [RoleController::class, 'show'])->permission(Permission::ROLE_VIEW());
         Route::get('/{id}/permissions', [RoleController::class, 'getPermissions'])->permission(Permission::PERMISSION_VIEW());
