@@ -11,6 +11,7 @@ use Modules\Country\Database\factories\CountryFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Setting\Models\Driver;
 use Modules\Shared\TimeZone\Models\TimeZone;
+use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -19,6 +20,7 @@ class Country extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+
     //use HasTranslations;
     //use SoftDeletes;
 
@@ -41,7 +43,7 @@ class Country extends Model
 
     protected $casts = [
         'id' => 'string',
-        "timezones"=>"array"
+        "timezones" => "array"
     ];
 
     public function smsDriver()
@@ -53,17 +55,29 @@ class Country extends Model
     {
         return CountryFactory::new();
     }
+
     public function scopeActive($query)
     {
-        return $query->where("status",1);
+        return $query->where("status", 1);
     }
 
     public function states()
     {
         return $this->hasMany(State::class);
     }
+
     public function timeZones()
-{
-    return $this->hasMany(TimeZone::class);
-}
+    {
+        return $this->hasMany(TimeZone::class);
+    }
+
+    public function companyAccessProgram()
+    {
+        return $this->belongsToMany(
+            CompanyAccessProgram::class,
+            'company_access_program_country',
+            'country_id',
+            'company_access_program_id'
+        );
+    }
 }
