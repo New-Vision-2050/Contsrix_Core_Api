@@ -7,17 +7,20 @@ namespace Modules\RoleAndPermission\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 use Modules\RoleAndPermission\Handlers\AssignPermissionsToRoleHandler;
 use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
+use Modules\RoleAndPermission\Presenters\RoleWithPermissionPresenter;
 use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
 use Modules\RoleAndPermission\Requests\CreateRoleRequest;
 use Modules\RoleAndPermission\Requests\DeleteRoleRequest;
 use Modules\RoleAndPermission\Requests\GetPermissionRequest;
 use Modules\RoleAndPermission\Requests\GetRoleListRequest;
 use Modules\RoleAndPermission\Requests\GetRoleRequest;
+use Modules\RoleAndPermission\Requests\SetStatusRoleRequest;
 use Modules\RoleAndPermission\Requests\UpdateRoleRequest;
 use Modules\RoleAndPermission\Services\RoleCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -46,7 +49,7 @@ class RoleController extends Controller
     {
         $item = $this->roleService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new RolePresenter($item);
+        $presenter = new RoleWithPermissionPresenter($item);
 
         return Json::item($presenter->getData());
     }
@@ -94,5 +97,29 @@ class RoleController extends Controller
         $this->deleteRoleHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    /**
+     * Set the status of a role (activate or deactivate).
+     *
+     * @param SetStatusRoleRequest $request
+     * @return JsonResponse
+     */
+    public function setStatus(SetStatusRoleRequest $request): JsonResponse
+    {
+        try {
+            $role = $this->roleService->setStatus(
+                Uuid::fromString($request->getRoleId()),
+                $request->getStatus()
+            );
+
+            $message = $request->getStatus() ? 'Role activated successfully.' : 'Role deactivated successfully.';
+
+            $presenter = new RolePresenter($role);
+
+            return Json::item($presenter->getData(), message: $message);
+        } catch (ValidationException $e) {
+            return Json::error($e->errors()['status'][0] ?? 'Cannot update role status', 422);
+        }
     }
 }

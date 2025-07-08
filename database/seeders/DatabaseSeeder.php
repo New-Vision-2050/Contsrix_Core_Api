@@ -3,11 +3,16 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
+use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
+use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
+use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
+use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
+use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
 use Modules\Program\Database\Seeders\ProgramDatabaseSeeder;
-use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\SubEntity\Database\Seeders\RegistrationFormsSeeder;
@@ -25,10 +30,8 @@ use Modules\Shared\University\Database\Seeders\UniversitiesTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitsSeederTableSeeder;
 use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
-use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
 use Modules\Shared\NatureWork\Database\Seeders\NatureWorkSeederTableSeeder;
 use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
-use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesSeederTableSeeder;
 use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
@@ -36,10 +39,6 @@ use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
-<<<<<<< HEAD
-use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
-=======
->>>>>>> 4d33c9eb (merge roles with subscription)
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\RightTerminate\Database\Seeders\RightTerminateSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSeeder;
@@ -61,12 +60,14 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CurrencySeederTable::class);
 //        $this->call(UniversitiesTableSeeder::class);
-        $this->call(RolesAndPermissionsSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(LanguagesTableSeeder::class);
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(AdminSeedTableSeeder::class);
         $this->call(CompanyModulesSeederTableSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
+
+
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
         $this->call(QuestionSettingTableSeeder::class);

@@ -36,15 +36,7 @@ class AdminSeedTableSeeder extends Seeder
                     'email' => 'admin@constrix-nv.com',
 
                     "currency_id"=> Country::query()->first()->id,
-<<<<<<< HEAD
-<<<<<<< HEAD
                     "job_title_id"=>JobTitle::query()->first()->id,
-=======
-                    "job_title_id"=>jobTitle::query()->first()->id,
->>>>>>> 7be6c72c (merge with stage (first version ))
-=======
-                    "job_title_id"=>JobTitle::query()->first()->id,
->>>>>>> 4d33c9eb (merge roles with subscription)
                     "country_id"=>Country::query()->first()->id,
                     "time_zone_id"=>Country::query()->first()->id,
                     "language_id"=>Language::query()->first()->id,
@@ -65,22 +57,12 @@ class AdminSeedTableSeeder extends Seeder
                     "management_hierarchy_id"=>2 //main management in main company
                 ]
             );
-<<<<<<< HEAD
-            $user->assignRole('super-admin');
-            
-=======
 
->>>>>>> 4d33c9eb (merge roles with subscription)
             // Manually trigger users_count recalculation since seeder bypasses observers
             $this->recalculateUsersCount();
         }
     //}
-<<<<<<< HEAD
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 4d33c9eb (merge roles with subscription)
     /**
      * Manually recalculate users_count for all hierarchies
      * This ensures correct counts after seeding
@@ -90,9 +72,4 @@ class AdminSeedTableSeeder extends Seeder
         // Use Artisan command to recalculate counts
         \Illuminate\Support\Facades\Artisan::call('recalculate:users-count');
     }
-<<<<<<< HEAD
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
-=======
->>>>>>> 4d33c9eb (merge roles with subscription)
 }

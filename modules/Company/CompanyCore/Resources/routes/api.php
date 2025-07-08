@@ -22,7 +22,7 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
     Route::post('/test', [CompanyController::class, 'test']);
 
     Route::put('/{id}/activate', [CompanyController::class, 'activate']);
-    Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show')->permission(Permission::COMPANY_VIEW());
+    Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show')->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
     Route::put('/{id}', [CompanyController::class, 'update'])->permission(Permission::COMPANY_EDIT());
     Route::delete('/delete-last', [CompanyController::class, 'deleteLastCreated'])->name('companies.delete')->permission(Permission::COMPANY_DELETE());
     Route::delete('/{id}', [CompanyController::class, 'delete'])->name('companies.delete')->permission(Permission::COMPANY_DELETE());
@@ -51,15 +51,15 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
         Route::post("validate-logo", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "validateCompanyLogo"]);
 
         Route::prefix("national-address")->group(function () {
-            Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getAddressFromMap"]);
+            Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getAddressFromMap"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
             Route::put("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "setAddress"])->permission(Permission::COMPANY_PROFILE_ADDRESS_UPDATE());
         });
 
         // Separated API endpoints for company data
-        Route::get("company-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyLegalData"])->permission(Permission::COMPANY_VIEW());
-        Route::get("company-address", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyAddress"])->permission(Permission::COMPANY_VIEW());
-        Route::get("company-official-documents", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyOfficialDocuments"])->permission(Permission::COMPANY_VIEW());
-        Route::get("company-branches", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyBranches"])->permission(Permission::COMPANY_VIEW());
+        Route::get("company-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyLegalData"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
+        Route::get("company-address", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyAddress"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
+        Route::get("company-official-documents", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyOfficialDocuments"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
+        Route::get("company-branches", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyBranches"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
 
     });
 });

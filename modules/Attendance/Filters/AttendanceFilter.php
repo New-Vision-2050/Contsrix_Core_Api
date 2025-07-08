@@ -107,6 +107,7 @@ class AttendanceFilter extends SearchModelFilter
         });
     }
 
+
     public function companyName($name)
     {
         return $this->whereHas('company', function ($query) use ($name) {
@@ -146,5 +147,36 @@ class AttendanceFilter extends SearchModelFilter
             return $this->where('is_early_leave', true);
         }
         return $this->where('is_early_leave', false);
+    }
+
+    public function userSearch($term)
+    {
+        return $this->whereHas('user', function ($query) use ($term) {
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'LIKE', "%{$term}%")
+                ->orWhere('email', 'LIKE', "%{$term}%");
+            });
+        });
+    }
+    public function management($managementId)
+    {
+
+        return $this->whereHas('user.userProfessionalData', function ($query) use ($managementId) {
+            $query->where('management_id', $managementId);
+        });
+    }
+
+    public function branch($branchId)
+    {
+        return $this->whereHas('user.userProfessionalData', function ($query) use ($branchId) {
+            $query->where('branch_id', $branchId);
+        });
+    }
+
+    public function constraint($constraintId)
+    {
+       return $this->whereHas('appliedConstraints', function ($query) use ($constraintId) {
+            $query->where('constraint_id', $constraintId);
+        });
     }
 }

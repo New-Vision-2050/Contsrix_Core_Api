@@ -21,10 +21,6 @@ use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Modules\Company\CompanyType\Models\CompanyType;
-<<<<<<< HEAD
-use Modules\Subscription\Models\CompanyPackagePivot;
-=======
->>>>>>> 4d33c9eb (merge roles with subscription)
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 

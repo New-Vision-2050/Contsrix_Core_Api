@@ -31,7 +31,6 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->ensureCompanyHasPermissions($companyId);
 
 
-
         // Create roles for the current company
         $this->createCompanyRoles($companyId);
     }
@@ -74,14 +73,14 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdminRole->syncPermissions($permissions);
         $adminRole->syncPermissions($permissions);
 
-        // Assign super-admin role to the first user if not in tenant environment
-        if (!tenant()) {
-            $user = User::first();
-            if ($user) {
-                setPermissionsTeamId($companyId);
-                $user->assignRole('super-admin');
-            }
+        // Assign super-admin role to the first userZ
+
+        $user = User::first();
+        if ($user) {
+            setPermissionsTeamId($companyId);
+            $user->assignRole('super-admin');
         }
+
     }
 
     /**
@@ -135,119 +134,6 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     private function getDefaultPermissions(): array
     {
-        return [
-            // User module permissions
-            'users.user.view',
-            'users.user.list',
-            'users.user.create',
-            'users.user.edit',
-            'users.user.delete',
-            'users.user.export',
-
-            'users.client.view',
-            'users.client.list',
-            'users.client.create',
-            'users.client.edit',
-            'users.client.delete',
-            'users.client.export',
-
-
-            'users.broker.view',
-            'users.broker.list',
-            'users.broker.create',
-            'users.broker.edit',
-            'users.broker.delete',
-            'users.broker.export',
-
-
-            'users.employee.view',
-            'users.employee.list',
-            'users.employee.create',
-            'users.employee.edit',
-            'users.employee.delete',
-            'users.employee.export',
-
-
-            // Company module permissions
-            'companies.company.view',
-            'companies.company.list',
-            'companies.company.create',
-            'companies.company.edit',
-            'companies.company.delete',
-            'companies.company.login-as-admin',
-            'companies.company.export',
-
-            // Role and Permission module permissions
-            'settings.role.view',
-            'settings.role.create',
-            'settings.role.edit',
-            'settings.role.delete',
-            'settings.permission.view',
-            'settings.permission.assign',
-
-            "settings.identifier.list",
-            "settings.login-way.create",
-            "settings.login-way.update",
-            "settings.login-way.view",
-            "settings.login-way.delete",
-            "settings.login-way.activate",
-
-            "settings.driver.view",
-            "settings.driver.update",
-
-            "organization.branch.view",
-            "organization.management.view",
-            "organization.users.view",
-
-            "organization.job-title.create",
-            "organization.job-title.update",
-            "organization.job-title.delete",
-            "organization.job-title.list",
-            "organization.job-title.activate",
-            "organization.job-title.export",
-
-
-            "organization.job-type.create",
-            "organization.job-type.update",
-            "organization.job-type.delete",
-            "organization.job-type.list",
-            "organization.job-type.activate",
-            "organization.job-type.export",
-            "organization.branch.create",
-            "organization.branch.update",
-            "organization.branch.delete",
-            "organization.management.create",
-            "organization.management.update",
-            "organization.management.delete",
-
-
-            "company-profile.official-data.update",
-            "company-profile.official-data.request-update",
-
-
-            "company-profile.legal-data.update",
-            "company-profile.legal-data.request-update",
-
-
-            "company-profile.address.update",
-            "company-profile.address.request-update",
-
-            "company-profile.branch.list",
-            "company-profile.branch.view",
-
-
-
-
-
-            "company-profile.official-document.create",
-            "company-profile.official-document.update",
-            "company-profile.official-document.delete",
-
-
-
-
-
-            // Add more default permissions for your modules here
-        ];
+        return \Modules\RoleAndPermission\Enums\Permission::all();
     }
 }

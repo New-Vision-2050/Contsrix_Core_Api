@@ -104,43 +104,30 @@ class AttendanceRepository extends BaseRepository
     /**
      * Get attendance history with filters and pagination
      */
-    // public function getAttendanceHistory(array $filters = [], ?int $page = null, ?int $perPage = 10): array
-    // {
-    //     $query = $this->model->newQuery()->with(['user', 'company']);
-
-    //     // Apply filters using the filter method
-    //     if (!empty($filters)) {
-    //         $query->filter($filters);
-    //     }
-
-    //     $query->orderBy('clock_in_time', 'desc');
-
-    //     if ($page) {
-    //         return $this->getPaginationData($query, $page, $perPage);
-    //     }
-
-    //     return [
-    //         'data' => $query->get(),
-    //         'pagination' => null
-    //     ];
-    // }
-
-        public function getAttendanceHistory(array $conditions = [], int $page = 1,int $perPage = 10)
+    public function getAttendanceHistory(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        $query = $this->model->where($conditions)->filter(request()->all());
-        $count = $query->count();
-        $paginatedData = $query->forPage($page, $perPage)->get();
-        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return array_merge($paginationArray, [
-            'data' => $paginatedData
-        ]);
+        $query = $this->model->newQuery()->with(['user', 'company']);
+        
+        // Apply filters using the filter method
+        if (!empty($filters)) {
+            $query->filter($filters);
+        }
+
+        $query->orderBy('clock_in_time', 'desc');
+
+        if ($page) {
+            return $this->getPaginationData($query, $page, $perPage);
+        }
+        return [
+            'data' => $query->get(),
+            'pagination' => null
+        ];
+
     }
-
-
     /**
      * Get attendance by date range
      */
-    public function getAttendanceByDateRange(string $userId, Carbon $startDate, Carbon $endDate): Collection
+    public function getAttendanceByDateRange(UuidInterface $userId, Carbon $startDate, Carbon $endDate): Collection
     {
         return Attendance::where('user_id', $userId)
             ->whereBetween('clock_in_time', [$startDate, $endDate])

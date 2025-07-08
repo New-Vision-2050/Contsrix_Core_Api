@@ -51,6 +51,18 @@ return [
     'legal-data' => 'Legal Data',
     'address' => 'Address',
     'official-document' => 'Official Document',
+
+    // User Profile
+    'user-profile' => 'User Profile',
+    'personal-information' => 'Personal Information',
+    'contact-information' => 'Contact Information',
+    'passport-information' => 'Passport Information',
+    'bank-information' => 'Bank Information',
+    'address-information' => 'Address Information',
+    'marital-status' => 'Marital Status',
+    'social-media-account' => 'Social Media Account',
+    'border-number-information' => 'Border Number Information',
+    'work-license' => 'Work License',
     
     // Module names
     'settings' => 'Settings',

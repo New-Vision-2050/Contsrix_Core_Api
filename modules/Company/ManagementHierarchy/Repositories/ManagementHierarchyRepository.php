@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
+
 use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\User\Models\User;

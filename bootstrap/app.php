@@ -1,6 +1,11 @@
 <?php
 
 use App\Http\Middleware\TenancePermision;
+use App\Http\Middleware\Localization;
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\RoleOrPermissionMiddleware;
+use App\Http\Middleware\DomainToTenantMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'lang' => \App\Http\Middleware\Localization::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'permission' => PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'domain.tenant' => \App\Http\Middleware\DomainToTenantMiddleware::class,
         ]);

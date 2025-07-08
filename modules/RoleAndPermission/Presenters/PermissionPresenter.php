@@ -19,24 +19,11 @@ class PermissionPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        $nameParts = explode('.', $this->permission->name);
-        $translatedName = '';
-        if (count($nameParts) >= 2) {
-            // Skip the first part (module name) and translate the rest
-            for ($i = count($nameParts) - 1; $i >= 1; $i--) {
-                $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
-            }
-        } elseif (count($nameParts) == 1) {
-            $translatedName = __('names.' . $nameParts[0]);
-        } else {
-            $translatedName = __('names.' . $this->permission->name);
-        }
         return [
             'id' => $this->permission->id,
-            'name' => $translatedName,
+            'name' => $this->permission->name,
             'status' => $this->permission->status,
-            'user_count' => $this->getUserCount(),
-            "key" => $this->permission->key,
+            'user_count' => $this->getUserCount()
         ];
     }
 
