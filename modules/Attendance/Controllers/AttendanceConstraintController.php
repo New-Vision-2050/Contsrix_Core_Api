@@ -23,6 +23,7 @@ use Modules\Attendance\Requests\BulkConstraintRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Attendance\Presenters\ConstraintPresenter;
 use Ramsey\Uuid\Uuid;
 
 class AttendanceConstraintController extends Controller
@@ -44,7 +45,7 @@ class AttendanceConstraintController extends Controller
     /**
      * Display a listing of constraints with filtering and pagination.
      */
-    public function index(FilterConstraintsRequest $request): JsonResponse
+    public function index(FilterConstraintsRequest $request)//: JsonResponse
     {
         $filterDTO = $request->createFilterConstraintDTO(Auth::user()->company_id);
 
@@ -54,15 +55,19 @@ class AttendanceConstraintController extends Controller
             (int) $request->input('per_page', 10)
         );
 
-        if ($result['pagination']) {
-            return Json::items(
-                mainItems:          $result['data'],
-                paginationSettings: $result['pagination'],
-                message:            'Constraints retrieved successfully'
-            );
-        }
 
-        return Json::items(mainItems: $result['data'], message: 'Constraints retrieved successfully');
+       $presentedData = collect($result['data'])->map(function ($constraint) {
+            return (new ConstraintPresenter($constraint))->present();
+        });
+
+        // 2. Pass the formatted collection to the JSON helper.
+        // The ->values()->all() ensures it's a clean, flat array.
+        return Json::items(
+            mainItems:          $presentedData->values()->all(),
+            paginationSettings: $result['pagination'],
+            message:            'Constraints retrieved successfully'
+        );
+        return Json::items($result['data'], message: 'Constraints retrieved successfully');
     }
 
     /**
