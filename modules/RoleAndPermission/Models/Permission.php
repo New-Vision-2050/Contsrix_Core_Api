@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Spatie\Permission\Models\Permission as SpatiePermission;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
@@ -18,6 +19,7 @@ class Permission extends SpatiePermission
     use UuidTrait;
     use BaseFilterable;
     use HasFactory;
+    use BelongsToTenant;
 
     // use HasTranslations;
     // use SoftDeletes;
