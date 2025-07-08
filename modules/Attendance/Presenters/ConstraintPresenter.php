@@ -17,8 +17,8 @@ class ConstraintPresenter extends AbstractPresenter
     {
         return [
             'id' => (string) $this->constraint->id,
-            'name' => $this->constraint->constraint_name,
-            'type' => $this->constraint->constraint_type,
+            'constraint_name' => $this->constraint->constraint_name,
+            'constraint_type' => $this->constraint->constraint_type,
             'notes' => $this->constraint->notes,
             'is_active' => (int) $this->constraint->is_active,
             'priority' => (int) $this->constraint->priority,
