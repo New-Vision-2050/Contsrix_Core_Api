@@ -14,8 +14,8 @@ class UpdateCompanyAccessProgramHandler
     ) {
     }
 
-    public function handle(UpdateCompanyAccessProgramCommand $updateCompanyAccessProgramCommand)
+    public function handle(UpdateCompanyAccessProgramCommand $updateCompanyAccessProgramCommand): void
     {
-        $this->repository->updateCompanyAccessProgram($updateCompanyAccessProgramCommand->getId(), $updateCompanyAccessProgramCommand->toArray());
+        $this->repository->updateCompanyAccessProgramWithRelations($updateCompanyAccessProgramCommand);
     }
 }

@@ -57,7 +57,7 @@ class ValidProgramStructure implements Rule
     private function fetchDataFromDb(): void
     {
         $this->dbPrograms = Program::whereIn('id', array_unique($this->programIds))->get()->keyBy('id')->all();
-        $this->dbSubEntities = SubEntity::whereIn('id', array_unique($this->subEntityIds))->get()->groupBy('main_program_id');
+        $this->dbSubEntities = SubEntity::whereIn('id', array_unique($this->subEntityIds))->get()->groupBy('program_id');
     }
 
     private function validatePrograms(array $programs, ?string $parentId = null): void
