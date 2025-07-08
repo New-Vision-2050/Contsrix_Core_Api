@@ -27,7 +27,11 @@ class FilterAttendanceRequest extends FormRequest
             'status' => ['sometimes', 'string', 'in:active,completed,pending_approval,approved,rejected'],
             'start_date' => ['sometimes', 'date', 'before_or_equal:end_date'],
             'end_date' => ['sometimes', 'date', 'after_or_equal:start_date'],
-            'department_id' => ['sometimes', 'string', 'exists:departments,id'],
+            'department_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
+            'management_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
+            'branch_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
+            'constraint_id' => ['sometimes', 'string', 'exists:attendance_constraints,id'],
+            'user_search' => ['sometimes', 'string'],
             'user_name' => ['sometimes', 'string'],
             'user_email' => ['sometimes', 'string', 'email'],
             'work_hours_from' => ['sometimes', 'numeric', 'min:0', 'lte:work_hours_to'],
@@ -40,7 +44,7 @@ class FilterAttendanceRequest extends FormRequest
             'ip_address' => ['sometimes', 'string'],
             'late_arrival' => ['sometimes', 'boolean'],
             'early_departure' => ['sometimes', 'boolean'],
-            
+
             // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
@@ -82,6 +86,10 @@ class FilterAttendanceRequest extends FormRequest
             start_date: $validated['start_date'] ?? null,
             end_date: $validated['end_date'] ?? null,
             department_id: $validated['department_id'] ?? null,
+            management_id: $validated['management_id'] ?? null,
+            branch_id: $validated['branch_id'] ?? null,
+            constraint_id: $validated['constraint_id'] ?? null,
+            user_search: $validated['user_search'] ?? null,
             user_name: $validated['user_name'] ?? null,
             user_email: $validated['user_email'] ?? null,
             work_hours_from: $validated['work_hours_from'] ?? null,

@@ -158,4 +158,25 @@ class AttendanceFilter extends SearchModelFilter
             });
         });
     }
+    public function management($managementId)
+    {
+
+        return $this->whereHas('user.userProfessionalData', function ($query) use ($managementId) {
+            $query->where('management_id', $managementId);
+        });
+    }
+
+    public function branch($branchId)
+    {
+        return $this->whereHas('user.userProfessionalData', function ($query) use ($branchId) {
+            $query->where('branch_id', $branchId);
+        });
+    }
+
+    public function constraint($constraintId)
+    {
+       return $this->whereHas('appliedConstraints', function ($query) use ($constraintId) {
+            $query->where('constraint_id', $constraintId);
+        });
+    }
 }

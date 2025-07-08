@@ -107,7 +107,7 @@ class AttendanceRepository extends BaseRepository
     public function getAttendanceHistory(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
         $query = $this->model->newQuery()->with(['user', 'company']);
-
+        
         // Apply filters using the filter method
         if (!empty($filters)) {
             $query->filter($filters);

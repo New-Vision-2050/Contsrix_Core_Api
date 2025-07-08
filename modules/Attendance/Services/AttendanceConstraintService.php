@@ -65,7 +65,6 @@ class AttendanceConstraintService
 
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
-
         if (!$isDryRun && $attendance->exists) {
             $appliedConstraintIds = $constraints->pluck('id')
                                                  ->map(fn($id) => (string) $id)
@@ -74,13 +73,16 @@ class AttendanceConstraintService
         }
         foreach ($constraints as $constraint) {
             try {
-                $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData);
+
+                $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData,$isDryRun);
+
                 if ($violation) {
                     $violations[] = $violation;
 
-                    // Create violation record
-                    $this->createViolationRecord($attendance, $constraint, $violation);
-
+                    if (!$isDryRun && $attendance->exists) {
+                        // We pass the full constraint object here
+                        $this->createViolation($attendance, $constraint, $violation);
+                    }
                     // Check if this violation should block attendance
                     if ($this->shouldBlockAttendance($constraint, $violation)) {
                         // Add blocking flag to violation
@@ -143,7 +145,7 @@ class AttendanceConstraintService
      * @param array $requestData Additional request data (currently unused here but kept for interface compatibility).
      * @return bool|array Returns false if all applicable checks pass, or an array with details of the first violation found.
      */
-    public function validateSingleConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData = []): bool|array
+    public function validateSingleConstraint(Attendance $attendance, AttendanceConstraint $constraint, array $requestData = [],bool $isDryRun = false): bool|array
     {
         // Get the entire configuration object for the constraint.
         $config = $constraint->constraint_config ?? [];
@@ -166,9 +168,10 @@ class AttendanceConstraintService
             if (isset($config[$configKey])) {
                 // Execute the corresponding validation function.
                 $violation = $validationFunction();
-
                 // If a violation is found, stop immediately and return it.
                 if ($violation) {
+                    $violation['constraint_id'] = $constraint->id;
+
                     return $violation;
                 }
             }
