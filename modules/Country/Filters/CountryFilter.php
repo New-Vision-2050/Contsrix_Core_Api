@@ -17,16 +17,13 @@ class CountryFilter extends SearchModelFilter
 
     public function status($status)
     {
-
         return $this->where('status', $status);
     }
 
-    public function CompanyAccessProgram($company_access_program_id)
+    public function companyAccessProgramId()
     {
-
-        return $this->whereHas('companyAccessProgram', function ($query)use($company_access_program_id) {
-            $query->where('company_access_programs.id', $company_access_program_id);
+        return $this->whereHas('companyAccessProgram', function ($query) {
+            $query->where('company_access_programs.id', request('company_access_program_id'));
         });
-
     }
 }

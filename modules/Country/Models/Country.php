@@ -11,10 +11,7 @@ use Modules\Country\Database\factories\CountryFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Setting\Models\Driver;
 use Modules\Shared\TimeZone\Models\TimeZone;
-<<<<<<< HEAD
 use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
-=======
->>>>>>> 7be6c72c (merge with stage (first version ))
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -46,11 +43,7 @@ class Country extends Model
 
     protected $casts = [
         'id' => 'string',
-<<<<<<< HEAD
         "timezones" => "array"
-=======
-        "timezones"=>"array"
->>>>>>> 7be6c72c (merge with stage (first version ))
     ];
 
     public function smsDriver()
@@ -87,13 +80,4 @@ class Country extends Model
             'company_access_program_id'
         );
     }
-
-    public function states()
-    {
-        return $this->hasMany(State::class);
-    }
-    public function timeZones()
-{
-    return $this->hasMany(TimeZone::class);
-}
 }
