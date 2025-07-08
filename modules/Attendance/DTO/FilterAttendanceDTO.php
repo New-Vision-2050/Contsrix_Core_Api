@@ -13,6 +13,10 @@ class FilterAttendanceDTO
         public ?string $start_date = null,
         public ?string $end_date = null,
         public ?string $department_id = null,
+        public ?string $management_id = null,
+        public ?string $branch_id = null,
+        public ?string $constraint_id = null,
+        public ?string $user_search = null,
         public ?string $user_name = null,
         public ?string $user_email = null,
         public ?float $work_hours_from = null,
@@ -47,6 +51,18 @@ class FilterAttendanceDTO
         }
         if ($this->department_id !== null) {
             $data['department_id'] = $this->department_id;
+        }
+        if ($this->management_id !== null) {
+            $data['management_id'] = $this->management_id;
+        }
+        if ($this->branch_id !== null) {
+            $data['branch_id'] = $this->branch_id;
+        }
+        if ($this->constraint_id !== null) {
+            $data['constraint_id'] = $this->constraint_id;
+        }
+        if ($this->user_search !== null) {
+            $data['user_search'] = $this->user_search;
         }
         if ($this->user_name !== null) {
             $data['user_name'] = $this->user_name;
@@ -116,6 +132,25 @@ class FilterAttendanceDTO
     public function getDepartmentId(): ?string
     {
         return $this->department_id;
+    }
+    public function getManagementId(): ?string
+    {
+        return $this->management_id;
+    }
+
+    public function getBranchId(): ?string
+    {
+        return $this->branch_id;
+    }
+
+    public function getConstraintId(): ?string
+    {
+        return $this->constraint_id;
+    }
+
+    public function getUserSearch(): ?string
+    {
+        return $this->user_search;
     }
 
     public function getUserName(): ?string
