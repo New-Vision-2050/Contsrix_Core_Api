@@ -11,8 +11,8 @@ use Modules\Subscription\Models\Feature;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission as SpatiePermission;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Permission extends SpatiePermission
 {
@@ -27,6 +27,12 @@ class Permission extends SpatiePermission
     protected $primaryKey = 'id';
     protected $keyType = 'string';
 
+
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "roles";
+    }
     // Allow mass assignment for new columns
     protected $fillable = [
         'name',
