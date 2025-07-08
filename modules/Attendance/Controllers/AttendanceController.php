@@ -74,7 +74,6 @@ class AttendanceController extends Controller
         // --- POST-VALIDATION STEP ---
         // After clock-in, re-validate to log any non-blocking violations (e.g., tardiness).
         $actualViolations = $this->constraintService->validateAttendance($attendance, $request->all());
-
         if (!empty($actualViolations)) {
             // Process each detected violation individually.
             foreach ($actualViolations as $violationData) {
@@ -322,20 +321,18 @@ class AttendanceController extends Controller
 
         $list = $this->attendanceService->getTeamAttendance(
 Auth::id()->toString(),
-            $filterDTO->toArray(), // Pass filters as the second parameter
-           (int) $request->input('page', 1), // Use request input for page, default to 1
-           (int) $request->input('per_page', 10) // Use request input for per_page, default to 10
+            $filterDTO->toArray(),
+           (int) $request->input('page', 1),
+           (int) $request->input('per_page', 10)
         );
 
         return Json::items(AttendancePresenter::collection($list['data']), paginationSettings: $list['pagination']);
-
     }
     public function teamAttendance(AttendanceRequest $request)//: JsonResponse
     {
         $attendance = $this->attendanceService->getAttendance(Uuid::fromString($request->route('attendance')));
 
         return Json::item((new AttendancePresenter($attendance))->present());
-
     }
     /**
      * Display a listing of attendance records with filtering and pagination.

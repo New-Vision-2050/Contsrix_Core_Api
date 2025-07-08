@@ -40,6 +40,7 @@ class FilterAttendanceRequest extends FormRequest
             'ip_address' => ['sometimes', 'string'],
             'late_arrival' => ['sometimes', 'boolean'],
             'early_departure' => ['sometimes', 'boolean'],
+            
             // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
