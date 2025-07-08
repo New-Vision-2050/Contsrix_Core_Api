@@ -6,12 +6,14 @@ namespace Modules\Company\ManagementHierarchy\Services;
 
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Company\ManagementHierarchy\DTO\GetNonCopiedHierarchiesDTO;
+use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 
 class NonCopiedHierarchiesService
 {
     public function __construct(
-        private ManagementHierarchyRepository $repository,
+        private ManagementHierarchyRepository $managementHierarchyRepository,
     ) {
     }
 
@@ -23,7 +25,7 @@ class NonCopiedHierarchiesService
      */
     public function getNonCopiedHierarchies(GetNonCopiedHierarchiesDTO $dto): array
     {
-        return $this->repository->getNonCopiedHierarchies(
+        return $this->managementHierarchyRepository->getNonCopiedHierarchies(
             page: $dto->page,
             perPage: $dto->perPage
         );
@@ -36,6 +38,17 @@ class NonCopiedHierarchiesService
      */
     public function getAllNonCopiedHierarchies(): Collection
     {
-        return $this->repository->getAllNonCopiedHierarchies();
+        return $this->managementHierarchyRepository->getAllNonCopiedHierarchies();
+    }
+
+    /**
+     * Find a non-copied hierarchy by ID
+     *
+     * @param  $id
+     * @return ManagementHierarchy|null
+     */
+    public function findNonCopiedHierarchyById( $id): ?SourceManagementHierarchy
+    {
+        return $this->managementHierarchyRepository->findNonCopiedHierarchyById($id);
     }
 }
