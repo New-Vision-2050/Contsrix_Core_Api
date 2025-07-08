@@ -16,7 +16,7 @@ class SetStatusPermissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|boolean',
+            'status' => 'required',
         ];
     }
 
