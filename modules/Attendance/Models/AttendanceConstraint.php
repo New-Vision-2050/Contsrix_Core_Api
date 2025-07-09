@@ -414,6 +414,13 @@ class AttendanceConstraint extends Model implements Auditable
             ];
         })->values()->toArray();
     }
+    public static function getConstraintArrayTypes(): array
+    {
+        return [
+            self::REGULAR => __('validation.regular'),
+
+        ];
+    }
 
     /**
      * Get constraint names by type.

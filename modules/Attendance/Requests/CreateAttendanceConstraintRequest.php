@@ -35,6 +35,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
             'branch_locations' => ['nullable', 'array'],
             'branch_locations.*' => ['array'],
             'branch_locations.*.name' => ['required_with:branch_locations.*', 'string', 'max:255'],
+            'branch_locations.*.branch_id' => ['nullable', 'string', 'max:50'],
             'branch_locations.*.address' => ['nullable', 'string', 'max:500'],
             'branch_locations.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'branch_locations.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
@@ -42,7 +43,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
             'constraint_type' => [
                 'required',
                 'string',
-                'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintTypes()))
+                 'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))
             ],
             'constraint_name' => 'required|string|max:255',
             'constraint_config' => 'required|array',
