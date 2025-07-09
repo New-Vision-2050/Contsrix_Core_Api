@@ -48,6 +48,8 @@ class PackageController extends Controller
             $filters['company_access_program_id'] = $request->get('company_access_program_id');
         }
 
+
+
         if ($request->has('company_fields')) {
             $filters['company_fields'] = $request->input('company_fields');
         }
