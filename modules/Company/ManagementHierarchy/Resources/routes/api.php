@@ -11,7 +11,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/', [ManagementHierarchyController::class, 'index'])->permission(Permission::ORGANIZATION_BRANCH_VIEW() , Permission::ORGANIZATION_MANAGEMENT_VIEW());
     Route::get('/widgets', [WidgetsController::class, 'getAllWidgets']);
 
-    Route::get('/list', [ManagementHierarchyController::class, 'listWithoutPagination'])->permission(Permission::ORGANIZATION_BRANCH_VIEW() , Permission::ORGANIZATION_MANAGEMENT_VIEW());
+    Route::get('/list', [ManagementHierarchyController::class, 'listWithoutPagination'])->permission(Permission::ORGANIZATION_BRANCH_VIEW()."kmmk" , Permission::ORGANIZATION_MANAGEMENT_VIEW());
     Route::get('/tree', [ManagementHierarchyController::class, 'presentTree'])->permission(Permission::ORGANIZATION_BRANCH_VIEW() , Permission::ORGANIZATION_MANAGEMENT_VIEW());
     Route::get('/tree-direct-children', [ManagementHierarchyController::class, 'directChildrenTree'])->permission(Permission::ORGANIZATION_BRANCH_VIEW() , Permission::ORGANIZATION_MANAGEMENT_VIEW());
     Route::get('/user', [ManagementHierarchyController::class, 'hierarchies']);

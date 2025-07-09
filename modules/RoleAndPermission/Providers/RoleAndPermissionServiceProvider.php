@@ -30,7 +30,7 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
         $this->registerMigrations();
         $this->registerCommands();
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('super-admin') ||  $user->hasRole('admin') ? true : null;
+            return $user->hasRole('super-admin') ||  $user->hasRole('admin' ) || (auth()->check() && auth()->user()->is_owner == 1) ? true : null;
         });
 
         IlluminateRoute::macro('permission', function (...$permissions) {
