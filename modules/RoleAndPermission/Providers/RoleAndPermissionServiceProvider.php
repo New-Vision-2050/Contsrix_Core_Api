@@ -34,10 +34,14 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
         });
 
         IlluminateRoute::macro('permission', function (...$permissions) {
+            if(auth()->check() && auth()->user()->is_owner == 1) {
+                return $this;
+            }
             $permissions = collect($permissions)
                 ->flatten()
                 ->map(fn ($permission) => $permission instanceof \UnitEnum ? $permission->value : $permission)
                 ->all();
+
 
             return $this->middleware("permission:" . implode('|', $permissions));
         });
