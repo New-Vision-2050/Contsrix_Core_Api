@@ -314,14 +314,13 @@ class AttendanceConstraintController extends Controller
         return Json::items($result['data'], message: 'Violations retrieved successfully');
     }
 
-        public function userConstraint()//: JsonResponse
+    public function userConstraint()//: JsonResponse
     {
         $user = Auth::user();
 
-        return $this->constraintService->getApplicableConstraints($user);
+        $result = $this->constraintService->getTodaysWorkRulesForUser($user);
 
-
-        // return Json::items($result['data'], message: 'Violations retrieved successfully');
+         return Json::item($result, message: 'Violations retrieved successfully');
     }
 
     /**
