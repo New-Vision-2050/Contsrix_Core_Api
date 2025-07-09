@@ -7,6 +7,7 @@ namespace Modules\Subscription\CompanyAccessProgram\Requests;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Subscription\CompanyAccessProgram\DTO\CreateCompanyAccessProgramDTO;
+use Modules\Subscription\CompanyAccessProgram\DTO\ProgramPayloadDTO;
 use Modules\Subscription\CompanyAccessProgram\Rules\ValidProgramStructure;
 
 class CreateCompanyAccessProgramRequest extends FormRequest
@@ -28,9 +29,14 @@ class CreateCompanyAccessProgramRequest extends FormRequest
 
     public function createCreateCompanyAccessProgramDTO(): CreateCompanyAccessProgramDTO
     {
+        $programs = array_map(
+            fn ($program) => ProgramPayloadDTO::fromArray($program),
+            $this->get('programs', [])
+        );
+
         return new CreateCompanyAccessProgramDTO(
             name: $this->get('name'),
-            rawPrograms: $this->get('programs', []),
+            rawPrograms: $programs,
             companyFields: $this->get('company_fields', []),
             companyTypes: $this->get('company_types', []),
             countries: $this->get('countries', []),
