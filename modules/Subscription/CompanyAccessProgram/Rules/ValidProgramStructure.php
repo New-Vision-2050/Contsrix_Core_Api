@@ -90,8 +90,7 @@ class ValidProgramStructure implements Rule
 
     private function isSubEntityValid(string $subEntityId, string $programId): bool
     {
-        return $this->dbSubEntities->has($programId) &&
-               $this->dbSubEntities[$programId]->pluck('id')->contains($subEntityId);
+        return $this->dbSubEntities->has($programId);
     }
 
     public function message(): string
