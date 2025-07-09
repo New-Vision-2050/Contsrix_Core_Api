@@ -150,11 +150,21 @@ class AttendanceConstraintService
         // Get the entire configuration object for the constraint.
         $config = $constraint->constraint_config ?? [];
 
+        if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
+            $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
+     
+            if ($violation) {
+
+                return $violation;
+            }
+        }
+
+
         // Define a map linking config keys to their respective validation services.
         // This makes the code cleaner and easier to extend.
         $validationMap = [
             'time_rules'       => fn() => $this->timeConstraintService->validateTimeConstraint($attendance, $config['time_rules']),
-            'location_rules'   => fn() => $this->locationConstraintService->validateLocationConstraint($attendance, $constraint), // This service expects the full constraint
+            // 'location_rules'   => fn() => $this->locationConstraintService->validateLocationConstraint($attendance, $constraint), // This service expects the full constraint
             'device_rules'     => fn() => $this->deviceConstraintService->validateDeviceConstraint($attendance, $config['device_rules']),
             'behavioral_rules' => fn() => $this->behavioralConstraintService->validateBehavioralConstraint($attendance, $config['behavioral_rules']),
             'security_rules'   => fn() => $this->securityConstraintService->validateSecurityConstraint($attendance, $config['security_rules']),
@@ -507,60 +517,76 @@ class AttendanceConstraintService
             'detected_at' => now(),
         ]);
     }
-    public function getTodaysWorkRulesForUser(User $user): array
+public function getTodaysWorkRulesForUser(User $user): array
     {
-        $timezone = $user->company->timezone ?? config('app.timezone');
+        $timezone = getTimeZoneByRequest()?? config('app.timezone');
+
         $now = Carbon::now($timezone);
-        $dayOfWeek = strtolower($now->format('l'));
 
         $constraints = $this->getApplicableConstraints($user);
 
-        $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
+        // Define a reusable closure to select the winning constraint based on priority.
+    $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
             return $constraints
                 ->filter($filter)
+                ->sortByDesc(function ($constraint) use ($user) {
+                    $score = ($constraint->priority ?? 1) * 100;
+
+                    if ($constraint->user_id === $user->id) {
+                        $score += 10000;
+                    }
+                    elseif (!empty($constraint->branch_ids)) {
+                        $score += 1000;
+                    }
+                    return $score;
+                })
                 ->sortByDesc('created_at')
                 ->first();
         };
 
-
+        // Find the winning TIME and LOCATION constraints.
         $timeConstraint = $selectWinningConstraint(fn($c) => isset($c->constraint_config['time_rules']));
-        $timeRulesResult = $this->buildTimeRules($timeConstraint, $now, $dayOfWeek);
-
-
-        $locationConstraint = $selectWinningConstraint(fn($c) =>
-            !empty($c->branch_locations) || isset($c->constraint_config['location_rules'])
-        );
+        $locationConstraint = $selectWinningConstraint(fn($c) => !empty($c->branch_locations) || isset($c->constraint_config['location_rules']));
+        // Build the rule summaries from the winning constraints.
+        $timeRulesResult = $this->buildTimeRules($timeConstraint, $now);
         $locationRulesResult = $this->buildLocationRules($locationConstraint, $user);
 
-
+        // Combine the results into a final, clean response.
         return [
-            'day_status'        => $timeRulesResult['status'],
-            'day_name'          => $now->isoFormat('dddd'),
-            'is_holiday'        => $timeRulesResult['is_holiday'],
-            'reason'            => $timeRulesResult['reason'],
-            'all_work_periods'  => $timeRulesResult['periods'],
-            'total_work_hours'  => $timeRulesResult['total_work_hours'],
-            'next_work_period'  => $timeRulesResult['next_period'],
-            'location_work'     => $locationRulesResult,
+            'day_status'              => $timeRulesResult['status'],
+            'day_name'                => $now->isoFormat(format: 'dddd'),
+            'is_holiday'              => $timeRulesResult['is_holiday'],
+            'reason'                  => $timeRulesResult['reason'],
+            'todays_work_periods'     => $timeRulesResult['periods'],
+            'todays_total_work_hours' => $timeRulesResult['total_work_hours'],
+            'active_or_next_period'   => $timeRulesResult['active_or_next_period'],
+            'location_work'           => $locationRulesResult,
+            'source_constraint_ids'   => [
+                'time' => $timeConstraint?->id,
+                'location' => $locationConstraint?->id,
+            ],
         ];
     }
 
     /**
-     * Private helper to build the time rules summary from a constraint.
-     * This version correctly finds the next upcoming work period, even across days.
+     * Validate an attendance record against all applicable constraints.
+     *
+     * @param Attendance $attendance The attendance record to validate.
+     * @param array $requestData Additional request data.
+     * @param bool $isDryRun If true, will not create violation or applied_constraint records.
+     * @return array Array of violations found.
      */
-  private function buildTimeRules(?AttendanceConstraint $constraint, Carbon $now, string $dayOfWeek): array
-    {
-        $defaultResult = [
-            'status' => 'Undefined', 'reason' => 'No time schedule constraint applied.', 'periods' => [], 'is_holiday' => false, 'total_work_hours' => 0.0, 'next_period' => null
-        ];
 
+    private function buildTimeRules(?AttendanceConstraint $constraint, Carbon $now): array
+    {
+        $defaultResult = ['status' => 'Undefined', 'reason' => 'No time schedule applied.', 'periods' => [], 'is_holiday' => false, 'total_work_hours' => 0.0, 'active_or_next_period' => null];
         if (!$constraint) return $defaultResult;
 
         $timeRules = $constraint->constraint_config['time_rules'] ?? [];
         $weeklySchedule = $timeRules['weekly_schedule'] ?? [];
         $holidays = $timeRules['holidays'] ?? [];
 
+        $dayOfWeek = strtolower($now->format('l'));
         $isTodayHoliday = collect($holidays)->contains(fn($h) => $now->isSameDay($h['date'] ?? null));
         $todaySchedule = $weeklySchedule[$dayOfWeek] ?? ['enabled' => false];
         $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false);
@@ -576,27 +602,32 @@ class AttendanceConstraintService
             $workDayReason = 'Scheduled weekend or non-working day.';
         }
 
-        $nextPeriod = null;
+        $relevantPeriod = null;
         for ($i = 0; $i < 7; $i++) {
             $checkDate = $now->copy()->addDays($i);
             $checkDayOfWeek = strtolower($checkDate->format('l'));
 
             if (collect($holidays)->contains(fn($h) => $checkDate->isSameDay($h['date'] ?? null))) continue;
-
             $dayScheduleForCheck = $weeklySchedule[$checkDayOfWeek] ?? null;
             if (!$dayScheduleForCheck || !($dayScheduleForCheck['enabled'] ?? false) || empty($dayScheduleForCheck['periods'])) continue;
 
             foreach ($dayScheduleForCheck['periods'] as $period) {
-                $periodStartTime = Carbon::createFromTimeString($period['start_time'], $now->timezone)->setDateFrom($checkDate);
+                $periodStart = Carbon::createFromTimeString($period['start_time'], $now->timezone)->setDateFrom($checkDate);
+                $periodEnd = Carbon::createFromTimeString($period['end_time'], $now->timezone)->setDateFrom($checkDate);
+                if ($periodEnd->isBefore($periodStart)) $periodEnd->addDay();
 
-                if ($periodStartTime->isFuture()) {
-                    $nextPeriod = [
-                        'start_time' => $period['start_time'],
-                        'end_time' => $period['end_time'],
-                    ];
+                if ($now->between($periodStart, $periodEnd, true)) {
+                    $relevantPeriod = ['status' => 'active', 'day' => 'Today', 'date' => $checkDate->format('Y-m-d')] + $period;
+                    goto end_loop;
+                }
+
+                if ($periodStart->isFuture()) {
+                    $relevantPeriod = ['status' => 'upcoming', 'day' => $i === 0 ? 'Today' : $checkDate->isoFormat('dddd'), 'date' => $checkDate->format('Y-m-d')] + $period;
+                    goto end_loop;
                 }
             }
         }
+        end_loop:
 
         return [
             'status' => $workDayStatus,
@@ -604,44 +635,27 @@ class AttendanceConstraintService
             'periods' => $todaySchedule['periods'] ?? [],
             'is_holiday' => ($workDayStatus !== 'Work Day'),
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
-            'next_period' => $nextPeriod
+            'active_or_next_period' => $relevantPeriod
         ];
     }
 
-    /**
-     * Private helper to build the location rules summary from a constraint.
-     */
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array
     {
         if (!$constraint || !$user->branch) return null;
-
         $userBranchId = (string) $user->branch->id;
-
         if (!empty($constraint->branch_locations)) {
             $branchData = collect($constraint->branch_locations)->firstWhere('branch_id', $userBranchId);
             if ($branchData) {
-                return [
-                    'name'      => $branchData['name'] ?? $user->branch->name,
-                    'latitude'  => (float)($branchData['latitude'] ?? 0),
-                    'longitude' => (float)($branchData['longitude'] ?? 0),
-                    'radius'    => (int)($branchData['radius'] ?? 0),
-                ];
+                return ['name' => $branchData['name'] ?? $user->branch->name] +
+                       ['latitude' => (float)($branchData['latitude'] ?? 0), 'longitude' => (float)($branchData['longitude'] ?? 0), 'radius' => (int)($branchData['radius'] ?? 0)];
             }
         }
-
         $locationRules = $constraint->constraint_config['location_rules'] ?? [];
         if (!empty($locationRules['allowed_zones'])) {
-
             $firstZone = $locationRules['allowed_zones'][0];
-            return [
-                'name'      => $firstZone['name'] ?? $user->branch->name,
-                'latitude'  => (float)($firstZone['latitude'] ?? 0),
-                'longitude' => (float)($firstZone['longitude'] ?? 0),
-                'radius'    => (int)($firstZone['radius'] ?? 0),
-            ];
+            return ['name' => $firstZone['name'] ?? $user->branch->name] +
+                   ['latitude' => (float)($firstZone['latitude'] ?? 0), 'longitude' => (float)($firstZone['longitude'] ?? 0), 'radius' => (int)($firstZone['radius'] ?? 0)];
         }
-
         return null;
     }
-
 }
