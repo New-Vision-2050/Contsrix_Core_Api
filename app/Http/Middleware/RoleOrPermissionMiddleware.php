@@ -39,6 +39,9 @@ class RoleOrPermissionMiddleware extends SpatieRoleOrPermissionMiddleware
         $roleOrPermission = collect($roleOrPermission);
         $user = $authGuard->user();
         $companyId = $user->company_id;
+        if($user->hasRole('super-admin') || $user->hasRole('admin')&&(auth()->check() && auth()->user()->is_owner == 1)) {
+            return $next($request);
+        }
 
         // Get all permissions the user has that are in the list
         $userPermissions = $user->getPermissionNames();

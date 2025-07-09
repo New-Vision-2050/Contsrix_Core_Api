@@ -48,4 +48,9 @@ class PackageCRUDService
     {
         return $this->repository->counts();
     }
+
+    public function syncPermissions(Package $package, array $permissionIds): void
+    {
+        $this->repository->syncPermissions($package, $permissionIds);
+    }
 }

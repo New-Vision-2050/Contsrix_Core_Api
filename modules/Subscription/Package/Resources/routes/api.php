@@ -12,4 +12,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/{id}', [PackageController::class, 'show']);
     Route::put('/{id}', [PackageController::class, 'update']);
     Route::delete('/{id}', [PackageController::class, 'delete']);
+    Route::post('/{package}/assign-permissions', [PackageController::class, 'syncPermissions']);
+    Route::get('/{package}/permissions', [PackageController::class, 'getPermissions']);
 });

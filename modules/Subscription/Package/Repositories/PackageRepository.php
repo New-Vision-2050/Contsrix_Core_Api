@@ -158,5 +158,8 @@ class PackageRepository extends BaseRepository
         ];
     }
 
-
+    public function syncPermissions(Package $package, array $permissionIds): void
+    {
+        $package->permissions()->sync($permissionIds);
+    }
 }
