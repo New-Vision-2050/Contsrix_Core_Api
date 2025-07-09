@@ -30,6 +30,9 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
         if (auth()->guard($authGuard)->guest()) {
             throw UnauthorizedException::notLoggedIn();
         }
+        if(auth()->check() && auth()->user()->is_owner == 1) {
+            return $next($request);
+        }
 
         $permissions = is_array($permissions[0]) ? $permissions[0] : $permissions;
 
