@@ -12,9 +12,10 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
+
 use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
-use Modules\User\Models\User;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 use function PHPUnit\Framework\throwException;
 
@@ -774,7 +775,7 @@ class ManagementHierarchyRepository extends BaseRepository
 //                    $managementData['parent_id'] = $parentDetail ? $parentDetail->management_hierarchy_id : null;
 //                }
 
-                $managementHierarchy->update(["name"=>$managementData["name"]]);
+                $managementHierarchy->update(["name" => $managementData["name"]]);
 
                 // Update the detail
                 $detail->update($managementDetail);
@@ -952,5 +953,19 @@ class ManagementHierarchyRepository extends BaseRepository
             ->where('is_active', 1)
             ->select(['id', 'name'])
             ->get();
+    }
+
+    public function findNonCopiedHierarchyById( $id): ?SourceManagementHierarchy
+    {
+        return SourceManagementHierarchy::query()
+            ->with([
+                'details.managementHierarchy',
+                'company',
+                'jobTypes',
+                'jobTitles',
+                'relatedBranches',
+                "relatedManagements"
+            ])
+            ->find($id);
     }
 }

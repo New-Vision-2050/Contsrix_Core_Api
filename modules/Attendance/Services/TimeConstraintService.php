@@ -80,12 +80,10 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         if ($attendance->clock_in_time) {
             $clockInTime = Carbon::parse($attendance->clock_in_time)->format('H:i');
             $gracePeriodMinutes = (int)($config['grace_period_minutes'] ?? 0);
-
             // Calculate the latest allowed clock-in time with grace period
             $shiftStartWithGrace = Carbon::createFromFormat('H:i', $shiftStartTime)
                 ->addMinutes($gracePeriodMinutes)
                 ->format('H:i');
-
             if ($clockInTime > $shiftStartWithGrace) {
                 $violations[] = [
                     'type' => 'late_clock_in',
@@ -93,17 +91,14 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 ];
             }
         }
-
         // Check clock-out time against shift end time
         if ($attendance->clock_out_time) {
             $clockOutTime = Carbon::parse($attendance->clock_out_time)->format('H:i');
             $earlyDepartureGraceMinutes = (int)($config['early_departure_grace_minutes'] ?? 0);
-
             // Calculate the earliest allowed clock-out time with grace period
             $shiftEndWithGrace = Carbon::createFromFormat('H:i', $shiftEndTime)
                 ->subMinutes($earlyDepartureGraceMinutes)
                 ->format('H:i');
-
             if ($clockOutTime < $shiftEndWithGrace) {
                 $violations[] = [
                     'type' => 'early_clock_out',
@@ -111,7 +106,6 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 ];
             }
         }
-
         // If violations found, return constraint violation details
         if (!empty($violations)) {
             return [
@@ -237,18 +231,15 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         if (!$enforceBreakLimits) {
             return false;
         }
-
         // Get break records from attendance
         $breaks = $attendance->breaks ?? [];
         if (empty($breaks)) {
             return false;
         }
-
         $violations = [];
         $maxBreakDuration = (int)($config['max_break_duration_minutes'] ?? 0);
         $maxBreaksPerDay = (int)($config['max_breaks_per_day'] ?? 0);
         $totalBreakTimeLimit = (int)($config['total_break_time_limit_minutes'] ?? 0);
-
         // Check number of breaks if limit is set
         if ($maxBreaksPerDay > 0 && count($breaks) > $maxBreaksPerDay) {
             $violations[] = [
@@ -256,7 +247,6 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 'message' => "Too many breaks taken: " . count($breaks) . " (limit: {$maxBreaksPerDay})"
             ];
         }
-
         // Check individual break durations and calculate total
         $totalBreakMinutes = 0;
         foreach ($breaks as $index => $break) {
@@ -278,7 +268,6 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 }
             }
         }
-
         // Check total break time
         if ($totalBreakTimeLimit > 0 && $totalBreakMinutes > $totalBreakTimeLimit) {
             $violations[] = [
@@ -287,7 +276,6 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 'total_break_minutes' => $totalBreakMinutes
             ];
         }
-
         // If violations found, return constraint violation details
         if (!empty($violations)) {
             return [
@@ -322,25 +310,21 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         if (!$requiresApproval) {
             return false;
         }
-
         // Check if there is overtime
         $overtimeMinutes = $attendance->overtime_minutes ?? 0;
         if ($overtimeMinutes <= 0) {
             return false;
         }
-
         // Check if overtime is approved
         $isApproved = $attendance->overtime_approved ?? false;
         if ($isApproved) {
             return false;
         }
-
         // Check if overtime exceeds threshold for approval
         $approvalThresholdMinutes = (int)($config['approval_threshold_minutes'] ?? 0);
         if ($approvalThresholdMinutes > 0 && $overtimeMinutes <= $approvalThresholdMinutes) {
             return false; // No approval needed if under threshold
         }
-
         // Return violation details
         return [
             'constraint_type' => AttendanceConstraint::TIME_OVERTIME_APPROVAL,

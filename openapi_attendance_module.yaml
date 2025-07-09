@@ -1,0 +1,1127 @@
+openapi: 3.0.3
+info:
+  title: Contsrix Core API - Attendance Module
+  description: |
+    Employee Attendance Management System API with comprehensive attendance tracking, 
+    leave management, reporting, and attendance constraints enforcement.
+    
+    ## Features
+    - Clock in/out with location tracking
+    - Break management
+    - Leave request workflow
+    - Comprehensive reporting
+    - Attendance constraints and violations
+    - Multi-tenant support
+    
+    ## Authentication
+    All endpoints require Bearer token authentication using JWT.
+    
+    ## Attendance Constraints
+    The system supports various constraint types:
+    - **Location**: Geofencing, IP restrictions, office location verification
+    - **Time**: Shift enforcement, early clock-in prevention, overtime approval
+    - **Device**: Authorized devices, device fingerprinting, single device policy
+    - **Role**: Department-specific rules, probationary employee rules
+    - **Behavioral**: Consecutive days limit, weekly hour limits, mandatory rest periods
+    - **Security**: 2FA, biometric verification, fraud detection, audit trails
+    - **Compliance**: Labor law compliance, union agreements, government reporting
+  version: 1.0.0
+  contact:
+    name: Contsrix Development Team
+    email: dev@contsrix.com
+  license:
+    name: Proprietary
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: https://api.contsrix.com/v1
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Attendance Endpoints
+  /attendance/clock-in:
+    post:
+      tags:
+        - Attendance
+      summary: Clock in employee
+      description: Records employee clock-in time with location and device information. Validates attendance constraints before allowing clock-in.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClockInRequest'
+            examples:
+              basic_clock_in:
+                summary: Basic clock-in
+                value:
+                  latitude: 34.0522
+                  longitude: -118.2437
+                  ip_address: "192.168.1.100"
+                  device_info: "Chrome on macOS"
+                  notes: "Starting my day"
+      responses:
+        '200':
+          description: Successfully clocked in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceResponse'
+        '422':
+          description: Clock-in blocked due to constraint violations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintViolationError'
+        '400':
+          description: Bad request - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /attendance/clock-out:
+    post:
+      tags:
+        - Attendance
+      summary: Clock out employee
+      description: Records employee clock-out time and calculates work duration. Validates attendance constraints after clock-out.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClockOutRequest'
+      responses:
+        '200':
+          description: Successfully clocked out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceResponse'
+
+  /attendance/status:
+    get:
+      tags:
+        - Attendance
+      summary: Get current attendance status
+      description: Returns the current attendance status for the authenticated user
+      responses:
+        '200':
+          description: Current attendance status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceStatusResponse'
+
+  # Attendance Constraints Endpoints
+  /attendance/constraints:
+    get:
+      tags:
+        - Attendance Constraints
+      summary: Get all attendance constraints
+      description: Retrieve paginated list of attendance constraints with filtering options
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+        - name: constraint_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/ConstraintType'
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: department_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of attendance constraints
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintListResponse'
+
+    post:
+      tags:
+        - Attendance Constraints
+      summary: Create new attendance constraint
+      description: Create a new attendance constraint with specified configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConstraintRequest'
+            examples:
+              geofencing_constraint:
+                summary: Geofencing constraint
+                value:
+                  constraint_type: "location"
+                  constraint_name: "geofencing"
+                  constraint_config:
+                    allowed_zones:
+                      - name: "Main Office"
+                        latitude: 34.0522
+                        longitude: -118.2437
+                        radius: 100
+                  is_active: true
+                  priority: 5
+                  start_date: "2025-01-01"
+                  notes: "Geofencing constraint for main office location"
+              ip_restriction:
+                summary: IP restriction constraint
+                value:
+                  constraint_type: "location"
+                  constraint_name: "ip_restriction"
+                  constraint_config:
+                    allowed_ips: ["192.168.1.0/24", "10.0.0.0/8"]
+                  is_active: true
+                  priority: 7
+      responses:
+        '201':
+          description: Constraint created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintResponse'
+
+  /attendance/constraints/{constraintId}:
+    get:
+      tags:
+        - Attendance Constraints
+      summary: Get constraint by ID
+      parameters:
+        - name: constraintId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Constraint details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintResponse'
+
+    put:
+      tags:
+        - Attendance Constraints
+      summary: Update attendance constraint
+      parameters:
+        - name: constraintId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConstraintRequest'
+      responses:
+        '200':
+          description: Constraint updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintResponse'
+
+    delete:
+      tags:
+        - Attendance Constraints
+      summary: Delete attendance constraint
+      parameters:
+        - name: constraintId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Constraint deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /attendance/constraints/types:
+    get:
+      tags:
+        - Attendance Constraints
+      summary: Get available constraint types
+      description: Returns all available constraint types and their possible names
+      responses:
+        '200':
+          description: Available constraint types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintTypesResponse'
+
+  /attendance/constraints/validate:
+    post:
+      tags:
+        - Attendance Constraints
+      summary: Validate user constraints
+      description: Validate attendance data against user's active constraints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateConstraintRequest'
+      responses:
+        '200':
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintValidationResponse'
+
+  /attendance/constraints/violations:
+    get:
+      tags:
+        - Attendance Constraints
+      summary: Get constraint violations
+      description: Retrieve paginated list of constraint violations with filtering
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ViolationStatus'
+        - name: severity_level
+          in: query
+          schema:
+            $ref: '#/components/schemas/SeverityLevel'
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: violation_type
+          in: query
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of violations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViolationListResponse'
+
+  /attendance/constraints/violations/{violationId}/resolve:
+    put:
+      tags:
+        - Attendance Constraints
+      summary: Resolve constraint violation
+      parameters:
+        - name: violationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveViolationRequest'
+      responses:
+        '200':
+          description: Violation resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViolationResponse'
+
+  /attendance/constraints/statistics:
+    get:
+      tags:
+        - Attendance Constraints
+      summary: Get constraint statistics
+      description: Get statistics about constraints and violations for a date range
+      parameters:
+        - name: date_from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: constraint_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/ConstraintType'
+        - name: department_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Constraint statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstraintStatisticsResponse'
+
+  # Leave Management Endpoints
+  /leave/requests:
+    get:
+      tags:
+        - Leave Management
+      summary: Get leave requests
+      description: Retrieve paginated list of leave requests with filtering options
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/LeaveStatus'
+        - name: leave_type_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of leave requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequestListResponse'
+
+    post:
+      tags:
+        - Leave Management
+      summary: Create leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeaveRequestRequest'
+      responses:
+        '201':
+          description: Leave request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequestResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Attendance Schemas
+    ClockInRequest:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          description: GPS latitude coordinate
+          example: 34.0522
+        longitude:
+          type: number
+          format: double
+          description: GPS longitude coordinate
+          example: -118.2437
+        ip_address:
+          type: string
+          description: Client IP address
+          example: "192.168.1.100"
+        device_info:
+          type: string
+          description: Device and browser information
+          example: "Chrome on macOS"
+        notes:
+          type: string
+          description: Optional notes for clock-in
+          example: "Starting my day"
+
+    ClockOutRequest:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+        notes:
+          type: string
+          description: Optional notes for clock-out
+          example: "Ending my workday"
+
+    AttendanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Successfully clocked in"
+        data:
+          $ref: '#/components/schemas/Attendance'
+
+    AttendanceStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            is_clocked_in:
+              type: boolean
+            current_attendance:
+              $ref: '#/components/schemas/Attendance'
+            today_total_hours:
+              type: string
+              example: "8:30"
+
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        clock_in_time:
+          type: string
+          format: date-time
+        clock_out_time:
+          type: string
+          format: date-time
+          nullable: true
+        clock_in_location:
+          type: string
+          example: "34.0522,-118.2437"
+        clock_out_location:
+          type: string
+          example: "34.0522,-118.2437"
+          nullable: true
+        ip_address:
+          type: string
+        total_hours:
+          type: string
+          example: "8:30"
+          nullable: true
+        status:
+          type: string
+          enum: [active, completed, pending_approval]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Constraint Schemas
+    ConstraintType:
+      type: string
+      enum:
+        - location
+        - time
+        - device
+        - role
+        - behavioral
+        - security
+        - compliance
+
+    SeverityLevel:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+        - critical
+
+    ViolationStatus:
+      type: string
+      enum:
+        - pending
+        - acknowledged
+        - resolved
+        - dismissed
+
+    LeaveStatus:
+      type: string
+      enum:
+        - pending
+        - approved
+        - rejected
+        - cancelled
+
+    CreateConstraintRequest:
+      type: object
+      required:
+        - constraint_type
+        - constraint_name
+        - constraint_config
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Specific user (null for company-wide)"
+        department_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Specific department (null for all departments)"
+        constraint_type:
+          $ref: '#/components/schemas/ConstraintType'
+        constraint_name:
+          type: string
+          example: "geofencing"
+        constraint_config:
+          type: object
+          description: "Configuration object varies by constraint type"
+          example:
+            allowed_zones:
+              - name: "Main Office"
+                latitude: 34.0522
+                longitude: -118.2437
+                radius: 100
+        is_active:
+          type: boolean
+          default: true
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 1
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    UpdateConstraintRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        department_id:
+          type: string
+          format: uuid
+          nullable: true
+        constraint_type:
+          $ref: '#/components/schemas/ConstraintType'
+        constraint_name:
+          type: string
+        constraint_config:
+          type: object
+        is_active:
+          type: boolean
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    AttendanceConstraint:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        department_id:
+          type: string
+          format: uuid
+          nullable: true
+        constraint_type:
+          $ref: '#/components/schemas/ConstraintType'
+        constraint_name:
+          type: string
+        constraint_config:
+          type: object
+        is_active:
+          type: boolean
+        priority:
+          type: integer
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ConstraintViolation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        attendance_id:
+          type: string
+          format: uuid
+        constraint_id:
+          type: string
+          format: uuid
+        violation_type:
+          type: string
+        violation_details:
+          type: object
+        severity_level:
+          $ref: '#/components/schemas/SeverityLevel'
+        status:
+          $ref: '#/components/schemas/ViolationStatus'
+        resolved_by:
+          type: string
+          format: uuid
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolution_notes:
+          type: string
+          nullable: true
+        auto_resolved:
+          type: boolean
+        notification_sent:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    ValidateConstraintRequest:
+      type: object
+      required:
+        - user_id
+        - attendance_data
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        attendance_data:
+          type: object
+          properties:
+            latitude:
+              type: number
+              format: double
+            longitude:
+              type: number
+              format: double
+            ip_address:
+              type: string
+            device_info:
+              type: string
+
+    ResolveViolationRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/ViolationStatus'
+        resolution_notes:
+          type: string
+
+    CreateLeaveRequestRequest:
+      type: object
+      required:
+        - leave_type_id
+        - start_date
+        - end_date
+        - reason
+      properties:
+        leave_type_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reason:
+          type: string
+        notes:
+          type: string
+          nullable: true
+
+    # Response Schemas
+    ConstraintResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AttendanceConstraint'
+
+    ConstraintListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/AttendanceConstraint'
+            current_page:
+              type: integer
+            last_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+
+    ConstraintTypesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            location:
+              - geofencing
+              - ip_restriction
+              - office_location
+            time:
+              - shift_enforcement
+              - early_clock_prevention
+              - overtime_approval
+
+    ConstraintValidationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            is_valid:
+              type: boolean
+            violations:
+              type: array
+              items:
+                type: object
+                properties:
+                  constraint_id:
+                    type: string
+                    format: uuid
+                  violation_type:
+                    type: string
+                  message:
+                    type: string
+                  severity:
+                    $ref: '#/components/schemas/SeverityLevel'
+
+    ViolationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ConstraintViolation'
+
+    ViolationListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/ConstraintViolation'
+            current_page:
+              type: integer
+            last_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+
+    ConstraintStatisticsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            total_constraints:
+              type: integer
+            active_constraints:
+              type: integer
+            total_violations:
+              type: integer
+            violations_by_severity:
+              type: object
+              properties:
+                low:
+                  type: integer
+                medium:
+                  type: integer
+                high:
+                  type: integer
+                critical:
+                  type: integer
+            violations_by_type:
+              type: object
+              additionalProperties:
+                type: integer
+            resolution_rate:
+              type: number
+              format: float
+              description: "Percentage of resolved violations"
+
+    LeaveRequestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+          # Leave request schema would be defined here
+
+    LeaveRequestListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                # Leave request items would be defined here
+            current_page:
+              type: integer
+            last_page:
+              type: integer
+            per_page:
+              type: integer
+            total:
+              type: integer
+
+    ConstraintViolationError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Clock-in blocked due to constraint violations"
+        data:
+          type: object
+          properties:
+            violations:
+              type: array
+              items:
+                type: object
+                properties:
+                  constraint_id:
+                    type: string
+                    format: uuid
+                  violation_type:
+                    type: string
+                  message:
+                    type: string
+                  severity:
+                    $ref: '#/components/schemas/SeverityLevel'
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+tags:
+  - name: Attendance
+    description: Core attendance tracking operations
+  - name: Attendance Constraints
+    description: Attendance constraints and violations management
+  - name: Leave Management
+    description: Employee leave requests and approvals
+  - name: Reports
+    description: Attendance and leave reporting
