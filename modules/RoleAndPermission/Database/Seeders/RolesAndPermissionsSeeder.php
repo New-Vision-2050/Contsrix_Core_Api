@@ -106,22 +106,21 @@ class RolesAndPermissionsSeeder extends Seeder
             return;
         }
 
-        // Define default permissions by module
-        $defaultPermissions = $this->getDefaultPermissions();
+        // Clear existing permissions for this company to ensure a clean slate
+        Permission::where('company_id', $companyId)->delete();
 
-        foreach ($defaultPermissions as $permission) {
+        $permissions = config('permissions.permissions');
+
+        $guardName = 'api';
+
+        foreach ($permissions as $key => $name) {
             Permission::firstOrCreate(
+                ['name' => $name, 'company_id' => $companyId],
                 [
-                    'name' => $permission,
-                    'guard_name' => 'api',
-                    'company_id' => $companyId
-                ],
-                [
-                    'id' => Uuid::uuid4()->toString(),
-                    'name' => $permission,
-                    'guard_name' => 'api',
+                    'name' => $name,
+                    'key' => $key,
+                    'guard_name' => $guardName,
                     'company_id' => $companyId,
-                    'status' => true
                 ]
             );
         }
