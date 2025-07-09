@@ -69,9 +69,9 @@ class SubEntity extends Model
             }
         });
 
-        static::created(function (self $subEntity) {
-            $subEntity->createDefaultPermissions();
-        });
+//        static::created(function (self $subEntity) {
+//            $subEntity->createDefaultPermissions();
+//        });
     }
 
     protected static function generateUniqueSlug(string $name, $ignoreId = null): string
