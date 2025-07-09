@@ -19,7 +19,7 @@ class Permission extends SpatiePermission
     use UuidTrait;
     use BaseFilterable;
     use HasFactory;
-    use BelongsToTenant;
+//    use BelongsToTenant;
 
     public array $translatable = [];
 
