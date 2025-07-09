@@ -23,7 +23,8 @@ class PermissionPresenter extends AbstractPresenter
             'id' => $this->permission->id,
             'name' => $this->permission->name,
             'status' => $this->permission->status,
-            'user_count' => $this->getUserCount()
+            'user_count' => $this->getUserCount(),
+            "key" => $this->permission->key,
         ];
     }
 
