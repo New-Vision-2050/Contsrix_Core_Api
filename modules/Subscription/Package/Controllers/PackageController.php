@@ -20,6 +20,9 @@ use Modules\Subscription\Package\Requests\GetPackageListRequest;
 use Modules\Subscription\Package\Handlers\UpdatePackageStatusHandler;
 use Modules\Subscription\Package\Requests\UpdatePackageStatusRequest;
 use Modules\Subscription\Package\Requests\AttachPackageFeaturesRequest;
+use Modules\Subscription\Package\Requests\SyncPackagePermissionsRequest;
+use Modules\Subscription\Package\Models\Package;
+use Modules\Subscription\Package\Presenters\PackageWithPermissionsPresenter;
 
 class PackageController extends Controller
 {
@@ -132,5 +135,20 @@ class PackageController extends Controller
         );
 
         return Json::success('Features attached successfully');
+    }
+
+    public function syncPermissions(SyncPackagePermissionsRequest $request, Package $package): JsonResponse
+    {
+        $this->packageService->syncPermissions($package, $request->validated('permissions'));
+
+        return Json::success('Permissions synced successfully.');
+    }
+
+    public function getPermissions(Package $package): JsonResponse
+    {
+        $package->load('permissions');
+        $presenter = new PackageWithPermissionsPresenter($package);
+
+        return Json::item($presenter->getData());
     }
 }

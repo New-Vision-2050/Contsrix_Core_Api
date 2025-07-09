@@ -13,6 +13,7 @@ use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\RoleAndPermission\Models\Permission;
 use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
 
 class Package extends Model
@@ -126,5 +127,10 @@ class Package extends Model
         )
             ->withTimestamps()
             ->withPivot('subscribed_at', 'expires_at', 'is_active');
+    }
+
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'package_permission');
     }
 }
