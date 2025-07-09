@@ -38,6 +38,11 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
 
         $user = auth()->guard($authGuard)->user();
 
+
+        if($user->hasRole('super-admin') || $user->hasRole('admin')) {
+            return $next($request);
+        }
+
         foreach ($permissions as $permission) {
             if ($user->hasPermissionTo($permission, $authGuard)) {
                 $permissionModel = Permission::where('name', $permission)
