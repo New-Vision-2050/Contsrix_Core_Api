@@ -28,7 +28,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
     Route::get('/roles', [CompanyUserController::class, 'roles']);
     //Route::post('/export', [CompanyUserController::class, 'export'])->name('company-users.export');
-
+    Route::get('/user-data', [CompanyUserProfileController::class, 'userProfessionalData']);
+    Route::get('/profile/{id?}', [CompanyUserProfileController::class, 'profile']);
     Route::get('/profile/{id?}', [CompanyUserProfileController::class, 'profile'])->permission(Permission::USER_PROFILE_DATA_VIEW());
     Route::post('/validate-photo/{id?}', [CompanyUserProfileController::class, 'validatePhoto']);
     Route::post('/upload-photo/{id?}', [CompanyUserProfileController::class, 'uploadPhoto'])->permission(Permission::USER_PROFILE_DATA_UPDATE());

@@ -19,6 +19,7 @@ use Modules\CompanyUser\Presenters\CompanyIdentityDataPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserDataInfoPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserImagePresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\CompanyUser\Presenters\UserPresenter;
 use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
 use Modules\CompanyUser\Presenters\WidgetCompanyUserProfilePresenter;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
@@ -71,6 +72,14 @@ class CompanyUserProfileController extends Controller
         );
 
         $presenter = new CompanyUserPresenter($user, (string) $userId);
+
+        return Json::item($presenter->getData());
+    }
+    public function userProfessionalData(GetCompanyUserRequest $request): JsonResponse
+    {
+        $user = auth()->user();
+
+        $presenter = new UserPresenter($user);
 
         return Json::item($presenter->getData());
     }
