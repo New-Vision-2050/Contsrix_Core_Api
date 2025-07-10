@@ -32,7 +32,7 @@ Route::prefix('attendance')->group(function () {
     Route::get('live-tracking', [LocationTrackingController::class, 'getLiveTrackingData'])
         ->name('attendance.live-tracking');
 
-    Route::post('{attendance}/track-location', [LocationTrackingController::class, 'store'])
+    Route::post('track-location', [LocationTrackingController::class, 'store'])
         ->name('attendance.track-location');
 
     Route::post('start-break', [AttendanceController::class, 'startBreak'])

@@ -76,6 +76,8 @@ class AttendanceConstraint extends Model implements Auditable
         'deleted_at',
     ];
 
+    const REGULAR = 'regular';
+
     // Constraint type constants
     const TYPE_LOCATION = 'location';
     const TYPE_TIME = 'time';
@@ -158,14 +160,14 @@ class AttendanceConstraint extends Model implements Auditable
     /**
      * Get the branches that this constraint applies to (if branch-specific).
      */
-    public function branches()
-    {
-        if (empty($this->branch_ids)) {
-            return collect();
-        }
+    // public function branches()
+    // {
+    //     if (empty($this->branch_ids)) {
+    //         return collect();
+    //     }
 
-        return ManagementHierarchy::whereIn('id', $this->branch_ids)->get();
-    }
+    //     return ManagementHierarchy::whereIn('id', $this->branch_ids)->get();
+    // }
 
     /**
      * Check if constraint applies to a specific branch.
@@ -385,16 +387,38 @@ class AttendanceConstraint extends Model implements Auditable
     /**
      * Get all constraint types.
      */
+    // public static function getConstraintTypes(): array
+    // {
+    //     return [
+    //         self::TYPE_LOCATION => 'Location-based Constraints',
+    //         self::TYPE_TIME => 'Time-based Constraints',
+    //         self::TYPE_DEVICE => 'Device-based Constraints',
+    //         self::TYPE_ROLE => 'Role-based Constraints',
+    //         self::TYPE_BEHAVIORAL => 'Behavioral Constraints',
+    //         self::TYPE_SECURITY => 'Security Constraints',
+    //         self::TYPE_COMPLIANCE => 'Compliance Constraints',
+    //     ];
+    // }
+
+        /**
+     * Get all constraint types.
+     */
     public static function getConstraintTypes(): array
     {
+        return collect([
+            self::REGULAR => __('validation.regular'),
+        ])->map(function ($name, $code) {
+            return [
+                'name' => $name,
+                'code' => $code,
+            ];
+        })->values()->toArray();
+    }
+    public static function getConstraintArrayTypes(): array
+    {
         return [
-            self::TYPE_LOCATION => 'Location-based Constraints',
-            self::TYPE_TIME => 'Time-based Constraints',
-            self::TYPE_DEVICE => 'Device-based Constraints',
-            self::TYPE_ROLE => 'Role-based Constraints',
-            self::TYPE_BEHAVIORAL => 'Behavioral Constraints',
-            self::TYPE_SECURITY => 'Security Constraints',
-            self::TYPE_COMPLIANCE => 'Compliance Constraints',
+            self::REGULAR => __('validation.regular'),
+
         ];
     }
 
@@ -466,5 +490,9 @@ class AttendanceConstraint extends Model implements Auditable
             'constraint_id',
             'attendance_id'
         );
+    }
+    public function branches()
+    {
+        return $this->hasMany(ManagementHierarchy::class, 'id', 'branch_ids');
     }
 }

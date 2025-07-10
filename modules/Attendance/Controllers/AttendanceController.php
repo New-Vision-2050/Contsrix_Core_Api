@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Controllers;
 
+use AWS\CRT\HTTP\Message;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
@@ -190,9 +191,15 @@ class AttendanceController extends Controller
             $attendance = $this->attendanceService->getAttendance(Uuid::fromString($attendanceId));
         }
 
+
         if (!$attendance) {
-            return Json::error('No active attendance found', 404);
+            return response()->json([
+                'code' => 'SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT',
+                'message' =>    'No active attendance found',
+                'payload' => NULL
+            ]);
         }
+
         $presenter = new AttendancePresenter($attendance);
 
         return Json::item($presenter->getData());
