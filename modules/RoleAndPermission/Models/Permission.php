@@ -61,4 +61,21 @@ class Permission extends SpatiePermission
     {
         return $this->belongsTo(\Modules\SubEntity\Models\SubEntity::class, 'sub_entity_id');
     }
+
+    /**
+     * Many-to-many relationship with packages.
+     */
+    public function packages(): BelongsToMany
+    {
+        return $this->belongsToMany(\Modules\Subscription\Package\Models\Package::class, 'package_permission')
+                    ->withPivot('limit');
+    }
+
+    /**
+     * Get the company limits for this permission.
+     */
+    public function companyLimits(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\Modules\Subscription\Package\Models\CompanyPermissionLimit::class, 'permission_id');
+    }
 }

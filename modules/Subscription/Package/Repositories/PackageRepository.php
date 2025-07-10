@@ -162,8 +162,35 @@ class PackageRepository extends BaseRepository
         ];
     }
 
-    public function syncPermissions(Package $package, array $permissionIds): void
+    public function syncPermissions(Package $package, array $permissionIds, array $limits = []): void
     {
-        $package->permissions()->sync($permissionIds);
+        // Prepare sync data with limits
+        $syncData = [];
+        
+        foreach ($permissionIds as $permissionId) {
+            $syncData[$permissionId] = [
+                'limit' => $limits[$permissionId] ?? null
+            ];
+        }
+        
+        $package->permissions()->sync($syncData);
+    }
+
+    /**
+     * Find packages by IDs with all their permissions.
+     */
+    public function findByIdsWithPermissions(array $packageIds): Collection
+    {
+        return $this->model->whereIn('id', $packageIds)
+            ->with(['permissions'])
+            ->get();
+    }
+
+    /**
+     * Find a package with permissions and companies.
+     */
+    public function findWithPermissionsAndCompanies(string $packageId): Package
+    {
+        return $this->model->with(['permissions', 'companies'])->findOrFail($packageId);
     }
 }
