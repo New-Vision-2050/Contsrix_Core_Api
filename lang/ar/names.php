@@ -62,8 +62,29 @@ return [
     'marital-status' => 'الحالة الاجتماعية',
     'social-media-account' => 'حسابات التواصل الاجتماعي',
     'border-number-information' => 'معلومات رقم الحدود',
+    'residence-information' => 'معلومات الإقامة',
+    'about-me-information' => 'معلومات عني',
+    'cv' => 'السيرة الذاتية',
+    'job-offer' => 'عرض عمل',
+    'contract-work' => 'عقد عمل',
+    'employment-information' => 'معلومات التوظيف',
+    'salary-information' => 'معلومات الراتب',
+    'qualification' => 'مؤهل',
+    'experience' => 'خبرة',
+    'courses' => 'دورات',
+    'certificates' => 'شهادات',
     'work-license' => 'رخصة العمل',
-    
+
+    // Geographic Data
+    'country' => 'دولة',
+    'state' => 'ولاية',
+    'city' => 'مدينة',
+
+    // User Profile generic
+    'data' => 'بيانات',
+    'contact' => 'اتصال',
+    'identity' => 'هوية',
+
     // Module names
     'settings' => 'الإعدادات',
     'departments' => 'الأقسام',

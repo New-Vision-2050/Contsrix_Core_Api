@@ -54,14 +54,14 @@ class RoleWithPermissionPresenter extends AbstractPresenter
         // First group by the first part of the name (module)
         $groupedByModule = collect($modified)->groupBy(function ($query) {
             $parts = explode('.', $query["key"]);
-            return isset($parts[0]) ? $parts[0] : 'other';
+            return isset($parts[0]) ? __('names.' . $parts[0]) : 'other';
         });
 
         // Then for each module group, group again by the second part (action)
         $nestedGroups = $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
                 $parts = explode('.', $item["key"]);
-                return isset($parts[1]) ? $parts[1] : 'other';
+                return isset($parts[1]) ? __('names.' . $parts[1]) : 'other';
             });
         })->toArray();
 

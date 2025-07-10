@@ -62,7 +62,28 @@ return [
     'marital-status' => 'Marital Status',
     'social-media-account' => 'Social Media Account',
     'border-number-information' => 'Border Number Information',
+    'residence-information' => 'Residence Information',
+    'about-me-information' => 'About Me Information',
+    'cv' => 'CV',
+    'job-offer' => 'Job Offer',
+    'contract-work' => 'Contract Work',
+    'employment-information' => 'Employment Information',
+    'salary-information' => 'Salary Information',
+    'qualification' => 'Qualification',
+    'experience' => 'Experience',
+    'courses' => 'Courses',
+    'certificates' => 'Certificates',
     'work-license' => 'Work License',
+    
+    // Geographic Data
+    'country' => 'Country',
+    'state' => 'State',
+    'city' => 'City',
+    
+    // User Profile generic
+    'data' => 'Data',
+    'contact' => 'Contact',
+    'identity' => 'Identity',
     
     // Module names
     'settings' => 'Settings',
