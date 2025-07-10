@@ -21,8 +21,10 @@ use Modules\Subscription\Package\Handlers\UpdatePackageStatusHandler;
 use Modules\Subscription\Package\Requests\UpdatePackageStatusRequest;
 use Modules\Subscription\Package\Requests\AttachPackageFeaturesRequest;
 use Modules\Subscription\Package\Requests\SyncPackagePermissionsRequest;
+use Modules\Subscription\Package\Requests\AssignPackagesToCompanyRequest;
 use Modules\Subscription\Package\Models\Package;
 use Modules\Subscription\Package\Presenters\PackageWithPermissionsPresenter;
+use Modules\Subscription\Package\Services\PackageAssignmentService;
 
 class PackageController extends Controller
 {
@@ -31,6 +33,7 @@ class PackageController extends Controller
         private UpdatePackageHandler       $updatePackageHandler,
         private UpdatePackageStatusHandler $updatePackageStatusHandler,
         private DeletePackageHandler       $deletePackageHandler,
+        private PackageAssignmentService   $assignmentService,
     )
     {
     }
@@ -142,10 +145,12 @@ class PackageController extends Controller
 
     public function syncPermissions(SyncPackagePermissionsRequest $request, Package $package): JsonResponse
     {
+        $permissions = $request->validated('permissions');
+        $limits = $request->getPermissionLimits();
 
-        $this->packageService->syncPermissions($package, $request->validated('permissions'));
+        $this->packageService->syncPermissions($package, $permissions, $limits);
 
-        return Json::success('Permissions synced successfully.');
+        return Json::success('Permissions synced successfully with limits.');
     }
 
     public function getPermissions(Package $package): JsonResponse
@@ -154,5 +159,22 @@ class PackageController extends Controller
         $presenter = new PackageWithPermissionsPresenter($package);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Assign multiple packages to a company with automatic limit handling.
+     */
+    public function assignPackagesToCompany(AssignPackagesToCompanyRequest $request): JsonResponse
+    {
+        try {
+            $result = $this->assignmentService->assignPackagesToCompany(
+                $request->validated('company_id'),
+                $request->validated('package_ids')
+            );
+
+            return Json::success($result['message'], $result);
+        } catch (\Exception $e) {
+            return Json::error('Failed to assign packages to company: ' . $e->getMessage());
+        }
     }
 }

@@ -6,9 +6,17 @@ use Closure;
 use Spatie\Permission\Exceptions\UnauthorizedException;
 use Spatie\Permission\Middleware\PermissionMiddleware as SpatiePermissionMiddleware;
 use Modules\RoleAndPermission\Models\Permission;
+use Modules\Subscription\Package\Models\CompanyPermissionLimit;
+use Modules\RoleAndPermission\Repositories\PermissionRepository;
+use Modules\Subscription\Package\Repositories\CompanyPermissionLimitRepository;
 
 class PermissionMiddleware extends SpatiePermissionMiddleware
 {
+    public function __construct(
+        private PermissionRepository $permissionRepository,
+        private CompanyPermissionLimitRepository $companyPermissionLimitRepository
+    ) {}
+
     /**
      * Handle an incoming request.
      * Check if the user has the specified permission AND if that permission is active (status = true)
@@ -45,12 +53,29 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
 
         foreach ($permissions as $permission) {
             if ($user->hasPermissionTo($permission, $authGuard)) {
-                $permissionModel = Permission::where('name', $permission)
-                    ->where('company_id', $user->company_id)
-                    ->first();
+                $permissionModel = $this->permissionRepository->findByName($permission);
 
                 if (!$permissionModel || !$permissionModel->status) {
                     throw UnauthorizedException::forPermissions($permissions);
+                }
+
+                // Check if this permission has a limit for the company
+                $permissionLimit = $this->companyPermissionLimitRepository->findByCompanyAndPermission(
+                    $user->company_id,
+                    $permissionModel->id
+                );
+
+                if ($permissionLimit) {
+                    // Check if limit is exceeded
+                    if ($permissionLimit->isLimitExceeded()) {
+                        throw new UnauthorizedException(
+                            403,
+                            "Permission '{$permission}' limit exceeded. No more usage allowed."
+                        );
+                    }
+
+                    // Decrease the actual limit (consume one usage)
+                    $permissionLimit->decreaseLimit();
                 }
             } else {
                 throw UnauthorizedException::forPermissions($permissions);

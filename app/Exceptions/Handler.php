@@ -33,6 +33,8 @@ class Handler
             $e instanceof NotFoundHttpException => response()->json([
                 'success' => false,
                 'message' => __('validation.resource_not_found'),
+                'error' => $e->getMessage() , // Hide error details in production
+                "trace"=> $e->getTrace(), // Hide error details in production <==>
             ], 404),
 
             $e instanceof CustomException => response()->json([

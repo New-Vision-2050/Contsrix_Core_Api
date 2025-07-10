@@ -10,11 +10,13 @@ use Illuminate\Support\Collection;
 use Modules\Subscription\Package\Models\Package;
 use Modules\Subscription\Package\DTO\CreatePackageDTO;
 use Modules\Subscription\Package\Repositories\PackageRepository;
+use Modules\Subscription\Package\Services\PackageAssignmentService;
 
 class PackageCRUDService
 {
     public function __construct(
         private PackageRepository $repository,
+        private PackageAssignmentService $assignmentService,
     ) {
     }
 
@@ -49,8 +51,9 @@ class PackageCRUDService
         return $this->repository->counts();
     }
 
-    public function syncPermissions(Package $package, array $permissionIds): void
+    public function syncPermissions(Package $package, array $permissionIds, array $limits = []): void
     {
-        $this->repository->syncPermissions($package, $permissionIds);
+        $this->repository->syncPermissions($package, $permissionIds, $limits);
+        $this->assignmentService->recalculate($package);
     }
 }

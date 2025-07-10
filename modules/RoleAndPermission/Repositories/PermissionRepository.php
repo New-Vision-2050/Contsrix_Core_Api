@@ -53,4 +53,13 @@ class PermissionRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    /**
+     * Find permission by name.
+     */
+    public function findByName(string $name): ?Permission
+    {
+        return $this->model->where('name', $name)
+            ->first();
+    }
 }

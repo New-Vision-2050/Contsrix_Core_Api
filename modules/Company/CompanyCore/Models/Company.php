@@ -270,4 +270,12 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
             ->withTimestamps();
     }
+
+    /**
+     * Get the permission limits for this company.
+     */
+    public function permissionLimits(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\Modules\Subscription\Package\Models\CompanyPermissionLimit::class, 'company_id');
+    }
 }

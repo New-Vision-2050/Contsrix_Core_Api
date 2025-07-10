@@ -231,4 +231,20 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->where($conditions)->count();
     }
+
+    /**
+     * Sync packages for a company.
+     */
+    public function syncPackages(Company $company, array $syncData): void
+    {
+        $company->packages()->sync($syncData);
+    }
+
+    /**
+     * Find company with packages.
+     */
+    public function findWithPackages(string $companyId): Company
+    {
+        return $this->model->with('packages')->findOrFail($companyId);
+    }
 }
