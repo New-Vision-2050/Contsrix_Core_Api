@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
-use Modules\SubscriptionSystem\Subscription\Models\CompanyPackagePivot;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Stancl\Tenancy\DatabaseConfig;
