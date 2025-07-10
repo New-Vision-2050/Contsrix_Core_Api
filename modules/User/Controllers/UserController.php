@@ -91,7 +91,7 @@ class UserController extends Controller
 
     public function me()
     {
-       return $user = auth()->user();
+        $user = auth()->user();
         $userPresenter = new UserPresenter($user);
         return Json::item($userPresenter->getData());
     }
