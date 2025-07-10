@@ -41,13 +41,13 @@ class PackageWithPermissionsPresenter extends AbstractPresenter
 
         $groupedByModule = $permissions->groupBy(function ($query) {
             $parts = explode('.', $query['key']);
-            return $parts[0] ?? 'other';
+            return __('names.' . $parts[0]) ?? 'other';
         });
 
         $nestedGroups = $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
                 $parts = explode('.', $item['key']);
-                return $parts[1] ?? 'other';
+                return __('names.' . $parts[1]) ?? 'other';
             });
         })->toArray();
 
