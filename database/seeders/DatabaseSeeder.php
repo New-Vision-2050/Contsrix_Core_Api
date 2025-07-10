@@ -110,6 +110,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
         $this->call(BanksOtherModulesSeederTableSeeder::class);
         $this->call(UniversitiesOtherSeederTableSeeder::class);
+        $this->call(MainPackageSeeder::class);
 
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);

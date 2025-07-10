@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
-use Modules\SubscriptionSystem\Subscription\Models\CompanyPackagePivot;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Stancl\Tenancy\DatabaseConfig;
@@ -266,7 +265,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             'company_id',
             'package_id'
         )
-            ->using(CompanyPackagePivot::class)
+//            ->using(CompanyPackagePivot::class)
             ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
             ->withTimestamps();
     }
