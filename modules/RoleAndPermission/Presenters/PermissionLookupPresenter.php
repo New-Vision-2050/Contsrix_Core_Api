@@ -4,27 +4,14 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Presenters;
 
-use Modules\RoleAndPermission\Models\Permission;
-use Modules\RoleAndPermission\Models\Role;
-use BasePackage\Shared\Presenters\AbstractPresenter;
-use Modules\RoleAndPermission\Services\PermissionLookupService;
+use Illuminate\Support\Collection;
 
-class RoleWithPermissionPresenter extends AbstractPresenter
+class PermissionLookupPresenter
 {
-    private Role $role;
-
-    public function __construct(Role $role)
+    public function present(Collection $permissions): array
     {
-        $this->role = $role;
-    }
-
-    protected function present(bool $isListing = false): array
-    {
-        $permissions =app(PermissionLookupService::class)->getPermissionsForCompany();
         $modified = [];
         foreach ($permissions as $permission) {
-            $permission->is_active = $this->role->permissions()->where("name", $permission->name)->first() ? true : false;
-
             // Extract the permission name parts
             $nameParts = explode('.', $permission->name);
 
@@ -48,28 +35,21 @@ class RoleWithPermissionPresenter extends AbstractPresenter
                 "key" => $permission->name,
                 "type" => $parts[count($parts) - 1],
                 "name" => $translatedName,
-                "is_active" => $permission->is_active
             ];
         }
 
         // First group by the first part of the name (module)
         $groupedByModule = collect($modified)->groupBy(function ($query) {
             $parts = explode('.', $query["key"]);
-            return isset($parts[0]) ? $parts[0] : 'other';
+            return isset($parts[0]) ? __('names.' . $parts[0]): 'other';
         });
 
         // Then for each module group, group again by the second part (action)
-        $nestedGroups = $groupedByModule->map(function ($group, $module) {
+        return $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
                 $parts = explode('.', $item["key"]);
-                return isset($parts[1]) ? $parts[1] : 'other';
+                return isset($parts[1]) ? __('names.' . $parts[1]) : 'other';
             });
         })->toArray();
-
-        return [
-            'id' => $this->role->id,
-            'name' => $this->role->name,
-            "permissions" => $nestedGroups
-        ];
     }
 }
