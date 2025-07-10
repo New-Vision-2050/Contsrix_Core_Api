@@ -641,19 +641,22 @@ public function getTodaysWorkRulesForUser(User $user): array
 
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array
     {
-        if (!$constraint || !$user->branch) return null;
-        $userBranchId = (string) $user->branch->id;
+        if (!$constraint || !$user->userProfessionalData?->branch_id) return null;
+        $userBranchId = (string) $user->userProfessionalData?->branch_id;
+        $userBranchName = $user->userProfessionalData?->branch->name ;
+
         if (!empty($constraint->branch_locations)) {
             $branchData = collect($constraint->branch_locations)->firstWhere('branch_id', $userBranchId);
             if ($branchData) {
-                return ['name' => $branchData['name'] ?? $user->branch->name] +
-                       ['latitude' => (float)($branchData['latitude'] ?? 0), 'longitude' => (float)($branchData['longitude'] ?? 0), 'radius' => (int)($branchData['radius'] ?? 0)];
+                return ['name' => $branchData['name'] ?? $userBranchName] +
+                ['latitude' => (float)($branchData['latitude'] ?? 0), 'longitude' => (float)($branchData['longitude'] ?? 0), 'radius' => (int)($branchData['radius'] ?? 0)];
             }
         }
+        dd($constraint->branch_locations);
         $locationRules = $constraint->constraint_config['location_rules'] ?? [];
         if (!empty($locationRules['allowed_zones'])) {
             $firstZone = $locationRules['allowed_zones'][0];
-            return ['name' => $firstZone['name'] ?? $user->branch->name] +
+            return ['name' => $firstZone['name'] ?? $userBranchName] +
                    ['latitude' => (float)($firstZone['latitude'] ?? 0), 'longitude' => (float)($firstZone['longitude'] ?? 0), 'radius' => (int)($firstZone['radius'] ?? 0)];
         }
         return null;
