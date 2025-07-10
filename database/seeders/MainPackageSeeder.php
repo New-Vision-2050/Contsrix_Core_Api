@@ -52,8 +52,8 @@ class MainPackageSeeder extends Seeder
             if ($company) {
                 $company->packages()->syncWithoutDetaching([
                     $package->id => [
-                        'start_date' => now(),
-                        'end_date' => now()->addYear(),
+                        'subscribed_at' => now(),
+                        'expires_at' => now()->addYear(),
                         'is_active' => true,
                     ]
                 ]);

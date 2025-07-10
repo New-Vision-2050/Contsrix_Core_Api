@@ -265,7 +265,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             'company_id',
             'package_id'
         )
-            ->using(CompanyPackagePivot::class)
+//            ->using(CompanyPackagePivot::class)
             ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
             ->withTimestamps();
     }
