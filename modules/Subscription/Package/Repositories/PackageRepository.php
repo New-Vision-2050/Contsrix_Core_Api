@@ -118,6 +118,10 @@ class PackageRepository extends BaseRepository
             $query->where('name', 'LIKE', '%' . $conditions['name'] . '%');
         }
 
+        if (!empty($conditions['company_access_program_id'])) {
+            $query->where('company_access_program_id',  $conditions['company_access_program_id']);
+        }
+
         // // Relational filter
         if (!empty($conditions['company_fields'])) {
             $query->whereHas('companyFields', function ($q) use ($conditions) {
