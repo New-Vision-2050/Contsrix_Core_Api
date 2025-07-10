@@ -37,10 +37,10 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             'branch_locations.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'branch_locations.*.radius' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'constraint_type' => [
-                'sometimes',
+                'nullable',
                 'required',
                 'string',
-                'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintTypes()))
+                // 'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))
             ],
             'constraint_name' => 'sometimes|required|string|max:255',
             'constraint_config' => 'sometimes|required|array',
@@ -70,29 +70,29 @@ class UpdateAttendanceConstraintRequest extends FormRequest
     /**
      * Configure the validator instance.
      */
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator) {
-            if ($this->has('constraint_config')) {
-                $this->validateConstraintConfig($validator);
-            }
-        });
-    }
+    // public function withValidator($validator): void
+    // {
+    //     $validator->after(function ($validator) {
+    //         if ($this->has('constraint_config')) {
+    //             $this->validateConstraintConfig($validator);
+    //         }
+    //     });
+    // }
 
     /**
      * Validate constraint configuration based on type and name.
      */
-    protected function validateConstraintConfig($validator): void
-    {
-        $type = $this->input('constraint_type');
-        $name = $this->input('constraint_name');
-        $config = $this->input('constraint_config', []);
+    // protected function validateConstraintConfig($validator): void
+    // {
+    //     $type = $this->input('constraint_type');
+    //     $name = $this->input('constraint_name');
+    //     $config = $this->input('constraint_config', []);
 
-        // Use the same validation logic as CreateAttendanceConstraintRequest
-        $createRequest = new CreateAttendanceConstraintRequest();
-        $createRequest->merge($this->all());
-        $createRequest->validateConstraintConfig($validator);
-    }
+    //     // Use the same validation logic as CreateAttendanceConstraintRequest
+    //     $createRequest = new CreateAttendanceConstraintRequest();
+    //     $createRequest->merge($this->all());
+    //     $createRequest->validateConstraintConfig($validator);
+    // }
 
     /**
      * Create DTO from validated request data.
@@ -106,7 +106,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             constraint_type: $validated['constraint_type'] ?? null,
             name: $validated['constraint_name'] ?? null,
             description: $validated['notes'] ?? null,
-            config: $validated['constraint_config'] ?? null,
+            config: $validated['constraint_config'] ?? [],
             user_id: $validated['user_id'] ?? null,
             department_id: $validated['department_id'] ?? null,
             branch_ids: $validated['branch_ids'] ?? null,

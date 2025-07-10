@@ -10,12 +10,18 @@ use Modules\Attendance\Requests\TrackLocationRequest;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Presenters\LiveTrackingPresenter;
 use Modules\Attendance\Requests\LiveTrackingRequest;
+use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\LocationTrackingService;
 
 class LocationTrackingController
 {
     // This constructor is correct.
-    public function __construct(private LocationTrackingService $trackingService)
+    public function __construct(
+        private LocationTrackingService $trackingService,
+          private AttendanceService $attendanceService,
+        private AttendanceConstraintService $constraintService
+        )
     {
     }
 
@@ -34,9 +40,15 @@ class LocationTrackingController
         return Json::item($finalData);
     }
 
-    public function store(TrackLocationRequest $request, Attendance $attendance): JsonResponse
+    public function store(TrackLocationRequest $request): JsonResponse
     {
         $trackingPoints = $request->getTrackingPoints();
+
+
+        $attendance= $this->attendanceService->getCurrentAttendance($request->user()->id);
+        if (!$attendance) {
+            return Json::error('No active attendance found for the user.');
+        }
         $this->trackingService->addTrackingPoints($attendance, $trackingPoints);
 
         return Json::success('Location data received successfully.');

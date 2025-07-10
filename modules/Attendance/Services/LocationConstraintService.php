@@ -35,6 +35,10 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
     public function validateLocationConstraint(Attendance $attendance,AttendanceConstraint $constraint ): bool|array
     {
         $config = $constraint->constraint_config;
+
+        if($constraint->branch_locations) {
+                return $this->validateMultiLocation($attendance, $constraint);
+        }
         // Get constraint subtype
         $subtype = $config['subtype'] ?? '';
         // Switch based on constraint name to handle different location validations
@@ -365,7 +369,6 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         // 2. Get the list of allowed branch locations directly from the constraint itself.
         // This is the main fix: We use the data from the constraint, not from the user.
         $allowedBranchLocations = $constraint->branch_locations ?? [];
-
         // If no branch locations are defined in this constraint, we cannot validate.
         if (empty($allowedBranchLocations)) {
             // This is not a violation, it just means this constraint is misconfigured or not applicable.
@@ -387,7 +390,6 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
 
         $userLat = (float) $userLocation['latitude'];
         $userLon = (float) $userLocation['longitude'];
-
         // 4. Loop through each defined branch location and check if the user is within its radius.
         $isWithinAnyAllowedBranch = false;
         foreach ($allowedBranchLocations as $branchLocation) {
@@ -400,9 +402,9 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             $branchLon = (float) $branchLocation['longitude'];
             $branchRadius = (float) $branchLocation['radius'];
 
+
             // Calculate the distance between the user and the branch center.
             $distanceInMeters = $this->calculateDistance($userLat, $userLon, $branchLat, $branchLon);
-
             // Check if the distance is within the allowed radius for this branch.
             if ($distanceInMeters <= $branchRadius) {
                 $isWithinAnyAllowedBranch = true;
