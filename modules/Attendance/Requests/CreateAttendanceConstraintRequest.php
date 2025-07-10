@@ -46,7 +46,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
                  'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))
             ],
             'constraint_name' => 'required|string|max:255',
-            'constraint_config' => 'required|array',
+            'constraint_config' => 'nullable|array',
             'is_active' => 'boolean',
             'inherit_from_parent' => ['boolean'],
             'priority' => ['nullable', 'integer', 'min:1', 'max:10'],
@@ -247,7 +247,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
             constraint_type: $validated['constraint_type'],
             name: $validated['constraint_name'],
             description: $validated['notes'] ?? '',
-            config: $validated['constraint_config'],
+            config: $validated['constraint_config'] ?? [],
             company_id: $companyId,
             created_by: $createdBy,
             user_id: $validated['user_id'] ?? null,
