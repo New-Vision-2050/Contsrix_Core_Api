@@ -9,6 +9,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::post('/', [PackageController::class, 'store']);
     Route::put('/{id}/status', [PackageController::class, 'updateStatus']);
     Route::post('/attach-features', [PackageController::class, 'attachFeatures']);
+    Route::post('/assign-to-company', [PackageController::class, 'assignPackagesToCompany']);
     Route::get('/{id}', [PackageController::class, 'show']);
     Route::put('/{id}', [PackageController::class, 'update']);
     Route::delete('/{id}', [PackageController::class, 'delete']);

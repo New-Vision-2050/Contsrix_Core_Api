@@ -131,6 +131,7 @@ class Package extends Model
 
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class, 'package_permission');
+        return $this->belongsToMany(Permission::class, 'package_permission')
+                    ->withPivot('limit');
     }
 }

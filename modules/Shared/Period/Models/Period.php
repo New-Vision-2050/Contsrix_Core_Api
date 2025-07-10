@@ -26,6 +26,7 @@ class Period extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'name',
     ];
 
     protected $casts = [
