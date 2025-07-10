@@ -152,7 +152,7 @@ class AttendanceConstraintService
 
         if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
             $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
-     
+           // dd($violation);
             if ($violation) {
 
                 return $violation;
@@ -557,9 +557,9 @@ public function getTodaysWorkRulesForUser(User $user): array
             'day_name'                => $now->isoFormat(format: 'dddd'),
             'is_holiday'              => $timeRulesResult['is_holiday'],
             'reason'                  => $timeRulesResult['reason'],
-            'todays_work_periods'     => $timeRulesResult['periods'],
-            'todays_total_work_hours' => $timeRulesResult['total_work_hours'],
-            'active_or_next_period'   => $timeRulesResult['active_or_next_period'],
+            'all_work_periods'     => $timeRulesResult['periods'],
+            'total_work_hours' => $timeRulesResult['total_work_hours'],
+            'next_work_period'   => $timeRulesResult['active_or_next_period'],
             'location_work'           => $locationRulesResult,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
