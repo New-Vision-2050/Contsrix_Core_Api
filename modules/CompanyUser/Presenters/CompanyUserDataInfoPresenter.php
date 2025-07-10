@@ -23,7 +23,7 @@ class CompanyUserDataInfoPresenter extends AbstractPresenter
         return [
             'name' => $this->companyUser->name,
             'nickname' => $this->companyUser->nickname,
-            'gender' => $this->companyUser->gender == 'male' ? 'ذكر' : 'انثى',
+            'gender' => $this->companyUser->gender,
             'is_default'=> $this->companyUser->is_default,
             'birthdate_gregorian'=> $this->companyUser->birthdate_gregorian,
             "birthdate_hijri"=> $this->companyUser->birthdate_hijri,

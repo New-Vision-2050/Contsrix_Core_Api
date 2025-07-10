@@ -27,37 +27,42 @@ use Modules\Subscription\Package\Presenters\PackageWithPermissionsPresenter;
 class PackageController extends Controller
 {
     public function __construct(
-        private PackageCRUDService $packageService,
-        private UpdatePackageHandler $updatePackageHandler,
+        private PackageCRUDService         $packageService,
+        private UpdatePackageHandler       $updatePackageHandler,
         private UpdatePackageStatusHandler $updatePackageStatusHandler,
-        private DeletePackageHandler $deletePackageHandler,
-    ) {
+        private DeletePackageHandler       $deletePackageHandler,
+    )
+    {
     }
 
     public function index(GetPackageListRequest $request): JsonResponse
     {
         $filters = [];
 
-        if($request->has('status')) {
+        if ($request->has('status')) {
             $filters['is_active'] = $request->boolean('status');
         }
 
-        if($request->has('name')) {
+        if ($request->has('name')) {
             $filters['name'] = $request->get('name');
         }
 
 
-        if($request->has('company_access_program_id')) {
+       
+
+        if ($request->has('company_access_program_id')) {
             $filters['company_access_program_id'] = $request->get('company_access_program_id');
         }
 
-        if($request->has('company_fields')) {
+
+
+        if ($request->has('company_fields')) {
             $filters['company_fields'] = $request->input('company_fields');
         }
 
         $list = $this->packageService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10),
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10),
             $filters
         );
 

@@ -24,10 +24,11 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
     Route::post('/', [AttendanceConstraintController::class, 'store'])
         // ->middleware('permission:create_attendance_constraints')
         ->name('attendance.constraints.store');
+    // User-specific Constraint Routes
 
-    Route::get('/{constraint}', [AttendanceConstraintController::class, 'show'])
+    Route::get('/user', [AttendanceConstraintController::class, 'userConstraint'])
         // ->middleware('permission:view_attendance_constraints')
-        ->name('attendance.constraints.show');
+        ->name('attendance.constraints.user');
 
     Route::put('/{constraint}', [AttendanceConstraintController::class, 'update'])
         // ->middleware('permission:update_attendance_constraints')
@@ -93,6 +94,10 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
     Route::post('/bulk/delete', [AttendanceConstraintController::class, 'bulkDelete'])
         // ->middleware('permission:delete_attendance_constraints')
         ->name('attendance.constraints.bulk.delete');
+
+    Route::get('/{constraint}', [AttendanceConstraintController::class, 'show'])
+        // ->middleware('permission:view_attendance_constraints')
+        ->name('attendance.constraints.show');
 });
 
 /*
