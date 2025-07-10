@@ -109,8 +109,8 @@ class AttendanceConstraintService
      */
     public function getApplicableConstraints(User $user): Collection
     {
-        $userBranch = $user->branch ?? null;
-        $userBranchId = $userBranch ? (string) $userBranch->id : null;
+        $userBranch = $user->userProfessionalData ?? null;
+        $userBranchId = $userBranch ? (string) $userBranch->branch_id : null;
 
         $constraint = AttendanceConstraint::where('company_id', $user->company_id)
     ->where(function ($query) use ($user, $userBranchId) {
