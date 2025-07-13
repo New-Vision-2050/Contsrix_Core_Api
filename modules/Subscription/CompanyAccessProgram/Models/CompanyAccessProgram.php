@@ -66,23 +66,17 @@ class CompanyAccessProgram extends Model
         );
     }
 
-    public function programs(): BelongsToMany
+    public function programs(): HasMany
     {
-        return $this->belongsToMany(
-            Program::class,
-            'company_access_program_program',
-            'company_access_program_id',
-            'program_id'
+        return $this->hasMany(
+            CompanyAccessProgramProgram::class,"company_access_program_id","id"
         );
     }
 
-    public function subEntities(): BelongsToMany
+    public function subEntities(): HasMany
     {
-        return $this->belongsToMany(
-            SubEntity::class,
-            'company_access_program_sub_entity',
-            'company_access_program_id',
-            'sub_entity_id'
+        return $this->hasMany(
+            CompanyAccessProgramSubEntity::class,"company_access_program_id","id"
         );
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\Package\Services;
 
+use Modules\RoleAndPermission\Repositories\PermissionRepository;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Collection;
@@ -15,9 +16,11 @@ use Modules\Subscription\Package\Services\PackageAssignmentService;
 class PackageCRUDService
 {
     public function __construct(
-        private PackageRepository $repository,
+        private PackageRepository        $repository,
         private PackageAssignmentService $assignmentService,
-    ) {
+        private PermissionRepository       $permissionRepository,
+    )
+    {
     }
 
     public function create(CreatePackageDTO $createPackageDTO): Package
