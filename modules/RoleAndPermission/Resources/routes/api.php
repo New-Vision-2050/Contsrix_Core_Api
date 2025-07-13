@@ -11,9 +11,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('permissions/lookup', [PermissionController::class, 'permissionAsLookup']);
     Route::post('permissions', [PermissionController::class, 'store'])->permission(Permission::PERMISSION_CREATE());
     Route::get('permissions/{id}', [PermissionController::class, 'show'])->permission(Permission::PERMISSION_VIEW());
-    Route::put('permissions/{id}', [PermissionController::class, 'update'])->permission(Permission::PERMISSION_EDIT());
+    Route::put('permissions/{id}', [PermissionController::class, 'update'])->permission(Permission::PERMISSION_UPDATE());
     Route::delete('permissions/{id}', [PermissionController::class, 'delete'])->permission(Permission::PERMISSION_DELETE());
-    Route::patch('permissions/{id}/status', [PermissionController::class, 'setStatus'])->permission(Permission::PERMISSION_EDIT());
+    Route::patch('permissions/{id}/status', [PermissionController::class, 'setStatus'])->permission(Permission::PERMISSION_UPDATE());
 
     // Permission Hierarchy Routes
     Route::group(['prefix' => 'permissions/hierarchy'], function () {
@@ -28,8 +28,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::get('/{id}', [RoleController::class, 'show'])->permission(Permission::ROLE_VIEW());
         Route::get('/{id}/permissions', [RoleController::class, 'getPermissions'])->permission(Permission::PERMISSION_VIEW());
         Route::post('/{id}/assign-permissions', [RoleController::class, 'assignPermissionToRole']);
-        Route::put('/{id}', [RoleController::class, 'update'])->permission(Permission::ROLE_EDIT());
+        Route::put('/{id}', [RoleController::class, 'update'])->permission(Permission::ROLE_UPDATE());
         Route::delete('/{id}', [RoleController::class, 'delete'])->permission(Permission::ROLE_DELETE());
-        Route::patch('/{id}/status', [RoleController::class, 'setStatus'])->permission(Permission::ROLE_EDIT());
+        Route::patch('/{id}/status', [RoleController::class, 'setStatus'])->permission(Permission::ROLE_UPDATE());
     });
 });

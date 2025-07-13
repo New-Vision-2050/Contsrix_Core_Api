@@ -20,9 +20,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{id}/roles', [UserController::class, 'getRoles'])->permission(Permission::USER_VIEW());
     Route::get('/{id}/permissions', [UserController::class, 'getPermissions'])->permission(Permission::USER_VIEW());
     Route::get('/{id}/audits', [UserController::class, 'getAudites']);
-    Route::put('/{id}/update-login-way', [UserController::class, 'updateLoginWay'])->permission(Permission::USER_EDIT());
+    Route::put('/{id}/update-login-way', [UserController::class, 'updateLoginWay'])->permission(Permission::USER_UPDATE());
 
-    Route::put('/{id}', [UserController::class, 'update'])->permission(Permission::USER_EDIT());
+    Route::put('/{id}', [UserController::class, 'update'])->permission(Permission::USER_UPDATE());
     Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser'])->permission(Permission::PERMISSION_ASSIGN());
 
     Route::delete('/{id}', [UserController::class, 'delete'])->permission(Permission::USER_DELETE());

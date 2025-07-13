@@ -23,14 +23,14 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
 
     Route::put('/{id}/activate', [CompanyController::class, 'activate']);
     Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show')->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_VIEW());
-    Route::put('/{id}', [CompanyController::class, 'update'])->permission(Permission::COMPANY_EDIT());
+    Route::put('/{id}', [CompanyController::class, 'update'])->permission(Permission::COMPANY_UPDATE());
     Route::delete('/delete-last', [CompanyController::class, 'deleteLastCreated'])->name('companies.delete')->permission(Permission::COMPANY_DELETE());
     Route::delete('/{id}', [CompanyController::class, 'delete'])->name('companies.delete')->permission(Permission::COMPANY_DELETE());
 
     Route::group(['prefix' => 'company-profile'], function () {
         Route::prefix("official-data")->group(function () {
             Route::put("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialData"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DATA_UPDATE());
-            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDataRequest"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DATA_REQUEST_UPDATE());
+            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDataRequest"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DATA_UPDATE());
         });
 
         Route::prefix("official-document")->group(function () {
@@ -41,7 +41,7 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
         });
 
         Route::prefix("legal-data")->group(function () {
-            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "requestUpdateLegalDataRequest"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_REQUEST_UPDATE());
+            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "requestUpdateLegalDataRequest"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_UPDATE());
             Route::post("/update", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateCompanyLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_UPDATE());
             Route::post("/create-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_CREATE());
             Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_DELETE());
