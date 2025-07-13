@@ -88,6 +88,15 @@ return [
         'PROFILE_CERTIFICATES_CREATE' => 'user-profile.certificates.create',
         'PROFILE_CERTIFICATES_UPDATE' => 'user-profile.certificates.update',
         'PROFILE_CERTIFICATES_DELETE' => 'user-profile.certificates.delete',
+
+
+
+        'PROFILE_PRIVILEGES_VIEW' => 'user-profile.privileges.view',
+        'PROFILE_PRIVILEGES_CREATE' => 'user-profile.privileges.create',
+        'PROFILE_PRIVILEGES_UPDATE' => 'user-profile.privileges.update',
+        'PROFILE_PRIVILEGES_DELETE' => 'user-profile.privileges.delete',
+
+
         'PROFILE_WORK_LICENSE_VIEW' => 'user-profile.work-license.view',
         'PROFILE_WORK_LICENSE_UPDATE' => 'user-profile.work-license.update',
 
