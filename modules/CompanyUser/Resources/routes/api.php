@@ -8,20 +8,20 @@ use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::group(["prefix"=>"brokers"],function (){
-        Route::get('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'index'])->permission(Permission::BROKER_LIST());
-        Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store'])->permission(Permission::BROKER_CREATE());
+        Route::get('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'index'])->permission(Permission::USER_LIST());
+        Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store'])->permission(Permission::USER_CREATE());
 
     });
 
     Route::group(["prefix"=>"employees"],function (){
-        Route::get('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'index'])->permission(Permission::EMPLOYEE_LIST());
-        Route::post('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'store'])->permission(Permission::EMPLOYEE_CREATE());
+        Route::get('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'index'])->permission(Permission::USER_LIST());
+        Route::post('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'store'])->permission(Permission::USER_CREATE());
 
     });
 
     Route::group(["prefix"=>"clients"],function (){
-        Route::get('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'index'])->permission(Permission::CLIENT_LIST());
-        Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store'])->permission(Permission::CLIENT_CREATE());
+        Route::get('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'index'])->permission(Permission::USER_LIST());
+        Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store'])->permission(Permission::USER_CREATE());
 
     });
     Route::get('/', [CompanyUserController::class, 'index'])->permission(Permission::USER_LIST());
@@ -52,7 +52,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/check-email', [CompanyUserController::class, 'checkEmail']);
 
     Route::get('/{id}', [CompanyUserController::class, 'show'])->permission(Permission::USER_VIEW());
-    Route::put('/{id}', [CompanyUserController::class, 'update'])->permission(Permission::USER_EDIT());
+    Route::put('/{id}', [CompanyUserController::class, 'update'])->permission(Permission::USER_UPDATE());
     Route::post('/{id}/assign-role', [CompanyUserController::class, 'assignRoleForCompanies']);
     Route::post('/{id}/assign-role-for-current-company', [CompanyUserController::class, 'assignRoleForCurrentCompany']);
     Route::delete('/{id}', [CompanyUserController::class, 'delete'])->permission(Permission::USER_DELETE());
