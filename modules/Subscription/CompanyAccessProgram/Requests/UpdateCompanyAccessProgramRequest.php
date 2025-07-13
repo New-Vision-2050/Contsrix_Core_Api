@@ -18,7 +18,7 @@ class UpdateCompanyAccessProgramRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', Rule::unique('company_access_programs', 'name')->ignore($this->route('id'))],
-            'programs' => ['required', 'array', new ValidProgramStructure()],
+            'programs' => ['required', 'array'],
             'company_fields' => 'nullable|array',
             'company_fields.*' => ['uuid', Rule::exists('company_fields', 'id')],
             'company_types' => 'nullable|array',

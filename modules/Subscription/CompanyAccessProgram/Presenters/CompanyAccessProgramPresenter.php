@@ -20,8 +20,8 @@ class CompanyAccessProgramPresenter extends AbstractPresenter
             'id' => $this->companyAccessProgram->id,
             'name' => $this->companyAccessProgram->name,
             'status' => $this->companyAccessProgram->is_active ? true : false,
-            "programs"=>$this->companyAccessProgram->programs,
-            "sub_entities"=>$this->companyAccessProgram->subEntities,
+            "programs"=>CompanyAccessProgramProgramsPresenter::collection($this->companyAccessProgram->programs),
+            "sub_entities"=>CompanyAccessProgramSubEntityPresenter::collection($this->companyAccessProgram->subEntities),
             "company_fields"=>$this->companyAccessProgram->companyFields,
             "company_types"=>$this->companyAccessProgram->companyTypes,
             "countries"=>$this->companyAccessProgram->countries

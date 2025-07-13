@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\RoleAndPermission\Controllers\PermissionController;
 use Modules\RoleAndPermission\Controllers\RoleController;
+use Modules\RoleAndPermission\Controllers\PermissionHierarchyController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -13,6 +14,12 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::put('permissions/{id}', [PermissionController::class, 'update'])->permission(Permission::PERMISSION_UPDATE());
     Route::delete('permissions/{id}', [PermissionController::class, 'delete'])->permission(Permission::PERMISSION_DELETE());
     Route::patch('permissions/{id}/status', [PermissionController::class, 'setStatus'])->permission(Permission::PERMISSION_UPDATE());
+
+    // Permission Hierarchy Routes
+    Route::group(['prefix' => 'permissions/hierarchy'], function () {
+        Route::get('/from-names', [PermissionHierarchyController::class, 'getPermissionsFromNames'])->permission(Permission::PERMISSION_LIST());
+        Route::get('/detailed', [PermissionHierarchyController::class, 'getDetailedPermissions'])->permission(Permission::PERMISSION_LIST());
+    });
 
     Route::group(['prefix' => 'roles'], function () {
         Route::get('/', [RoleController::class, 'index'])->permission(Permission::ROLE_VIEW());

@@ -47,14 +47,28 @@ class CompanyAccessProgramRepository extends BaseRepository
             // Recursively collect all program and sub-entity IDs
             [$programIds, $subEntityIds] = $this->collectAllIds($createCompanyAccessProgramDTO->rawPrograms);
 
-            // Sync programs
+            // Sync programs - Delete existing and bulk insert new ones
             if (!empty($programIds)) {
-                $program->programs()->sync($programIds);
+                $program->programs()->delete();
+
+                $programData = collect($programIds)->map(fn($programId) => [
+                    'company_access_program_id' => $program->id,
+                    'program_id' => $programId,
+                ])->toArray();
+
+                $program->programs()->insert($programData);
             }
 
-            // Sync sub_entities
+            // Sync sub_entities - Delete existing and bulk insert new ones
             if (!empty($subEntityIds)) {
-                $program->subEntities()->sync($subEntityIds);
+                $program->subEntities()->delete();
+
+                $subEntityData = collect($subEntityIds)->map(fn($subEntityId) => [
+                    'company_access_program_id' => $program->id,
+                    'sub_entity_id' => $subEntityId,
+                ])->toArray();
+
+                $program->subEntities()->insert($subEntityData);
             }
 
             // Sync other relations
@@ -112,9 +126,31 @@ class CompanyAccessProgramRepository extends BaseRepository
             // Recursively collect all program and sub-entity IDs
             [$programIds, $subEntityIds] = $this->collectAllIds($command->getPrograms());
 
-            // Sync programs and sub-entities
-            $program->programs()->sync($programIds);
-            $program->subEntities()->sync($subEntityIds);
+            // Sync programs - Delete existing and bulk insert new ones
+            if (!empty($programIds)) {
+                $program->programs()->delete();
+
+                $programData = collect($programIds)->map(fn($programId) => [
+                    'company_access_program_id' => $program->id,
+                    'program_id' => $programId,
+
+                ])->toArray();
+
+                $program->programs()->insert($programData);
+            }
+
+            // Sync sub_entities - Delete existing and bulk insert new ones
+            if (!empty($subEntityIds)) {
+                $program->subEntities()->delete();
+
+                $subEntityData = collect($subEntityIds)->map(fn($subEntityId) => [
+                    'company_access_program_id' => $program->id,
+                    'sub_entity_id' => $subEntityId,
+
+                ])->toArray();
+
+                $program->subEntities()->insert($subEntityData);
+            }
 
             // Sync other relations
             $program->companyFields()->sync($command->getCompanyFields());
