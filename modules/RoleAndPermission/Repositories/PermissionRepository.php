@@ -62,4 +62,22 @@ class PermissionRepository extends BaseRepository
         return $this->model->where('name', $name)
             ->first();
     }
+
+    /**
+     * Get permissions filtered by subEntity names where subEntity matches 
+     * the second part of permission name pattern "programName.subEntity.action"
+     */
+    public function getPermissionsBySubEntities(array $subEntities): Collection
+    {
+        if (empty($subEntities)) {
+            return collect();
+        }
+
+        return $this->model->where(function ($query) use ($subEntities) {
+            foreach ($subEntities as $subEntity) {
+                // Use REGEXP to match exactly the second segment: "anything.subEntity.anything"
+                $query->orWhere('name', 'REGEXP', "^[^.]+\\.{$subEntity}\\.[^.]+");
+            }
+        })->get();
+    }
 }
