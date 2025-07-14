@@ -28,7 +28,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             'user_id' => ['nullable', 'uuid', 'exists:users,id'],
             'department_id' => ['nullable', 'string', 'max:255'],
             'branch_ids' => ['nullable', 'array'],
-            'branch_ids.*' => ['uuid', 'exists:management_hierarchies,id'],
+            'branch_ids.*' => ['exists:management_hierarchies,id'],
             'branch_locations' => ['nullable', 'array'],
             'branch_locations.*' => ['array'],
             'branch_locations.*.name' => ['required_with:branch_locations.*', 'string', 'max:255'],
