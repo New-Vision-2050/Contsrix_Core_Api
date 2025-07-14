@@ -35,6 +35,7 @@ class PackageWithPermissionsPresenter extends AbstractPresenter
                 'key' => $permission->name,
                 'type' => $parts[count($parts) - 1],
                 'name' => $translatedName,
+                "limit" => $permission->pivot->limit,
                 'is_active' => true, // All permissions in the pivot table are active for the package
             ];
         });
