@@ -45,10 +45,18 @@ class PermissionController extends Controller
 
     public function permissionAsLookup(GetPermissionListRequest $request): JsonResponse
     {
+        if($request->has("package_id")){
+            $permissions = $this->permissionLookupService->getPermissionsForPackage($request->get("package_id"));
+            $presented = $this->permissionLookupPresenter->present($permissions);
+            return Json::item($presented);
+
+
+        }
         if(tenant('is_central_company',0)){
             $list = $this->permissionService->listPermissionAsLookup();
             return Json::item($list);
         }
+
         $permissions = $this->permissionLookupService->getPermissionsForCompany();
         $presented = $this->permissionLookupPresenter->present($permissions);
         return Json::item($presented);
