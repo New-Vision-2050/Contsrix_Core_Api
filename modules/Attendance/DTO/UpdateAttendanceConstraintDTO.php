@@ -31,13 +31,13 @@ class UpdateAttendanceConstraintDTO
             $data['constraint_type'] = $this->constraint_type;
         }
         if ($this->name !== null) {
-            $data['name'] = $this->name;
+            $data['constraint_name'] = $this->name;
         }
         if ($this->description !== null) {
             $data['description'] = $this->description;
         }
         if ($this->config !== null) {
-            $data['config'] = $this->config;
+            $data['constraint_config'] = $this->config;
         }
         if ($this->user_id !== null) {
             $data['user_id'] = $this->user_id;
