@@ -32,7 +32,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             'branch_locations' => ['nullable', 'array'],
             'branch_locations.*' => ['array'],
             'branch_locations.*.name' => ['required_with:branch_locations.*', 'string', 'max:255'],
-            'branch_locations.*.branch_id' => ['required_with:branch_locations.*', 'string', 'max:50'],
+            'branch_locations.*.branch_id' => ['required_with:branch_locations.*', 'max:50'],
             'branch_locations.*.address' => ['required_with:branch_locations.*', 'string', 'max:500'],
             'branch_locations.*.latitude' => ['required_with:branch_locations.*', 'numeric', 'between:-90,90'],
             'branch_locations.*.longitude' => ['required_with:branch_locations.*', 'numeric', 'between:-180,180'],
