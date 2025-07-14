@@ -18,6 +18,7 @@ use Modules\User\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 
 /**
  * Main attendance constraint service that acts as a facade coordinating specialized constraint services.
@@ -107,13 +108,24 @@ class AttendanceConstraintService
      * @param User $user The user to get constraints for
      * @return Collection Collection of applicable constraints
      */
-    public function getApplicableConstraints(User $user): Collection
+    public function getEffectiveConstraintForUser(User $user)
     {
-        $userBranch = $user->userProfessionalData ?? null;
-        $userBranchId = $userBranch ? (string) $userBranch->branch_id : null;
+        $userBranchId = $user->userProfessionalData?->branch_id;
+        if (!$userBranchId) {
+            return null;
+        }
+        $branch = ManagementHierarchy::find($userBranchId);
+        if (!$branch) {
+            return null;
+        }
+        $defaultConstraint = $branch->defaultAttendanceConstraint()->get();
 
-        $constraint = AttendanceConstraint::where('company_id', $user->company_id)
-    ->where(function ($query) use ($user, $userBranchId) {
+        if ( $defaultConstraint->isNotEmpty()) {
+            return $defaultConstraint;
+        }
+
+          $constraint = AttendanceConstraint::where('company_id', $user->company_id)
+            ->where(function ($query) use ($user, $userBranchId) {
                 $query->where(function ($q) {
                     $q->whereNull('user_id')
                       ->where(function ($subQ) {
@@ -127,11 +139,15 @@ class AttendanceConstraintService
                 });
             })
             ->where('is_active', true)
+
             ->get();
 
         return $constraint;
     }
-
+  public function getApplicableConstraints(User $user): Collection
+    {
+       return $this->getEffectiveConstraintForUser($user);
+    }
     /**
      * Validate a single constraint against attendance.
      *

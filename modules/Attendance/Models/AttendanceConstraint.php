@@ -52,14 +52,14 @@ class AttendanceConstraint extends Model implements Auditable
     ];
 
     protected $casts = [
-        'id' => UuidCast::class,
-        'company_id' => UuidCast::class,
-        'user_id' => UuidCast::class,
-        'department_id' => UuidCast::class,
+        'id' => 'string',
+        'company_id' => 'string',
+        'user_id' => 'string',
+        'department_id' => 'string',
         'branch_ids' => 'array',
         'branch_locations' => 'array',
-        'created_by' => UuidCast::class,
-        'updated_by' => UuidCast::class,
+        'created_by' => 'string',
+        'updated_by' => 'string',
         'constraint_config' => 'array',
         'is_active' => 'boolean',
         'inherit_from_parent' => 'boolean',
@@ -494,5 +494,15 @@ class AttendanceConstraint extends Model implements Auditable
     public function branches()
     {
         return $this->hasMany(ManagementHierarchy::class, 'id', 'branch_ids');
+    }
+    public function managementHierarchies()
+    {
+        return $this->morphedByMany(
+            ManagementHierarchy::class,
+            'constrainable',
+            'constrainables',  // table name
+            'attendance_constraint_id',
+            'constrainable_id'
+        );
     }
 }
