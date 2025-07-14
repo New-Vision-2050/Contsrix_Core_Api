@@ -222,25 +222,57 @@ class AttendanceService
     /**
      * Get attendance summary
      */
+// In AttendanceService.php
+
     public function getAttendanceSummary(UuidInterface $userId, ?string $startDate = null, ?string $endDate = null): array
     {
         $startDate = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
         $endDate = $endDate ? Carbon::parse($endDate) : now()->endOfMonth();
 
+        // 1. Get all attendance records for the period.
         $attendances = $this->attendanceRepository->getAttendanceByDateRange($userId, $startDate, $endDate);
 
+        // 2. Calculate the base total for percentages.
+        // We will use the total number of records in the given date range as the base "100%".
+        $totalRecords = $attendances->count();
+
+        // It's more efficient to calculate these once and store them in variables.
+        $totalAttendant = $attendances->whereNotNull('clock_in_time')->count();
+        $totalAbsent = $attendances->where('is_absent', true)->count();
+        $totalHoliday = $attendances->where('is_holiday', true)->count();
+        $totalDepartures = $attendances->whereNotNull('clock_out_time')->count();
+        $totalLate = $attendances->where('is_late', true)->count();
+        $totalEarly = $attendances->where('is_early_departure', true)->count();
+
+        // 3. Build the summary array.
         $summary = [
-            'total_days' => $attendances->count(),
-            'total_attendant'=> $attendances->whereNotNull('clock_in_time')->count(),
-            'total_absent_days' => $attendances->where('is_absent',1)->count(),
-            'total_holiday_days' => $attendances->where('is_holiday',1)->count(),
-            'total_departures' => $attendances->whereNotNull('clock_out_time')->count(),
-            'total_work_hours' => $attendances->sum('total_work_hours'),
-            'total_overtime_hours' => $attendances->sum('overtime_hours'),
-            'total_break_hours' => $attendances->sum('total_break_hours'),
-            'late_days' => $attendances->where('is_late',1)->count(),
-            'early_departures' => $attendances->where('is_early_departure',1)->count(),
-            'average_work_hours' => $attendances->count() > 0 ? $attendances->avg('total_work_hours') : 0,
+            'total_days' => $totalRecords,
+
+            'total_attendant' => $totalAttendant,
+            'total_attendant_percentage' => $this->calculatePercentage($totalAttendant, $totalRecords),
+
+            'total_absent_days' => $totalAbsent,
+            'total_absent_days_percentage' => $this->calculatePercentage($totalAbsent, $totalRecords),
+
+            'total_holiday_days' => $totalHoliday,
+            'total_holiday_days_percentage' => $this->calculatePercentage($totalHoliday, $totalRecords),
+
+            'total_departures' => $totalDepartures,
+            'total_departures_percentage' => $this->calculatePercentage($totalDepartures, $totalRecords),
+
+            // These are percentages of the days the user was actually present.
+            'late_days' => $totalLate,
+            'late_days_percentage' => $this->calculatePercentage($totalLate, $totalAttendant),
+
+            'early_departures' => $totalEarly,
+            'early_departures_percentage' => $this->calculatePercentage($totalEarly, $totalDepartures),
+
+            // --- Hour Summaries (no percentage needed here) ---
+            'total_work_hours' => round($attendances->sum('total_work_hours'), 2),
+            'total_overtime_hours' => round($attendances->sum('overtime_hours'), 2),
+            'total_break_hours' => round($attendances->sum('total_break_hours'), 2),
+            'average_work_hours' => $totalAttendant > 0 ? round($attendances->avg('total_work_hours'), 2) : 0,
+
             'period' => [
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $endDate->toDateString()
@@ -249,7 +281,19 @@ class AttendanceService
 
         return $summary;
     }
-
+   /**
+     * Helper function to safely calculate a percentage.
+     * @param int|float $part The value for which to calculate the percentage.
+     * @param int|float $total The total value to compare against.
+     * @return float The calculated percentage, rounded to 2 decimal places.
+     */
+    private function calculatePercentage(int|float $part, int|float $total): float
+    {
+        if ($total == 0) {
+            return 0.0;
+        }
+        return round(($part / $total) * 100, 2);
+    }
     /**
      * Update attendance record
      */
