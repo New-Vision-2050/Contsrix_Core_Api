@@ -20,7 +20,7 @@ class CreateBranchDTO
         public string $countryId,
         public string $stateId,
         public string $cityId,
-
+        public ?string $defaultConstraintId = null
     ) {
     }
 
@@ -37,7 +37,8 @@ class CreateBranchDTO
             'longitude' => $this->longitude,
             "manager_id" => $this->managerId,
 
-            "type" => "branch"
+            "type" => "branch",
+            'default_constraint_id' => $this->defaultConstraintId
 
         ],$phone);
     }

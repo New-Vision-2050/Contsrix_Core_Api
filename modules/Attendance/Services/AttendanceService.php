@@ -12,6 +12,7 @@ use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\DTO\ClockOutDTO;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
@@ -466,5 +467,33 @@ class AttendanceService
         }
 
         return $breaks;
+    }
+
+        public function getAttendanceForUserOnDate(User $user, Carbon $date): ?Attendance
+    {
+        // Use the repository to find a single record matching the criteria.
+        // This is more efficient than getting a collection and checking if it's empty.
+        return $this->attendanceRepository->findOneBy([
+            ['user_id', '=', $user->id],
+            // Check for records created between the start and end of the given day.
+            ['created_at', '>=', $date->copy()->startOfDay()],
+            ['created_at', '<=', $date->copy()->endOfDay()],
+        ]);
+    }
+        public function createAbsenceRecord(User $user, Carbon $dateOfAbsence, string $reason): Attendance
+    {
+        // Prepare the data for the new absence record.
+        $attendanceData = [
+            'user_id' => $user->id,
+            'company_id' => $user->company_id,
+            'status' => Attendance::STATUS_COMPLETED, // An absence is a "completed" state for the day.
+            'is_absent' => true,
+            'absence_reason' => $reason,
+            'clock_in_time' => $dateOfAbsence->copy()->startOfDay(),
+            'timezone' => $user->company->timezone ?? config('app.timezone'),
+        ];
+
+        // Use the repository to create the record in the database.
+        return $this->attendanceRepository->create($attendanceData);
     }
 }

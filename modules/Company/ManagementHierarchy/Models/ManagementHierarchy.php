@@ -13,6 +13,7 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Models\CompanyAddress;
 use Modules\Company\ManagementHierarchy\Database\factories\ManagementHierarchyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\User\Models\User;
 use Modules\Shared\JobType\Models\JobType;
 use Modules\JobTitle\Models\JobTitle;
@@ -237,7 +238,20 @@ class ManagementHierarchy extends Model
         $this->users_count--;
         $this->save();
     }
+    public function attendanceConstraints()
+    {
+        return $this->morphToMany(
+            AttendanceConstraint::class,
+            'constrainable',
+            'constrainables',
+            'constrainable_id',
+            'attendance_constraint_id'
+        );
+    }
 
-
-
+   public function defaultAttendanceConstraint()
+    {
+        return $this->morphToMany(AttendanceConstraint::class, 'constrainable')
+                    ->wherePivot('is_default', true);
+    }
 }

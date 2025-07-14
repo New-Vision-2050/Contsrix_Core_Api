@@ -15,7 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )->withCommands([
-        \App\Console\Commands\TestMailSendCommand::class
+        \App\Console\Commands\TestMailSendCommand::class,
+        \App\Console\Commands\AuditAbsencesCommand::class,
                            ])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
