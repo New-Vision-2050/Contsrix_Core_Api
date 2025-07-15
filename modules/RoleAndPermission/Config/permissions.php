@@ -90,7 +90,6 @@ return [
         'PROFILE_CERTIFICATES_DELETE' => 'user-profile.certificates.delete',
 
 
-
         'PROFILE_PRIVILEGES_VIEW' => 'user-profile.privileges.view',
         'PROFILE_PRIVILEGES_CREATE' => 'user-profile.privileges.create',
         'PROFILE_PRIVILEGES_UPDATE' => 'user-profile.privileges.update',
@@ -115,15 +114,18 @@ return [
         'ROLE_CREATE' => 'settings.role.create',
         'ROLE_UPDATE' => 'settings.role.update',
         'ROLE_DELETE' => 'settings.role.delete',
+        'ROLE_ACTIVATE' => 'settings.role.activate',
 
         'PERMISSION_LIST' => 'settings.permission.list',
         'PERMISSION_CREATE' => 'settings.permission.create',
         'PERMISSION_UPDATE' => 'settings.permission.update',
         'PERMISSION_DELETE' => 'settings.permission.delete',
+        'PERMISSION_ACTIVATE' => 'settings.permission.activate',
         'PERMISSION_VIEW' => 'settings.permission.view',
         'PERMISSION_ASSIGN' => 'settings.permission.update',
         'IDENTIFIER_LIST' => 'settings.identifier.list',
         'LOGIN_WAY_CREATE' => 'settings.login-way.create',
+        'LOGIN_WAY_LIST' => 'settings.login-way.list',
         'LOGIN_WAY_UPDATE' => 'settings.login-way.update',
         'LOGIN_WAY_VIEW' => 'settings.login-way.view',
         'LOGIN_WAY_DELETE' => 'settings.login-way.delete',
@@ -137,10 +139,20 @@ return [
         'ORGANIZATION_BRANCH_CREATE' => 'organization.branch.create',
         'ORGANIZATION_BRANCH_UPDATE' => 'organization.branch.update',
         'ORGANIZATION_BRANCH_DELETE' => 'organization.branch.delete',
+
         'ORGANIZATION_MANAGEMENT_VIEW' => 'organization.management.view',
+        'ORGANIZATION_MANAGEMENT_EXPORT' => 'organization.management.export',
         'ORGANIZATION_MANAGEMENT_CREATE' => 'organization.management.create',
         'ORGANIZATION_MANAGEMENT_UPDATE' => 'organization.management.update',
         'ORGANIZATION_MANAGEMENT_DELETE' => 'organization.management.delete',
+
+        'ORGANIZATION_DEPARTMENT_VIEW' => 'organization.department.view',
+        'ORGANIZATION_DEPARTMENT_EXPORT' => 'organization.department.export',
+        'ORGANIZATION_DEPARTMENT_CREATE' => 'organization.department.create',
+        'ORGANIZATION_DEPARTMENT_UPDATE' => 'organization.department.update',
+        'ORGANIZATION_DEPARTMENT_DELETE' => 'organization.department.delete',
+
+
         'ORGANIZATION_USERS_VIEW' => 'organization.users.view',
         'ORGANIZATION_JOB_TITLE_VIEW' => 'organization.job-title.view',
         'ORGANIZATION_JOB_TITLE_CREATE' => 'organization.job-title.create',
@@ -159,15 +171,22 @@ return [
 
         // Company Profile module permissions
         'COMPANY_PROFILE_OFFICIAL_DATA_UPDATE' => 'company-profile.official-data.update',
+        'COMPANY_PROFILE_OFFICIAL_DATA_VIEW' => 'company-profile.official-data.view',
 //        'COMPANY_PROFILE_OFFICIAL_DATA_REQUEST_UPDATE' => 'company-profile.official-data.update',
+        'COMPANY_PROFILE_LEGAL_DATA_VIEW' => 'company-profile.legal-data.view',
         'COMPANY_PROFILE_LEGAL_DATA_UPDATE' => 'company-profile.legal-data.update',
         'COMPANY_PROFILE_LEGAL_DATA_CREATE' => 'company-profile.legal-data.create',
         'COMPANY_PROFILE_LEGAL_DATA_DELETE' => 'company-profile.legal-data.delete',
 //        'COMPANY_PROFILE_LEGAL_DATA_REQUEST_UPDATE' => 'company-profile.legal-data.update',
+        'COMPANY_PROFILE_ADDRESS_VIEW' => 'company-profile.address.view',
         'COMPANY_PROFILE_ADDRESS_UPDATE' => 'company-profile.address.update',
 //        'COMPANY_PROFILE_ADDRESS_REQUEST_UPDATE' => 'company-profile.address.update',
         'COMPANY_PROFILE_BRANCH_LIST' => 'company-profile.branch.list',
         'COMPANY_PROFILE_BRANCH_VIEW' => 'company-profile.branch.view',
+        'COMPANY_PROFILE_BRANCH_UPDATE' => 'company-profile.branch.update',
+        'COMPANY_PROFILE_BRANCH_CREATE' => 'company-profile.branch.create',
+
+
         'COMPANY_PROFILE_OFFICIAL_DOCUMENT_CREATE' => 'company-profile.official-document.create',
         'COMPANY_PROFILE_OFFICIAL_DOCUMENT_UPDATE' => 'company-profile.official-document.update',
         'COMPANY_PROFILE_OFFICIAL_DOCUMENT_DELETE' => 'company-profile.official-document.delete',
@@ -193,8 +212,6 @@ return [
         'CITY_UPDATE' => 'country.city.update',
         'CITY_DELETE' => 'country.city.delete',
         'CITY_EXPORT' => 'country.city.export',
-
-
 
 
     ]
