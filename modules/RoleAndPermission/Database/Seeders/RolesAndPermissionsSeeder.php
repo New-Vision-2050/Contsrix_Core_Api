@@ -115,7 +115,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         foreach ($permissions as $key => $name) {
             Permission::firstOrCreate(
-                ['name' => $name, 'company_id' => $companyId],
+                ['name' => $name],
                 [
                     'name' => $name,
                     'key' => $key,

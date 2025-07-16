@@ -9,14 +9,17 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\RoleAndPermission\Commands\SyncCompanyPermissionsCommand;
+use Modules\RoleAndPermission\Commands\ManageModulePermissionsCommand;
+use Modules\RoleAndPermission\Services\PermissionConfigService;
 
 class RoleAndPermissionServiceProvider extends ModuleServiceProvider
 {
     /**
      * @var string[]
      */
-    protected $commands = [
+    protected array $commands = [
         SyncCompanyPermissionsCommand::class,
+        ManageModulePermissionsCommand::class,
     ];
 
     public static function getModuleName(): string
@@ -74,6 +77,11 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
 
     protected function registerConfig(): void
     {
+        // Register merged permissions from all modules
+        $mergedConfig = PermissionConfigService::getMergedConfig();
+        config(['permissions' => $mergedConfig]);
+
+        // Also merge the original permissions file for backward compatibility
         $this->mergeConfigFrom(
             $this->getModulePath() . '/Config/permissions.php', 'permissions'
         );
