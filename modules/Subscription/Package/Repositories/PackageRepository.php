@@ -123,9 +123,9 @@ class PackageRepository extends BaseRepository
         }
 
         // // Relational filter
-        if (!empty($conditions['company_fields'])) {
+        if (!empty($conditions['company_field_id'])) {
             $query->whereHas('companyFields', function ($q) use ($conditions) {
-                $q->whereIn('company_fields.id', $conditions['company_fields']);
+                $q->whereIn('company_fields.id', $conditions['company_field_id']);
             });
         }
 
@@ -166,13 +166,13 @@ class PackageRepository extends BaseRepository
     {
         // Prepare sync data with limits
         $syncData = [];
-        
+
         foreach ($permissionIds as $permissionId) {
             $syncData[$permissionId] = [
                 'limit' => $limits[$permissionId] ?? null
             ];
         }
-        
+
         $package->permissions()->sync($syncData);
     }
 

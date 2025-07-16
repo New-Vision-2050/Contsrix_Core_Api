@@ -195,9 +195,9 @@ class CompanyAccessProgramRepository extends BaseRepository
         }
 
         // // Relational filter
-        if (!empty($conditions['company_fields'])) {
+        if (!empty($conditions['company_field_id'])) {
             $query->whereHas('companyFields', function ($q) use ($conditions) {
-                $q->whereIn('company_fields.id', $conditions['company_fields']);
+                $q->where('company_fields.id', $conditions['company_field_id']);
             });
         }
 

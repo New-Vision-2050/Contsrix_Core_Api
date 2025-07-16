@@ -25,7 +25,7 @@ return [
     'activate' => 'Activate',
     'login-as-admin' => 'Login as Admin',
     'request-update' => 'Request Update',
-    
+
     // Module specific names
     'user' => 'User',
     'users' => 'Users',
@@ -74,20 +74,21 @@ return [
     'courses' => 'Courses',
     'certificates' => 'Certificates',
     'work-license' => 'Work License',
-    
+
     // Geographic Data
     'country' => 'Country',
     'state' => 'State',
     'city' => 'City',
-    
+
     // User Profile generic
     'data' => 'Data',
     'contact' => 'Contact',
     'identity' => 'Identity',
-    
+
     // Module names
     'settings' => 'Settings',
     'departments' => 'Departments',
     'modules' => 'Modules',
     'features' => 'Features',
+    'department' => 'Department',
 ];

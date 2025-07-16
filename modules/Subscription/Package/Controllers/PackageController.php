@@ -59,8 +59,8 @@ class PackageController extends Controller
 
 
 
-        if ($request->has('company_fields')) {
-            $filters['company_fields'] = $request->input('company_fields');
+        if ($request->has('company_field_id')) {
+            $filters['company_field_id'] = $request->input('company_field_id');
         }
 
         $list = $this->packageService->list(
