@@ -138,7 +138,7 @@ class CompanyAccessProgramController extends Controller
             Uuid::fromString($request->route('id'))
         );
 
-        return Json::items($permissionsHierarchy);
+        return Json::item($permissionsHierarchy);
     }
 
     /**

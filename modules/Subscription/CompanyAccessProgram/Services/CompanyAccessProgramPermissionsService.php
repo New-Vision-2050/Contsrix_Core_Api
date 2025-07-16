@@ -62,7 +62,7 @@ class CompanyAccessProgramPermissionsService
 
         // Return both company access program data and permissions hierarchy
         return [
-            'company_access_program' => [
+
                 'id' => $companyAccessProgram->id,
                 'name' => $companyAccessProgram->name,
                 'status' => $companyAccessProgram->is_active ? true : false,
@@ -71,7 +71,7 @@ class CompanyAccessProgramPermissionsService
                 'countries' => $companyAccessProgram->countries,
                 'sub_entities' => $allPermissions
 
-            ],
+
         ];
     }
 
