@@ -14,4 +14,5 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::put('/{id}/status', [CompanyAccessProgramController::class, 'updateStatus'])->permission(Permission::COMPANY_ACCESS_PROGRAM_UPDATE());
     Route::delete('/{id}', [CompanyAccessProgramController::class, 'delete'])->permission(Permission::COMPANY_ACCESS_PROGRAM_DELETE());
     Route::get('/{id}/package-form-meta', [CompanyAccessProgramController::class, 'getPackageFormMeta'])->permission(Permission::COMPANY_ACCESS_PROGRAM_VIEW());
+    Route::get('/{id}/permissions-hierarchy', [CompanyAccessProgramController::class, 'getPermissionsHierarchy'])->permission(Permission::COMPANY_ACCESS_PROGRAM_VIEW());
 });

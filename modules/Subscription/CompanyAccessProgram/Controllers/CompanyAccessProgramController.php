@@ -22,6 +22,7 @@ use Modules\Subscription\CompanyAccessProgram\Requests\UpdateCompanyAccessProgra
 use Modules\Subscription\CompanyAccessProgram\Presenters\CompanyAccessProgramPackageFormMetaPresenter;
 use Modules\Subscription\CompanyAccessProgram\Requests\ExportCompanyAccessProgramRequest;
 use Modules\Subscription\CompanyAccessProgram\Exports\CompanyAccessProgramExport;
+use Modules\Subscription\CompanyAccessProgram\Services\CompanyAccessProgramPermissionsService;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CompanyAccessProgramController extends Controller
@@ -122,6 +123,22 @@ class CompanyAccessProgramController extends Controller
         $presenter = new CompanyAccessProgramPackageFormMetaPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Get detailed permissions hierarchy with is_selected field for a specific company access program
+     *
+     * @param GetCompanyAccessProgramRequest $request
+     * @param CompanyAccessProgramPermissionsService $permissionsService
+     * @return JsonResponse
+     */
+    public function getPermissionsHierarchy(GetCompanyAccessProgramRequest $request, CompanyAccessProgramPermissionsService $permissionsService): JsonResponse
+    {
+        $permissionsHierarchy = $permissionsService->getDetailedPermissionsHierarchy(
+            Uuid::fromString($request->route('id'))
+        );
+
+        return Json::items($permissionsHierarchy);
     }
 
     /**
