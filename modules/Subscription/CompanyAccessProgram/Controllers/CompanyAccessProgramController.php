@@ -20,6 +20,9 @@ use Modules\Subscription\CompanyAccessProgram\Requests\GetCompanyAccessProgramLi
 use Modules\Subscription\CompanyAccessProgram\Handlers\UpdateCompanyAccessProgramStatusHandler;
 use Modules\Subscription\CompanyAccessProgram\Requests\UpdateCompanyAccessProgramStatusRequest;
 use Modules\Subscription\CompanyAccessProgram\Presenters\CompanyAccessProgramPackageFormMetaPresenter;
+use Modules\Subscription\CompanyAccessProgram\Requests\ExportCompanyAccessProgramRequest;
+use Modules\Subscription\CompanyAccessProgram\Exports\CompanyAccessProgramExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CompanyAccessProgramController extends Controller
 {
@@ -119,5 +122,20 @@ class CompanyAccessProgramController extends Controller
         $presenter = new CompanyAccessProgramPackageFormMetaPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Export company access programs to a file
+     *
+     * @param ExportCompanyAccessProgramRequest $request
+     */
+    public function export(ExportCompanyAccessProgramRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'company_access_programs.' . $format;
+
+        $filters = $request->getFilters();
+
+        return Excel::download(new CompanyAccessProgramExport($this->companyAccessProgramService, $filters), $fileName);
     }
 }

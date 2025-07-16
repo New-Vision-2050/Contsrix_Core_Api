@@ -193,4 +193,21 @@ class PackageRepository extends BaseRepository
     {
         return $this->model->with(['permissions', 'companies'])->findOrFail($packageId);
     }
+
+    /**
+     * Get filtered packages for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->query();
+
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters["ids"])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->get();
+    }
 }

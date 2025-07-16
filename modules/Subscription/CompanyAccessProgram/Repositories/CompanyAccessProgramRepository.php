@@ -232,4 +232,21 @@ class CompanyAccessProgramRepository extends BaseRepository
             'active_packages' => $activePackages,
         ];
     }
+
+    /**
+     * Get filtered company access programs for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->query();
+
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters["ids"])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->with(['companyField'])->get();
+    }
 }

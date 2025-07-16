@@ -17,6 +17,7 @@ use Modules\Subscription\Package\Requests\CreatePackageRequest;
 use Modules\Subscription\Package\Requests\DeletePackageRequest;
 use Modules\Subscription\Package\Requests\UpdatePackageRequest;
 use Modules\Subscription\Package\Requests\GetPackageListRequest;
+use Modules\Subscription\Package\Requests\ExportPackageRequest;
 use Modules\Subscription\Package\Handlers\UpdatePackageStatusHandler;
 use Modules\Subscription\Package\Requests\UpdatePackageStatusRequest;
 use Modules\Subscription\Package\Requests\AttachPackageFeaturesRequest;
@@ -25,6 +26,8 @@ use Modules\Subscription\Package\Requests\AssignPackagesToCompanyRequest;
 use Modules\Subscription\Package\Models\Package;
 use Modules\Subscription\Package\Presenters\PackageWithPermissionsPresenter;
 use Modules\Subscription\Package\Services\PackageAssignmentService;
+use Modules\Subscription\Package\Exports\PackageExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PackageController extends Controller
 {
@@ -176,5 +179,20 @@ class PackageController extends Controller
         } catch (\Exception $e) {
             return Json::error('Failed to assign packages to company: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Export packages to a file
+     *
+     * @param ExportPackageRequest $request
+     */
+    public function export(ExportPackageRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'packages.' . $format;
+
+        $filters = $request->getFilters();
+
+        return Excel::download(new PackageExport($this->packageService, $filters), $fileName);
     }
 }

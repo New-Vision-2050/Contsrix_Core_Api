@@ -49,4 +49,15 @@ class CompanyAccessProgramCRUDService
     {
         return $this->repository->counts();
     }
+
+    /**
+     * Get filtered company access programs for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters);
+    }
 }
