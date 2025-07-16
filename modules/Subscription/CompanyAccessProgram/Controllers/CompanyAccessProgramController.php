@@ -56,7 +56,7 @@ class CompanyAccessProgramController extends Controller
             $filters
         );
 
-        return Json::items(CompanyAccessProgramPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        return Json::items(CompanyAccessProgramPresenter::collection($list['data'], $this->companyAccessProgramService), paginationSettings: $list['pagination']);
     }
 
     public function counts(GetCompanyAccessProgramListRequest $request): JsonResponse
@@ -70,7 +70,7 @@ class CompanyAccessProgramController extends Controller
     {
         $item = $this->companyAccessProgramService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new CompanyAccessProgramPresenter($item);
+        $presenter = new CompanyAccessProgramPresenter($item, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
@@ -79,7 +79,7 @@ class CompanyAccessProgramController extends Controller
     {
         $createdItem = $this->companyAccessProgramService->create($request->createCreateCompanyAccessProgramDTO());
 
-        $presenter = new CompanyAccessProgramPresenter($createdItem);
+        $presenter = new CompanyAccessProgramPresenter($createdItem, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
@@ -91,7 +91,7 @@ class CompanyAccessProgramController extends Controller
 
         $item = $this->companyAccessProgramService->get($command->getId());
 
-        $presenter = new CompanyAccessProgramPresenter($item);
+        $presenter = new CompanyAccessProgramPresenter($item, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
@@ -103,7 +103,7 @@ class CompanyAccessProgramController extends Controller
 
         $item = $this->companyAccessProgramService->get($command->getId());
 
-        $presenter = new CompanyAccessProgramPresenter($item);
+        $presenter = new CompanyAccessProgramPresenter($item, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
