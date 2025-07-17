@@ -20,8 +20,6 @@ class AttendanceService
 {
     public function __construct(
         private AttendanceRepository $attendanceRepository,
-        // private AttendanceConstraintService $constraintService
-
     ) {}
 
     /**

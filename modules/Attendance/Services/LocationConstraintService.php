@@ -411,7 +411,6 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             $branchLat = (float) $branchLocation['latitude'];
             $branchLon = (float) $branchLocation['longitude'];
             $branchRadius = (float) $branchLocation['radius'];
-
             // Calculate the distance between the user and the branch center.
             $distanceInMeters = $this->calculateDistance($userLat, $userLon, $branchLat, $branchLon);
             // Check if the distance is within the allowed radius for this branch.
@@ -423,11 +422,13 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         }
         // 5. If the user was not within the radius of ANY of the defined branches, return a violation.
         if (!$isWithinAnyAllowedBranch) {
-            $this->attendanceService->endShiftAutomatically(
-                (string) $attendance->id,
-                'auto_multi_location_enforcement', // A specific reason for this type of checkout
-                "Shift ended: User was not within any assigned branch location.",
-            );
+            if($attendance->clock_in_time && $attendance->clock_out_time){
+                $this->attendanceService->endShiftAutomatically(
+                    (string) $attendance->id,
+                    'auto_multi_location_enforcement', // A specific reason for this type of checkout
+                    "Shift ended: User was not within any assigned branch location.",
+                );
+            }
             return [
                 'constraint_type' => $constraint->constraint_name,
                 'severity' => $config['severity'] ?? 'high',
@@ -437,9 +438,7 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
                         'latitude' => $userLat,
                         'longitude' => $userLon
                     ],
-                    // For security, you might not want to return the full list of allowed locations.
-                    // This is optional and depends on your security policy.
-                    // 'allowed_branch_locations' => $allowedBranchLocations
+
                 ]
             ];
         }

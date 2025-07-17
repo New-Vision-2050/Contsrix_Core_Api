@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Support\Facades\Auth;
+use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Requests\ClockInRequest;
@@ -21,82 +22,48 @@ use Modules\Attendance\Presenters\AttendancePresenter;
 use Modules\Attendance\Presenters\AttendanceBreakPresenter;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Requests\AttendanceRequest;
+use Modules\Attendance\Services\MockAttendanceService;
 use Ramsey\Uuid\Uuid;
 class AttendanceController extends Controller
 {
     public function __construct(
         private AttendanceService $attendanceService,
-        private AttendanceConstraintService $constraintService
+        private AttendanceConstraintService $constraintService,
+        private MockAttendanceService $mockAttendanceService
     ) {}
 
     /**
      * Clock in employee
      */
-   public function clockIn(ClockInRequest $request): JsonResponse
+    public function clockIn(ClockInRequest $request)//: JsonResponse
     {
-        // Create a clean Data Transfer Object from the validated request data.
-        $clockInDTO = $request->createClockInDTO();
+        try {
+            $clockInDTO = $request->createClockInDTO();
+            $rawRequestData = $request->all();
 
-        // --- PRE-VALIDATION STEP ---
-        // Before creating an actual record, we run a simulation to check for blocking violations.
+            $violations = $this->mockAttendanceService->handleClockInProcess($clockInDTO, $rawRequestData);
 
-        $user = auth()->user();
-
-        // Create a temporary "mock" attendance object. It's crucial to include all data
-        // from the request that might be needed for constraint validation (location, IP, verification data, etc.).
-        $mockAttendanceData = [
-            'user_id'             => $user->id,
-            'company_id'          => $user->company_id,
-            'clock_in_time'       => now(),
-            'clock_in_location'   => $request->input('location'),
-            'ip_address'          => $request->input('ip_address')?? $request->ip(),
-            'user_agent'          => $request->userAgent(),
-            'verification_data'   => $request->input('verification_data'), // Crucial for Office Verification
-        ];
-        $mockAttendance = new \Modules\Attendance\Models\Attendance($mockAttendanceData);
-        // Manually set the 'user' relation on the mock object, as it doesn't exist in the DB yet.
-        // This allows services to access `$attendance->user` without errors.
-        $mockAttendance->setRelation('user', $user);
-
-        // Validate the mock attendance object against all applicable constraints.
-        $violations = $this->constraintService->validateAttendance($mockAttendance, $request->all(),true);
-        // If any blocking violations are found, stop the process and return an error.
-        if (!empty($violations)) {
-            return Json::error(
-                description: 'Clock-in blocked due to constraint violations',
-                data: ['violations' => $violations],
-                httpStatus: 422
-            );
-        }
-        // --- EXECUTION STEP ---
-        // If pre-validation passes, create the actual attendance record in the database.
-        $attendance = $this->attendanceService->clockIn($clockInDTO);
-
-        // --- POST-VALIDATION STEP ---
-        // After clock-in, re-validate to log any non-blocking violations (e.g., tardiness).
-        $actualViolations = $this->constraintService->validateAttendance($attendance, $request->all());
-        if (!empty($actualViolations)) {
-            // Process each detected violation individually.
-            foreach ($actualViolations as $violationData) {
-                // Ensure the violation data is valid before creating a record.
-                if (isset($violationData['constraint_id'])) {
-                    $constraint = AttendanceConstraint::find($violationData['constraint_id']);
-                    if ($constraint) {
-                        // Persist the violation record to the database for reporting.
-                        $this->constraintService->createViolation($attendance, $constraint, $violationData);
-                    }
-                }
+            if (!empty($violations)) {
+                return Json::error(
+                    description: 'Clock-in blocked due to constraint violations',
+                    data: ['violations' => $violations],
+                    httpStatus: 422
+                );
             }
+
+            $attendance = $this->mockAttendanceService->createDTO($clockInDTO, $rawRequestData);
+
+            return Json::item(
+                        (new AttendancePresenter($attendance))->present(),
+                        message: 'Successfully clocked in.'
+            );
+        } catch (AttendanceException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getStatusCode());
         }
-
-        // --- RESPONSE STEP ---
-        // If the process is successful, return a formatted response with the new attendance data.
-        return Json::item(
-            (new AttendancePresenter($attendance))->present(),
-            message: 'Successfully clocked in.'
-        );
     }
-
 
     /**
      * Clock out employee
