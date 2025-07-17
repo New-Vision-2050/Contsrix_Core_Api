@@ -35,11 +35,11 @@ return new class extends Migration {
             }
             $table->timestamps();
 
-            if ($teams || config('permission.testing')) {
-                $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
-            } else {
-                $table->unique(['name', 'guard_name', 'company_id']);
-            }
+//            if ($teams || config('permission.testing')) {
+//                $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
+//            } else {
+//                $table->unique(['name', 'guard_name', 'company_id']);
+//            }
         });
 
         Schema::create($tableNames['roles'], function (Blueprint $table) use ($teams, $columnNames) {
