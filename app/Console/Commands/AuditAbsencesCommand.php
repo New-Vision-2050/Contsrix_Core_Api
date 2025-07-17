@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\User\Models\User;
 use Modules\Attendance\Services\AttendanceService;
@@ -24,113 +25,128 @@ class AuditAbsencesCommand extends Command
     {
         $this->info('Starting periodic absence audit...');
 
-        // 1. Get all active constraints that have time rules, along with the branches they apply to.
-        $constraints = AttendanceConstraint::with('branches.users') // Eager load for performance
-            ->where('is_active', true)
+        // Allow running the command for a specific historical date for testing.
+        $dateToCheck = $this->option('date') ? Carbon::parse($this->option('date')) : Carbon::today();
+        $this->info("Auditing absences for date: " . $dateToCheck->toDateString());
+
+        // 1. Get all active constraints that contain time-based rules.
+        $constraints = AttendanceConstraint::where('is_active', true)
             ->whereJsonContainsKey('constraint_config->time_rules')
             ->get();
 
-        foreach ($constraints as $constraint) {
-            $this->processConstraint($constraint);
+        if ($constraints->isEmpty()) {
+            $this->warn('No active time-based constraints found. Exiting.');
+            return Command::SUCCESS;
         }
 
-        $this->info('Absence audit completed.');
+        // Process each constraint to find the employees it applies to.
+        foreach ($constraints as $constraint) {
+            $this->processConstraint($constraint, $dateToCheck);
+        }
+
+        $this->info('Absence audit completed successfully.');
         return Command::SUCCESS;
     }
 
     /**
-     * Process a single constraint to find and mark absent users.
+     * Process a single constraint to find and mark absent users for a given date.
      */
-    private function processConstraint(AttendanceConstraint $constraint)
+    private function processConstraint(AttendanceConstraint $constraint, Carbon $date): void
     {
-        $this->line("Processing Constraint: '{$constraint->constraint_name}' (ID: {$constraint->id})");
+        $this->line("--> Processing Constraint: '{$constraint->constraint_name}'");
 
-        $timeRules = $constraint->constraint_config['time_rules'] ?? null;
-        if (!$timeRules) {
-            return; // Skip if no time rules
-        }
-
-        // Determine if "now" is a working time according to this constraint.
-        $now = Carbon::now();
-        $isWorkTimeResult = $this->isCurrentlyWorkTime($timeRules, $now);
-
-        if (!$isWorkTimeResult['is_work_time']) {
-            $this->line(" -> Not currently a work time for this constraint. Skipping.");
+        // 2. Check if the audit date was a scheduled workday according to this constraint.
+        if (!$this->isWorkDay($constraint->constraint_config['time_rules'] ?? [], $date)) {
+            $this->line("    -> Not a scheduled work day for this constraint. Skipping.");
             return;
         }
 
-        $this->info(" -> It is currently a work time. Checking employees...");
+        $this->info("    -> Was a scheduled work day. Checking employees...");
 
-        // Get all users this constraint applies to.
-        $users = $this->getUsersForConstraint($constraint);
+        // 3. Get the QUERY BUILDER for users this constraint applies to.
+        //    This is a performance optimization - we don't fetch all users at once.
+        $usersQuery = $this->getUsersQueryForConstraint($constraint);
 
-        foreach ($users as $user) {
-            try {
-                // Check if the user already has an attendance record for today.
-                $todaysAttendance = $this->attendanceService->getAttendanceForUserOnDate($user, $now->copy()->startOfDay());
+        // 4. Process users in manageable chunks to keep memory usage low.
+        $usersQuery->chunkById(200, function ($users) use ($date) {
+            if ($users->isEmpty()) {
+                return;
+            }
 
-                if (!$todaysAttendance) {
-                    $this->warn("   - User {$user->name} is ABSENT. Creating absence record.");
+            // Get all user IDs from the current chunk.
+            $userIdsInChunk = $users->pluck('id')->all();
+
+            // 5. In ONE database query, find which of these users already have an attendance record today.
+            $presentUserIds = $this->attendanceService->getPresentUserIdsOnDate($userIdsInChunk, $date);
+
+            // 6. Determine who is absent by finding the difference.
+            $absentUserIds = array_diff($userIdsInChunk, $presentUserIds);
+
+            if (empty($absentUserIds)) {
+                $this->info("    -> All " . count($users) . " users in this chunk were present or already marked.");
+                return; // Continue to the next chunk
+            }
+
+            $this->warn("    -> Found " . count($absentUserIds) . " absent users in this chunk. Creating records...");
+
+            // 7. Loop through ONLY the absent users to create records.
+            foreach ($users->whereIn('id', $absentUserIds) as $absentUser) {
+                try {
                     $this->attendanceService->createAbsenceRecord(
-                        $user,
-                        $now->copy()->startOfDay(),
-                        "Absent: No clock-in detected during scheduled shift."
+                        $absentUser,
+                        $date,
+                        "Absent: No clock-in recorded on a scheduled workday."
                     );
+                    $this->line("        - Marked '{$absentUser->name}' as absent.");
+                } catch (\Exception $e) {
+                    Log::error("Failed to create absence record for user {$absentUser->id}: " . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                Log::error("Failed during absence check for user {$user->id}: " . $e->getMessage());
             }
-        }
+        });
     }
 
     /**
-     * Determines if the current moment is a working time based on a time rule config.
+     * Determines if a given date is a working day based on a time rule config.
      */
-    private function isCurrentlyWorkTime(array $timeRules, Carbon $now): array
+    private function isWorkDay(array $timeRules, Carbon $date): bool
     {
-        $dayOfWeek = strtolower($now->format('l'));
-        $weeklySchedule = $timeRules['weekly_schedule'] ?? [];
-        $holidays = $timeRules['holidays'] ?? [];
-
-        // Check if today is a holiday
-        if (collect($holidays)->contains(fn($h) => $now->isSameDay($h['date'] ?? null))) {
-            return ['is_work_time' => false, 'reason' => 'Holiday'];
-        }
-
-        // Check if today is a scheduled workday
-        $daySchedule = $weeklySchedule[$dayOfWeek] ?? null;
-        if (!$daySchedule || !($daySchedule['enabled'] ?? false)) {
-            return ['is_work_time' => false, 'reason' => 'Day Off / Weekend'];
-        }
-
-        // Check if current time is within any work period
-        $currentTimeStr = $now->format('H:i');
-        foreach (($daySchedule['periods'] ?? []) as $period) {
-            if ($currentTimeStr >= $period['start_time'] && $currentTimeStr <= $period['end_time']) {
-                return ['is_work_time' => true, 'reason' => 'Within work period'];
+        // Check holidays first, as they override weekly schedules.
+        foreach (($timeRules['holidays'] ?? []) as $holiday) {
+            if ($date->isSameDay($holiday['date'] ?? null)) {
+                return false; // It's a holiday
             }
         }
 
-        return ['is_work_time' => false, 'reason' => 'Outside work periods'];
+        // Check the weekly schedule for the given day of the week.
+        $dayOfWeek = strtolower($date->format('l'));
+        $daySchedule = $timeRules['weekly_schedule'][$dayOfWeek] ?? null;
+
+        // If the day is defined and enabled, it's a workday.
+        return $daySchedule && ($daySchedule['enabled'] ?? false);
     }
 
     /**
-     * Gets all users that a specific constraint applies to.
+     * Returns the QUERY BUILDER for users that a specific constraint applies to.
+     * It does not execute the query.
      */
-    private function getUsersForConstraint(AttendanceConstraint $constraint)
+    private function getUsersQueryForConstraint(AttendanceConstraint $constraint): \Illuminate\Database\Eloquent\Builder
     {
-        // If the constraint is tied to a specific user, just return that user.
+        $query = User::query();
+
+        // If the constraint is for a specific user, target only them.
         if ($constraint->user_id) {
-            return User::where('id', $constraint->user_id)->get();
+            return $query->where('id', $constraint->user_id);
         }
 
-        // If the constraint is tied to specific branches, get all users from those branches.
+        // If the constraint is for specific branches, find users in those branches.
         if (!empty($constraint->branch_ids)) {
-            // This assumes a user is directly linked to a branch via `management_hierarchy_id`.
-            return User::whereIn('management_hierarchy_id', $constraint->branch_ids)->get();
+            // This assumes a user's branch is stored in the 'user_professional_datas' table.
+            return $query->whereHas('userProfessionalData', function ($q) use ($constraint) {
+                $q->whereIn('branch_id', $constraint->branch_ids);
+            });
         }
 
-        // If it's a global constraint, get all users in the company.
-        return User::where('company_id', $constraint->company_id)->get();
+        // Otherwise, it's a global constraint for the entire company.
+        return $query->where('company_id', $constraint->company_id);
     }
 }

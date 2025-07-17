@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 
+use function Ramsey\Uuid\v1;
+
 /**
  * Main attendance constraint service that acts as a facade coordinating specialized constraint services.
  * This service maintains backward compatibility while delegating validation to specialized services.
@@ -63,7 +65,6 @@ class AttendanceConstraintService
     {
         $violations = [];
         $user = $attendance->user;
-
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
         if (!$isDryRun && $attendance->exists) {
@@ -168,9 +169,7 @@ class AttendanceConstraintService
 
         if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
             $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
-           // dd($violation);
             if ($violation) {
-
                 return $violation;
             }
         }
@@ -187,7 +186,6 @@ class AttendanceConstraintService
             'compliance_rules' => fn() => $this->complianceConstraintService->validateComplianceConstraint($attendance, $config['compliance_rules']),
             'role_rules'       => fn() => $this->roleConstraintService->validateRoleConstraint($attendance, $config['role_rules']),
         ];
-
         // Iterate through the map and execute validation for any rules present in the config.
         foreach ($validationMap as $configKey => $validationFunction) {
             // Check if the specific rule configuration exists in the constraint.
@@ -202,7 +200,6 @@ class AttendanceConstraintService
                 }
             }
         }
-
         // If the loop completes without finding any violations, all checks have passed.
         return false;
     }
@@ -668,7 +665,7 @@ public function getTodaysWorkRulesForUser(User $user): array
                 ['latitude' => (float)($branchData['latitude'] ?? 0), 'longitude' => (float)($branchData['longitude'] ?? 0), 'radius' => (int)($branchData['radius'] ?? 0)];
             }
         }
-        dd($constraint->branch_locations);
+
         $locationRules = $constraint->constraint_config['location_rules'] ?? [];
         if (!empty($locationRules['allowed_zones'])) {
             $firstZone = $locationRules['allowed_zones'][0];

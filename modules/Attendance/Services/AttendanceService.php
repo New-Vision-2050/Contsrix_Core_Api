@@ -20,6 +20,8 @@ class AttendanceService
 {
     public function __construct(
         private AttendanceRepository $attendanceRepository,
+        private AttendanceConstraintService $constraintService
+
     ) {}
 
     /**
@@ -441,14 +443,6 @@ class AttendanceService
             return false; // Cannot end an inactive or already completed shift
         }
 
-        // Validate clock out time
-        $clockOutTime = Carbon::now();
-        $clockInTime = Carbon::parse($attendance->clock_in_time);
-
-        if ($clockOutTime->lt($clockInTime)) {
-            throw AttendanceException::invalidClockOutTime();
-        }
-
         // Set clock out time to current time
         $timestamp = Carbon::now();
         $updateData = [
@@ -524,6 +518,17 @@ class AttendanceService
             ['created_at', '<=', $date->copy()->endOfDay()],
         ]);
     }
+    public function getPresentUserIdsOnDate(array $userIds, Carbon $date): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+        return $this->attendanceRepository->model->query()
+            ->whereIn('user_id', $userIds)
+            ->whereDate('clock_in_time', $date)
+            ->pluck('user_id')
+            ->all();
+    }
         public function createAbsenceRecord(User $user, Carbon $dateOfAbsence, string $reason): Attendance
     {
         // Prepare the data for the new absence record.
@@ -540,4 +545,43 @@ class AttendanceService
         // Use the repository to create the record in the database.
         return $this->attendanceRepository->create($attendanceData);
     }
+    //  /**
+    //  * Handles the entire clock-in process.
+    //  * This method is now decoupled from the Illuminate\Http\Request object.
+    //  *
+    //  * @param ClockInDTO $clockInDTO The validated data for the clock-in.
+    //  * @param array $rawRequestData All data from the original request for validation context.
+    //  * @return Attendance The successfully created Attendance record.
+    //  * @throws AttendanceException If a blocking violation is found.
+    //  */
+    // public function handleClockInProcess(ClockInDTO $clockInDTO, array $rawRequestData): Attendance
+    // {
+    //     $user = Auth::user()->load('company');
+
+    //     // --- PRE-VALIDATION (DRY RUN) ---
+
+    //     // Use the mock service with the DTO and raw data.
+    //     $mockAttendance = $this->mockAttendanceService->createFromDTO($clockInDTO, $user, $rawRequestData);
+
+    //     // Perform the validation in "dry run" mode.
+    //     $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData, true);
+
+    //     // Check for blocking violations.
+    //     $blockingViolations = array_filter($violations, fn($v) => $v['blocks_attendance'] ?? false);
+
+    //     if (!empty($blockingViolations)) {
+    //         throw AttendanceException::clockInBlocked($blockingViolations);
+    //     }
+
+    //     // --- EXECUTION ---
+
+    //     $attendance = $this->clockIn($clockInDTO);
+
+    //     // --- POST-VALIDATION AND RECORDING ---
+
+    //     // Validate again with the real record to log violations.
+    //     $this->constraintService->validateAttendance($attendance, $rawRequestData);
+
+    //     return $attendance;
+    // }
 }

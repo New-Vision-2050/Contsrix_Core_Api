@@ -185,7 +185,6 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
     {
         // Check if IP restriction is enabled
         $ipRestrictionEnabled = $config['ip_restriction_enabled'] ?? false;
-                // dd($config);
 
         if (!$ipRestrictionEnabled) {
             return false;
@@ -353,6 +352,18 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
 
         return false;
     }
+   private function getLatestUserLocation(Attendance $attendance): ?array
+    {
+        $trackingPoints = $attendance->location_tracking ?? [];
+
+        // If there are tracking points, return the very last one.
+        if (!empty($trackingPoints) && is_array($trackingPoints)) {
+            return end($trackingPoints); // end() gets the last element of an array
+        }
+
+        // If there's no tracking data, fall back to the clock-in location.
+        return $attendance->clock_in_location ?? null;
+    }
 
     /**
      * Validate multi-location constraints.
@@ -374,9 +385,9 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             // This is not a violation, it just means this constraint is misconfigured or not applicable.
             return false;
         }
-
         // 3. Get the user's current location from the clock-in data.
-        $userLocation = $attendance->clock_in_location;
+        // $userLocation = $attendance->clock_in_location;
+        $userLocation  = $this->getLatestUserLocation($attendance);
 
         // If the user did not provide a location, we must return a violation.
         if (!$userLocation || !isset($userLocation['latitude'], $userLocation['longitude'])) {
@@ -387,7 +398,6 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
                 'details' => ['reason' => 'Missing GPS data from user.']
             ];
         }
-
         $userLat = (float) $userLocation['latitude'];
         $userLon = (float) $userLocation['longitude'];
         // 4. Loop through each defined branch location and check if the user is within its radius.
@@ -402,7 +412,6 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
             $branchLon = (float) $branchLocation['longitude'];
             $branchRadius = (float) $branchLocation['radius'];
 
-
             // Calculate the distance between the user and the branch center.
             $distanceInMeters = $this->calculateDistance($userLat, $userLon, $branchLat, $branchLon);
             // Check if the distance is within the allowed radius for this branch.
@@ -414,6 +423,11 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         }
         // 5. If the user was not within the radius of ANY of the defined branches, return a violation.
         if (!$isWithinAnyAllowedBranch) {
+            $this->attendanceService->endShiftAutomatically(
+                (string) $attendance->id,
+                'auto_multi_location_enforcement', // A specific reason for this type of checkout
+                "Shift ended: User was not within any assigned branch location.",
+            );
             return [
                 'constraint_type' => $constraint->constraint_name,
                 'severity' => $config['severity'] ?? 'high',
