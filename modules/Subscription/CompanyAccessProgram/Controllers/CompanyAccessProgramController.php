@@ -20,6 +20,10 @@ use Modules\Subscription\CompanyAccessProgram\Requests\GetCompanyAccessProgramLi
 use Modules\Subscription\CompanyAccessProgram\Handlers\UpdateCompanyAccessProgramStatusHandler;
 use Modules\Subscription\CompanyAccessProgram\Requests\UpdateCompanyAccessProgramStatusRequest;
 use Modules\Subscription\CompanyAccessProgram\Presenters\CompanyAccessProgramPackageFormMetaPresenter;
+use Modules\Subscription\CompanyAccessProgram\Requests\ExportCompanyAccessProgramRequest;
+use Modules\Subscription\CompanyAccessProgram\Exports\CompanyAccessProgramExport;
+use Modules\Subscription\CompanyAccessProgram\Services\CompanyAccessProgramPermissionsService;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CompanyAccessProgramController extends Controller
 {
@@ -43,8 +47,8 @@ class CompanyAccessProgramController extends Controller
             $filters['name'] = $request->get('name');
         }
 
-        if($request->has('company_fields')) {
-            $filters['company_fields'] = $request->input('company_fields');
+        if($request->has('company_field_id')) {
+            $filters['company_field_id'] = $request->input('company_field_id');
         }
 
         $list = $this->companyAccessProgramService->list(
@@ -53,7 +57,7 @@ class CompanyAccessProgramController extends Controller
             $filters
         );
 
-        return Json::items(CompanyAccessProgramPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        return Json::items(CompanyAccessProgramPresenter::collection($list['data'], $this->companyAccessProgramService), paginationSettings: $list['pagination']);
     }
 
     public function counts(GetCompanyAccessProgramListRequest $request): JsonResponse
@@ -67,7 +71,7 @@ class CompanyAccessProgramController extends Controller
     {
         $item = $this->companyAccessProgramService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new CompanyAccessProgramPresenter($item);
+        $presenter = new CompanyAccessProgramPresenter($item, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
@@ -76,7 +80,7 @@ class CompanyAccessProgramController extends Controller
     {
         $createdItem = $this->companyAccessProgramService->create($request->createCreateCompanyAccessProgramDTO());
 
-        $presenter = new CompanyAccessProgramPresenter($createdItem);
+        $presenter = new CompanyAccessProgramPresenter($createdItem, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
@@ -88,7 +92,7 @@ class CompanyAccessProgramController extends Controller
 
         $item = $this->companyAccessProgramService->get($command->getId());
 
-        $presenter = new CompanyAccessProgramPresenter($item);
+        $presenter = new CompanyAccessProgramPresenter($item, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
@@ -100,7 +104,7 @@ class CompanyAccessProgramController extends Controller
 
         $item = $this->companyAccessProgramService->get($command->getId());
 
-        $presenter = new CompanyAccessProgramPresenter($item);
+        $presenter = new CompanyAccessProgramPresenter($item, $this->companyAccessProgramService);
 
         return Json::item($presenter->getData());
     }
@@ -119,5 +123,36 @@ class CompanyAccessProgramController extends Controller
         $presenter = new CompanyAccessProgramPackageFormMetaPresenter($item);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Get detailed permissions hierarchy with is_selected field for a specific company access program
+     *
+     * @param GetCompanyAccessProgramRequest $request
+     * @param CompanyAccessProgramPermissionsService $permissionsService
+     * @return JsonResponse
+     */
+    public function getPermissionsHierarchy(GetCompanyAccessProgramRequest $request, CompanyAccessProgramPermissionsService $permissionsService): JsonResponse
+    {
+        $permissionsHierarchy = $permissionsService->getDetailedPermissionsHierarchy(
+            Uuid::fromString($request->route('id'))
+        );
+
+        return Json::item($permissionsHierarchy);
+    }
+
+    /**
+     * Export company access programs to a file
+     *
+     * @param ExportCompanyAccessProgramRequest $request
+     */
+    public function export(ExportCompanyAccessProgramRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'company_access_programs.' . $format;
+
+        $filters = $request->getFilters();
+
+        return Excel::download(new CompanyAccessProgramExport($this->companyAccessProgramService, $filters), $fileName);
     }
 }

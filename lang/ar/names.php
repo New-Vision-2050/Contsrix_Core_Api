@@ -25,7 +25,7 @@ return [
     'activate' => 'تفعيل',
     'login-as-admin' => 'تسجيل الدخول كمسؤول',
     'request-update' => 'طلب تحديث',
-    
+
     // Module specific names
     'user' => 'مستخدم',
     'users' => 'المستخدمين',
@@ -90,4 +90,5 @@ return [
     'departments' => 'الأقسام',
     'modules' => 'الوحدات',
     'features' => 'الميزات',
+    'department' =>"قسم",
 ];

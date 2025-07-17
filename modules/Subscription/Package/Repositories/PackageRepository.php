@@ -123,9 +123,9 @@ class PackageRepository extends BaseRepository
         }
 
         // // Relational filter
-        if (!empty($conditions['company_fields'])) {
+        if (!empty($conditions['company_field_id'])) {
             $query->whereHas('companyFields', function ($q) use ($conditions) {
-                $q->whereIn('company_fields.id', $conditions['company_fields']);
+                $q->where('company_fields.id', $conditions['company_field_id']);
             });
         }
 
@@ -166,13 +166,13 @@ class PackageRepository extends BaseRepository
     {
         // Prepare sync data with limits
         $syncData = [];
-        
+
         foreach ($permissionIds as $permissionId) {
             $syncData[$permissionId] = [
                 'limit' => $limits[$permissionId] ?? null
             ];
         }
-        
+
         $package->permissions()->sync($syncData);
     }
 
@@ -192,5 +192,22 @@ class PackageRepository extends BaseRepository
     public function findWithPermissionsAndCompanies(string $packageId): Package
     {
         return $this->model->with(['permissions', 'companies'])->findOrFail($packageId);
+    }
+
+    /**
+     * Get filtered packages for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->query();
+
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters["ids"])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->get();
     }
 }

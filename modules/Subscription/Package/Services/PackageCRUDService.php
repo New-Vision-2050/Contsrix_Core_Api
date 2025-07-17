@@ -59,4 +59,20 @@ class PackageCRUDService
         $this->repository->syncPermissions($package, $permissionIds, $limits);
         $this->assignmentService->recalculate($package);
     }
+
+    public function assignToCompany(string $packageId, string $companyId): void
+    {
+        $this->assignmentService->assignPackageToCompany($packageId, $companyId);
+    }
+
+    /**
+     * Get filtered packages for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters);
+    }
 }

@@ -195,9 +195,9 @@ class CompanyAccessProgramRepository extends BaseRepository
         }
 
         // // Relational filter
-        if (!empty($conditions['company_fields'])) {
+        if (!empty($conditions['company_field_id'])) {
             $query->whereHas('companyFields', function ($q) use ($conditions) {
-                $q->whereIn('company_fields.id', $conditions['company_fields']);
+                $q->where('company_fields.id', $conditions['company_field_id']);
             });
         }
 
@@ -231,5 +231,22 @@ class CompanyAccessProgramRepository extends BaseRepository
             'company_fields' => $distinctCompanyFields,
             'active_packages' => $activePackages,
         ];
+    }
+
+    /**
+     * Get filtered company access programs for export
+     *
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->query();
+
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters["ids"])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->with(['companyField'])->get();
     }
 }
