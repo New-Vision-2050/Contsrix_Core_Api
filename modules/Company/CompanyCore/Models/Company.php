@@ -4,32 +4,32 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
-use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\HasTranslations;
-use BasePackage\Shared\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Modules\AdminRequest\Models\AdminRequest;
-use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
-use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\Company\CompanyField\Models\CompanyField;
-use Modules\Company\CompanyType\Models\CompanyType;
-use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
-use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\Country\Models\Country;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
-use Stancl\Tenancy\Database\Concerns\HasDatabase;
-use Stancl\Tenancy\Database\Concerns\HasDomains;
-use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
-
+use Stancl\Tenancy\DatabaseConfig;
+use Modules\Country\Models\Country;
+use App\Traits\CustomBelongsToTenant;
+use Illuminate\Database\Eloquent\Model;
+use BasePackage\Shared\Traits\UuidTrait;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use BasePackage\Shared\Traits\BaseFilterable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\AdminRequest\Models\AdminRequest;
+use BasePackage\Shared\Traits\HasTranslations;
+use Stancl\Tenancy\Contracts\TenantWithDatabase;
+use Stancl\Tenancy\Database\Concerns\HasDomains;
+use Stancl\Tenancy\Database\Concerns\HasDatabase;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\CompanyField\Models\CompanyField;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 use Stancl\Tenancy\Database\Concerns\HasScopedValidationRules;
-use Stancl\Tenancy\Contracts\TenantWithDatabase;
-use Stancl\Tenancy\DatabaseConfig;
+use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -74,11 +74,11 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public array $translatable = ["name"];
 
-//    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner"];
+    //    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner"];
 
     public $incrementing = false;
     protected $table = 'companies';
-//    protected $connection = "mysql";
+    //    protected $connection = "mysql";
 
 
     protected $keyType = 'string';
@@ -233,7 +233,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public function owner()
     {
-        return $this->hasOne(User::class)->where("is_owner",1);
+        return $this->hasOne(User::class)->where("is_owner", 1);
     }
 
     public function users()
@@ -255,5 +255,26 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
             $model->serial_no = $serial;
         });
+    }
+
+    public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(
+            \Modules\Subscription\Package\Models\Package::class,
+            'company_package',
+            'company_id',
+            'package_id'
+        )
+//            ->using(CompanyPackagePivot::class)
+            ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the permission limits for this company.
+     */
+    public function permissionLimits(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\Modules\Subscription\Package\Models\CompanyPermissionLimit::class, 'company_id');
     }
 }

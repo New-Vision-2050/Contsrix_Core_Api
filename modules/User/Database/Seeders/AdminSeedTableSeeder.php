@@ -57,13 +57,12 @@ class AdminSeedTableSeeder extends Seeder
                     "management_hierarchy_id"=>2 //main management in main company
                 ]
             );
-            $user->assignRole('super-admin');
-            
+
             // Manually trigger users_count recalculation since seeder bypasses observers
             $this->recalculateUsersCount();
         }
     //}
-    
+
     /**
      * Manually recalculate users_count for all hierarchies
      * This ensures correct counts after seeding

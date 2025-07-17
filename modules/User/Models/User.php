@@ -9,7 +9,6 @@ use App\Casts\UuidCast;
 use Modules\CompanyUser\Models\ClientDetail;
 use Modules\Setting\Models\LoginWay;
 use App\Traits\CustomBelongsToTenant;
-use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Spatie\Permission\Traits\HasRoles;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use BasePackage\Shared\Traits\UuidTrait;
@@ -29,7 +28,7 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -197,7 +196,7 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function branch()
     {
         return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
-            ->where('type', operator: 'branch');
+            ->where('type','branch');
     }
 
     public function userProfessionalData()

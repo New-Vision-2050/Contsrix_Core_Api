@@ -192,7 +192,6 @@ class CompanyUserRepository extends BaseRepository
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
 
             DB::beginTransaction();
-
             $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyRole['company_id']])->first();
             if(isset($companyUserData["job_title_id"])&&$companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
             {
@@ -381,6 +380,8 @@ class CompanyUserRepository extends BaseRepository
                 "company_id" => $companyId,
                 "parent_id" => null
             ]);
+            $user->assignRole('super-admin');//assign super admin role for first user
+
 
             $branch->update(["manager_id" => $user->id]);
 
