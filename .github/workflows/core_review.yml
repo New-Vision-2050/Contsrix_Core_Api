@@ -5,6 +5,9 @@ on:
     types:
       - opened
       - synchronize
+    branches:
+      - production
+      - stage
   workflow_dispatch:
     inputs:
       pr_number:
