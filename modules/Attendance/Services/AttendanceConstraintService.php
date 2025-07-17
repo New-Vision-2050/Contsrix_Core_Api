@@ -126,21 +126,19 @@ class AttendanceConstraintService
         }
 
           $constraint = AttendanceConstraint::where('company_id', $user->company_id)
-            ->where(function ($query) use ($user, $userBranchId) {
-                $query->where(function ($q) {
-                    $q->whereNull('user_id')
-                      ->where(function ($subQ) {
-                          $subQ->whereNull('branch_ids')
-                               ->orWhereJsonLength('branch_ids', 0);
-                      });
-                })
-                ->orWhere('user_id', $user->id);
-                $query->when($userBranchId, function ($q) use ($userBranchId) {
-                    $q->orWhereJsonContains('branch_ids', $userBranchId);
-                });
-            })
             ->where('is_active', true)
 
+            ->where(function ($query) use ($user, $userBranchId) {
+                $query->whereJsonContains('user_ids', $user->id)
+
+                ->when($userBranchId, function ($q) use ($userBranchId) {
+                    $q->orWhereJsonContains('branch_ids', (string) $userBranchId);
+                })
+                ->orWhere(function ($q) {
+                    $q->where(fn($sub) => $sub->whereNull('user_ids')->orWhereJsonLength('user_ids', 0))
+                    ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
+                });
+            })
             ->get();
 
         return $constraint;
@@ -542,17 +540,6 @@ public function getTodaysWorkRulesForUser(User $user): array
     $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
             return $constraints
                 ->filter($filter)
-                ->sortByDesc(function ($constraint) use ($user) {
-                    $score = ($constraint->priority ?? 1) * 100;
-
-                    if ($constraint->user_id === $user->id) {
-                        $score += 10000;
-                    }
-                    elseif (!empty($constraint->branch_ids)) {
-                        $score += 1000;
-                    }
-                    return $score;
-                })
                 ->sortByDesc('created_at')
                 ->first();
         };

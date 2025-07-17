@@ -133,20 +133,19 @@ class AuditAbsencesCommand extends Command
     {
         $query = User::query();
 
-        // If the constraint is for a specific user, target only them.
-        if ($constraint->user_id) {
-            return $query->where('id', $constraint->user_id);
+        $userIds = $constraint->user_ids ?? [];
+        $branchIds = $constraint->branch_ids ?? [];
+
+        if (!empty($userIds)) {
+            return $query->whereIn('id', $userIds);
         }
 
-        // If the constraint is for specific branches, find users in those branches.
-        if (!empty($constraint->branch_ids)) {
-            // This assumes a user's branch is stored in the 'user_professional_datas' table.
-            return $query->whereHas('userProfessionalData', function ($q) use ($constraint) {
-                $q->whereIn('branch_id', $constraint->branch_ids);
+        if (!empty($branchIds)) {
+            return $query->whereHas('userProfessionalData', function ($q) use ($branchIds) {
+                $q->whereIn('branch_id',$branchIds);
             });
         }
 
-        // Otherwise, it's a global constraint for the entire company.
         return $query->where('company_id', $constraint->company_id);
     }
 }

@@ -28,8 +28,10 @@ class CreateAttendanceConstraintRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['nullable', 'uuid', 'exists:users,id'],
-            'department_id' => ['nullable', 'string', 'max:255'],
+            'user_ids'         => ['nullable', 'array'],
+            'user_ids.*'       => ['uuid', 'exists:users,id'],
+            'department_ids'   => ['nullable', 'array'],
+            'department_ids.*' => ['exists:management_hierarchies,id'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['exists:management_hierarchies,id'],
             'branch_locations' => ['nullable', 'array'],
@@ -246,12 +248,12 @@ class CreateAttendanceConstraintRequest extends FormRequest
         return new CreateAttendanceConstraintDTO(
             constraint_type: $validated['constraint_type'],
             name: $validated['constraint_name'],
-            description: $validated['notes'] ?? '',
+            notes: $validated['notes'] ?? '',
             config: $validated['constraint_config'] ?? [],
             company_id: $companyId,
             created_by: $createdBy,
-            user_id: $validated['user_id'] ?? null,
-            department_id: $validated['department_id'] ?? null,
+            user_ids: $validated['user_ids'] ?? [],
+            department_ids: $validated['department_ids'] ?? [],
             branch_ids: $validated['branch_ids'] ?? [],
             branch_locations: $validated['branch_locations'] ?? null,
             priority: $validated['priority'] ?? 1,

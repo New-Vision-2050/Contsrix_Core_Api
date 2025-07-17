@@ -25,8 +25,10 @@ class UpdateAttendanceConstraintRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => ['nullable', 'uuid', 'exists:users,id'],
-            'department_id' => ['nullable', 'string', 'max:255'],
+            'user_ids'         => ['nullable', 'array'],
+            'user_ids.*'       => ['uuid', 'exists:users,id'],
+            'department_ids'   => ['nullable', 'array'],
+            'department_ids.*' => ['exists:management_hierarchies,id'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['exists:management_hierarchies,id'],
             'branch_locations' => ['nullable', 'array'],
@@ -106,11 +108,11 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             updated_by: $updatedBy,
             constraint_type: $validated['constraint_type'] ?? null,
             name: $validated['constraint_name'] ?? null,
-            description: $validated['notes'] ?? null,
+            notes: $validated['notes'] ?? null,
             config: $validated['constraint_config'] ?? [],
-            user_id: $validated['user_id'] ?? null,
-            department_id: $validated['department_id'] ?? null,
-            branch_ids: $validated['branch_ids'] ?? null,
+            user_ids: $validated['user_ids'] ?? [],
+            department_ids: $validated['department_ids'] ?? [],
+            branch_ids: $validated['branch_ids'] ?? [],
             branch_locations: $validated['branch_locations'] ?? null,
             priority: $validated['priority'] ?? null,
             is_active: $validated['is_active'] ?? null,
