@@ -22,6 +22,7 @@ use Modules\Attendance\Presenters\AttendancePresenter;
 use Modules\Attendance\Presenters\AttendanceBreakPresenter;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Requests\AttendanceRequest;
+use Modules\Attendance\Requests\BreakRequest;
 use Modules\Attendance\Services\MockAttendanceService;
 use Ramsey\Uuid\Uuid;
 class AttendanceController extends Controller
@@ -96,7 +97,7 @@ class AttendanceController extends Controller
     /**
      * Start break
      */
-    public function startBreak(Request $request): JsonResponse
+    public function startBreak(BreakRequest $request): JsonResponse
     {
         $attendance = $this->attendanceService->startBreak(
             $request->user()->id,
@@ -114,7 +115,7 @@ class AttendanceController extends Controller
     /**
      * End break
      */
-    public function endBreak(Request $request): JsonResponse
+    public function endBreak(BreakRequest $request): JsonResponse
     {
         $attendance = $this->attendanceService->endBreak(
             $request->user()->id,
