@@ -20,7 +20,7 @@ class AttendanceService
 {
     public function __construct(
         private AttendanceRepository $attendanceRepository,
-        private AttendanceConstraintService $constraintService
+        // private AttendanceConstraintService $constraintService
 
     ) {}
 
@@ -545,15 +545,15 @@ class AttendanceService
         // Use the repository to create the record in the database.
         return $this->attendanceRepository->create($attendanceData);
     }
-    //  /**
-    //  * Handles the entire clock-in process.
-    //  * This method is now decoupled from the Illuminate\Http\Request object.
-    //  *
-    //  * @param ClockInDTO $clockInDTO The validated data for the clock-in.
-    //  * @param array $rawRequestData All data from the original request for validation context.
-    //  * @return Attendance The successfully created Attendance record.
-    //  * @throws AttendanceException If a blocking violation is found.
-    //  */
+     /**
+     * Handles the entire clock-in process.
+     * This method is now decoupled from the Illuminate\Http\Request object.
+     *
+     * @param ClockInDTO $clockInDTO The validated data for the clock-in.
+     * @param array $rawRequestData All data from the original request for validation context.
+     * @return Attendance The successfully created Attendance record.
+     * @throws AttendanceException If a blocking violation is found.
+     */
     // public function handleClockInProcess(ClockInDTO $clockInDTO, array $rawRequestData): Attendance
     // {
     //     $user = Auth::user()->load('company');
