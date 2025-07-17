@@ -39,10 +39,7 @@ class Permission extends SpatiePermission
     /**
      * Get the company that owns the permission.
      */
-    public function company(): BelongsTo
-    {
-        return $this->belongsTo('Modules\Company\CompanyCore\Models\Company', 'company_id');
-    }
+
     /**
      * Relation to Program model (nullable).
      */

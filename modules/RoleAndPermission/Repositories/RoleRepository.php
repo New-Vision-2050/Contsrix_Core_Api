@@ -57,7 +57,7 @@ class RoleRepository extends BaseRepository
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception('Role update failed: ' . $e->getMessage(), 500);
+            throw new \Exception(__("validation.update-not-successful"), 500);
         }
         return true;
 

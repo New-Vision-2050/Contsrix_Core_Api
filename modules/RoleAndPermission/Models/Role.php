@@ -21,6 +21,7 @@ class Role extends SpatieRole
     use BaseFilterable;
     use HasFactory;
     use BelongsToTenant;
+
 //    use HasUuids;
 
     // use HasTranslations;

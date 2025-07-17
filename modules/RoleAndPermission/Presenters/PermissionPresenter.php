@@ -21,10 +21,8 @@ class PermissionPresenter extends AbstractPresenter
     {
         $nameParts = explode('.', $this->permission->name);
         $translatedName = '';
-        
-        if (empty($nameParts) || empty($this->permission->name)) {
-            $translatedName = $this->permission->name;
-        } elseif (count($nameParts) >= 2) {
+        if (count($nameParts) >= 2) {
+            // Skip the first part (module name) and translate the rest
             for ($i = count($nameParts) - 1; $i >= 1; $i--) {
                 $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
             }
@@ -33,7 +31,6 @@ class PermissionPresenter extends AbstractPresenter
         } else {
             $translatedName = __('names.' . $this->permission->name);
         }
-        
         return [
             'id' => $this->permission->id,
             'name' => $translatedName,
