@@ -34,13 +34,13 @@ class Role extends SpatieRole
     protected $primaryKey = 'id';
 
     protected $casts = [
-        'company_id' => "string",
+        'company_id' => 'string',
     ];
 
     protected $fillable = [
         'name',
         'guard_name',
         'company_id',
-        'status'
+        'status',
     ];
 }

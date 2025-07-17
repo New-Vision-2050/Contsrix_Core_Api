@@ -16,8 +16,6 @@ return new class extends Migration {
             $mainPackage = Package::where('name', 'Main Package')->first();
 
             if ($mainPackage) {
-
-
                 // Get all companies that don't already have the Main Package assigned
                 $companiesWithoutMainPackage = Company::whereDoesntHave('packages', function ($query) use ($mainPackage) {
                     $query->where('package_id', $mainPackage->id);
@@ -45,7 +43,6 @@ return new class extends Migration {
                 }
             }
         });
-
     }
 
     /**

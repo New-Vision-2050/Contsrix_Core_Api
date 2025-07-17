@@ -17,12 +17,12 @@ class RoleFilter extends SearchModelFilter
 
     public function search($search)
     {
-        return $this->where('name', $search);
+        return $this->where('name', 'like', '%' . $search . '%');
     }
 
-    public function status($satus)
+    public function status($status)
     {
-        return $this->where('status');
+        return $this->where('status', $status);
     }
 
     public function employeeName($employeeName)

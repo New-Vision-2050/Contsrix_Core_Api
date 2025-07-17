@@ -17,8 +17,11 @@ class TenancePermision
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!empty(auth('api')->user())) {
-            setPermissionsTeamId(auth('api')->user()->company_id);
+        if (auth('api')->check()) {
+            $user = auth('api')->user();
+            if ($user && $user->company_id) {
+                setPermissionsTeamId($user->company_id);
+            }
         }
         return $next($request);
     }

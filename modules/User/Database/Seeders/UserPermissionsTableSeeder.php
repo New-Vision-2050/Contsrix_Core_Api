@@ -20,7 +20,7 @@ class UserPermissionsTableSeeder extends Seeder
      */
     public function run()
     {
-        Model::unguard();
+        // Removed Model::unguard() to ensure observers work properly
         $operations  = ["create","update","delete","list","show"];
         $modules  = ["user"];
         //if (App::environment('production') == false)

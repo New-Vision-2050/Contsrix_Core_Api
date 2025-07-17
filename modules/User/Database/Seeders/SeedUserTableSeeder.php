@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Modules\User\Models\User;
 use Ranium\SeedOnce\Traits\SeedOnce;
+
 class SeedUserTableSeeder extends Seeder
 {
     use SeedOnce;
+
     /**
      * Run the database seeds.
      *
@@ -18,7 +20,7 @@ class SeedUserTableSeeder extends Seeder
     public function run()
     {
         // Removed dd() to allow proper seeder execution
-        Model::unguard();
+        // Removed Model::unguard() to ensure observers fire properly
 
         User::factory()->create([
             'name' => 'Test User',

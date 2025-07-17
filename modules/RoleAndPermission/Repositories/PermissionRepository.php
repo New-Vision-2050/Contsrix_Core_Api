@@ -29,7 +29,7 @@ class PermissionRepository extends BaseRepository
 
     public function getPermissionsWithoutPagination()
     {
-        return $this->model->get();
+        return $this->model->all();
     }
 
     public function getPermission(UuidInterface $id): Permission
@@ -76,7 +76,7 @@ class PermissionRepository extends BaseRepository
         return $this->model->where(function ($query) use ($subEntities) {
             foreach ($subEntities as $subEntity) {
                 // Use REGEXP to match exactly the second segment: "anything.subEntity.anything"
-                $query->orWhere('name', 'REGEXP', "^[^.]+\\.{$subEntity}\\.[^.]+");
+                $query->orWhere('name', 'REGEXP', "^[a-zA-Z0-9_]+\\.{$subEntity}\\.[a-zA-Z0-9_]+$");
             }
         })->get();
     }

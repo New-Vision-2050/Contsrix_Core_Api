@@ -23,7 +23,7 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run()
     {
-        Model::unguard();
+        // Removed Model::unguard() to ensure observers work properly
 
         // Get current company ID or use the first company
         $companyId = tenant("id") ?? Company::query()->first()?->id;

@@ -1,0 +1,514 @@
+File: app/Http/Middleware/PermissionMiddleware.php (Line 38)
+Reviewer: github-actions[bot]
+Comment:
+The guard check `auth()->guard($authGuard)->guest()` could be simplified to just `auth()->guest()` since you're using the default guard.
+----------------------------------------
+File: app/Http/Middleware/PermissionMiddleware.php (Line 41)
+Reviewer: github-actions[bot]
+Comment:
+The condition `auth()->check() && auth()->user()->is_owner == 1` could be simplified to `auth()->user()->is_owner` since `auth()->check()` is redundant when accessing `auth()->user()`.
+----------------------------------------
+File: app/Http/Middleware/PermissionMiddleware.php (Line 50)
+Reviewer: github-actions[bot]
+Comment:
+The role check `$user->hasRole('super-admin') || $user->hasRole('admin')` could be optimized by using `$user->hasAnyRole(['super-admin', 'admin'])` for better readability.
+----------------------------------------
+File: app/Http/Middleware/PermissionMiddleware.php (Line 55)
+Reviewer: github-actions[bot]
+Comment:
+Consider moving the permission check logic (`$user->hasPermissionTo`) and subsequent operations into a separate method to improve code organization and readability.
+----------------------------------------
+File: app/Http/Middleware/PermissionMiddleware.php (Line 70)
+Reviewer: github-actions[bot]
+Comment:
+The error message for limit exceeded could be moved to a language file or constant for better maintainability.
+----------------------------------------
+File: app/Http/Middleware/RoleMiddleware.php (Line 37)
+Reviewer: github-actions[bot]
+Comment:
+The condition `$user->hasRole('super-admin') || $user->hasRole('admin')&&(auth()->check() && auth()->user()->is_owner == 1)` has incorrect operator precedence. The `&&` will be evaluated before the `||`, which might not be the intended behavior. Consider adding parentheses to make the logic clearer: `($user->hasRole('super-admin') || $user->hasRole('admin')) && (auth()->check() && auth()->user()->is_owner == 1)`.
+----------------------------------------
+File: app/Http/Middleware/RoleOrPermissionMiddleware.php (Line 42)
+Reviewer: github-actions[bot]
+Comment:
+The condition `$user->hasRole('admin')&&(auth()->check() && auth()->user()->is_owner == 1)` is missing parentheses around the `&&` operation, which could lead to incorrect evaluation. It should be `$user->hasRole('admin') && (auth()->check() && auth()->user()->is_owner == 1)`.
+----------------------------------------
+File: app/Http/Middleware/TenancePermision.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+The condition `!empty(auth('api')->user())` could be simplified to `auth('api')->check()` for better readability.
+----------------------------------------
+File: app/Http/Middleware/TenancePermision.php (Line 21)
+Reviewer: github-actions[bot]
+Comment:
+Consider adding a null check for `company_id` before calling `setPermissionsTeamId` to avoid potential errors if `company_id` is null.
+----------------------------------------
+File: database/migrations/2025_01_21_082337_create_domains_table.php (Line 18)
+Reviewer: github-actions[bot]
+Comment:
+The table existence check should be moved before the `Schema::create` call to avoid unnecessary closure definition when the table already exists.
+----------------------------------------
+File: database/migrations/2025_01_21_082337_create_domains_table.php (Line 21)
+Reviewer: github-actions[bot]
+Comment:
+Consider adding an index for the `domain` field since it's marked as unique - this will improve lookup performance.
+----------------------------------------
+File: database/migrations/2025_01_21_082337_create_domains_table.php (Line 22)
+Reviewer: github-actions[bot]
+Comment:
+The `company_id` field should be defined as `uuid` type to match the reference type in the `companies` table.
+----------------------------------------
+File: database/migrations/2025_01_21_082337_create_domains_table.php (Line 27)
+Reviewer: github-actions[bot]
+Comment:
+The foreign key constraint should be added within the initial table creation closure to avoid making multiple schema calls.
+----------------------------------------
+File: database/migrations/2025_07_09_211515_populate_key_column_in_permissions_table.php (Line 19)
+Reviewer: github-actions[bot]
+Comment:
+Consider using `array_keys($permissions)` instead of `$key` in the foreach loop to make it more explicit where the key is coming from.
+----------------------------------------
+File: database/migrations/2025_07_09_211515_populate_key_column_in_permissions_table.php (Line 31)
+Reviewer: github-actions[bot]
+Comment:
+The `down()` method assumes all permissions had a null key before, but there's no check to ensure this. Consider adding a condition to verify this assumption or handle cases where keys might not be null.
+----------------------------------------
+File: database/migrations/2025_07_09_211516_populate_key_column_in_permissions_table.php (Line 19)
+Reviewer: github-actions[bot]
+Comment:
+The `where()` method returns a query builder instance, not a model instance. You should use `first()` to get the actual permission model before checking/updating it:
+
+```php
+$permission = Permission::where('name', $name)->first();
+```
+----------------------------------------
+File: database/migrations/2025_07_09_211516_populate_key_column_in_permissions_table.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+The condition `if ($permission)` will always evaluate to true since `where()` returns a query builder. After fixing line 19, this check will work correctly.
+----------------------------------------
+File: database/migrations/2025_07_09_211516_populate_key_column_in_permissions_table.php (Line 34)
+Reviewer: github-actions[bot]
+Comment:
+Consider adding error handling for cases where the config file might not exist or is malformed. Currently, if `config('permissions.permissions')` is not accessible, this will throw an error.
+----------------------------------------
+File: database/migrations/2025_07_09_211516_populate_key_column_in_permissions_table.php (Line 19)
+Reviewer: github-actions[bot]
+Comment:
+Consider using `firstOrNew` instead of `where` + `first` + conditional create/update to make the code more concise and avoid potential race conditions.
+----------------------------------------
+File: database/migrations/2025_07_09_211516_populate_key_column_in_permissions_table.php (Line 32)
+Reviewer: github-actions[bot]
+Comment:
+The comment about making this reversible is misleading since the migration is already reversible. Consider removing this comment as it adds no value.
+----------------------------------------
+File: database/migrations/2025_07_09_211516_populate_key_column_in_permissions_table.php (Line 34)
+Reviewer: github-actions[bot]
+Comment:
+The `whereIn` condition might fail silently if `config('permissions.permissions')` returns null. Consider adding a null check similar to line 14.
+----------------------------------------
+File: database/migrations/2025_07_09_211518_populate_key_column_in_permissions_table.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+The if-else statement can be simplified using the null coalescing operator (`??`) or `firstOrNew` method to reduce redundancy and improve readability.
+----------------------------------------
+File: database/migrations/2025_07_09_211518_populate_key_column_in_permissions_table.php (Line 22)
+Reviewer: github-actions[bot]
+Comment:
+Consider using `firstOrCreate` instead of manually checking and creating to avoid race conditions and make the code more concise.
+----------------------------------------
+File: database/migrations/2025_07_09_211518_populate_key_column_in_permissions_table.php (Line 34)
+Reviewer: github-actions[bot]
+Comment:
+The `whereIn` condition might fail if `config('permissions.permissions')` returns `null`. Add a check to ensure it's not `null` before proceeding.
+----------------------------------------
+File: database/migrations/2025_07_09_211519_populate_key_column_in_permissions_table.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+Consider using `updateOrCreate` method instead of separate `where` and `update/create` logic to make the code more concise and atomic.
+----------------------------------------
+File: database/migrations/2025_07_09_211519_populate_key_column_in_permissions_table.php (Line 34)
+Reviewer: github-actions[bot]
+Comment:
+The `down` method assumes all permissions had null keys before, but there's no validation for this. Consider adding a comment in the migration file (not in code) explaining this assumption.
+----------------------------------------
+File: database/migrations/2025_07_17_115500_assign_main_package_to_all_companies.php (Line 19)
+Reviewer: github-actions[bot]
+Comment:
+Remove empty lines for better code readability.
+----------------------------------------
+File: database/migrations/2025_07_17_115500_assign_main_package_to_all_companies.php (Line 49)
+Reviewer: github-actions[bot]
+Comment:
+Remove empty line for better code readability.
+----------------------------------------
+File: database/migrations/2025_07_17_115500_assign_main_package_to_all_companies.php (Line 39)
+Reviewer: github-actions[bot]
+Comment:
+Consider making the subscription duration configurable instead of hardcoding `addYear()`.
+----------------------------------------
+File: database/migrations/2025_07_17_115500_assign_main_package_to_all_companies.php (Line 62)
+Reviewer: github-actions[bot]
+Comment:
+The comment suggests optional behavior but the code doesn't actually check for records created by this migration. Either implement the check or remove the misleading comment.
+----------------------------------------
+File: database/seeders/DatabaseSeeder.php (Line 71)
+Reviewer: github-actions[bot]
+Comment:
+There are two unnecessary blank lines after `RolesAndPermissionsSeeder::class`. Please remove them to maintain consistent code formatting.
+----------------------------------------
+File: database/seeders/MainPackageSeeder.php (Line 51)
+Reviewer: github-actions[bot]
+Comment:
+The tenant check logic `tenant("id")? Company::find(tenant("id")): Company::first()` could be simplified and made more readable. Consider extracting this into a separate method or using a ternary operator more clearly.
+----------------------------------------
+File: database/seeders/MainPackageSeeder.php (Line 56)
+Reviewer: github-actions[bot]
+Comment:
+Hardcoding `addYear()` might not be flexible if subscription periods change. Consider using the package's `subscription_period` and `subscription_period_unit` to calculate the expiry date dynamically.
+----------------------------------------
+File: modules/Company/CompanyCore/Database/factories/CompanyFactory.php (Line 18)
+Reviewer: github-actions[bot]
+Comment:
+The indentation seems off here. The `return` statement should align with the method's opening brace.
+----------------------------------------
+File: modules/Company/CompanyCore/Database/factories/CompanyFactory.php (Line 21)
+Reviewer: github-actions[bot]
+Comment:
+`country_id` expects an integer ID, but you're assigning a `Country::factory()`. Should be `'country_id' => Country::factory()->create()->id` or similar.
+----------------------------------------
+File: modules/Company/CompanyCore/Observers/CompanyObserver.php (Line 22)
+Reviewer: github-actions[bot]
+Comment:
+Commented out code should be removed if not needed. Either uncomment and use it or delete it completely.
+----------------------------------------
+File: modules/Company/CompanyCore/Observers/CompanyObserver.php (Line 25)
+Reviewer: github-actions[bot]
+Comment:
+Commented out code should be removed if not needed. Either uncomment and use it or delete it completely.
+----------------------------------------
+File: modules/Company/CompanyCore/Observers/CompanyObserver.php (Line 56)
+Reviewer: github-actions[bot]
+Comment:
+The comment `// Skip copying for the first company (it will be our source)` is misleading since the condition checks `<= 1`. Consider rewording to clarify it skips when there's only one company.
+----------------------------------------
+File: modules/Company/CompanyCore/Resources/routes/api.php (Line 26)
+Reviewer: github-actions[bot]
+Comment:
+There's a duplicate `Permission::COMPANY_VIEW()` parameter in the `permission()` method call. Please remove one of them.
+----------------------------------------
+File: modules/Company/CompanyCore/tests/Feature/BaseCompanyTestCase.php (Line 26)
+Reviewer: github-actions[bot]
+Comment:
+Consider using factory methods instead of direct model creation to ensure consistency with the rest of the test setup where `User::factory()` is used.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Presenters/ManagementWithRelationsPresenter.php (Line 68)
+Reviewer: github-actions[bot]
+Comment:
+It seems there's a copy-paste error here. The method `getRelatedBranches()` is called instead of `getRelatedManagements()` which was just added above. This will return branches data instead of management data.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Presenters/NonCopiedHierarchyWithDetailsPresenter.php (Line 10)
+Reviewer: github-actions[bot]
+Comment:
+The method `present` could benefit from type hints for the return value. Consider adding `: array` to the method signature for better clarity and static analysis.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Presenters/NonCopiedHierarchyWithDetailsPresenter.php (Line 24)
+Reviewer: github-actions[bot]
+Comment:
+The cast `(bool)` is redundant since `$managementHierarchy->detail->is_copied` is likely already a boolean. Remove the cast unless there's a specific reason for it.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Presenters/NonCopiedHierarchyWithDetailsPresenter.php (Line 26)
+Reviewer: github-actions[bot]
+Comment:
+Consider using arrow functions (`fn() =>`) for the `map` operations to improve readability and reduce boilerplate code.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Presenters/NonCopiedHierarchyWithDetailsPresenter.php (Line 51)
+Reviewer: github-actions[bot]
+Comment:
+Using `toIso8601String()` might not be the best choice for API responses. Consider using `->format('Y-m-d H:i:s')` or another standardized format that aligns with your API conventions.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Repositories/ManagementHierarchyRepository.php (Line 958)
+Reviewer: github-actions[bot]
+Comment:
+The method name `findNonCopiedHierarchyById` is unclear about what "non-copied" refers to. Consider renaming it to better reflect its purpose or the business logic it represents.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Repositories/ManagementHierarchyRepository.php (Line 958)
+Reviewer: github-actions[bot]
+Comment:
+Missing type hint for the `$id` parameter. Consider adding `int` or `string` depending on what type of ID is expected.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Repositories/ManagementHierarchyRepository.php (Line 967)
+Reviewer: github-actions[bot]
+Comment:
+Inconsistent string quotes usage. The rest of the array uses single quotes, but this line uses double quotes. Please standardize to single quotes for consistency.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Repositories/ManagementHierarchyRepository.php (Line 21)
+Reviewer: github-actions[bot]
+Comment:
+There appears to be a typo in the method name `getLookupsForChoise`. It should likely be `getLookupsForChoices` to match the previous implementation and be grammatically correct.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Services/NonCopiedHierarchiesService.php (Line 16)
+Reviewer: github-actions[bot]
+Comment:
+The variable name change from `$repository` to `$managementHierarchyRepository` is unnecessary and makes the code less concise without adding clarity. Suggest keeping the original name.
+----------------------------------------
+File: modules/Company/ManagementHierarchy/Services/NonCopiedHierarchiesService.php (Line 50)
+Reviewer: github-actions[bot]
+Comment:
+The parameter `$id` should have a type hint. Consider adding `int` or `string` depending on what type of ID is expected.
+----------------------------------------
+File: modules/CompanyUser/Repositories/CompanyUserRepository.php (Line 383)
+Reviewer: github-actions[bot]
+Comment:
+The inline comment should be removed as per the instructions. Also, there should be a space after `//` if comments were allowed.
+----------------------------------------
+File: modules/Country/Filters/CountryFilter.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+Remove unnecessary empty line before the return statement.
+----------------------------------------
+File: modules/Country/Filters/CountryFilter.php (Line 26)
+Reviewer: github-actions[bot]
+Comment:
+Remove unnecessary empty line before the return statement.
+----------------------------------------
+File: modules/Country/Filters/CountryFilter.php (Line 27)
+Reviewer: github-actions[bot]
+Comment:
+The `use` keyword should have a space after it: `use ($company_access_program_id)`.
+----------------------------------------
+File: modules/Country/Filters/CountryFilter.php (Line 31)
+Reviewer: github-actions[bot]
+Comment:
+Remove unnecessary empty line before the closing brace.
+----------------------------------------
+File: modules/Program/Presenters/ProgramSelectListPresenter.php (Line 38)
+Reviewer: github-actions[bot]
+Comment:
+The `filter` callback should be type-hinted for better code clarity. Consider using `fn($sub): bool => !Str::isUuid($sub->super_entity)` instead.
+----------------------------------------
+File: modules/Program/Repositories/ProgramRepository.php (Line 52)
+Reviewer: github-actions[bot]
+Comment:
+The method name `selectList` is too generic. Consider renaming it to something more descriptive like `getActiveParentProgramsWithRelations` to better reflect its purpose.
+----------------------------------------
+File: modules/Program/Repositories/ProgramRepository.php (Line 53)
+Reviewer: github-actions[bot]
+Comment:
+The relationship loading seems overly complex with multiple nested relationships. Consider if all these relationships are truly needed for every use case of this method, as it may impact performance.
+----------------------------------------
+File: modules/Program/Repositories/ProgramRepository.php (Line 60)
+Reviewer: github-actions[bot]
+Comment:
+Hardcoding `parent_id` as null might be too restrictive. Consider making this a parameter to allow more flexibility in querying programs.
+----------------------------------------
+File: modules/RoleAndPermission/Enums/Permission.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+The `search` method seems redundant as it's doing the same thing as the `name` method. Consider removing it or modifying it to provide different functionality.
+----------------------------------------
+File: modules/RoleAndPermission/Filters/RoleFilter.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+The `search` method is using `where('name', $search)` which performs an exact match. If the intention is to allow partial matches (as implied by the method name 'search'), consider using `like` operator: `where('name', 'like', '%' . $search . '%')`.
+----------------------------------------
+File: modules/RoleAndPermission/Filters/RoleFilter.php (Line 25)
+Reviewer: github-actions[bot]
+Comment:
+The `status` method has a typo in parameter name (`$satus`) and is incorrectly using `where('status')` without any value comparison. It should be `where('status', $status)` with the correct parameter name.
+----------------------------------------
+File: modules/RoleAndPermission/Filters/RoleFilter.php (Line 30)
+Reviewer: github-actions[bot]
+Comment:
+The `employeeName` method uses `whereHas` with `users` relation, but there's no check if the relation exists in `$this->relations`. Ensure the relation is loaded or handle cases where the relation might not exist.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Permission.php (Line 7)
+Reviewer: github-actions[bot]
+Comment:
+The `CompanyRoleCast` import was removed but it might be used elsewhere in the codebase. Please verify if this removal is intentional.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Permission.php (Line 14)
+Reviewer: github-actions[bot]
+Comment:
+The `BelongsToTenant` and `BelongsToPrimaryModel` traits are imported but `BelongsToTenant` is commented out in the class. Either use it or remove the import to avoid confusion.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Permission.php (Line 22)
+Reviewer: github-actions[bot]
+Comment:
+The commented out `BelongsToTenant` trait should be either properly implemented or removed to keep the code clean.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Permission.php (Line 44)
+Reviewer: github-actions[bot]
+Comment:
+The `company()` relationship method should specify the return type `BelongsTo` for better type hinting.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Permission.php (Line 49)
+Reviewer: github-actions[bot]
+Comment:
+There's an extra blank line here that should be removed for consistent code formatting.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Permission.php (Line 71)
+Reviewer: github-actions[bot]
+Comment:
+The relationship table name `package_permission` should be defined as a constant if it's used elsewhere in the codebase to avoid hardcoding.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Permission.php (Line 78)
+Reviewer: github-actions[bot]
+Comment:
+The return type `\Illuminate\Database\Eloquent\Relations\HasMany` should be imported at the top of the file for better readability.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Role.php (Line 36)
+Reviewer: github-actions[bot]
+Comment:
+The `casts` array should use single quotes consistently for array keys and values to match the existing code style.
+----------------------------------------
+File: modules/RoleAndPermission/Models/Role.php (Line 40)
+Reviewer: github-actions[bot]
+Comment:
+The `fillable` array should be aligned with the same indentation as other properties (4 spaces) to maintain consistent formatting.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionInRolePresenter.php (Line 16)
+Reviewer: github-actions[bot]
+Comment:
+The property name `rolePermissions` is misleading since it actually holds a single `Permission` instance, not multiple permissions. Consider renaming it to `permission` to better reflect its purpose.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionInRolePresenter.php (Line 18)
+Reviewer: github-actions[bot]
+Comment:
+The parameter name `$permissions` is plural but it accepts a single `Permission` instance. It should be singular (`$permission`) to match the actual type.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionInRolePresenter.php (Line 23)
+Reviewer: github-actions[bot]
+Comment:
+The `$isListing` parameter is unused in the method. Either remove it if not needed or implement logic that uses it.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionLookupPresenter.php (Line 16)
+Reviewer: github-actions[bot]
+Comment:
+Consider using `Str::of($permission->name)->explode('.')` instead of `explode()` for better readability and chainability.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionLookupPresenter.php (Line 25)
+Reviewer: github-actions[bot]
+Comment:
+The string concatenation inside the loop could be inefficient for large permission sets. Consider building an array and then imploding it.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionLookupPresenter.php (Line 32)
+Reviewer: github-actions[bot]
+Comment:
+This `explode()` operation is redundant since you already have `$nameParts` from line 16. Reuse that variable instead.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionLookupPresenter.php (Line 36)
+Reviewer: github-actions[bot]
+Comment:
+Accessing `$parts[count($parts) - 1]` could be simplified to `end($parts)` for better readability.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionLookupPresenter.php (Line 44)
+Reviewer: github-actions[bot]
+Comment:
+The ternary operator here could be simplified to `$parts[0] ?? 'other'` since you're just checking if it's set.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionLookupPresenter.php (Line 51)
+Reviewer: github-actions[bot]
+Comment:
+Same as above - could be simplified to `$parts[1] ?? 'other'`.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionPresenter.php (Line 22)
+Reviewer: github-actions[bot]
+Comment:
+Consider adding input validation for `$this->permission->name` to ensure it's not empty before processing.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionPresenter.php (Line 25)
+Reviewer: github-actions[bot]
+Comment:
+The comment `// Skip the first part (module name) and translate the rest` is redundant as the code is self-explanatory.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/PermissionPresenter.php (Line 51)
+Reviewer: github-actions[bot]
+Comment:
+The comment `// Count users who have this permission directly or through a role` duplicates the method's docblock and should be removed.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/RolePresenter.php (Line 22)
+Reviewer: github-actions[bot]
+Comment:
+Remove empty line for better code readability.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/RolePresenter.php (Line 26)
+Reviewer: github-actions[bot]
+Comment:
+Use single quotes for consistency with the rest of the array keys.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/RolePresenter.php (Line 27)
+Reviewer: github-actions[bot]
+Comment:
+Use single quotes for consistency with the rest of the array keys.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/RoleWidgetsPresenter.php (Line 18)
+Reviewer: github-actions[bot]
+Comment:
+The `present` method parameter `$isListing` is unused. Consider removing it if not needed.
+----------------------------------------
+File: modules/RoleAndPermission/Presenters/RoleWidgetsPresenter.php (Line 20)
+Reviewer: github-actions[bot]
+Comment:
+The returned array structure could be simplified by using a direct associative array instead of nested arrays for each item. For example:
+
+```php
+return [
+    'total_roles' => $this->dto->total_roles,
+    'main_roles' => $this->dto->main_roles,
+    // etc.
+];
+```
+
+This would make the data structure flatter and easier to work with.
+----------------------------------------
+File: modules/RoleAndPermission/Repositories/PermissionRepository.php (Line 32)
+Reviewer: github-actions[bot]
+Comment:
+Consider using `all()` instead of `get()` for consistency with Laravel conventions when retrieving all records without conditions.
+----------------------------------------
+File: modules/RoleAndPermission/Repositories/PermissionRepository.php (Line 79)
+Reviewer: github-actions[bot]
+Comment:
+The REGEXP pattern might be too permissive. Consider using a more precise pattern like `^[a-zA-Z0-9_]+\.{$subEntity}\.[a-zA-Z0-9_]+$` to ensure proper matching of valid permission name segments.
+----------------------------------------
+File: modules/RoleAndPermission/Repositories/RoleRepository.php (Line 13)
+Reviewer: github-actions[bot]
+Comment:
+The imported function `t` from Symfony's Translation component is unused and should be removed to avoid unnecessary dependencies.
+----------------------------------------
+File: modules/RoleAndPermission/Repositories/RoleRepository.php (Line 41)
+Reviewer: github-actions[bot]
+Comment:
+The method `syncPermissions` is called on the result of `create($roleData)` but there's no check if the role was actually created successfully. Consider adding error handling here similar to what's done in `updateRole`.
+----------------------------------------
+File: modules/RoleAndPermission/Repositories/RoleRepository.php (Line 47)
+Reviewer: github-actions[bot]
+Comment:
+The `update` method call result is not checked before calling `givePermissionsToRole`. If `update` fails silently, permissions might still be assigned. Either check the return value or wrap both operations in the same try-catch block.
+----------------------------------------
+File: modules/RoleAndPermission/Repositories/RoleRepository.php (Line 54)
+Reviewer: github-actions[bot]
+Comment:
+The exception message `"validation.update-not-successful"` appears to be a translation key but it's not clear from the context what validation failed. Consider using a more descriptive error message.
+----------------------------------------
+File: modules/RoleAndPermission/Repositories/RoleRepository.php (Line 94)
+Reviewer: github-actions[bot]
+Comment:
+Hardcoding the value `2` for `mainRoles` seems arbitrary. This should either be calculated dynamically based on a proper business rule or removed if not needed.
+----------------------------------------
+File: modules/RoleAndPermission/Requests/SetStatusPermissionRequest.php (Line 19)
+Reviewer: github-actions[bot]
+Comment:
+The 'status' validation rule should be more specific. Consider adding type validation (e.g., 'boolean' or 'string') and any other relevant constraints based on what values are expected.
+----------------------------------------
+File: modules/RoleAndPermission/Requests/SetStatusPermissionRequest.php (Line 28)
+Reviewer: github-actions[bot]
+Comment:
+The return type hint is missing for the `getStatus` method. Since this is a new class, we should be strict about types. Add `: mixed` or a more specific type if possible.
+----------------------------------------
+File: modules/RoleAndPermission/Requests/SetStatusRoleRequest.php (Line 28)
+Reviewer: github-actions[bot]
+Comment:
+The `role_has_users` message in the `messages()` method doesn't correspond to any validation rule in the `rules()` method. Either add the corresponding validation rule or remove this message.
+----------------------------------------

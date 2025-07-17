@@ -28,7 +28,7 @@ class ManagementHierarchyCRUDService
          return $this->repository->createManagementHierarchy($createManagementHierarchyDTO->toArray());
     }
 
-    public function updateManagementWithLookupsForChoise(UpdateManagementWithRelationsDTO $updateManagementWithRelationsDTO): SourceManagementHierarchy
+    public function updateManagementWithLookupsForChoice(UpdateManagementWithRelationsDTO $updateManagementWithRelationsDTO): SourceManagementHierarchy
     {
         return $this->repository->updateManagementWithRelations(
             $updateManagementWithRelationsDTO->getManagementId(),
@@ -44,7 +44,7 @@ class ManagementHierarchyCRUDService
     /**
      * Delete management with all related data (job types, job titles, branches, deputy managers)
      */
-    public function deleteManagementWithLookupsForChoise(int $managementId): bool
+    public function deleteManagementWithLookupsForChoice(int $managementId): bool
     {
         return $this->repository->deleteManagementWithRelations($managementId);
     }
@@ -66,7 +66,7 @@ class ManagementHierarchyCRUDService
          return $this->repository->createDepartment($createDepartmentDTO->departmentToArray(),$createDepartmentDTO->departmentDetailToArray(),[],[]);
     }
 
-    public function createManagementWithLookupsForChoise(CreateManagementWithRelationsDTO $createManagementWithRelationsDTO): SourceManagementHierarchy
+    public function createManagementWithLookupsForChoice(CreateManagementWithRelationsDTO $createManagementWithRelationsDTO): SourceManagementHierarchy
     {
 //        $detail =$this->repository->getDetail($createManagementWithRelationsDTO->getParentId());
         return $this->repository->createManagementWithRelations(

@@ -21,35 +21,27 @@ class NonCopiedHierarchyWithDetailsPresenter
                 'email' => $managementHierarchy->user->email,
             ] : null,
             'detail' => $managementHierarchy->detail ? [
-                'is_copied' => (bool) $managementHierarchy->detail->is_copied,
+                'is_copied' => (bool)$managementHierarchy->detail->is_copied,
             ] : null,
-            'job_titles' => $managementHierarchy->jobTitles->map(function ($jobTitle) {
-                return [
-                    'id' => $jobTitle->id,
-                    'name' => $jobTitle->name,
-                ];
-            }),
-            'job_types' => $managementHierarchy->jobTypes->map(function ($jobType) {
-                return [
-                    'id' => $jobType->id,
-                    'name' => $jobType->name,
-                ];
-            }),
-            'related_branches' => $managementHierarchy->relatedBranches->map(function ($branch) {
-                return [
-                    'id' => $branch->id,
-                    'name' => $branch->name,
-                ];
-            }),
-            'deputy_managers' => $managementHierarchy->deputyManagers->map(function ($deputy) {
-                return [
-                    'id' => $deputy->user->id,
-                    'name' => $deputy->user->name,
-                    'email' => $deputy->user->email,
-                ];
-            }),
-            'created_at' => $managementHierarchy->created_at->toIso8601String(),
-            'updated_at' => $managementHierarchy->updated_at->toIso8601String(),
+            'job_titles' => $managementHierarchy->jobTitles->map(fn ($jobTitle) => [
+                'id' => $jobTitle->id,
+                'name' => $jobTitle->name,
+            ]),
+            'job_types' => $managementHierarchy->jobTypes->map(fn ($jobType) => [
+                'id' => $jobType->id,
+                'name' => $jobType->name,
+            ]),
+            'related_branches' => $managementHierarchy->relatedBranches->map(fn ($branch) => [
+                'id' => $branch->id,
+                'name' => $branch->name,
+            ]),
+            'deputy_managers' => $managementHierarchy->deputyManagers->map(fn ($deputy) => [
+                'id' => $deputy->user->id,
+                'name' => $deputy->user->name,
+                'email' => $deputy->user->email,
+            ]),
+            'created_at' => $managementHierarchy->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $managementHierarchy->updated_at->format('Y-m-d H:i:s'),
         ];
     }
 }

@@ -964,7 +964,7 @@ class ManagementHierarchyRepository extends BaseRepository
                 'jobTypes',
                 'jobTitles',
                 'relatedBranches',
-                "relatedManagements"
+                'relatedManagements'
             ])
             ->find($id);
     }

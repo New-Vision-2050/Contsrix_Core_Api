@@ -114,10 +114,10 @@ class ManagementHierarchySettingController extends Controller
     /**
      * Create a new management with job types, job titles, and branches relations
      */
-    public function createManagementWithLookupsForChoise(CreateManagementWithRelationsRequest $request): JsonResponse
+    public function createManagementWithLookupsForChoice(CreateManagementWithRelationsRequest $request): JsonResponse
     {
         $createManagementWithRelationsDTO = $request->createCreateManagementWithRelationsDTO();
-        $sourceManagementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoise($createManagementWithRelationsDTO);
+        $sourceManagementHierarchy = $this->managementHierarchyService->createManagementWithLookupsForChoice($createManagementWithRelationsDTO);
 
         return Json::item(
             (new ManagementWithRelationsPresenter($sourceManagementHierarchy))->getData(),
@@ -184,10 +184,10 @@ class ManagementHierarchySettingController extends Controller
     /**
      * Update a management with job types, job titles, and branches relations
      */
-    public function updateManagementWithLookupsForChoise(UpdateManagementWithRelationsRequest $request): JsonResponse
+    public function updateManagementWithLookupsForChoice(UpdateManagementWithRelationsRequest $request): JsonResponse
     {
         $updateManagementWithRelationsDTO = $request->createUpdateManagementWithRelationsDTO();
-        $sourceManagementHierarchy = $this->managementHierarchyService->updateManagementWithLookupsForChoise($updateManagementWithRelationsDTO);
+        $sourceManagementHierarchy = $this->managementHierarchyService->updateManagementWithLookupsForChoice($updateManagementWithRelationsDTO);
 
         return Json::item(
             (new ManagementWithRelationsPresenter($sourceManagementHierarchy))->getData(),
@@ -210,10 +210,10 @@ class ManagementHierarchySettingController extends Controller
     /**
      * Delete a management with job types, job titles, and branches relations
      */
-    public function deleteManagementWithLookupsForChoise(int $id): JsonResponse
+    public function deleteManagementWithLookupsForChoice(int $id): JsonResponse
     {
         try {
-            $result = $this->managementHierarchyService->deleteManagementWithLookupsForChoise($id);
+            $result = $this->managementHierarchyService->deleteManagementWithLookupsForChoice($id);
 
             return response()->json([
                 'success' => true,

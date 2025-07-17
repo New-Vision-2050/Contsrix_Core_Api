@@ -380,8 +380,7 @@ class CompanyUserRepository extends BaseRepository
                 "company_id" => $companyId,
                 "parent_id" => null
             ]);
-            $user->assignRole('super-admin');//assign super admin role for first user
-
+            $user->assignRole('super-admin');
 
             $branch->update(["manager_id" => $user->id]);
 

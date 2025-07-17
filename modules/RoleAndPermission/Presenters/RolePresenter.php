@@ -19,12 +19,11 @@ class RolePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-
         return [
             'id' => $this->role->id,
             'name' => $this->role->name,
-            "status"=>$this->role->status,
-            "permission_count"=>$this->role->permissions()->count(),
+            'status' => $this->role->status,
+            'permission_count' => $this->role->permissions()->count(),
         ];
     }
 }

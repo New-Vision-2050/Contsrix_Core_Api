@@ -39,7 +39,7 @@ class RoleOrPermissionMiddleware extends SpatieRoleOrPermissionMiddleware
         $roleOrPermission = collect($roleOrPermission);
         $user = $authGuard->user();
         $companyId = $user->company_id;
-        if($user->hasRole('super-admin') || $user->hasRole('admin')&&(auth()->check() && auth()->user()->is_owner == 1)) {
+        if ($user->hasRole('super-admin') || $user->hasRole('admin') || (auth()->check() && auth()->user()->is_owner == 1)) {
             return $next($request);
         }
 

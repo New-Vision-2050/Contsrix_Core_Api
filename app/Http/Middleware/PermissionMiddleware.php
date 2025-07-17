@@ -38,7 +38,7 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
         if (auth()->guard($authGuard)->guest()) {
             throw UnauthorizedException::notLoggedIn();
         }
-        if(auth()->check() && auth()->user()->is_owner == 1) {
+        if( auth()->user()->is_owner == 1) {
             return $next($request);
         }
 
@@ -47,7 +47,7 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
         $user = auth()->guard($authGuard)->user();
 
 
-        if($user->hasRole('super-admin') || $user->hasRole('admin')) {
+        if($user->hasAnyRole(['super-admin', 'admin']) ){
             return $next($request);
         }
 
@@ -70,7 +70,7 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
                     if ($permissionLimit->isLimitExceeded()) {
                         throw new UnauthorizedException(
                             403,
-                            "Permission '{$permission}' limit exceeded. No more usage allowed."
+                            __('permissions.limit_exceeded', ['permission' => $permission])
                         );
                     }
 

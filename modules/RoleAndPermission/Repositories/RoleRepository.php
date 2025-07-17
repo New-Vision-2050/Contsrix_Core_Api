@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Modules\RoleAndPermission\DTO\RoleWidgetsDataDTO;
 use Modules\RoleAndPermission\Models\Role;
 use Ramsey\Uuid\UuidInterface;
-use function Symfony\Component\Translation\t;
 
 /**
  * @property Role $model
@@ -38,7 +37,11 @@ class RoleRepository extends BaseRepository
 
     public function createRole(array $roleData , ?array $permissions): Role
     {
-        return $this->create($roleData)->syncPermissions($permissions);
+        $role = $this->create($roleData);
+        if (!$role) {
+            throw new \Exception('Role creation failed');
+        }
+        return $role->syncPermissions($permissions);
     }
 
     public function updateRole(UuidInterface $id, array $data , ?array $permissions): bool
@@ -46,12 +49,15 @@ class RoleRepository extends BaseRepository
 
         try {
             DB::beginTransaction();
-            $this->update($id, $data);
+            $updateResult = $this->update($id, $data);
+            if (!$updateResult) {
+                throw new \Exception('Role update failed');
+            }
             $this->givePermissionsToRole($id, $permissions);
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            throw new \Exception(__("validation.update-not-successful"), 500);
+            throw new \Exception('Role update failed: ' . $e->getMessage(), 500);
         }
         return true;
 
@@ -91,7 +97,7 @@ class RoleRepository extends BaseRepository
         $activeRoles = $this->model->query()->where('status', 1)->count();
         $inactiveRoles = $this->model->query()->where('status', 0)->count();
         // TODO: Confirm the definition of a 'Main Role'. Assuming roles with no company_id for now.
-        $mainRoles = 2;
+        $mainRoles = $this->model->query()->whereNull('company_id')->count();
 
         return RoleWidgetsDataDTO::fromArray([
             'total_roles' => $totalRoles,

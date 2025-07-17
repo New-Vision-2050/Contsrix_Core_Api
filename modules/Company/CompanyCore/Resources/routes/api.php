@@ -22,7 +22,7 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
     Route::post('/test', [CompanyController::class, 'test']);
 
     Route::put('/{id}/activate', [CompanyController::class, 'activate']);
-    Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show')->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_VIEW());
+    Route::get('/{id}', [CompanyController::class, 'show'])->name('companies.show')->permission(Permission::COMPANY_VIEW());
     Route::put('/{id}', [CompanyController::class, 'update'])->permission(Permission::COMPANY_UPDATE());
     Route::delete('/delete-last', [CompanyController::class, 'deleteLastCreated'])->name('companies.delete')->permission(Permission::COMPANY_DELETE());
     Route::delete('/{id}', [CompanyController::class, 'delete'])->name('companies.delete')->permission(Permission::COMPANY_DELETE());

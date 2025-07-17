@@ -66,8 +66,6 @@ class DatabaseSeeder extends Seeder
         $this->call(AdminSeedTableSeeder::class);
         $this->call(CompanyModulesSeederTableSeeder::class);
         $this->call(RolesAndPermissionsSeeder::class);
-
-
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
         $this->call(QuestionSettingTableSeeder::class);

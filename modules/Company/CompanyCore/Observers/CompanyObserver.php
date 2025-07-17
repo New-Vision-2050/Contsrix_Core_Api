@@ -18,11 +18,6 @@ class CompanyObserver
      */
     public function created(Company $company): void
     {
-        // Create default job types and titles for the company
-//        $this->createDefaultJobTypesAndTitles($company);
-
-        // Copy permissions from the first company to the new company
-//        $this->copyPermissionsToNewCompany($company);
     }
 
     /**
