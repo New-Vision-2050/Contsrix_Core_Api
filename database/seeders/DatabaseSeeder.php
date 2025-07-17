@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
@@ -26,7 +27,6 @@ use Modules\Shared\TimeZone\Database\Seeders\TimeZoneSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\Shared\TimeUnit\Database\Seeders\TimeUnitsSeederTableSeeder;
-use Modules\RoleAndPermission\Database\Seeders\RolesAndPermissionsSeeder;
 use Modules\Shared\NatureWork\Database\Seeders\NatureWorkSeederTableSeeder;
 use Modules\Shared\SalaryType\Database\Seeders\SalaryTypeSeederTableSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesSeederTableSeeder;
@@ -57,12 +57,12 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CurrencySeederTable::class);
 //        $this->call(UniversitiesTableSeeder::class);
-        $this->call(RolesAndPermissionsSeeder::class);
         $this->call(TimeZoneSeederTableSeeder::class);
         $this->call(LanguagesTableSeeder::class);
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(AdminSeedTableSeeder::class);
         $this->call(CompanyModulesSeederTableSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
         $this->call(QuestionSettingTableSeeder::class);
@@ -105,9 +105,9 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicSpecializationsNewSeederTableSeeder::class);
         $this->call(BanksOtherModulesSeederTableSeeder::class);
         $this->call(UniversitiesOtherSeederTableSeeder::class);
-     
+
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
-        
+
     }
 }
