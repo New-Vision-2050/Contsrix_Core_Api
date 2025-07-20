@@ -28,7 +28,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Get current company ID or use the first company
         $companyId = tenant("id") ?? Company::query()->first()?->id;
 
-        $this->ensureCompanyHasPermissions($companyId);
+        $this->ensureCompanyHasPermissions();
 
 
         // Create roles for the current company
@@ -67,7 +67,7 @@ class RolesAndPermissionsSeeder extends Seeder
         );
 
         // Get all permissions for this company
-        $permissions = Permission::where('company_id', $companyId)->get();
+        $permissions = Permission::get();
 
         // Assign permissions to roles
         $superAdminRole->syncPermissions($permissions);
@@ -90,9 +90,8 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         $companies = Company::all();
 
-        foreach ($companies as $company) {
-            $this->ensureCompanyHasPermissions($company->id);
-        }
+
+        $this->ensureCompanyHasPermissions();
     }
 
     /**
@@ -100,14 +99,9 @@ class RolesAndPermissionsSeeder extends Seeder
      *
      * @param string|null $companyId The company ID
      */
-    protected function ensureCompanyHasPermissions(?string $companyId): void
+    protected function ensureCompanyHasPermissions(): void
     {
-        if (!$companyId) {
-            return;
-        }
 
-        // Clear existing permissions for this company to ensure a clean slate
-        Permission::where('company_id', $companyId)->delete();
 
         $permissions = config('permissions.permissions');
 
@@ -120,7 +114,6 @@ class RolesAndPermissionsSeeder extends Seeder
                     'name' => $name,
                     'key' => $key,
                     'guard_name' => $guardName,
-                    'company_id' => $companyId,
                 ]
             );
         }

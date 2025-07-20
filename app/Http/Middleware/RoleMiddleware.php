@@ -34,7 +34,7 @@ class RoleMiddleware extends SpatieRoleMiddleware
         $roles = is_array($roles[0]) ? $roles[0] : $roles;
 
         $user = auth()->guard($authGuard)->user();
-        if($user->hasRole('super-admin') || $user->hasRole('admin')&&(auth()->check() && auth()->user()->is_owner == 1)) {
+        if($user->hasRole('super-admin') || $user->hasRole('admin')||(auth()->check() && auth()->user()->is_owner == 1)) {
             return $next($request);
         }
 
