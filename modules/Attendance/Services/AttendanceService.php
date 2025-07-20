@@ -12,6 +12,7 @@ use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\DTO\ClockOutDTO;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
@@ -221,25 +222,57 @@ class AttendanceService
     /**
      * Get attendance summary
      */
+// In AttendanceService.php
+
     public function getAttendanceSummary(UuidInterface $userId, ?string $startDate = null, ?string $endDate = null): array
     {
         $startDate = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
         $endDate = $endDate ? Carbon::parse($endDate) : now()->endOfMonth();
 
+        // 1. Get all attendance records for the period.
         $attendances = $this->attendanceRepository->getAttendanceByDateRange($userId, $startDate, $endDate);
 
+        // 2. Calculate the base total for percentages.
+        // We will use the total number of records in the given date range as the base "100%".
+        $totalRecords = $attendances->count();
+
+        // It's more efficient to calculate these once and store them in variables.
+        $totalAttendant = $attendances->whereNotNull('clock_in_time')->count();
+        $totalAbsent = $attendances->where('is_absent', true)->count();
+        $totalHoliday = $attendances->where('is_holiday', true)->count();
+        $totalDepartures = $attendances->whereNotNull('clock_out_time')->count();
+        $totalLate = $attendances->where('is_late', true)->count();
+        $totalEarly = $attendances->where('is_early_departure', true)->count();
+
+        // 3. Build the summary array.
         $summary = [
-            'total_days' => $attendances->count(),
-            'total_attendant'=> $attendances->whereNotNull('clock_in_time')->count(),
-            'total_absent_days' => $attendances->where('is_absent',1)->count(),
-            'total_holiday_days' => $attendances->where('is_holiday',1)->count(),
-            'total_departures' => $attendances->whereNotNull('clock_out_time')->count(),
-            'total_work_hours' => $attendances->sum('total_work_hours'),
-            'total_overtime_hours' => $attendances->sum('overtime_hours'),
-            'total_break_hours' => $attendances->sum('total_break_hours'),
-            'late_days' => $attendances->where('is_late',1)->count(),
-            'early_departures' => $attendances->where('is_early_departure',1)->count(),
-            'average_work_hours' => $attendances->count() > 0 ? $attendances->avg('total_work_hours') : 0,
+            'total_days' => $totalRecords,
+
+            'total_attendant' => $totalAttendant,
+            'total_attendant_percentage' => $this->calculatePercentage($totalAttendant, $totalRecords),
+
+            'total_absent_days' => $totalAbsent,
+            'total_absent_days_percentage' => $this->calculatePercentage($totalAbsent, $totalRecords),
+
+            'total_holiday_days' => $totalHoliday,
+            'total_holiday_days_percentage' => $this->calculatePercentage($totalHoliday, $totalRecords),
+
+            'total_departures' => $totalDepartures,
+            'total_departures_percentage' => $this->calculatePercentage($totalDepartures, $totalRecords),
+
+            // These are percentages of the days the user was actually present.
+            'late_days' => $totalLate,
+            'late_days_percentage' => $this->calculatePercentage($totalLate, $totalAttendant),
+
+            'early_departures' => $totalEarly,
+            'early_departures_percentage' => $this->calculatePercentage($totalEarly, $totalDepartures),
+
+            // --- Hour Summaries (no percentage needed here) ---
+            'total_work_hours' => round($attendances->sum('total_work_hours'), 2),
+            'total_overtime_hours' => round($attendances->sum('overtime_hours'), 2),
+            'total_break_hours' => round($attendances->sum('total_break_hours'), 2),
+            'average_work_hours' => $totalAttendant > 0 ? round($attendances->avg('total_work_hours'), 2) : 0,
+
             'period' => [
                 'start_date' => $startDate->toDateString(),
                 'end_date' => $endDate->toDateString()
@@ -248,7 +281,19 @@ class AttendanceService
 
         return $summary;
     }
-
+   /**
+     * Helper function to safely calculate a percentage.
+     * @param int|float $part The value for which to calculate the percentage.
+     * @param int|float $total The total value to compare against.
+     * @return float The calculated percentage, rounded to 2 decimal places.
+     */
+    private function calculatePercentage(int|float $part, int|float $total): float
+    {
+        if ($total == 0) {
+            return 0.0;
+        }
+        return round(($part / $total) * 100, 2);
+    }
     /**
      * Update attendance record
      */
@@ -396,14 +441,6 @@ class AttendanceService
             return false; // Cannot end an inactive or already completed shift
         }
 
-        // Validate clock out time
-        $clockOutTime = Carbon::now();
-        $clockInTime = Carbon::parse($attendance->clock_in_time);
-
-        if ($clockOutTime->lt($clockInTime)) {
-            throw AttendanceException::invalidClockOutTime();
-        }
-
         // Set clock out time to current time
         $timestamp = Carbon::now();
         $updateData = [
@@ -467,4 +504,82 @@ class AttendanceService
 
         return $breaks;
     }
+
+        public function getAttendanceForUserOnDate(User $user, Carbon $date): ?Attendance
+    {
+        // Use the repository to find a single record matching the criteria.
+        // This is more efficient than getting a collection and checking if it's empty.
+        return $this->attendanceRepository->findOneBy([
+            ['user_id', '=', $user->id],
+            // Check for records created between the start and end of the given day.
+            ['created_at', '>=', $date->copy()->startOfDay()],
+            ['created_at', '<=', $date->copy()->endOfDay()],
+        ]);
+    }
+    public function getPresentUserIdsOnDate(array $userIds, Carbon $date): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+        return $this->attendanceRepository->model->query()
+            ->whereIn('user_id', $userIds)
+            ->whereDate('clock_in_time', $date)
+            ->pluck('user_id')
+            ->all();
+    }
+        public function createAbsenceRecord(User $user, Carbon $dateOfAbsence, string $reason): Attendance
+    {
+        // Prepare the data for the new absence record.
+        $attendanceData = [
+            'user_id' => $user->id,
+            'company_id' => $user->company_id,
+            'status' => Attendance::STATUS_COMPLETED, // An absence is a "completed" state for the day.
+            'is_absent' => true,
+            'absence_reason' => $reason,
+            'clock_in_time' => $dateOfAbsence->copy()->startOfDay(),
+            'timezone' => $user->company->timezone ?? config('app.timezone'),
+        ];
+
+        // Use the repository to create the record in the database.
+        return $this->attendanceRepository->create($attendanceData);
+    }
+     /**
+     * Handles the entire clock-in process.
+     * This method is now decoupled from the Illuminate\Http\Request object.
+     *
+     * @param ClockInDTO $clockInDTO The validated data for the clock-in.
+     * @param array $rawRequestData All data from the original request for validation context.
+     * @return Attendance The successfully created Attendance record.
+     * @throws AttendanceException If a blocking violation is found.
+     */
+    // public function handleClockInProcess(ClockInDTO $clockInDTO, array $rawRequestData): Attendance
+    // {
+    //     $user = Auth::user()->load('company');
+
+    //     // --- PRE-VALIDATION (DRY RUN) ---
+
+    //     // Use the mock service with the DTO and raw data.
+    //     $mockAttendance = $this->mockAttendanceService->createFromDTO($clockInDTO, $user, $rawRequestData);
+
+    //     // Perform the validation in "dry run" mode.
+    //     $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData, true);
+
+    //     // Check for blocking violations.
+    //     $blockingViolations = array_filter($violations, fn($v) => $v['blocks_attendance'] ?? false);
+
+    //     if (!empty($blockingViolations)) {
+    //         throw AttendanceException::clockInBlocked($blockingViolations);
+    //     }
+
+    //     // --- EXECUTION ---
+
+    //     $attendance = $this->clockIn($clockInDTO);
+
+    //     // --- POST-VALIDATION AND RECORDING ---
+
+    //     // Validate again with the real record to log violations.
+    //     $this->constraintService->validateAttendance($attendance, $rawRequestData);
+
+    //     return $attendance;
+    // }
 }

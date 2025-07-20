@@ -50,7 +50,8 @@ class LocationTrackingController
             return Json::error('No active attendance found for the user.');
         }
         $this->trackingService->addTrackingPoints($attendance, $trackingPoints);
+        $this->constraintService->validateAttendance($attendance, $request->all());
 
-        return Json::success('Location data received successfully.');
+        return Json::success('Location data stored successfully.');
     }
 }

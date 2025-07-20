@@ -48,7 +48,6 @@ class AttendanceConstraintController extends Controller
     public function index(FilterConstraintsRequest $request)//: JsonResponse
     {
         $filterDTO = $request->createFilterConstraintDTO(Auth::user()->company_id);
-
         $result = $this->constraintRepository->getConstraintList(
             $filterDTO->toArray(),
             (int) $request->input('page', 1),
@@ -81,7 +80,7 @@ class AttendanceConstraintController extends Controller
         );
 
         $constraint = $this->constraintRepository->createConstraint($constraintDTO->toArray());
-        $constraint->load(['user', 'creator']);
+        $constraint->load(['creator']);
 
         return Json::item($constraint, message: 'Constraint created successfully');
     }

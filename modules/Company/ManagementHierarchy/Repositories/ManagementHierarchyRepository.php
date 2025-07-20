@@ -131,7 +131,7 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function createBranch(array $branchData, array $addressData): ManagementHierarchy
+    public function createBranch(array $branchData, array $addressData,): ManagementHierarchy
     {
         try {
             DB::beginTransaction();
@@ -153,7 +153,11 @@ class ManagementHierarchyRepository extends BaseRepository
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
-
+            if (isset($branchData['default_constraint_id']) && $branchData['default_constraint_id'] !== null) {
+                    $managementHierarchy->attendanceConstraints()->attach($branchData['default_constraint_id'], [
+                        'is_default' => true
+                    ]);
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -263,7 +267,16 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy->fresh();
 
             $managementHierarchy->address()->update($addressData);
+            $newDefaultConstraintId = $branchData['default_constraint_id'] ?? null;
 
+
+            $managementHierarchy->attendanceConstraints()->wherePivot('is_default', true)->detach();
+
+            if ($newDefaultConstraintId) {
+                $managementHierarchy->attendanceConstraints()->attach($newDefaultConstraintId, [
+                    'is_default' => true
+                ]);
+            }
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
