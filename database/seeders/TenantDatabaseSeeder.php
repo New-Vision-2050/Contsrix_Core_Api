@@ -27,7 +27,7 @@ class TenantDatabaseSeeder extends Seeder
 //        $this->call(CompanyModulesSeederTableSeeder::class);
         $this->call(GenaralAdminSeedTableSeeder::class);
 
-//        $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
 
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(SettingSeeder::class);
