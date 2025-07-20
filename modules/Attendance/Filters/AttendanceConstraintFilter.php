@@ -8,7 +8,7 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class AttendanceConstraintFilter extends SearchModelFilter
 {
-    public $relations = ['user', 'company', 'branch'];
+    public $relations = ['users', 'company', 'branch'];
 
     public function name($name)
     {
@@ -128,14 +128,14 @@ class AttendanceConstraintFilter extends SearchModelFilter
 
     public function userName($name)
     {
-        return $this->whereHas('user', function ($query) use ($name) {
+        return $this->whereHas('users', function ($query) use ($name) {
             $query->where('name', 'LIKE', "%{$name}%");
         });
     }
 
     public function userEmail($email)
     {
-        return $this->whereHas('user', function ($query) use ($email) {
+        return $this->whereHas('users', function ($query) use ($email) {
             $query->where('email', 'LIKE', "%{$email}%");
         });
     }

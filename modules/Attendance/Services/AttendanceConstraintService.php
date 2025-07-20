@@ -111,37 +111,41 @@ class AttendanceConstraintService
      */
     public function getEffectiveConstraintForUser(User $user)
     {
-        $userBranchId = $user->userProfessionalData?->branch_id;
-        if (!$userBranchId) {
-            return null;
-        }
-        $branch = ManagementHierarchy::find($userBranchId);
-        if (!$branch) {
-            return null;
-        }
-        $defaultConstraint = $branch->defaultAttendanceConstraint()->get();
+        $userBranch = $user->userProfessionalData?->branch;
+        $userBranchId = $userBranch ? (string) $userBranch->id : null;
 
-        if ( $defaultConstraint->isNotEmpty()) {
-            return $defaultConstraint;
+        // --- 1. Check for a Default Constraint on the Branch ---
+        // If the branch has a default constraint, that is the ONLY one that applies.
+        if ($userBranch) {
+            /** @var Collection $defaultConstraint */
+            $defaultConstraint = $userBranch->defaultAttendanceConstraint()->get();
+
+            // If a default is found, return it immediately. This is the highest priority rule.
+            if ($defaultConstraint->isNotEmpty()) {
+                return $defaultConstraint;
+            }
         }
 
-          $constraint = AttendanceConstraint::where('company_id', $user->company_id)
+        // --- 2. If No Default, Find All Other Applicable Constraints ---
+        // This query runs if no default was found for the branch.
+        return AttendanceConstraint::where('company_id', $user->company_id)
             ->where('is_active', true)
-
             ->where(function ($query) use ($user, $userBranchId) {
+                // Condition A: Constraints assigned directly to this user.
                 $query->whereJsonContains('user_ids', $user->id)
 
+                // Condition B: Constraints assigned to the user's branch (if they have one).
                 ->when($userBranchId, function ($q) use ($userBranchId) {
-                    $q->orWhereJsonContains('branch_ids', (string) $userBranchId);
+                    $q->orWhereJsonContains('branch_ids', $userBranchId);
                 })
+
+                // Condition C: Global constraints (not assigned to any specific user or branch).
                 ->orWhere(function ($q) {
                     $q->where(fn($sub) => $sub->whereNull('user_ids')->orWhereJsonLength('user_ids', 0))
-                    ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
+                      ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
                 });
             })
             ->get();
-
-        return $constraint;
     }
   public function getApplicableConstraints(User $user): Collection
     {

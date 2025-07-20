@@ -154,10 +154,18 @@ class AttendanceConstraint extends Model implements Auditable
     //     return $this->belongsTo(User::class, 'user_id');
     // }
 
-    protected function users()
+    protected function users(): Attribute
     {
-        return $this->hasMany(User::class, 'id', 'user_ids');
-
+        return Attribute::make(
+            get: function ($value) {
+                // Return an empty collection if no user IDs are set.
+                if (empty($this->user_ids)) {
+                    return collect();
+                }
+                // Fetch and return the User models.
+                return User::whereIn('id', $this->user_ids)->get();
+            }
+        );
     }
 
     protected function departments()
