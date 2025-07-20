@@ -506,9 +506,11 @@ return [
     'date_end_required' => 'The certificate expiry date is required.',
     'date_end_date' => 'The certificate expiry date must be a valid date.',
     'graduation_date_date' => 'Graduation date must be a valid date.',
-    
+
     // Company user deletion validation messages
     'admin_account_cannot_be_deleted' => 'The admin account cannot be deleted.',
     'cannot_delete_yourself' => 'You cannot delete your own account.',
     'cannot_delete_company_owner' => 'A company owner account cannot be deleted.',
+    'regular' => 'regular'
+
 ];
