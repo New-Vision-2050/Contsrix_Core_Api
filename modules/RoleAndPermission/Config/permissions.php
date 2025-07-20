@@ -5,7 +5,7 @@ return [
         // ================================================================================================
         // ROLE AND PERMISSION MODULE PERMISSIONS
         // ================================================================================================
-        
+
         // Role Management
         'ROLE_LIST' => 'settings.role.list',
         'ROLE_VIEW' => 'settings.role.view',
@@ -21,6 +21,5 @@ return [
         'PERMISSION_DELETE' => 'settings.permission.delete',
         'PERMISSION_ACTIVATE' => 'settings.permission.activate',
         'PERMISSION_VIEW' => 'settings.permission.view',
-        'PERMISSION_ASSIGN' => 'settings.permission.update',
     ]
 ];
