@@ -32,7 +32,7 @@ class VerficationDataRepository extends BaseRepository
     public function validateToken($token)
     {
        $verfication =  $this->findOneBy(["token"=>$token]);
-       if(!$verfication ||($verfication && $verfication->expires_at < Carbon::now()))
+       if(!$verfication || ($verfication && $verfication->expires_at < Carbon::now()))
        {
            throw new \ErrorException(__("validation.invalid-token"), 403);
        }

@@ -24,26 +24,15 @@ return new class extends Migration {
         }
 
         Schema::create($tableNames['permissions'], function (Blueprint $table) use ($teams, $columnNames) {
-            //$table->engine('InnoDB');
             $table->uuid('id')->primary()->unique();
             $table->string('name');       // For MyISAM use string('name', 225); // (or 166 for InnoDB with Redundant/Compact row format)
             $table->string('guard_name'); // For MyISAM use string('guard_name', 25);
             $table->boolean('status')->default(true); // Add status field to enable/disable permissions
-            if ($teams || config('permission.testing')) { // permission.testing is a fix for sqlite testing
-                $table->uuid($columnNames['team_foreign_key'])->nullable();
-                $table->index($columnNames['team_foreign_key'], 'permissions_team_foreign_key_index');
-            }
-            $table->timestamps();
 
-            if ($teams || config('permission.testing')) {
-                $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
-            } else {
-                $table->unique(['name', 'guard_name', 'company_id']);
-            }
+            $table->timestamps();
         });
 
         Schema::create($tableNames['roles'], function (Blueprint $table) use ($teams, $columnNames) {
-            //$table->engine('InnoDB');
             $table->uuid('id')->primary()->unique(); // role id
             if ($teams || config('permission.testing')) { // permission.testing is a fix for sqlite testing
                 $table->uuid($columnNames['team_foreign_key'])->nullable();
@@ -53,11 +42,13 @@ return new class extends Migration {
             $table->string('guard_name'); // For MyISAM use string('guard_name', 25);
             $table->boolean('status')->default(true); // Add status field to enable/disable roles
             $table->timestamps();
-            if ($teams || config('permission.testing')) {
-                $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
-            } else {
-                $table->unique(['name', 'guard_name']);
-            }
+            $table->unique(['name', 'guard_name']);
+
+//            if ($teams || config('permission.testing')) {
+//                $table->unique([$columnNames['team_foreign_key'], 'name', 'guard_name']);
+//            } else {
+//                $table->unique(['name', 'guard_name']);
+//            }
         });
 
         Schema::create($tableNames['model_has_permissions'], function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission, $teams) {

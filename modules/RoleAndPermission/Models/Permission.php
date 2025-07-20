@@ -11,7 +11,6 @@ use Modules\Subscription\Models\Feature;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Permission as SpatiePermission;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 class Permission extends SpatiePermission
@@ -19,7 +18,6 @@ class Permission extends SpatiePermission
     use UuidTrait;
     use BaseFilterable;
     use HasFactory;
-//    use BelongsToTenant;
 
     public array $translatable = [];
 
@@ -41,11 +39,6 @@ class Permission extends SpatiePermission
     /**
      * Get the company that owns the permission.
      */
-    public function company()
-    {
-        return $this->belongsTo('Modules\Company\CompanyCore\Models\Company', 'company_id');
-    }
-
 
     /**
      * Relation to Program model (nullable).

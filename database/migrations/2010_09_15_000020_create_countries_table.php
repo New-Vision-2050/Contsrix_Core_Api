@@ -21,7 +21,7 @@ return new class extends Migration
         $sql = File::get(database_path('sql/countries.sql'));
         DB::unprepared($sql);
         Schema::table('countries', function ($table) {
-            $table->boolean('status')->defualt(0);
+            $table->boolean('status')->default(0);
             $table->uuid('sms_driver_id')->nullable();
         });
         Country::query()

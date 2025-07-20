@@ -1,11 +1,6 @@
 <?php
 
-use App\Http\Middleware\TenancePermision;
-use App\Http\Middleware\Localization;
-use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
-use App\Http\Middleware\RoleOrPermissionMiddleware;
-use App\Http\Middleware\DomainToTenantMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

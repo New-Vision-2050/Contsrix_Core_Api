@@ -38,7 +38,11 @@ class RoleRepository extends BaseRepository
 
     public function createRole(array $roleData , ?array $permissions): Role
     {
-        return $this->create($roleData)->syncPermissions($permissions);
+        $role = $this->create($roleData);
+        if (!$role) {
+            throw new \Exception('Role creation failed');
+        }
+        return $role->syncPermissions($permissions);
     }
 
     public function updateRole(UuidInterface $id, array $data , ?array $permissions): bool

@@ -13,20 +13,20 @@ use Nwidart\Modules\Collection;
 class PermissionInRolePresenter extends AbstractPresenter
 {
 
-    private Permission $rolePermissions;
+    private Permission $permission;
 
-    public function __construct(Permission $permissions )
+    public function __construct(Permission $permission )
     {
-        $this->rolePermissions = $permissions;
+        $this->permission = $permission;
     }
 
-    protected function present(bool $isListing = false): array
+    protected function present(): array
     {
 
         return [
-            'id' => $this->rolePermissions->id,
-            'name' => $this->rolePermissions->name,
-            'is_active' => $this->rolePermissions->is_active,
+            'id' => $this->permission->id,
+            'name' => $this->permission->name,
+            'is_active' => $this->permission->is_active,
         ];
     }
 }

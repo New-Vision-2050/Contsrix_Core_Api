@@ -28,20 +28,18 @@ class GenaralAdminSeedTableSeeder extends Seeder
     public function run()
     {
 
-        //if (App::environment('production') == false) {
 
-        $user = User::firstOrCreate(['email' => 'admin@constrix-nv.com',],
-            [
-                'name' => 'Admin',
-                'email' => 'admin@constrix-nv.com',
-                "phone" => "966542138116",
-                "phone_code" => "966",
-                'password' => "Test1234",
-                "global_company_user_id" => CompanyUser::query()->withoutParentModel()->where("email", "admin@constrix-nv.com")->first()->global_id,
-                "company_id" => tenant("id"),
-            ]
-        );
+            $user = User::firstOrCreate(['email' => 'admin@constrix-nv.com',],
+                [
+                    'name' => 'Admin',
+                    'email' => 'admin@constrix-nv.com',
+                    "phone" => "966542138116",
+                    "phone_code" => "966",
+                    'password' => "Test1234",
+                    "global_company_user_id" => CompanyUser::query()->withoutParentModel()->where("email", "admin@constrix-nv.com")->first()->global_id,
+                    "company_id" => tenant("id"),
+                ]
+            );
+        }
 
-    }
-    //}
 }

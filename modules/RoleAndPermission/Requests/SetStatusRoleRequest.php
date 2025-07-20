@@ -30,7 +30,6 @@ class SetStatusRoleRequest extends FormRequest
         return [
             'status.required' => __('validation.required', ['attribute' => 'status']),
             'status.boolean' => __('validation.boolean', ['attribute' => 'status']),
-            'role_has_users' => __('validation.custom.role.cannot_deactivate'),
         ];
     }
 

@@ -131,7 +131,7 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function createBranch(array $branchData, array $addressData,): ManagementHierarchy
+    public function createBranch(array $branchData, array $addressData): ManagementHierarchy
     {
         try {
             DB::beginTransaction();
@@ -977,7 +977,7 @@ class ManagementHierarchyRepository extends BaseRepository
                 'jobTypes',
                 'jobTitles',
                 'relatedBranches',
-                "relatedManagements"
+                'relatedManagements'
             ])
             ->find($id);
     }

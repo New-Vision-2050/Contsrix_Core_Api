@@ -21,7 +21,7 @@ class NonCopiedHierarchyWithDetailsPresenter
                 'email' => $managementHierarchy->user->email,
             ] : null,
             'detail' => $managementHierarchy->detail ? [
-                'is_copied' => (bool) $managementHierarchy->detail->is_copied,
+                'is_copied' => (bool)$managementHierarchy->detail->is_copied,
             ] : null,
             'job_titles' => $managementHierarchy->jobTitles->map(function ($jobTitle) {
                 return [
@@ -48,8 +48,8 @@ class NonCopiedHierarchyWithDetailsPresenter
                     'email' => $deputy->user->email,
                 ];
             }),
-            'created_at' => $managementHierarchy->created_at->toIso8601String(),
-            'updated_at' => $managementHierarchy->updated_at->toIso8601String(),
+            'created_at' => $managementHierarchy->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $managementHierarchy->updated_at->format('Y-m-d H:i:s'),
         ];
     }
 }
