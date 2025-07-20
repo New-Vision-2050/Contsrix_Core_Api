@@ -28,21 +28,7 @@ class GenaralAdminSeedTableSeeder extends Seeder
     public function run()
     {
 
-            // First create CompanyUser
-            $companyUser = CompanyUser::firstOrCreate(['email' => 'admin@constrix-nv.com'],
-                [
-                    'name' => 'Admin',
-                    'email' => 'admin@constrix-nv.com',
-                    "currency_id" => Country::query()->first()?->id ?? 1,
-                    "job_title_id" => JobTitle::query()->first()?->id ?? 1,
-                    "country_id" => Country::query()->first()?->id ?? 1,
-                    "time_zone_id" => Country::query()->first()?->id ?? 1,
-                    "language_id" => Language::query()->first()?->id ?? 1,
-                ]
-            );
-            $companyUser->update(["global_id" => $companyUser->id]);
 
-            // Then create User using the CompanyUser's global_id
             $user = User::firstOrCreate(['email' => 'admin@constrix-nv.com',],
                 [
                     'name' => 'Admin',
@@ -50,7 +36,7 @@ class GenaralAdminSeedTableSeeder extends Seeder
                     "phone" => "966542138116",
                     "phone_code" => "966",
                     'password' => "Test1234",
-                    "global_company_user_id" => $companyUser->global_id,
+                    "global_company_user_id" => CompanyUser::query()->withoutParentModel()->where("email", "admin@constrix-nv.com")->first()->global_id,
                     "company_id" => tenant("id"),
                 ]
             );
