@@ -8,9 +8,17 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Models\Branch;
 use Modules\Company\ManagementHierarchy\Models\Management;
 use Illuminate\Support\Str;
+use Modules\Attendance\Services\DefaultConstraintService;
 
 class ManagementHierarchyObserver
 {
+    /**
+     * Inject the service via the constructor.
+     * Laravel will automatically resolve it from the service container.
+     */
+    public function __construct(
+        private DefaultConstraintService $defaultConstraintService
+    ) {}
     /**
      * Handle the ManagementHierarchy "created" event.
      *
@@ -20,6 +28,9 @@ class ManagementHierarchyObserver
     public function created(ManagementHierarchy $managementHierarchy): void
     {
         $this->syncRelatedTable($managementHierarchy);
+           if ($managementHierarchy->type === 'branch') {
+            $this->defaultConstraintService->createForBranch($managementHierarchy);
+        }
     }
 
     /**
