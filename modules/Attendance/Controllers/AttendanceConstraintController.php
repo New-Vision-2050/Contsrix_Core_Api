@@ -69,6 +69,32 @@ class AttendanceConstraintController extends Controller
         return Json::items($result['data'], message: 'Constraints retrieved successfully');
     }
 
+
+    public function list(FilterConstraintsRequest $request)//: JsonResponse
+    {
+        $filterDTO = $request->createFilterConstraintDTO(Auth::user()->company_id);
+        $result = $this->constraintRepository->getConstraintList(
+            $filterDTO->toArray(),
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10)
+        );
+
+
+       $presentedData = collect($result['data'])->map(function ($constraint) {
+            return (new ConstraintPresenter($constraint))->present();
+        });
+
+        // 2. Pass the formatted collection to the JSON helper.
+        // The ->values()->all() ensures it's a clean, flat array.
+        return Json::items(
+            mainItems:          $presentedData->values()->all(),
+            paginationSettings: $result['pagination'],
+            message:            'Constraints retrieved successfully'
+        );
+        return Json::items($result['data'], message: 'Constraints retrieved successfully');
+    }
+
+
     /**
      * Store a newly created constraint.
      */
