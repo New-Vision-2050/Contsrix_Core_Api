@@ -115,4 +115,22 @@ class UserProfessionalDataRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function getById(string $id): ?UserProfessionalData
+    {
+        return UserProfessionalData::with([
+            'attendanceConstraint',
+            'branch.defaultAttendanceConstraint'
+        ])->find($id);
+    }
+
+    public function getByGlobalId(string $globalId): ?UserProfessionalData
+    {
+        return UserProfessionalData::where('global_id', $globalId)
+            ->with([
+                'attendanceConstraint',
+                'branch.defaultAttendanceConstraint'
+            ])
+        ->first();
+    }
 }
