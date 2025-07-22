@@ -21,6 +21,11 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         // // ->middleware('permission:view_attendance_constraints')
         ->name('attendance.constraints.index');
 
+    Route::get('/list', [AttendanceConstraintController::class, 'list'])
+        // Temporarily commented out for development
+        // // ->middleware('permission:view_attendance_constraints')
+        ->name('attendance.constraints.list');
+
     Route::post('/', [AttendanceConstraintController::class, 'store'])
         // ->middleware('permission:create_attendance_constraints')
         ->name('attendance.constraints.store');
