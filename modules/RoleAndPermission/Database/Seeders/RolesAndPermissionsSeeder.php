@@ -67,7 +67,7 @@ class RolesAndPermissionsSeeder extends Seeder
         );
 
         // Get all permissions for this company
-        $permissions = Permission::where('company_id', $companyId)->get();
+        $permissions = Permission::get();
 
         // Assign permissions to roles
         $superAdminRole->syncPermissions($permissions);
