@@ -34,7 +34,7 @@ class AttendanceConstraint extends Model implements Auditable
 
     protected $fillable = [
         'company_id',
-        'user_ids',
+        // 'user_ids',
         'department_ids',
         'branch_ids',
         'branch_locations',
@@ -54,7 +54,7 @@ class AttendanceConstraint extends Model implements Auditable
     protected $casts = [
         'id' => 'string',
         'company_id' => 'string',
-        'user_ids' => 'array',
+        // 'user_ids' => 'array',
         'department_ids' => 'array',
         'branch_ids' => 'array',
         'branch_locations' => 'array',
@@ -154,17 +154,16 @@ class AttendanceConstraint extends Model implements Auditable
     //     return $this->belongsTo(User::class, 'user_id');
     // }
 
-    protected function users(): Attribute
+    /**
+     * Get the users that this constraint applies to.
+     */
+    public function users()
     {
-        return Attribute::make(
-            get: function ($value) {
-                // Return an empty collection if no user IDs are set.
-                if (empty($this->user_ids)) {
-                    return collect();
-                }
-                // Fetch and return the User models.
-                return User::whereIn('id', $this->user_ids)->get();
-            }
+        return $this->belongsToMany(
+            User::class,
+            'attendance_constraint_user',
+            'attendance_constraint_id',
+            'user_id'
         );
     }
 

@@ -107,7 +107,7 @@ class AttendanceConstraintController extends Controller
             Uuid::fromString($id),
             $updateDTO->toArray()
         );
-        $constraint->load(['user', 'creator', 'updater']);
+        $constraint->load(['users', 'creator', 'updater']);
 
         return Json::item($constraint, message: 'Constraint updated successfully');
     }
