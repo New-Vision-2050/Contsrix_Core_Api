@@ -21,10 +21,6 @@ class DefaultConstraintService
      */
     public function createForBranch(ManagementHierarchy $branch): void
     {
-        // Don't create a constraint if a manager isn't assigned yet.
-        if (!$branch->manager_id) {
-            return;
-        }
 
         // Check if a default constraint already exists to avoid duplicates.
         if ($branch->attendanceConstraints()->wherePivot('is_default', true)->exists()) {
@@ -38,7 +34,7 @@ class DefaultConstraintService
             'constraint_type'   => 'regular',
             'is_active'         => true,
             'priority'          => 1, // Default priority for branch-level constraints
-            'created_by'        => $branch->manager_id,
+            'created_by'        => $branch->manager_id?? auth()->user()->id,
             'branch_ids'        => [(string) $branch->id], // Link to this branch
             'branch_locations'  => [
                 [
@@ -47,20 +43,20 @@ class DefaultConstraintService
                     'address'   => $branch->address?->full_address,
                     'latitude'  => (float) $branch->latitude,
                     'longitude' => (float) $branch->longitude,
-                    'radius'    => 300 // Default radius of 300 meters
+                    'radius'    => 500 // Default radius of 300 meters
                 ]
             ],
             'constraint_config' => [
                 'time_rules' => [
                     'subtype' => 'multiple_periods',
                     'weekly_schedule' => [
-                        'sunday'    => ['enabled' => true, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'monday'    => ['enabled' => true, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'tuesday'   => ['enabled' => true, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'wednesday' => ['enabled' => true, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'thursday'  => ['enabled' => true, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'friday'    => ['enabled' => false, 'periods' => []],
-                        'saturday'  => ['enabled' => false, 'periods' => []]
+                        'sunday'    => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
+                        'monday'    => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
+                        'tuesday'   => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
+                        'wednesday' => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
+                        'thursday'  => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
+                        'friday'    => ['enabled' => false, "total_work_hours"=>9,'periods' => []],
+                        'saturday'  => ['enabled' => false, "total_work_hours"=>9,'periods' => []]
                     ],
                     'lateness_rules' => [
                         'prevent_lateness' => true,
