@@ -23,6 +23,7 @@ use Modules\Attendance\Requests\BulkConstraintRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Attendance\Presenters\ConstraintListPresenter;
 use Modules\Attendance\Presenters\ConstraintPresenter;
 use Ramsey\Uuid\Uuid;
 
@@ -48,7 +49,6 @@ class AttendanceConstraintController extends Controller
     public function index(FilterConstraintsRequest $request)//: JsonResponse
     {
         $filterDTO = $request->createFilterConstraintDTO(Auth::user()->company_id);
-
         $result = $this->constraintRepository->getConstraintList(
             $filterDTO->toArray(),
             (int) $request->input('page', 1),
@@ -70,6 +70,32 @@ class AttendanceConstraintController extends Controller
         return Json::items($result['data'], message: 'Constraints retrieved successfully');
     }
 
+
+    public function list(FilterConstraintsRequest $request)//: JsonResponse
+    {
+        $filterDTO = $request->createFilterConstraintDTO(Auth::user()->company_id);
+        $result = $this->constraintRepository->getConstraintList(
+            $filterDTO->toArray(),
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10)
+        );
+
+
+       $presentedData = collect($result['data'])->map(function ($constraint) {
+            return (new ConstraintListPresenter($constraint))->present();
+        });
+
+        // 2. Pass the formatted collection to the JSON helper.
+        // The ->values()->all() ensures it's a clean, flat array.
+        return Json::items(
+            mainItems:          $presentedData->values()->all(),
+            paginationSettings: $result['pagination'],
+            message:            'Constraints retrieved successfully'
+        );
+        return Json::items($result['data'], message: 'Constraints retrieved successfully');
+    }
+
+
     /**
      * Store a newly created constraint.
      */
@@ -81,7 +107,7 @@ class AttendanceConstraintController extends Controller
         );
 
         $constraint = $this->constraintRepository->createConstraint($constraintDTO->toArray());
-        $constraint->load(['user', 'creator']);
+        $constraint->load(['creator']);
 
         return Json::item($constraint, message: 'Constraint created successfully');
     }
@@ -108,7 +134,7 @@ class AttendanceConstraintController extends Controller
             Uuid::fromString($id),
             $updateDTO->toArray()
         );
-        $constraint->load(['user', 'creator', 'updater']);
+        $constraint->load(['users', 'creator', 'updater']);
 
         return Json::item($constraint, message: 'Constraint updated successfully');
     }

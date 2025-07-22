@@ -494,4 +494,5 @@ return [
     'admin_account_cannot_be_deleted' => 'لا يمكن حذف حساب المسؤول.',
     'cannot_delete_yourself' => 'لا يمكنك حذف حسابك الشخصي.',
     'cannot_delete_company_owner' => 'لا يمكن حذف حساب مالك الشركة.',
+    'regular' => 'منتظم'
 ];

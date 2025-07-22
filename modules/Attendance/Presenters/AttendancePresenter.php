@@ -98,13 +98,13 @@ class AttendancePresenter extends AbstractPresenter
             'applied_constraints' => $appliedConstraints,
             // Use the result of the helper method to determine the day status.
             'day_status' => $this->getDayStatus($appliedConstraints),
-            'professional_data' => $this->attendance->user?->professionalData ? [
-                'id' => (string) $this->attendance->user->professionalData->id,
-                'job_title' => $this->attendance->user->professionalData->jobTitle?->name,
-                'job_code' => $this->attendance->user->professionalData->job_code,
-                'department' => $this->attendance->user->professionalData->department?->name,
-                'branch' => $this->attendance->user->professionalData->branch?->name,
-                'management' => $this->attendance->user->professionalData->management?->name,
+            'professional_data' => $this->attendance->user?->userProfessionalData ? [
+                'id' => (string) $this->attendance->user->userProfessionalData->id,
+                'job_title' => $this->attendance->user->userProfessionalData->jobTitle?->name,
+                'job_code' => $this->attendance->user->userProfessionalData->job_code,
+                'department' => $this->attendance->user->userProfessionalData->department?->name,
+                'branch' => $this->attendance->user->userProfessionalData->branch?->name,
+                'management' => $this->attendance->user->userProfessionalData->management?->name,
             ] : null,
         ];
     }

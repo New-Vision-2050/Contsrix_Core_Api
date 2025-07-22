@@ -26,7 +26,7 @@ class AttendanceConstraintRepository extends BaseRepository
      */
     public function getConstraintList(array $filters = [], ?int $page = 1, ?int $perPage = 10): array
     {
-        $query = $this->model->newQuery()->with(['user', 'company']);
+        $query = $this->model->newQuery()->with(['company']);
 
         // Apply filters using the filter method
         if (!empty($filters)) {

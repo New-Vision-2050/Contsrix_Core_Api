@@ -18,6 +18,9 @@ use Modules\User\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+
+use function Ramsey\Uuid\v1;
 
 /**
  * Main attendance constraint service that acts as a facade coordinating specialized constraint services.
@@ -62,7 +65,6 @@ class AttendanceConstraintService
     {
         $violations = [];
         $user = $attendance->user;
-
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
         if (!$isDryRun && $attendance->exists) {
@@ -107,31 +109,48 @@ class AttendanceConstraintService
      * @param User $user The user to get constraints for
      * @return Collection Collection of applicable constraints
      */
-    public function getApplicableConstraints(User $user): Collection
+    public function getEffectiveConstraintForUser(User $user)
     {
-        $userBranch = $user->userProfessionalData ?? null;
-        $userBranchId = $userBranch ? (string) $userBranch->branch_id : null;
+        $userBranch = $user->userProfessionalData?->branch;
+        $userBranchId = $userBranch ? (string) $userBranch->id : null;
 
-        $constraint = AttendanceConstraint::where('company_id', $user->company_id)
-    ->where(function ($query) use ($user, $userBranchId) {
-                $query->where(function ($q) {
-                    $q->whereNull('user_id')
-                      ->where(function ($subQ) {
-                          $subQ->whereNull('branch_ids')
-                               ->orWhereJsonLength('branch_ids', 0);
-                      });
-                })
-                ->orWhere('user_id', $user->id);
-                $query->when($userBranchId, function ($q) use ($userBranchId) {
+        // --- 1. Check for a Default Constraint on the Branch ---
+        // If the branch has a default constraint, that is the ONLY one that applies.
+        if ($userBranch) {
+            /** @var Collection $defaultConstraint */
+            $defaultConstraint = $userBranch->defaultAttendanceConstraint()->get();
+
+            // If a default is found, return it immediately. This is the highest priority rule.
+            if ($defaultConstraint->isNotEmpty()) {
+                return $defaultConstraint;
+            }
+        }
+
+        // --- 2. If No Default, Find All Other Applicable Constraints ---
+        // This query runs if no default was found for the branch.
+        return AttendanceConstraint::where('company_id', $user->company_id)
+            ->where('is_active', true)
+            ->where(function ($query) use ($user, $userBranchId) {
+                // Condition A: Constraints assigned directly to this user.
+                $query->whereJsonContains('user_ids', $user->id)
+
+                // Condition B: Constraints assigned to the user's branch (if they have one).
+                ->when($userBranchId, function ($q) use ($userBranchId) {
                     $q->orWhereJsonContains('branch_ids', $userBranchId);
+                })
+
+                // Condition C: Global constraints (not assigned to any specific user or branch).
+                ->orWhere(function ($q) {
+                    $q->where(fn($sub) => $sub->whereNull('user_ids')->orWhereJsonLength('user_ids', 0))
+                      ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
                 });
             })
-            ->where('is_active', true)
             ->get();
-
-        return $constraint;
     }
-
+  public function getApplicableConstraints(User $user): Collection
+    {
+       return $this->getEffectiveConstraintForUser($user);
+    }
     /**
      * Validate a single constraint against attendance.
      *
@@ -152,9 +171,7 @@ class AttendanceConstraintService
 
         if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
             $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
-           // dd($violation);
             if ($violation) {
-
                 return $violation;
             }
         }
@@ -171,7 +188,6 @@ class AttendanceConstraintService
             'compliance_rules' => fn() => $this->complianceConstraintService->validateComplianceConstraint($attendance, $config['compliance_rules']),
             'role_rules'       => fn() => $this->roleConstraintService->validateRoleConstraint($attendance, $config['role_rules']),
         ];
-
         // Iterate through the map and execute validation for any rules present in the config.
         foreach ($validationMap as $configKey => $validationFunction) {
             // Check if the specific rule configuration exists in the constraint.
@@ -186,7 +202,6 @@ class AttendanceConstraintService
                 }
             }
         }
-
         // If the loop completes without finding any violations, all checks have passed.
         return false;
     }
@@ -529,17 +544,6 @@ public function getTodaysWorkRulesForUser(User $user): array
     $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
             return $constraints
                 ->filter($filter)
-                ->sortByDesc(function ($constraint) use ($user) {
-                    $score = ($constraint->priority ?? 1) * 100;
-
-                    if ($constraint->user_id === $user->id) {
-                        $score += 10000;
-                    }
-                    elseif (!empty($constraint->branch_ids)) {
-                        $score += 1000;
-                    }
-                    return $score;
-                })
                 ->sortByDesc('created_at')
                 ->first();
         };
@@ -652,7 +656,7 @@ public function getTodaysWorkRulesForUser(User $user): array
                 ['latitude' => (float)($branchData['latitude'] ?? 0), 'longitude' => (float)($branchData['longitude'] ?? 0), 'radius' => (int)($branchData['radius'] ?? 0)];
             }
         }
-        dd($constraint->branch_locations);
+
         $locationRules = $constraint->constraint_config['location_rules'] ?? [];
         if (!empty($locationRules['allowed_zones'])) {
             $firstZone = $locationRules['allowed_zones'][0];

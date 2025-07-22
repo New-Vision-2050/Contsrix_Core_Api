@@ -12,42 +12,110 @@ use Modules\Attendance\Models\AttendanceConstraint;
  */
 class TimeConstraintService extends BaseConstraintService implements TimeConstraintServiceInterface
 {
-    /**
-     * Validate time constraints for attendance.
-     * This is a dispatcher method that handles different types of time constraints.
+    // public function validateTimeConstraint(Attendance $attendance, array $config): bool|array
+    // {
+    //     // Get constraint subtype
+    //     $subtype = $config['subtype'] ?? '';
+
+    //     switch ($subtype) {
+    //         case AttendanceConstraint::TIME_SHIFT_ENFORCEMENT:
+    //             return $this->validateShiftEnforcement($attendance, $config);
+
+    //         case AttendanceConstraint::TIME_EARLY_PREVENTION:
+    //             return $this->validateEarlyPrevention($attendance, $config);
+
+    //         case AttendanceConstraint::TIME_LATE_RESTRICTION:
+    //             return $this->validateLateRestriction($attendance, $config);
+
+    //         case AttendanceConstraint::TIME_BREAK_LIMITS:
+    //             return $this->validateBreakLimits($attendance, $config);
+
+    //         case AttendanceConstraint::TIME_OVERTIME_APPROVAL:
+    //             return $this->validateOvertimeApproval($attendance, $config);
+
+    //         case AttendanceConstraint::TIME_MULTIPLE_PERIODS:
+    //             return $this->validateMultiplePeriods($attendance, $config);
+
+    //         default:
+    //             return false;
+    //     }
+    // }
+
+        /**
+     * Validates an attendance record against ALL applicable time rules
+     * defined within a single configuration.
      *
-     * @param Attendance $attendance The attendance record to validate
-     * @param array $config The constraint configuration
-     * @return bool|array Returns false if no violation, or violation details if constraint is violated
+     * This method checks for schedule compliance, lateness, early departure,
+     * break limits, and overtime rules, aggregating any violations found.
+     *
+     * @param Attendance $attendance The attendance record to validate.
+     * @param array $config The 'time_rules' section of the constraint's config.
+     * @return bool|array Returns false if no violations are found, or an array of all violations.
      */
     public function validateTimeConstraint(Attendance $attendance, array $config): bool|array
     {
-        // Get constraint subtype
-        $subtype = $config['subtype'] ?? '';
+        $allViolations = [];
 
-        switch ($subtype) {
-            case AttendanceConstraint::TIME_SHIFT_ENFORCEMENT:
-                return $this->validateShiftEnforcement($attendance, $config);
+        // --- Execute All Applicable Validation Checks ---
 
-            case AttendanceConstraint::TIME_EARLY_PREVENTION:
-                return $this->validateEarlyPrevention($attendance, $config);
+        // 1. Schedule Validation (Work Day, Weekend, Holiday, and Shift Period)
+        // This is a primary check. If a user tries to clock in on a non-working day,
+        // it's a significant violation, and we can return it immediately.
+        $scheduleViolation = $this->validateMultiplePeriods($attendance, $config);
 
-            case AttendanceConstraint::TIME_LATE_RESTRICTION:
-                return $this->validateLateRestriction($attendance, $config);
-
-            case AttendanceConstraint::TIME_BREAK_LIMITS:
-                return $this->validateBreakLimits($attendance, $config);
-
-            case AttendanceConstraint::TIME_OVERTIME_APPROVAL:
-                return $this->validateOvertimeApproval($attendance, $config);
-
-            case AttendanceConstraint::TIME_MULTIPLE_PERIODS:
-                return $this->validateMultiplePeriods($attendance, $config);
-
-            default:
-                return false;
+        // if (is_array($scheduleViolation)) {
+        //     // If the violation is for a non-working day, it's critical, so we return it right away.
+        //     if (in_array($scheduleViolation['details']['reason'], ['Official Holiday', 'Weekend or non-working day'])) {
+        //         return $scheduleViolation;
+        //     }
+        //     $allViolations[] = $scheduleViolation;
+        // }
+        // 2. Lateness Check (only on clock-in)
+        if ($attendance->isDirty('clock_in_time') || !$attendance->exists) {
+            $latenessViolation = $this->validateLateRestriction($attendance, $config);
+            if (is_array($latenessViolation)) {
+                $allViolations[] = $latenessViolation;
+            }
         }
+        // Only run the following checks if it's a valid work day and time period.
+        if (empty($allViolations)) {
+
+            // Check 2: Early Clock-In Prevention (only on clock-in)
+            if (isset($config['early_clock_in_rules'])) {
+                $earlyClockInViolation = $this->validateEarlyClockInPrevention($attendance, $config);
+                if (is_array($earlyClockInViolation)) {
+                    $allViolations[] = $earlyClockInViolation;
+                }
+            }
+
+        // 3. Early Departure Check (only on clock-out)
+        if ($attendance->isDirty('clock_in_time') && $attendance->clock_in_time) {
+            $earlyDepartureViolation = $this->validateEarlyPrevention($attendance, $config);
+            if (is_array($earlyDepartureViolation)) {
+                $allViolations[] = $earlyDepartureViolation;
+            }
+        }
+
+        // 4. Break Limits Check
+        $breakViolation = $this->validateBreakLimits($attendance, $config);
+        if (is_array($breakViolation)) {
+            $allViolations[] = $breakViolation;
+        }
+
+        // 5. Overtime Approval Check
+        // This is most relevant after hours are calculated (e.g., on clock-out).
+        if ($attendance->overtime_hours > 0) {
+            $overtimeViolation = $this->validateOvertimeApproval($attendance, $config);
+            if (is_array($overtimeViolation)) {
+                $allViolations[] = $overtimeViolation;
+            }
+        }
+        }
+        // If the violations array is not empty, return the collection of violations.
+        // Otherwise, return false to indicate success.
+        return !empty($allViolations) ? $allViolations : false;
     }
+
 
     /**
      * Validates shift enforcement constraints.
@@ -133,32 +201,58 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
      */
     public function validateEarlyPrevention(Attendance $attendance, array $config): bool|array
     {
-        if (!$attendance->clock_out_time) {
+        if (!$attendance->clock_in_time) return false;
+        // 1. Pre-condition checks.
+
+        // Check if this rule is enabled in the constraint config.
+        $rules = $config['early_departure_rules'] ?? [];
+        if (!($rules['prevent_early_departure'] ?? false)) {
             return false;
         }
 
+        // 2. Get the user's clock-in time to determine the correct day and shift.
+        $clockInTime = Carbon::parse($attendance->clock_in_time);
+        $dayOfWeek = strtolower($clockInTime->format('l'));
+
+        // 3. Find the correct shift period for that day from the main schedule.
+        $daySchedule = $config['weekly_schedule'][$dayOfWeek] ?? null;
+
+        // Find the specific period the user clocked into.
+        // This is important for multi-period days.
+        $clockInTimeStr = $clockInTime->format('H:i');
+        $activePeriod = null;
+        foreach (($daySchedule['periods'] ?? []) as $period) {
+            if ($this->isTimeWithinRangeWithGrace($clockInTimeStr, $period)) {
+                $activePeriod = $period;
+                break;
+            }
+        }
+        // If we can't determine which shift the user was in, we can't check for early departure.
+        if (!$activePeriod || !isset($activePeriod['end_time'])) {
+            return false;
+        }
+
+        // 4. Calculate the earliest allowed departure time.
+        $timezone = $attendance->timezone ?? config('app.timezone');
+        $scheduledEndTime = Carbon::createFromTimeString($activePeriod['end_time'], $timezone)->setDateFrom($clockInTime);
         $clockOutTime = Carbon::parse($attendance->clock_out_time);
-        $scheduledEndTime = null;
 
-        if (isset($config['scheduled_end_time'])) {
-            $scheduledEndTime = Carbon::parse($config['scheduled_end_time']);
-        } elseif (isset($config['work_hours']) && is_numeric($config['work_hours'])) {
-            $workHoursInMinutes = (float)$config['work_hours'] * 60;
-            $scheduledEndTime = Carbon::parse($attendance->clock_in_time)->addMinutes($workHoursInMinutes);
-        } else {
-            return false;
+        // Handle overnight shifts where end time is the next day.
+        if ($scheduledEndTime->isBefore($clockInTime)) {
+            $scheduledEndTime->addDay();
         }
 
-        $gracePeriodMinutes = isset($config['grace_period_minutes']) ? (int)$config['grace_period_minutes'] : 0;
+        $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
         $earliestAllowedDeparture = $scheduledEndTime->copy()->subMinutes($gracePeriodMinutes);
 
-        if ($clockOutTime->lt($earliestAllowedDeparture)) {
-            $minutesEarly = $earliestAllowedDeparture->diffInMinutes($clockOutTime);
+        // 5. Compare and return a violation if necessary.
+        if ($clockOutTime->isBefore($earliestAllowedDeparture)) {
+            $minutesEarly = $earliestAllowedDeparture->diffInMinutes($clockOutTime, true);
 
             return [
                 'constraint_type' => AttendanceConstraint::TIME_EARLY_PREVENTION,
                 'severity' => $this->getSeverityFromConfig($config),
-                'message' => "Early departure detected. Left {$minutesEarly} minutes before scheduled end time.",
+                'message' => "Early departure detected. Left {$minutesEarly} minutes before allowed time.",
                 'details' => [
                     'clock_out_time' => $clockOutTime->toDateTimeString(),
                     'scheduled_end_time' => $scheduledEndTime->toDateTimeString(),
@@ -181,29 +275,27 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
      */
     public function validateLateRestriction(Attendance $attendance, array $config): bool|array
     {
-        if (!$attendance->clock_in_time) {
-            return false;
-        }
+        if (!$attendance->clock_in_time) return false;
+
+        $rules = $config['lateness_rules'] ?? [];
+        if (!($rules['prevent_lateness'] ?? false)) return false;
+
+        $daySchedule = $config['weekly_schedule'][strtolower($attendance->clock_in_time->format('l'))] ?? null;
+        $firstPeriod = $daySchedule['periods'][0] ?? null;
+
+        if (!$firstPeriod || !isset($firstPeriod['start_time'])) return false;
 
         $clockInTime = Carbon::parse($attendance->clock_in_time);
-        $scheduledStartTime = null;
+        $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'], $clockInTime->timezone)->setDateFrom($clockInTime);
 
-        if (isset($config['scheduled_start_time'])) {
-            $scheduledStartTime = Carbon::parse($config['scheduled_start_time']);
-        } else {
-            return false;
-        }
-
-        $gracePeriodMinutes = isset($config['grace_period_minutes']) ? (int)$config['grace_period_minutes'] : 0;
+        $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
         $latestAllowedArrival = $scheduledStartTime->copy()->addMinutes($gracePeriodMinutes);
 
-        if ($clockInTime->gt($latestAllowedArrival)) {
-            $minutesLate = $clockInTime->diffInMinutes($latestAllowedArrival);
-
+        if ($clockInTime->isAfter($latestAllowedArrival)) {
+            $minutesLate = $latestAllowedArrival->diffInMinutes($clockInTime, true);
             return [
                 'constraint_type' => AttendanceConstraint::TIME_LATE_RESTRICTION,
-                'severity' => $this->getSeverityFromConfig($config),
-                'message' => "Late arrival detected. Arrived {$minutesLate} minutes after allowed start time.",
+                'message' => "Late arrival detected. Arrived {$minutesLate} minutes after the grace period.",
                 'details' => [
                     'clock_in_time' => $clockInTime->toDateTimeString(),
                     'scheduled_start_time' => $scheduledStartTime->toDateTimeString(),
@@ -468,5 +560,61 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         }
 
         return $time >= $effectiveStartTime && $time <= $effectiveEndTime;
+    }
+     /**
+     * ADDED: Validates that an employee does not clock in too early.
+     *
+     * This checks the clock-in time against the scheduled start time of the relevant
+     * shift period, minus any allowed grace period for clocking in early.
+     *
+     * @param Attendance $attendance The attendance record to validate.
+     * @param array $config The 'time_rules' section of the constraint's config.
+     * @return bool|array Returns false if compliant, or a violation array if the clock-in is too early.
+     */
+    private function validateEarlyClockInPrevention(Attendance $attendance, array $config): bool|array
+    {
+        // 1. Check if the rule is enabled.
+        $rules = $config['early_clock_in_rules'] ?? [];
+        if (!($rules['prevent_early_clock_in'] ?? false) || !$attendance->clock_in_time) {
+            return false;
+        }
+
+        // 3. Parse the user's clock-in time (which is stored in UTC) and
+        //    IMMEDIATELY convert it to the user's local timezone for all comparisons.
+        $clockInTimeLocal = Carbon::parse($attendance->clock_in_time);
+        // --- END OF FIX ---
+
+        $dayOfWeek = strtolower($clockInTimeLocal->format('l'));
+        $daySchedule = $config['weekly_schedule'][$dayOfWeek] ?? null;
+        $firstPeriod = $daySchedule['periods'][0] ?? null;
+
+        if (!$firstPeriod || !isset($firstPeriod['start_time'])) {
+            return false;
+        }
+
+        // 4. Calculate the earliest allowed clock-in time in the user's local timezone.
+        $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'])
+                                  ->setDateFrom($clockInTimeLocal);
+
+        $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
+        $earliestAllowedClockIn = $scheduledStartTime->copy()->subMinutes($gracePeriodMinutes);
+        // 5. Compare the two Carbon objects, which are now in the SAME timezone.
+        if ($clockInTimeLocal->isBefore($earliestAllowedClockIn)) {
+            $minutesEarly = $earliestAllowedClockIn->diffInMinutes($clockInTimeLocal, true);
+
+            return [
+                'constraint_type' => 'early_clock_in_prevention',
+                'severity' => $this->getSeverityFromConfig($config, 'high'),
+                'message' => "Clock-in is too early. You can clock in from {$earliestAllowedClockIn->format('H:i')}.",
+                'details' => [
+                    'clock_in_time' => $clockInTimeLocal->toDateTimeString(),
+                    'scheduled_start_time' => $scheduledStartTime->toDateTimeString(),
+                    'earliest_allowed_clock_in' => $earliestAllowedClockIn->toDateTimeString(),
+                    'minutes_early' => $minutesEarly
+                ]
+            ];
+        }
+
+        return false;
     }
 }

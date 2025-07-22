@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 namespace Modules\Attendance\Models;
-
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use App\Casts\UuidCast;
 use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -34,8 +34,8 @@ class AttendanceConstraint extends Model implements Auditable
 
     protected $fillable = [
         'company_id',
-        'user_id',
-        'department_id',
+        // 'user_ids',
+        'department_ids',
         'branch_ids',
         'branch_locations',
         'constraint_type',
@@ -52,14 +52,14 @@ class AttendanceConstraint extends Model implements Auditable
     ];
 
     protected $casts = [
-        'id' => UuidCast::class,
-        'company_id' => UuidCast::class,
-        'user_id' => UuidCast::class,
-        'department_id' => UuidCast::class,
+        'id' => 'string',
+        'company_id' => 'string',
+        // 'user_ids' => 'array',
+        'department_ids' => 'array',
         'branch_ids' => 'array',
         'branch_locations' => 'array',
-        'created_by' => UuidCast::class,
-        'updated_by' => UuidCast::class,
+        'created_by' => 'string',
+        'updated_by' => 'string',
         'constraint_config' => 'array',
         'is_active' => 'boolean',
         'inherit_from_parent' => 'boolean',
@@ -149,14 +149,28 @@ class AttendanceConstraint extends Model implements Auditable
         return $this->belongsTo(Company::class, 'company_id');
     }
 
+    // public function user(): BelongsTo
+    // {
+    //     return $this->belongsTo(User::class, 'user_id');
+    // }
+
     /**
-     * Get the user that this constraint applies to (if user-specific).
+     * Get the users that this constraint applies to.
      */
-    public function user(): BelongsTo
+    public function users()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsToMany(
+            User::class,
+            'attendance_constraint_user',
+            'attendance_constraint_id',
+            'user_id'
+        );
     }
 
+    protected function departments()
+    {
+        return $this->hasMany(ManagementHierarchy::class, 'id', 'department_ids');
+    }
     /**
      * Get the branches that this constraint applies to (if branch-specific).
      */
@@ -494,5 +508,15 @@ class AttendanceConstraint extends Model implements Auditable
     public function branches()
     {
         return $this->hasMany(ManagementHierarchy::class, 'id', 'branch_ids');
+    }
+    public function managementHierarchies()
+    {
+        return $this->morphedByMany(
+            ManagementHierarchy::class,
+            'constrainable',
+            'constrainables',  // table name
+            'attendance_constraint_id',
+            'constrainable_id'
+        );
     }
 }

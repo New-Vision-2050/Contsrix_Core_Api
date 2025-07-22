@@ -10,10 +10,10 @@ class UpdateAttendanceConstraintDTO
         public UuidInterface $updated_by,
         public ?string $constraint_type = null,
         public ?string $name = null,
-        public ?string $description = null,
+        public ?string $notes = null,
         public ?array $config = null,
-        public ?string $user_id = null,
-        public ?string $department_id = null,
+        public ?array $user_ids  = null,
+        public ?array $department_ids = null,
         public ?array $branch_ids = null,
         public ?array $branch_locations = null,
         public ?int $priority = null,
@@ -31,19 +31,19 @@ class UpdateAttendanceConstraintDTO
             $data['constraint_type'] = $this->constraint_type;
         }
         if ($this->name !== null) {
-            $data['name'] = $this->name;
+            $data['constraint_name'] = $this->name;
         }
-        if ($this->description !== null) {
-            $data['description'] = $this->description;
+        if ($this->notes !== null) {
+            $data['notes'] = $this->notes;
         }
         if ($this->config !== null) {
-            $data['config'] = $this->config;
+            $data['constraint_config'] = $this->config;
         }
-        if ($this->user_id !== null) {
-            $data['user_id'] = $this->user_id;
+        if ($this->user_ids !== null) {
+            $data['user_ids'] = $this->user_ids;
         }
-        if ($this->department_id !== null) {
-            $data['department_id'] = $this->department_id;
+        if ($this->department_ids !== null) {
+            $data['department_ids'] = $this->department_ids;
         }
         if ($this->branch_ids !== null) {
             $data['branch_ids'] = $this->branch_ids;
@@ -70,7 +70,7 @@ class UpdateAttendanceConstraintDTO
         return $data;
     }
 
-    public function getUpdatedBy(): string
+    public function getUpdatedBy(): UuidInterface
     {
         return $this->updated_by;
     }
@@ -85,9 +85,9 @@ class UpdateAttendanceConstraintDTO
         return $this->name;
     }
 
-    public function getDescription(): ?string
+    public function getNotes(): ?string
     {
-        return $this->description;
+        return $this->notes;
     }
 
     public function getConfig(): ?array
@@ -95,14 +95,14 @@ class UpdateAttendanceConstraintDTO
         return $this->config;
     }
 
-    public function getUserId(): ?string
+    public function getUserIds(): ?array
     {
-        return $this->user_id;
+        return $this->user_ids;
     }
 
-    public function getDepartmentId(): ?string
+    public function getDepartmentIds(): ?array
     {
-        return $this->department_id;
+        return $this->department_ids;
     }
 
     public function getBranchIds(): ?array
