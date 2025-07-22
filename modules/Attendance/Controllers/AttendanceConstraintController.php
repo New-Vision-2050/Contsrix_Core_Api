@@ -23,6 +23,7 @@ use Modules\Attendance\Requests\BulkConstraintRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Modules\Attendance\Presenters\ConstraintListPresenter;
 use Modules\Attendance\Presenters\ConstraintPresenter;
 use Ramsey\Uuid\Uuid;
 
@@ -81,7 +82,7 @@ class AttendanceConstraintController extends Controller
 
 
        $presentedData = collect($result['data'])->map(function ($constraint) {
-            return (new ConstraintPresenter($constraint))->present();
+            return (new ConstraintListPresenter($constraint))->present();
         });
 
         // 2. Pass the formatted collection to the JSON helper.
