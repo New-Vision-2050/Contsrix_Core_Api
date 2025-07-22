@@ -12,7 +12,7 @@ class UpdateAttendanceConstraintDTO
         public ?string $name = null,
         public ?string $notes = null,
         public ?array $config = null,
-        public ?string $user_ids  = null,
+        public ?array $user_ids  = null,
         public ?string $department_ids = null,
         public ?array $branch_ids = null,
         public ?array $branch_locations = null,
