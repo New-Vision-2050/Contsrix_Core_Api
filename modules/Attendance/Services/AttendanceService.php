@@ -610,6 +610,13 @@ class AttendanceService
 
         return $query->pluck('user_id')->all();
     }
+    public function updateAttendanceStatus(Attendance $attendance, string $status, bool $absent = false): Attendance
+    {
+        $attendance->status = $status;
+        $attendance->is_absent = $absent;
+        $attendance->save();
+        return $attendance;
+    }
      /**
      * Handles the entire clock-in process.
      * This method is now decoupled from the Illuminate\Http\Request object.
