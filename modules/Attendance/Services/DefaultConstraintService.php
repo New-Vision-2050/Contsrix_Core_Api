@@ -43,7 +43,7 @@ class DefaultConstraintService
                     'address'   => $branch->address?->full_address,
                     'latitude'  => (float) $branch->latitude,
                     'longitude' => (float) $branch->longitude,
-                    'radius'    => 500 // Default radius of 300 meters
+                    'radius'    => 200 // Default radius of 200 meters
                 ]
             ],
             'constraint_config' => [
