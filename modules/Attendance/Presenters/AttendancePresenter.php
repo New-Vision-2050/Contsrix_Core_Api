@@ -119,7 +119,7 @@ class AttendancePresenter extends AbstractPresenter
      * @param array $appliedConstraints The formatted array of constraints.
      * @return array An object containing the status and reason.
      */
-    private function getDayStatus(array $appliedConstraints): array
+    private function getDayStatus($appliedConstraints): array
     {
         $defaultStatus = ['status' => 'Undefined', 'reason' => 'No applicable time schedule found.'];
 
