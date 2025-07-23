@@ -47,6 +47,11 @@ class DefaultConstraintService
                 ]
             ],
             'constraint_config' => [
+                "radius_enforcement"=>[
+                    "out_of_radius_time_threshold"=>30,
+                    "unit"=>"minute"//hour, minute, day
+                ],
+
                 'time_rules' => [
                     'subtype' => 'multiple_periods',
                     'weekly_schedule' => [
@@ -60,15 +65,19 @@ class DefaultConstraintService
                     ],
                     'lateness_rules' => [
                         'prevent_lateness' => true,
-                        'grace_period_minutes' => 15
+                        'grace_period_minutes' => 15,
+                        "unit"=>"minute"//hour, minute, day
+
                     ],
                     'early_departure_rules' => [
                         'prevent_early_departure' => true,
-                        'grace_period_minutes' => 10
+                        'grace_period_minutes' => 10,
+                        "unit"=>"minute"//hour, minute, day
                     ],
                     'overtime_rules' => [
                         'requires_approval' => true,
-                        'approval_threshold_minutes' => 30
+                        'approval_threshold_minutes'=> 30,
+                        "unit"=>"minute"//hour, minute, day
                     ],
                 ],
                 'type_attendance' => [
