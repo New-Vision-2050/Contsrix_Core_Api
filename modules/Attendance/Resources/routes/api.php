@@ -18,6 +18,7 @@ use Modules\Attendance\Controllers\LocationTrackingController;
 | is assigned the "api" middleware group and "auth:api" middleware.
 |
 */
+Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
 
 // Attendance Management Routes
 Route::prefix('attendance')->group(function () {
@@ -202,4 +203,5 @@ Route::prefix('dashboard')->group(function () {
     Route::get('hr-stats', [AttendanceController::class, 'getHRStats'])
         ->middleware('permission:view-attendance-reports')
         ->name('dashboard.hr-stats');
+    });
 });
