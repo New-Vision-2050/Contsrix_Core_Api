@@ -175,7 +175,7 @@ class AttendanceFilter extends SearchModelFilter
 
     public function constraint($constraintId)
     {
-       return $this->whereHas('professionalData', function ($query) use ($constraintId) {
+       return $this->whereHas('user.professionalData', function ($query) use ($constraintId) {
             $query->where('attendance_constraint_id',$constraintId);
         });
     }
