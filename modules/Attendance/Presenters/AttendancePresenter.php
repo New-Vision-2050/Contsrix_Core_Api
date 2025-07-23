@@ -105,6 +105,7 @@ class AttendancePresenter extends AbstractPresenter
                 'department' => $this->attendance->user->userProfessionalData->department?->name,
                 'branch' => $this->attendance->user->userProfessionalData->branch?->name,
                 'management' => $this->attendance->user->userProfessionalData->management?->name,
+                'attendance_constraint'=> $this->attendance->user->userProfessionalData->attendance_constraint?->name,
             ] : null,
         ];
     }

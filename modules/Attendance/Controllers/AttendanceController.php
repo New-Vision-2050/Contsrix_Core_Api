@@ -36,7 +36,7 @@ class AttendanceController extends Controller
     /**
      * Clock in employee
      */
-    public function clockIn(ClockInRequest $request)//: JsonResponse
+    public function clockIn(ClockInRequest $request): JsonResponse
     {
         try {
             $clockInDTO = $request->createClockInDTO();
