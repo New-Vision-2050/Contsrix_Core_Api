@@ -29,15 +29,15 @@ class Kernel extends ConsoleKernel
         // Create waiting attendance records early in the morning (5:00 AM)
         $schedule->command(CreateWaitingAttendanceCommand::class)
                 ->everyThreeHours()
-                ->timezone('Asia/Riyadh') // Adjust to your timezone
+                ->timezone('Asia/Riyadh')
                 ->withoutOverlapping()
                 ->appendOutputTo(storage_path('logs/attendance-waiting.log'));
 
         // Update attendance statuses at the end of the workday (7:00 PM)
         // This will mark users as absent if they didn't clock in
         $schedule->command(UpdateAttendanceStatusCommand::class)
-                ->dailyAt('19:00')
-                ->timezone('Asia/Riyadh') // Adjust to your timezone
+                ->everyThreeHours()
+                ->timezone('Asia/Riyadh')
                 ->withoutOverlapping()
                 ->appendOutputTo(storage_path('logs/attendance-status-update.log'));
     }
