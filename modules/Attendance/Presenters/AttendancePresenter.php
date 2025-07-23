@@ -106,6 +106,7 @@ class AttendancePresenter extends AbstractPresenter
                 'attendance_constraint'=> $this->attendance->user->professionalData->attendanceConstraint ?[
                     'id'=> (string) $this->attendance->user->professionalData->id,
                     'constraint_name'=> $this->attendance->user->professionalData->attendanceConstraint?->constraint_name,
+                    'constraint_type'=> $this->attendance->user->professionalData->attendanceConstraint?->constraint_type,
                     'constraint_config'=> $this->attendance->user->professionalData?->attendanceConstraint->constraint_config,
                 ] : null,
             ] : null,
