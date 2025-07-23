@@ -19,6 +19,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Log;
 
 class Attendance extends Model implements Auditable
 {
@@ -62,7 +63,9 @@ class Attendance extends Model implements Auditable
         'approved_at',
         'verification_data',
         'location_tracking',
-        'timezone'
+        'timezone',
+        'start_time',
+        'end_time'
     ];
 
     protected $casts = [
@@ -100,6 +103,7 @@ class Attendance extends Model implements Auditable
     ];
 
     // Status constants
+    const STATUS_WAITING = 'waiting';  // New status for attendance records waiting for user to arrive
     const STATUS_ACTIVE = 'active';
     const STATUS_COMPLETED = 'completed';
     const STATUS_PENDING_APPROVAL = 'pending_approval';
@@ -110,6 +114,10 @@ class Attendance extends Model implements Auditable
      * Valid status transitions
      */
     private const STATUS_TRANSITIONS = [
+        self::STATUS_WAITING => [
+            self::STATUS_ACTIVE,
+            self::STATUS_COMPLETED,  // Can transition directly to completed (absent)
+        ],
         self::STATUS_ACTIVE => [
             self::STATUS_COMPLETED,
             self::STATUS_PENDING_APPROVAL,

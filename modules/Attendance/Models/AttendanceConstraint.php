@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Carbon\Carbon;
 use App\Casts\UuidCast;
 use App\Traits\CustomBelongsToTenant;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -16,6 +17,28 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use OwenIt\Auditing\Contracts\Auditable;
 
+/**
+ * @property string $id
+ * @property string $company_id
+ * @property array|null $user_ids
+ * @property array|null $department_ids
+ * @property array|null $branch_ids
+ * @property array|null $branch_locations
+ * @property string $constraint_type
+ * @property string $constraint_name
+ * @property array $constraint_config
+ * @property boolean $is_active
+ * @property boolean $inherit_from_parent
+ * @property integer $priority
+ * @property \Carbon\Carbon|null $start_date
+ * @property \Carbon\Carbon|null $end_date
+ * @property string|null $created_by
+ * @property string|null $updated_by
+ * @property string|null $notes
+ * @property-read Company $company
+ * @property-read User $creator
+ * @property-read User $updater
+ */
 class AttendanceConstraint extends Model implements Auditable
 {
     use UuidTrait;
@@ -390,7 +413,7 @@ class AttendanceConstraint extends Model implements Auditable
      */
     public function isValidForDate($date = null): bool
     {
-        $checkDate = $date ? carbon($date) : now();
+        $checkDate = $date ? Carbon::parse($date) : now();
 
         $startValid = !$this->start_date || $checkDate->gte($this->start_date);
         $endValid = !$this->end_date || $checkDate->lte($this->end_date);

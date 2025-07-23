@@ -45,7 +45,10 @@ class AttendanceRepository extends BaseRepository
             'pagination' => null
         ];
     }
-
+    public function getQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return $this->model->newQuery();
+    }
     /**
      * Get attendance by ID
      */

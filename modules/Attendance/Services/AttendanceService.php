@@ -483,7 +483,7 @@ class AttendanceService
             $attendanceId = Uuid::fromString($attendanceId);
         }
 
-        $attendance = $this->attendanceRepository->getAttendanceById($attendanceId);
+        $attendance = $this->attendanceRepository->getAttendance($attendanceId);
 
         if (!$attendance) {
             return [];
@@ -516,18 +516,28 @@ class AttendanceService
             ['created_at', '<=', $date->copy()->endOfDay()],
         ]);
     }
-    public function getPresentUserIdsOnDate(array $userIds, Carbon $date): array
+    public function getPresentUserIdsOnDate(array $userIds, Carbon $date, ?array $period = null): array
     {
         if (empty($userIds)) {
             return [];
         }
-        return $this->attendanceRepository->model->query()
-            ->whereIn('user_id', $userIds)
-            ->whereDate('clock_in_time', $date)
-            ->pluck('user_id')
-            ->all();
+
+        $query = $this->attendanceRepository->getQuery()
+            ->whereIn('user_id', $userIds);
+
+        if ($period && isset($period['start_time']) && isset($period['end_time'])) {
+            // Check for records within the specific period on the given date
+            $startTime = Carbon::parse($date->toDateString() . ' ' . $period['start_time']);
+            $endTime = Carbon::parse($date->toDateString() . ' ' . $period['end_time']);
+            $query->whereBetween('start_time', [$startTime, $endTime]);
+        } else {
+            // Fallback to checking the entire day if no period is specified
+            $query->whereDate('start_time', $date);
+        }
+
+        return $query->pluck('user_id')->all();
     }
-        public function createAbsenceRecord(User $user, Carbon $dateOfAbsence, string $reason): Attendance
+    public function createAbsenceRecord(User $user, Carbon $dateOfAbsence, string $reason): Attendance
     {
         // Prepare the data for the new absence record.
         $attendanceData = [
@@ -542,6 +552,70 @@ class AttendanceService
 
         // Use the repository to create the record in the database.
         return $this->attendanceRepository->create($attendanceData);
+    }
+
+    /**
+     * Create a waiting attendance record for a user who is expected to attend but hasn't clocked in yet.
+     *
+     * @param User $user The user to create the waiting record for
+     * @param Carbon $date The date for the attendance record
+     * @param string|null $notes Optional notes
+     * @return Attendance The created attendance record
+     */
+    public function createWaitingRecord(User $user, Carbon $date, ?string $notes = null,$startTime,$endTime): Attendance
+    {
+        $startTimeCarbon = Carbon::parse($startTime);
+        $endTimeCarbon = Carbon::parse($endTime);
+
+        $startDate = $startTimeCarbon->copy()->startOfDay();  
+        $endDateLimit = $startDate->copy()->addDay();       
+    
+        // Prepare the data for the new waiting record
+        $attendanceData = [
+            'user_id' => $user->id,
+            'company_id' => $user->company_id,
+            'status' => Attendance::STATUS_WAITING,
+            'is_absent' => false,
+            'notes' => $notes ?? 'Attendance record created in waiting status',
+            'timezone' => $user->company->timezone ?? config('app.timezone'),
+            'clock_in_time' => null,
+            'clock_out_time' => null,
+            'total_work_hours' => 0.0,
+            'total_break_hours' => 0.0,
+            'overtime_hours' => 0.0,
+          'start_time' => $startTimeCarbon->toDateTimeString(),
+        'end_time' => $endTimeCarbon->toDateTimeString(),
+        ];
+
+        // Use the repository to create the record in the database
+        return $this->attendanceRepository->create($attendanceData);
+    }
+
+    /**
+     * Get all users with waiting attendance status for a specific date
+     *
+     * @param Carbon $date The date to check
+     * @param string|null $companyId Optional company ID to filter by
+     * @return array Array of user IDs with waiting status
+     */
+    public function getWaitingUserIdsOnDate(Carbon $date, ?string $companyId = null): array
+    {
+        $query = $this->attendanceRepository->getQuery()
+            ->where('status', Attendance::STATUS_WAITING)
+            ->whereDate('clock_in_time', $date);
+
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+
+        return $query->pluck('user_id')->all();
+    }
+    public function updateAttendanceStatus(Attendance $attendance, string $status, bool $absent = false): Attendance
+    {
+        $attendance->status = $status;
+        $attendance->is_absent = $absent;
+        $attendance->save();
+        return $attendance;
     }
      /**
      * Handles the entire clock-in process.

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\UserInfo\UserProfessionalData\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Ramsey\Uuid\Uuid;
 use Modules\UserInfo\UserProfessionalData\DTO\CreateUserProfessionalDataDTO;
 
 class CreateUserProfessionalDataRequest extends FormRequest
@@ -38,6 +37,7 @@ class CreateUserProfessionalDataRequest extends FormRequest
         return new CreateUserProfessionalDataDTO(
             company_id: '',
             global_id: '',
+            user_id: '',
             branch_id: $this->get('branch_id'),
             management_id: $this->get('management_id'),
             job_type_id: $this->get('job_type_id'),
