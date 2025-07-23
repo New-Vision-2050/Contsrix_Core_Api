@@ -9,7 +9,6 @@ use Ramsey\Uuid\UuidInterface;
 class CreateUserProfessionalDataDTO
 {
     public function __construct(
-        public string $company_id,
         public string $global_id,
         public string $user_id,
         public string $branch_id,
@@ -24,7 +23,6 @@ class CreateUserProfessionalDataDTO
     public function toArray(): array
     {
         return [
-            'company_id' => $this->company_id,
             'global_id' => $this->global_id,
             'user_id' => $this->user_id,
             'branch_id' => $this->branch_id,

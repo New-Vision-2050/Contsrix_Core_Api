@@ -32,11 +32,10 @@ class UserProfessionalDataRepository extends BaseRepository
         );
     }
 
-    public function getUserProfessionalData(UuidInterface $companyId, UuidInterface $globalId): ?UserProfessionalData
+    public function getUserProfessionalData(UuidInterface $globalId,$userId): ?UserProfessionalData
     {
         return $this->model->where([
-            'global_id' => $globalId,
-            'company_id' => $companyId,
+            'user_id' => $userId
         ])->first();
     }
 
@@ -65,7 +64,7 @@ class UserProfessionalDataRepository extends BaseRepository
             }
             $user->update(["management_hierarchy_id"=>$managementHierarchyId]);
 
-            
+
             if ($userProfessionalData) {
                 $userProfessionalData->update($data);
                 DB::commit();

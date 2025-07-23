@@ -46,7 +46,6 @@ class MockAttendanceService
 
         $mockAttendanceData = [
             'user_id'             => $user->id,
-            'company_id'          => $user->company_id,
             'clock_in_time'       => $clockInDTO->getClockInTime(),
             'timezone'            => getTimeZoneByRequest()  ?? config('app.timezone'),
             'clock_in_location'   => $clockInDTO->getLocation(),

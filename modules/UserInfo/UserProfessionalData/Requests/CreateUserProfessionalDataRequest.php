@@ -35,7 +35,6 @@ class CreateUserProfessionalDataRequest extends FormRequest
     public function createCreateUserProfessionalDataDTO(): CreateUserProfessionalDataDTO
     {
         return new CreateUserProfessionalDataDTO(
-            company_id: '',
             global_id: '',
             user_id: '',
             branch_id: $this->get('branch_id'),
