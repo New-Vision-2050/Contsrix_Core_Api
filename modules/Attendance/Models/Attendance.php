@@ -20,7 +20,37 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 
+/**
+ * @property string $id
+ * @property string $user_id
+ * @property string $company_id
+ * @property Carbon|null $clock_in_time
+ * @property Carbon|null $clock_out_time
+ * @property float $total_work_hours
+ * @property float $total_break_hours
+ * @property float $overtime_hours
+ * @property bool $is_late
+ * @property bool $is_early_departure
+ * @property int $late_minutes
+ * @property int $early_departure_minutes
+ * @property string $status
+ * @property string|null $approved_by
+ * @property Carbon|null $approved_at
+ * @property array|null $clock_in_location
+ * @property array|null $clock_out_location
+ * @property string|null $notes
+ * @property string|null $ip_address
+ * @property string|null $timezone
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read User $user
+ * @property-read Company $company
+ * @property-read User|null $approvedBy
+ * @property-read Collection|AttendanceBreak[] $breaks
+ * @property-read AttendanceConstraint|null $attendanceConstraint
+ */
 class Attendance extends Model implements Auditable
 {
     use UuidTrait;
@@ -631,5 +661,9 @@ class Attendance extends Model implements Auditable
             'attendance_id',
             'constraint_id'
         );
+    }
+    public function professionalData()
+    {
+        return $this->hasOne(UserProfessionalData::class, 'user_id', 'user_id');
     }
 }

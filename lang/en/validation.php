@@ -515,6 +515,8 @@ return [
     'admin_account_cannot_be_deleted' => 'The admin account cannot be deleted.',
     'cannot_delete_yourself' => 'You cannot delete your own account.',
     'cannot_delete_company_owner' => 'A company owner account cannot be deleted.',
-    'regular' => 'regular'
+    'regular' => 'regular',
+    'male' => 'male',
+    'female' => 'female',
 
 ];

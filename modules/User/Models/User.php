@@ -32,6 +32,14 @@ use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $phone
+ * @property-read CompanyUser|null $companyUser
+ * @property-read UserProfessionalData|null $professionalData
+ */
 class User extends Authenticatable implements JWTSubject, Auditable
 {
     use HasFactory;

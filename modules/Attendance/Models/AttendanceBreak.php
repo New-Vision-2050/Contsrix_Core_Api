@@ -14,6 +14,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
 use Modules\Company\CompanyCore\Models\Company;
 
+/**
+ * @property string $id
+ * @property string $attendance_id
+ * @property string $company_id
+ * @property Carbon|null $start_time
+ * @property Carbon|null $end_time
+ * @property int|null $duration_minutes
+ * @property string|null $notes
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Attendance $attendance
+ * @property-read Company $company
+ */
 class AttendanceBreak extends Model
 {
     use UuidTrait;
