@@ -204,4 +204,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
     {
         return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_company_user_id')->where("company_id", "=", tenant("id"));
     }
+    public function professionalData()
+    {
+        return $this->hasOne(UserProfessionalData::class, 'user_id', 'id');
+    }
 }

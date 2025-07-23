@@ -46,6 +46,7 @@ use Modules\Shared\BankTypeAccount\Database\Seeders\BankTypeAccountSeederTableSe
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\UpdatePrivilegeModulesSeederTableSeeder;
+use Modules\UserInfo\UserProfessionalData\Database\seeders\SyncUserIdsInUserProfessionalDataSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -108,6 +109,7 @@ class DatabaseSeeder extends Seeder
      
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
+        $this->call(SyncUserIdsInUserProfessionalDataSeeder::class);
         
     }
 }

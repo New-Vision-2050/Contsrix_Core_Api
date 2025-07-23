@@ -145,7 +145,7 @@ class CreateWaitingAttendanceCommand extends Command
        $this->info(json_encode($branchIds));
 
         if (!empty($branchIds)) {
-            $query->whereHas('userProfessionalData', function ($q) use ($branchIds) {
+            $query->whereHas('professionalData', function ($q) use ($branchIds) {
                 $q->whereIn('branch_id',$branchIds);
             });
         }
@@ -159,7 +159,7 @@ class CreateWaitingAttendanceCommand extends Command
     private function getUsersQueryForConstraint2(AttendanceConstraint $constraint): Builder
     {
         $query = User::where('company_id', $constraint->company_id);
-
+        $this->info(json_encode($constraint->user_ids));
         // Filter by specific user_ids if the constraint has them
         if (!empty($constraint->user_ids)) {
             $query->whereIn('id', $constraint->user_ids);
@@ -167,7 +167,7 @@ class CreateWaitingAttendanceCommand extends Command
             // Otherwise, if branch_ids are specified, filter by users in those branches
             $branchIds = $constraint->branch_ids ?? [];
             if (!empty($branchIds)) {
-                $query->whereHas('userProfessionalData', function ($q) use ($branchIds) {
+                $query->whereHas('professionalData', function ($q) use ($branchIds) {
                     $q->whereIn('branch_id', $branchIds);
                 });
             }
@@ -178,9 +178,9 @@ class CreateWaitingAttendanceCommand extends Command
         // Eager load relations needed by AttendanceConstraintService for getTodaysWorkRulesForUser (used in processCompanyAttendance)
         // Ensure userProfessionalData and its nested relations are loaded for constraint service.
         $query->with([
-            'userProfessionalData.branch.defaultAttendanceConstraint',
-            'userProfessionalData.attendanceConstraint',
-            'userProfessionalData.company', // For timezone, etc.
+            'professionalData.branch.defaultAttendanceConstraint',
+            'professionalData.attendanceConstraint',
+            // 'professionalData.company', // For timezone, etc.
         ]);
 
         return $query;
