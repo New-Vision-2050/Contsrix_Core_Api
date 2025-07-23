@@ -107,7 +107,7 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // Clear existing permissions for this company to ensure a clean slate
-        Permission::where('company_id', $companyId)->delete();
+//        Permission::where('company_id', $companyId)->delete();
 
         $permissions = config('permissions.permissions');
 

@@ -247,6 +247,6 @@ class CompanyAccessProgramRepository extends BaseRepository
             $query->whereIn('id', $filters['ids']);
         }
 
-        return $query->with(['companyField'])->get();
+        return $query->with(['companyFields'])->get();
     }
 }

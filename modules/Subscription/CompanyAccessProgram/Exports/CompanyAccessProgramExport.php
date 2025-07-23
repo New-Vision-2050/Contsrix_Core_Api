@@ -56,10 +56,12 @@ class CompanyAccessProgramExport implements FromCollection, WithHeadings, WithMa
             $companyAccessProgram->id,
             $companyAccessProgram->name,
             $companyAccessProgram->description,
-            $companyAccessProgram->companyField ? $companyAccessProgram->companyField->name : '-',
+            $companyAccessProgram->company_fields_count != null&&$companyAccessProgram->company_fields_count != 0 ? $companyAccessProgram->company_fields_count : "0",
             $companyAccessProgram->is_active ? 'Active' : 'Inactive',
             $companyAccessProgram->created_at->format('Y-m-d H:i:s'),
             $companyAccessProgram->updated_at->format('Y-m-d H:i:s'),
+//            $data['programs_count'] = $this->calculateProgramsCount($this->companyAccessProgram);
+//        $data['packages_count'] = $this->companyAccessProgram->packages_count ?? 0;
         ];
     }
 }
