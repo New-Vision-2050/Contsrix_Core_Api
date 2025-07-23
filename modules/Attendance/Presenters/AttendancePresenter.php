@@ -72,6 +72,7 @@ class AttendancePresenter extends AbstractPresenter
                 'birthdate' => $this->attendance->user?->companyUser?->birthdate_gregorian ?? null,
                 'country' => $this->attendance->user->companyUser?->country?->name ?: null,
                 'gender' => $this->attendance->user->companyUser->gender,
+                'phone' => $this->attendance->user->companyUser->phone,
             ] : null,
 
             'company' => $this->attendance->company ? [
