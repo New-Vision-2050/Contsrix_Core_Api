@@ -51,10 +51,9 @@ class UserProfessionalDataRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $userProfessionalData = $this->model->where([
-                'global_id' => $data['global_id'],
-                'company_id' => $data['company_id'],
+                'user_id' => $data['user_id'],
             ])->first();
-            $user = $this->userRepository->findOneBy(["global_company_user_id"=>$data["global_id"],"company_id"=>$data["company_id"]]);
+            $user = $this->userRepository->findOneBy(["id"=>$data["user_id"]]);
             $managementHierarchyId = null;
 
             if($data["management_id"]!=null){
@@ -66,7 +65,7 @@ class UserProfessionalDataRepository extends BaseRepository
             }
             $user->update(["management_hierarchy_id"=>$managementHierarchyId]);
 
-
+            
             if ($userProfessionalData) {
                 $userProfessionalData->update($data);
                 DB::commit();

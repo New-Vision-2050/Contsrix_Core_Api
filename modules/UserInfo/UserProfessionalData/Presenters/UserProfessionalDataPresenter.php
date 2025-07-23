@@ -49,7 +49,7 @@ class UserProfessionalDataPresenter extends AbstractPresenter
             'id' => $this->userProfessionalData->id,
             'company_id' => $this->userProfessionalData->company_id,
             'global_id' => $this->userProfessionalData->global_id,
-
+            'user_id'=> $this->userProfessionalData->user_id,
             'branch' => $this->userProfessionalData->branch ? (new ManagementHierarchyPresenter($this->userProfessionalData->branch))->getData() : null,
             'management' => $this->userProfessionalData->management? (new ManagementHierarchyPresenter($this->userProfessionalData->management))->getData() : null,
             'department' => $this->userProfessionalData->department? (new ManagementHierarchyPresenter($this->userProfessionalData->department))->getData() : null,

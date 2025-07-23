@@ -665,4 +665,5 @@ public function getTodaysWorkRulesForUser(User $user): array
         }
         return null;
     }
+    
 }

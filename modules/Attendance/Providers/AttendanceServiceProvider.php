@@ -6,6 +6,7 @@ namespace Modules\Attendance\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Factory;
+use Illuminate\Console\Scheduling\Schedule;
 
 class AttendanceServiceProvider extends ServiceProvider
 {
@@ -29,6 +30,7 @@ class AttendanceServiceProvider extends ServiceProvider
         $this->registerTranslations();
         $this->registerConfig();
         $this->registerViews();
+        $this->registerSchedules();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'Database/migrations'));
     }
 
@@ -113,5 +115,13 @@ class AttendanceServiceProvider extends ServiceProvider
             }
         }
         return $paths;
+    }
+    public function registerSchedules(): void
+    {
+        $this->app->booted(function () {
+            $schedule = $this->app->make(Schedule::class);
+            $schedule->command('attendance:create-waiting')->everyThreeHours();
+            $schedule->command('attendance:update-status')->everyThreeHours();
+        });
     }
 }

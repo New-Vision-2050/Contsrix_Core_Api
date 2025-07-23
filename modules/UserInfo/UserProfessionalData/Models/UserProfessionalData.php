@@ -37,6 +37,7 @@ class UserProfessionalData extends Model
     protected $fillable = [
         'company_id',
         'global_id',
+        'user_id',
         'branch_id',
         'management_id',
 //        'department_id',
