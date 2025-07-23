@@ -18,7 +18,6 @@ class AttendancePresenter extends AbstractPresenter
 
     public function present(bool $isListing = false): array
     {
-        $appliedConstraints = $this->formatAppliedConstraints();
 
         return [
 
@@ -95,9 +94,8 @@ class AttendancePresenter extends AbstractPresenter
             'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
             'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
             'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),
-            'applied_constraints' => $appliedConstraints,
             // Use the result of the helper method to determine the day status.
-            'day_status' => $this->getDayStatus($appliedConstraints),
+            'day_status' => $this->getDayStatus($this->attendance->user->professionalData?->attendanceConstraint),
             'professional_data' => $this->attendance->user?->professionalData ? [
                 'id' => (string) $this->attendance->user->professionalData->id,
                 'job_title' => $this->attendance->user->professionalData->jobTitle?->name,
@@ -105,30 +103,15 @@ class AttendancePresenter extends AbstractPresenter
                 'department' => $this->attendance->user->professionalData->department?->name,
                 'branch' => $this->attendance->user->professionalData->branch?->name,
                 'management' => $this->attendance->user->professionalData->management?->name,
-                'attendance_constraint'=> $this->attendance->user->professionalData->attendanceConstraint,
+                'attendance_constraint'=> $this->attendance->user->professionalData->attendanceConstraint ?[
+                    'id'=> (string) $this->attendance->user->professionalData->id,
+                    'constraint_name'=> $this->attendance->user->professionalData->attendanceConstraint?->constraint_name,
+                    'constraint_config'=> $this->attendance->user->professionalData?->attendanceConstraint->constraint_config,
+                ] : null,
             ] : null,
         ];
     }
-  /**
-     * Formats the applied constraints for the API response.
-     * This now correctly returns an array of ALL applied constraints.
-     *
-     * @return array
-     */
-    private function formatAppliedConstraints(): array
-    {
-        if (!$this->attendance->appliedConstraints) {
-            return [];
-        }
-
-        return $this->attendance->appliedConstraints->map(function ($constraint) {
-            return [
-                'id'     => (string) $constraint->id,
-                'name'   => $constraint->constraint_name,
-                'config' => $constraint->constraint_config, // Needed for day_status logic
-            ];
-        })->all(); // Use all() to get a clean, numerically-indexed array.
-    }
+ 
 
     /**
      * Determines if the attendance day was a Work Day, Weekend, or Holiday.
