@@ -33,6 +33,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $phone
+ * @property-read CompanyUser|null $companyUser
+ * @property-read UserProfessionalData|null $professionalData
+ */
 class User extends Authenticatable implements JWTSubject, Auditable
 {
     use HasFactory;

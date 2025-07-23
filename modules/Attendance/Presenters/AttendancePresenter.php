@@ -71,7 +71,7 @@ class AttendancePresenter extends AbstractPresenter
                 'email' => $this->attendance->user->email,
                 'birthdate' => $this->attendance->user?->companyUser?->birthdate_gregorian ?? null,
                 'country' => $this->attendance->user->companyUser?->country?->name ?: null,
-                'gender' => $this->attendance->user->companyUser->gender,
+                'gender' => __('validation.' . $this->attendance->user->companyUser->gender),
                 'phone' => $this->attendance->user->companyUser->phone,
             ] : null,
 
