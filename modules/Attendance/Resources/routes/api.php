@@ -188,20 +188,20 @@ Route::prefix('reports')->middleware('permission:view-attendance-reports')->grou
 });
 
 // Dashboard Statistics (for different user roles)
-Route::prefix('dashboard')->group(function () {
+    Route::prefix('dashboard')->group(function () {
 
-    // Employee Dashboard
-    Route::get('employee-stats', [AttendanceController::class, 'getEmployeeStats'])
-        ->name('dashboard.employee-stats');
+        // Employee Dashboard
+        Route::get('employee-stats', [AttendanceController::class, 'getEmployeeStats'])
+            ->name('dashboard.employee-stats');
 
-    // Supervisor Dashboard
-    Route::get('supervisor-stats', [AttendanceController::class, 'getSupervisorStats'])
-        ->middleware('permission:view-team-attendance')
-        ->name('dashboard.supervisor-stats');
+        // Supervisor Dashboard
+        Route::get('supervisor-stats', [AttendanceController::class, 'getSupervisorStats'])
+            ->middleware('permission:view-team-attendance')
+            ->name('dashboard.supervisor-stats');
 
-    // HR Dashboard
-    Route::get('hr-stats', [AttendanceController::class, 'getHRStats'])
-        ->middleware('permission:view-attendance-reports')
-        ->name('dashboard.hr-stats');
-    });
+        // HR Dashboard
+        Route::get('hr-stats', [AttendanceController::class, 'getHRStats'])
+            ->middleware('permission:view-attendance-reports')
+            ->name('dashboard.hr-stats');
+        });
 });
