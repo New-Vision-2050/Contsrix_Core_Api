@@ -21,6 +21,5 @@ return [
         'PERMISSION_DELETE' => 'settings.permissions.delete',
         'PERMISSION_ACTIVATE' => 'settings.permissions.activate',
         'PERMISSION_VIEW' => 'settings.permissions.view',
-        'PERMISSION_ASSIGN' => 'settings.permissions.update',
     ]
 ];

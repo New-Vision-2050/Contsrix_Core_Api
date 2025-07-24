@@ -312,36 +312,109 @@ class UpdatePermissionNamesCommand extends Command
             $this->table(
                 ['Key', 'Current Name', 'New Name'],
                 array_map(fn($update) => [
-                    $update['key'],
-                    $update['old_name'],
-                    $update['new_name']
+                    $this->formatKey($update['key']),
+                    $this->formatName($update['old_name']),
+                    $this->formatName($update['new_name'])
                 ], $updates)
             );
         }
 
+        if (!empty($missing)) {
+            $this->warn("\n➕ Missing permissions to create (" . count($missing) . "):");
+            $permissions = config('permissions.permissions');
+            $this->table(
+                ['Key', 'Name', 'Module', 'Action'],
+                array_map(function($key) use ($permissions) {
+                    $name = $permissions[$key];
+                    $parts = explode('.', $name);
+                    $module = $parts[0] ?? 'Unknown';
+                    $action = end($parts) ?? 'Unknown';
+                    
+                    return [
+                        $this->formatKey($key),
+                        $this->formatName($name),
+                        $this->formatModule($module),
+                        $this->formatAction($action)
+                    ];
+                }, $missing)
+            );
+        }
+
+        if (!empty($orphanedPermissions)) {
+            $this->warn("\n🗑️  Orphaned permissions to delete (" . count($orphanedPermissions) . "):");
+            $this->table(
+                ['Key', 'Name', 'ID', 'Status'],
+                array_map(fn($perm) => [
+                    $this->formatKey($perm['key']),
+                    $this->formatName($perm['name']),
+                    substr($perm['id'], 0, 8) . '...',
+                    '<fg=red>Orphaned</>'
+                ], $orphanedPermissions)
+            );
+        }
+
         if (!empty($notFound)) {
-            $this->warn("\n⚠️  Keys not found in database (" . count($notFound) . "):");
-            foreach ($notFound as $key) {
-                $this->line("  - {$key}");
-            }
+            $this->warn("\n⚠️  Keys in config but not found in database (" . count($notFound) . "):");
+            $permissions = config('permissions.permissions');
+            $this->table(
+                ['Key', 'Config Name', 'Status'],
+                array_map(fn($key) => [
+                    $this->formatKey($key),
+                    $this->formatName($permissions[$key] ?? 'Unknown'),
+                    '<fg=yellow>Missing</>'
+                ], $notFound)
+            );
         }
 
         if (!empty($noChanges)) {
             $this->info("\n✅ Keys with no changes needed (" . count($noChanges) . "):");
-            foreach ($noChanges as $key) {
-                $this->line("  - {$key}");
+            $this->table(
+                ['Key', 'Status'],
+                array_map(fn($key) => [
+                    $this->formatKey($key),
+                    '<fg=green>Up to date</>'
+                ], array_slice($noChanges, 0, 10)) // Show only first 10 for brevity
+            );
+            
+            if (count($noChanges) > 10) {
+                $this->line("... and " . (count($noChanges) - 10) . " more");
             }
         }
+    }
 
-        if (!empty($orphanedPermissions)) {
-            $this->warn("\n🗑️  Orphaned permissions found (" . count($orphanedPermissions) . "):");
-            $this->line("   These permissions exist in database but not in config.");
-        }
+    /**
+     * Format permission key for better readability
+     */
+    private function formatKey(string $key): string
+    {
+        // Add color and make it more readable
+        return "<fg=cyan>{$key}</>";
+    }
 
-        if (!empty($missing)) {
-            $this->warn("\n⚠️  Missing permissions found (" . count($missing) . "):");
-            $this->line("   These permissions exist in config but not in database.");
-        }
+    /**
+     * Format permission name for better readability
+     */
+    private function formatName(string $name): string
+    {
+        // Truncate long names and add color
+        $truncated = strlen($name) > 40 ? substr($name, 0, 37) . '...' : $name;
+        return "<fg=yellow>{$truncated}</>";
+    }
+
+    /**
+     * Format module name for better readability
+     */
+    private function formatModule(string $module): string
+    {
+        return "<fg=magenta>" . ucfirst($module) . "</>";
+    }
+
+    /**
+     * Format action name for better readability
+     */
+    private function formatAction(string $action): string
+    {
+        return "<fg=blue>" . ucfirst($action) . "</>";
     }
 
     /**

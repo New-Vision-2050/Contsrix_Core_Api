@@ -23,7 +23,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::put('/{id}/update-login-way', [UserController::class, 'updateLoginWay'])->permission(Permission::USER_UPDATE());
 
     Route::put('/{id}', [UserController::class, 'update'])->permission(Permission::USER_UPDATE());
-    Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser'])->permission(Permission::PERMISSION_ASSIGN());
+    Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser'])->permission(Permission::USER_UPDATE());
 
     Route::delete('/{id}', [UserController::class, 'delete'])->permission(Permission::USER_DELETE());
 });
