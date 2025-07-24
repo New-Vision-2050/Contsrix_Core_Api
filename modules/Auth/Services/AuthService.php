@@ -4,8 +4,9 @@ namespace Modules\Auth\Services;
 
 use App\Exceptions\CustomException;
 use Carbon\Carbon;
-use Faker\Core\Uuid;
+
 use Ichtrojan\Otp\Otp;
+use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Hash;
 use Modules\Auth\Commands\ResendOtpCommand;
 use Modules\Auth\Commands\ResetPasswordCommand;
@@ -55,7 +56,7 @@ class AuthService
         $isContinueWithOTP = $this->settingCRUDService->getValue('continue_with_otp');
         if ($isContinueWithOTP) {
             $user = $this->userRepository->getUserByEmail($authDTO->getEmail());
-            $this->sendOtpEmail->loginWithOtp($user->id);
+            $this->sendOtpEmail->loginWithOtp(Uuid::fromString($user->id));
             return [null, $user];
         }
 
@@ -63,7 +64,7 @@ class AuthService
         if (!$token) {
             throw new \ErrorException(__("validation.invalid-credential"), 403);
         }
-        $user = auth()->user();
+        $user = JWTAuth::user();
         return [$token, $user];
     }
 
@@ -99,7 +100,7 @@ class AuthService
         if ((new Otp)->validate($validateOtpDTO->getIdentifier(), $validateOtpDTO->getOtp())->status == true) {
             $user = $this->userCRUDService->getUserByIdentifier($validateOtpDTO->getIdentifier());
 
-            $token = $this->verficationDataRepository->createToken($user->id, ["can_reset_password" => true])->token;
+            $token = $this->verficationDataRepository->createToken(Uuid::fromString($user->id), ["can_reset_password" => true])->token;
             return $token;
         }
         throw new \ErrorException(__("validation.invalid-otp"), 401);
@@ -109,10 +110,10 @@ class AuthService
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
         $token = $this->verficationDataRepository->findOneBy(["token" => $resetPasswordCommand->getToken()]);
-        if (true || $token && isset($token->data["can_reset_password"]) && $token->data["can_reset_password"] == 1) {
+        if ($token && isset($token->data["can_reset_password"]) && $token->data["can_reset_password"] == 1) {
             $user = $this->userCRUDService->getUserByIdentifier($resetPasswordCommand->getIdentifier());
 
-            $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword()]);
+            $this->userRepository->updateUser(Uuid::fromString($user->id), ["password" => $resetPasswordCommand->getPassword()]);
 
             return $this;
         }
@@ -161,12 +162,14 @@ class AuthService
 
     private function checkOtpByStep($step, $identifier, $otp)
     {
-        if (empty($step)) {
+        if (!property_exists($step, 'login_option')) {
             return true;
         }
+
         if ($step->login_option == "otp") {
             return (new Otp)->validate($identifier, $otp)->status;
         }
+
         return true;
     }
 
@@ -211,7 +214,7 @@ class AuthService
         }
 
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
-        $token = $this->verficationDataRepository->createToken($user->id, ["order" => 1, "login_way" => $loginWay])->token;
+        $token = $this->verficationDataRepository->createToken(Uuid::fromString($user->id), ["order" => 1, "login_way" => $loginWay])->token;
 
 
         return [$loginWay->id, $token, $step, 0, $firstLogin];
@@ -287,7 +290,7 @@ class AuthService
         //get next step
 
         if ($nextStep) {//if we have step
-            $token = $this->verficationDataRepository->createToken($user->id, ["order" => $verficationData->data["order"] + 1, "login_way" => $loginWay])->token;
+            $token = $this->verficationDataRepository->createToken(Uuid::fromString($user->id), ["order" => $verficationData->data["order"] + 1, "login_way" => $loginWay])->token;
 
             $this->sendOtpByStep($nextStep, $loginStepDTO->getIdentifier()); // if step has otp then send otp
 
@@ -316,7 +319,7 @@ class AuthService
                 return [false, null];
             }
         }
-        $verficationData = $this->verficationDataRepository->createToken($user->id, ["change_email" => 1]);
+        $verficationData = $this->verficationDataRepository->createToken(Uuid::fromString($user->id), ["change_email" => 1]);
         return [true, $verficationData->token];
     }
 
