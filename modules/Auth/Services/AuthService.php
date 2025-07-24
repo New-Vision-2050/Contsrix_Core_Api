@@ -161,13 +161,22 @@ class AuthService
 
     private function checkOtpByStep($step, $identifier, $otp)
     {
-        if ($step->login_option == "otp" && (new Otp)->validate($identifier, $otp)->status == false) {
-            throw new \Exception(__("validation.invalid-otp"), 401);
+        if (empty($step)) {
+            return true;
+        }
+        if ($step->login_option == "otp") {
+            return (new Otp)->validate($identifier, $otp)->status;
         }
         return true;
     }
 
-
+    // private function checkOtpByStep($step, $identifier, $otp)
+    // {
+    //     if ($step->login_option == "otp" && (new Otp)->validate($identifier, $otp)->status == false) {
+    //         throw new \Exception(__("validation.invalid-otp"), 401);
+    //     }
+    //     return true;
+    // }
     private function checkPasswordByStep($step, $identifier, $password)
     {
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
