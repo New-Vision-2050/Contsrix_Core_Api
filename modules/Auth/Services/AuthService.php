@@ -161,11 +161,8 @@ class AuthService
 
     private function checkOtpByStep($step, $identifier, $otp)
     {
-        if (empty($step)) {
-            return true;
-        }
-        if ($step->login_option == "otp") {
-            return (new Otp)->validate($identifier, $otp)->status;
+        if ($step->login_option == "otp" && (new Otp)->validate($identifier, $otp)->status == false) {
+            throw new \Exception(__("validation.invalid-otp"), 401);
         }
         return true;
     }
@@ -174,14 +171,6 @@ class AuthService
     private function checkPasswordByStep($step, $identifier, $password)
     {
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
-
-        if ($step === null || !is_object($step) || get_class($step) === 'stdClass') {
-            return false;
-        }
-
-        if (!property_exists($step, 'login_option')) {
-             return false;
-        }
 
         if ($step->login_option == "password" && (!$user || !password_verify($password, $user->password))) {
             throw new \ErrorException(__("validation.invalid-credential"), 401);
@@ -223,8 +212,6 @@ class AuthService
     private function getLoginStepAndNextStepFromToken($token)
     {
         $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $token]);
-        dd($verficationData);
-
         $step = collect($verficationData->data["login_way"]["login_way_steps"])->filter(function ($item) use ($verficationData) {
             return $item['order'] == $verficationData->data["order"];
         })->first();
