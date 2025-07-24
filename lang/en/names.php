@@ -45,6 +45,7 @@ return [
     'program-settings*login-way' => 'Login Method',
     'program-settings*driver' => 'Driver',
     'organization' => 'Organizational Structure',
+    'organization-list' => 'Organizational Structure List ',
     'branch' => 'Branch',
     'organization-list*branch' => 'Branch',
     'management' => 'Management',

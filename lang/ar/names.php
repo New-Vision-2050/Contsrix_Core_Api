@@ -45,6 +45,7 @@ return [
     'login-way' => 'طريقة تسجيل الدخول',
     'driver' => 'سائق',
     'organization' => 'الهيكل التنظيمي',
+    'organization-list' => 'عرض الهيكل التنظيمي',
     'branch' => 'فرع',
     'organization-list*branch' => 'فرع',
     'management' => 'إدارة',
