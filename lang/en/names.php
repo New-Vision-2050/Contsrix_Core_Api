@@ -103,4 +103,5 @@ return [
     'features' => 'Features',
     'department' => 'Department',
     'organization-list*department' => 'Department',
+    "human-resources"=>"Human Resources",
 ];

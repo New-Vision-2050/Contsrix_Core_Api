@@ -60,6 +60,7 @@ return [
     'company-profile*legal-data' => 'البيانات القانونية',
     'company-profile*address' => 'العنوان',
     'company-profile*official-document' => 'وثيقة رسمية',
+    "human-resources"=>"الموارد البشرية",
 
     // User Profile
     'user-profile' => 'الملف الشخصي للمستخدم',
