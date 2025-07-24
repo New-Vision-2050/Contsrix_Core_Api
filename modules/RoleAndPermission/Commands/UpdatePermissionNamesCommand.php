@@ -16,14 +16,15 @@ class UpdatePermissionNamesCommand extends Command
                             {--dry-run : Preview changes without applying them}
                             {--key=* : Update specific keys only}
                             {--force : Force update without confirmation}
-                            {--delete-orphaned : Delete permissions not found in config}';
+                            {--delete-orphaned : Delete permissions not found in config}
+                            {--create-missing : Create permissions that exist in config but not in database}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Update permission names from config by key mappings and optionally delete orphaned permissions';
+    protected $description = 'Update permission names from config by key mappings, create missing permissions, and optionally delete orphaned permissions';
 
     /**
      * Execute the console command.
@@ -57,10 +58,12 @@ class UpdatePermissionNamesCommand extends Command
         $isDryRun = $this->option('dry-run');
         $isForced = $this->option('force');
         $deleteOrphaned = $this->option('delete-orphaned');
+        $createMissing = $this->option('create-missing');
 
         $updates = [];
         $notFound = [];
         $noChanges = [];
+        $missing = [];
 
         // Check what changes need to be made
         foreach ($permissions as $key => $newName) {
@@ -68,6 +71,7 @@ class UpdatePermissionNamesCommand extends Command
             
             if (!$permission) {
                 $notFound[] = $key;
+                $missing[] = $key;
                 continue;
             }
 
@@ -91,9 +95,9 @@ class UpdatePermissionNamesCommand extends Command
         }
 
         // Display summary
-        $this->displaySummary($updates, $notFound, $noChanges, $orphanedPermissions);
+        $this->displaySummary($updates, $notFound, $noChanges, $orphanedPermissions, $missing);
 
-        if (empty($updates) && empty($orphanedPermissions)) {
+        if (empty($updates) && empty($orphanedPermissions) && empty($missing)) {
             $this->info('No updates needed.');
             return self::SUCCESS;
         }
@@ -113,6 +117,24 @@ class UpdatePermissionNamesCommand extends Command
                 $this->applyUpdates($updates);
             } else {
                 $this->warn('DRY RUN: No updates were applied.');
+            }
+        }
+
+        // Handle missing permissions
+        if (!empty($missing) && $createMissing) {
+            // Confirm before proceeding (unless dry-run or forced)
+            if (!$isDryRun && !$isForced) {
+                if (!$this->confirm('Do you want to create these missing permissions?')) {
+                    $this->info('Creation operation cancelled.');
+                    return self::SUCCESS;
+                }
+            }
+
+            // Create missing permissions
+            if (!$isDryRun) {
+                $this->createMissingPermissions($missing, $permissions);
+            } else {
+                $this->warn('DRY RUN: No missing permissions were created.');
             }
         }
 
@@ -198,9 +220,37 @@ class UpdatePermissionNamesCommand extends Command
     }
 
     /**
+     * Create missing permissions
+     */
+    private function createMissingPermissions(array $missing, array $permissions): void
+    {
+        $this->info("\n🔄 Creating missing permissions...");
+        
+        $created = 0;
+        $failed = 0;
+
+        foreach ($missing as $key) {
+            try {
+                Permission::create(['key' => $key, 'name' => $permissions[$key]]);
+                $this->line("✅ Created {$key}: {$permissions[$key]}");
+                $created++;
+            } catch (\Exception $e) {
+                $this->error("❌ Failed to create {$key}: " . $e->getMessage());
+                $failed++;
+            }
+        }
+
+        $this->info("\n📊 Creation Summary:");
+        $this->info("✅ Created: {$created}");
+        if ($failed > 0) {
+            $this->error("❌ Failed: {$failed}");
+        }
+    }
+
+    /**
      * Display summary of changes to be made
      */
-    private function displaySummary(array $updates, array $notFound, array $noChanges, array $orphanedPermissions = []): void
+    private function displaySummary(array $updates, array $notFound, array $noChanges, array $orphanedPermissions = [], array $missing = []): void
     {
         if (!empty($updates)) {
             $this->info("\n📝 Permissions to update (" . count($updates) . "):");
@@ -231,6 +281,11 @@ class UpdatePermissionNamesCommand extends Command
         if (!empty($orphanedPermissions)) {
             $this->warn("\n🗑️  Orphaned permissions found (" . count($orphanedPermissions) . "):");
             $this->line("   These permissions exist in database but not in config.");
+        }
+
+        if (!empty($missing)) {
+            $this->warn("\n⚠️  Missing permissions found (" . count($missing) . "):");
+            $this->line("   These permissions exist in config but not in database.");
         }
     }
 

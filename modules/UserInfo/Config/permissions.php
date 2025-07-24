@@ -60,5 +60,53 @@ return [
         'PROFILE_WORK_LICENSE_VIEW' => 'settings.user-profile*work-license.view',
         'PROFILE_WORK_LICENSE_CREATE' => 'settings.user-profile*work-license.create',
         'PROFILE_WORK_LICENSE_UPDATE' => 'settings.user-profile*work-license.update',
+
+
+
+
+
+
+        'PROFILE_ADDRESS_INFO_VIEW' => 'settings.user-profile*address-information.view',
+        'PROFILE_ADDRESS_INFO_UPDATE' => 'settings.user-profile*address-information.update',
+        'PROFILE_MARITAL_STATUS_VIEW' => 'settings.user-profile*marital-status.view',
+        'PROFILE_MARITAL_STATUS_CREATE' => 'settings.user-profile*marital-status.create',
+        'PROFILE_MARITAL_STATUS_UPDATE' => 'settings.user-profile*marital-status.update',
+        'PROFILE_MARITAL_STATUS_DELETE' => 'settings.user-profile*marital-status.delete',
+        'PROFILE_SOCIAL_MEDIA_VIEW' => 'settings.user-profile*social-media-account.view',
+        'PROFILE_SOCIAL_MEDIA_UPDATE' => 'settings.user-profile*social-media-account.update',
+        'PROFILE_BORDER_NUMBER_VIEW' => 'settings.user-profile*border-number-information.view',
+        'PROFILE_BORDER_NUMBER_UPDATE' => 'settings.user-profile*border-number-information.update',
+        'PROFILE_RESIDENCE_INFO_VIEW' => 'settings.user-profile*residence-information.view',
+        'PROFILE_RESIDENCE_INFO_UPDATE' => 'settings.user-profile*residence-information.update',
+        'PROFILE_ABOUT_ME_VIEW' => 'settings.user-profile*about-me-information.view',
+        'PROFILE_ABOUT_ME_UPDATE' => 'settings.user-profile*about-me-information.update',
+        'PROFILE_CV_VIEW' => 'settings.user-profile*cv.view',
+        'PROFILE_CV_UPDATE' => 'settings.user-profile*cv.update',
+        'PROFILE_JOB_OFFER_VIEW' => 'settings.user-profile*job-offer.view',
+        'PROFILE_JOB_OFFER_UPDATE' => 'settings.user-profile*job-offer.update',
+        'PROFILE_CONTRACT_WORK_VIEW' => 'settings.user-profile*contract-work.view',
+        'PROFILE_CONTRACT_WORK_UPDATE' => 'settings.user-profile*contract-work.update',
+        'PROFILE_EMPLOYMENT_INFO_VIEW' => 'settings.user-profile*employment-information.view',
+        'PROFILE_EMPLOYMENT_INFO_UPDATE' => 'settings.user-profile*employment-information.update',
+        'PROFILE_SALARY_INFO_VIEW' => 'settings.user-profile*salary-information.view',
+        'PROFILE_SALARY_INFO_UPDATE' => 'settings.user-profile*salary-information.update',
+        'PROFILE_QUALIFICATION_VIEW' => 'settings.user-profile*qualification.view',
+        'PROFILE_QUALIFICATION_CREATE' => 'settings.user-profile*qualification.create',
+        'PROFILE_QUALIFICATION_UPDATE' => 'settings.user-profile*qualification.update',
+        'PROFILE_QUALIFICATION_DELETE' => 'settings.user-profile*qualification.delete',
+
+        'PROFILE_CERTIFICATES_VIEW' => 'settings.user-profile*certificates.view',
+        'PROFILE_CERTIFICATES_CREATE' => 'settings.user-profile*certificates.create',
+        'PROFILE_CERTIFICATES_UPDATE' => 'settings.user-profile*certificates.update',
+        'PROFILE_CERTIFICATES_DELETE' => 'settings.user-profile*certificates.delete',
+
+
+        'PROFILE_PRIVILEGES_VIEW' => 'settings.user-profile*privileges.view',
+        'PROFILE_PRIVILEGES_CREATE' => 'settings.user-profile*privileges.create',
+        'PROFILE_PRIVILEGES_UPDATE' => 'settings.user-profile*privileges.update',
+        'PROFILE_PRIVILEGES_DELETE' => 'settings.user-profile*privileges.delete',
+
+
+
     ]
 ];
