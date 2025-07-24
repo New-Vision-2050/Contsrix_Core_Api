@@ -58,20 +58,23 @@ class LocationTrackingService
     public function getTodaysActiveAttendance(array $filters = [])
     {
         // Get the start and end of the current day based on the app's timezone.
-        $startOfDay = Carbon::now()->startOfDay();
-        $endOfDay = Carbon::now()->endOfDay();
+    $startOfDay = now()->startOfDay();
+    $endOfDay = now()->endOfDay();
 
-        $query = Attendance::query()
-            ->with(['user.branch', 'company'])
-            ->where('status', Attendance::STATUS_ACTIVE)
-            ->whereBetween('clock_in_time', [$startOfDay, $endOfDay]);
+    $subQuery = Attendance::whereBetween('clock_in_time', [$startOfDay, $endOfDay])
+        ->select('user_id', \DB::raw('MAX(clock_in_time) as latest_clock_in'))
+        ->groupBy('user_id');
 
-        if (!empty($filters['branch_id'])) {
-            $query->whereHas('user.branch', function ($q) use ($filters) {
-                $q->where('id', $filters['branch_id']);
-            });
-        }
-
-        return $query->get();
+    return Attendance::joinSub($subQuery, 'latest_attendance', function ($join) {
+            $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
+                 ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
+        })
+        ->with(['user', 'company'])
+        ->get();
     }
+
+    public function getTodayLastAttendancePerUser()
+{
+
+}
 }

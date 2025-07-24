@@ -34,7 +34,12 @@ class LiveTrackingPresenter extends AbstractPresenter
                 'longitude' => (float) $latestPoint['longitude'],
                 'timestamp' => $latestPoint['timestamp'],
                 'accuracy'  => (float) $latestPoint['accuracy'],
-            ] : null,
+            ] : [
+                'latitude'  => $this->attendance->clock_in_location['latitude'],
+                'longitude' => $this->attendance->clock_in_location['longitude'],
+                'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
+                 'accuracy'  => 10,
+            ],
 
             'tracking_path' => array_map(function ($point) {
                 return [

@@ -10,7 +10,7 @@ class AttendanceFilter extends SearchModelFilter
 {
     public $relations = ['user', 'company'];
 
-    public function userId($userId)
+    public function user($userId)
     {
         return $this->where('user_id', $userId);
     }
