@@ -5,22 +5,22 @@ return [
         // ================================================================================================
         // ROLE AND PERMISSION MODULE PERMISSIONS
         // ================================================================================================
-        
+
         // Role Management
-        'ROLE_LIST' => 'settings.role.list',
-        'ROLE_VIEW' => 'settings.role.view',
-        'ROLE_CREATE' => 'settings.role.create',
-        'ROLE_UPDATE' => 'settings.role.update',
-        'ROLE_DELETE' => 'settings.role.delete',
-        'ROLE_ACTIVATE' => 'settings.role.activate',
+        'ROLE_LIST' => 'settings.roles.list',
+        'ROLE_VIEW' => 'settings.roles.view',
+        'ROLE_CREATE' => 'settings.roles.create',
+        'ROLE_UPDATE' => 'settings.roles.update',
+        'ROLE_DELETE' => 'settings.roles.delete',
+        'ROLE_ACTIVATE' => 'settings.roles.activate',
 
         // Permission Management
-        'PERMISSION_LIST' => 'settings.permission.list',
-        'PERMISSION_CREATE' => 'settings.permission.create',
-        'PERMISSION_UPDATE' => 'settings.permission.update',
-        'PERMISSION_DELETE' => 'settings.permission.delete',
-        'PERMISSION_ACTIVATE' => 'settings.permission.activate',
-        'PERMISSION_VIEW' => 'settings.permission.view',
-        'PERMISSION_ASSIGN' => 'settings.permission.update',
+        'PERMISSION_LIST' => 'settings.permissions.list',
+        'PERMISSION_CREATE' => 'settings.permissions.create',
+        'PERMISSION_UPDATE' => 'settings.permissions.update',
+        'PERMISSION_DELETE' => 'settings.permissions.delete',
+        'PERMISSION_ACTIVATE' => 'settings.permissions.activate',
+        'PERMISSION_VIEW' => 'settings.permissions.view',
+        'PERMISSION_ASSIGN' => 'settings.permissions.update',
     ]
 ];

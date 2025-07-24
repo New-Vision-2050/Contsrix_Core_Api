@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\RoleAndPermission\Commands\SyncCompanyPermissionsCommand;
 use Modules\RoleAndPermission\Commands\ManageModulePermissionsCommand;
+use Modules\RoleAndPermission\Commands\UpdatePermissionNamesCommand;
 use Modules\RoleAndPermission\Services\PermissionConfigService;
 
 class RoleAndPermissionServiceProvider extends ModuleServiceProvider
@@ -20,6 +21,7 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
     protected array $commands = [
         SyncCompanyPermissionsCommand::class,
         ManageModulePermissionsCommand::class,
+        UpdatePermissionNamesCommand::class,
     ];
 
     public static function getModuleName(): string

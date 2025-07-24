@@ -10,6 +10,49 @@ use Illuminate\Support\Collection;
 class PermissionHierarchyService
 {
     /**
+     * Array of program slugs to exclude from preview
+     *
+     * @var array
+     */
+    private $excludedPrograms = [
+        // Add program slugs you want to exclude from preview
+        // Example: 'system', 'admin', 'internal'
+    ];
+
+    /**
+     * Set programs to exclude from preview
+     *
+     * @param array $programs
+     * @return self
+     */
+    public function excludePrograms(array $programs): self
+    {
+        $this->excludedPrograms = array_merge($this->excludedPrograms, $programs);
+        return $this;
+    }
+
+    /**
+     * Get programs to exclude from preview
+     *
+     * @return array
+     */
+    public function getExcludedPrograms(): array
+    {
+        return $this->excludedPrograms;
+    }
+
+    /**
+     * Check if a program should be excluded from preview
+     *
+     * @param string $programSlug
+     * @return bool
+     */
+    private function shouldExcludeProgram(string $programSlug): bool
+    {
+        return in_array($programSlug, $this->excludedPrograms);
+    }
+
+    /**
      * Get permissions parsed from permission names following program.subEntity.action pattern
      *
      * @return array
@@ -25,6 +68,11 @@ class PermissionHierarchyService
         $result = [];
 
         foreach ($groupedPermissions as $programSlug => $subEntityGroups) {
+            // Skip excluded programs
+            if ($this->shouldExcludeProgram($programSlug)) {
+                continue;
+            }
+
             // Create program structure from permission name
             $programData = [
                 'id' => $programSlug,
@@ -73,6 +121,10 @@ class PermissionHierarchyService
             if (count($parts) >= 3) {
                 $program = $parts[0];
                 $subEntity = $parts[1];
+                if(str_contains($subEntity , "*"))
+                {
+                    $subEntity=explode('*', $parts[1])[0];
+                }
                 $action = $parts[2];
 
                 if (!isset($grouped[$program])) {
@@ -128,6 +180,11 @@ class PermissionHierarchyService
         $result = [];
 
         foreach ($groupedPermissions as $programSlug => $subEntityGroups) {
+            // Skip excluded programs
+            if ($this->shouldExcludeProgram($programSlug)) {
+                continue;
+            }
+
             $programData = [
                 'id' => $programSlug,
                 'name' => $this->getTranslatedName($programSlug),
