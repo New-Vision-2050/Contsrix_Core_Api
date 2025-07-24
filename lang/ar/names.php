@@ -51,6 +51,9 @@ return [
     'organization-list*management' => 'إدارة',
     'job-title' => 'المسمى الوظيفي',
     'job-type' => 'نوع الوظيفة',
+
+    'organization-list*job-title' => 'المسمى الوظيفي',
+    'organization-list*job-type' => 'نوع الوظيفة',
     'company-profile' => 'ملف الشركة',
     'company-profile*official-data' => 'البيانات الرسمية',
     'company-profile*legal-data' => 'البيانات القانونية',
