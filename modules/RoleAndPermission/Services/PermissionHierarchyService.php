@@ -121,9 +121,13 @@ class PermissionHierarchyService
             if (count($parts) >= 3) {
                 $program = $parts[0];
                 $subEntity = $parts[1];
-                if(str_contains($subEntity , "*"))
-                {
-                    $subEntity=explode('*', $parts[1])[0];
+                if (str_contains($subEntity, "*")) {
+                    $resources = explode('*', $parts[1]);
+                    $subEntity = $resources[0];
+                    if (uuid_is_valid($resources[1])) {
+                        $subEntity = $parts[1];
+                    }
+
                 }
                 $action = $parts[2];
 
@@ -156,12 +160,27 @@ class PermissionHierarchyService
         if (count($nameParts) >= 2) {
             // Skip the first part (module name) and translate the rest
             for ($i = count($nameParts) - 1; $i >= 1; $i--) {
+                if ($i == 1 && str_contains($nameParts[$i], "*")) {
+                    $resources = explode('*', $nameParts[$i]);
+                    $translatedName .= $resources[0];
+                    continue;
+                }
                 $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
             }
         } elseif (count($nameParts) == 1) {
-            $translatedName = __('names.' . $nameParts[0]);
+            $translatedName = __('names.' . $name);
+
+            if (str_contains($name, "*")) {
+                $translatedName =explode("*",$nameParts[0])[0];
+
+            }
         } else {
             $translatedName = __('names.' . $name);
+
+            if (str_contains($name, "*")) {
+                $resources = explode('*', $name);
+                $translatedName = $resources[0];
+            }
         }
 
         return $translatedName;
