@@ -25,6 +25,8 @@ return [
     'activate' => 'تفعيل',
     'login-as-admin' => 'تسجيل الدخول كمسؤول',
     'request-update' => 'طلب تحديث',
+    "companies-list" => "عرض الشركات",
+    "users-list" => "عرض المستخدمين",
 
     // Module specific names
     'user' => 'مستخدم',
@@ -47,38 +49,49 @@ return [
     'job-title' => 'المسمى الوظيفي',
     'job-type' => 'نوع الوظيفة',
     'company-profile' => 'ملف الشركة',
-    'official-data' => 'البيانات الرسمية',
-    'legal-data' => 'البيانات القانونية',
-    'address' => 'العنوان',
-    'official-document' => 'وثيقة رسمية',
+    'company-profile*official-data' => 'البيانات الرسمية',
+    'company-profile*legal-data' => 'البيانات القانونية',
+    'company-profile*address' => 'العنوان',
+    'company-profile*official-document' => 'وثيقة رسمية',
 
     // User Profile
     'user-profile' => 'الملف الشخصي للمستخدم',
-    'personal-information' => 'المعلومات الشخصية',
-    'contact-information' => 'معلومات الاتصال',
-    'passport-information' => 'معلومات جواز السفر',
-    'bank-information' => 'المعلومات البنكية',
-    'address-information' => 'معلومات العنوان',
-    'marital-status' => 'الحالة الاجتماعية',
-    'social-media-account' => 'حسابات التواصل الاجتماعي',
-    'border-number-information' => 'معلومات رقم الحدود',
-    'residence-information' => 'معلومات الإقامة',
-    'about-me-information' => 'معلومات عني',
-    'cv' => 'السيرة الذاتية',
-    'job-offer' => 'عرض عمل',
-    'contract-work' => 'عقد عمل',
-    'employment-information' => 'معلومات التوظيف',
-    'salary-information' => 'معلومات الراتب',
-    'qualification' => 'مؤهل',
-    'experience' => 'خبرة',
-    'courses' => 'دورات',
-    'certificates' => 'شهادات',
-    'work-license' => 'رخصة العمل',
+    'user-profile*personal-information' => 'المعلومات الشخصية',
+    'user-profile*contact-information' => 'معلومات الاتصال',
+    'user-profile*passport-information' => 'معلومات جواز السفر',
+    'user-profile*bank-information' => 'المعلومات البنكية',
+    'user-profile*address-information' => 'معلومات العنوان',
+    'user-profile*marital-status' => 'الحالة الاجتماعية',
+    'user-profile*social-media-account' => 'حسابات التواصل الاجتماعي',
+    'user-profile*border-number-information' => 'معلومات رقم الحدود',
+    'user-profile*residence-information' => 'معلومات الإقامة',
+    'user-profile*about-me-information' => 'معلومات عني',
+    'user-profile*cv' => 'السيرة الذاتية',
+    'user-profile*job-offer' => 'عرض عمل',
+    'user-profile*contract-work' => 'عقد عمل',
+    'user-profile*employment-information' => 'معلومات التوظيف',
+    'user-profile*salary-information' => 'معلومات الراتب',
+    'user-profile*qualification' => 'مؤهل',
+    'user-profile*experience' => 'خبرة',
+    'user-profile*courses' => 'دورات',
+    'user-profile*certificates' => 'شهادات',
+    'user-profile*work-license' => 'رخصة العمل',
+    'user-profile*family-information' => 'معلومات العائلة',
+
+
+
+    "program-settings"=>"اعدادات البرامج",
 
     // Geographic Data
     'country' => 'دولة',
     'state' => 'ولاية',
     'city' => 'مدينة',
+
+
+    // Geographic Data
+    'settings.program-settings*country' => 'دولة',
+    'settings.program-settings*state' => 'ولاية',
+    'settings.program-settings*city' => 'مدينة',
 
     // User Profile generic
     'data' => 'بيانات',

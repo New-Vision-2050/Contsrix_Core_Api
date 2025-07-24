@@ -57,6 +57,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/{id}/assign-role-for-current-company', [CompanyUserController::class, 'assignRoleForCurrentCompany']);
     Route::delete('/{id}', [CompanyUserController::class, 'delete'])->permission(Permission::USER_DELETE());
     Route::delete('/{id}/specific-role', [CompanyUserController::class, 'deleteForSpecificRole']);
-    Route::post('/export', [UserController::class, 'export'])->permission(Permission::USER_EXPORT(), Permission::CLIENT_EXPORT(), Permission::BROKER_EXPORT(), Permission::EMPLOYEE_EXPORT())->name("users.export");
+    Route::post('/export', [UserController::class, 'export'])->permission(Permission::USER_EXPORT())->name("users.export");
 
 });
