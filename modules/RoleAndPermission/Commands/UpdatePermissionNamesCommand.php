@@ -64,16 +64,25 @@ class UpdatePermissionNamesCommand extends Command
         $notFound = [];
         $noChanges = [];
         $missing = [];
+        $duplicates = [];
 
         // Check what changes need to be made
         foreach ($permissions as $key => $newName) {
-            $permission = Permission::where('key', $key)->first();
+            $permissionsWithKey = Permission::where('key', $key)->get();
             
-            if (!$permission) {
+            if ($permissionsWithKey->isEmpty()) {
                 $notFound[] = $key;
                 $missing[] = $key;
                 continue;
             }
+
+            // Check for duplicates
+            if ($permissionsWithKey->count() > 1) {
+                $duplicates[$key] = $permissionsWithKey->toArray();
+                continue; // Skip updates for duplicates until cleaned
+            }
+
+            $permission = $permissionsWithKey->first();
 
             if ($permission->name === $newName) {
                 $noChanges[] = $key;
@@ -95,9 +104,9 @@ class UpdatePermissionNamesCommand extends Command
         }
 
         // Display summary
-        $this->displaySummary($updates, $notFound, $noChanges, $orphanedPermissions, $missing);
+        $this->displaySummary($updates, $notFound, $noChanges, $orphanedPermissions, $missing, $duplicates);
 
-        if (empty($updates) && empty($orphanedPermissions) && empty($missing)) {
+        if (empty($updates) && empty($orphanedPermissions) && empty($missing) && empty($duplicates)) {
             $this->info('No updates needed.');
             return self::SUCCESS;
         }
@@ -138,6 +147,11 @@ class UpdatePermissionNamesCommand extends Command
         // Handle orphaned permissions
         if (!empty($orphanedPermissions)) {
             $this->handleOrphanedPermissions($orphanedPermissions, $isDryRun, $isForced);
+        }
+
+        // Handle duplicate permissions
+        if (!empty($duplicates)) {
+            $this->handleDuplicatePermissions($duplicates, $isDryRun, $isForced);
         }
 
         return self::SUCCESS;
@@ -303,9 +317,87 @@ class UpdatePermissionNamesCommand extends Command
     }
 
     /**
+     * Handle duplicate permissions
+     */
+    private function handleDuplicatePermissions(array $duplicates, bool $isDryRun, bool $isForced): void
+    {
+        if (empty($duplicates)) {
+            return;
+        }
+
+        $this->warn("\n🚨  Found " . count($duplicates) . " duplicate permissions:");
+        foreach ($duplicates as $key => $permissions) {
+            $this->line("  Key: {$key}");
+            $this->table(
+                ['ID', 'Name'],
+                array_map(fn($perm) => [
+                    $perm['id'],
+                    $perm['name']
+                ], $permissions)
+            );
+        }
+
+        if (!$isDryRun && !$isForced) {
+            if ($this->confirm('Do you want to delete these duplicate permissions from the database?')) {
+                $this->deleteDuplicatePermissions($duplicates);
+            } else {
+                $this->info('Deletion cancelled. Duplicate permissions remain in database.');
+            }
+        } elseif (!$isDryRun && $isForced) {
+            $this->deleteDuplicatePermissions($duplicates);
+        } else {
+            $this->warn('DRY RUN: Duplicate permissions would be deleted if confirmed.');
+        }
+    }
+
+    /**
+     * Delete duplicate permissions from database and create correct one from config
+     */
+    private function deleteDuplicatePermissions(array $duplicates): void
+    {
+        $this->info("\n🗑️  Cleaning up duplicate permissions...");
+        
+        $permissions = config('permissions.permissions');
+        $deleted = 0;
+        $created = 0;
+        $failed = 0;
+
+        foreach ($duplicates as $key => $permissionsList) {
+            try {
+                // Delete all duplicates for this key
+                foreach ($permissionsList as $permission) {
+                    Permission::where('id', $permission['id'])->delete();
+                    $this->line("🗑️  Deleted duplicate {$key}: {$permission['name']}");
+                    $deleted++;
+                }
+
+                // Create one correct permission from config
+                if (isset($permissions[$key])) {
+                    Permission::create(['key' => $key, 'name' => $permissions[$key]]);
+                    $this->line("✅ Created correct {$key}: {$permissions[$key]}");
+                    $created++;
+                } else {
+                    $this->warn("⚠️  No config found for key {$key}, only deleted duplicates");
+                }
+
+            } catch (\Exception $e) {
+                $this->error("❌ Failed to process {$key}: " . $e->getMessage());
+                $failed++;
+            }
+        }
+
+        $this->info("\n📊 Cleanup Summary:");
+        $this->info("🗑️  Deleted: {$deleted}");
+        $this->info("✅ Created: {$created}");
+        if ($failed > 0) {
+            $this->error("❌ Failed: {$failed}");
+        }
+    }
+
+    /**
      * Display summary of changes to be made
      */
-    private function displaySummary(array $updates, array $notFound, array $noChanges, array $orphanedPermissions = [], array $missing = []): void
+    private function displaySummary(array $updates, array $notFound, array $noChanges, array $orphanedPermissions = [], array $missing = [], array $duplicates = []): void
     {
         if (!empty($updates)) {
             $this->info("\n📝 Permissions to update (" . count($updates) . "):");
@@ -351,6 +443,21 @@ class UpdatePermissionNamesCommand extends Command
                     '<fg=red>Orphaned</>'
                 ], $orphanedPermissions)
             );
+        }
+
+        if (!empty($duplicates)) {
+            $this->warn("\n🚨  Duplicate permissions to delete (" . count($duplicates) . "):");
+            foreach ($duplicates as $key => $permissions) {
+                $this->line("  Key: {$key}");
+                $this->table(
+                    ['ID', 'Name', 'Status'],
+                    array_map(fn($perm) => [
+                        $perm['id'],
+                        $perm['name'],
+                        '<fg=red>Duplicate</>'
+                    ], $permissions)
+                );
+            }
         }
 
         if (!empty($notFound)) {
