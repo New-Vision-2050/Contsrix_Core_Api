@@ -31,6 +31,7 @@ return [
     // Module specific names
     'user' => 'User',
     'users' => 'Users',
+    'organization-list*users' => 'Users',
     'client' => 'Client',
     'broker' => 'Broker',
     'employee' => 'Employee',
@@ -43,9 +44,11 @@ return [
     'program-settings*identifier' => 'Identifier',
     'program-settings*login-way' => 'Login Method',
     'program-settings*driver' => 'Driver',
-    'organization' => 'Organization',
+    'organization' => 'Organizational Structure',
     'branch' => 'Branch',
+    'organization-list*branch' => 'Branch',
     'management' => 'Management',
+    'organization-list*management' => 'Management',
     'job-title' => 'Job Title',
     'job-type' => 'Job Type',
     'company-profile' => 'Company Profile',
@@ -98,4 +101,5 @@ return [
     'modules' => 'Modules',
     'features' => 'Features',
     'department' => 'Department',
+    'organization-list*department' => 'Department',
 ];

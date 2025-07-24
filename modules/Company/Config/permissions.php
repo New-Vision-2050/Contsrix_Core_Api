@@ -49,26 +49,26 @@ return [
         // ================================================================================================
 
         // Branch Management
-        'ORGANIZATION_BRANCH_VIEW' => 'organization.branch.view',
-        'ORGANIZATION_BRANCH_CREATE' => 'organization.branch.create',
-        'ORGANIZATION_BRANCH_UPDATE' => 'organization.branch.update',
-        'ORGANIZATION_BRANCH_DELETE' => 'organization.branch.delete',
+        'ORGANIZATION_BRANCH_VIEW' => 'organization.organization-list*branch.view',
+        'ORGANIZATION_BRANCH_CREATE' => 'organization.organization-list*branch.create',
+        'ORGANIZATION_BRANCH_UPDATE' => 'organization.organization-list*branch.update',
+        'ORGANIZATION_BRANCH_DELETE' => 'organization.organization-list*branch.delete',
 
         // Management Hierarchy
-        'ORGANIZATION_MANAGEMENT_VIEW' => 'organization.management.view',
-        'ORGANIZATION_MANAGEMENT_EXPORT' => 'organization.management.export',
-        'ORGANIZATION_MANAGEMENT_CREATE' => 'organization.management.create',
-        'ORGANIZATION_MANAGEMENT_UPDATE' => 'organization.management.update',
-        'ORGANIZATION_MANAGEMENT_DELETE' => 'organization.management.delete',
+        'ORGANIZATION_MANAGEMENT_VIEW' => 'organization.organization-list*management.view',
+        'ORGANIZATION_MANAGEMENT_EXPORT' => 'organization.organization-list*management.export',
+        'ORGANIZATION_MANAGEMENT_CREATE' => 'organization.organization-list*management.create',
+        'ORGANIZATION_MANAGEMENT_UPDATE' => 'organization.organization-list*management.update',
+        'ORGANIZATION_MANAGEMENT_DELETE' => 'organization.organization-list*management.delete',
 
         // Department Management
-        'ORGANIZATION_DEPARTMENT_VIEW' => 'organization.department.view',
-        'ORGANIZATION_DEPARTMENT_EXPORT' => 'organization.department.export',
-        'ORGANIZATION_DEPARTMENT_CREATE' => 'organization.department.create',
-        'ORGANIZATION_DEPARTMENT_UPDATE' => 'organization.department.update',
-        'ORGANIZATION_DEPARTMENT_DELETE' => 'organization.department.delete',
+        'ORGANIZATION_DEPARTMENT_VIEW' => 'organization.organization-list*department.view',
+        'ORGANIZATION_DEPARTMENT_EXPORT' => 'organization.organization-list*department.export',
+        'ORGANIZATION_DEPARTMENT_CREATE' => 'organization.organization-list*department.create',
+        'ORGANIZATION_DEPARTMENT_UPDATE' => 'organization.organization-list*department.update',
+        'ORGANIZATION_DEPARTMENT_DELETE' => 'organization.organization-list*department.delete',
 
         // Organization Users
-        'ORGANIZATION_USERS_VIEW' => 'organization.users.view',
+        'ORGANIZATION_USERS_VIEW' => 'organization.organization-list*users.view',
     ]
 ];
