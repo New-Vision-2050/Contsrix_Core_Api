@@ -19,12 +19,14 @@ use Modules\Attendance\Requests\GetAttendanceRequest;
 use Modules\Attendance\Requests\UpdateAttendanceRequest;
 use Modules\Attendance\Requests\FilterAttendanceRequest;
 use Modules\Attendance\Presenters\AttendancePresenter;
+use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 use Modules\Attendance\Presenters\AttendanceBreakPresenter;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Requests\AttendanceRequest;
 use Modules\Attendance\Requests\BreakRequest;
 use Modules\Attendance\Services\MockAttendanceService;
 use Ramsey\Uuid\Uuid;
+use Modules\Attendance\Models\Attendance;
 class AttendanceController extends Controller
 {
     public function __construct(
@@ -295,13 +297,13 @@ class AttendanceController extends Controller
         $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
 
         $list = $this->attendanceService->getTeamAttendance(
-Auth::id()->toString(),
+            Auth::id()->toString(),
             $filterDTO->toArray(),
-           (int) $request->input('page', 1),
-           (int) $request->input('per_page', 10)
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10)
         );
 
-        return Json::items(AttendancePresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        return Json::items(AttendanceTeamPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
     public function teamAttendance(AttendanceRequest $request)//: JsonResponse
     {

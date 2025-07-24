@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Services;
 
+use BasePackage\Shared\Services\AbstractService;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceBreak;
+use Modules\Attendance\Presenters\AttendancePresenter;
 use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\DTO\ClockOutDTO;
+use Modules\Attendance\DTO\BreakDTO;
 use Modules\User\Models\User;
+use Modules\User\Models\CompanyUser;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
@@ -391,12 +397,122 @@ class AttendanceService
 
     /**
      * Get team attendance with filtering and pagination (for supervisors)
+     * Shows all users for a specific day, including those not in the attendance table
+     * Users not in the attendance table are marked as absent/on vacation by default
+     * Groups multiple attendance periods per user per day into a single row
      */
-    public function getTeamAttendance(string $supervisorId, array $filters, ?int $page = 1, ?int $perPage = 10): array
+    public function getTeamAttendance(string $requestingUserId, array $filters, ?int $page = 1, ?int $perPage = 10): array
     {
-        // Add supervisor's team filter logic here if needed
-        // For now, just use the filters as provided
-        return $this->attendanceRepository->getAttendanceHistory($filters, $page, $perPage);
+        $companyId = $filters['company_id'] ?? null;
+        $date = isset($filters['date']) ? Carbon::parse($filters['date']) : Carbon::today();
+        if (!$companyId) {
+            // Handle error: company_id is required for team attendance
+            throw new \InvalidArgumentException('Company ID is required for team attendance.');
+        }
+        
+        // 1. Get all users relevant to the filters
+        $allRelevantUsers = User::where('company_id', $companyId)
+            ->with([
+                'companyUser',
+                'companyUser.country',
+                'professionalData',
+                'professionalData.branch',
+                'professionalData.management',
+                'professionalData.department',
+                'professionalData.jobType',
+                'professionalData.jobTitle',
+                'professionalData.attendanceConstraint',
+            ])
+            ->get();
+        $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
+     
+        // 2. Fetch all REAL attendance records for these users on the specified date
+        // Eager load necessary relations for presenting
+        $realAttendanceRecords = Attendance::query()
+            ->with([
+                'user',
+                'user.companyUser',
+                'user.companyUser.country',
+                'user.professionalData',
+                'user.professionalData.branch',
+                'user.professionalData.management',
+                'user.professionalData.department',
+                'user.professionalData.jobType',
+                'user.professionalData.jobTitle',
+                'user.professionalData.attendanceConstraint',
+                'breaks',
+                'company',
+            ])
+            ->whereIn('user_id', $allRelevantUserIds)
+            ->whereDate('clock_in_time', $date)
+            ->orderBy('clock_in_time')
+            ->get();
+            
+        // 3. Group real attendance records by user_id
+        $usersWithRealAttendance = $realAttendanceRecords->pluck('user_id')->unique()->toArray();
+        $finalAttendanceList = new Collection();
+        
+        // Group attendance records by user_id
+        $groupedAttendance = $realAttendanceRecords->groupBy('user_id');
+        
+        // Process each user's attendance records
+        foreach ($groupedAttendance as $userId => $userRecords) {
+            $primaryRecord = $userRecords->first();
+
+            $finalAttendanceList->push($primaryRecord);
+        }
+
+        $usersNeedingSyntheticRecords = $allRelevantUsers->filter(function ($user) use ($usersWithRealAttendance) {
+            return !in_array($user->id, $usersWithRealAttendance);
+        });
+        foreach ($usersNeedingSyntheticRecords as $user) {
+            $syntheticAttendance = new Attendance([
+                'user_id' => $user->id,
+                'company_id' => $companyId,
+                'status' => 'absent',
+                'is_holiday' => false,
+                'is_absent' => true,
+                'id' => Uuid::uuid4(),
+                'is_late' => false, 
+                'timezone' => config('app.timezone'),
+                'clock_in_time' => $date->copy()->startOfDay(),
+            ]);
+            
+            $syntheticAttendance->setRelation('user', $user);
+            $syntheticAttendance->attendance_periods = [];
+
+            $finalAttendanceList->push($syntheticAttendance);
+        }
+
+        // 6. Sort the final list by user name
+        $finalAttendanceList = $finalAttendanceList->sortBy(function ($record) {
+            return $record->user->name;
+        })->values();
+
+        // 7. Manual Pagination
+        $totalItems = $finalAttendanceList->count();
+        $offset = ($page - 1) * $perPage;
+        $paginatedItems = $finalAttendanceList->slice($offset, $perPage)->values();
+
+        $manualPaginator = new LengthAwarePaginator(
+            $paginatedItems,
+            $totalItems,
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()]
+        );
+
+        return [
+            'data' => $manualPaginator->items(),
+            'pagination' => [
+                'total' => $manualPaginator->total(),
+                'per_page' => $manualPaginator->perPage(),
+                'current_page' => $manualPaginator->currentPage(),
+                'last_page' => $manualPaginator->lastPage(),
+                'from' => $manualPaginator->firstItem(),
+                'to' => $manualPaginator->lastItem(),
+            ],
+        ];
     }
 
     /**
