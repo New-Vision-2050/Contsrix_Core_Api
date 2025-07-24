@@ -56,6 +56,11 @@ class PermissionCRUDService
             if (count($nameParts) >= 2) {
                 // Skip the first part (module name) and translate the rest
                 for ($i = count($nameParts) - 1; $i >= 1; $i--) {
+                    if ($i == 1 && str_contains($nameParts[$i], "*")) {
+                        $resources = explode('*', $nameParts[$i]);
+                        $translatedName .=" ". $resources[0];
+                        break;
+                    }
                     $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
                 }
             } elseif (count($nameParts) == 1) {
@@ -82,6 +87,10 @@ class PermissionCRUDService
         $nestedGroups = $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
                 $parts = explode('.', $item["key"]);
+                if(str_contains($parts[1],"*"))
+                {
+                    return explode("*",$parts[1])[0];
+                }
                 return isset($parts[1]) ? __('names.' . $parts[1]) : 'other';
             });
         })->toArray();

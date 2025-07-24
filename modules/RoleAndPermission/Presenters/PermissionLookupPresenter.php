@@ -22,10 +22,19 @@ class PermissionLookupPresenter
             if (count($nameParts) >= 2) {
                 // Skip the first part (module name) and translate the rest
                 for ($i = count($nameParts) - 1; $i >= 1; $i--) {
+                    if ($i == 1 && str_contains($nameParts[$i], "*")) {
+                        $resources = explode('*', $nameParts[$i]);
+                        $translatedName .= $resources[0];
+                        break;
+                    }
                     $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
                 }
             } elseif (count($nameParts) == 1) {
                 $translatedName = __('names.' . $nameParts[0]);
+                if (str_contains($permission->name, "*")) {
+                    $translatedName =explode("*",$nameParts[0])[0];
+
+                }
             } else {
                 $translatedName = __('names.' . $permission->name);
             }
@@ -47,7 +56,12 @@ class PermissionLookupPresenter
         // Then for each module group, group again by the second part (action)
         return $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
+
                 $parts = explode('.', $item["key"]);
+                if(str_contains($parts[1],"*"))
+                {
+                    return explode("*",$parts[1])[0];
+                }
                 return isset($parts[1]) ? __('names.' . $parts[1]) : 'other';
             });
         })->toArray();
