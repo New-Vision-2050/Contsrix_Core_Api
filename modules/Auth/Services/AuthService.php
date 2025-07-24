@@ -223,6 +223,8 @@ class AuthService
     private function getLoginStepAndNextStepFromToken($token)
     {
         $verficationData = $this->verficationDataRepository->findOneByOrFail(["token" => $token]);
+        dd($verficationData);
+
         $step = collect($verficationData->data["login_way"]["login_way_steps"])->filter(function ($item) use ($verficationData) {
             return $item['order'] == $verficationData->data["order"];
         })->first();
