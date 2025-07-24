@@ -121,20 +121,17 @@ class UpdatePermissionNamesCommand extends Command
         }
 
         // Handle missing permissions
-        if (!empty($missing) && $createMissing) {
-            // Confirm before proceeding (unless dry-run or forced)
+        if (!empty($missing)) {
             if (!$isDryRun && !$isForced) {
-                if (!$this->confirm('Do you want to create these missing permissions?')) {
+                if ($this->confirm('Do you want to create these missing permissions?')) {
+                    $this->createMissingPermissions($missing, $permissions);
+                } else {
                     $this->info('Creation operation cancelled.');
-                    return self::SUCCESS;
                 }
-            }
-
-            // Create missing permissions
-            if (!$isDryRun) {
+            } elseif (!$isDryRun && $isForced) {
                 $this->createMissingPermissions($missing, $permissions);
             } else {
-                $this->warn('DRY RUN: No missing permissions were created.');
+                $this->warn('DRY RUN: Missing permissions would be created if confirmed.');
             }
         }
 
@@ -228,15 +225,17 @@ class UpdatePermissionNamesCommand extends Command
         
         $created = 0;
         $failed = 0;
+        $skipped = 0;
 
         foreach ($missing as $key) {
-            try {
-                Permission::create(['key' => $key, 'name' => $permissions[$key]]);
-                $this->line("✅ Created {$key}: {$permissions[$key]}");
+            $success = $this->createSinglePermission($key, $permissions[$key]);
+            
+            if ($success === true) {
                 $created++;
-            } catch (\Exception $e) {
-                $this->error("❌ Failed to create {$key}: " . $e->getMessage());
+            } elseif ($success === false) {
                 $failed++;
+            } else { // null means skipped
+                $skipped++;
             }
         }
 
@@ -245,6 +244,62 @@ class UpdatePermissionNamesCommand extends Command
         if ($failed > 0) {
             $this->error("❌ Failed: {$failed}");
         }
+        if ($skipped > 0) {
+            $this->warn("⏭️  Skipped: {$skipped}");
+        }
+    }
+
+    /**
+     * Create a single permission with retry functionality
+     * 
+     * @return bool|null true = success, false = failed permanently, null = skipped
+     */
+    private function createSinglePermission(string $originalKey, string $originalName): ?bool
+    {
+        $currentKey = $originalKey;
+        $currentName = $originalName;
+        $attempts = 0;
+        $maxAttempts = 5;
+
+        while ($attempts < $maxAttempts) {
+            try {
+                Permission::create(['key' => $currentKey, 'name' => $currentName]);
+                $this->line("✅ Created {$currentKey}: {$currentName}");
+                return true;
+            } catch (\Exception $e) {
+                $attempts++;
+                $this->error("❌ Failed to create {$currentKey}: " . $e->getMessage());
+                
+                // If it's the last attempt, don't offer retry
+                if ($attempts >= $maxAttempts) {
+                    $this->error("Max attempts reached for {$currentKey}. Skipping.");
+                    return false;
+                }
+
+                // Ask if user wants to retry with corrections
+                if (!$this->confirm("Do you want to correct the key/name and try again?")) {
+                    return null; // Skip this permission
+                }
+
+                // Get corrected values
+                $this->info("Current values:");
+                $this->line("  Key: {$currentKey}");
+                $this->line("  Name: {$currentName}");
+                
+                $newKey = $this->ask("Enter corrected key (press enter to keep current)", $currentKey);
+                $newName = $this->ask("Enter corrected name (press enter to keep current)", $currentName);
+                
+                // Update current values for next attempt
+                $currentKey = $newKey ?: $currentKey;
+                $currentName = $newName ?: $currentName;
+                
+                $this->info("Retrying with:");
+                $this->line("  Key: {$currentKey}");
+                $this->line("  Name: {$currentName}");
+            }
+        }
+
+        return false;
     }
 
     /**
