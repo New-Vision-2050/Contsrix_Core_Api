@@ -175,6 +175,14 @@ class AuthService
     {
         $user = $this->userCRUDService->getUserByIdentifier($identifier);
 
+        if ($step === null || !is_object($step) || get_class($step) === 'stdClass') {
+            return false;
+        }
+
+        if (!property_exists($step, 'login_option')) {
+             return false;
+        }
+
         if ($step->login_option == "password" && (!$user || !password_verify($password, $user->password))) {
             throw new \ErrorException(__("validation.invalid-credential"), 401);
         }
