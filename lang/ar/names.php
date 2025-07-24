@@ -31,6 +31,7 @@ return [
     // Module specific names
     'user' => 'مستخدم',
     'users' => 'المستخدمين',
+    'organization-list*users' => 'المستخدمين',
     'client' => 'عميل',
     'broker' => 'وسيط',
     'employee' => 'موظف',
@@ -43,9 +44,11 @@ return [
     'identifier' => 'معرّف',
     'login-way' => 'طريقة تسجيل الدخول',
     'driver' => 'سائق',
-    'organization' => 'مؤسسة',
+    'organization' => 'الهيكل التنظيمي',
     'branch' => 'فرع',
+    'organization-list*branch' => 'فرع',
     'management' => 'إدارة',
+    'organization-list*management' => 'إدارة',
     'job-title' => 'المسمى الوظيفي',
     'job-type' => 'نوع الوظيفة',
     'company-profile' => 'ملف الشركة',
@@ -101,6 +104,7 @@ return [
     // Module names
     'settings' => 'الإعدادات',
     'departments' => 'الأقسام',
+    'organization-list*department' => 'الأقسام',
     'modules' => 'الوحدات',
     'features' => 'الميزات',
     'department' =>"قسم",
