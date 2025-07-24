@@ -69,9 +69,9 @@ class SubEntity extends Model
             }
         });
 
-//        static::created(function (self $subEntity) {
-//            $subEntity->createDefaultPermissions();
-//        });
+        static::created(function (self $subEntity) {
+            $subEntity->createDefaultPermissions();
+        });
     }
 
     protected static function generateUniqueSlug(string $name, $ignoreId = null): string
@@ -175,15 +175,15 @@ class SubEntity extends Model
         }
 
         $module = $this->mainProgram->slug;
-        $resource = $this->id;
-        $companyId = tenant("id");
+        $resource = $this->name . '*' . $this->id;
 
         foreach (self::PERMISSION_ACTIONS as $action) {
             Permission::firstOrCreate([
                 'name' => "{$module}.{$resource}.{$action}",
+                "key" => "{$module}.{$resource}.{$action}",
+
             ], [
                 'status' => true,
-                "company_id" => $companyId
             ]);
         }
     }
