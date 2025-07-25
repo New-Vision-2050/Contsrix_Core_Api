@@ -25,12 +25,12 @@ class AttendanceFilter extends SearchModelFilter
         return $this->where('status', $status);
     }
 
-    public function dateFrom($date)
+    public function start_date($date)
     {
         return $this->whereDate('clock_in_time', '>=', $date);
     }
 
-    public function dateTo($date)
+    public function end_date($date)
     {
         return $this->whereDate('clock_in_time', '<=', $date);
     }
