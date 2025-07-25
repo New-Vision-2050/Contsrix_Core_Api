@@ -43,6 +43,8 @@ class AttendancePresenter extends AbstractPresenter
 
             // Status flags
             'is_late' => (int) $this->attendance->is_late,
+            'is_absent' => (int) $this->attendance->is_absent,
+            'is_holiday' => (int) $this->attendance->is_holiday,
             'is_early_departure' => (int) $this->attendance->is_early_departure,
             'late_minutes' => $this->attendance->late_minutes,
             'early_departure_minutes' => $this->attendance->early_departure_minutes,
