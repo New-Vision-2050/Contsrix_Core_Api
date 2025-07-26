@@ -158,6 +158,15 @@ class AttendanceFilter extends SearchModelFilter
             });
         });
     }
+    public function searchText($search)
+    {
+        return $this->whereHas('user', function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'LIKE', "%{$search}%");
+            });
+        });
+    }
     public function management($managementId)
     {
 
