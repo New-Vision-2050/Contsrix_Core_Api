@@ -18,6 +18,11 @@ class AttendanceTeamPresenter extends AbstractPresenter
 
     public function present(bool $isListing = false): array
     {
+        // Get all tracking points, or an empty array if none.
+        $trackingPoints = $this->attendance->location_tracking ?? [];
+
+        // Find the most recent tracking point.
+        $latestPoint = !empty($trackingPoints) ? end($trackingPoints) : null;
         return [
 
             'id' => $this->attendance->id ? (string)$this->attendance->id : null,
@@ -33,6 +38,20 @@ class AttendanceTeamPresenter extends AbstractPresenter
             'work_date' => $this->attendance->created_at?->format('Y-m-d')??$this->attendance->clock_in_time->format('Y-m-d'),
 
             'day_status' => '',
+            'clock_in_location' => $this->attendance?->clock_in_location ,
+
+            'latest_location' => $latestPoint ? [
+                'latitude'  => (float) $latestPoint['latitude'],
+                'longitude' => (float) $latestPoint['longitude'],
+                'timestamp' => $latestPoint['timestamp'],
+                'accuracy'  => (float) $latestPoint['accuracy'],
+            ] : [
+                'latitude'  => $this->attendance->clock_in_location['latitude'],
+                'longitude' => $this->attendance->clock_in_location['longitude'],
+                'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
+                 'accuracy'  => 10,
+            ],
+
             'professional_data' => $this->attendance->user?->professionalData ? [
                 'id' => (string) $this->attendance->user->professionalData->id,
                 'job_title' => $this->attendance->user->professionalData->jobTitle?->name,
