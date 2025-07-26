@@ -427,11 +427,7 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
 
     // Fetch all real attendance records for the date range with optimized eager loading
     $realAttendanceRecords = Attendance::query()
-        ->select([
-            'id', 'user_id', 'company_id', 'status', 'notes', 'is_holiday', 'is_absent',
-            'total_work_hours', 'total_break_hours', 'overtime_hours', 'is_late', 'late_minutes',
-            'early_departure_minutes', 'is_early_departure', 'clock_in_time', 'clock_out_time', 'timezone'
-        ])
+        ->select('*')
         ->with([
             'user:id,name,email,company_id,status',
         ])
