@@ -29,6 +29,7 @@ class FilterAttendanceDTO
         public ?string $ip_address = null,
         public ?bool $late_arrival = null,
         public ?bool $early_departure = null,
+        public ?string $search_text  = null,
         // public ?int $page = null,
         // public ?int $per_page = null,
     ) {}
@@ -100,6 +101,15 @@ class FilterAttendanceDTO
         if ($this->early_departure !== null) {
             $data['early_departure'] = $this->early_departure;
         }
+        if ($this->search_text !== null) {
+            $data['search_text'] = $this->search_text;
+        }
+        // if ($this->page !== null) {
+        //     $data['page'] = $this->page;
+        // }
+        // if ($this->per_page !== null) {
+        //     $data['per_page'] = $this->per_page;
+        // }
 
         return $data;
     }

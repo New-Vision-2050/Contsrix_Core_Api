@@ -415,6 +415,7 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
 
     // Get all relevant users with optimized eager loading
     $allRelevantUsers = User::where('company_id', $companyId)
+        ->filter($filters)
         ->select(['id', 'name', 'company_id'])
         ->with([
             'companyUser:id,user_id,gender,phone,country_id',
@@ -427,6 +428,7 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
 
     // Fetch all real attendance records for the date range with optimized eager loading
     $realAttendanceRecords = Attendance::query()
+        ->filter($filters)
         ->select('*')
         ->with([
             'user:id,name,email,company_id,status',

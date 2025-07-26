@@ -55,25 +55,72 @@ class DefaultConstraintService
                 'time_rules' => [
                     'subtype' => 'multiple_periods',
                     'weekly_schedule' => [
-                        'sunday'    => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'monday'    => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'tuesday'   => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'wednesday' => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'thursday'  => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']]],
-                        'friday'    => ['enabled' => false, "total_work_hours"=>9,'periods' => []],
-                        'saturday'  => ['enabled' => false, "total_work_hours"=>9,'periods' => []]
-                    ],
-                    'lateness_rules' => [
-                        'prevent_lateness' => true,
-                        'grace_period_minutes' => 15,
-                        "unit"=>"minute"//hour, minute, day
-
-                    ],
-                    'early_departure_rules' => [
-                        'prevent_early_departure' => true,
-                        'grace_period_minutes' => 10,
-                        "unit"=>"minute"//hour, minute, day
-                    ],
+                        'sunday'    => [
+                            'enabled' => true,
+                            "total_work_hours"=>9,
+                            'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
+                            'lateness_rules' => [
+                                'prevent_lateness' => true,
+                                'grace_period_minutes' => 30,
+                                "unit"=>"minute"//hour, minute, day
+                                ],
+                                'early_departure_rules' => [
+                                    'prevent_early_departure' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ]
+                            ],
+                            'monday'    => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
+                                'lateness_rules' => [
+                                    'prevent_lateness' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ],
+                                    'early_departure_rules' => [
+                                    'prevent_early_departure' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ]
+                            ],
+                            'tuesday'   => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
+                                'lateness_rules' => [
+                                    'prevent_lateness' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ],
+                                    'early_departure_rules' => [
+                                    'prevent_early_departure' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ]
+                            ],
+                            'wednesday' => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
+                                'lateness_rules' => [
+                                    'prevent_lateness' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ],
+                                    'early_departure_rules' => [
+                                    'prevent_early_departure' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ]
+                            ],
+                            'thursday'  => ['enabled' => true, "total_work_hours"=>9, 'periods' => [['start_time' => '08:30', 'end_time' => '17:30']],
+                                'lateness_rules' => [
+                                    'prevent_lateness' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ],
+                                    'early_departure_rules' => [
+                                    'prevent_early_departure' => true,
+                                    'grace_period_minutes' => 30,
+                                    "unit"=>"minute"//hour, minute, day
+                                ]
+                            ],
+                            'friday'    => ['enabled' => false, "total_work_hours"=>9,'periods' => []],
+                            'saturday'  => ['enabled' => false, "total_work_hours"=>9,'periods' => []]
+                        ],
                     'overtime_rules' => [
                         'requires_approval' => true,
                         'approval_threshold_minutes'=> 30,

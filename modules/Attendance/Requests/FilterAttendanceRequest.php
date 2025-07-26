@@ -44,7 +44,7 @@ class FilterAttendanceRequest extends FormRequest
             'ip_address' => ['sometimes', 'string'],
             'late_arrival' => ['sometimes', 'boolean'],
             'early_departure' => ['sometimes', 'boolean'],
-
+            'search_text'=> ['sometimes', 'string'],
             // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
@@ -102,6 +102,7 @@ class FilterAttendanceRequest extends FormRequest
             ip_address: $validated['ip_address'] ?? null,
             late_arrival: $validated['late_arrival'] ?? null,
             early_departure: $validated['early_departure'] ?? null,
+            search_text: $validated['search_text'] ?? null,
             // page: $validated['page'] ?? null,
             // per_page: $validated['per_page'] ?? null,
         );
