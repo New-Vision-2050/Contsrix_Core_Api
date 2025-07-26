@@ -97,25 +97,24 @@ class AttendancePresenter extends AbstractPresenter
             'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
             'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
             'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),
-            // Use the result of the helper method to determine the day status.
             'day_status' => $this->getDayStatus($this->attendance->user->professionalData?->attendanceConstraint),
             'professional_data' => $this->attendance->user?->professionalData ? [
                 'id' => (string) $this->attendance->user->professionalData->id,
-                'job_title' => $this->attendance->user->professionalData->jobTitle?->name,
-                'job_code' => $this->attendance->user->professionalData->job_code,
+                'job_title' => $this->attendance->user?->professionalData?->jobTitle?->name,
+                'job_code' => $this->attendance->user?->professionalData?->job_code,
                 'department' => $this->attendance->user->professionalData->department?->name,
                 'branch' => $this->attendance->user->professionalData->branch?->name,
-                'management' => $this->attendance->user->professionalData->management?->name,
-                'attendance_constraint'=> $this->attendance->user->professionalData->attendanceConstraint ?[
-                    'id'=> (string) $this->attendance->user->professionalData->id,
-                    'constraint_name'=> $this->attendance->user->professionalData->attendanceConstraint?->constraint_name,
-                    'constraint_type'=> $this->attendance->user->professionalData->attendanceConstraint?->constraint_type,
-                    'constraint_config'=> $this->attendance->user->professionalData?->attendanceConstraint->constraint_config,
+                'management' => $this->attendance->user?->professionalData?->management?->name,
+                 'attendance_constraint'=> $this->attendance->user?->professionalData?->attendanceConstraint ?[
+                    'id'=> (string) $this->attendance->user?->professionalData?->id,
+                    'constraint_name'=> $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_name,
+                    'constraint_type'=> $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_type,
+                    'constraint_config'=> $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_config,
                 ] : null,
-            ] : null,
+            ]:null,
         ];
     }
- 
+
 
     /**
      * Determines if the attendance day was a Work Day, Weekend, or Holiday.

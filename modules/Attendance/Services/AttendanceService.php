@@ -215,7 +215,34 @@ class AttendanceService
      */
     public function getAttendanceHistory(array $filters, ?int $page = null, ?int $perPage = 10): array
     {
-        return $this->attendanceRepository->getAttendanceHistory($filters, $page, $perPage);
+        $attendance = $this->attendanceRepository->getAttendanceHistory($filters, $page, $perPage);
+
+
+        if (is_array($attendance['data'])) {
+            return $attendance;
+        } else {
+            if (empty($filters['user_id'])) {
+                return $attendance;
+            }
+            $syntheticAttendance = new Attendance([
+                'user_id' => $filters['user_id'],
+                'status' => Attendance::STATUS_COMPLETED,
+                'is_absent' => true,
+                'id' => Uuid::uuid4(),
+            ]);
+
+            $user = User::with(['professionalData','userProfessionalData'])->find($filters['user_id']);
+            $syntheticAttendance->setRelation('user', $user);
+            $syntheticAttendance->setRelation('breaks', new Collection());
+            $syntheticAttendance->attendance_periods = [];
+
+            $finalAttendanceList[] = $syntheticAttendance;
+
+            return [
+                'data' => $finalAttendanceList,
+                'pagination' => null
+            ];
+        }
     }
 
     /**
