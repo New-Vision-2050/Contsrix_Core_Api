@@ -50,7 +50,7 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 'longitude' => $this->attendance->clock_in_location['longitude'],
                 'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
                  'accuracy'  => 10,
-            ],
+            ], 
 
             'professional_data' => $this->attendance->user?->professionalData ? [
                 'id' => (string) $this->attendance->user->professionalData->id,
