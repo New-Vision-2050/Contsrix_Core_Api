@@ -76,7 +76,7 @@ class PermissionRepository extends BaseRepository
         return $this->model->where(function ($query) use ($subEntities) {
             foreach ($subEntities as $subEntity) {
                 // Use REGEXP to match exactly the second segment: "anything.subEntity.anything"
-                $query->orWhere('name', 'LIKE', ".".$subEntity.".");
+                $query->orWhere('name', 'LIKE', "%".".".$subEntity."."."%");
 
             }
         })->get();
