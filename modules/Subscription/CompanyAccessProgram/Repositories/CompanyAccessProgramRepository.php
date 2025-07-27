@@ -11,6 +11,8 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
 use Modules\Subscription\CompanyAccessProgram\DTO\CreateCompanyAccessProgramDTO;
 use Modules\Subscription\CompanyAccessProgram\Commands\UpdateCompanyAccessProgramCommand;
+use Modules\Subscription\CompanyAccessProgram\Events\CompanyAccessProgramCreated;
+use Modules\Subscription\CompanyAccessProgram\Events\CompanyAccessProgramUpdated;
 
 /**
  * @property CompanyAccessProgram $model
@@ -38,7 +40,7 @@ class CompanyAccessProgramRepository extends BaseRepository
 
     public function createCompanyAccessProgram(CreateCompanyAccessProgramDTO $createCompanyAccessProgramDTO): CompanyAccessProgram
     {
-        return DB::transaction(function () use ($createCompanyAccessProgramDTO) {
+        $program = DB::transaction(function () use ($createCompanyAccessProgramDTO) {
             $program = $this->model->create([
                 'name' => $createCompanyAccessProgramDTO->name,
                 'is_active' => true
@@ -86,6 +88,12 @@ class CompanyAccessProgramRepository extends BaseRepository
 
             return $program;
         });
+
+        // Dispatch event after transaction completes successfully
+        // This ensures all sub-entities and relations are properly assigned
+        CompanyAccessProgramCreated::dispatch($program);
+
+        return $program;
     }
 
     /**
@@ -118,8 +126,14 @@ class CompanyAccessProgramRepository extends BaseRepository
 
     public function updateCompanyAccessProgramWithRelations(UpdateCompanyAccessProgramCommand $command): CompanyAccessProgram
     {
-        return DB::transaction(function () use ($command) {
+        $program = DB::transaction(function () use ($command) {
             $program = $this->findOneByOrFail(['id' => $command->getId()->toString()]);
+
+            // Capture original data before update
+            $originalData = [
+                'name' => $program->name,
+                'sub_entity_ids' => $program->subEntities->pluck('sub_entity_id')->toArray()
+            ];
 
             $program->update(['name' => $command->getName()]);
 
@@ -157,8 +171,16 @@ class CompanyAccessProgramRepository extends BaseRepository
             $program->companyTypes()->sync($command->getCompanyTypes());
             $program->countries()->sync($command->getCountries());
 
-            return $program;
+            return [$program, $originalData];
         });
+
+        [$updatedProgram, $originalData] = $program;
+
+        // Dispatch event after transaction completes successfully
+        // This ensures all sub-entities and relations are properly updated
+        CompanyAccessProgramUpdated::dispatch($updatedProgram, $originalData);
+
+        return $updatedProgram;
     }
 
     public function deleteCompanyAccessProgram(UuidInterface $id): bool

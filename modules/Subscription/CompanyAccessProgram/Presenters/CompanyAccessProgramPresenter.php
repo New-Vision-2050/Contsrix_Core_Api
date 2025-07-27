@@ -31,7 +31,7 @@ class CompanyAccessProgramPresenter extends AbstractPresenter
 //            "sub_entities"=>$this->companyAccessProgram->subEntities
         ];
 
-        if ($this->service) {
+        if (0) {
             try {
                 // Get hierarchical structure with nested sub_entities
                 $data['programs'] = $this->service->getProgramsHierarchy($this->companyAccessProgram->id);

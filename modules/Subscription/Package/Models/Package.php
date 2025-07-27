@@ -36,12 +36,14 @@ class Package extends Model
         'trial_period',
         'trial_period_unit',
         'is_active',
+        'is_main_package',
     ];
 
     protected $casts = [
         'id' => 'string',
         'price' => 'decimal:2',
         'is_active' => 'boolean',
+        'is_main_package' => 'boolean',
         'subscription_period' => 'integer',
         'trial_period' => 'integer',
         'subscription_period_unit' => PeriodUnitEnum::class,
