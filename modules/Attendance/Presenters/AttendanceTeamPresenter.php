@@ -37,7 +37,7 @@ class AttendanceTeamPresenter extends AbstractPresenter
             'is_absent' => (int) $this->attendance->is_absent,
             'work_date' => $this->attendance->created_at?->format('Y-m-d')??$this->attendance->clock_in_time->format('Y-m-d'),
 
-            'day_status' => '',  
+            'day_status' => '',
             'clock_in_time' => $this->attendance->clock_in_time ? $this->attendance->clock_in_time->format('Y-m-d H:i:s') : null,
             'latest_location' => $latestPoint ? [
                 'latitude'  => (float) $latestPoint['latitude'],
@@ -50,6 +50,7 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
                 'accuracy'  => 10,
             ] : null),
+            'attendance_constraint_id' => $this->attendance->user?->professionalData?->attendanceConstraint?->id,
 
             'professional_data' => $this->attendance->user?->professionalData ? [
                 'id' => (string) $this->attendance->user->professionalData->id,
