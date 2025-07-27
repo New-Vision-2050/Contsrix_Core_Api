@@ -119,13 +119,29 @@ class AttendanceRepository extends BaseRepository
         $query->orderBy('clock_in_time', 'desc');
 
         if ($page) {
-            return $this->getPaginationData($query, $page, $perPage);
+            $results = $this->getPaginationData($query, $page, $perPage);
+        } else {
+            $results = [
+                'data' => $query->get(),
+                'pagination' => null
+            ];
         }
-        return [
-            'data' => $query->get(),
-            'pagination' => null
-        ];
 
+        // Group results by start_time and end_time
+        if (isset($results['data']) && !empty($results['data'])) {
+            $groupedData = collect($results['data'])->groupBy(function ($item) {
+                $startDate = $item->start_time ? date('Y-m-d H:i', strtotime($item->start_time)) :
+                    ($item->clock_in_time ? date('Y-m-d H:i', strtotime($item->clock_in_time)) : null);
+                $endDate = $item->end_time ? date('Y-m-d H:i', strtotime($item->end_time)) :
+                    ($item->clock_out_time ? date('Y-m-d H:i', strtotime($item->clock_out_time)) : null);
+
+                return $startDate . ' - ' . ($endDate ?? 'Present');
+            });
+
+            $results['data'] = $groupedData;
+        }
+
+        return $results;
     }
     /**
      * Get attendance by date range

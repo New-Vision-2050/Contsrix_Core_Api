@@ -217,29 +217,40 @@ class AttendanceService
     {
         $attendance = $this->attendanceRepository->getAttendanceHistory($filters, $page, $perPage);
 
-
-        if (is_array($attendance['data'])) {
+        // Check if we have data and it's already grouped
+        if (isset($attendance['data']) && !empty($attendance['data'])) {
             return $attendance;
         } else {
+            // If no data and user_id is provided, create synthetic attendance
             if (empty($filters['user_id'])) {
                 return $attendance;
             }
+
             $syntheticAttendance = new Attendance([
                 'user_id' => $filters['user_id'],
                 'status' => Attendance::STATUS_COMPLETED,
                 'is_absent' => true,
                 'id' => Uuid::uuid4(),
+                // Add start_time and end_time for proper grouping
+                'start_time' => Carbon::now()->format('Y-m-d H:i:s'),
+                'end_time' => null
             ]);
 
-            $user = User::with(['professionalData','userProfessionalData'])->find($filters['user_id']);
+            $user = User::with(['professionalData', 'userProfessionalData'])->find($filters['user_id']);
             $syntheticAttendance->setRelation('user', $user);
             $syntheticAttendance->setRelation('breaks', new Collection());
             $syntheticAttendance->attendance_periods = [];
 
-            $finalAttendanceList[] = $syntheticAttendance;
+            $finalAttendanceList = collect([$syntheticAttendance]);
+
+            // Group the synthetic attendance by date
+            $groupedData = $finalAttendanceList->groupBy(function ($item) {
+                $startDate = $item->start_time ? date('Y-m-d H:i', strtotime($item->start_time)) : null;
+                return $startDate . ' - Present';
+            });
 
             return [
-                'data' => $finalAttendanceList,
+                'data' => $groupedData,
                 'pagination' => null
             ];
         }
