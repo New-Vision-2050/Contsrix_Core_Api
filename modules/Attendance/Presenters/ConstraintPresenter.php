@@ -19,6 +19,7 @@ class ConstraintPresenter extends AbstractPresenter
             'id' => (string) $this->constraint->id,
             'constraint_name' => $this->constraint->constraint_name,
             'constraint_type' =>  __('validation.'.$this->constraint->constraint_type),
+            'constraint_code' =>  $this->constraint->constraint_type,
             'branch_locations' => $this->constraint->branch_locations,
             'notes' => $this->constraint->notes,
             'is_active' => (int) $this->constraint->is_active,
