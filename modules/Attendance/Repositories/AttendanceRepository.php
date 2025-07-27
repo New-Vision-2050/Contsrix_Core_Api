@@ -110,7 +110,7 @@ class AttendanceRepository extends BaseRepository
     public function getAttendanceHistory(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
         $query = $this->model->newQuery()->with(['user', 'company']);
-        
+
         // Apply filters using the filter method
         if (!empty($filters)) {
             $query->filter($filters);
@@ -129,11 +129,14 @@ class AttendanceRepository extends BaseRepository
 
         // Group results by start_time and end_time
         if (isset($results['data']) && !empty($results['data'])) {
-            $groupedData = collect($results['data'])->groupBy(function ($item) {
-                $startDate = $item->start_time ? date('Y-m-d H:i', strtotime($item->start_time)) :
-                    ($item->clock_in_time ? date('Y-m-d H:i', strtotime($item->clock_in_time)) : null);
-                $endDate = $item->end_time ? date('Y-m-d H:i', strtotime($item->end_time)) :
-                    ($item->clock_out_time ? date('Y-m-d H:i', strtotime($item->clock_out_time)) : null);
+           $groupedData = collect($results['data'])->groupBy(function ($item) {
+                $startDate = $item->start_time
+                    ? $item->start_time->format('Y-m-d H:i')
+                    : ($item->clock_in_time ? $item->clock_in_time->format('Y-m-d H:i') : null);
+
+                $endDate = $item->end_time
+                    ? $item->end_time->format('Y-m-d H:i')
+                    : ($item->clock_out_time ? $item->clock_out_time->format('Y-m-d H:i') : null);
 
                 return $startDate . ' - ' . ($endDate ?? 'Present');
             });
