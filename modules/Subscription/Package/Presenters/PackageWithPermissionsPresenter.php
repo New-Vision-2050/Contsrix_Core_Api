@@ -58,10 +58,7 @@ class PackageWithPermissionsPresenter extends AbstractPresenter
         $nestedGroups = $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
                 $parts = explode('.', $item["key"]);
-                if (isset($parts[1])&&str_contains($parts[1], "*")) {
-                    return explode("*",$parts[1])[0];
 
-                }
                 return isset($parts[1]) ? __('names.' . $parts[1]) : 'other';
             });
         })->toArray();
