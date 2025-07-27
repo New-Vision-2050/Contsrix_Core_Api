@@ -23,9 +23,19 @@ class LiveTrackingPresenter extends AbstractPresenter
 
         return [
             'attendance_id' => $this->attendance->id,
-            'employee_name' => $this->attendance->user->name ?? 'N/A',
-            'branch_name'   => $this->attendance->user->branch->name ?? 'N/A',
-            // 'department_name' => 'إدارة الموارد البشرية',
+            'user' => $this->attendance->user ? [
+                'id' => $this->attendance->user->id ?? '-',
+                'name' => $this->attendance->user->name ?? '-',
+                'email' => $this->attendance->user->email ?? '-',
+                'phone' => $this->attendance->user->phone ?? '-',
+                'company_name' => $this->attendance->user->company->name ?? '-',
+                'birthdate' => $this->attendance->user->companyUser->birthdate_gregorian ?? '-',
+                'gender' => $this->attendance->user->companyUser->gender ?? '-',
+                'branch_name'   => $this->attendance->user->professionalData->branch->name ?? '-',
+                'department_name' => $this->attendance->user->professionalData->department->name ?? '-',
+                'management_name' => $this->attendance->user->professionalData->management->name ?? '-',
+            ] : null,
+
             'clock_in_time' => $this->attendance->clock_in_time->format('H:i:s'),
 
             // --- Latest Location Info (for the marker) ---
