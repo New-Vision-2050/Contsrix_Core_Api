@@ -115,7 +115,7 @@ class AttendanceConstraintService
         $constraint = $user->professionalData?->attendanceConstraint;
         if ($constraint) {
             $constraints[] = $constraint;
-            return $constraints;
+            return collect($constraints); 
         }
         $userBranch = $user->userProfessionalData?->branch;
         $userBranchId = $userBranch ? (string) $userBranch->id : null;
