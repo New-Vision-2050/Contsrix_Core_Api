@@ -156,7 +156,7 @@ class PackageController extends Controller
         return Json::success('Permissions synced successfully with limits.');
     }
 
-    public function getPermissions(Package $package): JsonResponse
+    public function getPermissions(Package $package)
     {
         $package->load('permissions');
         $presenter = new PackageWithPermissionsPresenter($package);
