@@ -142,40 +142,9 @@ class AttendanceRepository extends BaseRepository
                     : 'Present';
 
                 return $startFormatted . ' - ' . $endFormatted;
-            })->map(function ($group) {
-                $totalHours = 0;
-                $group->each(function ($item) use (&$totalHours) {
-                    $start = $item->start_time;
-                    $end = $item->end_time;
-
-                    if ($start && $end) {
-                        $startTime = $start instanceof \Carbon\Carbon ? $start : Carbon::parse($start);
-                        $endTime = $end instanceof \Carbon\Carbon ? $end : Carbon::parse($end);
-
-                        // Handle cases where end time is before start time (e.g., overnight shifts)
-                        if ($endTime->lt($startTime)) {
-                            $endTime->addDay();
-                        }
-                        // Calculate duration from start_time to end_time
-                        $totalHours = $startTime->diffInMinutes($endTime) / 60;
-
-                    } elseif ($start && !$end) {
-                        $totalHours += 8;
-                    }
-                });
-
-                // Convert total hours to a more presentable format (e.g., "X.XX hours")
-                $group->total_hours = round($totalHours, 2);
-                return $group;
             });
 
-            // Map the grouped data to include total_hours inside payload objects
-            $results['data'] = $groupedData->map(function ($group, $period) {
-              return [
-                  $period => $group,
-                  'total_hours' => $group->total_hours
-              ];
-            })->values()->toArray();
+            $results['data'] = $groupedData;
         }
 
         return $results;
