@@ -78,7 +78,7 @@ class PermissionRepository extends BaseRepository
                 // Escape special regex characters in subEntity to treat them as literals
 //                $escapedSubEntity = preg_quote($subEntity, '/');
                 // Use REGEXP to match exactly the second segment: "anything.subEntity.anything"
-                $query->orWhere('name', 'LIKE', "%.".$subEntity.".%");
+                $query->orWhere('name', 'LIKE', "%.".$subEntity."%");
             }
         })->get();
     }
