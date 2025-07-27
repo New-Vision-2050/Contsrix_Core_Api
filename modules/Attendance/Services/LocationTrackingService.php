@@ -64,6 +64,7 @@ class LocationTrackingService
     $subQuery = Attendance::whereBetween('clock_in_time', [$startOfDay, $endOfDay])
         ->where('is_absent', false)
         ->where('is_holiday', false)
+        ->filter($filters)
         ->select('user_id', \DB::raw('MAX(clock_in_time) as latest_clock_in'))
         ->groupBy('user_id');
 
