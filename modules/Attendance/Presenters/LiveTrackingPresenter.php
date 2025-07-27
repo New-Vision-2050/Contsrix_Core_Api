@@ -29,6 +29,7 @@ class LiveTrackingPresenter extends AbstractPresenter
                 'email' => $this->attendance->user->email ?? '-',
                 'phone' => $this->attendance->user->phone ?? '-',
                 'company_name' => $this->attendance->user->company->name ?? '-',
+                'country' => $this->attendance->user->companyUser->country?->name ?? '-',
                 'birthdate' => $this->attendance->user->companyUser->birthdate_gregorian ?? '-',
                 'gender' => $this->attendance->user->companyUser->gender ?? '-',
                 'branch_name'   => $this->attendance->user->professionalData->branch->name ?? '-',
