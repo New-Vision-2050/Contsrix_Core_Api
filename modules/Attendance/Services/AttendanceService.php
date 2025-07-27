@@ -40,33 +40,28 @@ class AttendanceService
 
         $date = Carbon::now()->format('Y-m-d');
 
-        $periodStartTime = data_get($constraints, 'current_work_period.start_time');
+        $periodStartTime = data_get($constraints, key: 'current_work_period.start_time');
         $periodEndTime = data_get($constraints, 'current_work_period.end_time');
-        $day_status = data_get($constraints, 'day_status');
-        
-        // Parse start and end into Carbon instances
-        $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
-        $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
-        
-        if ($endDateTime->lessThanOrEqualTo($startDateTime)) {
-            $endDateTime->addDay();
-        }
-        
+        $day_status = data_get($constraints,'day_status');
+        // if (!$periodStartTime || !$periodEndTime) {
+        //     throw new \Exception('لا يوجد فترة عمل حالية current_work_period لهذا المستخدم اليوم.');
+        // }
+
         $attendanceData = [
             'user_id' => $clockInDTO->getUserId(),
             'company_id' => $clockInDTO->getCompanyId(),
             'clock_in_time' => $clockInDTO->getClockInTime(),
             'clock_in_location' => $clockInDTO->getLocation(),
-            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
-            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
+            'start_time' => $date . ' ' . $periodStartTime,
+            'end_time' => $date . ' ' . $periodEndTime,
             'notes' => $clockInDTO->getNotes(),
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
             'status' => 'active',
-            'date' => $date,
             'day_status' => $day_status,
             'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
         ];
+
         return $this->attendanceRepository->create($attendanceData);
     }
 
@@ -260,7 +255,7 @@ class AttendanceService
             // Group the synthetic attendance by date
             $groupedData = $finalAttendanceList->groupBy(function ($item) {
                 $startDate = $item->start_time ? date('Y-m-d H:i', strtotime($item->start_time)) : null;
-                return $startDate . ' - Present';
+                return $startDate . ' - ' . $item->end_time ;
             });
 
             return [
