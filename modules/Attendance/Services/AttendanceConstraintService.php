@@ -545,7 +545,9 @@ public function getTodaysWorkRulesForUser(User $user): array
         $now = Carbon::now($timezone);
 
         $constraints = $this->getApplicableConstraints($user);
-
+        if ($constraints->isEmpty()) {
+            return [];
+        }
         // Define a reusable closure to select the winning constraint based on priority.
         $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
             return $constraints
