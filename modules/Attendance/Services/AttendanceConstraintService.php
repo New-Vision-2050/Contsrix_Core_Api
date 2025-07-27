@@ -111,6 +111,12 @@ class AttendanceConstraintService
      */
     public function getEffectiveConstraintForUser(User $user)
     {
+        $constraints = [];
+        $constraint = $user->professionalData?->attendance_constraint;
+        if ($constraint) {
+            $constraints[] = $constraint;
+            return $constraints;
+        }
         $userBranch = $user->userProfessionalData?->branch;
         $userBranchId = $userBranch ? (string) $userBranch->id : null;
 
@@ -541,7 +547,7 @@ public function getTodaysWorkRulesForUser(User $user): array
         $constraints = $this->getApplicableConstraints($user);
 
         // Define a reusable closure to select the winning constraint based on priority.
-    $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
+        $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
             return $constraints
                 ->filter($filter)
                 ->sortByDesc('created_at')
