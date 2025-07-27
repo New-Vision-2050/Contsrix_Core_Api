@@ -95,7 +95,9 @@ class Attendance extends Model implements Auditable
         'location_tracking',
         'timezone',
         'start_time',
-        'end_time'
+        'end_time',
+        'day_status',
+        'date',
     ];
 
     protected $casts = [

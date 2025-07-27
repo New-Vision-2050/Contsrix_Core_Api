@@ -115,7 +115,7 @@ class AttendanceConstraintService
         $constraint = $user->professionalData?->attendanceConstraint;
         if ($constraint) {
             $constraints[] = $constraint;
-            return collect($constraints); 
+            return collect($constraints);
         }
         $userBranch = $user->userProfessionalData?->branch;
         $userBranchId = $userBranch ? (string) $userBranch->id : null;
@@ -570,6 +570,7 @@ public function getTodaysWorkRulesForUser(User $user): array
             'all_work_periods'     => $timeRulesResult['periods'],
             'total_work_hours' => $timeRulesResult['total_work_hours'],
             'next_work_period'   => $timeRulesResult['active_or_next_period'],
+            'current_work_period'     => $timeRulesResult['current_work_period'],
             'location_work'           => $locationRulesResult,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
@@ -589,8 +590,18 @@ public function getTodaysWorkRulesForUser(User $user): array
 
     private function buildTimeRules(?AttendanceConstraint $constraint, Carbon $now): array
     {
-        $defaultResult = ['status' => 'Undefined', 'reason' => 'No time schedule applied.', 'periods' => [], 'is_holiday' => false, 'total_work_hours' => 0.0, 'active_or_next_period' => null];
-        if (!$constraint) return $defaultResult;
+        $defaultResult = [
+            'status' => 'Undefined',
+            'reason' => 'No time schedule applied.',
+            'periods' => [], // All periods for TODAY
+            'is_holiday' => false,
+            'total_work_hours' => 0.0,
+            'current_work_period' => null, // New: Active period for today
+            'next_upcoming_period' => null, // Next upcoming period (could be today or future)
+        ];
+        if (!$constraint) {
+            return $defaultResult;
+        }
 
         $timeRules = $constraint->constraint_config['time_rules'] ?? [];
         $weeklySchedule = $timeRules['weekly_schedule'] ?? [];
@@ -612,42 +623,67 @@ public function getTodaysWorkRulesForUser(User $user): array
             $workDayReason = 'Scheduled weekend or non-working day.';
         }
 
-        $relevantPeriod = null;
-        for ($i = 0; $i < 7; $i++) {
-            $checkDate = $now->copy()->addDays($i);
-            $checkDayOfWeek = strtolower($checkDate->format('l'));
+        $currentActivePeriodToday = null;
+        $nextUpcomingPeriod = null; // Will capture the very next period chronologically (could be today or in future)
 
-            if (collect($holidays)->contains(fn($h) => $checkDate->isSameDay($h['date'] ?? null))) continue;
-            $dayScheduleForCheck = $weeklySchedule[$checkDayOfWeek] ?? null;
-            if (!$dayScheduleForCheck || !($dayScheduleForCheck['enabled'] ?? false) || empty($dayScheduleForCheck['periods'])) continue;
+        // --- Process periods for TODAY first ---
+        if ($isTodayWorkDay && !empty($todaySchedule['periods'])) {
+            $sortedTodayPeriods = collect($todaySchedule['periods'])->sortBy('start_time')->all();
 
-            foreach ($dayScheduleForCheck['periods'] as $period) {
-                $periodStart = Carbon::createFromTimeString($period['start_time'], $now->timezone)->setDateFrom($checkDate);
-                $periodEnd = Carbon::createFromTimeString($period['end_time'], $now->timezone)->setDateFrom($checkDate);
-                if ($periodEnd->isBefore($periodStart)) $periodEnd->addDay();
+            foreach ($sortedTodayPeriods as $period) {
+                $periodStartToday = Carbon::createFromTimeString($period['start_time'], $now->timezone)->setDateFrom($now);
+                $periodEndToday = Carbon::createFromTimeString($period['end_time'], $now->timezone)->setDateFrom($now);
 
-                if ($now->between($periodStart, $periodEnd, true)) {
-                    $relevantPeriod = ['status' => 'active', 'day' => 'Today', 'date' => $checkDate->format('Y-m-d')] + $period;
-                    goto end_loop;
+                // Handle overnight periods
+                if ($periodEndToday->isBefore($periodStartToday)) {
+                    $periodEndToday->addDay();
                 }
 
-                if ($periodStart->isFuture()) {
-                    $relevantPeriod = ['status' => 'upcoming', 'day' => $i === 0 ? 'Today' : $checkDate->isoFormat('dddd'), 'date' => $checkDate->format('Y-m-d')] + $period;
-                    goto end_loop;
+                // If currently active period found for TODAY
+                if ($now->between($periodStartToday, $periodEndToday, true)) {
+                    $currentActivePeriodToday = [
+                        'status' => 'active',
+                        'day' => 'Today',
+                        'date' => $now->format('Y-m-d'),
+                        'start_time' => $period['start_time'],
+                        'end_time' => $period['end_time'],
+                        'period_start_time_carbon' => $periodStartToday,
+                        'period_end_time_carbon' => $periodEndToday,
+                    ];
+                    // Since an active period is found, this is also the "next upcoming" if nothing before it was found.
+                    // This is also the most relevant period for clock-in.
+                    $nextUpcomingPeriod = $currentActivePeriodToday;
+                    break; // Stop looking for active periods today, we found one
+                }
+
+                // If this period is upcoming for TODAY (and no active period found yet)
+                if ($periodStartToday->isFuture() && is_null($nextUpcomingPeriod)) {
+                    $nextUpcomingPeriod = [
+                        'status' => 'upcoming',
+                        'day' => 'Today',
+                        'date' => $now->format('Y-m-d'),
+                        'start_time' => $period['start_time'],
+                        'end_time' => $period['end_time'],
+                        'period_start_time_carbon' => $periodStartToday,
+                        'period_end_time_carbon' => $periodEndToday,
+                    ];
+                    // Don't break yet, we might still find an *active* period later today in the loop
+                    // But if no active is found, this will be the one.
                 }
             }
         }
-        end_loop:
 
         return [
             'status' => $workDayStatus,
             'reason' => $workDayReason,
-            'periods' => $todaySchedule['periods'] ?? [],
-            'is_holiday' => ($workDayStatus !== 'Work Day'),
+            'periods' => $todaySchedule['periods'] ?? [], // This is still just ALL of today's periods
+            'is_holiday' => ($workDayStatus === 'Holiday'),
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
-            'active_or_next_period' => $relevantPeriod
+            'current_work_period' => $currentActivePeriodToday, // Null if no active period today
+            'active_or_next_period' => $nextUpcomingPeriod, // The absolute next period (today or future)
         ];
     }
+
 
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array
     {
@@ -671,5 +707,5 @@ public function getTodaysWorkRulesForUser(User $user): array
         }
         return null;
     }
-    
+
 }

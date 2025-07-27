@@ -33,36 +33,43 @@ class AttendanceService
         if ($existingAttendance && !$existingAttendance->clock_out_time) {
             throw AttendanceException::alreadyClockedIn();
         }
+
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
         $constraints = $constraintService->getTodaysWorkRulesForUser($user);
-        $periodStartTime = null;
-        $periodEndTime = null;
-        $day_status = null;
-        if ($constraints && isset($constraints['current_work_period'])) {
-            $periodStartTime = $constraints['current_work_period']['start_time'];
-            $periodEndTime = $constraints['current_work_period']['end_time'];
-            $date =Carbon::now()->format('Y-m-d');
-            $day_status = $constraints['day_status'];
+
+        $date = Carbon::now()->format('Y-m-d');
+
+        $periodStartTime = data_get($constraints, 'current_work_period.start_time');
+        $periodEndTime = data_get($constraints, 'current_work_period.end_time');
+        $day_status = data_get($constraints, 'day_status');
+        
+        // Parse start and end into Carbon instances
+        $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
+        $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
+        
+        if ($endDateTime->lessThanOrEqualTo($startDateTime)) {
+            $endDateTime->addDay();
         }
-        // Create new attendance record
+        
         $attendanceData = [
             'user_id' => $clockInDTO->getUserId(),
             'company_id' => $clockInDTO->getCompanyId(),
             'clock_in_time' => $clockInDTO->getClockInTime(),
             'clock_in_location' => $clockInDTO->getLocation(),
-            'start_time' => $date .' '.$periodStartTime,
-            'end_time' => $date.' '.$periodEndTime,
+            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
+            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
             'notes' => $clockInDTO->getNotes(),
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
             'status' => 'active',
+            'date' => $date,
             'day_status' => $day_status,
-            'timezone' => getTimeZoneByRequest()  ?? config('app.timezone'),
+            'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
         ];
-
         return $this->attendanceRepository->create($attendanceData);
     }
+
 
     /**
      * Clock out employee
