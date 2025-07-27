@@ -205,17 +205,17 @@ class AttendanceController extends Controller
             (int) $request->input('per_page',10)
         );
 
-        $presentedData = AttendancePresenter::collection($result['data']);
+        // $presentedData = AttendancePresenter::collection($result['data']);
 
-        if ($result['pagination']) {
-            return Json::items(
-                                    $presentedData,
-                paginationSettings: $result['pagination'],
-                message:            'Attendance history retrieved successfully'
-            );
-        }
+        // if ($result['pagination']) {
+        //     return Json::items(
+        //                             $presentedData,
+        //         paginationSettings: $result['pagination'],
+        //         message:            'Attendance history retrieved successfully'
+        //     );
+        // }
 
-        return Json::items($presentedData, message: 'Attendance history retrieved successfully');
+        return Json::items($result['data'], paginationSettings: $result['pagination'], message: 'Attendance history retrieved successfully');
     }
 
     /**
