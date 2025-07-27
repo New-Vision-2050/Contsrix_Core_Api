@@ -130,15 +130,18 @@ class AttendanceRepository extends BaseRepository
         // Group results by start_time and end_time
         if (isset($results['data']) && !empty($results['data'])) {
            $groupedData = collect($results['data'])->groupBy(function ($item) {
-                $startDate = $item->start_time
-                    ? $item->start_time->format('Y-m-d H:i')
-                    : ($item->clock_in_time ? $item->clock_in_time->format('Y-m-d H:i') : null);
+                $start = $item->start_time ?? $item->clock_in_time;
+                $end = $item->end_time ?? $item->clock_out_time;
 
-                $endDate = $item->end_time
-                    ? $item->end_time->format('Y-m-d H:i')
-                    : ($item->clock_out_time ? $item->clock_out_time->format('Y-m-d H:i') : null);
+                $startFormatted = $start
+                    ? ( $start instanceof \Carbon\Carbon ? $start : Carbon::parse($start) )->format('Y-m-d H:i')
+                    : null;
 
-                return $startDate . ' - ' . ($endDate ?? 'Present');
+                $endFormatted = $end
+                    ? ( $end instanceof \Carbon\Carbon ? $end : Carbon::parse($end) )->format('Y-m-d H:i')
+                    : 'Present';
+
+                return $startFormatted . ' - ' . $endFormatted;
             });
 
             $results['data'] = $groupedData;
