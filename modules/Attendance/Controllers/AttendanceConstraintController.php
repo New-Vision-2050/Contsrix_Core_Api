@@ -118,9 +118,9 @@ class AttendanceConstraintController extends Controller
     public function show(string $id): JsonResponse
     {
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($id));
-        $constraint->load(['user', 'creator', 'updater']);
-
-        return Json::item($constraint, message: 'Constraint retrieved successfully');
+        $constraint->load(['users', 'creator', 'updater']);
+        $constraintPresenter =(new ConstraintPresenter($constraint))->getData();
+        return Json::item($constraintPresenter, message: 'Constraint retrieved successfully');
     }
 
     /**
