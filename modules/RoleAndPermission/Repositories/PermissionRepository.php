@@ -67,7 +67,7 @@ class PermissionRepository extends BaseRepository
      * Get permissions filtered by subEntity names where subEntity matches
      * the second part of permission name pattern "programName.subEntity.action"
      */
-    public function getPermissionsBySubEntities(array $subEntities): Collection
+    public function getPermissionsBySubEntities(array $subEntities)
     {
         if (empty($subEntities)) {
             return collect();

@@ -50,4 +50,15 @@ class PermissionLookupService
 
         return $this->permissionRepository->getPermissionsBySubEntities($subEntities);
     }
+
+    /**
+     * Get permissions filtered by sub-entity IDs
+     *
+     * @param array $subEntityIds
+     * @return Collection
+     */
+    public function getPermissionsBySubEntities(array $subEntityIds): Collection
+    {
+        return $this->permissionRepository->getPermissionsBySubEntities($subEntityIds);
+    }
 }
