@@ -49,26 +49,26 @@ return [
         // ================================================================================================
 
         // Branch Management
-        'ORGANIZATION_BRANCH_VIEW' => 'organization.organization-list*branch.view',
-        'ORGANIZATION_BRANCH_CREATE' => 'organization.organization-list*branch.create',
-        'ORGANIZATION_BRANCH_UPDATE' => 'organization.organization-list*branch.update',
-        'ORGANIZATION_BRANCH_DELETE' => 'organization.organization-list*branch.delete',
+        'ORGANIZATION_BRANCH_VIEW' => 'human-resources.organization-list*branch.view',
+        'ORGANIZATION_BRANCH_CREATE' => 'human-resources.organization-list*branch.create',
+        'ORGANIZATION_BRANCH_UPDATE' => 'human-resources.organization-list*branch.update',
+        'ORGANIZATION_BRANCH_DELETE' => 'human-resources.organization-list*branch.delete',
 
         // Management Hierarchy
-        'ORGANIZATION_MANAGEMENT_VIEW' => 'organization.organization-list*management.view',
-        'ORGANIZATION_MANAGEMENT_EXPORT' => 'organization.organization-list*management.export',
-        'ORGANIZATION_MANAGEMENT_CREATE' => 'organization.organization-list*management.create',
-        'ORGANIZATION_MANAGEMENT_UPDATE' => 'organization.organization-list*management.update',
-        'ORGANIZATION_MANAGEMENT_DELETE' => 'organization.organization-list*management.delete',
+        'ORGANIZATION_MANAGEMENT_VIEW' => 'human-resources.organization-list*management.view',
+        'ORGANIZATION_MANAGEMENT_EXPORT' => 'human-resources.organization-list*management.export',
+        'ORGANIZATION_MANAGEMENT_CREATE' => 'human-resources.organization-list*management.create',
+        'ORGANIZATION_MANAGEMENT_UPDATE' => 'human-resources.organization-list*management.update',
+        'ORGANIZATION_MANAGEMENT_DELETE' => 'human-resources.organization-list*management.delete',
 
         // Department Management
-        'ORGANIZATION_DEPARTMENT_VIEW' => 'organization.organization-list*department.view',
-        'ORGANIZATION_DEPARTMENT_EXPORT' => 'organization.organization-list*department.export',
-        'ORGANIZATION_DEPARTMENT_CREATE' => 'organization.organization-list*department.create',
-        'ORGANIZATION_DEPARTMENT_UPDATE' => 'organization.organization-list*department.update',
-        'ORGANIZATION_DEPARTMENT_DELETE' => 'organization.organization-list*department.delete',
+        'ORGANIZATION_DEPARTMENT_VIEW' => 'human-resources.organization-list*department.view',
+        'ORGANIZATION_DEPARTMENT_EXPORT' => 'human-resources.organization-list*department.export',
+        'ORGANIZATION_DEPARTMENT_CREATE' => 'human-resources.organization-list*department.create',
+        'ORGANIZATION_DEPARTMENT_UPDATE' => 'human-resources.organization-list*department.update',
+        'ORGANIZATION_DEPARTMENT_DELETE' => 'human-resources.organization-list*department.delete',
 
         // Organization Users
-        'ORGANIZATION_USERS_VIEW' => 'organization.organization-list*users.view',
+        'ORGANIZATION_USERS_VIEW' => 'human-resources.organization-list*users.view',
     ]
 ];
