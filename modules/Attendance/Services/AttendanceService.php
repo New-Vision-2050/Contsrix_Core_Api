@@ -39,10 +39,10 @@ class AttendanceService
         $periodStartTime = null;
         $periodEndTime = null;
         $day_status = null;
-        if ($constraints && isset($constraints['next_work_period'])) {
-            $periodStartTime = $constraints['next_work_period']['start_time'];
-            $periodEndTime = $constraints['next_work_period']['end_time'];
-            $date = $constraints['next_work_period']['date'];
+        if ($constraints && isset($constraints['current_work_period'])) {
+            $periodStartTime = $constraints['current_work_period']['start_time'];
+            $periodEndTime = $constraints['current_work_period']['end_time'];
+            $date =Carbon::now()->format('Y-m-d');
             $day_status = $constraints['day_status'];
         }
         // Create new attendance record
