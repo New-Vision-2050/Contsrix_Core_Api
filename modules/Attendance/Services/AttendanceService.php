@@ -4,21 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Services;
 
-use BasePackage\Shared\Services\AbstractService;
 use Carbon\Carbon;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceBreak;
-use Modules\Attendance\Presenters\AttendancePresenter;
 use Modules\Attendance\Repositories\AttendanceRepository;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\DTO\ClockInDTO;
 use Modules\Attendance\DTO\ClockOutDTO;
-use Modules\Attendance\DTO\BreakDTO;
 use Modules\User\Models\User;
-use Modules\User\Models\CompanyUser;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Carbon\CarbonPeriod;
@@ -34,23 +28,36 @@ class AttendanceService
      */
     public function clockIn(ClockInDTO $clockInDTO): Attendance
     {
-        // Check if user is already clocked in
         $existingAttendance = $this->attendanceRepository->getCurrentAttendance($clockInDTO->getUserId());
 
         if ($existingAttendance && !$existingAttendance->clock_out_time) {
             throw AttendanceException::alreadyClockedIn();
         }
-
+        $user = User::find(auth()->user()->id);
+        $constraintService = app(AttendanceConstraintService::class);
+        $constraints = $constraintService->getTodaysWorkRulesForUser($user);
+        $periodStartTime = null;
+        $periodEndTime = null;
+        $day_status = null;
+        if ($constraints && isset($constraints['next_work_period'])) {
+            $periodStartTime = $constraints['next_work_period']['start_time'];
+            $periodEndTime = $constraints['next_work_period']['end_time'];
+            $date = $constraints['next_work_period']['date'];
+            $day_status = $constraints['day_status'];
+        }
         // Create new attendance record
         $attendanceData = [
             'user_id' => $clockInDTO->getUserId(),
             'company_id' => $clockInDTO->getCompanyId(),
             'clock_in_time' => $clockInDTO->getClockInTime(),
             'clock_in_location' => $clockInDTO->getLocation(),
+            'start_time' => $date .' '.$periodStartTime,
+            'end_time' => $date.' '.$periodEndTime,
             'notes' => $clockInDTO->getNotes(),
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
             'status' => 'active',
+            'day_status' => $day_status,
             'timezone' => getTimeZoneByRequest()  ?? config('app.timezone'),
         ];
 
