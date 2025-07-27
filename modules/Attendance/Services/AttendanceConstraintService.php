@@ -112,7 +112,7 @@ class AttendanceConstraintService
     public function getEffectiveConstraintForUser(User $user)
     {
         $constraints = [];
-        $constraint = $user->professionalData?->attendance_constraint;
+        $constraint = $user->professionalData?->attendanceConstraint;
         if ($constraint) {
             $constraints[] = $constraint;
             return $constraints;
