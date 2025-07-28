@@ -36,7 +36,7 @@ class UserProfessionalDataController extends Controller
 
         $item = $this->userProfessionalDataService->get(
             Uuid::fromString($user->global_company_user_id),
-            $userId,
+            Uuid::fromString($user->company_id),
         );
         if (!$item) {
             return Json::item(null);

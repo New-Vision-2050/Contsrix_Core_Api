@@ -27,8 +27,8 @@ class UserProfessionalDataCRUDService
         return $this->repository->getUserProfessionalDataList($companyId, $globalId, $page, $perPage);
     }
 
-    public function get(UuidInterface $globalId,UuidInterface $userId): ?UserProfessionalData
+    public function get(UuidInterface $globalId,UuidInterface $companyId): ?UserProfessionalData
     {
-        return $this->repository->getUserProfessionalData($globalId,$userId);
+        return $this->repository->getUserProfessionalData($globalId,$companyId);
     }
 }
