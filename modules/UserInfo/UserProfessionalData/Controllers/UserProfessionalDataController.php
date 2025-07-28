@@ -33,12 +33,14 @@ class UserProfessionalDataController extends Controller
     {
         $userId = Uuid::fromString($request->route('id'));
         $user = $this->userRepository->getUser($userId);
-        return $user;
 
         $item = $this->userProfessionalDataService->get(
             Uuid::fromString($user->global_company_user_id),
             $userId,
         );
+
+        return $item;
+
         if (!$item) {
             return Json::item(null);
         }
