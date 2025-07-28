@@ -26,7 +26,11 @@ class PackagePresenter extends AbstractPresenter
             'price' => $this->package->price,
             'currency' => $this->package->currency,
             'subscription_period' => $this->package->subscription_period,
-            'subscription_period_unit' => __($this->package->subscription_period_unit->value),
+            'subscription_period_unit' => $this->package->subscription_period_unit,
+
+            'trial_period' => $this->package->trial_period,
+            'trial_period_unit' => $this->package->trial_period_unit,
+
             'company_fields' => $this->package->companyFields->map(fn($field) => [
                 'id' => $field->id,
                 'name' => $field->name,
