@@ -23,10 +23,10 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
-     * @param  string|array  ...$permissions
+     * @param  string|array  $permission
      * @return mixed
      */
-    public function handle($request, Closure $next, ...$permissions)
+    public function handle($request, Closure $next, $permission, $guard = null)
     {
         // Set company ID for multi-tenant environments
         if (!empty(auth('api')->user())) {
@@ -43,7 +43,7 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
 //            return $next($request);
 //        }
 
-        $permissions = is_array($permissions[0]) ? $permissions[0] : $permissions;
+        $permissions = explode('|', $permission);
 
         $user = auth()->guard($authGuard)->user();
 

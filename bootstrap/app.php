@@ -27,9 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'lang' => \App\Http\Middleware\Localization::class,
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
-            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
             'domain.tenant' => \App\Http\Middleware\DomainToTenantMiddleware::class,
         ]);
         $middleware->append(\App\Http\Middleware\Localization::class);
