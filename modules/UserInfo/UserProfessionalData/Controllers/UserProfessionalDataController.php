@@ -29,7 +29,7 @@ class UserProfessionalDataController extends Controller
     ) {
     }
 
-    public function index(GetUserProfessionalDataListRequest $request): JsonResponse
+    public function index(GetUserProfessionalDataListRequest $request)
     {
         $userId = Uuid::fromString($request->route('id'));
         $user = $this->userRepository->getUser($userId);
