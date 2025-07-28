@@ -9,13 +9,15 @@ use Modules\Subscription\Package\Models\Package;
 use Modules\Subscription\Package\Repositories\PackageRepository;
 use Modules\Subscription\Package\Repositories\CompanyPermissionLimitRepository;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\RoleAndPermission\Repositories\RoleRepository;
 
 class PackageAssignmentService
 {
     public function __construct(
         private PackageRepository $packageRepository,
         private CompanyPermissionLimitRepository $companyPermissionLimitRepository,
-        private CompanyRepository $companyRepository
+        private CompanyRepository $companyRepository,
+        private RoleRepository $roleRepository
     ) {}
 
     /**
@@ -32,6 +34,9 @@ class PackageAssignmentService
             // Then calculate permission limits from all assigned packages
             $permissionLimits = $this->calculatePermissionLimits($companyId);
             $this->syncCompanyPermissionLimits($companyId, $permissionLimits);
+
+            // Sync company role permissions with package permissions
+            $this->syncCompanyRolePermissions($companyId, $packageIds);
 
             return [
                 'company_id' => $companyId,
@@ -125,6 +130,63 @@ class PackageAssignmentService
         }
 
         $this->companyPermissionLimitRepository->bulkInsert($limitsData);
+    }
+
+    /**
+     * Sync company role permissions with package permissions.
+     */
+    private function syncCompanyRolePermissions(string $companyId, array $packageIds): void
+    {
+        // Get all roles for this company
+        $roles = $this->roleRepository->findByCompanyId($companyId);
+
+        if ($roles->isEmpty()) {
+            return;
+        }
+
+        // Get all permissions available in the assigned packages
+        $packages = $this->packageRepository->findByIdsWithPermissions($packageIds);
+        $allowedPermissionIds = [];
+
+        foreach ($packages as $package) {
+            foreach ($package->permissions as $permission) {
+                $allowedPermissionIds[] = $permission->id;
+            }
+        }
+
+        // Remove duplicates
+        $allowedPermissionIds = array_unique($allowedPermissionIds);
+
+        // For each company role, sync permissions to only include those from the assigned packages
+        foreach ($roles as $role) {
+            // Get current role permissions
+            $currentPermissionIds = $role->permissions()->pluck('id')->toArray();
+
+            // Find permissions to remove (those not in any assigned package)
+            $permissionsToRemove = array_diff($currentPermissionIds, $allowedPermissionIds);
+
+            // Find permissions to add (those in packages but not currently assigned to role)
+            $permissionsToAdd = array_diff($allowedPermissionIds, $currentPermissionIds);
+
+            // Remove permissions not in packages
+            if (!empty($permissionsToRemove)) {
+                $role->permissions()->detach($permissionsToRemove);
+            }
+
+            // Add permissions from packages to super admin and admin roles
+            if ($this->isAdminRole($role) && !empty($permissionsToAdd)) {
+                $role->permissions()->attach($permissionsToAdd);
+            }
+        }
+    }
+
+    /**
+     * Check if a role is super admin or admin.
+     */
+    private function isAdminRole($role): bool
+    {
+        $adminRoleNames = ['super-admin', 'admin', 'Super Admin', 'Admin'];
+        return in_array($role->name, $adminRoleNames, true);
     }
 
     /**
