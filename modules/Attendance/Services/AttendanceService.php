@@ -40,9 +40,19 @@ class AttendanceService
 
         $date = Carbon::now()->format('Y-m-d');
 
-        $periodStartTime = data_get($constraints, key: 'current_work_period.start_time');
+
+        $periodStartTime = data_get($constraints, 'current_work_period.start_time');
         $periodEndTime = data_get($constraints, 'current_work_period.end_time');
-        $day_status = data_get($constraints,'day_status');
+        $day_status = data_get($constraints, 'day_status');
+
+        $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
+        $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
+
+        if ($startDateTime->gt($endDateTime)) {
+            $endDateTime->addDay();
+        }
+
+
         // if (!$periodStartTime || !$periodEndTime) {
         //     throw new \Exception('لا يوجد فترة عمل حالية current_work_period لهذا المستخدم اليوم.');
         // }
@@ -52,8 +62,8 @@ class AttendanceService
             'company_id' => $clockInDTO->getCompanyId(),
             'clock_in_time' => $clockInDTO->getClockInTime(),
             'clock_in_location' => $clockInDTO->getLocation(),
-            'start_time' => $date . ' ' . $periodStartTime,
-            'end_time' => $date . ' ' . $periodEndTime,
+            'start_time' => $startDateTime,
+            'end_time' => $endDateTime,
             'notes' => $clockInDTO->getNotes(),
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
