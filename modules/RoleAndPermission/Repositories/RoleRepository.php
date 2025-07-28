@@ -100,4 +100,12 @@ class RoleRepository extends BaseRepository
             'inactive_roles' => $inactiveRoles,
         ]);
     }
+
+    /**
+     * Get all roles for a specific company
+     */
+    public function findByCompanyId(string $companyId): Collection
+    {
+        return $this->model->where('company_id', $companyId)->get();
+    }
 }
