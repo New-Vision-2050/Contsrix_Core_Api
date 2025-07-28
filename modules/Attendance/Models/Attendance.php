@@ -490,21 +490,45 @@ class Attendance extends Model implements Auditable
     /**
      * Calculate total work hours and update the model.
      */
-       public function calculateWorkHours(): float
+    public function calculateWorkHours(): float
     {
         // 1. Pre-condition check
         if (!$this->clock_in_time || !$this->clock_out_time) {
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
+            $this->is_late = false;
+            $this->late_minutes = 0;
+            $this->is_early_departure = false;
+            $this->early_departure_minutes = 0;
             $this->save();
             return 0.0;
         }
 
         // 2. Timezone setup
-        $timezone = $this->company->timezone ?? config('app.timezone');
-        $clockIn = $this->clock_in_time->setTimezone($timezone);
-        $clockOut = $this->clock_out_time->setTimezone($timezone);
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+
+        try {
+            $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
+            $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
+        } catch (\Exception $e) {
+            Log::error('Error parsing clock_in_time or clock_out_time: ' . $e->getMessage(), [
+                'clock_in_time' => $this->clock_in_time,
+                'clock_out_time' => $this->clock_out_time,
+                'attendance_id' => $this->id,
+            ]);
+
+            // If parsing fails, reset and save.
+            $this->total_work_hours = 0.0;
+            $this->total_break_hours = 0.0;
+            $this->overtime_hours = 0.0;
+            $this->is_late = false;
+            $this->late_minutes = 0;
+            $this->is_early_departure = false;
+            $this->early_departure_minutes = 0;
+            $this->save();
+            return 0.0;
+        }
 
         // 3. Validity check
         if ($clockOut->isBefore($clockIn)) {
@@ -512,6 +536,10 @@ class Attendance extends Model implements Auditable
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
+            $this->is_late = false;
+            $this->late_minutes = 0;
+            $this->is_early_departure = false;
+            $this->early_departure_minutes = 0;
             $this->save();
             return 0.0;
         }
@@ -523,8 +551,7 @@ class Attendance extends Model implements Auditable
         $this->total_break_hours = round($breakMinutes / 60, 2);
 
         // 5. Calculate Net Work Duration
-        // Use `diffInMinutes` with `absolute` flag to ensure a positive result.
-        $totalGrossMinutes = $clockOut->diffInMinutes($clockIn, true);
+        $totalGrossMinutes = $clockOut->diffInMinutes($clockIn);
         $workMinutes = $totalGrossMinutes - $breakMinutes;
         $workHours = $workMinutes > 0 ? round($workMinutes / 60, 2) : 0.0;
         $this->total_work_hours = $workHours;
@@ -537,42 +564,37 @@ class Attendance extends Model implements Auditable
             $this->overtime_hours = 0.0;
         }
 
-        // 7. Calculate Lateness
-        // *** THE FIX FOR LATE MINUTES ***
-        // Create the scheduled start time based on the clock-in day.
-        $scheduledStartTime = $clockIn->copy()->setHour(9)->setMinute(0)->setSecond(0);
-        if ($clockIn->isAfter($scheduledStartTime)) {
-            $this->is_late = true;
-            // Calculate the difference correctly.
-            $this->late_minutes = $scheduledStartTime->diffInMinutes($clockIn, true);
-        } else {
-            $this->is_late = false;
-            $this->late_minutes = 0;
+        // 7. Calculate Late and Early Departure
+        // *** IMPROVED: Get scheduled start and end times from user/company settings ***
+        $scheduledStartTimeString = $this->start_time ?? $this->user->start_time ?? '09:00';
+        $scheduledEndTimeString = $this->end_time ?? $this->user->end_time ?? '17:00';
+        try {
+            $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
+            $scheduledEndTime = $clockIn->copy()->setTimeFromTimeString($scheduledEndTimeString);
+        } catch (\Exception $e) {
+            Log::warning('Invalid scheduled start or end time format.  Using defaults.', [
+                'user_id' => $this->user_id,
+                'company_id' => $this->company_id,
+                'scheduled_start_time' => $scheduledStartTimeString,
+                'scheduled_end_time' => $scheduledEndTimeString,
+                'error' => $e->getMessage(),
+            ]);
+            // Fallback to default values if parsing fails
+            $scheduledStartTime = $clockIn->copy()->setHour(9)->setMinute(0)->setSecond(0);
+            $scheduledEndTime = $clockIn->copy()->setHour(17)->setMinute(0)->setSecond(0);
         }
 
-        // 8. Calculate Early Departure
-        // *** THE FIX FOR EARLY DEPARTURE MINUTES ***
-        // Create the scheduled end time based on the clock-in day.
-        $scheduledEndTime = $clockIn->copy()->setHour(17)->setMinute(0)->setSecond(0);
-        if ($clockOut->isBefore($scheduledEndTime)) {
-            $this->is_early_departure = true;
-            // Calculate the difference correctly.
-            $this->early_departure_minutes = $clockOut->diffInMinutes($scheduledEndTime, true);
-        } else {
-            $this->is_early_departure = false;
-            $this->early_departure_minutes = 0;
-        }
+        $this->is_late = $clockIn->gt($scheduledStartTime);
+        $this->late_minutes = $this->is_late ? $scheduledStartTime->diffInMinutes($clockIn) : 0;
 
-        // 9. Validate data integrity before saving
-        // Note: The validate() method calls validateTimes(), which might be redundant here,
-        // but it's good for ensuring consistency.
+        $this->is_early_departure = $clockOut->lt($scheduledEndTime);
+        $this->early_departure_minutes = $this->is_early_departure ? $clockOut->diffInMinutes($scheduledEndTime) : 0;
+
         $this->validate();
 
-        // 10. Persist all changes to the database
         $this->save();
         return $workHours;
     }
-
     /**
      * Calculate overtime hours based on standard work hours.
      */
