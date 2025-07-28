@@ -32,10 +32,10 @@ class UserProfessionalDataRepository extends BaseRepository
         );
     }
 
-    public function getUserProfessionalData(UuidInterface $globalId,$userId): ?UserProfessionalData
+    public function getUserProfessionalData(UuidInterface $globalId,$companyId): ?UserProfessionalData
     {
         return $this->model->where([
-            'user_id' => $userId
+            'global_id' => $globalId, 'company_id' => $companyId
         ])->first();
     }
 
