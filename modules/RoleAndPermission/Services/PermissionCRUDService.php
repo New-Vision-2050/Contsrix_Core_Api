@@ -16,12 +16,13 @@ class PermissionCRUDService
 {
     public function __construct(
         private PermissionRepository $repository,
-    ) {
+    )
+    {
     }
 
     public function create(CreatePermissionDTO $createPermissionDTO): Permission
     {
-         return $this->repository->createPermission($createPermissionDTO->toArray());
+        return $this->repository->createPermission($createPermissionDTO->toArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -58,7 +59,7 @@ class PermissionCRUDService
                 for ($i = count($nameParts) - 1; $i >= 1; $i--) {
                     if ($i == 1 && str_contains($nameParts[$i], "*")) {
                         $resources = explode('*', $nameParts[$i]);
-                        $translatedName .=" ". $resources[0];
+                        $translatedName .= " " . $resources[0];
                         break;
                     }
                     $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
@@ -80,17 +81,50 @@ class PermissionCRUDService
         // First group by the first part of the name (module)
         $groupedByModule = collect($modified)->groupBy(function ($query) {
             $parts = explode('.', $query["key"]);
-            return isset($parts[0]) ? __('names.' . $parts[0]): 'other';
+            return isset($parts[0]) ? __('names.' . $parts[0]) : 'other';
         });
 
         // Then for each module group, group again by the second part (action)
         $nestedGroups = $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
                 $parts = explode('.', $item["key"]);
-
-                return isset($parts[1]) ? __('names.' . $parts[1]) : 'other';
+                if (isset($parts[1]) && str_contains($parts[1], '*')) {
+                    $subParts = explode("*", $parts[1]);
+                    if (isset($subParts[1])) {
+                        // Check if the part after asterisk is a UUID
+                        $isUuid = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $subParts[1]);
+                        if ($isUuid) {
+                            // If it's a UUID, group by the part before asterisk
+                            return isset($subParts[0]) ?  $subParts[0] : 'other';
+                        } else {
+                            // If it's not a UUID, group by the part after asterisk
+                            return __('names.' . $subParts[0]);
+                        }
+                    }
+                }
+                return isset($parts[1]) ? __('names.' . explode("*", $parts[1])[0]) : 'other';
+            })->map(function ($subGroup, $action) {
+                return collect($subGroup)->groupBy(function ($item) {
+                    $parts = explode('.', $item["key"]);
+                    if (isset($parts[1]) && str_contains($parts[1], '*')) {
+                        $subParts = explode("*", $parts[1]);
+                        if (isset($subParts[1])) {
+                            // Check if the part after asterisk is a UUID
+                            $isUuid = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $subParts[1]);
+                            if ($isUuid) {
+                                // If it's a UUID, group by the part before asterisk
+                                return isset($subParts[0]) ?  $subParts[0] : 'other';
+                            } else {
+                                // If it's not a UUID, group by the part after asterisk
+                                return __('names.' . $subParts[1]);
+                            }
+                        }
+                    }
+                    return 'other';
+                });
             });
         })->toArray();
+
         return $nestedGroups;
     }
 
@@ -108,7 +142,7 @@ class PermissionCRUDService
      * @param UuidInterface|string $targetCompanyId The target company ID to copy to
      * @return Collection The collection of created permission instances
      */
-    public function copyPermissionsToCompany($targetCompanyId,$sourceCompanyId = null): Collection
+    public function copyPermissionsToCompany($targetCompanyId, $sourceCompanyId = null): Collection
     {
         // Convert string IDs to UuidInterface if needed
         if (is_string($targetCompanyId)) {

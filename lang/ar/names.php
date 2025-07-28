@@ -60,6 +60,8 @@ return [
     'company-profile*legal-data' => 'البيانات القانونية',
     'company-profile*address' => 'العنوان',
     'company-profile*official-document' => 'وثيقة رسمية',
+    'company-profile*branch' => 'وثيقة رسمية',
+
     "human-resources"=>"الموارد البشرية",
 
     // User Profile
@@ -86,6 +88,13 @@ return [
     'user-profile*work-license' => 'رخصة العمل',
     'user-profile*family-information' => 'معلومات العائلة',
 
+    'user-profile*data' => 'معلومات الرسميه',
+    'user-profile*education' => 'معلومات التعليم',
+    'user-profile*privileges' => 'معلومات الامتيازات',
+    'user-profile*identity' => 'معلومات الهويه',
+    'user-profile*contact' => 'معلومات التواصل ',
+
+
 
 
     "program-settings"=>"اعدادات البرامج",
@@ -97,9 +106,11 @@ return [
 
 
     // Geographic Data
-    'settings.program-settings*country' => 'دولة',
-    'settings.program-settings*state' => 'ولاية',
-    'settings.program-settings*city' => 'مدينة',
+    'program-settings*country' => 'دولة',
+    'program-settings*state' => 'ولاية',
+    'program-settings*city' => 'مدينة',
+    'program-settings*driver' => 'مشغل الخدمة',
+    'program-settings*identifier' => 'المعرف',
 
     // User Profile generic
     'data' => 'بيانات',
