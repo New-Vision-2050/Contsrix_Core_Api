@@ -534,6 +534,7 @@ class CompanyUserRepository extends BaseRepository
             'management_id' => $mainManagement->id ?? null,
             'job_title_id' => $jobTitleId,
             'job_type_id' => $jobTypeId,
+            "user_id" => $user->id
         ];
 
         // Create or update professional data
