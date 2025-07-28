@@ -7,12 +7,12 @@ return [
         // ================================================================================================
 
         // Company module permissions
-        'COMPANY_VIEW' => 'companies.companies-list.view',
-        'COMPANY_LIST' => 'companies.companies-list.list',
-        'COMPANY_CREATE' => 'companies.companies-list.create',
-        'COMPANY_UPDATE' => 'companies.companies-list.update',
-        'COMPANY_DELETE' => 'companies.companies-list.delete',
-        'COMPANY_EXPORT' => 'companies.companies-list.export',
+        'COMPANY_VIEW' => 'companies.companies-list*companies-list.view',
+        'COMPANY_LIST' => 'companies.companies-list*companies-list.list',
+        'COMPANY_CREATE' => 'companies.companies-list*companies-list.create',
+        'COMPANY_UPDATE' => 'companies.companies-list*companies-list.update',
+        'COMPANY_DELETE' => 'companies.companies-list*companies-list.delete',
+        'COMPANY_EXPORT' => 'companies.companies-list*companies-list.export',
 
         // ================================================================================================
         // COMPANY PROFILE PERMISSIONS
