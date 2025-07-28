@@ -26,7 +26,7 @@ class UserProfessionalData extends Model
     use BaseFilterable;
     //use HasTranslations;
     //use SoftDeletes;
-//    use BelongsToTenant;//we can use belongs to primary model user or belongs to tenant because have company id
+    use BelongsToTenant;//we can use belongs to primary model user or belongs to tenant because have company id
 
     //public array $translatable = [];
     protected $table = 'user_professional_datas';
