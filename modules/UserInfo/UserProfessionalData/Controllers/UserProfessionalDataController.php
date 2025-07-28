@@ -33,6 +33,7 @@ class UserProfessionalDataController extends Controller
     {
         $userId = Uuid::fromString($request->route('id'));
         $user = $this->userRepository->getUser($userId);
+        return $user;
 
         $item = $this->userProfessionalDataService->get(
             Uuid::fromString($user->company_id),
