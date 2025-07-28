@@ -34,14 +34,14 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         $this->registerMigrations();
         $this->registerCommands();
-        Gate::before(function ($user, $ability) {
-            return $user->hasRole('super-admin') ||  $user->hasRole('admin' ) || (auth()->check() && auth()->user()->is_owner == 1) ? true : null;
-        });
+//        Gate::before(function ($user, $ability) {
+//            return $user->hasRole('super-admin') ||  $user->hasRole('admin' ) || (auth()->check() && auth()->user()->is_owner == 1) ? true : null;
+//        });
 
         IlluminateRoute::macro('permission', function (...$permissions) {
-            if(auth()->check() && auth()->user()->is_owner == 1) {
-                return $this;
-            }
+//            if(auth()->check() && auth()->user()->is_owner == 1) {
+//                return $this;
+//            }
             $permissions = collect($permissions)
                 ->flatten()
                 ->map(fn ($permission) => $permission instanceof \UnitEnum ? $permission->value : $permission)
