@@ -59,10 +59,43 @@ class RoleWithPermissionPresenter extends AbstractPresenter
         });
 
         // Then for each module group, group again by the second part (action)
-        $nestedGroups = $groupedByModule->map(function ($group, $module) {
+        $nestedGroups =  $groupedByModule->map(function ($group, $module) {
             return collect($group)->groupBy(function ($item) {
                 $parts = explode('.', $item["key"]);
-                return isset($parts[1]) ? __('names.' . $parts[1]) : 'other';
+                if (isset($parts[1]) && str_contains($parts[1], '*')) {
+                    $subParts = explode("*", $parts[1]);
+                    if (isset($subParts[1])) {
+                        // Check if the part after asterisk is a UUID
+                        $isUuid = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $subParts[1]);
+                        if ($isUuid) {
+                            // If it's a UUID, group by the part before asterisk
+                            return isset($subParts[0]) ?  $subParts[0] : 'other';
+                        } else {
+                            // If it's not a UUID, group by the part after asterisk
+                            return __('names.' . $subParts[0]);
+                        }
+                    }
+                }
+                return isset($parts[1]) ? __('names.' . explode("*", $parts[1])[0]) : 'other';
+            })->map(function ($subGroup, $action) {
+                return collect($subGroup)->groupBy(function ($item) {
+                    $parts = explode('.', $item["key"]);
+                    if (isset($parts[1]) && str_contains($parts[1], '*')) {
+                        $subParts = explode("*", $parts[1]);
+                        if (isset($subParts[1])) {
+                            // Check if the part after asterisk is a UUID
+                            $isUuid = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $subParts[1]);
+                            if ($isUuid) {
+                                // If it's a UUID, group by the part before asterisk
+                                return isset($subParts[0]) ?  $subParts[0] : 'other';
+                            } else {
+                                // If it's not a UUID, group by the part after asterisk
+                                return __('names.' . $subParts[1]);
+                            }
+                        }
+                    }
+                    return 'other';
+                });
             });
         })->toArray();
 
