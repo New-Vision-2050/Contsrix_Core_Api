@@ -39,7 +39,8 @@ class CompanyUserCRUDService
         $data = [
             "name" => $userInCompany->name,
             "company_name" => $userInCompany->company?->name,
-            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain
+            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
+            "serial_no" => $userInCompany->company?->serial_no
         ];
         $userInCompany->notify(new SendDomainForUser($data));
 
@@ -59,7 +60,8 @@ class CompanyUserCRUDService
         $data = [
             "name" => $userInCompany->name,
             "company_name" => $userInCompany->company?->name,
-            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain
+            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
+            "serial_no" => $userInCompany->company?->serial_no
         ];
         $userInCompany->notify(new SendDomainForUser($data));
     }
