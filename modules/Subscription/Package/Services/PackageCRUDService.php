@@ -68,7 +68,7 @@ class PackageCRUDService
 
     public function assignToCompany(string $packageId, string $companyId): void
     {
-        $this->assignmentService->assignPackageToCompany($packageId, $companyId);
+        $this->assignmentService->assignPackagesToCompany($packageId, $companyId);
     }
 
     /**
