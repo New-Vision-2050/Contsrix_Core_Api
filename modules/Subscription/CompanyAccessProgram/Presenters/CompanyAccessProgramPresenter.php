@@ -89,7 +89,7 @@ class CompanyAccessProgramPresenter extends AbstractPresenter
         $programsCount = $companyAccessProgram->programs_count ?? 0;
         $subEntitiesCount = $companyAccessProgram->sub_entities_count ?? 0;
 
-        return $programsCount + $subEntitiesCount;
+        return  $subEntitiesCount;
     }
 
     public function getData(bool $isListing = false): ?array
