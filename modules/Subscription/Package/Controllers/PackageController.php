@@ -102,12 +102,9 @@ class PackageController extends Controller
 
     public function update(UpdatePackageRequest $request): JsonResponse
     {
-        $command = $request->createUpdatePackageCommand();
-        $this->updatePackageHandler->handle($command);
+        $updatedItem = $this->packageService->update($request->createUpdatePackageDTO());
 
-        $item = $this->packageService->get($command->getId());
-
-        $presenter = new PackagePresenter($item);
+        $presenter = new PackagePresenter($updatedItem);
 
         return Json::item($presenter->getData());
     }

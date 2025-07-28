@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\Subscription\Package\Models\Package;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Subscription\Package\DTO\CreatePackageDTO;
+use Modules\Subscription\Package\DTO\UpdatePackageDTO;
 use Modules\Subscription\Package\Models\PackageFeature;
 
 /**
@@ -59,7 +60,25 @@ class PackageRepository extends BaseRepository
         return $package;
     }
 
-    public function updatePackage(UuidInterface $id, array $data): bool
+    public function updatePackage(UpdatePackageDTO $updatePackageDTO): Package
+    {
+        $package = $this->findOneOrFail($updatePackageDTO->packageId);
+        
+        $package->update($updatePackageDTO->toArray());
+
+        // Sync company fields
+        $package->companyFields()->sync($updatePackageDTO->companyFields);
+
+        // Sync company types  
+        $package->companyTypes()->sync($updatePackageDTO->companyTypes);
+
+        // Sync countries
+        $package->countries()->sync($updatePackageDTO->countries);
+
+        return $package->fresh();
+    }
+
+    public function updatePackageById(UuidInterface $id, array $data): bool
     {
         return $this->update($id, $data);
     }
