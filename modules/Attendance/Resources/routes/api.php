@@ -65,7 +65,7 @@ Route::prefix('attendance')->group(function () {
         ->name('attendance.team.show');
 
     // Attendance Management (HR/Admin)
-    Route::middleware('permission:manage-attendance')->group(function () {
+    // Route::middleware('permission:manage-attendance')->group(function () {
         Route::put('{attendanceId}', [AttendanceController::class, 'update'])
             ->name('attendance.update');
 
@@ -77,7 +77,7 @@ Route::prefix('attendance')->group(function () {
 
         Route::delete('{attendanceId}', [AttendanceController::class, 'destroy'])
             ->name('attendance.destroy');
-    });
+    // });
 });
 
 // Leave Management Routes
