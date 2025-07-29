@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\RoleAndPermission\Commands\SyncCompanyPermissionsCommand;
+use Modules\RoleAndPermission\Commands\SyncCompanyRolesCommand;
 use Modules\RoleAndPermission\Commands\ManageModulePermissionsCommand;
 use Modules\RoleAndPermission\Commands\UpdatePermissionNamesCommand;
 use Modules\RoleAndPermission\Services\PermissionConfigService;
@@ -20,6 +21,7 @@ class RoleAndPermissionServiceProvider extends ModuleServiceProvider
      */
     protected array $commands = [
         SyncCompanyPermissionsCommand::class,
+        SyncCompanyRolesCommand::class,
         ManageModulePermissionsCommand::class,
         UpdatePermissionNamesCommand::class,
     ];
