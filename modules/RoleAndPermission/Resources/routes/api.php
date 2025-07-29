@@ -18,7 +18,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // Permission Hierarchy Routes
     Route::group(['prefix' => 'permissions/hierarchy'], function () {
         Route::get('/from-names', [PermissionHierarchyController::class, 'getPermissionsFromNames'])->permission(Permission::PERMISSION_LIST());
-        Route::get('/detailed', [PermissionHierarchyController::class, 'getDetailedPermissions'])->permission(Permission::PERMISSION_LIST());
+        Route::get('/detailed', [PermissionHierarchyController::class, 'getDetailedPermissions']);
     });
 
     Route::group(['prefix' => 'roles'], function () {

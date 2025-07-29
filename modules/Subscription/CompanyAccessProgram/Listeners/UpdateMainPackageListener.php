@@ -202,10 +202,14 @@ class UpdateMainPackageListener
             'original_data' => $originalData
         ]);
         
-        // Get current sub-entity IDs
+        // Refresh the model and reload the subEntities relationship to get fresh data from database
+        $companyAccessProgram->refresh();
+        $companyAccessProgram->load('subEntities');
+        
+        // Get current sub-entity IDs from refreshed model
         $currentSubEntityIds = $companyAccessProgram->subEntities->pluck('sub_entity_id')->sort()->values()->toArray();
         
-        Log::debug("Current sub-entity IDs", [
+        Log::debug("Current sub-entity IDs (after refresh)", [
             'company_access_program_id' => $companyAccessProgram->id,
             'current_sub_entity_ids' => $currentSubEntityIds
         ]);
@@ -224,7 +228,13 @@ class UpdateMainPackageListener
         
         Log::debug("Sub-entities changed result", [
             'company_access_program_id' => $companyAccessProgram->id,
-            'sub_entities_changed' => $subEntitiesChanged
+            'sub_entities_changed' => $subEntitiesChanged,
+            'comparison_details' => [
+                'current_count' => count($currentSubEntityIds),
+                'original_count' => count($originalSubEntityIds),
+                'added' => array_diff($currentSubEntityIds, $originalSubEntityIds),
+                'removed' => array_diff($originalSubEntityIds, $currentSubEntityIds)
+            ]
         ]);
         
         return $subEntitiesChanged;
