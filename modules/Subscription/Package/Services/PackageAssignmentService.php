@@ -217,7 +217,7 @@ class PackageAssignmentService
             foreach ($package->companies as $company) {
                 // Get all packages for this company
                 $companyWithPackages = $this->companyRepository->findWithPackages($company->id);
-                $companyPackages = $companyWithPackages->packages()->with('permissions')->get();
+                $companyPackageIds = $companyWithPackages->packages->pluck('id')->toArray();
 
                 // Recalculate limits
                 $permissionLimits = $this->calculatePermissionLimits($company->id);
@@ -249,6 +249,9 @@ class PackageAssignmentService
                         );
                     }
                 }
+
+                // Sync company role permissions with updated package permissions
+                $this->syncCompanyRolePermissions($company->id, $companyPackageIds);
             }
         });
     }
@@ -257,6 +260,14 @@ class PackageAssignmentService
      * Recalculate permission limits for all companies using this package.
      */
     public function recalculate(Package $package): void
+    {
+        $this->updatePackageLimits($package->id);
+    }
+
+    /**
+     * Sync a package to all its assigned companies (used for main package updates).
+     */
+    public function syncPackageToCompanies(Package $package): void
     {
         $this->updatePackageLimits($package->id);
     }

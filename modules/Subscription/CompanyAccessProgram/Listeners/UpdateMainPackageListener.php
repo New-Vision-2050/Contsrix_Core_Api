@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\Log;
 use Modules\RoleAndPermission\Services\PermissionLookupService;
 use Modules\Subscription\CompanyAccessProgram\Events\CompanyAccessProgramUpdated;
 use Modules\Subscription\Package\Models\Package;
+use Modules\Subscription\Package\Services\PackageAssignmentService;
 
 class UpdateMainPackageListener
 {
     public function __construct(
-        private PermissionLookupService $permissionLookupService
+        private PermissionLookupService $permissionLookupService,
+        private PackageAssignmentService $packageAssignmentService
     ) {
     }
 
@@ -29,6 +31,11 @@ class UpdateMainPackageListener
             DB::transaction(function () use ($event) {
                 $companyAccessProgram = $event->companyAccessProgram;
                 $originalData = $event->originalData;
+                
+                Log::info("UpdateMainPackageListener triggered", [
+                    'company_access_program_id' => $companyAccessProgram->id,
+                    'original_data' => $originalData
+                ]);
                 
                 // Find the main package for this company access program
                 $mainPackage = $this->findMainPackage($companyAccessProgram);
@@ -55,7 +62,14 @@ class UpdateMainPackageListener
                 }
                 
                 // Check if sub-entities changed by comparing current vs original
-                if ($this->subEntitiesChanged($companyAccessProgram, $originalData)) {
+                $subEntitiesChangeResult = $this->subEntitiesChanged($companyAccessProgram, $originalData);
+                
+                Log::info("Sub-entities change check result", [
+                    'company_access_program_id' => $companyAccessProgram->id,
+                    'sub_entities_changed' => $subEntitiesChangeResult
+                ]);
+                
+                if ($subEntitiesChangeResult) {
                     $this->updatePackagePermissions($mainPackage, $companyAccessProgram);
                     $packageUpdated = true;
                     
@@ -65,8 +79,16 @@ class UpdateMainPackageListener
                     ]);
                 }
                 
+                // If package was updated, sync permissions to all related companies
                 if ($packageUpdated) {
-                    Log::info("Main package auto-updated for CompanyAccessProgram", [
+                    $this->syncPackageToCompanies($mainPackage);
+                    
+                    Log::info("Main package auto-updated and synced to companies for CompanyAccessProgram", [
+                        'company_access_program_id' => $companyAccessProgram->id,
+                        'package_id' => $mainPackage->id
+                    ]);
+                } else {
+                    Log::info("No package updates needed for CompanyAccessProgram", [
                         'company_access_program_id' => $companyAccessProgram->id,
                         'package_id' => $mainPackage->id
                     ]);
@@ -156,6 +178,17 @@ class UpdateMainPackageListener
     }
 
     /**
+     * Sync main package to all related companies
+     *
+     * @param Package $package
+     * @return void
+     */
+    private function syncPackageToCompanies(Package $package): void
+    {
+        $this->packageAssignmentService->syncPackageToCompanies($package);
+    }
+
+    /**
      * Check if sub-entities have changed
      *
      * @param \Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram $companyAccessProgram
@@ -164,14 +197,36 @@ class UpdateMainPackageListener
      */
     private function subEntitiesChanged($companyAccessProgram, array $originalData): bool
     {
+        Log::debug("Checking if sub-entities have changed", [
+            'company_access_program_id' => $companyAccessProgram->id,
+            'original_data' => $originalData
+        ]);
+        
         // Get current sub-entity IDs
         $currentSubEntityIds = $companyAccessProgram->subEntities->pluck('sub_entity_id')->sort()->values()->toArray();
+        
+        Log::debug("Current sub-entity IDs", [
+            'company_access_program_id' => $companyAccessProgram->id,
+            'current_sub_entity_ids' => $currentSubEntityIds
+        ]);
         
         // Get original sub-entity IDs if provided
         $originalSubEntityIds = isset($originalData['sub_entity_ids']) 
             ? collect($originalData['sub_entity_ids'])->sort()->values()->toArray()
             : [];
         
-        return $currentSubEntityIds !== $originalSubEntityIds;
+        Log::debug("Original sub-entity IDs", [
+            'company_access_program_id' => $companyAccessProgram->id,
+            'original_sub_entity_ids' => $originalSubEntityIds
+        ]);
+        
+        $subEntitiesChanged = $currentSubEntityIds !== $originalSubEntityIds;
+        
+        Log::debug("Sub-entities changed result", [
+            'company_access_program_id' => $companyAccessProgram->id,
+            'sub_entities_changed' => $subEntitiesChanged
+        ]);
+        
+        return $subEntitiesChanged;
     }
 }
