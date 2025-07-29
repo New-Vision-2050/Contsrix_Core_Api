@@ -180,7 +180,7 @@ class SubEntity extends Model
         foreach (self::PERMISSION_ACTIONS as $action) {
             Permission::firstOrCreate([
                 'name' => "{$module}.{$resource}.{$action}",
-                "key" => "{$module}.{$resource}.{$action}",
+                "key" => "dynamic.",$this->slug."$action",
 
             ], [
                 'status' => true,
