@@ -191,7 +191,6 @@ class PackageController extends Controller
     public function getPermissions(Package $package)
     {
         $package->load('permissions');
-        return app(PermissionLookupService::class)->getPermissionsForPackage($package->id);
         $presenter = new PackageWithPermissionsPresenter($package);
 
         return Json::item($presenter->getData());
