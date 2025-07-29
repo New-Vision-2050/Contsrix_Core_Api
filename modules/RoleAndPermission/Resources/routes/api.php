@@ -7,7 +7,7 @@ use Modules\RoleAndPermission\Controllers\PermissionHierarchyController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('permissions', [PermissionController::class, 'index'])->permission(Permission::PERMISSION_LIST());
+    Route::get('permissions', [PermissionController::class, 'index']);//->permission(Permission::PERMISSION_LIST())
     Route::get('permissions/lookup', [PermissionController::class, 'permissionAsLookup']);
     Route::post('permissions', [PermissionController::class, 'store'])->permission(Permission::PERMISSION_CREATE());
     Route::get('permissions/{id}', [PermissionController::class, 'show'])->permission(Permission::PERMISSION_VIEW());
@@ -22,7 +22,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     });
 
     Route::group(['prefix' => 'roles'], function () {
-        Route::get('/', [RoleController::class, 'index'])->permission(Permission::ROLE_VIEW());
+        Route::get('/', [RoleController::class, 'index']);//->permission(Permission::ROLE_VIEW())
         Route::get('/widgets', [RoleController::class, 'getRoleWidgetsData'])->permission(Permission::ROLE_VIEW());
         Route::post('/', [RoleController::class, 'store'])->permission(Permission::ROLE_CREATE());
         Route::get('/{id}', [RoleController::class, 'show'])->permission(Permission::ROLE_VIEW());
