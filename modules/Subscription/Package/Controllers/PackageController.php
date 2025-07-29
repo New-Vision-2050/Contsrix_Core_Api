@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Subscription\Package\Controllers;
 
 use Modules\RoleAndPermission\Services\PermissionLookupService;
+use Modules\Subscription\Package\Presenters\PackageSimplePresenter;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
@@ -74,6 +75,39 @@ class PackageController extends Controller
         );
 
         return Json::items(PackagePresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+    public function list(GetPackageListRequest $request): JsonResponse
+    {
+        $filters = [];
+
+        if ($request->has('status')) {
+            $filters['is_active'] = $request->boolean('status');
+        }
+
+        if ($request->has('name')) {
+            $filters['name'] = $request->get('name');
+        }
+
+
+
+
+        if ($request->has('company_access_program_id')) {
+            $filters['company_access_program_id'] = $request->get('company_access_program_id');
+        }
+
+
+
+        if ($request->has('company_field_id')) {
+            $filters['company_field_id'] = $request->input('company_field_id');
+        }
+
+        $list = $this->packageService->list(
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10),
+            $filters
+        );
+
+        return Json::items(PackageSimplePresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function counts(GetPackageListRequest $request): JsonResponse
