@@ -26,7 +26,7 @@ class ConstraintPresenter extends AbstractPresenter
             'priority' => (int) $this->constraint->priority,
             'start_date' => $this->constraint->start_date?->format('Y-m-d'),
             'end_date' => $this->constraint->end_date?->format('Y-m-d'),
-            'config' => $this->constraint->constraint_config,
+            'config' => $this->formatConstraintConfig(),
             'branches' => $this->formatBranches(),
             'created_by' => $this->constraint->creator?->name,
             'created_at' => $this->constraint->created_at?->format('Y-m-d H:i:s'),
@@ -46,5 +46,39 @@ class ConstraintPresenter extends AbstractPresenter
                 'name' => $branch->name,
             ];
         })->all();
+    }
+
+    private function formatConstraintConfig(): array
+    {
+        $config = $this->constraint->constraint_config;
+
+        if (!isset($config['time_rules']['weekly_schedule'])) {
+            return $config;
+        }
+
+        $weeklySchedule = $config['time_rules']['weekly_schedule'];
+
+        $orderedDays = [
+            'saturday',
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+        ];
+
+        $orderedSchedule = [];
+
+        foreach ($orderedDays as $day) {
+            $orderedSchedule[$day] = $weeklySchedule[$day] ?? [
+                'enabled' => false,
+                'periods' => [],
+            ];
+        }
+
+        $config['time_rules']['weekly_schedule'] = $orderedSchedule;
+
+        return $config;
     }
 }
