@@ -473,12 +473,9 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
     // Get all relevant users with optimized eager loading
     $allRelevantUsers = User::where('company_id', $companyId)
         ->filter($filters)
-        ->select(['id', 'name', 'company_id'])
-        ->with([
-            'companyUser:id,user_id,gender,phone,country_id',
-            'companyUser.country:id,name',
-            'professionalData'
-        ])
+        ->select('*')
+        ->with(['professionalData','companyUser'])
+        ->whereHas('companyUser')
         ->get();
 
     $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
@@ -491,8 +488,8 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
             'user:id,name,email,company_id,status',
         ])
         ->whereIn('user_id', $allRelevantUserIds)
-        ->whereBetween('clock_in_time', [$startDate->startOfDay(), $endDate->endOfDay()])
-        ->orderBy('clock_in_time')
+        ->whereBetween('start_time', [$startDate->startOfDay(), $endDate->endOfDay()])
+        ->orderBy('start_time')
         ->get();
 
     // Group attendance records by user_id and date
