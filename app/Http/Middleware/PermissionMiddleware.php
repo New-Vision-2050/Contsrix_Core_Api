@@ -38,10 +38,10 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
         if (auth()->guard($authGuard)->guest()) {
             throw UnauthorizedException::notLoggedIn();
         }
-//        if(auth()->check() &&( auth()->user()->is_owner == 1|| auth()->user()->email == 'admin@constrix-nv.com')) {
-//
-//            return $next($request);
-//        }
+        if(auth()->check() && auth()->user()->email == 'admin@constrix-nv.com') {
+
+            return $next($request);
+        }
 
         $permissions = explode('|', $permission);
 
