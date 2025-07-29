@@ -51,7 +51,7 @@ class SyncCompanyRolesCommand extends Command
     public function handle(): int
     {
         $this->info('🚀 Starting company roles sync...');
-        
+
         $companyId = $this->option('company-id');
         $dryRun = $this->option('dry-run');
         $createMissing = $this->option('create-missing');
@@ -62,7 +62,7 @@ class SyncCompanyRolesCommand extends Command
 
         try {
             DB::transaction(function () use ($companyId, $dryRun, $createMissing) {
-                $companies = $companyId 
+                $companies = $companyId
                     ? collect([$this->companyRepository->findOneOrFail($companyId)])
                     : $this->getAllCompanies();
 
@@ -101,7 +101,7 @@ class SyncCompanyRolesCommand extends Command
                 $this->error("❌ Error syncing company roles: " . $e->getMessage());
                 return Command::FAILURE;
             }
-            
+
             $this->info('✅ Dry run completed - no changes applied');
             return Command::SUCCESS;
         }
@@ -180,7 +180,7 @@ class SyncCompanyRolesCommand extends Command
      */
     private function getOrCreateAdminRoles(string $companyId, bool $createMissing, bool $dryRun): array
     {
-        $adminRoleNames = ['super admin', 'admin'];
+        $adminRoleNames = ['super-admin', 'admin'];
         $roles = [];
         $created = 0;
 
@@ -197,17 +197,21 @@ class SyncCompanyRolesCommand extends Command
                         'guard_name' => 'web',
                         'status' => 1,
                     ]);
+                    $this->info("  ✨ Created role: {$roleName}");
+                    $roles[] = $role; // Add the created role to the array
+                } else {
+                    $this->info("  ✨ Would create role: {$roleName}");
                 }
-                $this->info("  ✨ Created role: {$roleName}");
                 $created++;
-            }
-
-            if ($role) {
-                $roles[] = $role;
+            } else if ($role) {
+                $this->info("  📋 Found existing role: {$roleName}");
+                $roles[] = $role; // Add existing role to the array
             } else if (!$createMissing) {
                 $this->warn("  ⚠️  Role '{$roleName}' not found (use --create-missing to create)");
             }
         }
+
+        $this->info("  👥 Admin roles ready for sync: " . count($roles));
 
         return [
             'roles' => $roles,
@@ -220,25 +224,84 @@ class SyncCompanyRolesCommand extends Command
      */
     private function syncAdminRolePermissions($role, array $allowedPermissionIds, bool $dryRun): array
     {
+        $this->info("    🔄 Syncing permissions for admin role: {$role->name} (ID: {$role->id})");
+        
         $currentPermissionIds = $role->permissions()->pluck('id')->toArray();
         
+        $this->info("    📊 Current permissions: " . count($currentPermissionIds));
+        $this->info("    📦 Package permissions available: " . count($allowedPermissionIds));
+
+        // Debug: Check if permissions actually exist in database
+        if (!empty($allowedPermissionIds)) {
+            $existingPermissions = \Modules\RoleAndPermission\Models\Permission::whereIn('id', $allowedPermissionIds)->pluck('id')->toArray();
+            $missingPermissions = array_diff($allowedPermissionIds, $existingPermissions);
+            
+            $this->info("    🔍 Permissions that exist in DB: " . count($existingPermissions));
+            if (!empty($missingPermissions)) {
+                $this->warn("    ⚠️  Missing permission IDs: " . json_encode(array_slice($missingPermissions, 0, 5)));
+            }
+        }
+
         $permissionsToAdd = array_diff($allowedPermissionIds, $currentPermissionIds);
         $permissionsToRemove = array_diff($currentPermissionIds, $allowedPermissionIds);
 
+        $this->info("    ➕ Permissions to add: " . count($permissionsToAdd));
+        $this->info("    ➖ Permissions to remove: " . count($permissionsToRemove));
+
         $updated = false;
 
-        if (!empty($permissionsToAdd) && !$dryRun) {
-            $role->permissions()->attach($permissionsToAdd);
+        if (!empty($permissionsToAdd)) {
+            if (!$dryRun) {
+                $this->info("    🔧 Attempting to attach " . count($permissionsToAdd) . " permissions...");
+                
+                try {
+                    // Debug: Show some permission IDs being attached
+                    $this->info("    🔍 Sample permission IDs to attach: " . json_encode(array_slice($permissionsToAdd, 0, 3)));
+                    
+                    $role->permissions()->attach($permissionsToAdd);
+                    
+                    // Verify the attachment worked
+                    $newPermissionCount = $role->permissions()->count();
+                    $this->info("    ✅ Added permissions. New total: {$newPermissionCount}");
+                    
+                    // Double-check by counting records in pivot table
+                    $pivotCount = \Illuminate\Support\Facades\DB::table('role_has_permissions')
+                        ->where('role_id', $role->id)
+                        ->count();
+                    $this->info("    🔍 Pivot table records for this role: {$pivotCount}");
+                    
+                } catch (\Exception $e) {
+                    $this->error("    ❌ Failed to attach permissions: " . $e->getMessage());
+                    throw $e;
+                }
+            } else {
+                $this->info("    🔍 Would add " . count($permissionsToAdd) . " permissions to {$role->name}");
+            }
             $updated = true;
         }
 
-        if (!empty($permissionsToRemove) && !$dryRun) {
-            $role->permissions()->detach($permissionsToRemove);
+        if (!empty($permissionsToRemove)) {
+            if (!$dryRun) {
+                $role->permissions()->detach($permissionsToRemove);
+                $this->info("    ✅ Removed " . count($permissionsToRemove) . " permissions from {$role->name}");
+            } else {
+                $this->info("    🔍 Would remove " . count($permissionsToRemove) . " permissions from {$role->name}");
+            }
             $updated = true;
         }
 
-        if (!empty($permissionsToAdd) || !empty($permissionsToRemove)) {
-            $this->info("  🔧 Admin role '{$role->name}': +" . count($permissionsToAdd) . " -" . count($permissionsToRemove) . " permissions");
+        if (empty($permissionsToAdd) && empty($permissionsToRemove)) {
+            $this->info("    ✨ Role {$role->name} is already up to date");
+        }
+
+        // Verify permissions after sync (only in non-dry-run mode)
+        if (!$dryRun && ($updated || empty($currentPermissionIds))) {
+            $finalPermissionCount = $role->permissions()->count();
+            $this->info("    🔍 Final permission count for {$role->name}: {$finalPermissionCount}");
+            
+            if ($finalPermissionCount !== count($allowedPermissionIds)) {
+                $this->warn("    ⚠️  Warning: Expected " . count($allowedPermissionIds) . " permissions but role has {$finalPermissionCount}");
+            }
         }
 
         return [
@@ -265,10 +328,10 @@ class SyncCompanyRolesCommand extends Command
                 if (!$dryRun) {
                     $role->permissions()->detach($permissionsToRemove);
                 }
-                
+
                 $rolesCleanedCount++;
                 $totalPermissionsRemoved += count($permissionsToRemove);
-                
+
                 $this->info("  🧹 Cleaned role '{$role->name}': -" . count($permissionsToRemove) . " unauthorized permissions");
             }
         }
@@ -310,7 +373,7 @@ class SyncCompanyRolesCommand extends Command
         $this->info("Other Roles Cleaned: {$stats['other_roles_cleaned']}");
         $this->info("Permissions Added: {$stats['permissions_added']}");
         $this->info("Permissions Removed: {$stats['permissions_removed']}");
-        
+
         if ($dryRun) {
             $this->warn("\n⚠️  This was a DRY RUN - no actual changes were made");
         }
