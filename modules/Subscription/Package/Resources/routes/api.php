@@ -6,6 +6,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [PackageController::class, 'index'])->permission(Permission::PACKAGE_LIST());
+    Route::get('/list', [PackageController::class, 'list']);
     Route::get('/counts', [PackageController::class, 'counts'])->permission(Permission::PACKAGE_VIEW());
     Route::post('/export', [PackageController::class, 'export'])->permission(Permission::PACKAGE_EXPORT());
     Route::post('/', [PackageController::class, 'store'])->permission(Permission::PACKAGE_CREATE());
