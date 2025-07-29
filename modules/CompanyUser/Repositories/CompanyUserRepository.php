@@ -537,7 +537,8 @@ class CompanyUserRepository extends BaseRepository
             'management_id' => $mainManagement->id ?? null,
             'job_title_id' => $jobTitleId,
             'job_type_id' => $jobTypeId,
-            'attendance_constraint_id' => $attendanceConstraint->id ?? null
+            'attendance_constraint_id' => $attendanceConstraint->id ?? null,
+            "user_id" => $user->id
         ];
 
         // Create or update professional data
