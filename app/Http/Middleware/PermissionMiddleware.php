@@ -26,6 +26,15 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
      * @param  string|array  $permission
      * @return mixed
      */
+/**
+* Handle an incoming request.
+* Check if the user has the specified permission AND if that permission is active (status = true)
+*
+* @param  \Illuminate\Http\Request  $request
+* @param  \Closure  $next
+* @param  string|array  $permission
+* @return mixed
+*/
     public function handle($request, Closure $next, $permission, $guard = null)
     {
         // Set company ID for multi-tenant environments
@@ -38,8 +47,8 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
         if (auth()->guard($authGuard)->guest()) {
             throw UnauthorizedException::notLoggedIn();
         }
-        if(auth()->check() && auth()->user()->email == 'admin@constrix-nv.com') {
 
+        if(auth()->check() && auth()->user()->email == 'admin@constrix-nv.com') {
             return $next($request);
         }
 
@@ -47,18 +56,31 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
 
         $user = auth()->guard($authGuard)->user();
 
+        // Check if user has any of the permissions (OR logic)
 
-//        if($user->hasRole('super-admin') || $user->hasRole('admin')) {
-//            return $next($request);
-//        }
 
-        foreach ($permissions as $permission) {
-            if ($user->hasPermissionTo($permission, $authGuard)) {
-                $permissionModel = $this->permissionRepository->findByName($permission);
+        $activePermissions = [];
+        foreach ($permissions as $perm) {
+            $permissionModel = $this->permissionRepository->findByName($perm);
+            if ($permissionModel && $permissionModel->status) {
+                $activePermissions[] = $perm;
+            }
+        }
 
-                if (!$permissionModel || !$permissionModel->status) {
-                    throw UnauthorizedException::forPermissions($permissions);
-                }
+// Check if user has any of the ACTIVE permissions (OR logic)
+        if (empty($activePermissions) || ! $user->canAny($activePermissions)) {
+            throw UnauthorizedException::forPermissions($permissions);
+        }
+
+        if (! $user->canAny($activePermissions)) {
+            throw UnauthorizedException::forPermissions($permissions);
+        }
+
+        // Additional checks for active permissions and limits
+        foreach ($permissions as $perm) {
+            if ($user->hasPermissionTo($perm, $authGuard)) {
+                $permissionModel = $this->permissionRepository->findByName($perm);
+
 
                 // Check if this permission has a limit for the company
                 $permissionLimit = $this->companyPermissionLimitRepository->findByCompanyAndPermission(
@@ -71,18 +93,18 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
                     if ($permissionLimit->isLimitExceeded()) {
                         throw new UnauthorizedException(
                             403,
-                            "Permission '{$permission}' limit exceeded. No more usage allowed."
+                            "Permission '{$perm}' limit exceeded. No more usage allowed."
                         );
                     }
 
                     // Decrease the actual limit (consume one usage)
                     $permissionLimit->decreaseLimit();
                 }
-            } else {
-                throw UnauthorizedException::forPermissions($permissions);
+
+                // Break after first valid permission found (since we only need ANY permission)
+                break;
             }
         }
 
         return $next($request);
-    }
-}
+    }}
