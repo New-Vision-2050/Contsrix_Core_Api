@@ -473,9 +473,8 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
     // Get all relevant users with optimized eager loading
     $allRelevantUsers = User::where('company_id', $companyId)
         ->filter($filters)
-        ->select('*')
-        ->with(['professionalData','companyUser'])
-        ->whereHas('companyUser')
+        ->with(['professionalData'])
+        ->whereNotIn('email', config('constrix.emails'))
         ->get();
 
     $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
