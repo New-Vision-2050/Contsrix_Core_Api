@@ -48,7 +48,12 @@ class AttendanceConstraintRepository extends BaseRepository
             'id' => $id->toString(),
         ]);
     }
+    public function getConstraintBybranch($id): ?AttendanceConstraint
+    {
 
+        return $this->model->whereJsonContains('branch_ids', $id)->first();
+
+    }
     /**
      * Create new constraint
      */

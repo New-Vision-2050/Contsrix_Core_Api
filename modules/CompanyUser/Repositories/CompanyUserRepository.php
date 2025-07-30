@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Repositories\AttendanceConstraintRepository;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -52,6 +53,7 @@ class CompanyUserRepository extends BaseRepository
         private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository
     )
     {
+
         parent::__construct($model);
     }
 
@@ -528,6 +530,8 @@ class CompanyUserRepository extends BaseRepository
             ? $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager", "company_id" => $companyId])->first()->job_type_id
             : $generalManagerJobTitle->job_type_id;
 
+        $attendanceConstraint = $this->attendanceConstraintRepository->getConstraintBybranch($branchId);
+
         $data = [
             'company_id' => $companyId,
             'global_id' => $user->global_company_user_id,
@@ -535,7 +539,8 @@ class CompanyUserRepository extends BaseRepository
             'management_id' => $mainManagement->id ?? null,
             'job_title_id' => $jobTitleId,
             'job_type_id' => $jobTypeId,
-            "user_id" => $user->id
+            "user_id" => $user->id,
+            'attendance_constraint_id' => $attendanceConstraint->id ?? null,
         ];
 
         // Create or update professional data
