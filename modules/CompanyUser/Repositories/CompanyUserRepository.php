@@ -529,7 +529,6 @@ class CompanyUserRepository extends BaseRepository
             : $generalManagerJobTitle->job_type_id;
 
         $attendanceConstraint = $this->attendanceConstraintRepository->getConstraintBybranch($branchId);
-
         $data = [
             'company_id' => $companyId,
             'global_id' => $user->global_company_user_id,
