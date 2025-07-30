@@ -609,7 +609,7 @@ class AttendanceConstraintService
             'lateness_rules' => null,
             'early_clock_in_rules' => null,
             'current_work_period' => null,
-            'next_upcoming_period' => null,
+            'active_or_next_period' => null,
         ];
 
         if (!$constraint) {
@@ -680,7 +680,7 @@ class AttendanceConstraintService
 
         $lateness_rules = $todaySchedule['lateness_rules'] ?? null;
         $early_clock_in_rules = $todaySchedule['early_clock_in_rules'] ?? null;
-        
+
         // Fallback period if no current period is active
         $fallbackPeriod = null;
         if ($isTodayWorkDay && !empty($todaySchedule['periods']) && !$currentActivePeriodToday && !$nextUpcomingPeriod) {
@@ -690,11 +690,11 @@ class AttendanceConstraintService
                 $firstPeriod = $sortedPeriods->first();
                 $periodStartToday = Carbon::createFromTimeString($firstPeriod['start_time'], $now->timezone)->setDateFrom($now);
                 $periodEndToday = Carbon::createFromTimeString($firstPeriod['end_time'], $now->timezone)->setDateFrom($now);
-                
+
                 if ($periodEndToday->isBefore($periodStartToday)) {
                     $periodEndToday->addDay();
                 }
-                
+
                 $fallbackPeriod = [
                     'status' => 'fallback',
                     'day' => 'Today',
