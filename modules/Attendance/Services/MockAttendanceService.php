@@ -62,7 +62,6 @@ class MockAttendanceService
 
         // Check lateness at clock-in time for the mock attendance
         //$mockAttendance->checkLateness();
-        dd($mockAttendance);
         $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData,true);
 
         return $violations;
