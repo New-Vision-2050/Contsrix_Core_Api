@@ -40,17 +40,18 @@ class CompanyUserRepository extends BaseRepository
 {
 
     public function __construct(
-        CompanyUser $model,
-        private UserRepository $userRepository,
-        private JobTitleRepository $jobTitleRepository,
-        private CompanyRepository $companyRepository,
-        private ManagementHierarchyRepository $managementHierarchyRepository,
-        private UserProfessionalDataRepository $userProfessionalDataRepository,
-        private CompanyUserCompanyRepository $companyUserCompanyRepository,
-        private CompanyUserAddressRepository $companyUserAddressRepository,
-        private ClientDetailRepository $clientDetailRepository,
+        CompanyUser                                      $model,
+        private UserRepository                           $userRepository,
+        private JobTitleRepository                       $jobTitleRepository,
+        private CompanyRepository                        $companyRepository,
+        private ManagementHierarchyRepository            $managementHierarchyRepository,
+        private UserProfessionalDataRepository           $userProfessionalDataRepository,
+        private CompanyUserCompanyRepository             $companyUserCompanyRepository,
+        private CompanyUserAddressRepository             $companyUserAddressRepository,
+        private ClientDetailRepository                   $clientDetailRepository,
         private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository
-    ) {
+    )
+    {
         parent::__construct($model);
     }
 
@@ -193,12 +194,10 @@ class CompanyUserRepository extends BaseRepository
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
 
             DB::beginTransaction();
-            $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyRole['company_id']])->first();
-            if(isset($companyUserData["job_title_id"])&&$companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
-            {
-                $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
-                if($companyRole['company_id'] != $companyIdJobTitle )
-                {
+            $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager", "company_id" => $companyRole['company_id']])->first();
+            if (isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null) {
+                $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" => $companyUserData["job_title_id"]])->first()->company_id;
+                if ($companyRole['company_id'] != $companyIdJobTitle) {
                     $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
                 }
             }
@@ -212,7 +211,7 @@ class CompanyUserRepository extends BaseRepository
             $user = $this->findOrCreateUserInCompany(
                 $companyUser,
                 $companyRole['company_id'],
-                $companyUserData['name'] ,
+                $companyUserData['name'],
                 $companyRole['role'],
                 $branches
             );
@@ -308,7 +307,7 @@ class CompanyUserRepository extends BaseRepository
 
         if (!$companyUser) {
             $companyUser = $this->create($companyUserData);
-        }elseif ($companyUser->deleted_at !== null) {
+        } elseif ($companyUser->deleted_at !== null) {
 
             $companyUser->restore();
         }
@@ -320,7 +319,7 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Find or create user within a company
      */
-    private function findOrCreateUserInCompany(CompanyUser $companyUser, $companyId, string $name,  $role, ?array $branches = null): User
+    private function findOrCreateUserInCompany(CompanyUser $companyUser, $companyId, string $name, $role, ?array $branches = null): User
     {
         // Try to find existing user in company
         $user = $this->userRepository->findOneBy([
@@ -337,7 +336,7 @@ class CompanyUserRepository extends BaseRepository
                 "global_company_user_id" => $companyUser->global_id
             ]);
 
-            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner",1)->count();
+            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner", 1)->count();
             $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
 
             if ($existingUser) {
@@ -381,8 +380,9 @@ class CompanyUserRepository extends BaseRepository
                 "company_id" => $companyId,
                 "parent_id" => null
             ]);
-            $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id",$companyId)->first();
 
+            $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id", $companyId)->first();
+            setPermissionsTeamId($companyId);
             $user->assignRole($role);//assign super admin role for first user
 
 
@@ -422,7 +422,7 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Handle branch assignments for company user
      */
-    private function handleBranchAssignments(User $user, CompanyUserCompany $companyUserCompany, array $companyRole, ?array $branches):mixed
+    private function handleBranchAssignments(User $user, CompanyUserCompany $companyUserCompany, array $companyRole, ?array $branches): mixed
 
     {
         // Remove existing associations
@@ -444,7 +444,7 @@ class CompanyUserRepository extends BaseRepository
     /**
      * Create branch association
      */
-    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany,  $branchId): void
+    private function createBranchAssociation(User $user, CompanyUserCompany $companyUserCompany, $branchId): void
     {
         $this->companyUserManagementHierarchyRepository->updateOrCreate(
             [
@@ -506,12 +506,10 @@ class CompanyUserRepository extends BaseRepository
      */
     private function handleEmployeeData(User $user, $companyId, int $branchId, array $companyUserData = []): void
     {
-        $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyId])->first();
-        if(isset($companyUserData["job_title_id"])&&$companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null)
-        {
-            $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" =>$companyUserData["job_title_id"]])->first()->company_id;
-            if($companyId != $companyIdJobTitle )
-            {
+        $generalManagerJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager", "company_id" => $companyId])->first();
+        if (isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] && $companyUserData["job_title_id"] != null) {
+            $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" => $companyUserData["job_title_id"]])->first()->company_id;
+            if ($companyId != $companyIdJobTitle) {
                 $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
             }
         }
@@ -527,7 +525,7 @@ class CompanyUserRepository extends BaseRepository
 
         $jobTitleId = $companyUserData["job_title_id"] ?? $generalManagerJobTitle->id;
         $jobTypeId = isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] !== null
-            ? $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager","company_id"=>$companyId])->first()->job_type_id
+            ? $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager", "company_id" => $companyId])->first()->job_type_id
             : $generalManagerJobTitle->job_type_id;
 
         $data = [
@@ -541,7 +539,7 @@ class CompanyUserRepository extends BaseRepository
         ];
 
         // Create or update professional data
-       $userProfessionalData = $this->userProfessionalDataRepository->model->withoutTenancy()->where([
+        $userProfessionalData = $this->userProfessionalDataRepository->model->withoutTenancy()->where([
             'global_id' => $user->global_company_user_id,
             'company_id' => $companyId,
         ])->first();
