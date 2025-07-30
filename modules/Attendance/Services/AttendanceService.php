@@ -37,7 +37,7 @@ class AttendanceService
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
         $constraints = $constraintService->getTodaysWorkRulesForUser($user);
-
+        $timezone = getTimeZoneByRequest()?? config('app.timezone');
         $date = Carbon::now()->format('Y-m-d');
 
 
@@ -45,8 +45,34 @@ class AttendanceService
         $periodEndTime = data_get($constraints, 'current_work_period.end_time');
         $day_status = data_get($constraints, 'day_status');
 
+
         $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
         $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
+
+
+        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodStartTime, $timezone);
+        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodEndTime, timezone: $timezone);
+
+        if ($startDateTime->gt($endDateTime)) {
+            $endDateTime->addDay();
+        }
+
+        $earlyClockInRules = data_get($constraints, 'early_clock_in_rules');
+
+        if ($earlyClockInRules && ($earlyClockInRules['prevent_early_clock_in'] ?? false)) {
+            $earlyPeriod = $earlyClockInRules['early_period'] ?? 0;
+            $earlyUnit = $earlyClockInRules['early_unit'] ?? 'minutes';
+
+            $now = Carbon::now($timezone);
+
+            $earliestAllowedTime = $startDateTime->copy()->sub($earlyPeriod, $earlyUnit);
+
+            if ($now->lt($earliestAllowedTime)) {
+               dd('test');
+                throw new \Exception("غير مسموح بتسجيل الحضور قبل {$earlyPeriod} {$earlyUnit} من بداية الفترة.");
+            }
+        }
+
 
         if ($startDateTime->gt($endDateTime)) {
             $endDateTime->addDay();
