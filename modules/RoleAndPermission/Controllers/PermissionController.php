@@ -54,7 +54,7 @@ class PermissionController extends Controller
 
 
         }
-        if(tenant('is_central_company',0)){
+        if(tenant('is_central_company')){
             $list = $this->permissionService->listPermissionAsLookup();
             return Json::item($list);
         }
