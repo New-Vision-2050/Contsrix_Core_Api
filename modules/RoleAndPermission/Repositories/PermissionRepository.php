@@ -6,8 +6,11 @@ namespace Modules\RoleAndPermission\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\RoleAndPermission\Models\Permission;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use function Laravel\Prompts\text;
 
 
 /**
@@ -17,14 +20,24 @@ use Ramsey\Uuid\UuidInterface;
  */
 class PermissionRepository extends BaseRepository
 {
-    public function __construct(Permission $model)
+    public function __construct(Permission $model , private CompanyRepository $companyRepository)
     {
         parent::__construct($model);
     }
 
-    public function getPermissionList(?int $page, ?int $perPage = 10): Collection
+    public function getPermissionList(?int $page, ?int $perPage = 10)
     {
-        return $this->paginatedList([], $page, $perPage);
+        $packagesId = $this->companyRepository->getCompany(Uuid::fromString(tenant("id")))->packages()->pluck('id')->toArray();
+        $query = $this->model->filter(request()->all())->whereHas('packages', function ($q) use ($packagesId) {
+
+            $q->whereIn('packages.id', $packagesId);
+        });
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return array_merge($paginationArray, [
+            'data' => $paginatedData
+        ]);
     }
 
     public function getPermissionsWithoutPagination()
