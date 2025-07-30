@@ -65,6 +65,7 @@ class AttendanceConstraintService
     {
         $violations = [];
         $user = $attendance->user;
+        dd($user);
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
         if (!$isDryRun && $attendance->exists) {
