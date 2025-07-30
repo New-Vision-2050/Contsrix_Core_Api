@@ -43,7 +43,7 @@ return [
     'permissions' => 'الصلاحيات',
     'identifier' => 'معرّف',
     'login-way' => 'طريقة تسجيل الدخول',
-    'driver' => 'سائق',
+    'driver' => 'مزود الخدمة',
     'organization' => 'الهيكل التنظيمي',
     'organization-list' => 'عرض الهيكل التنظيمي',
     'branch' => 'فرع',

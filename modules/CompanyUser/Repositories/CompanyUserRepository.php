@@ -380,6 +380,8 @@ class CompanyUserRepository extends BaseRepository
                 "company_id" => $companyId,
                 "parent_id" => null
             ]);
+
+            setPermissionsTeamId($companyId);
             $user->assignRole('super-admin');//assign super admin role for first user
 
 
