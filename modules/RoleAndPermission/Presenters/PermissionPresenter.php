@@ -24,6 +24,21 @@ class PermissionPresenter extends AbstractPresenter
         if (count($nameParts) >= 2) {
             // Skip the first part (module name) and translate the rest
             for ($i = count($nameParts) - 1; $i >= 1; $i--) {
+                if ($i == 1 && str_contains($nameParts[$i], "*")) {
+                    $resources = explode('*', $nameParts[$i]);
+                    $isUuid = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $resources[1]);
+                    if ($isUuid) {
+                        // If it's a UUID, group by the part before asterisk
+                        $translatedName .= " " . $resources[0];
+                    } else {
+                        // If it's not a UUID, group by the part after asterisk
+                        $translatedName .= " " . __('names.' . $resources[0]);
+                        $translatedName .= " " . __('names.' . $resources[1]);
+                    }
+
+
+                    break;
+                }
                 $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
             }
         } elseif (count($nameParts) == 1) {
