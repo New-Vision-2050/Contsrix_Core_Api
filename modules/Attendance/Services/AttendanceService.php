@@ -48,7 +48,7 @@ class AttendanceService
 
         $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
         $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
-
+        dd($startDateTime, $endDateTime,$periodStartTime,$periodEndTime);
 
         $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodStartTime, $timezone);
         $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodEndTime, timezone: $timezone);
