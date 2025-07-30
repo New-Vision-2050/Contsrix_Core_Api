@@ -17,14 +17,14 @@ class PackageObserver
      */
     public function updating(Package $package): ?bool
     {
-        // Block direct updates to main packages
-        if ($package->is_main_package && $this->isDirectUpdate()) {
-            Log::warning("Attempted to directly update main package", [
+        // Block direct updates to packages named "Main Package"
+        if ($package->name === 'Main Package' && $this->isDirectUpdate()) {
+            Log::warning("Attempted to directly update Main Package", [
                 'package_id' => $package->id,
                 'package_name' => $package->name
             ]);
             
-            throw new \Exception("Main packages cannot be updated directly. They are managed automatically by the system.");
+            throw new \Exception("The 'Main Package' cannot be updated directly. It is managed automatically by the system.");
         }
         
         return true;
@@ -38,14 +38,14 @@ class PackageObserver
      */
     public function deleting(Package $package): ?bool
     {
-        // Block deletion of main packages
-        if ($package->is_main_package) {
-            Log::warning("Attempted to delete main package", [
+        // Block deletion of packages named "Main Package"
+        if ($package->name === 'Main Package') {
+            Log::warning("Attempted to delete Main Package", [
                 'package_id' => $package->id,
                 'package_name' => $package->name
             ]);
             
-            throw new \Exception("Main packages cannot be deleted. They are managed automatically by the system.");
+            throw new \Exception("The 'Main Package' cannot be deleted. It is managed automatically by the system.");
         }
         
         return true;

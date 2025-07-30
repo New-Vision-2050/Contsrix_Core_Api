@@ -31,11 +31,13 @@ class CompanyAccessProgram extends Model
     protected $fillable = [
         'name',
         'is_active',
+        'is_main_program',
     ];
 
     protected $casts = [
         'id' => 'string',
         'is_active' => 'bool',
+        'is_main_program' => 'bool',
     ];
 
     public function companyFields(): BelongsToMany

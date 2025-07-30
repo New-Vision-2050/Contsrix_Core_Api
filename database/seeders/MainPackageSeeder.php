@@ -27,6 +27,7 @@ class MainPackageSeeder extends Seeder
                 'name' => 'Main Access Program',
             ], [
                 'is_active' => true,
+                'is_main_program' => true,
             ]);
 
             // 2. Create Main Package
@@ -41,6 +42,7 @@ class MainPackageSeeder extends Seeder
                 'trial_period' => 0,
                 'trial_period_unit' => PeriodUnitEnum::Day->value,
                 'is_active' => true,
+                'is_main_package' =>1
             ]);
 
             // 3. Sync all permissions to the package
