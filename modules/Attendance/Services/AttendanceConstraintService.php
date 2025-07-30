@@ -688,7 +688,7 @@ class AttendanceConstraintService
             'is_holiday' => ($workDayStatus === 'Holiday'),
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
             'current_work_period' => $currentActivePeriodToday ?? (
-                $nextUpcomingPeriod['day'] === 'Today' ? $nextUpcomingPeriod : null
+                isset($nextUpcomingPeriod['day']) && $nextUpcomingPeriod['day'] === 'Today' ? $nextUpcomingPeriod : null
             ),
             'active_or_next_period' => $nextUpcomingPeriod,
             'lateness_rules' => $lateness_rules,
