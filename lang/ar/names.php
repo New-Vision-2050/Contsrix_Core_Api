@@ -43,7 +43,7 @@ return [
     'permissions' => 'الصلاحيات',
     'identifier' => 'معرّف',
     'login-way' => 'طريقة تسجيل الدخول',
-    'driver' => 'سائق',
+    'driver' => 'مزود الخدمة',
     'organization' => 'الهيكل التنظيمي',
     'organization-list' => 'عرض الهيكل التنظيمي',
     'branch' => 'فرع',
@@ -86,7 +86,7 @@ return [
     'user-profile*courses' => 'دورات',
     'user-profile*certificates' => 'شهادات',
     'user-profile*work-license' => 'رخصة العمل',
-    'user-profile*family-information' => 'معلومات العائلة',
+    'user-profile*family-information' => 'معلومات العائلة',
 
     'user-profile*data' => 'معلومات الرسميه',
     'user-profile*education' => 'معلومات التعليم',
@@ -125,7 +125,6 @@ return [
     'package' => 'حزمة',
     'names.package' => 'حزمة',
     'company-access-program' => 'برنامج الوصول للشركة',
-    'names.company-access-program' => 'برنامج الوصول للشركة',
     'Brokers-3' => 'الوسطاء-3',
     'Brokers-3m' => 'الوسطاء-3م',
     'dynamic-brokers-3-2m' => 'الوسطاء الديناميكيون-3-2م',
@@ -134,12 +133,7 @@ return [
     'user-profile*personal-info' => 'المعلومات الشخصية',
     'user-profile*family-info' => 'المعلومات العائلية',
     'user-profile*passport-info' => 'معلومات جواز السفر',
-    'user-profile*qualification' => 'المؤهلات',
-    'user-profile*education' => 'التعليم',
-    'user-profile*certificates' => 'الشهادات',
-    'user-profile*courses' => 'الدورات',
-    'user-profile*experience' => 'الخبرة',
-    'user-profile*work-license' => 'رخصة العمل',
+
     'user-profile*social-media' => 'وسائل التواصل الاجتماعي',
     'user-profile*contact-info' => 'معلومات التواصل',
     'user-profile*bank-info' => 'المعلومات المصرفية',
@@ -147,39 +141,21 @@ return [
     'user-profile*employment-info' => 'معلومات التوظيف',
     'user-profile*residence-info' => 'معلومات الإقامة',
     'user-profile*border-number' => 'رقم الحدود',
-    'user-profile*privileges' => 'الامتيازات',
     'user-profile*about-me' => 'عني',
 
     // Company Profile detailed sections
-    'company-profile*branch' => 'فرع',
-    'company-profile*official-data' => 'البيانات الرسمية',
+
 
     // Program Settings detailed sections
     'program-settings*login-way' => 'طريقة تسجيل الدخول',
-    'program-settings*driver' => 'السائق',
-    'program-settings*city' => 'المدينة',
-    'program-settings*state' => 'الولاية',
-    'program-settings*country' => 'البلد',
-    'program-settings*identifier' => 'المُعرِّف',
+
 
     // Organization list detailed sections
-    'organization-list*management' => 'الإدارة',
-    'organization-list*job-type' => 'نوع الوظيفة',
-    'organization-list*job-title' => 'المسمى الوظيفي',
-    'organization-list*users' => 'المستخدمين',
+
     "day"=> "يوم",
-    "organization-list"=> "قائمة التنظيم",
-    "user-profile"=> "الملف الشخصي للمستخدم",
-    "companies-list"=> "قائمة الشركات",
-    "roles"=> "الأدوار",
-    "permissions"=> "الصلاحيات",
-    "program-settings"=> "إعدادات البرنامج",
-    "company-profile"=> "ملف الشركة",
-    "names.package"=> "الحزم",
+
     "names.company-access-program"=> "برنامج الوصول للشركة",
-    "Brokers-3"=> "الوسطاء-3",
-    "Brokers-3m"=> "الوسطاء-3م",
-    "dynamic-brokers-3-2m"=> "الوسطاء الديناميكيون-3-2م",
+
     "legal-data"=> "البيانات القانونية",
     "official-document"=> "الوثائق الرسمية",
     "address"=> "العنوان",
@@ -204,27 +180,11 @@ return [
     "residence-info"=> "معلومات الإقامة",
     "border-number"=> "رقم الحدود",
     "privileges"=> "الامتيازات",
-    "identity"=> "الهوية",
-    "contact"=> "التواصل",
-    "data"=> "البيانات",
-    "about-me"=> "عني",
-    "login-way"=> "طريقة تسجيل الدخول",
-    "driver"=> "السائق",
-    "city"=> "المدينة",
-    "state"=> "الولاية",
-    "country"=> "البلد",
-    "identifier"=> "المُعرِّف",
-    "management"=> "الإدارة",
-    "department"=> "القسم",
-    "job-type"=> "نوع الوظيفة",
-    "official-data"=> "البيانات الرسمية",
-    "package"=> "الحزمة",
-    "company-access-program"=> "برنامج الوصول للشركة",
-    "family-information"=>"معلومات العائلة",
-    "company-access-program"=> "برنامج الوصول للشركة",
-    "family-information"=>"معلومات العائلة",
 
-    // Missing user profile detailed information translations  
+    "about-me"=> "عني",
+    "official-data"=> "البيانات الرسمية",
+
+    // Missing user profile detailed information translations
     "passport-information" => "معلومات جواز السفر",
     "social-media-account" => "حساب وسائل التواصل الاجتماعي",
     "personal-information" => "المعلومات الشخصية",
