@@ -77,6 +77,30 @@ class CompanyAccessProgramController extends Controller
             $filters['company_field_id'] = $request->input('company_field_id');
         }
 
+
+
+        if($request->has('country_id')) {
+            $filters['country_id'] = $request->input('country_id');
+        }
+
+
+        if($request->has('company_field')) {
+            if(str_contains($request->company_field,","))
+            {
+                $filters['company_field'] = explode(",", $request->input('company_field'));
+            }else{
+                $filters['company_field_id'] = $request->input('company_field');
+
+            }
+        }
+
+
+        if ($request->has("company_type_id"))
+        {
+            $filters['company_type_id'] = $request->input('company_type_id');
+
+        }
+
         $list = $this->companyAccessProgramService->list(
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10),
