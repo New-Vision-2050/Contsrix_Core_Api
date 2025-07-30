@@ -174,7 +174,7 @@ class AttendanceConstraintService
     {
         // Get the entire configuration object for the constraint.
         $config = $constraint->constraint_config ?? [];
-
+        dd($config);
         if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
             $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
             if ($violation) {
