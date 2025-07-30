@@ -9,7 +9,6 @@ use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\RoleAndPermission\Models\Permission;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\SubEntity\Database\factories\SubEntityFactory;
@@ -67,10 +66,6 @@ class SubEntity extends Model
             if ($subEntity->isDirty('name') && isset($subEntity->name) && blank($subEntity->slug)) {
                 $subEntity->slug = static::generateUniqueSlug($subEntity->name, $subEntity->id);
             }
-        });
-
-        static::created(function (self $subEntity) {
-            $subEntity->createDefaultPermissions();
         });
     }
 
@@ -166,25 +161,5 @@ class SubEntity extends Model
         }
 
         return $current->super_entity;
-    }
-
-    protected function createDefaultPermissions(): void
-    {
-        if (!$this->mainProgram || !$this->slug) {
-            return;
-        }
-
-        $module = $this->mainProgram->slug;
-        $resource = $this->name . '*' . $this->id;
-
-        foreach (self::PERMISSION_ACTIONS as $action) {
-            Permission::firstOrCreate([
-                'name' => "{$module}.{$resource}.{$action}",
-                "key" => "{$module}.{$resource}.{$action}",
-
-            ], [
-                'status' => true,
-            ]);
-        }
     }
 }

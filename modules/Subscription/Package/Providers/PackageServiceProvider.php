@@ -8,9 +8,17 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Subscription\Package\Models\Package;
 use Modules\Subscription\Package\Observers\PackageObserver;
+use Modules\Subscription\Package\Commands\AssignAllPermissionsToMainPackageCommand;
 
 class PackageServiceProvider extends ModuleServiceProvider
 {
+    /**
+     * @var string[]
+     */
+    protected array $commands = [
+        AssignAllPermissionsToMainPackageCommand::class,
+    ];
+
     public static function getModuleName(): string
     {
         return 'Package';
@@ -22,6 +30,7 @@ class PackageServiceProvider extends ModuleServiceProvider
         //$this->registerConfig();
         $this->registerMigrations();
         $this->registerObservers();
+        $this->registerCommands();
     }
 
     public function register(): void
@@ -42,5 +51,17 @@ class PackageServiceProvider extends ModuleServiceProvider
     private function registerObservers(): void
     {
         Package::observe(PackageObserver::class);
+    }
+
+    /**
+     * Register commands.
+     *
+     * @return void
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands($this->commands);
+        }
     }
 }

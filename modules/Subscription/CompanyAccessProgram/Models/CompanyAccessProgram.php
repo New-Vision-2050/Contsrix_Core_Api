@@ -16,12 +16,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Subscription\Package\Models\Package;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class CompanyAccessProgram extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use HasRelationships;
 
     public $incrementing = false;
     protected $keyType = 'string';
@@ -29,11 +31,13 @@ class CompanyAccessProgram extends Model
     protected $fillable = [
         'name',
         'is_active',
+        'is_main_program',
     ];
 
     protected $casts = [
         'id' => 'string',
         'is_active' => 'bool',
+        'is_main_program' => 'bool',
     ];
 
     public function companyFields(): BelongsToMany
@@ -83,5 +87,40 @@ class CompanyAccessProgram extends Model
     public function packages(): HasMany
     {
         return $this->hasMany(Package::class);
+    }
+
+    /**
+     * Deep relationship: Get all companies that have packages belonging to this CompanyAccessProgram
+     */
+    public function companiesWithPackages()
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->packages(),
+            (new Package())->companies()
+        );
+    }
+
+    /**
+     * Deep relationship: Get all permissions through packages
+     */
+    public function permissionsThroughPackages()
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->packages(),
+            (new Package())->permissions()
+        );
+    }
+
+    /**
+     * Alternative deep relationship using table names and foreign keys
+     */
+    public function packagesDeep()
+    {
+        return $this->hasManyDeep(
+            Package::class,
+            ['packages'], // intermediate tables (if any)
+            ['company_access_program_id'], // foreign keys on intermediate tables
+            ['id'] // local keys on intermediate tables
+        );
     }
 }

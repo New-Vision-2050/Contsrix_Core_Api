@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\CompanyAccessProgram\Controllers;
 
+use Modules\Subscription\CompanyAccessProgram\Presenters\CompanyAccessProgramSimplePresenter;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
@@ -58,6 +59,55 @@ class CompanyAccessProgramController extends Controller
         );
 
         return Json::items(CompanyAccessProgramPresenter::collection($list['data'], $this->companyAccessProgramService), paginationSettings: $list['pagination']);
+    }
+
+    public function list(GetCompanyAccessProgramListRequest $request): JsonResponse
+    {
+        $filters = [];
+
+        if($request->has('status')) {
+            $filters['is_active'] = $request->boolean('status');
+        }
+
+        if($request->has('name')) {
+            $filters['name'] = $request->get('name');
+        }
+
+        if($request->has('company_field_id')) {
+            $filters['company_field_id'] = $request->input('company_field_id');
+        }
+
+
+
+        if($request->has('country_id')) {
+            $filters['country_id'] = $request->input('country_id');
+        }
+
+
+        if($request->has('company_field')) {
+            if(str_contains($request->company_field,","))
+            {
+                $filters['company_field'] = explode(",", $request->input('company_field'));
+            }else{
+                $filters['company_field_id'] = $request->input('company_field');
+
+            }
+        }
+
+
+        if ($request->has("company_type_id"))
+        {
+            $filters['company_type_id'] = $request->input('company_type_id');
+
+        }
+
+        $list = $this->companyAccessProgramService->list(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10),
+            $filters
+        );
+
+        return Json::items(CompanyAccessProgramSimplePresenter::collection($list['data'], $this->companyAccessProgramService), paginationSettings: $list['pagination']);
     }
 
     public function counts(GetCompanyAccessProgramListRequest $request): JsonResponse

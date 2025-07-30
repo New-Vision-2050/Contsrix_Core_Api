@@ -21,6 +21,8 @@ class UpdateOfficialCompanyData extends FormRequest
             'phone' => 'required|string',
             'branch_name' => 'required|string',
             'company_type_id' => 'required|exists:company_types,id',
+            'packages' => 'required|array',
+            "packages.*" => 'required|exists:packages,id',
         ];
     }
     public function messages(): array
@@ -46,7 +48,8 @@ class UpdateOfficialCompanyData extends FormRequest
             phone: $this->get('phone'),
             branchName: $this->get('branch_name'),
             companyTypeId: $this->get('company_type_id'),
-            branch : $branch
+            branch : $branch,
+            packages : $this->get('packages'),
         );
     }
 }

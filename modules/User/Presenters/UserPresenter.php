@@ -24,7 +24,9 @@ class UserPresenter extends AbstractPresenter
             'email' => $this->user->email,
             'is_super_admin' => $this->user->hasRole("super-admin")||$this->user->is_owner?1:0,
             'phone' => $this->user->phone,
-            'management_hierarchy_id ' => $this->user->brancmanagement_hierarchy_id 
+            'management_hierarchy_id' => $this->user->management_hierarchy_id ,
+            "roles"=>$this->user->roles,
+            "permissions"=>$this->user->getAllPermissions()
         ];
     }
 }

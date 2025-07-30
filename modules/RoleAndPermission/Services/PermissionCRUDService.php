@@ -25,9 +25,9 @@ class PermissionCRUDService
         return $this->repository->createPermission($createPermissionDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10)
     {
-        return $this->repository->paginated(
+        return $this->repository->getPermissionList(
             page: $page,
             perPage: $perPage,
         );

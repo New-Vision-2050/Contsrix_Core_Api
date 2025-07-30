@@ -25,6 +25,7 @@ class RolePresenter extends AbstractPresenter
             'name' => $this->role->name,
             "status"=>$this->role->status,
             "permission_count"=>$this->role->permissions()->count(),
+            "permissions"=>PermissionPresenter::collection($this->role->permissions)
         ];
     }
 }
