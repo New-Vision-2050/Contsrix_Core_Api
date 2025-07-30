@@ -33,6 +33,9 @@ class AttendancePresenter extends AbstractPresenter
             'clock_out_time' => $this->attendance->clock_out_time?->setTimezone(
                 new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
             )->format('Y-m-d H:i:s'),
+            'start_time' => $this->attendance->start_time,
+            'end_time' => $this->attendance->end_time,
+
 
             'timezone' => $this->attendance->timezone ?? null,
 
