@@ -181,14 +181,14 @@ class SubEntity extends Model
         foreach (self::PERMISSION_ACTIONS as $action) {
             $permission = Permission::firstOrCreate([
                 'name' => "{$module}.{$resource}.{$action}",
-                "key" => "dynamic-".$this->slug.".$action",
+                "key" => "dynamic-" . $this->slug . ".$action",
 
             ], [
                 'status' => true,
             ]);
 
-
-                $createdPermissions[] = $permission;
+            // Track if this is a newly created permission
+            $createdPermissions[] = $permission;
 
         }
 
