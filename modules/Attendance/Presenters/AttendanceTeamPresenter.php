@@ -52,16 +52,17 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
                 'accuracy'  => 10,
             ] : null),
-            'attendance_constraint_id' => $this->attendance->user?->professionalData?->attendanceConstraint?->id,
+            'attendance_constraint_id' => $this->attendance->user?->userProfessionalData?->attendanceConstraint?->id,
 
-            'professional_data' => $this->attendance->user?->professionalData ? [
-                'id' => (string) $this->attendance->user->professionalData->id,
-                'job_title' => $this->attendance->user->professionalData->jobTitle?->name,
-                'job_code' => $this->attendance->user->professionalData->job_code,
-                'department' => $this->attendance->user->professionalData->department?->name,
-                'branch' => $this->attendance->user->professionalData->branch?->name,
-                'management' => $this->attendance->user->professionalData->management?->name,
-                'attendance_constraint' => $this->attendance->user->professionalData->attendanceConstraint?->constraint_name
+            'professional_data' => $this->attendance->user?->userProfessionalData ? [
+                'id' => (string) $this->attendance->user->userProfessionalData->id,
+                'job_title' => $this->attendance->user->userProfessionalData->jobTitle?->name,
+                'job_code' => $this->attendance->user->userProfessionalData->job_code,
+                'department' => $this->attendance->user->userProfessionalData->department?->name,
+                'branch' => $this->attendance->user->userProfessionalData->branch?->name,
+                'management' => $this->attendance->user->userProfessionalData->management?->name,
+                'attendance_constraint' => $this->attendance->user->userProfessionalData->attendanceConstraint?->constraint_name,
+                'user_id' => (string) $this->attendance->user->userProfessionalData->user_id,
             ] : null,
         ];
     }
