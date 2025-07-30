@@ -23,6 +23,7 @@ use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\JobTitle\Repositories\JobTitleRepository;
+use Modules\RoleAndPermission\Models\Role;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -382,9 +383,9 @@ class CompanyUserRepository extends BaseRepository
                 "company_id" => $companyId,
                 "parent_id" => null
             ]);
+            $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id",$companyId)->first();
 
-            setPermissionsTeamId($companyId);
-            $user->assignRole('super-admin');//assign super admin role for first user
+            $user->assignRole($role);//assign super admin role for first user
 
 
             $branch->update(["manager_id" => $user->id]);
