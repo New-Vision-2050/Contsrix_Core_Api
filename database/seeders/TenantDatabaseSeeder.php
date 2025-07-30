@@ -36,6 +36,6 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(DefaultIdentifierSeederTableSeeder::class);
 
         $this->call(DefaultLoginWaySeederTableSeeder::class);
-        $this->call(MainPackageSeeder::class);
+//        $this->call(MainPackageSeeder::class);
     }
 }
