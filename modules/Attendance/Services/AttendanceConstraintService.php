@@ -680,6 +680,32 @@ class AttendanceConstraintService
 
         $lateness_rules = $todaySchedule['lateness_rules'] ?? null;
         $early_clock_in_rules = $todaySchedule['early_clock_in_rules'] ?? null;
+        
+        // Fallback period if no current period is active
+        $fallbackPeriod = null;
+        if ($isTodayWorkDay && !empty($todaySchedule['periods']) && !$currentActivePeriodToday && !$nextUpcomingPeriod) {
+            // Get the first period of the day as fallback
+            $sortedPeriods = collect($todaySchedule['periods'])->sortBy('start_time')->values();
+            if ($sortedPeriods->count() > 0) {
+                $firstPeriod = $sortedPeriods->first();
+                $periodStartToday = Carbon::createFromTimeString($firstPeriod['start_time'], $now->timezone)->setDateFrom($now);
+                $periodEndToday = Carbon::createFromTimeString($firstPeriod['end_time'], $now->timezone)->setDateFrom($now);
+                
+                if ($periodEndToday->isBefore($periodStartToday)) {
+                    $periodEndToday->addDay();
+                }
+                
+                $fallbackPeriod = [
+                    'status' => 'fallback',
+                    'day' => 'Today',
+                    'date' => $now->format('Y-m-d'),
+                    'start_time' => $firstPeriod['start_time'],
+                    'end_time' => $firstPeriod['end_time'],
+                    'period_start_time_carbon' => $periodStartToday,
+                    'period_end_time_carbon' => $periodEndToday,
+                ];
+            }
+        }
 
         return [
             'status' => $workDayStatus,
@@ -688,9 +714,9 @@ class AttendanceConstraintService
             'is_holiday' => ($workDayStatus === 'Holiday'),
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
             'current_work_period' => $currentActivePeriodToday ?? (
-                isset($nextUpcomingPeriod['day']) && $nextUpcomingPeriod['day'] === 'Today' ? $nextUpcomingPeriod : null
+                isset($nextUpcomingPeriod['day']) && $nextUpcomingPeriod['day'] === 'Today' ? $nextUpcomingPeriod : $fallbackPeriod
             ),
-            'active_or_next_period' => $nextUpcomingPeriod,
+            'active_or_next_period' => $nextUpcomingPeriod ?? $fallbackPeriod,
             'lateness_rules' => $lateness_rules,
             'early_clock_in_rules' => $early_clock_in_rules
         ];
