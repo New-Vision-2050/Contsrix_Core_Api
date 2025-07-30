@@ -465,6 +465,8 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             // This isn't a violation, just a misconfiguration. Silently pass.
             return false;
         }
+
+        dd($config);
         $clockInTime = Carbon::parse($attendance->clock_in_time);
 
         // --- FIX 1: CHECK FOR HOLIDAYS FIRST ---
@@ -529,7 +531,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             // Ensure period times are properly formatted before creating Carbon objects
             $startTime = trim($period['start_time']);
             $endTime = trim($period['end_time']);
-            
+
             // Validate time format
             if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $startTime)) {
                 \Illuminate\Support\Facades\Log::error('Invalid period start time format', [
@@ -539,7 +541,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 ]);
                 continue;
             }
-            
+
             if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $endTime)) {
                 \Illuminate\Support\Facades\Log::error('Invalid period end time format', [
                     'end_time' => $endTime,
@@ -548,7 +550,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 ]);
                 continue;
             }
-            
+
             try {
                 $periodStart = Carbon::createFromFormat('H:i', $startTime, $clockInTime->timezone)
                     ->setDateFrom($clockInTime);
@@ -596,7 +598,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 break;
             }
         }
-        
+
         if($period['end_time'] < $clockInTime->format('H:i')){
             return [
                 'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
@@ -704,7 +706,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
 
         // Ensure start time is properly formatted
         $startTime = trim($firstPeriod['start_time']);
-        
+
         // Validate time format
         if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $startTime)) {
             \Illuminate\Support\Facades\Log::error('Invalid period start time format in validateEarlyClockInPrevention', [
@@ -714,7 +716,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             ]);
             return false;
         }
-        
+
         try {
             // Calculate the earliest allowed clock-in time based on the scheduled start time
             $scheduledStartTime = Carbon::createFromTimeString($startTime)
