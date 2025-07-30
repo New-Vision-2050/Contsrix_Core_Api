@@ -571,7 +571,7 @@ class AttendanceConstraintService
 
         // Combine the results into a final, clean response.
         return [
-            'day_status'              => $timeRulesResult['status'],
+            'day_status'              => $timeRulesResult['day_status'],
             'day_name'                => $now->isoFormat(format: 'dddd'),
             'is_holiday'              => $timeRulesResult['is_holiday'],
             'reason'                  => $timeRulesResult['reason'],
@@ -610,6 +610,7 @@ class AttendanceConstraintService
             'early_clock_in_rules' => null,
             'current_work_period' => null,
             'active_or_next_period' => null,
+            'day_status' => 'Undefined',
         ];
 
         if (!$constraint) {
@@ -626,13 +627,13 @@ class AttendanceConstraintService
         $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false);
 
         if ($isTodayHoliday) {
-            $workDayStatus = 'Holiday';
+            $workDayStatus = 'holiday';
             $workDayReason = collect($holidays)->firstWhere(fn($h) => $now->isSameDay($h['date'] ?? null))['name'] ?? 'Official Holiday';
         } elseif ($isTodayWorkDay) {
-            $workDayStatus = 'Work Day';
+            $workDayStatus = 'work_day';
             $workDayReason = 'Scheduled working day.';
         } else {
-            $workDayStatus = 'Day Off';
+            $workDayStatus = 'day_off_or_weekend';
             $workDayReason = 'Scheduled weekend or non-working day.';
         }
 
@@ -708,7 +709,7 @@ class AttendanceConstraintService
         }
 
         return [
-            'status' => $workDayStatus,
+            'day_status' => $workDayStatus,
             'reason' => $workDayReason,
             'periods' => $todaySchedule['periods'] ?? [],
             'is_holiday' => ($workDayStatus === 'Holiday'),
