@@ -31,7 +31,6 @@ return [
     // Module specific names
     'user' => 'User',
     'users' => 'Users',
-    'organization-list*users' => 'Users',
     'client' => 'Client',
     'broker' => 'Broker',
     'employee' => 'Employee',
@@ -41,19 +40,15 @@ return [
     'roles' => 'Roles',
     'permission' => 'Permission',
     'permissions' => 'Permissions',
-    'program-settings*identifier' => 'Identifier',
-    'program-settings*login-way' => 'Login Method',
-    'program-settings*driver' => 'Driver',
+
     'organization' => 'Organizational Structure',
     'organization-list' => 'Organizational Structure List ',
     'branch' => 'Branch',
     'organization-list*branch' => 'Branch',
     'management' => 'Management',
-    'organization-list*management' => 'Management',
     'job-title' => 'Job Title',
     'job-type' => 'Job Type',
     'company-profile' => 'Company Profile',
-    'company-profile*official-data' => 'Official Data',
     'company-profile*legal-data' => 'Legal Data',
     'company-profile*address' => 'Address',
     'company-profile*official-document' => 'Official Document',
@@ -75,11 +70,7 @@ return [
     'user-profile*contract-work' => 'Contract Work',
     'user-profile*employment-information' => 'Employment Information',
     'user-profile*salary-information' => 'Salary Information',
-    'user-profile*qualification' => 'Qualification',
-    'user-profile*experience' => 'Experience',
-    'user-profile*courses' => 'Courses',
-    'user-profile*certificates' => 'Certificates',
-    'user-profile*work-license' => 'Work License',
+
     'user-profile*family-information' => 'Family Information',
 
     "program-settings"=>"Program Settings",
@@ -99,13 +90,11 @@ return [
     'departments' => 'Departments',
     'modules' => 'Modules',
     'features' => 'Features',
-    'department' => 'Department',
     'organization-list*department' => 'Department',
     "human-resources"=>"Human Resources",
 
     // Additional terms from JSON response
-    'package' => 'Package',
-    'company-access-program' => 'Company Access Program',
+
     'names.company-access-program' => 'Company Access Program',
     'Brokers-3' => 'Brokers-3',
     'Brokers-3m' => 'Brokers-3m',
@@ -115,12 +104,8 @@ return [
     'user-profile*personal-info' => 'Personal Information',
     'user-profile*family-info' => 'Family Information',
     'user-profile*passport-info' => 'Passport Information',
-    'user-profile*qualification' => 'Qualification',
     'user-profile*education' => 'Education',
-    'user-profile*certificates' => 'Certificates',
-    'user-profile*courses' => 'Courses',
-    'user-profile*experience' => 'Experience',
-    'user-profile*work-license' => 'Work License',
+
     'user-profile*social-media' => 'Social Media',
     'user-profile*contact-info' => 'Contact Information',
     'user-profile*bank-info' => 'Bank Information',
@@ -133,39 +118,25 @@ return [
 
     // Company Profile detailed sections
     'company-profile*branch' => 'Branch',
-    'company-profile*official-data' => 'Official Data',
 
     // Program Settings detailed sections
-    'program-settings*login-way' => 'Login Way',
-    'program-settings*driver' => 'Driver',
+
     'program-settings*city' => 'City',
     'program-settings*state' => 'State',
     'program-settings*country' => 'Country',
-    'program-settings*identifier' => 'Identifier',
 
     // Organization list detailed sections
-    'organization-list*management' => 'Management',
     'organization-list*job-type' => 'Job Type',
     'organization-list*job-title' => 'Job Title',
-    'organization-list*users' => 'Users',
 
 
     "month"=> "Month",
     "year"=> "Year",
     "week"=> "Week",
     "day"=> "Day",
-    "organization-list"=> "Organization List",
-    "user-profile"=> "User Profile",
-    "companies-list"=> "Companies List",
-    "roles"=> "Roles",
-    "permissions"=> "Permissions",
-    "program-settings"=> "Program Settings",
-    "company-profile"=> "Company Profile",
+
     "names.package"=> "Packages",
-    "names.company-access-program"=> "Company Access Program",
-    "Brokers-3"=> "Brokers-3",
-    "Brokers-3m"=> "Brokers-3m",
-    "dynamic-brokers-3-2m"=> "Dynamic Brokers-3-2m",
+
     "legal-data"=> "Legal Data",
     "official-document"=> "Official Document",
     "address"=> "Address",
@@ -190,21 +161,26 @@ return [
     "residence-info"=> "Residence Information",
     "border-number"=> "Border Number",
     "privileges"=> "Privileges",
-    "identity"=> "Identity",
-    "contact"=> "Contact",
-    "data"=> "Data",
+
     "about-me"=> "About Me",
     "login-way"=> "Login Way",
     "driver"=> "Driver",
-    "city"=> "City",
-    "state"=> "State",
-    "country"=> "Country",
+
     "identifier"=> "Identifier",
-    "management"=> "Management",
     "department"=> "Department",
-    "job-type"=> "Job Type",
     "official-data"=> "Official Data",
     "package"=> "Package",
     "company-access-program"=> "Company Access Program",
     "family-information"=>"Family Information",
+    "passport-information" => "Passport Information",
+    "social-media-account" => "Social Media Account",
+    "personal-information" => "Personal Information",
+    "contact-information" => "Contact Information",
+    "residence-information" => "Residence Information",
+    "bank-information" => "Bank Information",
+    "employment-information" => "Employment Information",
+    "salary-information" => "Salary Information",
+    "address-information" => "Address Information",
+    "about-me-information" => "About Me Information",
+    "border-number-information" => "Border Number Information",
 ];

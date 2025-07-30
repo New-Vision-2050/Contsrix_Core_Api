@@ -221,7 +221,19 @@ return [
     "package"=> "الحزمة",
     "company-access-program"=> "برنامج الوصول للشركة",
     "family-information"=>"معلومات العائلة",
+    "company-access-program"=> "برنامج الوصول للشركة",
+    "family-information"=>"معلومات العائلة",
 
-
-
+    // Missing user profile detailed information translations  
+    "passport-information" => "معلومات جواز السفر",
+    "social-media-account" => "حساب وسائل التواصل الاجتماعي",
+    "personal-information" => "المعلومات الشخصية",
+    "contact-information" => "معلومات التواصل",
+    "residence-information" => "معلومات الإقامة",
+    "bank-information" => "المعلومات المصرفية",
+    "employment-information" => "معلومات التوظيف",
+    "salary-information" => "معلومات الراتب",
+    "address-information" => "معلومات العنوان",
+    "about-me-information" => "معلومات عني",
+    "border-number-information" => "معلومات رقم الحدود",
 ];
