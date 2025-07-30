@@ -579,8 +579,6 @@ class Attendance extends Model implements Auditable
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
-            $this->is_late = false;
-            $this->late_minutes = 0;
             $this->is_early_departure = false;
             $this->early_departure_minutes = 0;
             $this->save();
@@ -604,8 +602,6 @@ class Attendance extends Model implements Auditable
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
-            $this->is_late = false;
-            $this->late_minutes = 0;
             $this->is_early_departure = false;
             $this->early_departure_minutes = 0;
             $this->save();
@@ -618,8 +614,6 @@ class Attendance extends Model implements Auditable
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
-            $this->is_late = false;
-            $this->late_minutes = 0;
             $this->is_early_departure = false;
             $this->early_departure_minutes = 0;
             $this->save();

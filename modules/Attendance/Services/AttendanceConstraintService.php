@@ -574,6 +574,7 @@ class AttendanceConstraintService
             'next_work_period'   => $timeRulesResult['active_or_next_period'],
             'current_work_period'     => $timeRulesResult['current_work_period'],
             'lateness_rules'         => $timeRulesResult['lateness_rules'],
+            'early_clock_in_rules'   => $timeRulesResult['early_clock_in_rules'],
             'location_work'           => $locationRulesResult,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
@@ -600,6 +601,7 @@ class AttendanceConstraintService
             'is_holiday' => false,
             'total_work_hours' => 0.0,
             'lateness_rules'=> null,
+            'early_clock_in_rules' => null,
             'current_work_period' => null, // New: Active period for today
             'next_upcoming_period' => null, // Next upcoming period (could be today or future)
         ];
@@ -682,6 +684,12 @@ class AttendanceConstraintService
             $lateness_rules = $todaySchedule['lateness_rules'];
         }
 
+        $early_clock_in_rules = null;
+
+        if (isset($todaySchedule['early_clock_in_rules'])) {
+            $early_clock_in_rules = $todaySchedule['early_clock_in_rules'];
+        }
+
         return [
             'status' => $workDayStatus,
             'reason' => $workDayReason,
@@ -690,7 +698,8 @@ class AttendanceConstraintService
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
             'current_work_period' => $currentActivePeriodToday, // Null if no active period today
             'active_or_next_period' => $nextUpcomingPeriod, // The absolute next period (today or future)
-            'lateness_rules' => $lateness_rules
+            'lateness_rules' => $lateness_rules,
+            'early_clock_in_rules' => $early_clock_in_rules
         ];
     }
 
