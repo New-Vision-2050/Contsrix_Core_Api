@@ -526,10 +526,42 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 continue;
             }
 
-            $periodStart = Carbon::createFromFormat('H:i', $period['start_time'], $clockInTime->timezone)
-                ->setDateFrom($clockInTime);
-            $periodEnd = Carbon::createFromFormat('H:i', $period['end_time'], $clockInTime->timezone)
-                ->setDateFrom($clockInTime);
+            // Ensure period times are properly formatted before creating Carbon objects
+            $startTime = trim($period['start_time']);
+            $endTime = trim($period['end_time']);
+            
+            // Validate time format
+            if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $startTime)) {
+                \Illuminate\Support\Facades\Log::error('Invalid period start time format', [
+                    'start_time' => $startTime,
+                    'period' => $period,
+                    'day_of_week' => $dayOfWeek
+                ]);
+                continue;
+            }
+            
+            if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $endTime)) {
+                \Illuminate\Support\Facades\Log::error('Invalid period end time format', [
+                    'end_time' => $endTime,
+                    'period' => $period,
+                    'day_of_week' => $dayOfWeek
+                ]);
+                continue;
+            }
+            
+            try {
+                $periodStart = Carbon::createFromFormat('H:i', $startTime, $clockInTime->timezone)
+                    ->setDateFrom($clockInTime);
+                $periodEnd = Carbon::createFromFormat('H:i', $endTime, $clockInTime->timezone)
+                    ->setDateFrom($clockInTime);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to create Carbon object from period time', [
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'error' => $e->getMessage()
+                ]);
+                continue;
+            }
 
 
             if ($periodEnd->lessThan($periodStart)) {
@@ -670,9 +702,31 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // Calculate the earliest allowed clock-in time based on the scheduled start time
-        $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'])
-                                  ->setDateFrom($clockInTimeLocal);
+        // Ensure start time is properly formatted
+        $startTime = trim($firstPeriod['start_time']);
+        
+        // Validate time format
+        if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $startTime)) {
+            \Illuminate\Support\Facades\Log::error('Invalid period start time format in validateEarlyClockInPrevention', [
+                'start_time' => $startTime,
+                'attendance_id' => $attendance->id,
+                'day_of_week' => $dayOfWeek
+            ]);
+            return false;
+        }
+        
+        try {
+            // Calculate the earliest allowed clock-in time based on the scheduled start time
+            $scheduledStartTime = Carbon::createFromTimeString($startTime)
+                                      ->setDateFrom($clockInTimeLocal);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to create Carbon object from period start time', [
+                'start_time' => $startTime,
+                'error' => $e->getMessage(),
+                'attendance_id' => $attendance->id
+            ]);
+            return false;
+        }
 
         // Calculate grace period based on early_period and early_unit
         $earlyPeriod = (int)($rules['early_period'] ?? 0);
