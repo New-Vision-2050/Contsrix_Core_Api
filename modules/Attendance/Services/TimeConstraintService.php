@@ -288,19 +288,36 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         $clockInTime = Carbon::parse($attendance->clock_in_time);
         $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'], $clockInTime->timezone)->setDateFrom($clockInTime);
 
-        $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
+        // Calculate grace period based on lateness_period and lateness_unit
+        $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
+        $latenessUnit = $rules['lateness_unit'] ?? 'minute';
+        
+        // Convert the lateness period to minutes based on the unit
+        $gracePeriodMinutes = $this->convertToMinutes($latenessPeriod, $latenessUnit);
+        
+        // If no specific grace period is defined, fall back to grace_period_minutes
+        if ($gracePeriodMinutes <= 0) {
+            $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
+        }
+        
         $latestAllowedArrival = $scheduledStartTime->copy()->addMinutes($gracePeriodMinutes);
 
         if ($clockInTime->isAfter($latestAllowedArrival)) {
             $minutesLate = $latestAllowedArrival->diffInMinutes($clockInTime, true);
             return [
                 'constraint_type' => AttendanceConstraint::TIME_LATE_RESTRICTION,
+                'severity' => $this->getSeverityFromConfig($config),
                 'message' => "Late arrival detected. Arrived {$minutesLate} minutes after the grace period.",
                 'details' => [
                     'clock_in_time' => $clockInTime->toDateTimeString(),
                     'scheduled_start_time' => $scheduledStartTime->toDateTimeString(),
                     'latest_allowed_arrival' => $latestAllowedArrival->toDateTimeString(),
-                    'minutes_late' => $minutesLate
+                    'minutes_late' => $minutesLate,
+                    'grace_period' => [
+                        'value' => $latenessPeriod,
+                        'unit' => $latenessUnit,
+                        'minutes_equivalent' => $gracePeriodMinutes
+                    ]
                 ]
             ];
         }
@@ -459,7 +476,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             if (isset($holiday['date']) && $clockInTime->isSameDay($holiday['date'])) {
                 return [
                     'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
-                    'severity' => $this->getSeverityFromConfig($config, 'high'),
+                    'severity' => $this->getSeverityFromConfig($config),
                     'message' => "Clock-in is not allowed on an official holiday: " . ($holiday['name'] ?? 'Holiday'),
                     'details' => [
                         'date' => $clockInTime->toDateString(),
@@ -478,7 +495,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         if (!$daySchedule || !($daySchedule['enabled'] ?? false)) {
             return [
                 'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
-                'severity' => $this->getSeverityFromConfig($config, 'high'),
+                'severity' => $this->getSeverityFromConfig($config),
                 'message' => 'Clock-in is not allowed on a scheduled day off.',
                 'details' => [
                     'day_of_week' => $dayOfWeek,
@@ -491,6 +508,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
 
         // A working day must have defined work periods.
         $periods = $daySchedule['periods'] ?? [];
+
         if (empty($periods)) {
             return [
                 'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
@@ -503,12 +521,10 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         // Check if the clock-in time falls within any of the defined periods for the day.
         $clockInTimeStr = $clockInTime->format('H:i');
         $inAllowedPeriod = false;
-
         foreach ($periods as $period) {
             if (!isset($period['start_time']) || !isset($period['end_time'])) {
                 continue;
             }
-
             // Note: Your TimeConstraintService needs a helper method `isTimeWithinRange` for this to work.
             // Assuming it exists and handles grace periods.
             if ($this->isTimeWithinRangeWithGrace($clockInTimeStr, $period)) {
@@ -561,8 +577,28 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
 
         return $time >= $effectiveStartTime && $time <= $effectiveEndTime;
     }
+    
+    /**
+     * Converts a time value from the specified unit to minutes.
+     *
+     * @param int $value The time value to convert
+     * @param string $unit The unit of the time value ('minute', 'hour', or 'day')
+     * @return int The equivalent time value in minutes
+     */
+    private function convertToMinutes(int $value, string $unit): int
+    {
+        switch (strtolower($unit)) {
+            case 'hour':
+                return $value * 60;
+            case 'day':
+                return $value * 24 * 60;
+            case 'minute':
+            default:
+                return $value;
+        }
+    }
      /**
-     * ADDED: Validates that an employee does not clock in too early.
+     * Validates that an employee does not clock in too early.
      *
      * This checks the clock-in time against the scheduled start time of the relevant
      * shift period, minus any allowed grace period for clocking in early.
@@ -579,10 +615,8 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // 3. Parse the user's clock-in time (which is stored in UTC) and
-        //    IMMEDIATELY convert it to the user's local timezone for all comparisons.
+        // Parse the user's clock-in time and convert to local timezone for comparisons
         $clockInTimeLocal = Carbon::parse($attendance->clock_in_time);
-        // --- END OF FIX ---
 
         $dayOfWeek = strtolower($clockInTimeLocal->format('l'));
         $daySchedule = $config['weekly_schedule'][$dayOfWeek] ?? null;
@@ -592,25 +626,42 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // 4. Calculate the earliest allowed clock-in time in the user's local timezone.
+        // Calculate the earliest allowed clock-in time based on the scheduled start time
         $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'])
                                   ->setDateFrom($clockInTimeLocal);
 
-        $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
+        // Calculate grace period based on early_period and early_unit
+        $earlyPeriod = (int)($rules['early_period'] ?? 0);
+        $earlyUnit = $rules['early_unit'] ?? 'minute';
+        
+        // Convert the early period to minutes based on the unit
+        $gracePeriodMinutes = $this->convertToMinutes($earlyPeriod, $earlyUnit);
+        
+        // If no specific grace period is defined, fall back to grace_period_minutes
+        if ($gracePeriodMinutes <= 0) {
+            $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
+        }
+        
         $earliestAllowedClockIn = $scheduledStartTime->copy()->subMinutes($gracePeriodMinutes);
-        // 5. Compare the two Carbon objects, which are now in the SAME timezone.
+        
+        // Compare the clock-in time with the earliest allowed time
         if ($clockInTimeLocal->isBefore($earliestAllowedClockIn)) {
             $minutesEarly = $earliestAllowedClockIn->diffInMinutes($clockInTimeLocal, true);
 
             return [
                 'constraint_type' => 'early_clock_in_prevention',
-                'severity' => $this->getSeverityFromConfig($config, 'high'),
+                'severity' => $this->getSeverityFromConfig($config),
                 'message' => "Clock-in is too early. You can clock in from {$earliestAllowedClockIn->format('H:i')}.",
                 'details' => [
                     'clock_in_time' => $clockInTimeLocal->toDateTimeString(),
                     'scheduled_start_time' => $scheduledStartTime->toDateTimeString(),
                     'earliest_allowed_clock_in' => $earliestAllowedClockIn->toDateTimeString(),
-                    'minutes_early' => $minutesEarly
+                    'minutes_early' => $minutesEarly,
+                    'grace_period' => [
+                        'value' => $earlyPeriod,
+                        'unit' => $earlyUnit,
+                        'minutes_equivalent' => $gracePeriodMinutes
+                    ]
                 ]
             ];
         }
