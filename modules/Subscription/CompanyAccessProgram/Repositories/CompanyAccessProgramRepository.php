@@ -195,12 +195,13 @@ class CompanyAccessProgramRepository extends BaseRepository
     }
 
     public function paginated(
-        array $conditions = [],
-        int $page = 1,
-        int $perPage = 15,
+        array  $conditions = [],
+        int    $page = 1,
+        int    $perPage = 15,
         string $orderBy = 'created_at',
         string $sortBy = 'desc'
-    ) {
+    )
+    {
         if (method_exists($this->model, 'scopeFilter')) {
             $query = $this->model->filter(request()->all());
         } else {
@@ -220,6 +221,24 @@ class CompanyAccessProgramRepository extends BaseRepository
         if (!empty($conditions['company_field_id'])) {
             $query->whereHas('companyFields', function ($q) use ($conditions) {
                 $q->where('company_fields.id', $conditions['company_field_id']);
+            });
+        }
+
+
+        if (!empty($conditions['company_type_id'])) {
+            $query->whereHas('companyTypes', function ($q) use ($conditions) {
+                $q->where('company_types.id', $conditions['company_type_id']);
+            });
+        }
+        if (!empty($conditions['company_field'])) {
+            $query->whereHas('companyFields', function ($q) use ($conditions) {
+                $q->whereIn('company_fields.id', $conditions['company_field']);
+            });
+        }
+
+        if (!empty($conditions['country_id'])) {
+            $query->whereHas('countries', function ($q) use ($conditions) {
+                $q->where('countries.id', $conditions['country_id']);
             });
         }
 
