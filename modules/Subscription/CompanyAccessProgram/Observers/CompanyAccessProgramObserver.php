@@ -91,7 +91,7 @@ class CompanyAccessProgramObserver
     public function updating(CompanyAccessProgram $companyAccessProgram): ?bool
     {
         // Check if this is a main program
-        if (!$companyAccessProgram->is_main_program) {
+        if ($companyAccessProgram->is_main_program) {
             Log::warning("Attempted to update main CompanyAccessProgram", [
                 'company_access_program_id' => $companyAccessProgram->id,
                 'company_access_program_name' => $companyAccessProgram->name,
