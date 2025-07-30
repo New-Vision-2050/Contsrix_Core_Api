@@ -25,6 +25,9 @@ class MockAttendanceService
     public function createDTO(ClockInDTO $clockInDTO,array $rawRequestData)
     {
         $attendance = $this->attendanceService->clockIn($clockInDTO);
+        
+        // Check lateness at clock-in time
+        $attendance->checkLateness();
 
         $actualViolations = $this->constraintService->validateAttendance($attendance, $rawRequestData);
         if (!empty($actualViolations)) {
@@ -56,6 +59,9 @@ class MockAttendanceService
         $mockAttendance = new \Modules\Attendance\Models\Attendance($mockAttendanceData);
 
         $mockAttendance->setRelation('user', $user);
+
+        // Check lateness at clock-in time for the mock attendance
+        //$mockAttendance->checkLateness();
 
         $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData,true);
 

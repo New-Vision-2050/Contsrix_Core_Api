@@ -488,6 +488,88 @@ class Attendance extends Model implements Auditable
     }
 
     /**
+     * Check if the clock-in time is late compared to the scheduled start time.
+     * This should be called during the clock-in process.
+     *
+     * @return $this
+     */
+    public function checkLateness(): self
+    {
+        if (!$this->clock_in_time) {
+            $this->is_late = false;
+            $this->late_minutes = 0;
+            return $this;
+        }
+
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+
+        try {
+            $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
+
+            $scheduledStartTimeString = $this->start_time ?? $this->user->start_time ?? '09:00';
+            if ($scheduledStartTimeString instanceof Carbon) {
+                $scheduledStartTimeString = $scheduledStartTimeString->format('H:i');
+            }
+
+            $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
+
+
+            // Get the constraint service to access time rules configuration
+            $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
+            $user = $this->user;
+            $config = $constraintService->getTodaysWorkRulesForUser($user);
+            // Get lateness rules from config
+            $rules = $config['lateness_rules'] ?? [];
+            $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
+            $latenessUnit = $rules['lateness_unit'] ?? 'minute';
+            // Convert the lateness period to minutes based on the unit
+            $gracePeriodMinutes = $this->convertToMinutes($latenessPeriod, $latenessUnit);
+            // If no specific grace period is defined, fall back to grace_period_minutes
+            if ($gracePeriodMinutes <= 0) {
+                $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
+            }
+            // Calculate the latest allowed arrival time with grace period
+            $latestAllowedArrival = $scheduledStartTime->copy()->addMinutes($gracePeriodMinutes);
+
+            // Check if clock-in time is later than the latest allowed arrival
+            $this->is_late = $clockIn->gt($latestAllowedArrival);
+            $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
+            $this->save();
+
+        } catch (\Exception $e) {
+            Log::error('Error checking lateness: ' . $e->getMessage(), [
+                'clock_in_time' => $this->clock_in_time,
+                'attendance_id' => $this->id,
+            ]);
+
+            $this->is_late = false;
+            $this->late_minutes = 0;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Converts a time value from the specified unit to minutes.
+     *
+     * @param int $value The time value to convert
+     * @param string $unit The unit of the time value ('minute', 'hour', or 'day')
+     * @return int The equivalent time value in minutes
+     */
+    private function convertToMinutes(int $value, string $unit): int
+    {
+        switch (strtolower($unit)) {
+            case 'hour':
+                return $value * 60;
+            case 'day':
+                return $value * 24 * 60;
+            case 'minute':
+            default:
+                return $value;
+        }
+    }
+
+    /**
      * Calculate total work hours and update the model.
      */
     public function calculateWorkHours(): float
@@ -584,8 +666,12 @@ class Attendance extends Model implements Auditable
             $scheduledEndTime = $clockIn->copy()->setHour(17)->setMinute(0)->setSecond(0);
         }
 
-        $this->is_late = $clockIn->gt($scheduledStartTime);
-        $this->late_minutes = $this->is_late ? $scheduledStartTime->diffInMinutes($clockIn) : 0;
+        // Only set lateness if it hasn't been set during clock-in
+        // This preserves the lateness values set by checkLateness() during clock-in
+        if ($this->is_late === null) {
+            $this->is_late = $clockIn->gt($scheduledStartTime);
+            $this->late_minutes = $this->is_late ? $scheduledStartTime->diffInMinutes($clockIn) : 0;
+        }
 
         $this->is_early_departure = $clockOut->lt($scheduledEndTime);
         $this->early_departure_minutes = $this->is_early_departure ? $clockOut->diffInMinutes($scheduledEndTime) : 0;

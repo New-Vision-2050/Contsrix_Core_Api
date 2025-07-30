@@ -538,7 +538,7 @@ class AttendanceConstraintService
             'detected_at' => now(),
         ]);
     }
-public function getTodaysWorkRulesForUser(User $user): array
+    public function getTodaysWorkRulesForUser(User $user): array
     {
         $timezone = getTimeZoneByRequest()?? config('app.timezone');
 
@@ -573,6 +573,7 @@ public function getTodaysWorkRulesForUser(User $user): array
             'total_work_hours' => $timeRulesResult['total_work_hours'],
             'next_work_period'   => $timeRulesResult['active_or_next_period'],
             'current_work_period'     => $timeRulesResult['current_work_period'],
+            'lateness_rules'         => $timeRulesResult['lateness_rules'],
             'location_work'           => $locationRulesResult,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
@@ -598,6 +599,7 @@ public function getTodaysWorkRulesForUser(User $user): array
             'periods' => [], // All periods for TODAY
             'is_holiday' => false,
             'total_work_hours' => 0.0,
+            'lateness_rules'=> null,
             'current_work_period' => null, // New: Active period for today
             'next_upcoming_period' => null, // Next upcoming period (could be today or future)
         ];
@@ -627,10 +629,9 @@ public function getTodaysWorkRulesForUser(User $user): array
 
         $currentActivePeriodToday = null;
         $nextUpcomingPeriod = null; // Will capture the very next period chronologically (could be today or in future)
-
         // --- Process periods for TODAY first ---
         if ($isTodayWorkDay && !empty($todaySchedule['periods'])) {
-            $sortedTodayPeriods = collect($todaySchedule['periods'])->sortBy('start_time')->all();
+            $sortedTodayPeriods = collect(value: $todaySchedule['periods'])->sortBy('start_time')->all();
 
             foreach ($sortedTodayPeriods as $period) {
                 $periodStartToday = Carbon::createFromTimeString($period['start_time'], $now->timezone)->setDateFrom($now);
@@ -675,6 +676,12 @@ public function getTodaysWorkRulesForUser(User $user): array
             }
         }
 
+        $lateness_rules = null;
+
+        if (isset($todaySchedule['lateness_rules'])) {
+            $lateness_rules = $todaySchedule['lateness_rules'];
+        }
+
         return [
             'status' => $workDayStatus,
             'reason' => $workDayReason,
@@ -683,6 +690,7 @@ public function getTodaysWorkRulesForUser(User $user): array
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
             'current_work_period' => $currentActivePeriodToday, // Null if no active period today
             'active_or_next_period' => $nextUpcomingPeriod, // The absolute next period (today or future)
+            'lateness_rules' => $lateness_rules
         ];
     }
 
