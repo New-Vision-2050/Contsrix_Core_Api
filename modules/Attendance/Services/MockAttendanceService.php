@@ -46,7 +46,7 @@ class MockAttendanceService
     public function handleClockInProcess(ClockInDTO $clockInDTO, array $rawRequestData)
     {
         $user = auth()->user();
-        dd($user, $clockInDTO, $rawRequestData);
+
         $mockAttendanceData = [
             'user_id'             => $user->id,
             'clock_in_time'       => $clockInDTO->getClockInTime(),
@@ -62,7 +62,7 @@ class MockAttendanceService
 
         // Check lateness at clock-in time for the mock attendance
         //$mockAttendance->checkLateness();
-
+        dd($mockAttendance);
         $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData,true);
 
         return $violations;
