@@ -43,12 +43,11 @@ class AttendanceService
 
         $periodStartTime = data_get($constraints, 'current_work_period.start_time');
         $periodEndTime = data_get($constraints, 'current_work_period.end_time');
-        $day_status = data_get($constraints, 'day_status');
+        $day_status = data_get($constraints,'day_status');
 
 
         $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
         $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
-        dd($startDateTime, $endDateTime,$periodStartTime,$periodEndTime);
 
         $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodStartTime, $timezone);
         $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodEndTime, timezone: $timezone);
@@ -68,7 +67,7 @@ class AttendanceService
             $earliestAllowedTime = $startDateTime->copy()->sub($earlyPeriod, $earlyUnit);
 
             if ($now->lt($earliestAllowedTime)) {
-               dd('test');
+
                 throw new \Exception("غير مسموح بتسجيل الحضور قبل {$earlyPeriod} {$earlyUnit} من بداية الفترة.");
             }
         }
@@ -480,7 +479,6 @@ class AttendanceService
     }
 
 
-
 public function getTeamAttendance(string $requestingUserId, array $filters, ?int $page = 1, ?int $perPage = 10): array
 {
     $companyId = $filters['company_id'] ?? null;
@@ -488,15 +486,22 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
         throw new \InvalidArgumentException('Company ID is required for team attendance.');
     }
 
-    // Parse date range
-    $startDate = isset($filters['start_date']) ? Carbon::parse($filters['start_date']) : Carbon::today();
-    $endDate = isset($filters['end_date']) ? Carbon::parse($filters['end_date']) : Carbon::today();
+    $timezone = getTimeZoneByRequest() ?? config('app.timezone');
 
-    // Get all days in the date range
-    $period = CarbonPeriod::create($startDate->startOfDay(), $endDate->endOfDay());
+    $startDate = isset($filters['start_date'])
+        ? Carbon::parse($filters['start_date'], $timezone)
+        : Carbon::today($timezone);
+
+    $endDate = isset($filters['end_date'])
+        ? Carbon::parse($filters['end_date'], $timezone)
+        : Carbon::today($timezone);
+
+    $startDate = $startDate->startOfDay();
+    $endDate = $endDate->endOfDay();
+
+    $period = CarbonPeriod::create($startDate, $endDate);
     $allDates = collect($period->toArray());
 
-    // Get all relevant users with optimized eager loading
     $allRelevantUsers = User::where('company_id', $companyId)
         ->filter($filters)
         ->with(['professionalData'])
@@ -505,40 +510,26 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
 
     $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
 
-    // Fetch all real attendance records for the date range with optimized eager loading
     $realAttendanceRecords = Attendance::query()
         ->filter($filters)
         ->select('*')
-        ->with([
-            'user:id,name,email,company_id,status',
-        ])
+        ->with(['user:id,name,email,company_id,status'])
         ->whereIn('user_id', $allRelevantUserIds)
-        ->whereBetween('start_time', [$startDate->startOfDay(), $endDate->endOfDay()])
+        ->whereBetween('start_time', [$startDate, $endDate])
         ->orderBy('start_time')
         ->get();
 
-    // Group attendance records by user_id and date
     $attendanceByUserAndDate = [];
     foreach ($realAttendanceRecords as $record) {
         $userId = (string)$record->user_id;
-        $date = $record->clock_in_time->format('Y-m-d');
-
-        if (!isset($attendanceByUserAndDate[$userId])) {
-            $attendanceByUserAndDate[$userId] = [];
-        }
-
-        if (!isset($attendanceByUserAndDate[$userId][$date])) {
-            $attendanceByUserAndDate[$userId][$date] = [];
-        }
+        $date = $record->clock_in_time->copy()->setTimezone($timezone)->format('Y-m-d');
 
         $attendanceByUserAndDate[$userId][$date][] = $record;
     }
 
-    // Create the final attendance list with one entry per user per day
     $finalAttendanceList = [];
     $defaultTimezone = config('app.timezone');
 
-    // For each user and each day in the date range
     foreach ($allRelevantUsers as $user) {
         $userId = (string)$user->id;
 
@@ -547,10 +538,8 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
             $userRecords = $attendanceByUserAndDate[$userId][$dateStr] ?? [];
 
             if (!empty($userRecords)) {
-                // User has attendance records for this day
                 $primaryRecord = $userRecords[0];
 
-                // Store attendance periods
                 $attendancePeriods = [];
                 $totalWorkHours = 0;
                 $totalBreakHours = 0;
@@ -561,17 +550,16 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
                 $maxEarlyDepartureMinutes = 0;
 
                 foreach ($userRecords as $record) {
-                    // Add to attendance periods
                     $attendancePeriods[] = [
                         'id' => (string)$record->id,
-                        'clock_in_time' => $record->clock_in_time?->format('Y-m-d H:i:s'),
-                        'clock_out_time' => $record->clock_out_time?->format('Y-m-d H:i:s'),
+                        'clock_in_time' => $record->clock_in_time?->setTimezone($timezone)->format('Y-m-d H:i:s'),
+                        'clock_out_time' => $record->clock_out_time?->setTimezone($timezone)->format('Y-m-d H:i:s'),
                         'total_work_hours' => (float)$record->total_work_hours,
                         'status' => $record->status,
-                        'is_late' => (int)$record->is_late
+                        'is_late' => (int)$record->is_late,
+                        'day_status' => $record->day_status,
                     ];
 
-                    // Aggregate metrics
                     $totalWorkHours += (float)$record->total_work_hours;
                     $totalBreakHours += (float)$record->total_break_hours;
                     $overtimeHours += (float)$record->overtime_hours;
@@ -583,7 +571,6 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
                     $maxEarlyDepartureMinutes = max($maxEarlyDepartureMinutes, (int)$record->early_departure_minutes);
                 }
 
-                // Update the primary record with aggregated data
                 $primaryRecord->total_work_hours = $totalWorkHours;
                 $primaryRecord->total_break_hours = $totalBreakHours;
                 $primaryRecord->overtime_hours = $overtimeHours;
@@ -594,18 +581,14 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
                 $primaryRecord->status = Attendance::STATUS_COMPLETED;
                 $primaryRecord->is_absent = false;
                 $primaryRecord->work_date = $dateStr;
-
-                // Add the attendance periods to the primary record
                 $primaryRecord->attendance_periods = $attendancePeriods;
 
-                // Set user relation if not already set
                 if (!$primaryRecord->relationLoaded('user')) {
                     $primaryRecord->setRelation('user', $user);
                 }
 
                 $finalAttendanceList[] = $primaryRecord;
             } else {
-                // Create synthetic record for absent user on this day
                 $syntheticAttendance = new Attendance([
                     'user_id' => $user->id,
                     'company_id' => $companyId,
@@ -623,7 +606,6 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
                     'work_date' => $dateStr,
                 ]);
 
-                // Set relations
                 $syntheticAttendance->setRelation('user', $user);
                 $syntheticAttendance->setRelation('breaks', new Collection());
                 $syntheticAttendance->attendance_periods = [];
@@ -633,11 +615,7 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
         }
     }
 
-    // Convert array to collection and sort by date first, then by user name
-    $finalAttendanceList = collect($finalAttendanceList);
-
-    // Sort by date first, then by user name
-    $finalAttendanceList = $finalAttendanceList->sortBy(function ($record) {
+    $finalAttendanceList = collect($finalAttendanceList)->sortBy(function ($record) {
         $date = $record->work_date ?? '';
         if (empty($date) && $record->clock_in_time) {
             $date = $record->clock_in_time->format('Y-m-d');
@@ -646,12 +624,10 @@ public function getTeamAttendance(string $requestingUserId, array $filters, ?int
         return $date . '_' . $userName;
     })->values();
 
-    // Manual Pagination
     $totalItems = $finalAttendanceList->count();
     $offset = ($page - 1) * $perPage;
     $paginatedItems = $finalAttendanceList->slice($offset, $perPage)->values();
 
-    // Calculate pagination values directly
     $lastPage = max((int) ceil($totalItems / $perPage), 1);
     $currentPage = $page;
     $from = $totalItems ? $offset + 1 : 0;
