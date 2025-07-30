@@ -7,6 +7,7 @@ namespace Modules\RoleAndPermission\Presenters;
 use Modules\RoleAndPermission\Models\Permission;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\User\Models\User;
+use Ramsey\Uuid\Uuid;
 
 class PermissionPresenter extends AbstractPresenter
 {
@@ -24,6 +25,21 @@ class PermissionPresenter extends AbstractPresenter
         if (count($nameParts) >= 2) {
             // Skip the first part (module name) and translate the rest
             for ($i = count($nameParts) - 1; $i >= 1; $i--) {
+                if ($i == 1 && str_contains($nameParts[$i], "*")) {
+                    $resources = explode('*', $nameParts[$i]);
+                    if (Uuid::isValid($resources[1])) {
+                        // If it's a UUID, group by the part before asterisk
+                        $translatedName .= " " . $resources[0];
+                    } else {
+                        // If it's not a UUID, group by the part after asterisk
+                        $translatedName .= " " . __('names.' . $resources[1]);
+
+                        $translatedName .= " " . __('names.' . $resources[0]);
+                    }
+
+
+                    break;
+                }
                 $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
             }
         } elseif (count($nameParts) == 1) {
