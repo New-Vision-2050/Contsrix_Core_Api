@@ -382,7 +382,6 @@ class CompanyUserRepository extends BaseRepository
             ]);
 
             $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id", $companyId)->first();
-            setPermissionsTeamId($companyId);
             $user->assignRole($role);//assign super admin role for first user
 
 
