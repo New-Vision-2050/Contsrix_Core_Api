@@ -54,6 +54,63 @@ class CompanyAccessProgramObserver
     }
 
     /**
+     * Handle the CompanyAccessProgram "deleting" event.
+     *
+     * @param CompanyAccessProgram $companyAccessProgram
+     * @return bool|null
+     */
+    public function deleting(CompanyAccessProgram $companyAccessProgram): ?bool
+    {
+        // Check if this CompanyAccessProgram has any packages assigned
+        $packagesCount = $companyAccessProgram->packages()->count();
+        
+        if ($packagesCount > 0) {
+            Log::warning("Attempted to delete CompanyAccessProgram with packages assigned", [
+                'company_access_program_id' => $companyAccessProgram->id,
+                'company_access_program_name' => $companyAccessProgram->name,
+                'packages_count' => $packagesCount
+            ]);
+            
+            throw new \Exception("Cannot delete Company Access Program '{$companyAccessProgram->name}' because it has {$packagesCount} package(s) assigned. Please delete or reassign the packages first.");
+        }
+        
+        Log::info("CompanyAccessProgram deletion allowed - no packages assigned", [
+            'company_access_program_id' => $companyAccessProgram->id,
+            'company_access_program_name' => $companyAccessProgram->name
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Handle the CompanyAccessProgram "updating" event.
+     *
+     * @param CompanyAccessProgram $companyAccessProgram
+     * @return bool|null
+     */
+    public function updating(CompanyAccessProgram $companyAccessProgram): ?bool
+    {
+        // Check if this is a main program
+        if ($companyAccessProgram->is_main_program) {
+            Log::warning("Attempted to update main CompanyAccessProgram", [
+                'company_access_program_id' => $companyAccessProgram->id,
+                'company_access_program_name' => $companyAccessProgram->name,
+                'changes' => $companyAccessProgram->getDirty()
+            ]);
+            
+            throw new \Exception("Main Company Access Program '{$companyAccessProgram->name}' cannot be updated. Main programs are system-managed and protected from modifications.");
+        }
+        
+        Log::info("CompanyAccessProgram update allowed - not a main program", [
+            'company_access_program_id' => $companyAccessProgram->id,
+            'company_access_program_name' => $companyAccessProgram->name,
+            'changes' => $companyAccessProgram->getDirty()
+        ]);
+        
+        return true;
+    }
+
+    /**
      * Create main package for the company access program
      *
      * @param CompanyAccessProgram $companyAccessProgram
