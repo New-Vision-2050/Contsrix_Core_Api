@@ -74,7 +74,7 @@ class AttendanceConstraintService
             $attendance->appliedConstraints()->sync($appliedConstraintIds);
         }
 
-        if (empty($constraints)) {
+        if ($constraints->isEmpty()) {
 
             return [
                 'constraint_type' => 'none applied to user and no default constraint',

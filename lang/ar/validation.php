@@ -503,5 +503,6 @@ return [
         'holiday'=>'اجازه',
         'day_off_or_weekend'=>'اجازه',
         'in_loction'=>'في الموقع',
+        'clocked_out'=> 'تم الانصراف'
     ]
 ];
