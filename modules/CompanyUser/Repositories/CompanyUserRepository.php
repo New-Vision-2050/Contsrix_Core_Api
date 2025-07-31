@@ -537,6 +537,8 @@ class CompanyUserRepository extends BaseRepository
         $attendanceConstraint = AttendanceConstraint::withoutTenancy()
     ->whereJsonContains('branch_ids', (string) $branchId)
     ->first();
+
+    dd($attendanceConstraint);
         $data = [
             'company_id' => $companyId,
             'global_id' => $user->global_company_user_id,
