@@ -497,4 +497,9 @@ return [
     'regular' => 'منتظم',
     'male' => 'ذكر',
     'female' => 'أنثى',
+    'day_status' => [
+        'work_day'=>'مطلوب للحضور',
+        'holiday'=>'اجازه',
+        'day_off_or_weekend'=>'اجازه',
+    ]
 ];

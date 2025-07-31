@@ -50,8 +50,7 @@ class AttendanceConstraintRepository extends BaseRepository
     }
     public function getConstraintBybranch($id): ?AttendanceConstraint
     {
-
-        return $this->model->whereJsonContains('branch_ids', (string)$id)->first();
+        return $this->model->withoutTenancy()->whereJsonContains('branch_ids', (string)$id)->first();
     }
     /**
      * Create new constraint
