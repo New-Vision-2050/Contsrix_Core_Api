@@ -65,6 +65,19 @@ return [
 
     "human-resources"=>"الموارد البشرية",
 
+    // SubEntity Module
+    'sub-entity' => 'كيان فرعي',
+    'sub-entities' => 'الكيانات الفرعية',
+    'system' => 'النظام',
+    'sub-entity-attributes' => 'خصائص الكيان الفرعي',
+    'sub-entity-validation' => 'التحقق من الكيان الفرعي',
+    'sub-entity-selection' => 'اختيار الكيان الفرعي',
+    'super-entity' => 'كيان رئيسي',
+    'super-entities' => 'الكيانات الرئيسية',
+    'super-entity-attributes' => 'خصائص الكيان الرئيسي',
+    'super-entity-registration' => 'تسجيل الكيان الرئيسي',
+    'sub-entity-records' => 'سجلات الكيان الفرعي',
+
     // User Profile
     'user-profile' => 'الملف الشخصي للمستخدم',
     'user-profile*personal-information' => 'المعلومات الشخصية',
