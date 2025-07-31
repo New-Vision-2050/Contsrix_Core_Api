@@ -553,11 +553,12 @@ class AttendanceConstraintService
             'detected_at' => now(),
         ]);
     }
-    public function getTodaysWorkRulesForUser(User $user): array
+    public function getTodaysWorkRulesForUser(User $user,$date=null): array
     {
         $timezone = getTimeZoneByRequest()?? config('app.timezone');
-
-        $now = Carbon::now($timezone);
+        $now = $date
+        ? Carbon::parse($date, $timezone)
+        : Carbon::now($timezone);
 
         $constraints = $this->getApplicableConstraints($user);
         if ($constraints->isEmpty()) {
@@ -632,9 +633,13 @@ class AttendanceConstraintService
 
         $dayOfWeek = strtolower($now->format('l'));
         $isTodayHoliday = collect($holidays)->contains(fn($h) => $now->isSameDay($h['date'] ?? null));
-        $todaySchedule = $weeklySchedule[$dayOfWeek] ?? ['enabled' => false];
         
+        $todaySchedule = $weeklySchedule[$dayOfWeek] ?? ['enabled' => false];
+        if (!($todaySchedule['enabled'] ?? false)) {
+            $isTodayHoliday = true;
+        }
         $periods = $todaySchedule['periods'] ?? [];
+
         $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false) && !empty($periods);
 
 
@@ -719,12 +724,11 @@ class AttendanceConstraintService
                 ];
             }
         }
-
         return [
             'day_status' => $workDayStatus,
             'reason' => $workDayReason,
             'periods' => $todaySchedule['periods'] ?? [],
-            'is_holiday' => ($workDayStatus === 'Holiday'),
+            'is_holiday' => ($workDayStatus === 'holiday'),
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
             'current_work_period' => $currentActivePeriodToday ?? (
                 isset($nextUpcomingPeriod['day']) && $nextUpcomingPeriod['day'] === 'Today' ? $nextUpcomingPeriod : $fallbackPeriod
