@@ -487,53 +487,84 @@ class AttendanceService
         }
 
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $defaultTimezone = config('app.timezone');
 
+        // Parse dates once and cache them
         $startDate = isset($filters['start_date'])
-            ? Carbon::parse($filters['start_date'], $timezone)
-            : Carbon::today($timezone);
+            ? Carbon::parse($filters['start_date'], $timezone)->startOfDay()
+            : Carbon::today($timezone)->startOfDay();
 
         $endDate = isset($filters['end_date'])
-            ? Carbon::parse($filters['end_date'], $timezone)
-            : Carbon::today($timezone);
+            ? Carbon::parse($filters['end_date'], $timezone)->endOfDay()
+            : Carbon::today($timezone)->endOfDay();
 
-        $startDate = $startDate->startOfDay();
-        $endDate = $endDate->endOfDay();
-
+        // Determine the date range upfront
         $period = CarbonPeriod::create($startDate, $endDate);
         $allDates = collect($period->toArray());
-
-        $allRelevantUsers = User::where('company_id', $companyId)
+        $dateCount = $allDates->count();
+        
+        // Pagination calculation
+        $offset = ($page - 1) * $perPage;
+        
+        // Only fetch users needed for the current page
+        // Optimization 1: Limit the number of users we process
+        $query = User::where('company_id', $companyId)
             ->filter($filters)
-            ->with(['professionalData'])
-            ->whereNotIn('email', config('constrix.emails'))
+            ->whereNotIn('email', config('constrix.emails'));
+            
+        // Get total user count for pagination
+        $totalUserCount = $query->count();
+        $totalItems = $totalUserCount * $dateCount;
+        
+        // Calculate which users we need for the current page
+        $usersPerPage = max(1, ceil($perPage / $dateCount));
+        $userOffset = floor($offset / $dateCount);
+        
+        // Only fetch users needed for this page
+        $allRelevantUsers = $query->with(['professionalData'])
+            ->skip($userOffset)
+            ->take($usersPerPage + 1) // Fetch one extra to ensure we have enough
             ->get();
 
         $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
 
+        // Optimization 2: Only select fields we need
         $realAttendanceRecords = Attendance::query()
             ->filter($filters)
-            ->select('*')
-            ->with(['user:id,name,email,company_id,status'])
+            ->select(['id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent', 
+                     'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time', 
+                     'start_time', 'overtime_hours'])
             ->whereIn('user_id', $allRelevantUserIds)
             ->whereBetween('start_time', [$startDate, $endDate])
             ->orderBy('start_time')
             ->get();
 
+        // Optimization 3: More efficient data structuring
         $attendanceByUserAndDate = [];
         foreach ($realAttendanceRecords as $record) {
             $userId = (string)$record->user_id;
             $date = $record->clock_in_time->copy()->setTimezone($timezone)->format('Y-m-d');
-
             $attendanceByUserAndDate[$userId][$date][] = $record;
         }
 
         $finalAttendanceList = [];
-        $defaultTimezone = config('app.timezone');
-
+        $constraintService = app(AttendanceConstraintService::class);
+        
+        // Optimization 4: Only process what we need for the current page
+        $processedItems = 0;
+        $targetItems = min($perPage, $totalItems - $offset);
+        
         foreach ($allRelevantUsers as $user) {
+            if ($processedItems >= $targetItems) break;
+            
             $userId = (string)$user->id;
-
+            
+            // Optimization 5: Pre-fetch constraints for this user once
+            $userConstraints = null;
+            
             foreach ($allDates as $date) {
+                if ($processedItems >= $targetItems) break;
+                
                 $dateStr = $date->format('Y-m-d');
                 $userRecords = $attendanceByUserAndDate[$userId][$dateStr] ?? [];
 
@@ -541,7 +572,6 @@ class AttendanceService
                     $primaryRecord = $userRecords[0];
 
                     $attendancePeriods = [];
-                    $overtimeHours = 0;
                     $isLate = false;
 
                     foreach ($userRecords as $record) {
@@ -557,23 +587,23 @@ class AttendanceService
                         if ($record->is_late) $isLate = true;
                     }
 
-                    $primaryRecord->overtime_hours = $overtimeHours;
                     $primaryRecord->is_late = $isLate;
                     $primaryRecord->status = Attendance::STATUS_COMPLETED;
                     $primaryRecord->is_absent = false;
                     $primaryRecord->work_date = $dateStr;
                     $primaryRecord->attendance_periods = $attendancePeriods;
-
-                    if (!$primaryRecord->relationLoaded('user')) {
-                        $primaryRecord->setRelation('user', $user);
-                    }
+                    $primaryRecord->setRelation('user', $user);
 
                     $finalAttendanceList[] = $primaryRecord;
                 } else {
-                   $constraintService = app(AttendanceConstraintService::class);
-                   $constraints = $constraintService->getTodaysWorkRulesForUser($user);
-                    $isHoliday = isset($constraints['is_holiday']) ? $constraints['is_holiday'] : null;
-                   $syntheticAttendance = new Attendance([
+                    // Optimization 6: Only fetch constraints when needed
+                    if ($userConstraints === null) {
+                        $userConstraints = $constraintService->getTodaysWorkRulesForUser($user);
+                    }
+                    
+                    $isHoliday = isset($userConstraints['is_holiday']) ? $userConstraints['is_holiday'] : null;
+                    
+                    $syntheticAttendance = new Attendance([
                         'user_id' => $user->id,
                         'company_id' => $companyId,
                         'status' => Attendance::STATUS_COMPLETED,
@@ -593,29 +623,24 @@ class AttendanceService
 
                     $finalAttendanceList[] = $syntheticAttendance;
                 }
+                
+                $processedItems++;
             }
         }
 
+        // Optimization 7: Simplified sorting
         $finalAttendanceList = collect($finalAttendanceList)->sortBy(function ($record) {
-            $date = $record->work_date ?? '';
-            if (empty($date) && $record->clock_in_time) {
-                $date = $record->clock_in_time->format('Y-m-d');
-            }
-            $userName = $record->user ? $record->user->name : '';
-            return $date . '_' . $userName;
+            return $record->work_date . '_' . ($record->user->name ?? '');
         })->values();
 
-        $totalItems = $finalAttendanceList->count();
-        $offset = ($page - 1) * $perPage;
-        $paginatedItems = $finalAttendanceList->slice($offset, $perPage)->values();
-
+        // Calculate pagination values
         $lastPage = max((int) ceil($totalItems / $perPage), 1);
         $currentPage = $page;
         $from = $totalItems ? $offset + 1 : 0;
         $to = min($offset + $perPage, $totalItems);
 
         return [
-            'data' => $paginatedItems->all(),
+            'data' => $finalAttendanceList->all(),
             'pagination' => [
                 'total' => $totalItems,
                 'per_page' => $perPage,
