@@ -51,6 +51,9 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
         if(auth()->check() && auth()->user()->email == 'admin@constrix-nv.com') {
             return $next($request);
         }
+        if(auth()->check() && auth()->user()->hasRole('super-admin') && tenant("is_central_company")) {
+            return $next($request);
+        }
 
         $permissions = explode('|', $permission);
 
