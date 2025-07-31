@@ -22,7 +22,7 @@ class PackagePresenter extends AbstractPresenter
             'id' => $this->package->id,
             'name' => $this->package->name,
             'status' => $this->package->is_active,
-            'features_count' => $this->package->features_count ?? 0,
+            'features_count' => $this->package->permissions()->count() ?? 0,
             'price' => $this->package->price,
             'currency' => $this->package->currency,
             'subscription_period' => $this->package->subscription_period,
