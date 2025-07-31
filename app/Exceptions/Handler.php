@@ -33,7 +33,7 @@ class Handler
             $e instanceof UnauthorizedException => response()->json([
                 'success' => false,
                 'message' => __('validation.unauthorized'),
-            ], 403),
+            ], 404),
 
             $e instanceof NotFoundHttpException => response()->json([
                 'success' => false,
