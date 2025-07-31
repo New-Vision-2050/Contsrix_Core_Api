@@ -130,7 +130,8 @@ class AttendanceService
             'clock_out_time' => $clockOutDTO->getClockOutTime(),
             'clock_out_location' => $clockOutDTO->getLocation(),
             'notes' => $attendance->notes . ($clockOutDTO->getNotes() ? "\n" . $clockOutDTO->getNotes() : ''),
-            'status' => 'completed'
+            'status' => 'completed',
+            'day_status' => 'clocked_out'
         ];
 
         $this->attendanceRepository->update($attendance->id, $updateData);

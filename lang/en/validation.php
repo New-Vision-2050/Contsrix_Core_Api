@@ -519,5 +519,6 @@ return [
         'holiday'=>'holiday',
         'day_off_or_weekend'=> 'day off or weekend',
         'in_loction'=>'in loction',
+        'clocked_out'=> 'clocked out'
     ]
 ];
