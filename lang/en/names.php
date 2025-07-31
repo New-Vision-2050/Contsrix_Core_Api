@@ -195,4 +195,5 @@ return [
     "address-information" => "Address Information",
     "about-me-information" => "About Me Information",
     "border-number-information" => "Border Number Information",
+    "program-management" => "Program Management",
 ];

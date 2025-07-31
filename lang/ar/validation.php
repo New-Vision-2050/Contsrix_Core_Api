@@ -497,4 +497,5 @@ return [
     'regular' => 'منتظم',
     'male' => 'ذكر',
     'female' => 'أنثى',
+    "program-management"=>"ادارة البرامج",
 ];
