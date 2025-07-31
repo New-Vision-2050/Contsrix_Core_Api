@@ -501,45 +501,89 @@ class AttendanceService
 
         // Determine the date range upfront
         $period = CarbonPeriod::create($startDate, $endDate);
-        $allDates = collect($period->toArray());
+        $allDates = collect($period->toArray())->map(fn($date) => $date->format('Y-m-d')); // Store as 'Y-m-d' strings
         $dateCount = $allDates->count();
-        // Pagination calculation
-        $offset = ($page - 1) * $perPage;
-        
-        // Only fetch users needed for the current page
-        // Optimization 1: Limit the number of users we process
-        $query = User::where('company_id', $companyId)
+
+        // Get all user IDs that match the filters for the company
+        // Optimized: Only select the ID to reduce memory if not all users are needed later.
+        $userIdsQuery = User::where('company_id', $companyId)
             ->filter($filters)
             ->whereNotIn('email', config('constrix.emails'));
-            
-        // Get total user count for pagination
-        $totalUserCount = $query->count();
-        $totalItems = $totalUserCount * $dateCount;
-        
-        // Calculate which users we need for the current page
-        $usersPerPage = max(1, ceil($perPage / $dateCount));
-        $userOffset = floor($offset / $dateCount);
-        
-        // Only fetch users needed for this page
-        $allRelevantUsers = $query->with(['professionalData'])
-            ->skip($userOffset)
-            ->take($usersPerPage + 1) // Fetch one extra to ensure we have enough
-            ->get();
 
-        $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
+        $totalUserCount = $userIdsQuery->count();
+        $totalItems = $totalUserCount * $dateCount; // Total conceptual items (user x date)
 
-        // Optimization 2: Only select fields we need
+        // Calculate offset for the overall report items
+        $offset = ($page - 1) * $perPage;
+
+        // --- Core Optimization 1: Identify exactly which (user_id, date) combinations are needed ---
+        // This is the most crucial part for efficient pagination of the combined list.
+        // We'll generate a conceptual list of all possible items and then slice it.
+        // This might be memory intensive if totalUserCount * dateCount is extremely large (e.g., millions).
+        // For 5000 users * 30 days = 150,000 items, it should be fine.
+        
+        $allUserIds = $userIdsQuery->pluck('id')->toArray(); // Get all user IDs upfront
+        
+        $currentReportItems = [];
+        $globalIndex = 0; // Tracks the index across all conceptual (user, date) items
+
+        foreach ($allUserIds as $userId) {
+            foreach ($allDates as $dateStr) {
+                // If this item falls within the current page's offset
+                if ($globalIndex >= $offset && $globalIndex < ($offset + $perPage)) {
+                    $currentReportItems[] = ['user_id' => (string)$userId, 'date' => $dateStr];
+                }
+                // Stop generating if we've found enough items for the current page + lookahead
+                // This optimization prevents iterating through all dates for all users
+                // if the requested page is early in the total set.
+                if (count($currentReportItems) >= $perPage) {
+                    break 2; // Break both loops
+                }
+                $globalIndex++;
+            }
+        }
+        
+        // Extract unique user IDs and dates from the conceptual items relevant to the current page
+        $relevantUserIds = collect($currentReportItems)->pluck('user_id')->unique()->toArray();
+        $relevantDatesStrings = collect($currentReportItems)->pluck('date')->unique()->toArray();
+
+        // If no relevant users/dates for this page, return empty
+        if (empty($relevantUserIds)) {
+             return [
+                'data' => [],
+                'pagination' => [
+                    'total' => $totalItems,
+                    'per_page' => $perPage,
+                    'current_page' => $page,
+                    'last_page' => max((int) ceil($totalItems / $perPage), 1),
+                    'from' => $totalItems ? $offset + 1 : 0,
+                    'to' => min($offset + $perPage, $totalItems),
+                ],
+            ];
+        }
+
+        // --- Optimization 2: Fetch only users truly relevant to the current page ---
+        $users = User::whereIn('id', $relevantUserIds)
+            ->with(['professionalData'])
+            ->get()
+            ->keyBy('id'); // Key by ID for easy lookup
+
+        // --- Optimization 3: Fetch attendance records only for relevant users and dates ---
+        // Convert relevant date strings back to Carbon objects for whereBetween
+        $minRelevantDate = !empty($relevantDatesStrings) ? Carbon::parse(min($relevantDatesStrings), $timezone)->startOfDay() : $startDate;
+        $maxRelevantDate = !empty($relevantDatesStrings) ? Carbon::parse(max($relevantDatesStrings), $timezone)->endOfDay() : $endDate;
+
         $realAttendanceRecords = Attendance::query()
-            ->filter($filters)
-            ->select(['id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent', 
-                     'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time', 
+            ->filter($filters) // Keep existing filters, they might include more than company_id
+            ->select(['id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
+                     'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
                      'start_time', 'overtime_hours'])
-            ->whereIn('user_id', $allRelevantUserIds)
-            ->whereBetween('start_time', [$startDate, $endDate])
+            ->whereIn('user_id', $relevantUserIds)
+            ->whereBetween('start_time', [$minRelevantDate, $maxRelevantDate]) // Use refined date range
             ->orderBy('start_time')
             ->get();
 
-        // Optimization 3: More efficient data structuring
+        // --- Optimization 4: Efficient data structuring (already good) ---
         $attendanceByUserAndDate = [];
         foreach ($realAttendanceRecords as $record) {
             $userId = (string)$record->user_id;
@@ -549,94 +593,99 @@ class AttendanceService
             } else if (is_string($record->clock_in_time)) {
                 $date = Carbon::parse($record->clock_in_time, $timezone)->format('Y-m-d');
             } else {
-                // Default fallback if clock_in_time is null or invalid
-                $date = Carbon::now($timezone)->format('Y-m-d');
+                // Fallback for null/invalid clock_in_time, though start_time should be reliable
+                $date = $record->start_time->copy()->setTimezone($timezone)->format('Y-m-d');
             }
             $attendanceByUserAndDate[$userId][$date][] = $record;
         }
 
         $finalAttendanceList = [];
         $constraintService = app(AttendanceConstraintService::class);
-        
-        // Optimization 4: Only process what we need for the current page
-        $processedItems = 0;
-        $targetItems = min($perPage, $totalItems - $offset);
-        
-        foreach ($allRelevantUsers as $user) {
-            if ($processedItems >= $targetItems) break;
-            
-            $userId = (string)$user->id;
-            
-            // Optimization 5: Pre-fetch constraints for this user once
-            $userConstraints = null;
-            
-            foreach ($allDates as $date) {
-                if ($processedItems >= $targetItems) break;
-                
-                $dateStr = $date->format('Y-m-d');
-                $userRecords = $attendanceByUserAndDate[$userId][$dateStr] ?? [];
+        $cachedConstraints = []; // Cache constraints to avoid repeated DB calls for the same user/date
 
-                if (!empty($userRecords)) {
-                    $primaryRecord = $userRecords[0];
+        // --- Optimization 5: Loop through the `currentReportItems` (the paginated conceptual items) ---
+        foreach ($currentReportItems as $item) {
+            $userId = (string)$item['user_id'];
+            $dateStr = $item['date'];
 
-                    $attendancePeriods = [];
-                    $isLate = false;
-
-                    foreach ($userRecords as $record) {
-                        $attendancePeriods[] = [
-                            'id' => (string)$record->id,
-                            'clock_in_time' => $record->clock_in_time,
-                            'clock_out_time' => $record->clock_out_time,
-                            'status' => $record->status,
-                            'is_late' => (int)$record->is_late,
-                            'day_status' => $record->day_status,
-                        ];
-                        
-                        if ($record->is_late) $isLate = true;
-                    }
-
-                    $primaryRecord->is_late = $isLate;
-                    $primaryRecord->status = Attendance::STATUS_COMPLETED;
-                    $primaryRecord->is_absent = false;
-                    $primaryRecord->work_date = $dateStr;
-                    $primaryRecord->attendance_periods = $attendancePeriods;
-                    $primaryRecord->setRelation('user', $user);
-
-                    $finalAttendanceList[] = $primaryRecord;
-                } else {
-                    // Only fetch constraints when needed
-                    $userConstraints = $constraintService->getTodaysWorkRulesForUser($user,$dateStr);
-                
-                    // Check if the day is a holiday based on the day_status from constraints
-                    $isHoliday = isset($userConstraints['day_status']) && $userConstraints['day_status'] == 'holiday';
-                    $syntheticAttendance = new Attendance([
-                        'user_id' => $user->id,
-                        'company_id' => $companyId,
-                        'status' => Attendance::STATUS_COMPLETED,
-                        'is_absent' => $isHoliday ? false : true,
-                        'is_holiday' => $isHoliday ? true : false,
-                        'day_status' => $isHoliday ? 'holiday' : 'work_day',
-                        'id' => Uuid::uuid4(),
-                        'is_late' => false,
-                        'clock_in_time' => $dateStr,
-                        'timezone' => $defaultTimezone,
-                        'work_date' => $dateStr,
-                    ]);
-                    
-                    $syntheticAttendance->setRelation('user', $user);
-                    $syntheticAttendance->setRelation('breaks', new Collection());
-                    $syntheticAttendance->attendance_periods = [];
-                    
-                    $finalAttendanceList[] = $syntheticAttendance;
-                }
-                $processedItems++;
+           $user = $users->get($userId);
+            if (!$user) {
+                // This user might have been filtered out by global filters or disappeared.
+                // Or, if allUserIds was taken from filtered, this shouldn't happen.
+                continue;
             }
 
+            $userRecords = $attendanceByUserAndDate[$userId][$dateStr] ?? [];
+
+            if (!empty($userRecords)) {
+                $primaryRecord = $userRecords[0]; // Assuming first record is primary for the day
+
+                $attendancePeriods = [];
+                $isLate = false;
+
+                foreach ($userRecords as $record) {
+                    $attendancePeriods[] = [
+                        'id' => (string)$record->id,
+                        'clock_in_time' => $record->clock_in_time,
+                        'clock_out_time' => $record->clock_out_time,
+                        'status' => $record->status,
+                        'is_late' => (int)$record->is_late,
+                        'day_status' => $record->day_status,
+                    ];
+
+                    if ($record->is_late) $isLate = true;
+                }
+
+                $primaryRecord->is_late = $isLate;
+                $primaryRecord->status = Attendance::STATUS_COMPLETED;
+                $primaryRecord->is_absent = false;
+                $primaryRecord->work_date = $dateStr;
+                $primaryRecord->attendance_periods = $attendancePeriods;
+                $primaryRecord->setRelation('user', $user);
+
+                $finalAttendanceList[] = $primaryRecord;
+            } else {
+                // --- Optimization 6: Cache `getTodaysWorkRulesForUser` calls ---
+                // Only fetch constraints if we need to create a synthetic record
+                if (!isset($cachedConstraints[$userId])) {
+                    $cachedConstraints[$userId] = [];
+                }
+                if (!isset($cachedConstraints[$userId][$dateStr])) {
+                    $cachedConstraints[$userId][$dateStr] = $constraintService->getTodaysWorkRulesForUser($user, $dateStr);
+                }
+                $userConstraints = $cachedConstraints[$userId][$dateStr];
+
+                // Check if the day is a holiday based on the day_status from constraints
+                $isHoliday = isset($userConstraints['day_status']) && $userConstraints['day_status'] == 'holiday';
+                $syntheticAttendance = new Attendance([
+                    'user_id' => $user->id,
+                    'company_id' => $companyId,
+                    'status' => Attendance::STATUS_COMPLETED,
+                    'is_absent' => $isHoliday ? false : true,
+                    'is_holiday' => $isHoliday ? true : false,
+                    'day_status' => $isHoliday ? 'holiday' : 'work_day',
+                    'id' => Uuid::uuid4()->toString(), // Ensure UUID is converted to string
+                    'is_late' => false,
+                    'clock_in_time' => null, // No clock-in for synthetic absent/holiday
+                    'timezone' => $defaultTimezone,
+                    'work_date' => $dateStr,
+                    'start_time' => Carbon::parse($dateStr, $defaultTimezone)->startOfDay(), // Ensure start_time is set
+                ]);
+
+                $syntheticAttendance->setRelation('user', $user);
+                $syntheticAttendance->setRelation('breaks', new Collection());
+                $syntheticAttendance->attendance_periods = [];
+
+                $finalAttendanceList[] = $syntheticAttendance;
+            }
         }
-        
-        // Optimization 7: Simplified sorting
+
+        // --- Optimization 7: Sorting (now applied to a smaller, page-specific list) ---
+        // Sorting here is still useful if the desired order isn't guaranteed by currentReportItems iteration.
         $finalAttendanceList = collect($finalAttendanceList)->sortBy(function ($record) {
-            return $record->work_date . '_' . ($record->user->name ?? '');
+            // Ensure user relation exists before accessing name
+            $userName = $record->user->name ?? '';
+            return $record->work_date . '_' . $userName;
         })->values();
 
         // Calculate pagination values
@@ -657,6 +706,7 @@ class AttendanceService
             ],
         ];
     }
+
 
     /**
      * Get late arrivals with filtering and pagination
