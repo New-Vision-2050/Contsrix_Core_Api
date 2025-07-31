@@ -5,7 +5,7 @@ use Modules\User\Controllers\UserController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [UserController::class, 'index'])->name("users.list")->permission(Permission::USER_LIST());
+    Route::get('/', [UserController::class, 'index'])->name("users.list");
     Route::get('/get-by-role', [UserController::class, 'getByRole'])->name("users.list")->permission(Permission::USER_LIST());
     Route::get('/get-by-email-with-branches', [UserController::class, 'getUserByGlobalId'])->permission(Permission::USER_VIEW());
 
