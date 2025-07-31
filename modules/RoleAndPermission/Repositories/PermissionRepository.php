@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Repositories;
 
+use BasePackage\Shared\Presenters\Json;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
@@ -28,10 +29,16 @@ class PermissionRepository extends BaseRepository
     public function getPermissionList(?int $page, ?int $perPage = 10)
     {
         $packagesId = $this->companyRepository->getCompany(Uuid::fromString(tenant("id")))->packages()->pluck('id')->toArray();
-        $query = $this->model->filter(request()->all())->whereHas('packages', function ($q) use ($packagesId) {
+        if(tenant('is_central_company')){
+            $query = $this->model->filter(request()->all());
+        }else{
+            $query = $this->model->filter(request()->all())->whereHas('packages', function ($q) use ($packagesId) {
 
-            $q->whereIn('packages.id', $packagesId);
-        });
+                $q->whereIn('packages.id', $packagesId);
+            });
+        }
+
+
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
