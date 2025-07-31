@@ -33,20 +33,20 @@ class MainPackageSeeder extends Seeder
                 'is_main_program' => true,
             ]);
 
-            // 1.1. Assign all countries, company types, and company fields to Main Access Program
-            if ($accessProgram->wasRecentlyCreated || $accessProgram->countries()->count() === 0) {
-                // Assign all countries
-                $countries = Country::all()->pluck('id');
-                $accessProgram->countries()->sync($countries);
-                
-                // Assign all company types
-                $companyTypes = CompanyType::all()->pluck('id');
-                $accessProgram->companyTypes()->sync($companyTypes);
-                
-                // Assign all company fields
-                $companyFields = CompanyField::all()->pluck('id');
-                $accessProgram->companyFields()->sync($companyFields);
-            }
+            // 1.1. Always sync all countries, company types, and company fields to Main Access Program
+            // This ensures newly added data is included when the seeder runs again
+            
+            // Assign all countries
+            $countries = Country::all()->pluck('id');
+            $accessProgram->countries()->sync($countries);
+            
+            // Assign all company types
+            $companyTypes = CompanyType::all()->pluck('id');
+            $accessProgram->companyTypes()->sync($companyTypes);
+            
+            // Assign all company fields
+            $companyFields = CompanyField::all()->pluck('id');
+            $accessProgram->companyFields()->sync($companyFields);
 
             // 2. Create Main Package
             $package = Package::firstOrCreate([
