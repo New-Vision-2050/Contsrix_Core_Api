@@ -58,8 +58,9 @@ class AuthService
             $this->sendOtpEmail->loginWithOtp($user->id);
             return [null, $user];
         }
+        $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
 
-        $token = JWTAuth::attempt($authDTO->toArray());
+        $token = JWTAuth::fromUser($user);
         if (!$token) {
             throw new \ErrorException(__("validation.invalid-credential"), 403);
         }
