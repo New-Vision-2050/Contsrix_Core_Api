@@ -64,7 +64,6 @@ class AuthService
         if (!$token) {
             throw new \ErrorException(__("validation.invalid-credential"), 403);
         }
-        $user = auth()->user();
         return [$token, $user];
     }
 
