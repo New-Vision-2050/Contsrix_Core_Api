@@ -33,6 +33,8 @@ class Handler
             $e instanceof UnauthorizedException => response()->json([
                 'success' => false,
                 'message' => __('validation.unauthorized'),
+                'error' => $e->getMessage() , // Hide error details in production
+                "trace"=> $e->getTrace(), // Hide error details in production <==>
             ], 404),
 
             $e instanceof NotFoundHttpException => response()->json([
