@@ -9,6 +9,7 @@ use App\Scopes\CustomTenantScope;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
@@ -267,15 +268,14 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy->fresh();
 
             $managementHierarchy->address()->update($addressData);
-            $newDefaultConstraintId = $branchData['default_constraint_id'] ?? null;
-
-
-            $managementHierarchy->attendanceConstraints()->wherePivot('is_default', true)->detach();
-
-            if ($newDefaultConstraintId) {
-                $managementHierarchy->attendanceConstraints()->attach($newDefaultConstraintId, [
-                    'is_default' => true
-                ]);
+            
+            // Dispatch event for branch location update instead of direct method call
+            if (isset($branchData['latitude']) && isset($branchData['longitude'])) {
+                event(new \Modules\Company\ManagementHierarchy\Events\BranchLocationUpdatedEvent(
+                    $id,
+                    $branchData['latitude'],
+                    $branchData['longitude']
+                ));
             }
             DB::commit();
         } catch (\Exception $e) {

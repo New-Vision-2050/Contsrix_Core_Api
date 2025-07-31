@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
+use Modules\Company\ManagementHierarchy\Events\BranchLocationUpdatedEvent;
 use Modules\Company\ManagementHierarchy\Listeners\CreateHierarchyListener;
+use Modules\Company\ManagementHierarchy\Listeners\UpdateAttendanceConstraintLocationsListener;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Observers\ManagementHierarchyObserver;
 use Modules\Company\ManagementHierarchy\Observers\UserCountObserver;
@@ -27,7 +29,8 @@ class ManagementHierarchyServiceProvider extends ModuleServiceProvider
         //$this->registerConfig();
         $this->registerMigrations();
 
-        Event::listen(CompanyCreatedEvent::class,CreateHierarchyListener::class );
+        Event::listen(CompanyCreatedEvent::class, CreateHierarchyListener::class);
+        Event::listen(BranchLocationUpdatedEvent::class, UpdateAttendanceConstraintLocationsListener::class);
         ManagementHierarchy::observe(ManagementHierarchyObserver::class);
         User::observe(UserCountObserver::class);
     }
