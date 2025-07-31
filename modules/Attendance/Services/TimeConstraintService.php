@@ -466,7 +466,6 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        dd($config);
         $clockInTime = Carbon::parse($attendance->clock_in_time);
 
         // --- FIX 1: CHECK FOR HOLIDAYS FIRST ---
