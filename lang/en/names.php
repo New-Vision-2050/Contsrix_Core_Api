@@ -129,6 +129,18 @@ return [
     'organization-list*job-type' => 'Job Type',
     'organization-list*job-title' => 'Job Title',
 
+    // SubEntity Module
+    'sub-entity' => 'Sub Entity',
+    'sub-entities' => 'Sub Entities',
+    'system' => 'System',
+    'sub-entity-attributes' => 'Sub Entity Attributes',
+    'sub-entity-validation' => 'Sub Entity Validation',
+    'sub-entity-selection' => 'Sub Entity Selection',
+    'super-entity' => 'Super Entity',
+    'super-entities' => 'Super Entities',
+    'super-entity-attributes' => 'Super Entity Attributes',
+    'super-entity-registration' => 'Super Entity Registration',
+    'sub-entity-records' => 'Sub Entity Records',
 
     "month"=> "Month",
     "year"=> "Year",
