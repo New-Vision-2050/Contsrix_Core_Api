@@ -604,14 +604,9 @@ class AttendanceService
 
                     $finalAttendanceList[] = $primaryRecord;
                 } else {
-                    $users[] = $user;
-                    $dates[]= $dateStr;
-
                     // Only fetch constraints when needed
                     $userConstraints = $constraintService->getTodaysWorkRulesForUser($user,$dateStr);
-                    
-                    $userConstraintsss[]= $userConstraints['day_status'];
-
+                
                     // Check if the day is a holiday based on the day_status from constraints
                     $isHoliday = isset($userConstraints['day_status']) && $userConstraints['day_status'] == 'holiday';
                     $syntheticAttendance = new Attendance([
