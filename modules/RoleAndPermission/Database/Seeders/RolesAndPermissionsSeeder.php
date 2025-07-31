@@ -26,7 +26,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Model::unguard();
 
         // Get current company ID or use the first company
-        $companyId = tenant("id") ?? Company::query()->first()?->id;
+        $companyId = tenant("id") ?? "560005d6-04b8-53b3-9889-d312648288e3";//id form new vision company
 
         $this->ensureCompanyHasPermissions($companyId);
 
