@@ -590,14 +590,13 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                     ];
                 }
             }
-
+            dd($this->isTimeWithinRangeWithGrace($clockInTime->format('H:i'), $period)) ;
 
             if ($this->isTimeWithinRangeWithGrace($clockInTime->format('H:i'), $period)) {
                 $inAllowedPeriod = true;
                 break;
             }
         }
-        dd($period, $clockInTime->format('H:i'));
         if($period['end_time'] < $clockInTime->format('H:i')){
             return [
                 'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
@@ -610,6 +609,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 ]
             ];
         }
+
         // If the clock-in time is outside all allowed periods, it's a violation.
         if (!$inAllowedPeriod) {
             return [
