@@ -74,8 +74,15 @@ class AttendanceConstraintService
             $attendance->appliedConstraints()->sync($appliedConstraintIds);
         }
 
-        dd($constraints);
+        if (empty($constraints)) {
 
+            return [
+                'constraint_type' => 'none applied to user and no default constraint',
+                'severity' => $config['severity'] ?? 'high',
+                'message' => 'Location data is required to validate against branch locations but was not provided.',
+                'details' => ['reason' => 'Missing GPS data from user.']
+            ];
+        }
         foreach ($constraints as $constraint) {
             try {
 
