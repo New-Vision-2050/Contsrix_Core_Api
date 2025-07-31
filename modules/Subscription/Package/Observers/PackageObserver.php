@@ -47,6 +47,23 @@ class PackageObserver
             
             throw new \Exception("The 'Main Package' cannot be deleted. It is managed automatically by the system.");
         }
+
+        // Block deletion of packages assigned to any company
+        $companiesCount = $package->companies()->count();
+        if ($companiesCount > 0) {
+            Log::warning("Attempted to delete package assigned to companies", [
+                'package_id' => $package->id,
+                'package_name' => $package->name,
+                'companies_count' => $companiesCount
+            ]);
+            
+            throw new \Exception("Cannot delete package '{$package->name}' because it is assigned to {$companiesCount} company/companies. Please remove the package assignments first.");
+        }
+
+        Log::info("Package deletion allowed - no companies assigned", [
+            'package_id' => $package->id,
+            'package_name' => $package->name
+        ]);
         
         return true;
     }

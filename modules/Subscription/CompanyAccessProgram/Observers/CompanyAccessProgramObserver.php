@@ -31,13 +31,13 @@ class CompanyAccessProgramObserver
             DB::transaction(function () use ($companyAccessProgram) {
                 // Create main package for this company access program
                 $package = $this->createMainPackage($companyAccessProgram);
-                
+
                 // Get permissions filtered by sub-entities
                 $permissions = $this->getFilteredPermissions($companyAccessProgram);
-                
+
                 // Assign permissions to the package
                 $this->assignPermissionsToPackage($package, $permissions);
-                
+
                 Log::info("Auto-created main package for CompanyAccessProgram", [
                     'company_access_program_id' => $companyAccessProgram->id,
                     'package_id' => $package->id,
@@ -63,22 +63,22 @@ class CompanyAccessProgramObserver
     {
         // Check if this CompanyAccessProgram has any packages assigned
         $packagesCount = $companyAccessProgram->packages()->count();
-        
+
         if ($packagesCount > 0) {
             Log::warning("Attempted to delete CompanyAccessProgram with packages assigned", [
                 'company_access_program_id' => $companyAccessProgram->id,
                 'company_access_program_name' => $companyAccessProgram->name,
                 'packages_count' => $packagesCount
             ]);
-            
+
             throw new \Exception("Cannot delete Company Access Program '{$companyAccessProgram->name}' because it has {$packagesCount} package(s) assigned. Please delete or reassign the packages first.");
         }
-        
+
         Log::info("CompanyAccessProgram deletion allowed - no packages assigned", [
             'company_access_program_id' => $companyAccessProgram->id,
             'company_access_program_name' => $companyAccessProgram->name
         ]);
-        
+
         return true;
     }
 
@@ -97,16 +97,16 @@ class CompanyAccessProgramObserver
                 'company_access_program_name' => $companyAccessProgram->name,
                 'changes' => $companyAccessProgram->getDirty()
             ]);
-            
+
             throw new \Exception("Main Company Access Program '{$companyAccessProgram->name}' cannot be updated. Main programs are system-managed and protected from modifications.");
         }
-        
+
         Log::info("CompanyAccessProgram update allowed - not a main program", [
             'company_access_program_id' => $companyAccessProgram->id,
             'company_access_program_name' => $companyAccessProgram->name,
             'changes' => $companyAccessProgram->getDirty()
         ]);
-        
+
         return true;
     }
 
@@ -143,7 +143,7 @@ class CompanyAccessProgramObserver
     {
         // Get sub-entity IDs from the company access program
         $subEntityIds = $companyAccessProgram->subEntities()->pluck('sub_entity_id')->toArray();
-        
+
         // Use the existing permission lookup service to get filtered permissions
         return $this->permissionLookupService->getPermissionsBySubEntities($subEntityIds);
     }
