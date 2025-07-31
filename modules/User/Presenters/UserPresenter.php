@@ -26,7 +26,8 @@ class UserPresenter extends AbstractPresenter
             'phone' => $this->user->phone,
             'management_hierarchy_id' => $this->user->management_hierarchy_id ,
             "roles"=>$this->user->roles,
-            "permissions"=>$this->user->getAllPermissions()
+            "permissions"=>$this->user->getAllPermissions(),
+            "is_central_company"=>tenant("is_central_company")
         ];
     }
 }
