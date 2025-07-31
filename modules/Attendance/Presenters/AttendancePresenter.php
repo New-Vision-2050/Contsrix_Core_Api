@@ -100,7 +100,7 @@ class AttendancePresenter extends AbstractPresenter
             'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
             'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
             'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),
-            'day_status' => $this->getDayStatus($this->attendance->user->professionalData?->attendanceConstraint),
+            'day_status' => __('validation.day_status.' . $this->attendance->day_status),
             'professional_data' => $this->attendance->user?->professionalData ? [
                 'id' => (string) $this->attendance->user->professionalData->id,
                 'job_title' => $this->attendance->user?->professionalData?->jobTitle?->name,

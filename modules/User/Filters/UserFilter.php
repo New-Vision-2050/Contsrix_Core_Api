@@ -48,4 +48,13 @@ class UserFilter extends SearchModelFilter
             $query->where('attendance_constraint_id',$constraintId);
         });
     }
+    public function startDate($date)
+    {
+        return $this->whereDate('created_at', '>=', $date);
+    }
+
+    public function endDate($date)
+    {
+        return $this->whereDate('created_at', '<=', $date);
+    }
 }

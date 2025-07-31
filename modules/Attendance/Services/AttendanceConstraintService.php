@@ -633,7 +633,10 @@ class AttendanceConstraintService
         $dayOfWeek = strtolower($now->format('l'));
         $isTodayHoliday = collect($holidays)->contains(fn($h) => $now->isSameDay($h['date'] ?? null));
         $todaySchedule = $weeklySchedule[$dayOfWeek] ?? ['enabled' => false];
-        $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false);
+        
+        $periods = $todaySchedule['periods'] ?? [];
+        $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false) && !empty($periods);
+
 
         if ($isTodayHoliday) {
             $workDayStatus = 'holiday';
