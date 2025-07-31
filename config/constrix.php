@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'emails' => [],
+    'emails' => ['admin@constrix-nv.com']
 ];
