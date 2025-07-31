@@ -602,7 +602,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return [
                 'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
                 'severity' => $this->getSeverityFromConfig($config),
-                'message' => 'Clock-in time is outside of all allowed work periods for this day.',
+                'message' => 'Clock-in time is outside of all allowed work periods for this day2.',
                 'details' => [
                     'day_of_week' => $dayOfWeek,
                     'clock_in_time' => $clockInTimeStr,
@@ -615,7 +615,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return [
                 'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
                 'severity' => $this->getSeverityFromConfig($config),
-                'message' => 'Clock-in time is outside of all allowed work periods for this day.',
+                'message' => 'Clock-in time is outside of all allowed work periods for this day1.',
                 'details' => [
                     'day_of_week' => $dayOfWeek,
                     'clock_in_time' => $clockInTimeStr,
