@@ -488,8 +488,9 @@ class Attendance extends Model implements Auditable
     }
 
     /**
-     * Check if the clock-in time is late compared to the scheduled start time.
-     * This should be called during the clock-in process.
+     * Check if the clock-in time is late compared to the scheduled start time or last clock-in.
+     * For first clock-in in a period, lateness is calculated from scheduled start time.
+     * For subsequent clock-ins in the same period, lateness is calculated from the last clock-in time.
      *
      * @return $this
      */
@@ -505,41 +506,83 @@ class Attendance extends Model implements Auditable
 
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
+            $clockInDate = $clockIn->format('Y-m-d');
+            
+            $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
+            $user = $this->user;
+            $config = $constraintService->getTodaysWorkRulesForUser($user);
+            
 
+            $rules = $config['lateness_rules'] ?? [];
+            $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
+            $latenessUnit = $rules['lateness_unit'] ?? 'minute';
+            
+            $gracePeriodMinutes = $this->convertToMinutes($latenessPeriod, $latenessUnit);
+
+            if ($gracePeriodMinutes <= 0) {
+                $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
+            }
+            
+            $previousAttendances = self::where('user_id', $this->user_id)
+                ->whereDate('clock_in_time', $clockInDate)
+                ->where('id', '!=', $this->id)
+                ->orderBy('clock_in_time', 'desc')
+                ->get();
+            
+            // Always get the scheduled start time for the period
             $scheduledStartTimeString = $this->start_time ?? $this->user->start_time ?? '09:00';
             if ($scheduledStartTimeString instanceof Carbon) {
                 $scheduledStartTimeString = $scheduledStartTimeString->format('H:i');
             }
-
+            
             $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
-
-
-            // Get the constraint service to access time rules configuration
-            $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
-            $user = $this->user;
-            $config = $constraintService->getTodaysWorkRulesForUser($user);
-            // Get lateness rules from config
-            $rules = $config['lateness_rules'] ?? [];
-            $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
-            $latenessUnit = $rules['lateness_unit'] ?? 'minute';
-            // Convert the lateness period to minutes based on the unit
-            $gracePeriodMinutes = $this->convertToMinutes($latenessPeriod, $latenessUnit);
-            // If no specific grace period is defined, fall back to grace_period_minutes
-            if ($gracePeriodMinutes <= 0) {
-                $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
-            }
-            // Calculate the latest allowed arrival time with grace period
             $latestAllowedArrival = $scheduledStartTime->copy()->addMinutes($gracePeriodMinutes);
-
-            // Check if clock-in time is later than the latest allowed arrival
+            
+            // Always calculate is_late based on scheduled period time
             $this->is_late = $clockIn->gt($latestAllowedArrival);
-            $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
+            
+            if ($previousAttendances->isEmpty()) {
+                // First clock-in: late_minutes is calculated from scheduled start time
+                $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
+            } else {
+                // Subsequent clock-in: check if in same period
+                $lastAttendance = $previousAttendances->first();
+                $lastClockInTime = Carbon::parse($lastAttendance->clock_in_time)->setTimezone($timezone);
+                
+                $scheduledEndTimeString = $this->end_time ?? $this->user->end_time ?? '17:00';
+                if ($scheduledEndTimeString instanceof Carbon) {
+                    $scheduledEndTimeString = $scheduledEndTimeString->format('H:i');
+                }
+                
+                $periodStart = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
+                $periodEnd = $clockIn->copy()->setTimeFromTimeString($scheduledEndTimeString);
+                
+                // Check if the last clock-in was in the same period
+                $lastClockInPeriodStart = $lastClockInTime->copy()->setTimeFromTimeString($scheduledStartTimeString);
+                $lastClockInPeriodEnd = $lastClockInTime->copy()->setTimeFromTimeString($scheduledEndTimeString);
+                
+                $sameDay = $lastClockInTime->isSameDay($clockIn);
+                $samePeriod = $sameDay && 
+                             (($lastClockInTime->between($lastClockInPeriodStart, $lastClockInPeriodEnd) && 
+                               $clockIn->between($periodStart, $periodEnd)));
+                
+                if ($samePeriod) {
+                    // Same period - calculate late_minutes from last clock-in time
+                    $lastClockInWithGrace = $lastClockInTime->copy()->addMinutes($gracePeriodMinutes);
+                    $this->late_minutes = $clockIn->gt($lastClockInWithGrace) ? 
+                                         $lastClockInWithGrace->diffInMinutes($clockIn) : 0;
+                } else {
+                    $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
+                }
+            }
+            
             $this->save();
 
         } catch (\Exception $e) {
             Log::error('Error checking lateness: ' . $e->getMessage(), [
                 'clock_in_time' => $this->clock_in_time,
                 'attendance_id' => $this->id,
+                'trace' => $e->getTraceAsString()
             ]);
 
             $this->is_late = false;
