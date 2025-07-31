@@ -607,7 +607,6 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 ]
             ];
         }
-        dd($period);
         // If the clock-in time is outside all allowed periods, it's a violation.
         if (!$inAllowedPeriod) {
             return [
