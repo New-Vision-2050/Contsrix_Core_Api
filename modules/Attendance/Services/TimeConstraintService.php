@@ -608,18 +608,18 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             ];
         }
         // If the clock-in time is outside all allowed periods, it's a violation.
-        if (!$inAllowedPeriod) {
-            return [
-                'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
-                'severity' => $this->getSeverityFromConfig($config),
-                'message' => 'Clock-in time is outside of all allowed work periods for this day1.',
-                'details' => [
-                    'day_of_week' => $dayOfWeek,
-                    'clock_in_time' => $clockInTimeStr,
-                    'allowed_periods' => $periods
-                ]
-            ];
-        }
+        // if (!$inAllowedPeriod) {
+        //     return [
+        //         'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
+        //         'severity' => $this->getSeverityFromConfig($config),
+        //         'message' => 'Clock-in time is outside of all allowed work periods for this day1.',
+        //         'details' => [
+        //             'day_of_week' => $dayOfWeek,
+        //             'clock_in_time' => $clockInTimeStr,
+        //             'allowed_periods' => $periods
+        //         ]
+        //     ];
+        // }
 
         // If all checks pass, the time is valid.
         return false;
