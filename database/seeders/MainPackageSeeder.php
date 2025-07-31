@@ -6,6 +6,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
@@ -35,15 +36,15 @@ class MainPackageSeeder extends Seeder
 
             // 1.1. Always sync all countries, company types, and company fields to Main Access Program
             // This ensures newly added data is included when the seeder runs again
-            
+
             // Assign all countries
             $countries = Country::all()->pluck('id');
             $accessProgram->countries()->sync($countries);
-            
+
             // Assign all company types
             $companyTypes = CompanyType::all()->pluck('id');
             $accessProgram->companyTypes()->sync($companyTypes);
-            
+
             // Assign all company fields
             $companyFields = CompanyField::all()->pluck('id');
             $accessProgram->companyFields()->sync($companyFields);
@@ -63,8 +64,25 @@ class MainPackageSeeder extends Seeder
                 'is_main_package' =>1
             ]);
 
-            // 3. Sync all permissions to the package
-            $permissions = Permission::all()->pluck('id');
+            // 3. Sync all permissions except company, company_access_program, and package related ones
+            $excludedPermissionPatterns = [
+                'companies',
+                'users',
+                'subscription',
+            ];
+
+            $totalPermissions = Permission::count();
+
+            $permissions = Permission::where(function($query) use ($excludedPermissionPatterns) {
+                foreach ($excludedPermissionPatterns as $pattern) {
+                    $query->where('name', 'NOT LIKE', "%{$pattern}.%");
+                }
+            })->pluck('id');
+
+            $excludedCount = $totalPermissions - $permissions->count();
+
+            Log::info("MainPackageSeeder: Excluded {$excludedCount} permissions, assigning {$permissions->count()} permissions to Main Package");
+
             $package->permissions()->sync($permissions);
 
             // 4. Assign the package to the first company
