@@ -73,6 +73,16 @@ class AttendanceConstraintService
                                                  ->all();
             $attendance->appliedConstraints()->sync($appliedConstraintIds);
         }
+
+        if (empty($constraints)) {
+
+            return [
+                'constraint_type' => 'none applied to user and no default constraint',
+                'severity' => $config['severity'] ?? 'high',
+                'message' => 'Location data is required to validate against branch locations but was not provided.',
+                'details' => ['reason' => 'Missing GPS data from user.']
+            ];
+        }
         foreach ($constraints as $constraint) {
             try {
 
@@ -174,7 +184,6 @@ class AttendanceConstraintService
     {
         // Get the entire configuration object for the constraint.
         $config = $constraint->constraint_config ?? [];
-
         if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
             $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
             if ($violation) {
@@ -182,11 +191,17 @@ class AttendanceConstraintService
             }
         }
 
+        if (isset($config['time_rules'])) {
+            $violation = $this->timeConstraintService->validateTimeConstraint($attendance, $config['time_rules']);
+            if ($violation) {
+                return $violation;
+            }
+        }
 
         // Define a map linking config keys to their respective validation services.
         // This makes the code cleaner and easier to extend.
         $validationMap = [
-            'time_rules'       => fn() => $this->timeConstraintService->validateTimeConstraint($attendance, $config['time_rules']),
+
             // 'location_rules'   => fn() => $this->locationConstraintService->validateLocationConstraint($attendance, $constraint), // This service expects the full constraint
             'device_rules'     => fn() => $this->deviceConstraintService->validateDeviceConstraint($attendance, $config['device_rules']),
             'behavioral_rules' => fn() => $this->behavioralConstraintService->validateBehavioralConstraint($attendance, $config['behavioral_rules']),
@@ -565,7 +580,7 @@ class AttendanceConstraintService
 
         // Combine the results into a final, clean response.
         return [
-            'day_status'              => $timeRulesResult['status'],
+            'day_status'              => $timeRulesResult['day_status'],
             'day_name'                => $now->isoFormat(format: 'dddd'),
             'is_holiday'              => $timeRulesResult['is_holiday'],
             'reason'                  => $timeRulesResult['reason'],
@@ -597,14 +612,16 @@ class AttendanceConstraintService
         $defaultResult = [
             'status' => 'Undefined',
             'reason' => 'No time schedule applied.',
-            'periods' => [], // All periods for TODAY
+            'periods' => [],
             'is_holiday' => false,
             'total_work_hours' => 0.0,
-            'lateness_rules'=> null,
+            'lateness_rules' => null,
             'early_clock_in_rules' => null,
-            'current_work_period' => null, // New: Active period for today
-            'next_upcoming_period' => null, // Next upcoming period (could be today or future)
+            'current_work_period' => null,
+            'active_or_next_period' => null,
+            'day_status' => 'Undefined',
         ];
+
         if (!$constraint) {
             return $defaultResult;
         }
@@ -616,35 +633,36 @@ class AttendanceConstraintService
         $dayOfWeek = strtolower($now->format('l'));
         $isTodayHoliday = collect($holidays)->contains(fn($h) => $now->isSameDay($h['date'] ?? null));
         $todaySchedule = $weeklySchedule[$dayOfWeek] ?? ['enabled' => false];
-        $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false);
+        
+        $periods = $todaySchedule['periods'] ?? [];
+        $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false) && !empty($periods);
+
 
         if ($isTodayHoliday) {
-            $workDayStatus = 'Holiday';
+            $workDayStatus = 'holiday';
             $workDayReason = collect($holidays)->firstWhere(fn($h) => $now->isSameDay($h['date'] ?? null))['name'] ?? 'Official Holiday';
         } elseif ($isTodayWorkDay) {
-            $workDayStatus = 'Work Day';
+            $workDayStatus = 'work_day';
             $workDayReason = 'Scheduled working day.';
         } else {
-            $workDayStatus = 'Day Off';
+            $workDayStatus = 'day_off_or_weekend';
             $workDayReason = 'Scheduled weekend or non-working day.';
         }
 
         $currentActivePeriodToday = null;
-        $nextUpcomingPeriod = null; // Will capture the very next period chronologically (could be today or in future)
-        // --- Process periods for TODAY first ---
+        $nextUpcomingPeriod = null;
+
         if ($isTodayWorkDay && !empty($todaySchedule['periods'])) {
-            $sortedTodayPeriods = collect(value: $todaySchedule['periods'])->sortBy('start_time')->all();
+            $sortedTodayPeriods = collect($todaySchedule['periods'])->sortBy('start_time')->all();
 
             foreach ($sortedTodayPeriods as $period) {
                 $periodStartToday = Carbon::createFromTimeString($period['start_time'], $now->timezone)->setDateFrom($now);
                 $periodEndToday = Carbon::createFromTimeString($period['end_time'], $now->timezone)->setDateFrom($now);
 
-                // Handle overnight periods
                 if ($periodEndToday->isBefore($periodStartToday)) {
                     $periodEndToday->addDay();
                 }
 
-                // If currently active period found for TODAY
                 if ($now->between($periodStartToday, $periodEndToday, true)) {
                     $currentActivePeriodToday = [
                         'status' => 'active',
@@ -655,13 +673,10 @@ class AttendanceConstraintService
                         'period_start_time_carbon' => $periodStartToday,
                         'period_end_time_carbon' => $periodEndToday,
                     ];
-                    // Since an active period is found, this is also the "next upcoming" if nothing before it was found.
-                    // This is also the most relevant period for clock-in.
                     $nextUpcomingPeriod = $currentActivePeriodToday;
-                    break; // Stop looking for active periods today, we found one
+                    break;
                 }
 
-                // If this period is upcoming for TODAY (and no active period found yet)
                 if ($periodStartToday->isFuture() && is_null($nextUpcomingPeriod)) {
                     $nextUpcomingPeriod = [
                         'status' => 'upcoming',
@@ -672,32 +687,49 @@ class AttendanceConstraintService
                         'period_start_time_carbon' => $periodStartToday,
                         'period_end_time_carbon' => $periodEndToday,
                     ];
-                    // Don't break yet, we might still find an *active* period later today in the loop
-                    // But if no active is found, this will be the one.
                 }
             }
         }
 
-        $lateness_rules = null;
+        $lateness_rules = $todaySchedule['lateness_rules'] ?? null;
+        $early_clock_in_rules = $todaySchedule['early_clock_in_rules'] ?? null;
 
-        if (isset($todaySchedule['lateness_rules'])) {
-            $lateness_rules = $todaySchedule['lateness_rules'];
-        }
+        // Fallback period if no current period is active
+        $fallbackPeriod = null;
+        if ($isTodayWorkDay && !empty($todaySchedule['periods']) && !$currentActivePeriodToday && !$nextUpcomingPeriod) {
+            // Get the first period of the day as fallback
+            $sortedPeriods = collect($todaySchedule['periods'])->sortBy('start_time')->values();
+            if ($sortedPeriods->count() > 0) {
+                $firstPeriod = $sortedPeriods->first();
+                $periodStartToday = Carbon::createFromTimeString($firstPeriod['start_time'], $now->timezone)->setDateFrom($now);
+                $periodEndToday = Carbon::createFromTimeString($firstPeriod['end_time'], $now->timezone)->setDateFrom($now);
 
-        $early_clock_in_rules = null;
+                if ($periodEndToday->isBefore($periodStartToday)) {
+                    $periodEndToday->addDay();
+                }
 
-        if (isset($todaySchedule['early_clock_in_rules'])) {
-            $early_clock_in_rules = $todaySchedule['early_clock_in_rules'];
+                $fallbackPeriod = [
+                    'status' => 'fallback',
+                    'day' => 'Today',
+                    'date' => $now->format('Y-m-d'),
+                    'start_time' => $firstPeriod['start_time'],
+                    'end_time' => $firstPeriod['end_time'],
+                    'period_start_time_carbon' => $periodStartToday,
+                    'period_end_time_carbon' => $periodEndToday,
+                ];
+            }
         }
 
         return [
-            'status' => $workDayStatus,
+            'day_status' => $workDayStatus,
             'reason' => $workDayReason,
-            'periods' => $todaySchedule['periods'] ?? [], // This is still just ALL of today's periods
+            'periods' => $todaySchedule['periods'] ?? [],
             'is_holiday' => ($workDayStatus === 'Holiday'),
             'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
-            'current_work_period' => $currentActivePeriodToday, // Null if no active period today
-            'active_or_next_period' => $nextUpcomingPeriod, // The absolute next period (today or future)
+            'current_work_period' => $currentActivePeriodToday ?? (
+                isset($nextUpcomingPeriod['day']) && $nextUpcomingPeriod['day'] === 'Today' ? $nextUpcomingPeriod : $fallbackPeriod
+            ),
+            'active_or_next_period' => $nextUpcomingPeriod ?? $fallbackPeriod,
             'lateness_rules' => $lateness_rules,
             'early_clock_in_rules' => $early_clock_in_rules
         ];

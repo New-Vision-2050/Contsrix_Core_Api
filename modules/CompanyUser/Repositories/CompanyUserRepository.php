@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Repositories\AttendanceConstraintRepository;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
@@ -532,7 +533,10 @@ class CompanyUserRepository extends BaseRepository
             ? $this->jobTitleRepository->model->withoutTenancy()->where(["type" => "general_manager", "company_id" => $companyId])->first()->job_type_id
             : $generalManagerJobTitle->job_type_id;
 
-        $attendanceConstraint = $this->attendanceConstraintRepository->getConstraintBybranch($branchId);
+        // $attendanceConstraint = $this->attendanceConstraintRepository->model->getConstraintBybranch($branchId);
+        $attendanceConstraint = AttendanceConstraint::withoutTenancy()
+    ->whereJsonContains('branch_ids', (string) $branchId)
+    ->first();
 
         $data = [
             'company_id' => $companyId,
