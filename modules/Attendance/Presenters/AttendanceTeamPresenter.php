@@ -42,7 +42,7 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 ? \Carbon\Carbon::parse($this->attendance->start_time)->format('Y-m-d')
                 : (\Carbon\Carbon::parse($this->attendance->clock_in_time))->format('Y-m-d'),
             'day_status' => __('validation.day_status.'.$this->attendance->day_status??'work_day') ?? '',
-            'clock_in_time' => $this->attendance->clock_in_time ? $this->attendance->clock_in_time->format('Y-m-d H:i:s') : null,
+            'clock_in_time' => $this->attendance->clock_in_time,
             'latest_location' => $latestPoint ? [
                 'latitude'  => (float) $latestPoint['latitude'],
                 'longitude' => (float) $latestPoint['longitude'],
