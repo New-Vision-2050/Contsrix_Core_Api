@@ -26,13 +26,15 @@ class MainPackageSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            // 1. Create Main Company Access Program
-            $accessProgram = CompanyAccessProgram::firstOrCreate([
-                'name' => 'Main Access Program',
-            ], [
-                'is_active' => true,
-                'is_main_program' => true,
-            ]);
+            // 1. Create Main Company Access Program without triggering observers
+            $accessProgram = CompanyAccessProgram::withoutEvents(function () {
+                return CompanyAccessProgram::firstOrCreate([
+                    'name' => 'Main Access Program',
+                ], [
+                    'is_active' => true,
+                    'is_main_program' => true,
+                ]);
+            });
 
             // 1.1. Always sync all countries, company types, and company fields to Main Access Program
             // This ensures newly added data is included when the seeder runs again
@@ -141,13 +143,7 @@ class MainPackageSeeder extends Seeder
                 'is_main_package' =>1
             ]);
 
-            // 3. Sync all permissions except company, company_access_program, and package related ones
-            $excludedPermissionPatterns = [
-                'companies',
-                'users',
-                'subscription',
-                "program-management",
-            ];
+
 
             $totalPermissions = Permission::count();
 
