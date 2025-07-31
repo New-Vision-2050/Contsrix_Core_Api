@@ -24,9 +24,11 @@ class SubEntityObserver
      */
     public function updated(SubEntity $subEntity): void
     {
-        // Update permission names when SubEntity name changes
-        if ($subEntity->isDirty('name')) {
-            $this->updatePermissionNames($subEntity, $subEntity->getOriginal('name'));
+        // Update permission names and keys when SubEntity name or slug changes
+        if ($subEntity->isDirty('name') || $subEntity->isDirty('slug')) {
+            $oldName = $subEntity->getOriginal('name');
+            $oldSlug = $subEntity->getOriginal('slug');
+            $this->updatePermissionNamesAndKeys($subEntity, $oldName, $oldSlug);
         }
     }
 
@@ -74,9 +76,9 @@ class SubEntityObserver
     }
 
     /**
-     * Update permission names when SubEntity name changes
+     * Update permission names and keys when SubEntity name or slug changes
      */
-    protected function updatePermissionNames(SubEntity $subEntity, string $oldName): void
+    protected function updatePermissionNamesAndKeys(SubEntity $subEntity, string $oldName, string $oldSlug): void
     {
         if (!$subEntity->mainProgram) {
             return;
@@ -90,14 +92,18 @@ class SubEntityObserver
             $permission = Permission::where('name', "{$module}.{$oldResource}.{$action}")->first();
 
             if ($permission) {
+                // Update both name and key
                 $permission->name = "{$module}.{$newResource}.{$action}";
+                $permission->key = "DYNAMIC." . $subEntity->slug . "_$action";
                 $permission->save();
 
-                Log::info('Updated SubEntity permission name', [
+                Log::info('Updated SubEntity permission name and key', [
                     'sub_entity_id' => $subEntity->id,
                     'permission_id' => $permission->id,
                     'old_name' => "{$module}.{$oldResource}.{$action}",
-                    'new_name' => $permission->name
+                    'new_name' => $permission->name,
+                    'old_key' => "DYNAMIC." . $oldSlug . "_$action",
+                    'new_key' => $permission->key
                 ]);
             }
         }
