@@ -590,9 +590,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                     ];
                 }
             }
-            dd($this->isTimeWithinRangeWithGrace($clockInTime->format('H:i'), $period)) ;
-
-            if ($this->isTimeWithinRangeWithGrace($clockInTime->format('H:i'), $period)) {
+            if ($this->isTimeWithinRangeWithGrace($clockInTime, $period)) {
                 $inAllowedPeriod = true;
                 break;
             }
@@ -609,7 +607,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 ]
             ];
         }
-
+        dd($period);
         // If the clock-in time is outside all allowed periods, it's a violation.
         if (!$inAllowedPeriod) {
             return [
@@ -636,7 +634,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
      * @param array $period An array containing 'start_time', 'end_time', and optional grace minutes.
      * @return bool
      */
-    private function isTimeWithinRangeWithGrace(string $time, array $period): bool
+    private function isTimeWithinRangeWithGrace(Carbon $clockInTime, array $period): bool
     {
         $startTime = $period['start_time'];
         $endTime = $period['end_time'];
@@ -644,15 +642,20 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         $beforeGraceMinutes = (int)($period['grace_before_minutes'] ?? 0);
         $afterGraceMinutes = (int)($period['grace_after_minutes'] ?? 0);
 
-        $effectiveStartTime = Carbon::createFromTimeString($startTime)->subMinutes($beforeGraceMinutes)->format('H:i');
-        $effectiveEndTime = Carbon::createFromTimeString($endTime)->addMinutes($afterGraceMinutes)->format('H:i');
+        $periodStart = Carbon::createFromFormat('H:i', $startTime, $clockInTime->timezone)
+            ->setDateFrom($clockInTime)
+            ->subMinutes($beforeGraceMinutes);
 
-        // This handles overnight shifts automatically (e.g., 22:00 to 06:00)
-        if ($effectiveStartTime > $effectiveEndTime) {
-            return $time >= $effectiveStartTime || $time <= $effectiveEndTime;
+        $periodEnd = Carbon::createFromFormat('H:i', $endTime, $clockInTime->timezone)
+            ->setDateFrom($clockInTime)
+            ->addMinutes($afterGraceMinutes);
+
+        if ($periodEnd->lessThan($periodStart)) {
+            // Overnight shift
+            $periodEnd->addDay();
         }
 
-        return $time >= $effectiveStartTime && $time <= $effectiveEndTime;
+        return $clockInTime->between($periodStart, $periodEnd);
     }
 
     /**
