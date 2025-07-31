@@ -597,7 +597,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                 break;
             }
         }
-
+        dd($period, $clockInTime->format('H:i'));
         if($period['end_time'] < $clockInTime->format('H:i')){
             return [
                 'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
