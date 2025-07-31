@@ -587,7 +587,6 @@ class Attendance extends Model implements Auditable
 
         // 2. Timezone setup
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
-
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
             $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
@@ -627,7 +626,7 @@ class Attendance extends Model implements Auditable
         $this->total_break_hours = round($breakMinutes / 60, 2);
 
         // 5. Calculate Net Work Duration
-        $totalGrossMinutes = $clockOut->diffInMinutes($clockIn);
+        $totalGrossMinutes = $this->clock_in_time->diffInMinutes($this->clock_out_time, false);
         $workMinutes = $totalGrossMinutes - $breakMinutes;
         $workHours = $workMinutes > 0 ? round($workMinutes / 60, 2) : 0.0;
         $this->total_work_hours = $workHours;
@@ -666,7 +665,7 @@ class Attendance extends Model implements Auditable
             $this->is_late = $clockIn->gt($scheduledStartTime);
             $this->late_minutes = $this->is_late ? $scheduledStartTime->diffInMinutes($clockIn) : 0;
         }
-
+        
         $this->is_early_departure = $clockOut->lt($scheduledEndTime);
         $this->early_departure_minutes = $this->is_early_departure ? $clockOut->diffInMinutes($scheduledEndTime) : 0;
 
