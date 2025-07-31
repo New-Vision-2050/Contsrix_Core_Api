@@ -543,7 +543,15 @@ class AttendanceService
         $attendanceByUserAndDate = [];
         foreach ($realAttendanceRecords as $record) {
             $userId = (string)$record->user_id;
-            $date = $record->clock_in_time->copy()->setTimezone($timezone)->format('Y-m-d');
+            // Ensure clock_in_time is a Carbon object before calling methods on it
+            if ($record->clock_in_time instanceof Carbon) {
+                $date = $record->clock_in_time->copy()->setTimezone($timezone)->format('Y-m-d');
+            } else if (is_string($record->clock_in_time)) {
+                $date = Carbon::parse($record->clock_in_time, $timezone)->format('Y-m-d');
+            } else {
+                // Default fallback if clock_in_time is null or invalid
+                $date = Carbon::now($timezone)->format('Y-m-d');
+            }
             $attendanceByUserAndDate[$userId][$date][] = $record;
         }
 
@@ -577,8 +585,8 @@ class AttendanceService
                     foreach ($userRecords as $record) {
                         $attendancePeriods[] = [
                             'id' => (string)$record->id,
-                            'clock_in_time' => $record->clock_in_time?->setTimezone($timezone)->format('Y-m-d H:i:s'),
-                            'clock_out_time' => $record->clock_out_time?->setTimezone($timezone)->format('Y-m-d H:i:s'),
+                            'clock_in_time' => $record->clock_in_time,
+                            'clock_out_time' => $record->clock_out_time,
                             'status' => $record->status,
                             'is_late' => (int)$record->is_late,
                             'day_status' => $record->day_status,
@@ -612,7 +620,7 @@ class AttendanceService
                         'day_status' => $isHoliday === true ? 'holiday' : 'work_day',
                         'id' => Uuid::uuid4(),
                         'is_late' => false,
-                        'clock_in_time' => $date->copy()->toDateTimeImmutable(),
+                        'clock_in_time' => null,
                         'timezone' => $defaultTimezone,
                         'work_date' => $dateStr,
                     ]);
