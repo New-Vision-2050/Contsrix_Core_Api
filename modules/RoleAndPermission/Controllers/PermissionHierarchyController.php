@@ -35,7 +35,7 @@ class PermissionHierarchyController
      */
     public function getDetailedPermissions(): JsonResponse
     {
-        $permissions = $this->permissionHierarchyService->excludePrograms(["subscription","users","companies"])->getDetailedPermissionsHierarchy();
+        $permissions = $this->permissionHierarchyService->excludePrograms(["subscription","users","companies","program-management"])->getDetailedPermissionsHierarchy();
 
         return Json::items($permissions);
     }
