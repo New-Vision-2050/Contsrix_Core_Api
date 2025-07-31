@@ -64,7 +64,10 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 'department' => $this->attendance->user->userProfessionalData->department?->name,
                 'branch' => $this->attendance->user->userProfessionalData->branch?->name,
                 'management' => $this->attendance->user->userProfessionalData->management?->name,
-                'attendance_constraint' => $this->attendance->user->userProfessionalData->attendanceConstraint,
+                'attendance_constraint' => $this->attendance->user->userProfessionalData->attendanceConstraint?[
+                    'id' => (string) $this->attendance->user->userProfessionalData->attendanceConstraint->id,
+                    'constraint_name' => $this->attendance->user->userProfessionalData->attendanceConstraint->constraint_name
+                ]:null,
                 'user_id' => (string) $this->attendance->user->userProfessionalData->user_id,
             ] : null,
         ];
