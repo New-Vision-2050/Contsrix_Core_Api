@@ -38,8 +38,9 @@ class AttendanceTeamPresenter extends AbstractPresenter
             'is_late' => (int) $this->attendance->is_late,
             'is_absent' => (int) $this->attendance->is_absent,
             'start_time' => $this->attendance->start_time ,
-            'work_date' => $this->attendance->start_time?->format('Y-m-d')??$this->attendance->clock_in_time->format('Y-m-d'),
-
+            'work_date' => $this->attendance->start_time
+                ? \Carbon\Carbon::parse($this->attendance->start_time)->format('Y-m-d')
+                : (\Carbon\Carbon::parse($this->attendance->clock_in_time))->format('Y-m-d'),
             'day_status' => __('validation.day_status.'.$this->attendance->day_status??'work_day') ?? '',
             'clock_in_time' => $this->attendance->clock_in_time ? $this->attendance->clock_in_time->format('Y-m-d H:i:s') : null,
             'latest_location' => $latestPoint ? [
