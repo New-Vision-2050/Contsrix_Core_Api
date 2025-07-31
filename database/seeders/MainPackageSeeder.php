@@ -11,6 +11,9 @@ use Modules\RoleAndPermission\Models\Permission;
 use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
 use Modules\Subscription\Enums\PeriodUnitEnum;
 use Modules\Subscription\Package\Models\Package;
+use Modules\Country\Models\Country;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\CompanyField\Models\CompanyField;
 
 class MainPackageSeeder extends Seeder
 {
@@ -29,6 +32,21 @@ class MainPackageSeeder extends Seeder
                 'is_active' => true,
                 'is_main_program' => true,
             ]);
+
+            // 1.1. Assign all countries, company types, and company fields to Main Access Program
+            if ($accessProgram->wasRecentlyCreated || $accessProgram->countries()->count() === 0) {
+                // Assign all countries
+                $countries = Country::all()->pluck('id');
+                $accessProgram->countries()->sync($countries);
+                
+                // Assign all company types
+                $companyTypes = CompanyType::all()->pluck('id');
+                $accessProgram->companyTypes()->sync($companyTypes);
+                
+                // Assign all company fields
+                $companyFields = CompanyField::all()->pluck('id');
+                $accessProgram->companyFields()->sync($companyFields);
+            }
 
             // 2. Create Main Package
             $package = Package::firstOrCreate([
