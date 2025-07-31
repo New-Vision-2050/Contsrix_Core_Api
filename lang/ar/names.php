@@ -45,7 +45,7 @@ return [
     'login-way' => 'طريقة تسجيل الدخول',
     'driver' => 'مزود الخدمة',
     'organization' => 'الهيكل التنظيمي',
-    'organization-list' => 'عرض الهيكل التنظيمي',
+    'organization-list' => ' الهيكل التنظيمي',
     'branch' => 'فرع',
     'organization-list*branch' => 'فرع',
     'management' => 'إدارة',
@@ -61,6 +61,7 @@ return [
     'company-profile*address' => 'العنوان',
     'company-profile*official-document' => 'وثيقة رسمية',
     'company-profile*branch' => 'وثيقة رسمية',
+    "family-information"=>"معلومات العائلة",
 
     "human-resources"=>"الموارد البشرية",
 
