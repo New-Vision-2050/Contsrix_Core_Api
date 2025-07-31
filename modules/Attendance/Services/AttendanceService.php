@@ -572,14 +572,14 @@ class AttendanceService
                 } else {
                    $constraintService = app(AttendanceConstraintService::class);
                    $constraints = $constraintService->getTodaysWorkRulesForUser($user);
-                   
+                    $isHoliday = isset($constraints['is_holiday']) ? $constraints['is_holiday'] : null;
                    $syntheticAttendance = new Attendance([
                         'user_id' => $user->id,
                         'company_id' => $companyId,
                         'status' => Attendance::STATUS_COMPLETED,
-                        'is_absent' => $constraints['is_holiday'] === false ? true : false,
-                        'is_holiday' => $constraints['is_holiday'],
-                        'day_status' => $constraints['is_holiday'] === true ? 'holiday' : 'work_day',
+                        'is_absent' => $isHoliday === false ? true : false,
+                        'is_holiday' => $isHoliday,
+                        'day_status' => $isHoliday === true ? 'holiday' : 'work_day',
                         'id' => Uuid::uuid4(),
                         'is_late' => false,
                         'clock_in_time' => $date->copy()->toDateTimeImmutable(),
