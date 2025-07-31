@@ -37,6 +37,7 @@ class AttendanceTeamPresenter extends AbstractPresenter
             'status' => $this->attendance->status,
             'is_late' => (int) $this->attendance->is_late,
             'is_absent' => (int) $this->attendance->is_absent,
+            'is_holiday' => (int) $this->attendance->is_holiday,
             'start_time' => $this->attendance->start_time ,
             'work_date' => $this->attendance->start_time
                 ? \Carbon\Carbon::parse($this->attendance->start_time)->format('Y-m-d')

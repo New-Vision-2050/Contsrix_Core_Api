@@ -604,38 +604,38 @@ class AttendanceService
 
                     $finalAttendanceList[] = $primaryRecord;
                 } else {
+           
                     // Optimization 6: Only fetch constraints when needed
-                    if ($userConstraints === null) {
-                        $userConstraints = $constraintService->getTodaysWorkRulesForUser($user);
-                    }
+                    $userConstraints = $constraintService->getTodaysWorkRulesForUser($user, $dateStr);
                     
-                    $isHoliday = isset($userConstraints['is_holiday']) ? $userConstraints['is_holiday'] : null;
+                    // Check if the day is a holiday based on the day_status from constraints
+                    $isHoliday = isset($userConstraints['day_status']) && $userConstraints['day_status'] === 'holiday';
                     
                     $syntheticAttendance = new Attendance([
                         'user_id' => $user->id,
                         'company_id' => $companyId,
                         'status' => Attendance::STATUS_COMPLETED,
-                        'is_absent' => $isHoliday === false ? true : false,
-                        'is_holiday' => $isHoliday,
-                        'day_status' => $isHoliday === true ? 'holiday' : 'work_day',
+                        'is_absent' => $isHoliday ? 0 : 1,
+                        'is_holiday' => $isHoliday ? 1 : 0,
+                        'day_status' => $isHoliday ? 'holiday' : 'مطلوب للحضور',
                         'id' => Uuid::uuid4(),
                         'is_late' => false,
                         'clock_in_time' => $dateStr,
                         'timezone' => $defaultTimezone,
                         'work_date' => $dateStr,
                     ]);
-
+                    
                     $syntheticAttendance->setRelation('user', $user);
                     $syntheticAttendance->setRelation('breaks', new Collection());
                     $syntheticAttendance->attendance_periods = [];
-
+                    
                     $finalAttendanceList[] = $syntheticAttendance;
                 }
                 
                 $processedItems++;
             }
         }
-
+        
         // Optimization 7: Simplified sorting
         $finalAttendanceList = collect($finalAttendanceList)->sortBy(function ($record) {
             return $record->work_date . '_' . ($record->user->name ?? '');
