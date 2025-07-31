@@ -54,7 +54,7 @@ class AuthService
     {
         $isContinueWithOTP = $this->settingCRUDService->getValue('continue_with_otp');
         if ($isContinueWithOTP) {
-            $user = $this->userRepository->getUserByEmail($authDTO->getEmail());
+            $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
             $this->sendOtpEmail->loginWithOtp($user->id);
             return [null, $user];
         }
