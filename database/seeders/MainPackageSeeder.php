@@ -69,6 +69,7 @@ class MainPackageSeeder extends Seeder
                 'companies',
                 'users',
                 'subscription',
+                "program-management",
             ];
 
             $totalPermissions = Permission::count();
