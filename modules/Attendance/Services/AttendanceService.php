@@ -503,7 +503,6 @@ class AttendanceService
         $period = CarbonPeriod::create($startDate, $endDate);
         $allDates = collect($period->toArray());
         $dateCount = $allDates->count();
-        
         // Pagination calculation
         $offset = ($page - 1) * $perPage;
         
@@ -621,7 +620,7 @@ class AttendanceService
                         'day_status' => $isHoliday === true ? 'holiday' : 'work_day',
                         'id' => Uuid::uuid4(),
                         'is_late' => false,
-                        'clock_in_time' => null,
+                        'clock_in_time' => $dateStr,
                         'timezone' => $defaultTimezone,
                         'work_date' => $dateStr,
                     ]);
