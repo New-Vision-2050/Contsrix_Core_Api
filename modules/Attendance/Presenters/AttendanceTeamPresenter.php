@@ -37,10 +37,12 @@ class AttendanceTeamPresenter extends AbstractPresenter
             'status' => $this->attendance->status,
             'is_late' => (int) $this->attendance->is_late,
             'is_absent' => (int) $this->attendance->is_absent,
-            'work_date' => $this->attendance->created_at?->format('Y-m-d')??$this->attendance->clock_in_time->format('Y-m-d'),
-
-            'day_status' => '',
-            'clock_in_time' => $this->attendance->clock_in_time ? $this->attendance->clock_in_time->format('Y-m-d H:i:s') : null,
+            'start_time' => $this->attendance->start_time ,
+            'work_date' => $this->attendance->start_time
+                ? \Carbon\Carbon::parse($this->attendance->start_time)->format('Y-m-d')
+                : (\Carbon\Carbon::parse($this->attendance->clock_in_time))->format('Y-m-d'),
+            'day_status' => __('validation.day_status.'.$this->attendance->day_status??'work_day') ?? '',
+            'clock_in_time' => $this->attendance->clock_in_time,
             'latest_location' => $latestPoint ? [
                 'latitude'  => (float) $latestPoint['latitude'],
                 'longitude' => (float) $latestPoint['longitude'],
@@ -52,16 +54,17 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
                 'accuracy'  => 10,
             ] : null),
-            'attendance_constraint_id' => $this->attendance->user?->professionalData?->attendanceConstraint?->id,
+            'attendance_constraint_id' => $this->attendance->user?->userProfessionalData?->attendanceConstraint?->id,
 
-            'professional_data' => $this->attendance->user?->professionalData ? [
-                'id' => (string) $this->attendance->user->professionalData->id,
-                'job_title' => $this->attendance->user->professionalData->jobTitle?->name,
-                'job_code' => $this->attendance->user->professionalData->job_code,
-                'department' => $this->attendance->user->professionalData->department?->name,
-                'branch' => $this->attendance->user->professionalData->branch?->name,
-                'management' => $this->attendance->user->professionalData->management?->name,
-                'attendance_constraint' => $this->attendance->user->professionalData->attendanceConstraint?->constraint_name
+            'professional_data' => $this->attendance->user?->userProfessionalData ? [
+                'id' => (string) $this->attendance->user->userProfessionalData->id,
+                'job_title' => $this->attendance->user->userProfessionalData->jobTitle?->name,
+                'job_code' => $this->attendance->user->userProfessionalData->job_code,
+                'department' => $this->attendance->user->userProfessionalData->department?->name,
+                'branch' => $this->attendance->user->userProfessionalData->branch?->name,
+                'management' => $this->attendance->user->userProfessionalData->management?->name,
+                'attendance_constraint' => $this->attendance->user->userProfessionalData->attendanceConstraint,
+                'user_id' => (string) $this->attendance->user->userProfessionalData->user_id,
             ] : null,
         ];
     }

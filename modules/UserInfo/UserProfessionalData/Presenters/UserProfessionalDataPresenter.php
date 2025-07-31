@@ -24,27 +24,6 @@ class UserProfessionalDataPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        // 1. Get the directly assigned attendance constraint
-        $effectiveConstraint = $this->userProfessionalData->attendanceConstraint;
-
-        // Defensive check: If it's a Collection (unlikely for belongsTo, but possible), get the first item
-        if ($effectiveConstraint instanceof Collection) {
-            $effectiveConstraint = $effectiveConstraint->first();
-        }
-
-        // 2. If no direct constraint, and a branch exists, try to get the default constraint from the branch
-        if (is_null($effectiveConstraint) && $this->userProfessionalData->branch) {
-            $defaultConstraintFromBranch = $this->userProfessionalData->branch->defaultAttendanceConstraint;
-
-            // Defensive check: If the default constraint from branch is a Collection, get the first item
-            if ($defaultConstraintFromBranch instanceof Collection) {
-                $effectiveConstraint = $defaultConstraintFromBranch->first();
-            } else {
-                // Otherwise, it's already a single model or null, assign directly
-                $effectiveConstraint = $defaultConstraintFromBranch;
-            }
-        }
-
         return [
             'id' => $this->userProfessionalData->id,
             'company_id' => $this->userProfessionalData->company_id,
@@ -58,7 +37,7 @@ class UserProfessionalDataPresenter extends AbstractPresenter
             'job_code' => $this->userProfessionalData->job_code,
 
             // Pass the guaranteed single model or null to the presenter
-            'attendance_constraint' => $effectiveConstraint ? (new ConstraintListPresenter($effectiveConstraint))->getData() : null,
+            'attendance_constraint' =>$this->userProfessionalData->attendanceConstraint ? (new ConstraintListPresenter($this->userProfessionalData->attendanceConstraint))->getData() : null,
         ];
     }
 }
