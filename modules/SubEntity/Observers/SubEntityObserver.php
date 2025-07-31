@@ -55,7 +55,7 @@ class SubEntityObserver
         foreach (SubEntity::PERMISSION_ACTIONS as $action) {
             $permission = Permission::firstOrCreate([
                 'name' => "{$module}.{$resource}.{$action}",
-                "key" => "dynamic-" . $subEntity->slug . ".$action",
+                "key" => "DYNAMIC." . $subEntity->slug . "_$action",
 
             ], [
                 'status' => true,
@@ -121,7 +121,7 @@ class SubEntityObserver
                 // Collect permissions that need to be deleted
                 foreach (SubEntity::PERMISSION_ACTIONS as $action) {
                     $permission = Permission::where('name', "{$module}.{$resource}.{$action}")->first();
-                    
+
                     if ($permission) {
                         $permissionsToDelete[] = $permission;
                     }
