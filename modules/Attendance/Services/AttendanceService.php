@@ -604,20 +604,23 @@ class AttendanceService
 
                     $finalAttendanceList[] = $primaryRecord;
                 } else {
-           
-                    // Optimization 6: Only fetch constraints when needed
-                    $userConstraints = $constraintService->getTodaysWorkRulesForUser($user, $dateStr);
+                    $users[] = $user;
+                    $dates[]= $dateStr;
+
+                    // Only fetch constraints when needed
+                    $userConstraints = $constraintService->getTodaysWorkRulesForUser($user,$dateStr);
                     
+                    $userConstraintsss[]= $userConstraints['day_status'];
+
                     // Check if the day is a holiday based on the day_status from constraints
-                    $isHoliday = isset($userConstraints['day_status']) && $userConstraints['day_status'] === 'holiday';
-                    
+                    $isHoliday = isset($userConstraints['day_status']) && $userConstraints['day_status'] == 'holiday';
                     $syntheticAttendance = new Attendance([
                         'user_id' => $user->id,
                         'company_id' => $companyId,
                         'status' => Attendance::STATUS_COMPLETED,
-                        'is_absent' => $isHoliday ? 0 : 1,
-                        'is_holiday' => $isHoliday ? 1 : 0,
-                        'day_status' => $isHoliday ? 'holiday' : 'مطلوب للحضور',
+                        'is_absent' => $isHoliday ? false : true,
+                        'is_holiday' => $isHoliday ? true : false,
+                        'day_status' => $isHoliday ? 'holiday' : 'work_day',
                         'id' => Uuid::uuid4(),
                         'is_late' => false,
                         'clock_in_time' => $dateStr,
@@ -631,9 +634,9 @@ class AttendanceService
                     
                     $finalAttendanceList[] = $syntheticAttendance;
                 }
-                
                 $processedItems++;
             }
+
         }
         
         // Optimization 7: Simplified sorting
