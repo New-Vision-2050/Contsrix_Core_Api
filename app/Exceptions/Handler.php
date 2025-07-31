@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Throwable;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
@@ -26,6 +27,10 @@ class Handler
             ], 401),
 
             $e instanceof AuthorizationException => response()->json([
+                'success' => false,
+                'message' => __('validation.unauthorized'),
+            ], 403),
+            $e instanceof UnauthorizedException => response()->json([
                 'success' => false,
                 'message' => __('validation.unauthorized'),
             ], 403),
