@@ -14,6 +14,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Models\AdminRequest;
 use BasePackage\Shared\Traits\HasTranslations;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
@@ -245,17 +246,96 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     protected static function booted()
     {
         static::creating(function ($model) {
-            do {
-                $lastCode = self::where('serial_no', 'LIKE', 'CX-%')
-                    ->orderByDesc('created_at')
-                    ->value('serial_no');
-
-                $newNumber = $lastCode ? (int) str_replace('CX-', '', $lastCode) + 1 : 1;
-                $serial = 'CX-' . $newNumber;
-            } while (self::where('serial_no', $serial)->exists());
-
-            $model->serial_no = $serial;
+            // Skip if serial_no is already set
+            if (!empty($model->serial_no)) {
+                return;
+            }
+            
+            // Use a database transaction to ensure atomicity
+            DB::transaction(function() use ($model) {
+                // Lock the companies table for update to prevent race conditions
+                DB::statement('LOCK TABLES companies WRITE');
+                
+                try {
+                    // Get the highest serial number using numeric extraction
+                    $lastSerial = self::where('serial_no', 'LIKE', 'CX-%')
+                        ->orderByRaw('CAST(SUBSTRING(serial_no, 4) AS UNSIGNED) DESC')
+                        ->value('serial_no');
+                    
+                    // Extract the number and increment it
+                    $lastNumber = $lastSerial ? (int)substr($lastSerial, 3) : 0;
+                    $newNumber = $lastNumber + 1;
+                    
+                    // Generate a new serial number
+                    $serial = 'CX-' . $newNumber;
+                    
+                    // Assign the serial number to the model
+                    $model->serial_no = $serial;
+                } finally {
+                    // Always unlock tables
+                    DB::statement('UNLOCK TABLES');
+                }
+            }, 5); // 5 retries
         });
+    }
+
+    public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(
+            \Modules\Subscription\Package\Models\Package::class,
+            'company_package',
+            'company_id',
+            'package_id'
+        )
+//            ->using(CompanyPackagePivot::class)
+            ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the permission limits for this company.
+     */
+    public function permissionLimits(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\Modules\Subscription\Package\Models\CompanyPermissionLimit::class, 'company_id');
+    }
+
+    /**
+     * Deep relationship: Get CompanyAccessPrograms through packages
+     * This gets all CompanyAccessPrograms that this company has access to through its packages
+     */
+    public function companyAccessPrograms()
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->packages(),
+            (new \Modules\Subscription\Package\Models\Package())->companyAccessProgram()
+        );
+    }
+
+    /**
+     * Alternative deep relationship using table names and foreign keys
+     * This is more explicit about the path through the database
+     */
+    public function companyAccessProgramsDeep()
+    {
+        return $this->hasManyDeep(
+            \Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram::class,
+            ['company_package', 'packages'], // intermediate tables
+            ['company_id', 'package_id'], // foreign keys on intermediate tables
+            ['id', 'id'], // local keys on intermediate tables
+            ['id', 'company_access_program_id'] // foreign keys on related tables
+        );
+    }
+
+    /**
+     * Get distinct CompanyAccessPrograms through packages (removes duplicates)
+     */
+    public function distinctCompanyAccessPrograms()
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->packages(),
+            (new \Modules\Subscription\Package\Models\Package())->companyAccessProgram()
+        )->distinct();
     }
 
     public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
