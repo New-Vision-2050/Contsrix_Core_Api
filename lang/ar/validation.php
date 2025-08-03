@@ -176,6 +176,7 @@ return [
     "identity-or-passport-required" => "يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required" => "يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found" => "الشركة غير موجودة",
+    "management-not-found" => "الادارة غير موجودة",
     "company-not-active" => "الشركة غير نشطة",
     "branch-not-found" => "الفرع غير موجود",
     "integrity-error" => "البيانات غير موحدة ",
@@ -390,6 +391,9 @@ return [
             'before' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء.',
             'date_format' => 'يجب أن يكون تاريخ الإشعار بالتنسيق Y-m-d.',
         ],
+        'role' => [
+            'cannot_deactivate' => 'لا يمكن إلغاء تنشيط هذا الدور لأنه معين لمستخدمين.',
+        ],
     ],
     'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
 
@@ -493,6 +497,7 @@ return [
     'regular' => 'منتظم',
     'male' => 'ذكر',
     'female' => 'أنثى',
+    "program-management"=>"ادارة البرامج",
     'day_status' => [
         'work_day'=>'مطلوب للحضور',
         'holiday'=>'اجازه',

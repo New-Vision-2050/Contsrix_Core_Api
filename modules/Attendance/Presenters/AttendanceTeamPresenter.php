@@ -31,7 +31,7 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 'id' => $this->attendance->user->id ? (string)$this->attendance->user->id : null,
                 'name' => $this->attendance->user->name,
                 'company_id'=> $this->attendance->user->company_id,
-                'company_name' => $this->attendance->user->company->name,
+                'company_name' => $this->attendance?->user?->company?->name,
             ] : null,
 
             'status' => $this->attendance->status,
