@@ -246,25 +246,37 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     {
         static::creating(function ($model) {
             // Skip if serial_no is already set
-            // if (!empty($model->serial_no)) {
-            //     return;
-            // }
-
-            // Use a database transaction with pessimistic locking
-            \Illuminate\Support\Facades\DB::connection()->transaction(function() use ($model) {
-                // Get the highest serial number using numeric sorting
-                $lastSerial = self::where('serial_no', 'LIKE', 'CX-%')
-                    ->orderByRaw('CAST(SUBSTRING(serial_no, 4) AS UNSIGNED) DESC')
-                    ->lockForUpdate() // This is critical - locks the rows for update
-                    ->first();
-
-                // Extract the number and increment it
-                $lastNumber = $lastSerial ? (int)substr($lastSerial->serial_no, 3) : 0;
-                $newNumber = $lastNumber + 1;
-
-                // Generate a new serial number
-                $model->serial_no = 'CX-' . $newNumber;
-            }, 5); // 5 retries
+            if (!empty($model->serial_no)) {
+                return;
+            }
+            
+            // Generate a UUID-based serial number that is guaranteed to be unique
+            // Format: CX-{first 8 chars of UUID}
+            $uuid = \Illuminate\Support\Str::uuid()->toString();
+            $shortUuid = substr($uuid, 0, 8); // Take first 8 characters of the UUID
+            
+            // Generate the serial number with a prefix
+            $model->serial_no = 'CX-' . $shortUuid;
+            
+            // Double-check that this serial number doesn't already exist (extremely unlikely but possible)
+            // If it does, generate a new one
+            $attempts = 0;
+            $maxAttempts = 5;
+            
+            while (\Illuminate\Support\Facades\DB::table('companies')->where('serial_no', $model->serial_no)->exists()) {
+                if ($attempts >= $maxAttempts) {
+                    // If we've tried too many times, use a timestamp-based fallback
+                    $timestamp = time();
+                    $model->serial_no = 'CX-' . dechex($timestamp);
+                    break;
+                }
+                
+                // Generate a new UUID and try again
+                $uuid = \Illuminate\Support\Str::uuid()->toString();
+                $shortUuid = substr($uuid, 0, 8);
+                $model->serial_no = 'CX-' . $shortUuid;
+                $attempts++;
+            }
         });
     }
 
