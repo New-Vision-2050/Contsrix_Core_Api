@@ -245,16 +245,26 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     protected static function booted()
     {
         static::creating(function ($model) {
-            do {
-                $lastCode = self::where('serial_no', 'LIKE', 'CX-%')
-                    ->orderByDesc('created_at')
-                    ->value('serial_no');
-
-                $newNumber = $lastCode ? (int) str_replace('CX-', '', $lastCode) + 1 : 1;
-                $serial = 'CX-' . $newNumber;
-            } while (self::where('serial_no', $serial)->exists());
-
-            $model->serial_no = $serial;
+            // Skip if serial_no is already set
+            if (!empty($model->serial_no)) {
+                return;
+            }
+            
+            // Use a database transaction with pessimistic locking
+            \Illuminate\Support\Facades\DB::connection()->transaction(function() use ($model) {
+                // Get the highest serial number using numeric sorting
+                $lastSerial = self::where('serial_no', 'LIKE', 'CX-%')
+                    ->orderByRaw('CAST(SUBSTRING(serial_no, 4) AS UNSIGNED) DESC')
+                    ->lockForUpdate() // This is critical - locks the rows for update
+                    ->first();
+                
+                // Extract the number and increment it
+                $lastNumber = $lastSerial ? (int)substr($lastSerial->serial_no, 3) : 0;
+                $newNumber = $lastNumber + 1;
+                
+                // Generate a new serial number
+                $model->serial_no = 'CX-' . $newNumber;
+            }, 5); // 5 retries
         });
     }
 
