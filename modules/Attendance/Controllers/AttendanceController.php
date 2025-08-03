@@ -296,14 +296,23 @@ class AttendanceController extends Controller
     {
         $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
 
-        $list = $this->attendanceService->getTeamAttendance(
-            Auth::id()->toString(),
+        $result = $this->attendanceService->getTeamAttendance(
             $filterDTO->toArray(),
             (int) $request->input('page', 1),
             (int) $request->input('per_page', 10)
         );
 
-        return Json::items(AttendanceTeamPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+        return Json::items(
+    AttendanceTeamPresenter::collection($result->items()),
+    [],
+    200,
+    [
+        'total' => $result->total(),
+        'per_page' => $result->perPage(),
+        'current_page' => $result->currentPage(),
+        'last_page' => $result->lastPage(),
+    ]
+);
     }
     public function teamAttendance(AttendanceRequest $request)//: JsonResponse
     {

@@ -67,7 +67,6 @@ class AttendanceConstraintController extends Controller
             paginationSettings: $result['pagination'],
             message:            'Constraints retrieved successfully'
         );
-        return Json::items($result['data'], message: 'Constraints retrieved successfully');
     }
 
 
