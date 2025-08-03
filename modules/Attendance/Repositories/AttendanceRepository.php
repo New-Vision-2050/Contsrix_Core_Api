@@ -22,6 +22,18 @@ class AttendanceRepository extends BaseRepository
         parent::__construct($model);
     }
 
+    public function paginatedAttendance(Collection $collection, int $page = 1, int $perPage = 10)
+    {
+        $count = $collection->count();
+        $results = $collection->forPage($page, $perPage)->values();
+
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $results,
+            $count,
+            $perPage,
+            $page,
+        );
+    }
     /**
      * Get attendance list with filters and pagination
      */
