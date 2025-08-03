@@ -4,33 +4,34 @@ declare(strict_types=1);
 
 namespace Modules\Company\CompanyCore\Models;
 
+use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Stancl\Tenancy\DatabaseConfig;
+use Modules\Country\Models\Country;
 use App\Traits\CustomBelongsToTenant;
-use BasePackage\Shared\Traits\HasTranslations;
-use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use BasePackage\Shared\Traits\UuidTrait;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Models\AdminRequest;
-use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
-use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\Company\CompanyField\Models\CompanyField;
-use Modules\Company\CompanyType\Models\CompanyType;
-use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
-use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\Country\Models\Country;
-use Modules\User\Models\User;
-use Spatie\MediaLibrary\HasMedia;
-use Stancl\Tenancy\Database\Concerns\HasDatabase;
+use BasePackage\Shared\Traits\HasTranslations;
+use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
-use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
+use Stancl\Tenancy\Database\Concerns\HasDatabase;
+use Modules\Company\CompanyType\Models\CompanyType;
+use Modules\Company\CompanyField\Models\CompanyField;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 use Stancl\Tenancy\Database\Concerns\HasScopedValidationRules;
-use Stancl\Tenancy\Contracts\TenantWithDatabase;
-use Stancl\Tenancy\DatabaseConfig;
+use Modules\Company\CompanyCore\Database\factories\CompanyFactory;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -62,16 +63,16 @@ use Stancl\Tenancy\DatabaseConfig;
 class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 {
     use HasFactory;
-    use BaseFilterable;
-    use InteractsWithMedia;
-    use HasTranslations;
-
-    use HasDatabase, HasDomains;
     use UuidTrait;
+    use HasDatabase;
+    use HasDomains;
+    use InteractsWithMedia;
+    use BaseFilterable;
+    use SoftDeletes;
     use HasScopedValidationRules;
     use CustomBelongsToTenant;
-    use softDeletes;
-
+    use HasRelationships;
+    use HasTranslations;
 
     public array $translatable = ["name"];
 
@@ -234,7 +235,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public function owner()
     {
-        return $this->hasOne(User::class)->where("is_owner",1);
+        return $this->hasOne(User::class)->where("is_owner", 1);
     }
 
     public function users()
@@ -276,5 +277,64 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
                 }
             }, 5); // 5 retries
         });
+    }
+
+    public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(
+            \Modules\Subscription\Package\Models\Package::class,
+            'company_package',
+            'company_id',
+            'package_id'
+        )
+//            ->using(CompanyPackagePivot::class)
+            ->withPivot(['subscribed_at', 'expires_at', 'is_active'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the permission limits for this company.
+     */
+    public function permissionLimits(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\Modules\Subscription\Package\Models\CompanyPermissionLimit::class, 'company_id');
+    }
+
+    /**
+     * Deep relationship: Get CompanyAccessPrograms through packages
+     * This gets all CompanyAccessPrograms that this company has access to through its packages
+     */
+    public function companyAccessPrograms()
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->packages(),
+            (new \Modules\Subscription\Package\Models\Package())->companyAccessProgram()
+        );
+    }
+
+    /**
+     * Alternative deep relationship using table names and foreign keys
+     * This is more explicit about the path through the database
+     */
+    public function companyAccessProgramsDeep()
+    {
+        return $this->hasManyDeep(
+            \Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram::class,
+            ['company_package', 'packages'], // intermediate tables
+            ['company_id', 'package_id'], // foreign keys on intermediate tables
+            ['id', 'id'], // local keys on intermediate tables
+            ['id', 'company_access_program_id'] // foreign keys on related tables
+        );
+    }
+
+    /**
+     * Get distinct CompanyAccessPrograms through packages (removes duplicates)
+     */
+    public function distinctCompanyAccessPrograms()
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->packages(),
+            (new \Modules\Subscription\Package\Models\Package())->companyAccessProgram()
+        )->distinct();
     }
 }
