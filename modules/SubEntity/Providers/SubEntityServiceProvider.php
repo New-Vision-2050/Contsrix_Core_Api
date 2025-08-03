@@ -6,6 +6,8 @@ namespace Modules\SubEntity\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\SubEntity\Models\SubEntity;
+use Modules\SubEntity\Observers\SubEntityObserver;
 
 class SubEntityServiceProvider extends ModuleServiceProvider
 {
@@ -19,11 +21,17 @@ class SubEntityServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         $this->registerConfig();
         $this->registerMigrations();
+        $this->registerObservers();
     }
 
     public function register(): void
     {
         $this->registerRoutes();
+    }
+
+    protected function registerObservers(): void
+    {
+        SubEntity::observe(SubEntityObserver::class);
     }
 
     public function mapRoutes(): void

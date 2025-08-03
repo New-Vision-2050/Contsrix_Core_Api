@@ -107,8 +107,8 @@ return [
         'string' => 'The :attribute field must not be greater than :max characters.',
     ],
     'max_digits' => 'The :attribute field must not have more than :max digits.',
-    'mimes' => 'The :attribute field must be a file of type: :values.',
-    'mimetypes' => 'The :attribute field must be a file of type: :values.',
+    'mimes' => 'The :attribute field must have one of the following extensions: :values.',
+    'mimetypes' => 'The :attribute field must have one of the following extensions: :values.',
     'min' => [
         'array' => 'The :attribute field must have at least :min items.',
         'file' => 'The :attribute field must be at least :min kilobytes.',
@@ -202,6 +202,7 @@ return [
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
+    "management-not-found"=>"management not found",
     "company-not-active"=>"company not active",
     "branch-not-found"=>"branch not found",
     "integrity-error"=>"integrity error",
@@ -399,6 +400,9 @@ return [
         ],
         'description' => [
             'required' => 'The description is required.',
+        ],
+        'role' => [
+            'cannot_deactivate' => 'Cannot deactivate this role because it is assigned to users.',
         ],
         'document_number' => [
             'required' => 'The document number is required.',

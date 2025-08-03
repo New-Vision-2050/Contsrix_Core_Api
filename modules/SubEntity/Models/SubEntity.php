@@ -9,8 +9,8 @@ use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\SubEntity\Database\factories\SubEntityFactory;
 
 class SubEntity extends Model
@@ -42,6 +42,17 @@ class SubEntity extends Model
         'default_attributes' => 'json',
         'optional_attributes' => 'json',
     ];
+
+    public const PERMISSION_ACTIONS = [
+        'activate',
+        'create',
+        'update',
+        'delete',
+        'list',
+        'view',
+        'export',
+    ];
+
 
     protected static function booted(): void
     {
@@ -105,6 +116,11 @@ class SubEntity extends Model
     public function parentSubEntity(): BelongsTo
     {
         return $this->belongsTo(SubEntity::class, 'super_entity');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(self::class, 'super_entity')->where('is_active', true);
     }
 
     public function registrationForm()

@@ -54,16 +54,16 @@ class AuthService
     {
         $isContinueWithOTP = $this->settingCRUDService->getValue('continue_with_otp');
         if ($isContinueWithOTP) {
-            $user = $this->userRepository->getUserByEmail($authDTO->getEmail());
+            $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
             $this->sendOtpEmail->loginWithOtp($user->id);
             return [null, $user];
         }
+        $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
 
-        $token = JWTAuth::attempt($authDTO->toArray());
+        $token = JWTAuth::fromUser($user);
         if (!$token) {
             throw new \ErrorException(__("validation.invalid-credential"), 403);
         }
-        $user = auth()->user();
         return [$token, $user];
     }
 
