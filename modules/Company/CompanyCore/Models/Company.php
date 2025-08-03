@@ -14,7 +14,6 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 use Modules\AdminRequest\Models\AdminRequest;
 use BasePackage\Shared\Traits\HasTranslations;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
@@ -76,11 +75,11 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
 
     public array $translatable = ["name"];
 
-//    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner"];
+    //    protected $with = ['country', 'companyType', 'companyField', 'companyRegistrationType', 'generalManager', "mainBranch", "companyLegalData.media", "companyOfficialDocuments.media", "companyOfficialDocuments.activityLogs", "companyAddress","owner"];
 
     public $incrementing = false;
     protected $table = 'companies';
-//    protected $connection = "mysql";
+    //    protected $connection = "mysql";
 
 
     protected $keyType = 'string';
@@ -246,36 +245,16 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     protected static function booted()
     {
         static::creating(function ($model) {
-            // Skip if serial_no is already set
-            if (!empty($model->serial_no)) {
-                return;
-            }
-            
-            // Use a database transaction to ensure atomicity
-            DB::transaction(function() use ($model) {
-                // Lock the companies table for update to prevent race conditions
-                DB::statement('LOCK TABLES companies WRITE');
-                
-                try {
-                    // Get the highest serial number using numeric extraction
-                    $lastSerial = self::where('serial_no', 'LIKE', 'CX-%')
-                        ->orderByRaw('CAST(SUBSTRING(serial_no, 4) AS UNSIGNED) DESC')
-                        ->value('serial_no');
-                    
-                    // Extract the number and increment it
-                    $lastNumber = $lastSerial ? (int)substr($lastSerial, 3) : 0;
-                    $newNumber = $lastNumber + 1;
-                    
-                    // Generate a new serial number
-                    $serial = 'CX-' . $newNumber;
-                    
-                    // Assign the serial number to the model
-                    $model->serial_no = $serial;
-                } finally {
-                    // Always unlock tables
-                    DB::statement('UNLOCK TABLES');
-                }
-            }, 5); // 5 retries
+            do {
+                $lastCode = self::where('serial_no', 'LIKE', 'CX-%')
+                    ->orderByDesc('created_at')
+                    ->value('serial_no');
+
+                $newNumber = $lastCode ? (int) str_replace('CX-', '', $lastCode) + 1 : 1;
+                $serial = 'CX-' . $newNumber;
+            } while (self::where('serial_no', $serial)->exists());
+
+            $model->serial_no = $serial;
         });
     }
 
