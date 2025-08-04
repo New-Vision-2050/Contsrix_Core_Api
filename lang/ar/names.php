@@ -65,6 +65,14 @@ return [
 
     "human-resources"=>"الموارد البشرية",
 
+    'attendance-list' => 'قائمة الحضور',
+    'attendance-list*attendance-list' => 'قائمة الحضور',
+    'attendance-constraints' => 'قيود الحضور',
+    'attendance-constraints*attendance-constraints' => 'محددات الحضور',
+    'attendance-map' => 'خريطة الحضور',
+    'attendance-list*attendance-map' => 'خريطة الحضور',
+    
+    // Settings module
     // SubEntity Module
     'sub-entity' => 'كيان فرعي',
     'sub-entities' => 'الكيانات الفرعية',
