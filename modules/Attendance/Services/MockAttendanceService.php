@@ -7,6 +7,7 @@ namespace Modules\Attendance\Services;
 use Illuminate\Support\Facades\Auth;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\DTO\ClockInDTO;
+use Modules\Attendance\Events\AttendanceClockedIn;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\User\Models\User;
@@ -26,20 +27,8 @@ class MockAttendanceService
     {
         $attendance = $this->attendanceService->clockIn($clockInDTO);
 
-        // Check lateness at clock-in time
-        $attendance->checkLateness();
+        AttendanceClockedIn::dispatch($attendance->id);
 
-        $actualViolations = $this->constraintService->validateAttendance($attendance, $rawRequestData);
-        if (!empty($actualViolations)) {
-            foreach ($actualViolations as $violationData) {
-                if (isset($violationData['constraint_id'])) {
-                    $constraint = AttendanceConstraint::find($violationData['constraint_id']);
-                    if ($constraint) {
-                        $this->constraintService->createViolation($attendance, $constraint, $violationData);
-                    }
-                }
-            }
-        }
         return  $attendance;
     }
 

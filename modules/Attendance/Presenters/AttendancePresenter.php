@@ -120,51 +120,6 @@ class AttendancePresenter extends AbstractPresenter
 
 
     /**
-     * Determines if the attendance day was a Work Day, Weekend, or Holiday.
-     *
-     * @param array $appliedConstraints The formatted array of constraints.
-     * @return array An object containing the status and reason.
-     */
-    private function getDayStatus($appliedConstraints): array
-    {
-        $defaultStatus = ['status' => 'Undefined', 'reason' => 'No applicable time schedule found.'];
-
-        if (!$this->attendance->clock_in_time) {
-            return $defaultStatus;
-        }
-        $attendanceDate = $this->attendance->clock_in_time;
-
-        // Find the first constraint that has time rules.
-        $timeConstraint = collect($appliedConstraints)->first(function ($constraint) {
-            return isset($constraint['config']['time_rules']);
-        });
-        if (!$timeConstraint) {
-            return $defaultStatus;
-        }
-
-        $timeRules = $timeConstraint['config']['time_rules'];
-
-        // 1. Check for specific holidays.
-        foreach (($timeRules['holidays'] ?? []) as $holiday) {
-            if (isset($holiday['date']) && $attendanceDate->isSameDay($holiday['date'])) {
-                return ['status' => 'Holiday', 'reason' => $holiday['name']];
-            }
-        }
-
-        // 2. Check the weekly schedule.
-        $dayOfWeek = strtolower($attendanceDate->format('l'));
-        $dayConfig = $timeRules['weekly_schedule'][$dayOfWeek] ?? null;
-
-
-        if ($dayConfig) {
-            return $dayConfig['enabled']
-                ? ['status' => 'Work Day', 'reason' => 'Scheduled working day.']
-                : ['status' => 'Weekend / Off-day', 'reason' => 'Scheduled day off.'];
-        }
-
-        return ['status' => 'Undefined', 'reason' => 'Day not defined in schedule.'];
-    }
-    /**
      * Format breaks data for the response
      */
     private function formatBreaks(): array

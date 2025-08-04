@@ -67,12 +67,6 @@ class AttendanceConstraintService
         $user = $attendance->user;
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
-        if (!$isDryRun && $attendance->exists) {
-            $appliedConstraintIds = $constraints->pluck('id')
-                                                 ->map(fn($id) => (string) $id)
-                                                 ->all();
-            $attendance->appliedConstraints()->sync($appliedConstraintIds);
-        }
 
         if ($constraints->isEmpty()) {
 
@@ -633,7 +627,7 @@ class AttendanceConstraintService
 
         $dayOfWeek = strtolower($now->format('l'));
         $isTodayHoliday = collect($holidays)->contains(fn($h) => $now->isSameDay($h['date'] ?? null));
-        
+
         $todaySchedule = $weeklySchedule[$dayOfWeek] ?? ['enabled' => false];
         if (!($todaySchedule['enabled'] ?? false)) {
             $isTodayHoliday = true;
