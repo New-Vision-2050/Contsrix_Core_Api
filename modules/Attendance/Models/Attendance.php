@@ -507,40 +507,40 @@ class Attendance extends Model implements Auditable
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
             $clockInDate = $clockIn->format('Y-m-d');
-            
+
             $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
             $user = $this->user;
             $config = $constraintService->getTodaysWorkRulesForUser($user);
-            
+
 
             $rules = $config['lateness_rules'] ?? [];
             $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
             $latenessUnit = $rules['lateness_unit'] ?? 'minute';
-            
+
             $gracePeriodMinutes = $this->convertToMinutes($latenessPeriod, $latenessUnit);
 
             if ($gracePeriodMinutes <= 0) {
                 $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
             }
-            
+
             $previousAttendances = self::where('user_id', $this->user_id)
                 ->whereDate('clock_in_time', $clockInDate)
                 ->where('id', '!=', $this->id)
                 ->orderBy('clock_in_time', 'desc')
                 ->get();
-            
+
             // Always get the scheduled start time for the period
             $scheduledStartTimeString = $this->start_time ?? $this->user->start_time ?? '09:00';
             if ($scheduledStartTimeString instanceof Carbon) {
                 $scheduledStartTimeString = $scheduledStartTimeString->format('H:i');
             }
-            
+
             $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
             $latestAllowedArrival = $scheduledStartTime->copy()->addMinutes($gracePeriodMinutes);
-            
+
             // Always calculate is_late based on scheduled period time
             $this->is_late = $clockIn->gt($latestAllowedArrival);
-            
+
             if ($previousAttendances->isEmpty()) {
                 // First clock-in: late_minutes is calculated from scheduled start time
                 $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
@@ -548,28 +548,28 @@ class Attendance extends Model implements Auditable
                 // Subsequent clock-in: check if in same period
                 $lastAttendance = $previousAttendances->first();
                 $lastClockInTime = Carbon::parse($lastAttendance->clock_in_time)->setTimezone($timezone);
-                
+
                 $scheduledEndTimeString = $this->end_time ?? $this->user->end_time ?? '17:00';
                 if ($scheduledEndTimeString instanceof Carbon) {
                     $scheduledEndTimeString = $scheduledEndTimeString->format('H:i');
                 }
-                
+
                 $periodStart = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
                 $periodEnd = $clockIn->copy()->setTimeFromTimeString($scheduledEndTimeString);
-                
+
                 // Check if the last clock-in was in the same period
                 $lastClockInPeriodStart = $lastClockInTime->copy()->setTimeFromTimeString($scheduledStartTimeString);
                 $lastClockInPeriodEnd = $lastClockInTime->copy()->setTimeFromTimeString($scheduledEndTimeString);
-                
+
                 $sameDay = $lastClockInTime->isSameDay($clockIn);
-                $samePeriod = $sameDay && 
-                             (($lastClockInTime->between($lastClockInPeriodStart, $lastClockInPeriodEnd) && 
+                $samePeriod = $sameDay &&
+                             (($lastClockInTime->between($lastClockInPeriodStart, $lastClockInPeriodEnd) &&
                                $clockIn->between($periodStart, $periodEnd)));
-                
+
                 if ($samePeriod) {
                     // Same period - calculate late_minutes from last clock-in time
                     $lastClockInWithGrace = $lastClockInTime->copy()->addMinutes($gracePeriodMinutes);
-                    $this->late_minutes = $clockIn->gt($lastClockInWithGrace) ? 
+                    $this->late_minutes = $clockIn->gt($lastClockInWithGrace) ?
                                          $lastClockInWithGrace->diffInMinutes($clockIn) : 0;
                 } else {
                     $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
@@ -708,7 +708,7 @@ class Attendance extends Model implements Auditable
             $this->is_late = $clockIn->gt($scheduledStartTime);
             $this->late_minutes = $this->is_late ? $scheduledStartTime->diffInMinutes($clockIn) : 0;
         }
-        
+
         $this->is_early_departure = $clockOut->lt($scheduledEndTime);
         $this->early_departure_minutes = $this->is_early_departure ? $clockOut->diffInMinutes($scheduledEndTime) : 0;
 
@@ -814,14 +814,9 @@ class Attendance extends Model implements Auditable
         // Save changes
         return $this->save();
     }
-    public function appliedConstraints()
+    public function appliedAttendanceConstraint()
     {
-        return $this->belongsToMany(
-            AttendanceConstraint::class,
-            'applied_attendance_constraints',
-            'attendance_id',
-            'constraint_id'
-        );
+        return $this->hasOne(AppliedAttendanceConstraint::class, 'attendance_id', 'id');
     }
     public function professionalData()
     {

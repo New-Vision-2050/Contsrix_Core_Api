@@ -7,6 +7,9 @@ namespace Modules\Attendance\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Factory;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Event;
+use Modules\Attendance\Events\AttendanceClockedIn;
+use Modules\Attendance\Listeners\HandleAttendanceLateness;
 
 class AttendanceServiceProvider extends ServiceProvider
 {
@@ -31,6 +34,7 @@ class AttendanceServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->registerSchedules();
+        $this->registerEventListeners();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'Database/migrations'));
     }
 
@@ -123,5 +127,12 @@ class AttendanceServiceProvider extends ServiceProvider
             $schedule->command('attendance:create-waiting')->everyMinute();
             // $schedule->command('attendance:update-status')->everyThreeHours();
         });
+    }
+    protected function registerEventListeners(): void
+    {
+        Event::listen(
+            AttendanceClockedIn::class,
+            HandleAttendanceLateness::class
+        );
     }
 }
