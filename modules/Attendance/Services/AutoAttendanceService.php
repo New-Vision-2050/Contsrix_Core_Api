@@ -29,7 +29,7 @@ class AutoAttendanceService
             'status' => $status,
             'day_status' => $data['day_status'],
             'timezone' => $data['timezone'] ?? config('app.timezone'),
-            'is_absent' => $data['is_late'] ?? 0,
+            'is_absent' => $data['is_absent'] ?? 0,
             'is_late' => $data['is_late'] ?? 0,
             'is_holiday' => $data['is_holiday'] ?? 0,
         ];
@@ -46,7 +46,7 @@ class AutoAttendanceService
                 'company_id' => $attendance->company_id,
             ]);
         }
-        
+
         return $attendance;
     }
 
