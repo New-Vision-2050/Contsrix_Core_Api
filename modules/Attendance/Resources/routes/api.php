@@ -64,6 +64,10 @@ Route::prefix('attendance')->group(function () {
        // ->middleware('permission:view-team-attendance')
         ->name('attendance.team.show');
 
+    Route::get('{attendance}/applied-attendance', [AttendanceController::class, 'appliedAttendanceConstraint'])
+       // ->middleware('permission:view-team-attendance')
+        ->name('attendance.appliedAttendanceConstraint.show');
+
     // Attendance Management (HR/Admin)
     // Route::middleware('permission:manage-attendance')->group(function () {
         Route::put('{attendanceId}', [AttendanceController::class, 'update'])
