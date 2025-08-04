@@ -537,8 +537,11 @@ class CompanyUserRepository extends BaseRepository
 
         // $attendanceConstraint = $this->attendanceConstraintRepository->model->getConstraintBybranch($branchId);
         $attendanceConstraint = AttendanceConstraint::withoutTenancy()
-    ->whereJsonContains('branch_ids', (string) $branchId)
-    ->first();
+        ->whereJsonContains('branch_ids', (string) $branchId)
+        ->first();
+        if (!$attendanceConstraint) {
+            $attendanceConstraint = AttendanceConstraint::where('company_id', $companyId)->withoutTenancy()->first();
+        }
 
         $data = [
             'company_id' => $companyId,
@@ -556,12 +559,13 @@ class CompanyUserRepository extends BaseRepository
             'global_id' => $user->global_company_user_id,
             'company_id' => $companyId,
         ])->first();
+
         if ($userProfessionalData) {
             $userProfessionalData->update($data);
         } else {
             UserProfessionalData::create($data);
         }
-        $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
+        // $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
     }
 
     public function setAddress(array $addressData)
