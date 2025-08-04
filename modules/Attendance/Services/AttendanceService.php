@@ -336,11 +336,11 @@ class AttendanceService
 
         // It's more efficient to calculate these once and store them in variables.
         $totalAttendant = $attendances->whereNotNull('clock_in_time')->count();
-        $totalAbsent = $attendances->where('is_absent', true)->count();
-        $totalHoliday = $attendances->where('is_holiday', true)->count();
+        $totalAbsent = $attendances->whereIn('is_absent',[true,1])->count();
+        $totalHoliday = $attendances->whereIn('is_holiday',[true,1])->count();
         $totalDepartures = $attendances->whereNotNull('clock_out_time')->count();
-        $totalLate = $attendances->where('is_late', true)->count();
-        $totalEarly = $attendances->where('is_early_departure', true)->count();
+        $totalLate = $attendances->whereIn('is_late',[true,1])->count();
+        $totalEarly = $attendances->whereIn('is_early_departure',[true,1])->count();
 
         // 3. Build the summary array.
         $summary = [
