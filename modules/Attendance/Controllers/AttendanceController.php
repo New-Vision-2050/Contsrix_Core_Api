@@ -27,6 +27,8 @@ use Modules\Attendance\Requests\BreakRequest;
 use Modules\Attendance\Services\MockAttendanceService;
 use Ramsey\Uuid\Uuid;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Presenters\AppliedAttendanceConstraintPresenter;
+
 class AttendanceController extends Controller
 {
     public function __construct(
@@ -231,7 +233,13 @@ class AttendanceController extends Controller
 
         return Json::item($summary, message: 'Attendance summary retrieved successfully');
     }
-
+    public function appliedAttendanceConstraint(string $id)//: JsonResponse
+    {
+        $constraint = $this->attendanceService->getAttendance(Uuid::fromString($id));
+        // return  $constraint->appliedAttendanceConstraint;
+        $constraintPresenter =(new AppliedAttendanceConstraintPresenter($constraint))->getData();
+        return Json::item($constraintPresenter, message: 'Constraint retrieved successfully');
+    }
     /**
      * Update attendance record (for HR/Admin)
      */

@@ -100,7 +100,7 @@ class AttendanceService
             'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
         ];
         $Attendance = Attendance::where('start_time',$startDateTime)
-        ->whereNull('clock_in')->first();
+        ->whereNull('clock_in_time')->first();
         if ($Attendance) {
             $Attendance->update($attendanceData);
         }else {
