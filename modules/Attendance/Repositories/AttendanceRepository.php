@@ -128,7 +128,7 @@ class AttendanceRepository extends BaseRepository
             $query->filter($filters);
         }
 
-        $query->orderBy('clock_in_time', 'desc');
+        $query->orderBy('start_time', 'desc');
 
         if ($page) {
             $results = $this->getPaginationData($query, $page, $perPage);
@@ -168,7 +168,7 @@ class AttendanceRepository extends BaseRepository
     {
         return Attendance::where('user_id', $userId)
             ->whereBetween('clock_in_time', [$startDate, $endDate])
-            ->orderBy('clock_in_time', 'desc')
+            ->orderBy('start_time', 'desc')
             ->get();
     }
 
