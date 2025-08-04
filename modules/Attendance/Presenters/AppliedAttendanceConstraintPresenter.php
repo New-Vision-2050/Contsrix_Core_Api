@@ -18,7 +18,7 @@ class AppliedAttendanceConstraintPresenter extends AbstractPresenter
 
     public function present(bool $isListing = false): ?array
     {
-        $snapshot = $this->attendance->appliedAttendanceConstraint->constraint_snapshot;
+        $snapshot = $this->attendance?->appliedAttendanceConstraint?->constraint_snapshot;
 
         if (!$snapshot) {
             return null;
