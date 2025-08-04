@@ -96,8 +96,13 @@ class AttendanceService
             'day_status' => $day_status,
             'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
         ];
-
-        return $this->attendanceRepository->create($attendanceData);
+        $Attendance = Attendance::where('start_time',$startDateTime)
+        ->whereNull('clock_in')->first();
+        if ($Attendance) {
+            $Attendance->update($attendanceData);
+        }else {
+            return $this->attendanceRepository->create($attendanceData);
+        }
     }
 
 
