@@ -38,6 +38,11 @@ class LiveTrackingPresenter extends AbstractPresenter
             ] : null,
 
             'clock_in_time' => $this->attendance->clock_in_time->format('H:i:s'),
+            
+            'status' => $this->attendance->status,
+            'is_late' => (int) $this->attendance->is_late,
+            'is_absent' => (int) $this->attendance->is_absent,
+            'is_holiday' => (int) $this->attendance->is_holiday,
 
             // --- Latest Location Info (for the marker) ---
             'latest_location' => $latestPoint ? [

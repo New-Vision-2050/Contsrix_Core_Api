@@ -301,7 +301,9 @@ class AttendanceController extends Controller
             (int) $request->input('page', 1),
             (int) $request->input('per_page', 10)
         );
-
+        if ($result->isEmpty()) {
+            return Json::items([], message: 'No attendance records found');
+        }
         return Json::items(
     AttendanceTeamPresenter::collection($result->items()),
     [],

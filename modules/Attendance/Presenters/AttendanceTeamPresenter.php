@@ -44,19 +44,24 @@ class AttendanceTeamPresenter extends AbstractPresenter
                 : (\Carbon\Carbon::parse($this->attendance->clock_in_time))->format('Y-m-d'),
             'day_status' => __('validation.day_status.'.$this->attendance->day_status??'work_day') ?? '',
             'clock_in_time' => $this->attendance->clock_in_time,
-            'latest_location' => $latestPoint ? [
-                'latitude'  => (float) $latestPoint['latitude'],
-                'longitude' => (float) $latestPoint['longitude'],
-                'timestamp' => $latestPoint['timestamp'],
-                'accuracy'  => (float) $latestPoint['accuracy'],
-            ] : ($this->attendance->clock_in_location ? [
-                'latitude'  => $this->attendance->clock_in_location['latitude'],
-                'longitude' => $this->attendance->clock_in_location['longitude'],
-                'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
-                'accuracy'  => 10,
-            ] : null),
+            // 'latest_location' => $latestPoint ? [
+            //     'latitude'  => (float) $latestPoint['latitude'],
+            //     'longitude' => (float) $latestPoint['longitude'],
+            //     'timestamp' => $latestPoint['timestamp'],
+            //     'accuracy'  => (float) $latestPoint['accuracy'],
+            // ] : ($this->attendance->clock_in_location ? [
+            //     'latitude'  => $this->attendance->clock_in_location['latitude'],
+            //     'longitude' => $this->attendance->clock_in_location['longitude'],
+            //     'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
+            //     'accuracy'  => 10,
+            // ] : null),
             'attendance_constraint_id' => $this->attendance->user?->userProfessionalData?->attendanceConstraint?->id,
-
+            'attendance_constraint' => $this->attendance->appliedAttendanceConstraint && is_array($this->attendance->appliedAttendanceConstraint->constraint_snapshot)
+                ? [
+                    'id' => (string) ($this->attendance->appliedAttendanceConstraint->constraint_snapshot['id'] ?? ''),
+                    'constraint_name' => $this->attendance->appliedAttendanceConstraint->constraint_snapshot['constraint_name'] ?? '',
+                ]
+                : null,
             'professional_data' => $this->attendance->user?->userProfessionalData ? [
                 'id' => (string) $this->attendance->user->userProfessionalData->id,
                 'job_title' => $this->attendance->user->userProfessionalData->jobTitle?->name,
