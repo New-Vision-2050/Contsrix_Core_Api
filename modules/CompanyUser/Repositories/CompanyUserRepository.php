@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Repositories\AttendanceConstraintRepository;
+use Modules\Attendance\Services\AutoAttendanceService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -52,7 +53,8 @@ class CompanyUserRepository extends BaseRepository
         private CompanyUserAddressRepository             $companyUserAddressRepository,
         private ClientDetailRepository                   $clientDetailRepository,
         private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository,
-        private AttendanceConstraintRepository           $attendanceConstraintRepository
+        private AttendanceConstraintRepository           $attendanceConstraintRepository,
+        private AutoAttendanceService $autoAttendanceService
 
     )
     {
@@ -559,6 +561,7 @@ class CompanyUserRepository extends BaseRepository
         } else {
             UserProfessionalData::create($data);
         }
+        $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
     }
 
     public function setAddress(array $addressData)

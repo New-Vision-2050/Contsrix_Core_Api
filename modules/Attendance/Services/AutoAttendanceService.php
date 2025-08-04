@@ -7,6 +7,7 @@ namespace Modules\Attendance\Services;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
+use Modules\Attendance\Models\AppliedAttendanceConstraint;
 use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
 class AutoAttendanceService
@@ -33,7 +34,20 @@ class AutoAttendanceService
             'is_holiday' => $data['is_holiday'] ?? 0,
         ];
 
-        return Attendance::create($attendanceData);
+        $attendance = Attendance::create($attendanceData);
+
+        $constraint = $attendance->user->professionalData->attendanceConstraint;
+
+        if ($constraint) {
+            // Create a record in the pivot table with the required fields
+            AppliedAttendanceConstraint::create([
+                'attendance_id' => $attendance->id,
+                'constraint_snapshot' => $constraint->toArray(),
+                'company_id' => $attendance->company_id,
+            ]);
+        }
+        
+        return $attendance;
     }
 
 
