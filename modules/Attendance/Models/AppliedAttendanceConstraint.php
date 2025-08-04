@@ -15,7 +15,7 @@ class AppliedAttendanceConstraint extends Model implements Auditable
 {
     // Remove UuidTrait since this table uses auto-incrementing IDs
     use BaseFilterable;
-    use SoftDeletes;
+    // use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
     use CustomBelongsToTenant;
 
