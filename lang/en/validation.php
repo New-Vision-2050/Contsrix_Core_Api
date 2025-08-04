@@ -32,6 +32,13 @@ return [
     'job_title_id_required' => 'The job title field is required.',
     'job_code_required' => 'The job code field is required.',
 
+    'attendance-list' => 'Attendance List',
+    'attendance-list*attendance-list' => 'Attendance List',
+    'attendance-map' => 'Attendance Map',
+    'attendance-list*attendance-map' => 'Attendance Map',
+    'attendance-constraints' => 'Attendance Constraints',
+    'attendance-constraints*attendance-constraints' => 'Attendance Constraints',
+
 
     'between' => [
         'array' => 'The :attribute field must have between :min and :max items.',
