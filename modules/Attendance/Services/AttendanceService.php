@@ -93,6 +93,9 @@ class AttendanceService
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
             'status' => 'active',
+            'is_absent' =>  0,
+            'is_late' => 0,
+            'is_holiday' => 0,
             'day_status' => $day_status,
             'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
         ];
