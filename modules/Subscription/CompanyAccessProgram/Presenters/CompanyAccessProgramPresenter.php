@@ -26,7 +26,8 @@ class CompanyAccessProgramPresenter extends AbstractPresenter
             'status' => $this->companyAccessProgram->is_active ? true : false,
             "company_fields"=>$this->companyAccessProgram->companyFields,
             "company_types"=>$this->companyAccessProgram->companyTypes,
-            "countries"=>$this->companyAccessProgram->countries
+            "countries"=>$this->companyAccessProgram->countries,
+            "is_main_program"=>$this->companyAccessProgram->is_main_program,
 //            "programs"=>$this->companyAccessProgram->programs,
 //            "sub_entities"=>$this->companyAccessProgram->subEntities
         ];

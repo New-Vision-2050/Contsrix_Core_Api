@@ -19,7 +19,9 @@ class PackageWithPermissionsPresenter extends AbstractPresenter
         $permissions = app(PermissionLookupService::class)->getPermissionsForPackage($this->package->id);
         $modified = [];
         foreach ($permissions as $permission) {
-            $permission->is_active = $this->package->permissions()->where("name", $permission->name)->first() ? true : false;
+
+            $perm =  $this->package->permissions()->where("name", $permission->name)->first();
+            $permission->is_active = $perm ? true : false;
 
             // Extract the permission name parts
             $nameParts = explode('.', $permission->name);
@@ -44,7 +46,8 @@ class PackageWithPermissionsPresenter extends AbstractPresenter
                 "key" => $permission->name,
                 "type" => $parts[count($parts) - 1],
                 "name" => $translatedName,
-                "is_active" => $permission->is_active
+                "is_active" => $permission->is_active,
+                "limit"=>$perm ? $perm->pivot->limit : 0
             ];
         }
 
