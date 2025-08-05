@@ -102,7 +102,9 @@ class AttendanceService
         $Attendance = Attendance::where('start_time',$startDateTime)
         ->whereNull('clock_in_time')->first();
         if ($Attendance) {
-            $Attendance->update($attendanceData);
+
+              $Attendance->update($attendanceData);
+              return $Attendance->refresh();
         }else {
             return $this->attendanceRepository->create($attendanceData);
         }
