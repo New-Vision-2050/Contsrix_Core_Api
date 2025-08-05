@@ -497,7 +497,7 @@ class AttendanceService
             ->select([
                 'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
                 'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
-                'start_time', 'overtime_hours', 'clock_in_location', 'location_tracking' // تأكد من هذه الحقول
+                'start_time', 'overtime_hours', 'clock_in_location', 'location_tracking'
             ])
             ->with([
                 'user',
@@ -519,7 +519,7 @@ class AttendanceService
     }
 
     private function processAttendancePeriods(Collection $realAttendanceRecords)//: Collection
-    {
+  {
         $processedRecords = collect();
 
         $realAttendanceRecords
@@ -530,22 +530,21 @@ class AttendanceService
                         return Carbon::parse($item->start_time)->toDateString();
                     })
                     ->each(function ($dailyRecordsForUserAndDate, $date) use (&$processedRecords) {
-                        $hasPresence = $dailyRecordsForUserAndDate->contains(function ($record) {
+                        $representativeRecord = $dailyRecordsForUserAndDate->first(function ($record) {
                             return $record->clock_in_time !== null;
                         });
 
-                        if ($hasPresence) {
-                            $presentPeriods = $dailyRecordsForUserAndDate->filter(function ($record) {
-                                return $record->clock_in_time !== null;
-                            });
-                            $processedRecords = $processedRecords->merge($presentPeriods);
-                        } else {
-                            $processedRecords = $processedRecords->merge($dailyRecordsForUserAndDate);
+                        if (!$representativeRecord) {
+                            $representativeRecord = $dailyRecordsForUserAndDate->first();
+                        }
+
+                        if ($representativeRecord) {
+                            $processedRecords->push($representativeRecord);
                         }
                     });
             });
 
-        return $processedRecords->sortBy('start_time')->values(); // تأكد من أن الترتيب هنا يتطابق مع ما تمرره لـ paginatedAttendance
+        return $processedRecords->sortBy('start_time')->values();
     }
     /**
      * Get late arrivals with filtering and pagination
