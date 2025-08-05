@@ -26,7 +26,7 @@ class AttendanceService
     /**
      * Clock in employee
      */
-    public function clockIn(ClockInDTO $clockInDTO): Attendance
+    public function clockIn(ClockInDTO $clockInDTO)
     {
         $existingAttendance = $this->attendanceRepository->getCurrentAttendance($clockInDTO->getUserId());
 
