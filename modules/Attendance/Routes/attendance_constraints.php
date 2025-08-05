@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Attendance\Controllers\AttendanceConstraintController;
-
+use Modules\RoleAndPermission\Enums\Permission;
 /*
 |--------------------------------------------------------------------------
 | Attendance Constraints API Routes
@@ -19,15 +19,18 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
     Route::get('/', [AttendanceConstraintController::class, 'index'])
         // Temporarily commented out for development
         // // ->middleware('permission:view_attendance_constraints')
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
         ->name('attendance.constraints.index');
 
     Route::get('/list', [AttendanceConstraintController::class, 'list'])
         // Temporarily commented out for development
         // // ->middleware('permission:view_attendance_constraints')
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
         ->name('attendance.constraints.list');
 
     Route::post('/', [AttendanceConstraintController::class, 'store'])
         // ->middleware('permission:create_attendance_constraints')
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_CREATE())
         ->name('attendance.constraints.store');
     // User-specific Constraint Routes
 
@@ -37,10 +40,12 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
 
     Route::put('/{constraint}', [AttendanceConstraintController::class, 'update'])
         // ->middleware('permission:update_attendance_constraints')
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
         ->name('attendance.constraints.update');
 
     Route::delete('/{constraint}', [AttendanceConstraintController::class, 'destroy'])
         // ->middleware('permission:delete_attendance_constraints')
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_DELETE())
         ->name('attendance.constraints.destroy');
 
     // Constraint Types and Validation Routes
@@ -102,6 +107,7 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
 
     Route::get('/{constraint}', [AttendanceConstraintController::class, 'show'])
         // ->middleware('permission:view_attendance_constraints')
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
         ->name('attendance.constraints.show');
 });
 
