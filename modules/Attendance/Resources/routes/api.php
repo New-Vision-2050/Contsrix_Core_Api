@@ -7,7 +7,7 @@ use Modules\Attendance\Controllers\LeaveTypeController;
 use Modules\Attendance\Controllers\LeaveBalanceController;
 use Modules\Attendance\Controllers\AttendanceReportController;
 use Modules\Attendance\Controllers\LocationTrackingController;
-
+use Modules\RoleAndPermission\Enums\Permission;
 /*
 |--------------------------------------------------------------------------
 | API Routes - Attendance Module
@@ -47,9 +47,11 @@ Route::prefix('attendance')->group(function () {
         ->name('attendance.current-status');
 
     Route::get('history', [AttendanceController::class, 'getHistory'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.history');
 
     Route::get('summary', [AttendanceController::class, 'getSummary'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.summary');
 
     Route::get('status', [AttendanceController::class, 'getStatus'])
@@ -57,29 +59,34 @@ Route::prefix('attendance')->group(function () {
 
     // Team Attendance (for supervisors)
     Route::get('team', [AttendanceController::class, 'getTeamAttendance'])
-       // ->middleware('permission:view-team-attendance')
+       ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team');
 
     Route::get('{attendance}/team', [AttendanceController::class, 'teamAttendance'])
-       // ->middleware('permission:view-team-attendance')
+       ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team.show');
 
     Route::get('{attendance}/applied-attendance', [AttendanceController::class, 'appliedAttendanceConstraint'])
        // ->middleware('permission:view-team-attendance')
+       ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.appliedAttendanceConstraint.show');
 
     // Attendance Management (HR/Admin)
     // Route::middleware('permission:manage-attendance')->group(function () {
         Route::put('{attendanceId}', [AttendanceController::class, 'update'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_UPDATE())
             ->name('attendance.update');
 
         Route::post('{attendanceId}/approve', [AttendanceController::class, 'approve'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_UPDATE())
             ->name('attendance.approve');
 
         Route::post('{attendanceId}/reject', [AttendanceController::class, 'reject'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_UPDATE())
             ->name('attendance.reject');
 
         Route::delete('{attendanceId}', [AttendanceController::class, 'destroy'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_DELETE())
             ->name('attendance.destroy');
     // });
 });

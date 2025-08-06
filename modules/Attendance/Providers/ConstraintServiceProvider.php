@@ -18,7 +18,9 @@ use Modules\Attendance\Services\BehavioralConstraintService;
 use Modules\Attendance\Services\SecurityConstraintService;
 use Modules\Attendance\Services\ComplianceConstraintService;
 use Modules\Attendance\Services\AttendanceConstraintService;
-
+use Illuminate\Support\Facades\Event;
+use Modules\Attendance\Events\AttendanceConstraintUpdated;
+use Modules\Attendance\Listeners\LogAttendanceConstraintUpdate;
 /**
  * Service Provider for registering all constraint-related services.
  */
@@ -47,6 +49,7 @@ class ConstraintServiceProvider extends ServiceProvider
         $this->app->singleton(SecurityConstraintService::class);
         $this->app->singleton(ComplianceConstraintService::class);
         $this->app->singleton(AttendanceConstraintService::class);
+                $this->registerEventListeners();
     }
 
     /**
@@ -54,6 +57,7 @@ class ConstraintServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+                $this->registerEventListeners();
         // Any bootstrapping logic can go here
     }
 
@@ -79,5 +83,14 @@ class ConstraintServiceProvider extends ServiceProvider
             ComplianceConstraintService::class,
             AttendanceConstraintService::class,
         ];
+    }
+
+        protected function registerEventListeners(): void
+    {
+
+        Event::listen(
+            AttendanceConstraintUpdated::class,
+            LogAttendanceConstraintUpdate::class
+        );
     }
 }
