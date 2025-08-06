@@ -19,6 +19,7 @@ use Modules\RoleAndPermission\Requests\SetStatusPermissionRequest;
 use Modules\RoleAndPermission\Requests\UpdatePermissionRequest;
 use Modules\RoleAndPermission\Services\PermissionCRUDService;
 use Modules\RoleAndPermission\Services\PermissionLookupService;
+use Modules\RoleAndPermission\Presenters\PermissionWidgetsPresenter;
 use Ramsey\Uuid\Uuid;
 
 class PermissionController extends Controller
@@ -119,5 +120,14 @@ class PermissionController extends Controller
         $presenter = new PermissionPresenter($permission);
 
         return Json::item($presenter->getData(), message: $message);
+    }
+
+    public function getPermissionWidgetsData(): JsonResponse
+    {
+        $widgetsData = $this->permissionService->getPermissionWidgetsData();
+
+        return Json::item(
+            (new PermissionWidgetsPresenter($widgetsData))->getData()
+        );
     }
 }

@@ -9,6 +9,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\RoleAndPermission\Models\Permission;
+use Modules\RoleAndPermission\DTO\PermissionWidgetsDataDTO;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use function Laravel\Prompts\text;
@@ -101,5 +102,29 @@ class PermissionRepository extends BaseRepository
                 $query->orWhere('name', 'LIKE', "%.".$subEntity."%");
             }
         })->get();
+    }
+
+    /**
+     * Get permission widgets data including total, main, active, and inactive counts
+     */
+    public function getPermissionWidgetsData(): PermissionWidgetsDataDTO
+    {
+        $query = $this->model->query();
+        
+        $totalPermissions = $query->count();
+        $activePermissions = (clone $query)->where('status', 1)->count();
+        $inactivePermissions = (clone $query)->where('status', 0)->count();
+        
+        // Count main permissions (those that don't have 'DYNAMIC.' in their key)
+        $mainPermissions = (clone $query)
+            ->where('key', 'NOT LIKE', '%DYNAMIC.%')
+            ->count();
+
+        return PermissionWidgetsDataDTO::fromArray([
+            'total_permissions' => $totalPermissions,
+            'total_main_permissions' => $mainPermissions,
+            'active_permissions' => $activePermissions,
+            'inactive_permissions' => $inactivePermissions,
+        ]);
     }
 }

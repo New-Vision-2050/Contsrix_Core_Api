@@ -9,6 +9,8 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\RoleAndPermission\DTO\CreatePermissionDTO;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Repositories\PermissionRepository;
+use Modules\Subscription\CompanyAccessProgram\Models\CompanyAccessProgram;
+use Modules\RoleAndPermission\DTO\PermissionWidgetsDataDTO;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
@@ -142,6 +144,11 @@ class PermissionCRUDService
      * @param UuidInterface|string $targetCompanyId The target company ID to copy to
      * @return Collection The collection of created permission instances
      */
+    public function getPermissionWidgetsData(): PermissionWidgetsDataDTO
+    {
+        return $this->repository->getPermissionWidgetsData();
+    }
+
     public function copyPermissionsToCompany($targetCompanyId, $sourceCompanyId = null): Collection
     {
         // Convert string IDs to UuidInterface if needed

@@ -8,6 +8,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('permissions', [PermissionController::class, 'index']);//->permission(Permission::PERMISSION_LIST())
+    Route::get('permissions/widgets', [PermissionController::class, 'getPermissionWidgetsData']);//->permission(Permission::PERMISSION_LIST())
     Route::get('permissions/lookup', [PermissionController::class, 'permissionAsLookup']);
     Route::post('permissions', [PermissionController::class, 'store'])->permission(Permission::PERMISSION_CREATE());
     Route::get('permissions/{id}', [PermissionController::class, 'show'])->permission(Permission::PERMISSION_VIEW());
