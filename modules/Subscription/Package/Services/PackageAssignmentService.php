@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Subscription\Package\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use Modules\Subscription\Package\Models\Package;
 use Modules\Subscription\Package\Repositories\PackageRepository;
 use Modules\Subscription\Package\Repositories\CompanyPermissionLimitRepository;
@@ -178,6 +179,9 @@ class PackageAssignmentService
                 $role->permissions()->attach($permissionsToAdd);
             }
         }
+        
+        // Clear all cached files to ensure permission changes take effect immediately
+        Artisan::call('optimize:clear');
     }
 
     /**
