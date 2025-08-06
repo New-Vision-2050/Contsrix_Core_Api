@@ -6,6 +6,7 @@ namespace Modules\Attendance\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Attendance\Events\AttendanceConstraintUpdated;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Ramsey\Uuid\UuidInterface;
 
@@ -67,6 +68,7 @@ class AttendanceConstraintRepository extends BaseRepository
     {
         $constraint = $this->getConstraint($id);
         $constraint->update($data);
+        AttendanceConstraintUpdated::dispatch($constraint->id);
         return $constraint->fresh();
     }
 
