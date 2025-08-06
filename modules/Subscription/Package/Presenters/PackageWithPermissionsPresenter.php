@@ -47,7 +47,7 @@ class PackageWithPermissionsPresenter extends AbstractPresenter
                 "type" => $parts[count($parts) - 1],
                 "name" => $translatedName,
                 "is_active" => $permission->is_active,
-                "limit"=>$perm ? $perm->pivot->limit : 0
+                "limit"=>$perm || $perm->pivot?->limit != null ? $perm->pivot->limit : 0
             ];
         }
 
