@@ -61,7 +61,13 @@ class PermissionCRUDService
                 for ($i = count($nameParts) - 1; $i >= 1; $i--) {
                     if ($i == 1 && str_contains($nameParts[$i], "*")) {
                         $resources = explode('*', $nameParts[$i]);
-                        $translatedName .= " " . $resources[0];
+                        if(Uuid::isValid($resources[1])){
+                            $translatedName .= " " . $resources[0];
+
+                        }
+                        else{
+                        $translatedName .= " " . __('names.' . $resources[0]);
+                        }
                         break;
                     }
                     $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);

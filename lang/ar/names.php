@@ -71,7 +71,7 @@ return [
     'attendance-constraints*attendance-constraints' => 'محددات الحضور',
     'attendance-map' => 'خريطة الحضور',
     'attendance-list*attendance-map' => 'خريطة الحضور',
-    
+
     // Settings module
     // SubEntity Module
     'sub-entity' => 'كيان فرعي',
@@ -218,4 +218,6 @@ return [
     "address-information" => "معلومات العنوان",
     "about-me-information" => "معلومات عني",
     "border-number-information" => "معلومات رقم الحدود",
+    "program-and-packages" => "برامج وباقات",
+
 ];

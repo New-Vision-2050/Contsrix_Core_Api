@@ -7,12 +7,12 @@ return [
         // ================================================================================================
 
         // User module permissions
-        'USER_VIEW' => 'users.users-list.view',
-        'USER_LIST' => 'users.users-list.list',
-        'USER_CREATE' => 'users.users-list.create',
-        'USER_UPDATE' => 'users.users-list.update',
-        'USER_DELETE' => 'users.users-list.delete',
-        'USER_EXPORT' => 'users.users-list.export',
+        'USER_VIEW' => 'users.user-list*user-list.view',
+        'USER_LIST' => 'users.user-list*user-list.list',
+        'USER_CREATE' => 'users.user-list*user-list.create',
+        'USER_UPDATE' => 'users.user-list*user-list.update',
+        'USER_DELETE' => 'users.user-list*user-list.delete',
+        'USER_EXPORT' => 'users.user-list*user-list.export',
 
 //        'CLIENT_VIEW' => 'users.client.view',
 //        'CLIENT_LIST' => 'users.client.list',
