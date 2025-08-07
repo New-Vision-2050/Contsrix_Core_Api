@@ -82,17 +82,30 @@ class CompanyAccessProgramCRUDService
         $activeProgramIds = $companyAccessProgram->programs->pluck('program_id')->unique()->toArray();
         $activeSubEntityIds = $companyAccessProgram->subEntities->pluck('sub_entity_id')->unique()->toArray();
 
-        // Get the full hierarchy of all permissions
-        $fullHierarchy = $this->permissionHierarchyService->excludePrograms(["subscription","users","companies","program-management","permissions"])->getDetailedPermissionsHierarchy();
+        // Get the full hierarchy of all permissions, excluding some system programs
+        $fullHierarchy = $this->permissionHierarchyService->excludePrograms(["subscription", "users", "companies", "program-management", "permissions"])->getDetailedPermissionsHierarchy();
 
-        // Instead of filtering, we will add an 'is_active' flag to each item.
-        foreach ($fullHierarchy as &$program) {
-            foreach ($program['sub_entities'] as &$subEntity) {
-                $subEntity['is_active'] = in_array($subEntity['id'], $activeSubEntityIds);
+        $filteredHierarchy = [];
+
+        foreach ($fullHierarchy as $program) {
+            // Keep only the programs that are active for this CompanyAccessProgram
+            if (in_array($program['id'], $activeProgramIds)) {
+                $filteredSubEntities = [];
+                foreach ($program['sub_entities'] as $subEntity) {
+                    // Keep only the sub-entities that are active for this CompanyAccessProgram
+                    if (in_array($subEntity['id'], $activeSubEntityIds)) {
+                        $filteredSubEntities[] = $subEntity;
+                    }
+                }
+                // Only include the program if it has active sub-entities
+                if (!empty($filteredSubEntities)) {
+                    $program['sub_entities'] = $filteredSubEntities;
+                    $filteredHierarchy[] = $program;
+                }
             }
         }
 
-        return $fullHierarchy;
+        return $filteredHierarchy;
     }
 
 
