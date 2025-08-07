@@ -237,7 +237,7 @@ class SubEntityObserver
     protected function assignPermissionsToSuperAdminRole(SubEntity $subEntity, array $permissions): void
     {
         $superAdminRole = \Modules\RoleAndPermission\Models\Role::where('name', 'super-admin')
-            ->where('company_id', tenant('company_id'))
+            ->where('company_id', tenant('id'))
             ->first();
 
         if (!$superAdminRole) {
@@ -269,6 +269,7 @@ class SubEntityObserver
                 'sub_entity' => $subEntity->id
             ]);
         }
+        \Artisan::call("optimize:clear");
     }
 
     /**
