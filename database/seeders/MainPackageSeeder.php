@@ -166,16 +166,16 @@ class MainPackageSeeder extends Seeder
             $package->companyFields()->sync($companyFields);
 
             // 4. Assign the package to the first company
-            $company =tenant("id")? Company::find(tenant("id")): Company::first();
-            if ($company) {
-                $company->packages()->syncWithoutDetaching([
-                    $package->id => [
-                        'subscribed_at' => now(),
-                        'expires_at' => now()->addYear(),
-                        'is_active' => true,
-                    ]
-                ]);
-            }
+//            $company =tenant("id")? Company::find(tenant("id")): Company::first();
+//            if ($company) {
+//                $company->packages()->syncWithoutDetaching([
+//                    $package->id => [
+//                        'subscribed_at' => now(),
+//                        'expires_at' => now()->addYear(),
+//                        'is_active' => true,
+//                    ]
+//                ]);
+//            }
         });
     }
 }

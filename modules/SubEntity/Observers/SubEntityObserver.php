@@ -9,15 +9,28 @@ use Modules\SubEntity\Models\SubEntity;
 use Modules\RoleAndPermission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Subscription\Package\Repositories\PackageRepository;
+use Modules\Subscription\Package\Services\PackageAssignmentService;
 
 class SubEntityObserver
 {
-    /**
-     * Handle the SubEntity "created" event.
-     */
+    public function __construct(
+        private PackageAssignmentService $packageAssignmentService,
+        private PackageRepository $packageRepository
+    ) {
+    }
+
     public function created(SubEntity $subEntity): void
     {
-        $this->createDefaultPermissions($subEntity);
+        DB::transaction(function () use ($subEntity) {
+            $this->createDefaultPermissions($subEntity);
+
+            // Add this block to trigger recalculation
+            $mainPackage = $this->packageRepository->findByName('Main Package');
+            if ($mainPackage) {
+                $this->packageAssignmentService->recalculate($mainPackage);
+            }
+        });
     }
 
     /**
@@ -38,8 +51,16 @@ class SubEntityObserver
      */
     public function deleting(SubEntity $subEntity): void
     {
-        // Delete permissions and remove from packages/roles when SubEntity is deleted
-        $this->deletePermissionsAndCleanup($subEntity);
+        DB::transaction(function () use ($subEntity) {
+            // Add this block to trigger recalculation BEFORE deleting
+            $mainPackage = $this->packageRepository->findByName('Main Package');
+            if ($mainPackage) {
+                $this->packageAssignmentService->recalculate($mainPackage);
+            }
+
+            // The original cleanup logic
+            $this->deletePermissionsAndCleanup($subEntity);
+        });
     }
 
     /**
@@ -197,6 +218,19 @@ class SubEntityObserver
             Log::warning('Main Package not found for auto-assignment', [
                 'sub_entity' => $subEntity->id
             ]);
+            return;
+        }
+
+        $excludedPermissionPatterns = [
+            'companies',
+            'users',
+            'subscription',
+            'program-management',
+            'permissions'
+        ];
+
+        // If the main program's slug is in the exclusion list, do not assign any of its permissions.
+        if ($subEntity->mainProgram && in_array($subEntity->mainProgram->slug, $excludedPermissionPatterns)) {
             return;
         }
 

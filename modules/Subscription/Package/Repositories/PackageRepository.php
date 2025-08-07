@@ -25,7 +25,10 @@ class PackageRepository extends BaseRepository
     {
         parent::__construct($model);
     }
-
+    public function findByName(string $name): ?Package
+    {
+        return $this->model->where('name', $name)->first();
+    }
     public function getPackageList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
@@ -63,13 +66,13 @@ class PackageRepository extends BaseRepository
     public function updatePackage(UpdatePackageDTO $updatePackageDTO): Package
     {
         $package = $this->findOneOrFail($updatePackageDTO->packageId);
-        
+
         $package->update($updatePackageDTO->toArray());
 
         // Sync company fields
         $package->companyFields()->sync($updatePackageDTO->companyFields);
 
-        // Sync company types  
+        // Sync company types
         $package->companyTypes()->sync($updatePackageDTO->companyTypes);
 
         // Sync countries
