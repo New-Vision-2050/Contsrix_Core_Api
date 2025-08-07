@@ -6,6 +6,7 @@ namespace Modules\RoleAndPermission\Services;
 
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Repositories\PermissionRepository;
 use Modules\Subscription\CompanyAccessProgram\Repositories\CompanyAccessProgramRepository;
 use Modules\Subscription\Package\Models\Package;
@@ -29,6 +30,10 @@ class PermissionLookupService
 
         if (!$company) {
             return collect();
+        }
+        if($company->is_central_company)
+        {
+            return Permission::all();
         }
 
         $company->load(['packages' => function ($query) {
