@@ -110,11 +110,11 @@ class PermissionRepository extends BaseRepository
     public function getPermissionWidgetsData(): PermissionWidgetsDataDTO
     {
         $query = $this->model->query();
-        
+
         $totalPermissions = $query->count();
         $activePermissions = (clone $query)->where('status', 1)->count();
         $inactivePermissions = (clone $query)->where('status', 0)->count();
-        
+
         // Count main permissions (those that don't have 'DYNAMIC.' in their key)
         $mainPermissions = (clone $query)
             ->where('key', 'NOT LIKE', '%DYNAMIC.%')
