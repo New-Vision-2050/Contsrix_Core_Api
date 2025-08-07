@@ -20,7 +20,7 @@ class RoleWithPermissionPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        $permissions =$this->role->permissions;
+        $permissions =app(PermissionLookupService::class)->getPermissionsForCompany();
         $modified = [];
         foreach ($permissions as $permission) {
             $permission->is_active = $this->role->permissions()->where("name", $permission->name)->first() ? true : false;
