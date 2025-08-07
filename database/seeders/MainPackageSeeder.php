@@ -159,6 +159,11 @@ class MainPackageSeeder extends Seeder
 
             $package->permissions()->sync($permissions);
 
+            $package->companyTypes()->sync($companyTypes);
+
+
+            $package->companyFields()->sync($companyFields);
+
             // 4. Assign the package to the first company
             $company =tenant("id")? Company::find(tenant("id")): Company::first();
             if ($company) {
