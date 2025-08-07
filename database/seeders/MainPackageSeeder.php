@@ -57,6 +57,7 @@ class MainPackageSeeder extends Seeder
                 'users',
                 'subscription',
                 "program-management",
+                "permissions"
             ];
 
             // Get all permissions and extract programs/sub-entities from permission names
