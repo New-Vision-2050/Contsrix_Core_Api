@@ -109,9 +109,16 @@ class PermissionRepository extends BaseRepository
      */
     public function getPermissionWidgetsData(): PermissionWidgetsDataDTO
     {
-        $query = $this->model->query();
+        $packagesId = $this->companyRepository->getCompany(Uuid::fromString(tenant("id")))->packages()->pluck('id')->toArray();
+        if (tenant('is_central_company')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model->filter(request()->all())->whereHas('packages', function ($q) use ($packagesId) {
+                $q->whereIn('packages.id', $packagesId);
+            });
+        }
 
-        $totalPermissions = $query->count();
+        $totalPermissions = (clone $query)->count();
         $activePermissions = (clone $query)->where('status', 1)->count();
         $inactivePermissions = (clone $query)->where('status', 0)->count();
 
