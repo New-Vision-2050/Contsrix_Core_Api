@@ -219,5 +219,7 @@ return [
     "about-me-information" => "معلومات عني",
     "border-number-information" => "معلومات رقم الحدود",
     "program-and-packages" => "برامج وباقات",
+    "user-list"=>"قائمة المستخدمين",
+
 
 ];
