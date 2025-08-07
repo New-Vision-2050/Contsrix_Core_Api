@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Observers;
 
+use Illuminate\Support\Facades\Artisan;
 use Modules\SubEntity\Models\SubEntity;
 use Modules\RoleAndPermission\Models\Permission;
 use Illuminate\Support\Facades\DB;
@@ -322,5 +323,7 @@ class SubEntityObserver
                 'sub_entity' => $subEntity->id
             ]);
         }
+
+        Artisan::call("optimize:clear");
     }
 }
