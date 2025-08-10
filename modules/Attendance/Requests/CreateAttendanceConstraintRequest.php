@@ -34,14 +34,17 @@ class CreateAttendanceConstraintRequest extends FormRequest
             'department_ids.*' => ['exists:management_hierarchies,id'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['exists:management_hierarchies,id'],
+
+            // Make branch_locations nullable here, its requirement will be conditional in after() validator
             'branch_locations' => ['nullable', 'array'],
-            'branch_locations.*' => ['array'],
+            // These rules will validate format if branch_locations is present
             'branch_locations.*.name' => ['required_with:branch_locations.*', 'string', 'max:255'],
-            'branch_locations.*.branch_id' => ['required_with:branch_locations.*', 'string', 'max:50'],
+            'branch_locations.*.branch_id' => ['required_with:branch_locations.*', 'string', 'max:50'], // Assuming branch_id refers to branch_ids
             'branch_locations.*.address' => ['required_with:branch_locations.*', 'string', 'max:500'],
             'branch_locations.*.latitude' => ['required_with:branch_locations.*', 'numeric', 'between:-90,90'],
             'branch_locations.*.longitude' => ['required_with:branch_locations.*', 'numeric', 'between:-180,180'],
             'branch_locations.*.radius' => ['required_with:branch_locations.*', 'integer', 'min:1', 'max:10000'],
+
             'constraint_type' => [
                 'required',
                 'string',
@@ -65,11 +68,18 @@ class CreateAttendanceConstraintRequest extends FormRequest
     {
         return [
             'constraint_type.in' => 'The selected constraint type is invalid.',
-            'constraint_config.required' => 'Constraint configuration is required.',
             'start_date.after_or_equal' => 'Start date must be today or later.',
             'end_date.after' => 'End date must be after start date.',
             'priority.min' => 'Priority must be at least 1.',
             'priority.max' => 'Priority cannot exceed 10.',
+            'constraint_config.time_rules.weekly_schedule.required' => 'The weekly schedule is required for multiple periods configuration.',
+            'branch_locations.required_when_location_enabled' => 'Branch locations are required when location attendance type is enabled.',
+            'branch_locations.*.name.required_with' => 'Branch location name is required.',
+            'branch_locations.*.branch_id.required_with' => 'Branch location ID is required.',
+            'branch_locations.*.address.required_with' => 'Branch location address is required.',
+            'branch_locations.*.latitude.required_with' => 'Branch location latitude is required.',
+            'branch_locations.*.longitude.required_with' => 'Branch location longitude is required.',
+            'branch_locations.*.radius.required_with' => 'Branch location radius is required and must be a positive integer.',
         ];
     }
 
@@ -89,30 +99,25 @@ class CreateAttendanceConstraintRequest extends FormRequest
     protected function validateConstraintConfig($validator): void
     {
         $type = $this->input('constraint_type');
-        $name = $this->input('constraint_name');
+        // $name = $this->input('constraint_name');
         $config = $this->input('constraint_config', []);
 
-        switch ($type) {
-            case AttendanceConstraint::TYPE_LOCATION:
-                $this->validateLocationConfig($validator, $name, $config);
-                break;
 
-            case AttendanceConstraint::TYPE_TIME:
-                $this->validateTimeConfig($validator, $name, $config);
-                break;
+        // This type handles 'allowed_zones' or 'allowed_ips' directly within constraint_config
+        // $this->validateLocationConfig($validator, $name, $config);
 
-            case AttendanceConstraint::TYPE_DEVICE:
-                $this->validateDeviceConfig($validator, $name, $config);
-                break;
+        // This type handles specific time rules like shift enforcement or break limits
+        $this->validateTimeConfig($validator, $config);
 
-            case AttendanceConstraint::TYPE_BEHAVIORAL:
-                $this->validateBehavioralConfig($validator, $name, $config);
-                break;
-        }
+
+        $this->validateRegularTypeConfig($validator, $config);
+
     }
 
+
     /**
-     * Validate location constraint configuration.
+     * Validate location constraint configuration (for TYPE_LOCATION).
+     * This method expects $config to be the direct content of 'constraint_config'.
      */
     protected function validateLocationConfig($validator, string $name, array $config): void
     {
@@ -145,96 +150,120 @@ class CreateAttendanceConstraintRequest extends FormRequest
     }
 
     /**
-     * Validate time constraint configuration.
+     * Validate time constraint configuration (for TYPE_TIME).
+     * This method expects $config to be the direct content of 'constraint_config'.
      */
-    protected function validateTimeConfig($validator, string $name, array $config): void
+    protected function validateTimeConfig($validator, array $config): void
     {
-        switch ($name) {
-            case AttendanceConstraint::TIME_SHIFT_ENFORCEMENT:
-                if (!isset($config['shift_start_time']) || !isset($config['shift_end_time'])) {
-                    $validator->errors()->add('constraint_config', 'Shift start and end times are required.');
-                }
-                break;
+                // The actual periods config is nested under 'time_rules' in your example JSON structure
+            if (!isset($config['time_rules']) || !is_array($config['time_rules'])) {
+                $validator->errors()->add('constraint_config.time_rules', 'Time rules configuration is missing or invalid for multiple periods.');
+                return;
+            }
+            // Pass the specific time_rules config to the validation function
+            $this->validateMultiplePeriodsConfig($validator, $config['time_rules']);
+    }
 
-            case AttendanceConstraint::TIME_BREAK_LIMITS:
-                if (!isset($config['max_break_duration']) || !is_numeric($config['max_break_duration'])) {
-                    $validator->errors()->add('constraint_config.max_break_duration', 'Maximum break duration is required and must be numeric.');
-                }
-                break;
 
-            case AttendanceConstraint::TIME_MULTIPLE_PERIODS:
-                $this->validateMultiplePeriodsConfig($validator, $config);
-                break;
+
+    /**
+     * Validate regular type configuration (which might contain multiple rules).
+     */
+    protected function validateRegularTypeConfig($validator, array $config): void
+    {
+        // 1. Validate default_location
+        if (!isset($config['default_location'])) {
+            $validator->errors()->add('constraint_config.default_location', 'Default location setting is required for regular constraint type.');
         }
+
+        // 2. Validate type_attendance structure and options
+        if (!isset($config['type_attendance']) || !is_array($config['type_attendance'])) {
+             $validator->errors()->add('constraint_config.type_attendance', 'Attendance type configuration is required for regular constraint type.');
+             // If type_attendance is missing or malformed, stop further related checks
+             return;
+        }
+
+        $locationEnabled = $config['type_attendance']['location'] ?? false;
+        $fingerprintEnabled = $config['type_attendance']['fingerprint'] ?? false;
+
+        // Ensure at least one attendance type is enabled
+        if (!$locationEnabled && !$fingerprintEnabled) {
+            $validator->errors()->add('constraint_config.type_attendance', 'At least one attendance type (location or fingerprint) must be enabled.');
+        }
+
+        // 3. Conditionally validate branch_locations if location attendance is enabled
+        if ($locationEnabled) {
+            $this->validateBranchLocations($validator);
+        }
+
+        // 4. Validate time_rules if subtype is multiple_periods
+        if (isset($config['time_rules']) && is_array($config['time_rules']) && ($config['time_rules']['subtype'] ?? null) === 'multiple_periods') {
+            $this->validateMultiplePeriodsConfig($validator, $config['time_rules']);
+        }
+
+        // Add other validation for other rules that might be under 'regular' type if any
     }
 
     /**
-     * Validate device constraint configuration.
+     * Validate branch_locations array (called when location attendance is enabled).
+     * This method accesses branch_locations from the top-level request input.
      */
-    protected function validateDeviceConfig($validator, string $name, array $config): void
+    protected function validateBranchLocations($validator): void
     {
-        switch ($name) {
-            case AttendanceConstraint::DEVICE_AUTHORIZED_ONLY:
-                if (!isset($config['authorized_devices']) || !is_array($config['authorized_devices'])) {
-                    $validator->errors()->add('constraint_config.authorized_devices', 'Authorized devices list is required.');
-                }
-                break;
-        }
-    }
+        $branchLocations = $this->input('branch_locations');
 
-    /**
-     * Validate behavioral constraint configuration.
-     */
-    protected function validateBehavioralConfig($validator, string $name, array $config): void
-    {
-        switch ($name) {
-            case AttendanceConstraint::BEHAVIORAL_CONSECUTIVE_LIMIT:
-                if (!isset($config['max_consecutive_days']) || !is_numeric($config['max_consecutive_days']) || $config['max_consecutive_days'] <= 0) {
-                    $validator->errors()->add('constraint_config.max_consecutive_days', 'Maximum consecutive days is required and must be a positive number.');
-                }
-                break;
-
-            case AttendanceConstraint::BEHAVIORAL_WEEKLY_HOURS:
-                if (!isset($config['max_weekly_hours']) || !is_numeric($config['max_weekly_hours']) || $config['max_weekly_hours'] <= 0) {
-                    $validator->errors()->add('constraint_config.max_weekly_hours', 'Maximum weekly hours is required and must be a positive number.');
-                }
-                break;
-        }
-    }
-
-    /**
-     * Validate multiple periods constraint configuration.
-     */
-    protected function validateMultiplePeriodsConfig($validator, array $config): void
-    {
-        try {
-            // Use the data class for strict validation
-            MultiplePeriodsConfig::fromArray($config);
-        } catch (InvalidArgumentException $e) {
-            $validator->errors()->add('constraint_config', 'Multiple periods configuration error: ' . $e->getMessage());
+        if (empty($branchLocations)) {
+            $validator->errors()->add('branch_locations', 'Branch locations are required when location attendance type is enabled.');
+            // No need to check individual items if the array itself is missing/empty
             return;
         }
 
-        // Additional business logic validation can be added here
-        $multiplePeriodsConfig = MultiplePeriodsConfig::fromArray($config);
-
-        // Validate reasonable work hours
-        $weeklyHours = $multiplePeriodsConfig->getTotalWeeklyWorkHours();
-        if ($weeklyHours > 80) {
-            $validator->errors()->add('constraint_config', "Weekly work hours ({$weeklyHours}) exceed reasonable limits (80 hours).");
+        if (!is_array($branchLocations)) {
+            $validator->errors()->add('branch_locations', 'Branch locations must be an array.');
+            return;
         }
+    }
 
-        // Validate at least one enabled day
-        if (count($multiplePeriodsConfig->getEnabledDays()) === 0) {
-            $validator->errors()->add('constraint_config', 'At least one day must be enabled in the weekly schedule.');
+
+    /**
+     * Validate multiple periods constraint configuration.
+     * This function now receives the content of 'time_rules' from the request.
+     */
+    protected function validateMultiplePeriodsConfig($validator, array $config): void
+    {
+        // Ensure that weekly_schedule is present as it's critical
+        if (!isset($config['weekly_schedule']) || !is_array($config['weekly_schedule'])) {
+            $validator->errors()->add('constraint_config.time_rules.weekly_schedule', 'The weekly schedule configuration is required for multiple periods.');
+            return;
         }
+        try {
+            // Use the data class for strict parsing and initial validation
+            $multiplePeriodsConfig = MultiplePeriodsConfig::fromArray($config);
+            // Additional business logic validation
+            $weeklyHours = $multiplePeriodsConfig->getTotalWeeklyWorkHours();
+            if ($weeklyHours > (24 * 7)) { // Total possible hours in a week
+                $validator->errors()->add('constraint_config.time_rules.weekly_schedule', "Weekly work hours ({$weeklyHours}) exceed the total hours in a week. Please check your periods.");
+            }
+            if ($weeklyHours < 0) { // Should not happen with current logic, but good as a safeguard
+                $validator->errors()->add('constraint_config.time_rules.weekly_schedule', "Calculated weekly work hours are negative. Please check your periods.");
+            }
 
-        // Check for potential scheduling conflicts with cross-day periods
-        if ($multiplePeriodsConfig->hasCrossDayPeriods()) {
+            // Validate at least one enabled day
+            if (count($multiplePeriodsConfig->getEnabledDays()) === 0) {
+                $validator->errors()->add('constraint_config.time_rules.weekly_schedule', 'At least one day must be enabled in the weekly schedule.');
+            }
+
+            // Perform the overlap validation using the WeeklySchedule's validate method
             $validationIssues = $multiplePeriodsConfig->weeklySchedule->validate();
             foreach ($validationIssues as $issue) {
-                $validator->errors()->add('constraint_config', $issue);
+                // Add errors to the validator with a specific key for clarity
+                $validator->errors()->add('constraint_config.time_rules.weekly_schedule', $issue);
             }
+
+        } catch (InvalidArgumentException $e) {
+            // Catch exceptions from data class parsing (e.g., malformed time strings)
+            $validator->errors()->add('constraint_config.time_rules', 'Multiple periods configuration error: ' . $e->getMessage());
+            return;
         }
     }
 
