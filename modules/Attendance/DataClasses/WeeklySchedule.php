@@ -91,7 +91,6 @@ class WeeklySchedule
     public function getDaySchedule(string $day): DaySchedule
     {
         $normalizedDay = strtolower(trim($day));
-        // This should always return a DaySchedule due to validateAndSetSchedule ensuring all days exist
         return $this->schedule[$normalizedDay];
     }
 
@@ -261,6 +260,7 @@ class WeeklySchedule
             $spilloverPeriodsFromPreviousDay = $daySchedule->getPeriodsCrossingToNextDay(ucfirst($dayName));
         }
 
+        /*
         foreach ($this->schedule as $day => $daySchedule) {
             if ($daySchedule->hasCrossDayPeriods()) {
                 $nextDay = $this->getNextDay($day);
@@ -272,6 +272,8 @@ class WeeklySchedule
                 }
             }
         }
+        */
+        // ---------------------------------------------------------------------------------
 
         return $issues;
     }
