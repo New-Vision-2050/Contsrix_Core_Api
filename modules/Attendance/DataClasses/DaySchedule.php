@@ -1,22 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Modules\Attendance\DataClasses;
 
 use InvalidArgumentException;
 
 /**
- * Data class representing a day's schedule with multiple periods
+ * Data class representing the schedule for a single day
  */
 class DaySchedule
 {
+    public readonly bool $enabled;
     /** @var TimePeriod[] */
     public readonly array $periods;
+    public readonly array $early_clock_in_rules;
+    public readonly array $lateness_rules;
+    public readonly float $total_work_hours;
 
+    /**
+     * @param TimePeriod[] $periods
+     */
     public function __construct(
-        public readonly bool $enabled,
-        array $periods = []
+        bool $enabled,
+        array $periods,
+        array $earlyClockInRules = [],
+        array $latenessRules = []
     ) {
+        $this->enabled = $enabled;
         $this->periods = $this->validateAndSetPeriods($periods);
+        $this->early_clock_in_rules = $earlyClockInRules;
+        $this->lateness_rules = $latenessRules;
+        $this->total_work_hours = $this->calculateTotalWorkHours();
     }
 
     /**
@@ -24,198 +39,233 @@ class DaySchedule
      */
     public static function fromArray(array $data): self
     {
-        $enabled = $data['enabled'] ?? false;
-        $periodsData = $data['periods'] ?? [];
+        $periods = array_map(
+            function(array $p_data) {
+                if (!isset($p_data['start_time'], $p_data['end_time'])) {
+                    throw new InvalidArgumentException("Period data must contain 'start_time' and 'end_time'.");
+                }
+                return TimePeriod::fromArray([
+                    'startTime' => $p_data['start_time'],
+                    'endTime' => $p_data['end_time'],
+                    'extends_to_next_day' => $p_data['extends_to_next_day'] ?? false,
+                    'gracePeriodBefore' => $p_data['grace_period_before'] ?? 0,
+                    'gracePeriodAfter' => $p_data['grace_period_after'] ?? 0,
+                ]);
+            },
+            $data['periods'] ?? []
+        );
 
-        $periods = [];
-        foreach ($periodsData as $periodData) {
-            $periods[] = TimePeriod::fromArray($periodData);
-        }
-
-        return new self($enabled, $periods);
+        return new self(
+            $data['enabled'] ?? false,
+            $periods,
+            $data['early_clock_in_rules'] ?? [],
+            $data['lateness_rules'] ?? []
+        );
     }
 
-    /**
-     * Convert to array
-     */
     public function toArray(): array
     {
         return [
             'enabled' => $this->enabled,
-            'periods' => array_map(fn(TimePeriod $period) => $period->toArray(), $this->periods),
+            'periods' => array_map(fn($p) => $p->toArray(), $this->periods),
+            'early_clock_in_rules' => $this->early_clock_in_rules,
+            'lateness_rules' => $this->lateness_rules,
+            'total_work_hours' => $this->total_work_hours,
         ];
     }
 
-    /**
-     * Validate and set periods
-     */
     private function validateAndSetPeriods(array $periods): array
     {
-        // If day is disabled, periods should be empty
-        if (!$this->enabled) {
-            if (!empty($periods)) {
-                throw new InvalidArgumentException('Disabled days cannot have periods');
-            }
-            return [];
-        }
-
-        // If day is enabled, must have at least one period
-        if (empty($periods)) {
-            throw new InvalidArgumentException('Enabled days must have at least one period');
-        }
-
-        // Validate each period is a TimePeriod instance
-        $validatedPeriods = [];
+        $processedPeriods = [];
         foreach ($periods as $period) {
             if (!$period instanceof TimePeriod) {
-                throw new InvalidArgumentException('All periods must be TimePeriod instances');
+                throw new InvalidArgumentException('Each period must be a TimePeriod instance.');
             }
-            $validatedPeriods[] = $period;
-        }
+            $startMinutes = $period->timeToMinutes($period->startTime);
+            $endMinutes = $period->timeToMinutes($period->endTime);
 
-        // Check for duplicate period names
-        $periodNames = array_map(fn(TimePeriod $p) => $p->name, $validatedPeriods);
-        if (count($periodNames) !== count(array_unique($periodNames))) {
-            throw new InvalidArgumentException('Period names must be unique within a day');
-        }
-
-        // Check for overlapping periods (for same-day periods only)
-        $this->validateNoOverlaps($validatedPeriods);
-
-        return $validatedPeriods;
-    }
-
-    /**
-     * Validate that periods don't overlap
-     */
-    private function validateNoOverlaps(array $periods): void
-    {
-        $sameDayPeriods = array_filter($periods, fn(TimePeriod $p) => !$p->spansNextDay);
-        
-        for ($i = 0; $i < count($sameDayPeriods); $i++) {
-            for ($j = $i + 1; $j < count($sameDayPeriods); $j++) {
-                if ($sameDayPeriods[$i]->overlapsWith($sameDayPeriods[$j])) {
-                    throw new InvalidArgumentException(
-                        "Periods '{$sameDayPeriods[$i]->name}' and '{$sameDayPeriods[$j]->name}' overlap"
-                    );
-                }
+            $adjustedEndMinutes = $endMinutes;
+            if ($period->extends_to_next_day) {
+                 $adjustedEndMinutes += 24 * 60;
+            } elseif ($endMinutes <= $startMinutes) {
+                throw new InvalidArgumentException("Period '{$period->startTime}-{$period->endTime}' is invalid. End time must be after start time or marked as extends_to_next_day.");
             }
+
+            if ($adjustedEndMinutes <= $startMinutes) {
+                 throw new InvalidArgumentException("Period '{$period->startTime}-{$period->endTime}' has zero or negative duration.");
+            }
+
+            $processedPeriods[] = [
+                'start' => $startMinutes,
+                'end' => $adjustedEndMinutes,
+                'original_period' => $period,
+            ];
         }
-    }
 
-    /**
-     * Add a period to this day schedule
-     */
-    public function addPeriod(TimePeriod $period): self
-    {
-        if (!$this->enabled) {
-            throw new InvalidArgumentException('Cannot add periods to disabled days');
-        }
+        usort($processedPeriods, fn($a, $b) => $a['start'] <=> $b['start']);
 
-        $newPeriods = [...$this->periods, $period];
-        return new self($this->enabled, $newPeriods);
-    }
+        for ($i = 0; $i < count($processedPeriods) - 1; $i++) {
+            $current = $processedPeriods[$i];
+            $next = $processedPeriods[$i + 1];
 
-    /**
-     * Remove a period by name
-     */
-    public function removePeriod(string $periodName): self
-    {
-        $newPeriods = array_filter(
-            $this->periods,
-            fn(TimePeriod $p) => $p->name !== $periodName
-        );
-
-        return new self($this->enabled, array_values($newPeriods));
-    }
-
-    /**
-     * Get period by name
-     */
-    public function getPeriod(string $name): ?TimePeriod
-    {
-        foreach ($this->periods as $period) {
-            if ($period->name === $name) {
-                return $period;
+            if ($current['end'] > $next['start']) {
+                throw new InvalidArgumentException(
+                    "Periods overlap within this day: '{$current['original_period']->startTime}-{$current['original_period']->endTime}' overlaps with '{$next['original_period']->startTime}-{$next['original_period']->endTime}'."
+                );
             }
         }
-        return null;
+        return $periods;
     }
 
-    /**
-     * Get all period names
-     */
-    public function getPeriodNames(): array
+    public static function enabled(TimePeriod ...$periods): self
     {
-        return array_map(fn(TimePeriod $p) => $p->name, $this->periods);
+        return new self(true, $periods);
     }
 
-    /**
-     * Get total number of periods
-     */
+    public static function disabled(): self
+    {
+        return new self(false, []);
+    }
+
     public function getPeriodCount(): int
     {
         return count($this->periods);
     }
 
-    /**
-     * Check if day has any cross-day periods
-     */
+    public function getPeriods(): array
+    {
+        return $this->periods;
+    }
+
+    public function getPeriodNames(): array
+    {
+        return array_map(fn(TimePeriod $p) => (string)$p, $this->periods);
+    }
+
     public function hasCrossDayPeriods(): bool
     {
         foreach ($this->periods as $period) {
-            if ($period->spansNextDay) {
+            if ($period->extends_to_next_day) {
                 return true;
             }
         }
         return false;
     }
 
-    /**
-     * Get total work time in minutes (excluding cross-day periods)
-     */
     public function getTotalWorkMinutes(): int
     {
-        $total = 0;
+        $totalMinutes = 0;
         foreach ($this->periods as $period) {
-            $duration = $period->getDurationMinutes();
-            if ($duration !== null) {
-                $total += $duration;
+            $totalMinutes += $period->getDurationMinutes();
+        }
+        return $totalMinutes;
+    }
+
+    private function calculateTotalWorkHours(): float
+    {
+        return $this->getTotalWorkMinutes() / 60;
+    }
+
+    public function validate(string $dayName, array $previousDaySpilloverPeriods = []): array
+    {
+        $errors = [];
+        $processedPeriods = [];
+
+        foreach ($previousDaySpilloverPeriods as $spillover) {
+            $processedPeriods[] = [
+                'start' => $spillover['start_minutes'],
+                'end' => $spillover['end_minutes'],
+                'original_context' => [
+                    'type' => 'spillover',
+                    'original_day' => $spillover['original_day'],
+                    'original_period_start' => $spillover['original_period_start'],
+                    'original_period_end' => $spillover['original_period_end']
+                ]
+            ];
+        }
+
+        foreach ($this->periods as $period) {
+            $startMinutes = $period->timeToMinutes($period->startTime);
+            $endMinutes = $period->timeToMinutes($period->endTime);
+
+            $adjustedEndMinutes = $endMinutes;
+            if ($period->extends_to_next_day) {
+                 $adjustedEndMinutes += 24 * 60;
+            }
+
+            if ($adjustedEndMinutes <= $startMinutes) {
+                $errors[] = "Period '{$period->startTime}-{$period->endTime}' for {$dayName} has an invalid duration (start time is not before end time).";
+                continue;
+            }
+
+            $processedPeriods[] = [
+                'start' => $startMinutes,
+                'end' => $adjustedEndMinutes,
+                'original_context' => [
+                    'type' => 'current_day',
+                    'day_name' => $dayName,
+                    'original_period_start' => $period->startTime,
+                    'original_period_end' => $period->endTime
+                ]
+            ];
+        }
+
+        if (empty($processedPeriods)) {
+            return $errors;
+        }
+
+        usort($processedPeriods, fn($a, $b) => $a['start'] <=> $b['start']);
+
+        for ($i = 0; $i < count($processedPeriods) - 1; $i++) {
+            $currentPeriod = $processedPeriods[$i];
+            $nextPeriod = $processedPeriods[$i + 1];
+
+            if ($currentPeriod['end'] > $nextPeriod['start']) {
+                $errorMsg = "Periods overlap for {$dayName}. ";
+
+                if ($currentPeriod['original_context']['type'] === 'spillover') {
+                    $errorMsg .= "A period from {$currentPeriod['original_context']['original_day']} ('{$currentPeriod['original_context']['original_period_start']}-{$currentPeriod['original_context']['original_period_end']}') extending into {$dayName} ";
+                } else {
+                    $errorMsg .= "Period '{$currentPeriod['original_context']['original_period_start']}-{$currentPeriod['original_context']['original_period_end']}' ";
+                }
+
+                if ($nextPeriod['original_context']['type'] === 'spillover') {
+                    $errorMsg .= "overlaps with a period from {$nextPeriod['original_context']['original_day']} ('{$nextPeriod['original_context']['original_period_start']}-{$nextPeriod['original_context']['original_period_end']}') extending into {$dayName}.";
+                } else {
+                    $errorMsg .= "overlaps with '{$nextPeriod['original_context']['original_period_start']}-{$nextPeriod['original_context']['original_period_end']}'.";
+                }
+                $errors[] = $errorMsg;
             }
         }
-        return $total;
+        return $errors;
     }
 
-    /**
-     * Create a disabled day schedule
-     */
-    public static function disabled(): self
+    public function getPeriodsCrossingToNextDay(string $dayName): array
     {
-        return new self(false, []);
+        $spillovers = [];
+        if (!$this->enabled) {
+            return $spillovers;
+        }
+
+        foreach ($this->periods as $period) {
+            if ($period->extends_to_next_day) {
+                $spillovers[] = [
+                    'start_minutes' => 0,
+                    'end_minutes' => $period->timeToMinutes($period->endTime),
+                    'original_day' => $dayName,
+                    'original_period_start' => $period->startTime,
+                    'original_period_end' => $period->endTime,
+                ];
+            }
+        }
+        return $spillovers;
     }
 
-    /**
-     * Create an enabled day schedule with periods
-     */
-    public static function enabled(TimePeriod ...$periods): self
-    {
-        return new self(true, $periods);
-    }
-
-    /**
-     * String representation
-     */
     public function __toString(): string
     {
-        if (!$this->enabled) {
-            return 'Disabled';
-        }
-
-        if (empty($this->periods)) {
-            return 'Enabled (no periods)';
-        }
-
-        $periodStrings = array_map(fn(TimePeriod $p) => $p->__toString(), $this->periods);
-        return 'Enabled: ' . implode(', ', $periodStrings);
+        $status = $this->enabled ? 'Enabled' : 'Disabled';
+        $periodStrings = array_map(fn($p) => (string)$p, $this->periods);
+        $totalHours = number_format($this->total_work_hours, 1);
+        return "{$status} ({$totalHours} hours): " . implode(', ', $periodStrings);
     }
 }

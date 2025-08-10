@@ -32,7 +32,7 @@ $period = new TimePeriod(
     name: 'Morning Shift',
     startTime: '09:00',
     endTime: '17:00',
-    spansNextDay: false,
+    extends_to_next_day: false,
     gracePeriodBefore: 15,  // minutes
     gracePeriodAfter: 15    // minutes
 );
