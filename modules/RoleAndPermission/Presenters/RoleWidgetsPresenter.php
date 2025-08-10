@@ -26,23 +26,23 @@ class RoleWidgetsPresenter extends AbstractPresenter
 
         return [
             [
-                'name' => 'اجمالي عدد الادوار',
+                'title' => 'اجمالي عدد الادوار',
                 'number' => $this->dto->total_roles,
                 'percentage' => 100,
             ],
             [
-                'name' => 'اجمالي الادوار الرئيسية',
+                'title' => 'اجمالي الادوار الرئيسية',
                 'number' => $this->dto->main_roles,
                 'percentage' => $calculatePercentage($this->dto->main_roles),
             ],
             [
-                'name' => 'اجمالي الادوار الفعالة',
+                'title' => 'اجمالي الادوار الفعالة',
                 'number' => $this->dto->active_roles,
                 'percentage' => $calculatePercentage($this->dto->active_roles),
             ],
             [
-                'name' => 'اجمالي الادوار غير الفعالة',
-                'number' => $this->dto->inactive_roles,
+                'title' => 'اجمالي الادوار غير الفعالة',
+                'total' => $this->dto->inactive_roles,
                 'percentage' => $calculatePercentage($this->dto->inactive_roles),
             ],
         ];

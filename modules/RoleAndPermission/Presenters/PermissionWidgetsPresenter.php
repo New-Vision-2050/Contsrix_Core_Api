@@ -26,23 +26,23 @@ class PermissionWidgetsPresenter extends AbstractPresenter
 
         return [
             [
-                'name' => 'إجمالي عدد الصلاحيات',
-                'number' => $this->dto->total_permissions,
+                'title' => 'إجمالي عدد الصلاحيات',
+                'total' => $this->dto->total_permissions,
                 'percentage' => 100.0,
             ],
             [
-                'name' => 'إجمالي عدد الصلاحيات الرئيسية',
-                'number' => $this->dto->total_main_permissions,
+                'title' => 'إجمالي عدد الصلاحيات الرئيسية',
+                'total' => $this->dto->total_main_permissions,
                 'percentage' => $calculatePercentage($this->dto->total_main_permissions),
             ],
             [
-                'name' => 'إجمالي الصلاحيات النشطة',
-                'number' => $this->dto->active_permissions,
+                'title' => 'إجمالي الصلاحيات النشطة',
+                'total' => $this->dto->active_permissions,
                 'percentage' => $calculatePercentage($this->dto->active_permissions),
             ],
             [
-                'name' => 'إجمالي الصلاحيات غير النشطة',
-                'number' => $this->dto->inactive_permissions,
+                'title' => 'إجمالي الصلاحيات غير النشطة',
+                'total' => $this->dto->inactive_permissions,
                 'percentage' => $calculatePercentage($this->dto->inactive_permissions),
             ],
         ];
