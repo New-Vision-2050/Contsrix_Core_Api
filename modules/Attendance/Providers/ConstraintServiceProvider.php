@@ -20,6 +20,8 @@ use Modules\Attendance\Services\ComplianceConstraintService;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Illuminate\Support\Facades\Event;
 use Modules\Attendance\Events\AttendanceConstraintUpdated;
+use Modules\Attendance\Events\UpdateAttendance;
+use Modules\Attendance\Listeners\HandelAttendanceConstraintUpdate;
 use Modules\Attendance\Listeners\LogAttendanceConstraintUpdate;
 /**
  * Service Provider for registering all constraint-related services.
@@ -91,6 +93,11 @@ class ConstraintServiceProvider extends ServiceProvider
         Event::listen(
             AttendanceConstraintUpdated::class,
             LogAttendanceConstraintUpdate::class
+        );
+
+        Event::listen(
+            UpdateAttendance::class,
+            HandelAttendanceConstraintUpdate::class
         );
     }
 }
