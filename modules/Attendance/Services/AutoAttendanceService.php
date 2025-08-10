@@ -12,7 +12,7 @@ use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
 class AutoAttendanceService
 {
-    public function createAttendanceRecord(array $data, Carbon $startDateTime=null, Carbon $endDateTime=null): Attendance
+    public function createAttendanceRecord(array $data, Carbon $startDateTime=null): Attendance
     {
         $status = $data['status'] ?? 'pending';
 
@@ -22,7 +22,6 @@ class AutoAttendanceService
             'clock_in_time' => $data['clock_in_time'] ?? null,
             'clock_in_location' => $data['clock_in_location'] ?? null,
             'start_time' => $startDateTime,
-            'end_time' => $endDateTime,
             'notes' => $data['notes'] ?? null,
             'ip_address' => $data['ip_address'] ?? null,
             'user_agent' => $data['user_agent'] ?? null,
@@ -51,15 +50,16 @@ class AutoAttendanceService
     }
 
 
-    public function generateAttendanceUsers($companyId,$userId=null)
+    public function generateAttendanceUsers($companyId,$userId=null,$startDatePram=null,$endDatePram=null)
     {
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
 
-        $startDate = Carbon::now($timezone)->startOfMonth()->startOfDay();
-        $endDate = Carbon::now($timezone)->endOfMonth()->endOfDay();
+        $startDate = $startDatePram ?? Carbon::now($timezone)->startOfMonth()->startOfDay();
+        $endDate =  $endDatePram ?? Carbon::now($timezone)->endOfMonth()->endOfDay();
 
         $period = CarbonPeriod::create($startDate, $endDate);
         $allDates = collect($period->toArray());
+
 
         $allRelevantUsers = User::where('company_id', $companyId)
             ->whereNotIn('email', config('constrix.emails'))
@@ -70,13 +70,15 @@ class AutoAttendanceService
             ->with(['professionalData.attendanceConstraint'])
             ->get();
 
-        $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
+            $allRelevantUserIds = $allRelevantUsers->pluck('id')->toArray();
+
+
 
         $realAttendanceRecords = Attendance::query()
             ->select([
                 'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
                 'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
-                'start_time', 'end_time', 'overtime_hours'
+                'start_time', 'overtime_hours'
             ])
             ->whereIn('user_id', $allRelevantUserIds)
             ->whereBetween('start_time', [$startDate, $endDate])
@@ -123,7 +125,7 @@ class AutoAttendanceService
                     foreach ($dayPeriods as $index => $periodTime) {
                         $periodName = 'فترة ' . ($index + 1);
                         $periodStart = Carbon::parse($dateString . ' ' . $periodTime['start_time']);
-                        $periodEnd = Carbon::parse($dateString . ' ' . $periodTime['end_time']);
+
 
                             $existingAbsentRecord = Attendance::where('user_id', $user->id)
                                 ->whereDate('start_time', $dateString)
@@ -142,7 +144,6 @@ class AutoAttendanceService
                                         'is_absent' => 1,
                                     ],
                                     $periodStart,
-                                    $periodEnd
                                 );
                             }
                         }
@@ -161,7 +162,7 @@ class AutoAttendanceService
                                     'notes' => 'Auto-generated holiday record.',
                                     'status' => 'holiday',
                                     'is_holiday' => 1,
-                                ],$carbonDate,$carbonDate);
+                                ],$carbonDate);
                         }
                     }
 
