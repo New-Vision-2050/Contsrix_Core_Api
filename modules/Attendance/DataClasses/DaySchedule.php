@@ -47,7 +47,7 @@ class DaySchedule
                 return TimePeriod::fromArray([
                     'startTime' => $p_data['start_time'],
                     'endTime' => $p_data['end_time'],
-                    'extends_to_next_day' => $p_data['extends_to_next_day'] ?? false,
+                    'extends_to_next_day' => (bool)($p_data['extends_to_next_day'] ?? false), // Ensure boolean conversion
                     'gracePeriodBefore' => $p_data['grace_period_before'] ?? 0,
                     'gracePeriodAfter' => $p_data['grace_period_after'] ?? 0,
                 ]);
@@ -221,12 +221,21 @@ class DaySchedule
             $nextPeriod = $processedPeriods[$i + 1];
 
             if ($currentPeriod['end'] > $nextPeriod['start']) {
+                $isPreviousDaySpillover = ($currentPeriod['original_context']['type'] === 'spillover' && $currentPeriod['start'] === 0);
+                $isCurrentDayStartsAtMidnight = ($nextPeriod['original_context']['type'] === 'current_day' && $nextPeriod['start'] === 0);
+
+                if ($isPreviousDaySpillover && $isCurrentDayStartsAtMidnight) {
+                    if ($nextPeriod['end'] <= $currentPeriod['end']) {
+                        continue;
+                    }
+                }
+
                 $errorMsg = "Periods overlap for {$dayName}. ";
 
                 if ($currentPeriod['original_context']['type'] === 'spillover') {
                     $errorMsg .= "A period from {$currentPeriod['original_context']['original_day']} ('{$currentPeriod['original_context']['original_period_start']}-{$currentPeriod['original_context']['original_period_end']}') extending into {$dayName} ";
                 } else {
-                    $errorMsg .= "Period '{$currentPeriod['original_context']['original_period_start']}-{$currentPeriod['original_context']['original_period_end']}' ";
+                    $errorMsg .= "Period '{$currentPeriod['original_context']['original_period_start']}-{$currentPeriod['original_period']->endTime}' "; // original_period->endTime
                 }
 
                 if ($nextPeriod['original_context']['type'] === 'spillover') {

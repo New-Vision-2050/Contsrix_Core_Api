@@ -16,6 +16,7 @@ use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Carbon\CarbonPeriod;
+use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
 
 class AttendanceService
 {
@@ -37,6 +38,8 @@ class AttendanceService
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
         $constraints = $constraintService->getTodaysWorkRulesForUser($user);
+        $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'];
+
         $timezone = getTimeZoneByRequest()?? config('app.timezone');
         $date = Carbon::now()->format('Y-m-d');
 
@@ -99,15 +102,21 @@ class AttendanceService
             'day_status' => $day_status,
             'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
         ];
-        $Attendance = Attendance::where('start_time',$startDateTime)
+        $attendance = Attendance::where('start_time',$startDateTime)
         ->whereNull('clock_in_time')->first();
-        if ($Attendance) {
+        if ($attendance) {
 
-              $Attendance->update($attendanceData);
-              return $Attendance->refresh();
+              $attendance->update($attendanceData);
+              $attendance = $attendance->refresh();
         }else {
-            return $this->attendanceRepository->create($attendanceData);
+            $attendance = $this->attendanceRepository->create($attendanceData);
         }
+
+        if($extendsNextDay){
+            ProcessClockInAttendanceData::dispatch($attendance->id)->delay($endDateTime);
+        }
+
+        return $attendance;
     }
 
 

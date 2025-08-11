@@ -33,9 +33,6 @@ class MultiplePeriodsConfig implements JsonSerializable
         $this->out_zone_rules = $outZoneRules;
         $this->early_clock_in_rules = $earlyClockInRules;
         $this->lateness_rules = $latenessRules;
-        // لا تستدعي validateConfig هنا إذا كانت تقوم بالتحقق من نفس الأشياء التي يقوم بها FormRequest
-        // لأنه سيؤدي إلى إلقاء استثناء بدلاً من إضافة أخطاء إلى Validator.
-        // التحقق سيتولى بواسطة FormRequest catch block.
     }
 
     public static function fromArray(array $data): self

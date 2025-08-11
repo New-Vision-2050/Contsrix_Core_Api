@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Events;
 
-use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class AttendanceClockedIn
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
 
     public $attendanceId;
 
