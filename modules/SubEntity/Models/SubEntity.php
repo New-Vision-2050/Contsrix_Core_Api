@@ -44,13 +44,13 @@ class SubEntity extends Model
     ];
 
     public const PERMISSION_ACTIONS = [
-        'activate',
-        'create',
-        'update',
-        'delete',
-        'list',
-        'view',
-        'export',
+        'ACTIVATE',
+        'CREATE',
+        'UPDATE',
+        'DELETE',
+        'LIST',
+        'VIEW',
+        'EXPORT',
     ];
 
 
