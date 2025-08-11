@@ -18,8 +18,9 @@ use Modules\User\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Modules\Attendance\DataClasses\WeeklySchedule;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-
+use InvalidArgumentException;
 use function Ramsey\Uuid\v1;
 
 /**
@@ -547,28 +548,46 @@ class AttendanceConstraintService
             'detected_at' => now(),
         ]);
     }
-    public function getTodaysWorkRulesForUser(User $user,$date=null): array
+    public function getTodaysWorkRulesForUser(User $user, $date = null): array
     {
-        $timezone = getTimeZoneByRequest()?? config('app.timezone');
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
         $now = $date
-        ? Carbon::parse($date, $timezone)
-        : Carbon::now($timezone);
+            ? Carbon::parse($date, $timezone)
+            : Carbon::now($timezone);
 
-        $constraints = $this->getApplicableConstraints($user);
+        $constraints = $this->getApplicableConstraintsForDataRetrieval($user);
         if ($constraints->isEmpty()) {
-            return [];
+            return [
+                'day_status' => 'Undefined',
+                'day_name' => $now->isoFormat(format: 'dddd'),
+                'is_holiday' => false,
+                'reason' => 'No attendance schedule applied.',
+                'all_work_periods' => [],
+                'total_work_hours' => 0.0,
+                'next_work_period' => null,
+                'current_work_period' => null,
+                'lateness_rules' => null,
+                'early_clock_in_rules' => null,
+                'location_work' => null,
+                'source_constraint_ids' => ['time' => null, 'location' => null],
+            ];
         }
+
         // Define a reusable closure to select the winning constraint based on priority.
+        // Assuming higher priority number means higher priority, then by creation date.
         $selectWinningConstraint = function (callable $filter) use ($constraints, $user) {
             return $constraints
                 ->filter($filter)
-                ->sortByDesc('created_at')
+                ->sortByDesc('priority') // Sort by priority if applicable
+                ->sortByDesc('created_at') // Then by creation date for stability
                 ->first();
         };
 
         // Find the winning TIME and LOCATION constraints.
+        // These keys might need to be adjusted based on your AttendanceConstraint model structure
         $timeConstraint = $selectWinningConstraint(fn($c) => isset($c->constraint_config['time_rules']));
         $locationConstraint = $selectWinningConstraint(fn($c) => !empty($c->branch_locations) || isset($c->constraint_config['location_rules']));
+
         // Build the rule summaries from the winning constraints.
         $timeRulesResult = $this->buildTimeRules($timeConstraint, $now);
         $locationRulesResult = $this->buildLocationRules($locationConstraint, $user);
@@ -579,12 +598,14 @@ class AttendanceConstraintService
             'day_name'                => $now->isoFormat(format: 'dddd'),
             'is_holiday'              => $timeRulesResult['is_holiday'],
             'reason'                  => $timeRulesResult['reason'],
-            'all_work_periods'     => $timeRulesResult['periods'],
-            'total_work_hours' => $timeRulesResult['total_work_hours'],
-            'next_work_period'   => $timeRulesResult['active_or_next_period'],
+            'all_work_periods'        => $timeRulesResult['periods'],
+            'total_work_hours'        => $timeRulesResult['total_work_hours'],
             'current_work_period'     => $timeRulesResult['current_work_period'],
-            'lateness_rules'         => $timeRulesResult['lateness_rules'],
-            'early_clock_in_rules'   => $timeRulesResult['early_clock_in_rules'],
+            'first_next_period'       => $timeRulesResult['first_next_period'],
+            'second_next_period'      => $timeRulesResult['second_next_period'],
+            'active_or_next_period'   => $timeRulesResult['active_or_next_period'],
+            'lateness_rules'          => $timeRulesResult['lateness_rules'],
+            'early_clock_in_rules'    => $timeRulesResult['early_clock_in_rules'],
             'location_work'           => $locationRulesResult,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
@@ -594,53 +615,55 @@ class AttendanceConstraintService
     }
 
     /**
-     * Validate an attendance record against all applicable constraints.
+     * Builds time-related attendance rules for a given constraint and date.
+     * Includes periods spilling over from the previous day.
      *
-     * @param Attendance $attendance The attendance record to validate.
-     * @param array $requestData Additional request data.
-     * @param bool $isDryRun If true, will not create violation or applied_constraint records.
-     * @return array Array of violations found.
+     * @param AttendanceConstraint|null $constraint The time constraint to use.
+     * @param Carbon $now The Carbon instance representing the current date/time.
+     * @return array
      */
-
     private function buildTimeRules(?AttendanceConstraint $constraint, Carbon $now): array
     {
         $defaultResult = [
-            'status' => 'Undefined',
+            'day_status' => 'Undefined',
             'reason' => 'No time schedule applied.',
-            'periods' => [],
+            'periods' => [], // All active periods for today, including spillover
             'is_holiday' => false,
             'total_work_hours' => 0.0,
             'lateness_rules' => null,
             'early_clock_in_rules' => null,
             'current_work_period' => null,
+            'first_next_period' => null,
+            'second_next_period' => null,
             'active_or_next_period' => null,
-            'day_status' => 'Undefined',
         ];
 
         if (!$constraint) {
             return $defaultResult;
         }
 
-        $timeRules = $constraint->constraint_config['time_rules'] ?? [];
-        $weeklySchedule = $timeRules['weekly_schedule'] ?? [];
-        $holidays = $timeRules['holidays'] ?? [];
+        $timeRulesData = $constraint->constraint_config['time_rules'] ?? [];
 
+        try {
+            // Attempt to parse the weekly schedule using the DataClass
+            $weeklySchedule = WeeklySchedule::fromArray($timeRulesData['weekly_schedule'] ?? []);
+        } catch (InvalidArgumentException $e) {
+            Log::error("Failed to parse WeeklySchedule for constraint {$constraint->id}: " . $e->getMessage());
+            return array_merge($defaultResult, ['reason' => 'Invalid weekly schedule configuration: ' . $e->getMessage()]);
+        }
+
+        $holidays = $timeRulesData['holidays'] ?? [];
         $dayOfWeek = strtolower($now->format('l'));
+
         $isTodayHoliday = collect($holidays)->contains(fn($h) => $now->isSameDay($h['date'] ?? null));
 
-        $todaySchedule = $weeklySchedule[$dayOfWeek] ?? ['enabled' => false];
-        if (!($todaySchedule['enabled'] ?? false)) {
-            $isTodayHoliday = true;
-        }
-        $periods = $todaySchedule['periods'] ?? [];
-
-        $isTodayWorkDay = !$isTodayHoliday && ($todaySchedule['enabled'] ?? false) && !empty($periods);
-
+        // Get today's schedule using the WeeklySchedule DataClass
+        $todaySchedule = $weeklySchedule->getDaySchedule($dayOfWeek);
 
         if ($isTodayHoliday) {
             $workDayStatus = 'holiday';
             $workDayReason = collect($holidays)->firstWhere(fn($h) => $now->isSameDay($h['date'] ?? null))['name'] ?? 'Official Holiday';
-        } elseif ($isTodayWorkDay) {
+        } elseif ($todaySchedule->enabled) {
             $workDayStatus = 'work_day';
             $workDayReason = 'Scheduled working day.';
         } else {
@@ -648,113 +671,292 @@ class AttendanceConstraintService
             $workDayReason = 'Scheduled weekend or non-working day.';
         }
 
-        $currentActivePeriodToday = null;
-        $nextUpcomingPeriod = null;
-
-        if ($isTodayWorkDay && !empty($todaySchedule['periods'])) {
-            $sortedTodayPeriods = collect($todaySchedule['periods'])->sortBy('start_time')->all();
-
-            foreach ($sortedTodayPeriods as $period) {
-                $periodStartToday = Carbon::createFromTimeString($period['start_time'], $now->timezone)->setDateFrom($now);
-                $periodEndToday = Carbon::createFromTimeString($period['end_time'], $now->timezone)->setDateFrom($now);
-
-                if ($periodEndToday->isBefore($periodStartToday)) {
-                    $periodEndToday->addDay();
-                }
-
-                if ($now->between($periodStartToday, $periodEndToday, true)) {
-                    $currentActivePeriodToday = [
-                        'status' => 'active',
-                        'day' => 'Today',
-                        'date' => $now->format('Y-m-d'),
-                        'start_time' => $period['start_time'],
-                        'end_time' => $period['end_time'],
-                        'period_start_time_carbon' => $periodStartToday,
-                        'period_end_time_carbon' => $periodEndToday,
-                    ];
-                    $nextUpcomingPeriod = $currentActivePeriodToday;
-                    break;
-                }
-
-                if ($periodStartToday->isFuture() && is_null($nextUpcomingPeriod)) {
-                    $nextUpcomingPeriod = [
-                        'status' => 'upcoming',
-                        'day' => 'Today',
-                        'date' => $now->format('Y-m-d'),
-                        'start_time' => $period['start_time'],
-                        'end_time' => $period['end_time'],
-                        'period_start_time_carbon' => $periodStartToday,
-                        'period_end_time_carbon' => $periodEndToday,
-                    ];
-                }
-            }
+        if ($workDayStatus !== 'work_day') {
+             return array_merge($defaultResult, [
+                'day_status' => $workDayStatus,
+                'reason' => $workDayReason,
+                'is_holiday' => ($workDayStatus === 'holiday'),
+            ]);
         }
 
-        $lateness_rules = $todaySchedule['lateness_rules'] ?? null;
-        $early_clock_in_rules = $todaySchedule['early_clock_in_rules'] ?? null;
+        // 2. Get periods from the previous day that extend into today
+        $previousDay = $now->copy()->subDay();
+        $previousDaySchedule = $weeklySchedule->getDaySchedule(strtolower($previousDay->format('l')));
 
-        // Fallback period if no current period is active
-        $fallbackPeriod = null;
-        if ($isTodayWorkDay && !empty($todaySchedule['periods']) && !$currentActivePeriodToday && !$nextUpcomingPeriod) {
-            // Get the first period of the day as fallback
-            $sortedPeriods = collect($todaySchedule['periods'])->sortBy('start_time')->values();
-            if ($sortedPeriods->count() > 0) {
-                $firstPeriod = $sortedPeriods->first();
-                $periodStartToday = Carbon::createFromTimeString($firstPeriod['start_time'], $now->timezone)->setDateFrom($now);
-                $periodEndToday = Carbon::createFromTimeString($firstPeriod['end_time'], $now->timezone)->setDateFrom($now);
+        $spilloverPeriodsFromPreviousDay = [];
+        if ($previousDaySchedule && $previousDaySchedule->enabled) {
+            $spilloverPeriodsRaw = $previousDaySchedule->getPeriodsCrossingToNextDay(ucfirst(strtolower($previousDay->format('l'))));
+            foreach ($spilloverPeriodsRaw as $spillover) {
+                // Ensure correct Carbon objects for start/end in today's context
+                $effectiveSpilloverStart = $now->copy()->startOfDay(); // Starts at 00:00 of today
+                $effectiveSpilloverEnd = $now->copy()->startOfDay()->addMinutes($spillover['end_minutes']); // Ends at actual time in today
 
-                if ($periodEndToday->isBefore($periodStartToday)) {
-                    $periodEndToday->addDay();
-                }
-
-                $fallbackPeriod = [
-                    'status' => 'fallback',
-                    'day' => 'Today',
-                    'date' => $now->format('Y-m-d'),
-                    'start_time' => $firstPeriod['start_time'],
-                    'end_time' => $firstPeriod['end_time'],
-                    'period_start_time_carbon' => $periodStartToday,
-                    'period_end_time_carbon' => $periodEndToday,
+                $spilloverPeriodsFromPreviousDay[] = [
+                    'status' => 'spillover',
+                    'day' => ucfirst(strtolower($previousDay->format('l'))),
+                    'date' => $previousDay->format('Y-m-d'), // Original date it started
+                    'start_time' => $spillover['original_period_start'],
+                    'end_time' => $spillover['original_period_end'],
+                    'period_start_time_carbon' => $effectiveSpilloverStart,
+                    'period_end_time_carbon' => $effectiveSpilloverEnd,
+                    'extends_to_next_day' => true, // Always true for spillover
+                    'original_day_name' => $spillover['original_day']
                 ];
             }
         }
+
+        // 3. Combine today's defined periods from the DaySchedule object
+        $allTodaysRawPeriods = [];
+        foreach ($todaySchedule->getPeriods() as $period) {
+            $periodStartToday = Carbon::createFromTimeString($period->startTime, $now->timezone)->setDateFrom($now);
+            $periodEndToday = Carbon::createFromTimeString($period->endTime, $now->timezone)->setDateFrom($now);
+
+            if ($period->extends_to_next_day) {
+                $periodEndToday->addDay(); // Adjust end time to next day if it spans
+            }
+
+            $allTodaysRawPeriods[] = [
+                'status' => 'scheduled',
+                'day' => 'Today',
+                'date' => $now->format('Y-m-d'),
+                'start_time' => $period->startTime,
+                'end_time' => $period->endTime,
+                'period_start_time_carbon' => $periodStartToday,
+                'period_end_time_carbon' => $periodEndToday,
+                'extends_to_next_day' => $period->extends_to_next_day,
+            ];
+        }
+
+        // Merge all periods (spillover + today's) and sort them chronologically
+        $allTodaysPeriods = collect(array_merge($spilloverPeriodsFromPreviousDay, $allTodaysRawPeriods))
+            ->sortBy(fn($p) => $p['period_start_time_carbon']->timestamp)
+            ->values()
+            ->all();
+
+        // Use the dedicated helper function to find current, first next, and second next periods
+        $periodDetails = $this->getCurrentOrNextPeriodDetails($allTodaysPeriods, $now, $weeklySchedule);
+
+        $lateness_rules = $todaySchedule->lateness_rules ?? null;
+        $early_clock_in_rules = $todaySchedule->early_clock_in_rules ?? null;
+
         return [
             'day_status' => $workDayStatus,
             'reason' => $workDayReason,
-            'periods' => $todaySchedule['periods'] ?? [],
+            'periods' => $allTodaysPeriods, // All periods for today, merged and sorted
             'is_holiday' => ($workDayStatus === 'holiday'),
-            'total_work_hours' => (float)($todaySchedule['total_work_hours'] ?? 0.0),
-            'current_work_period' => $currentActivePeriodToday ?? (
-                isset($nextUpcomingPeriod['day']) && $nextUpcomingPeriod['day'] === 'Today' ? $nextUpcomingPeriod : $fallbackPeriod
-            ),
-            'active_or_next_period' => $nextUpcomingPeriod ?? $fallbackPeriod,
+            'total_work_hours' => '', // Calculated by DaySchedule
+            'current_work_period' => $periodDetails['current_period'] ?? $periodDetails['fallback_period'],
+            'first_next_period' => $periodDetails['first_next_period'],
+            'second_next_period' => $periodDetails['second_next_period'],
+            'active_or_next_period' => $periodDetails['current_period'] ?? $periodDetails['first_next_period'] ?? $periodDetails['fallback_period'],
             'lateness_rules' => $lateness_rules,
             'early_clock_in_rules' => $early_clock_in_rules
         ];
     }
 
+    /**
+     * Determines the current active work period, the first upcoming, and the second upcoming work period.
+     * Searches within today's schedule and extends to future work days if needed.
+     *
+     * @param array $allTodaysPeriods Merged and sorted periods relevant to $now's day.
+     * @param Carbon $now Current Carbon instance.
+     * @param WeeklySchedule $weeklySchedule Full weekly schedule for searching future days.
+     * @return array An associative array containing 'current_period', 'first_next_period', 'second_next_period', 'fallback_period'.
+     */
+    private function getCurrentOrNextPeriodDetails(array $allTodaysPeriods, Carbon $now, WeeklySchedule $weeklySchedule): array
+    {
+        $currentPeriod = null;
+        $firstNextPeriod = null;
+        $secondNextPeriod = null;
+        $nowTimestamp = $now->timestamp;
+
+        $foundCurrent = false;
+        $foundFirstNext = false;
+
+        // Phase 1: Find periods within today's context
+        foreach ($allTodaysPeriods as $period) {
+            $periodStart = $period['period_start_time_carbon'];
+            $periodEnd = $period['period_end_time_carbon'];
+
+            // 1. Identify current active period
+            if ($nowTimestamp >= $periodStart->timestamp && $nowTimestamp <= $periodEnd->timestamp) {
+                $currentPeriod = $period;
+                $foundCurrent = true;
+            }
+
+            // 2. Identify first next upcoming period (after current, or just first future if no current)
+            if (!$foundFirstNext) {
+                if ($foundCurrent) {
+                    if ($periodStart->greaterThan($currentPeriod['period_end_time_carbon'])) {
+                        $firstNextPeriod = $period;
+                        $foundFirstNext = true;
+                    }
+                } elseif ($periodStart->isFuture()) {
+                    $firstNextPeriod = $period;
+                    $foundFirstNext = true;
+                }
+            }
+            // 3. Identify second next upcoming period (after first next)
+            elseif ($foundFirstNext && is_null($secondNextPeriod)) {
+                // Ensure second period starts after the first next period ends
+                if ($periodStart->greaterThan($firstNextPeriod['period_end_time_carbon'])) {
+                    $secondNextPeriod = $period;
+                }
+            }
+        }
+
+        // Phase 2: If we still need a next upcoming period (first or second), search in future work days.
+        if (is_null($firstNextPeriod) || is_null($secondNextPeriod)) {
+            $searchFromDay = $now->copy()->addDay(); // Start searching from tomorrow
+            $maxAttempts = 7; // Look up to 7 days ahead
+
+            for ($i = 0; $i < $maxAttempts; $i++) {
+                $nextDaySchedule = $weeklySchedule->getDaySchedule(strtolower($searchFromDay->format('l')));
+
+                if ($nextDaySchedule && $nextDaySchedule->enabled) {
+                    $dayPeriods = collect($nextDaySchedule->getPeriods())->sortBy('startTime')->all();
+
+                    foreach ($dayPeriods as $futurePeriod) {
+                        $futurePeriodDetails = [
+                            'status' => 'upcoming_next_day',
+                            'day' => ucfirst(strtolower($searchFromDay->format('l'))),
+                            'date' => $searchFromDay->format('Y-m-d'),
+                            'start_time' => $futurePeriod->startTime,
+                            'end_time' => $futurePeriod->endTime,
+                            'period_start_time_carbon' => Carbon::createFromTimeString($futurePeriod->startTime, $searchFromDay->timezone)->setDateFrom($searchFromDay),
+                            'period_end_time_carbon' => Carbon::createFromTimeString($futurePeriod->endTime, $searchFromDay->timezone)->setDateFrom($searchFromDay)->addDays($futurePeriod->extends_to_next_day ? 1 : 0),
+                            'extends_to_next_day' => $futurePeriod->extends_to_next_day,
+                        ];
+
+                        if (is_null($firstNextPeriod)) {
+                            $firstNextPeriod = $futurePeriodDetails;
+                        } elseif (is_null($secondNextPeriod) && $futurePeriodDetails['period_start_time_carbon']->greaterThan($firstNextPeriod['period_end_time_carbon'])) {
+                            $secondNextPeriod = $futurePeriodDetails;
+                            break 2; // Exit both loops if both are found
+                        }
+                    }
+                    // If we found firstNextPeriod but still need secondNextPeriod and this day is exhausted, continue to next day
+                    if ($firstNextPeriod && is_null($secondNextPeriod) && $i < $maxAttempts - 1) {
+                         // continue outer loop
+                    } elseif ($firstNextPeriod && $secondNextPeriod) {
+                         break; // Both found
+                    }
+                }
+                $searchFromDay->addDay(); // Move to the next calendar day
+            }
+        }
+
+        // Fallback period: If no current or upcoming period is found at all
+        $fallbackPeriod = empty($allTodaysPeriods) ? null : $allTodaysPeriods[0];
+
+        return [
+            'current_period' => $currentPeriod,
+            'first_next_period' => $firstNextPeriod,
+            'second_next_period' => $secondNextPeriod,
+            'fallback_period' => $fallbackPeriod,
+        ];
+    }
 
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array
     {
         if (!$constraint || !$user->userProfessionalData?->branch_id) return null;
-        $userBranchId = (string) $user->userProfessionalData?->branch_id;
-        $userBranchName = $user->userProfessionalData?->branch->name ;
+        $userBranchId = (string) $user->userProfessionalData->branch_id;
+        $userBranchName = $user->userProfessionalData->branch->name ?? 'Unknown Branch';
 
         if (!empty($constraint->branch_locations)) {
             $branchData = collect($constraint->branch_locations)->firstWhere('branch_id', $userBranchId);
             if ($branchData) {
-                return ['name' => $branchData['name'] ?? $userBranchName] +
-                ['latitude' => (float)($branchData['latitude'] ?? 0), 'longitude' => (float)($branchData['longitude'] ?? 0), 'radius' => (int)($branchData['radius'] ?? 0)];
+                return [
+                    'name' => $branchData['name'] ?? $userBranchName,
+                    'latitude' => (float)($branchData['latitude'] ?? 0),
+                    'longitude' => (float)($branchData['longitude'] ?? 0),
+                    'radius' => (int)($branchData['radius'] ?? 0)
+                ];
             }
         }
 
         $locationRules = $constraint->constraint_config['location_rules'] ?? [];
         if (!empty($locationRules['allowed_zones'])) {
             $firstZone = $locationRules['allowed_zones'][0];
-            return ['name' => $firstZone['name'] ?? $userBranchName] +
-                   ['latitude' => (float)($firstZone['latitude'] ?? 0), 'longitude' => (float)($firstZone['longitude'] ?? 0), 'radius' => (int)($firstZone['radius'] ?? 0)];
+            return [
+                'name' => $firstZone['name'] ?? $userBranchName,
+                'latitude' => (float)($firstZone['latitude'] ?? 0),
+                'longitude' => (float)($firstZone['longitude'] ?? 0),
+                'radius' => (int)($firstZone['radius'] ?? 0)
+            ];
         }
         return null;
     }
 
+    /**
+     * Get all constraints applicable to a user for data retrieval purposes.
+     * This is a simplified version for finding the winning constraints to display schedules.
+     *
+     * @param User $user The user to get constraints for
+     * @return Collection Collection of applicable constraints
+     */
+    public function getApplicableConstraintsForDataRetrieval(User $user): Collection
+    {
+        // This logic is copied from your previous getEffectiveConstraintForUser
+        // It might need refinement based on your business rules for constraint hierarchy/application.
+        $constraints = [];
+        $constraint = $user->professionalData?->attendanceConstraint; // Assuming direct user constraint is highest
+        if ($constraint) {
+            $constraints[] = $constraint;
+            return collect($constraints);
+        }
+
+        $userBranchId = $user->userProfessionalData?->branch?->id;
+        $userDepartmentId = $user->userProfessionalData?->department?->id;
+
+        // 1. Check for a Default Constraint on the Branch
+        if ($userBranchId) {
+            $defaultConstraint = AttendanceConstraint::whereHas('branches', function ($query) use ($userBranchId) {
+                $query->where('management_hierarchies.id', $userBranchId)
+                      ->where('is_default', true); // Assuming a pivot or relationship for default
+            })
+            ->where('is_active', true)
+            ->first(); // Get the single default constraint for the branch
+
+            if ($defaultConstraint) {
+                return collect([$defaultConstraint]); // If default is found, return it immediately
+            }
+        }
+
+        // 2. If No Default, Find All Other Applicable Constraints by user, department, branch, or global
+        return AttendanceConstraint::where('company_id', $user->company_id)
+            ->where('is_active', true)
+            ->where(function ($query) use ($user, $userBranchId, $userDepartmentId) {
+                // Constraints assigned directly to this user.
+                $query->whereJsonContains('user_ids', $user->id)
+                ->orWhere(function ($q) use ($user) {
+                    // Constraints assigned to user's department (if they have one)
+                    $q->when($user->userProfessionalData?->department_id, function ($q2) use ($user) {
+                        $q2->whereJsonContains('department_ids', $user->userProfessionalData->department_id);
+                    });
+                })
+                // Constraints assigned to the user's branch (if they have one).
+                ->orWhere(function ($q) use ($userBranchId) {
+                    $q->when($userBranchId, function ($q2) use ($userBranchId) {
+                        $q2->whereJsonContains('branch_ids', $userBranchId);
+                    });
+                })
+                // Global constraints (not assigned to any specific user, department, or branch).
+                ->orWhere(function ($q) {
+                    $q->where(fn($sub) => $sub->whereNull('user_ids')->orWhereJsonLength('user_ids', 0))
+                      ->where(fn($sub) => $sub->whereNull('department_ids')->orWhereJsonLength('department_ids', 0))
+                      ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
+                });
+            })
+            // Filter by active effective dates
+            ->where(function($query) {
+                $query->whereNull('effective_from')
+                      ->orWhere('effective_from', '<=', Carbon::now());
+            })
+            ->where(function($query) {
+                $query->whereNull('effective_to')
+                      ->orWhere('effective_to', '>=', Carbon::now());
+            })
+            ->get();
+    }
 }

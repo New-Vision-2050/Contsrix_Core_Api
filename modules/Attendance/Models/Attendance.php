@@ -55,7 +55,7 @@ class Attendance extends Model implements Auditable
 {
     use UuidTrait;
     use BaseFilterable;
-    use SoftDeletes;
+    // use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
     use CustomBelongsToTenant;
 
@@ -575,7 +575,7 @@ class Attendance extends Model implements Auditable
                     $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
                 }
             }
-            
+
             $this->save();
 
         } catch (\Exception $e) {
