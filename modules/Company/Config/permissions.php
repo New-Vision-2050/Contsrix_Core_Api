@@ -22,6 +22,8 @@ return [
         'COMPANY_PROFILE_OFFICIAL_DATA_UPDATE' => 'settings.company-profile*official-data.update',
         'COMPANY_PROFILE_OFFICIAL_DATA_VIEW' => 'settings.company-profile*official-data.view',
 
+        'COMPANY_PROFILE_SUPPORT_DATA_VIEW' => 'settings.company-profile*support-data.view',
+
         // Legal Data Management
         'COMPANY_PROFILE_LEGAL_DATA_VIEW' => 'settings.company-profile*legal-data.view',
         'COMPANY_PROFILE_LEGAL_DATA_UPDATE' => 'settings.company-profile*legal-data.update',
