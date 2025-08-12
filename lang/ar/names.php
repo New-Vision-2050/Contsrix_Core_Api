@@ -221,6 +221,7 @@ return [
     "program-and-packages" => "برامج وباقات",
     "user-list"=>"المستخدمين",
     "program-management" => "ادارة البرامج",
+    "support-data" => "الدعم",
 
 
 ];
