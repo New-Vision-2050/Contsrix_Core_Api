@@ -50,7 +50,7 @@ Route::prefix('attendance')->group(function () {
         ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.history');
             // // Export Reports
-    Route::post('export', [AttendanceController::class, 'exportTeamAttendance'])
+    Route::post('/team/export', [AttendanceController::class, 'exportTeamAttendance'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_EXPORT())
         ->name('reports.export-attendance');
 
