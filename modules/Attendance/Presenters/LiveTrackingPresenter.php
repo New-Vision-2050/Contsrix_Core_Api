@@ -31,14 +31,15 @@ class LiveTrackingPresenter extends AbstractPresenter
                 'company_name' => $this->attendance->user->company->name ?? '-',
                 'country' => $this->attendance->user->companyUser->country?->name ?? '-',
                 'birthdate' => $this->attendance->user->companyUser->birthdate_gregorian ?? '-',
-                'gender' => $this->attendance->user->companyUser->gender ?? '-',
+                'gender' => __('validation.' . $this->attendance->user->companyUser->gender) ?? '-',
+
                 'branch_name'   => $this->attendance->user->professionalData->branch->name ?? '-',
                 'department_name' => $this->attendance->user->professionalData->department->name ?? '-',
                 'management_name' => $this->attendance->user->professionalData->management->name ?? '-',
             ] : null,
 
             'clock_in_time' => $this->attendance->clock_in_time->format('H:i:s'),
-            
+
             'status' => $this->attendance->status,
             'is_late' => (int) $this->attendance->is_late,
             'is_absent' => (int) $this->attendance->is_absent,
