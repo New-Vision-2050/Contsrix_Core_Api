@@ -324,6 +324,7 @@ class AttendanceController extends Controller
         'per_page' => $result->perPage(),
         'current_page' => $result->currentPage(),
         'last_page' => $result->lastPage(),
+        'result_count' =>$result->total(),
     ]
     );
     }
