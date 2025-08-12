@@ -497,7 +497,25 @@ class AttendanceService
 
         return $this->attendanceRepository->deleteAttendance($uuid);
     }
+    public function getAttendanceForExport(array $filters): Collection
+    {
+        $realAttendanceRecords = Attendance::query()
+            ->filter($filters)
+            ->select([
+                'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
+                'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
+                'start_time', 'overtime_hours', 'clock_in_location', 'location_tracking'
+            ])
+            ->with([
+                'user',
+                'user.userProfessionalData',
+                'user.company'
+            ])
+            ->orderBy('start_time')
+            ->get();
 
+        return $this->processAttendancePeriods($realAttendanceRecords);
+    }
 
     public function getTeamAttendance(array $filters, ?int $page = 1, ?int $perPage = 10)//: array // تغيير نوع العودة إلى array
     {
