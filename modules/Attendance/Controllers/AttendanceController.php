@@ -28,6 +28,9 @@ use Modules\Attendance\Services\MockAttendanceService;
 use Ramsey\Uuid\Uuid;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Presenters\AppliedAttendanceConstraintPresenter;
+use Modules\Attendance\Requests\ExportAttendanceRequest;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\Attendance\Exports\AttendanceTeamExport;
 
 class AttendanceController extends Controller
 {
@@ -322,7 +325,7 @@ class AttendanceController extends Controller
         'current_page' => $result->currentPage(),
         'last_page' => $result->lastPage(),
     ]
-);
+    );
     }
     public function teamAttendance(AttendanceRequest $request)//: JsonResponse
     {
@@ -355,7 +358,21 @@ class AttendanceController extends Controller
 
         return Json::items($presentedData, message: 'Attendance list retrieved successfully');
     }
+   public function exportTeamAttendance(ExportAttendanceRequest $request)
+    {
+        $format = $request->get('format', 'xlsx'); // Default to xlsx if not specified
+        if (!in_array($format, ['xlsx', 'csv'])) {
+            return Json::error('Invalid format. Supported formats are: xlsx, csv', 400);
+        }
 
+        $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
+        $filters = $filterDTO->toArray();
+
+        $fileName = 'team_attendance_' . now()->format('Y-m-d_H-i-s') . '.' . $format;
+
+        // Pass the service instance and the filters to the export class
+        return Excel::download(new AttendanceTeamExport($this->attendanceService, $filters), $fileName);
+    }
     /**
      * Get late arrivals with filtering and pagination
      */

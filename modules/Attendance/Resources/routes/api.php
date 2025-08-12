@@ -49,6 +49,10 @@ Route::prefix('attendance')->group(function () {
     Route::get('history', [AttendanceController::class, 'getHistory'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.history');
+            // // Export Reports
+    Route::post('export', [AttendanceController::class, 'exportTeamAttendance'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_EXPORT())
+        ->name('reports.export-attendance');
 
     Route::get('summary', [AttendanceController::class, 'getSummary'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
@@ -189,10 +193,6 @@ Route::prefix('reports')->middleware('permission:view-attendance-reports')->grou
 
     // Route::get('team-attendance', [AttendanceReportController::class, 'teamAttendanceReport'])
     //     ->name('reports.team-attendance');
-
-    // // Export Reports
-    // Route::post('export/attendance', [AttendanceReportController::class, 'exportAttendance'])
-    //     ->name('reports.export-attendance');
 
     // Route::post('export/leave-requests', [AttendanceReportController::class, 'exportLeaveRequests'])
     //     ->name('reports.export-leave-requests');
