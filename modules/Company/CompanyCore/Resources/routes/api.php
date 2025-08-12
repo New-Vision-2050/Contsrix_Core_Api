@@ -29,37 +29,37 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
 
     Route::group(['prefix' => 'company-profile'], function () {
         Route::prefix("official-data")->group(function () {
-            Route::put("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialData"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DATA_UPDATE());
-            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDataRequest"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DATA_UPDATE());
+            Route::put("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialData"]);//->permission(Permission::COMPANY_PROFILE_OFFICIAL_DATA_UPDATE());
+            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDataRequest"]);//->permission(Permission::COMPANY_PROFILE_OFFICIAL_DATA_UPDATE());
         });
 
         Route::prefix("official-document")->group(function () {
-            Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createOfficialDocument"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_CREATE());
-            Route::post("/update/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDocument"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_UPDATE());
+            Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createOfficialDocument"]);//->permission(Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_CREATE());
+            Route::post("/update/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateOfficialDocument"]);//->permission(Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_UPDATE());
             Route::delete("/media/{id}/{media_id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteOfficialDocumentMedia"]);
-            Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteOfficialDocument"])->permission(Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_DELETE());
+            Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteOfficialDocument"]);//->permission(Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_DELETE());
         });
 
         Route::prefix("legal-data")->group(function () {
-            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "requestUpdateLegalDataRequest"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_UPDATE());
-            Route::post("/update", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateCompanyLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_UPDATE());
-            Route::post("/create-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_CREATE());
-            Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteLegalData"])->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_DELETE());
+            Route::post("/request", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "requestUpdateLegalDataRequest"]);//->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_UPDATE());
+            Route::post("/update", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "updateCompanyLegalData"]);//->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_UPDATE());
+            Route::post("/create-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "createLegalData"]);//->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_CREATE());
+            Route::delete("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "deleteLegalData"]);//)->permission(Permission::COMPANY_PROFILE_LEGAL_DATA_DELETE());
         });
 
         Route::post("assign-logo", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "setCompanyLogo"]);
         Route::post("validate-logo", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "validateCompanyLogo"]);
 
         Route::prefix("national-address")->group(function () {
-            Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getAddressFromMap"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_ADDRESS_VIEW());
-            Route::put("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "setAddress"])->permission(Permission::COMPANY_PROFILE_ADDRESS_UPDATE());
+            Route::post("/", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getAddressFromMap"]);//->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_ADDRESS_VIEW());
+            Route::put("/{id}", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "setAddress"]);//->permission(Permission::COMPANY_PROFILE_ADDRESS_UPDATE());
         });
 
         // Separated API endpoints for company data
-        Route::get("company-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyLegalData"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_LEGAL_DATA_VIEW());
-        Route::get("company-address", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyAddress"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_ADDRESS_VIEW());
-        Route::get("company-official-documents", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyOfficialDocuments"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_VIEW());
-        Route::get("company-branches", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyBranches"])->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_BRANCH_LIST());
+        Route::get("company-legal-data", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyLegalData"]);//->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_LEGAL_DATA_VIEW());
+        Route::get("company-address", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyAddress"]);//->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_ADDRESS_VIEW());
+        Route::get("company-official-documents", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyOfficialDocuments"]);//->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_OFFICIAL_DOCUMENT_VIEW());
+        Route::get("company-branches", [\Modules\Company\CompanyCore\Controllers\CompanyProfileController::class, "getCompanyBranches"]);//->permission(Permission::COMPANY_VIEW(),Permission::COMPANY_PROFILE_BRANCH_LIST());
 
     });
 });
