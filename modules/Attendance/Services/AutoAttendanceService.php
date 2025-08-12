@@ -101,7 +101,9 @@ class AutoAttendanceService
 
 
         foreach ($allRelevantUsers as $user) {
-            $constraint = $user->professionalData->attendanceConstraint ?? null;
+            $constraint = $user->professionalData?->attendanceConstraint ?? null;
+            if($constraint){
+
 
             $constraintHolidays = collect($constraint->constraint_config['time_rules']['holidays'] ?? [])
                                     ->pluck('date')
@@ -171,7 +173,7 @@ class AutoAttendanceService
             }
 
         }
-
+        }
     }
 }
 
