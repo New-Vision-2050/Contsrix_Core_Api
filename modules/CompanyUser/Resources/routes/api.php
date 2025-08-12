@@ -33,12 +33,12 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/validate-photo/{id?}', [CompanyUserProfileController::class, 'validatePhoto']);
     Route::post('/upload-photo/{id?}', [CompanyUserProfileController::class, 'uploadPhoto']);
     Route::put('/data-info/{id?}', [CompanyUserProfileController::class, 'updateDataInfo']);
-    Route::put('/contact-info/{id?}', [CompanyUserProfileController::class, 'updateContactInformation'])->permission(Permission::USER_PROFILE_CONTACT_UPDATE());
+    Route::put('/contact-info/{id?}', [CompanyUserProfileController::class, 'updateContactInformation'])->permission(Permission::USER_PROFILE_CONTACT_UPDATE(),Permission::PROFILE_CONTACT_INFO_UPDATE());
     Route::post('/identity-data/{id?}', [CompanyUserProfileController::class, 'identityData'])->permission(Permission::USER_PROFILE_IDENTITY_UPDATE(),Permission::PROFILE_PASSPORT_INFO_UPDATE(),Permission::PROFILE_BORDER_NUMBER_UPDATE(),Permission::PROFILE_RESIDENCE_INFO_UPDATE());
     Route::post('/send-otp/{id?}', [CompanyUserProfileController::class, 'sendOtp']);
     Route::post('/validate-otp/{id?}', [CompanyUserProfileController::class, 'validateOtp']);
     Route::get('/show-data-info/{id?}', [CompanyUserProfileController::class, 'showDataInfo']);
-    Route::get('/show-contact-information/{id?}', [CompanyUserProfileController::class, 'showContactInformation'])->permission(Permission::USER_PROFILE_CONTACT_VIEW());
+    Route::get('/show-contact-information/{id?}', [CompanyUserProfileController::class, 'showContactInformation'])->permission(Permission::USER_PROFILE_CONTACT_VIEW(),Permission::PROFILE_CONTACT_INFO_VIEW());
     Route::get('/show-identity-data/{id?}', [CompanyUserProfileController::class, 'showidentityData'])->permission(Permission::USER_PROFILE_IDENTITY_VIEW(),Permission::PROFILE_PASSPORT_INFO_VIEW(),Permission::PROFILE_BORDER_NUMBER_VIEW(),Permission::PROFILE_RESIDENCE_INFO_VIEW());
 
 
