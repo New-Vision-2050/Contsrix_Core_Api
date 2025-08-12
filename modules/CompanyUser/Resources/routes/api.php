@@ -29,7 +29,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/roles', [CompanyUserController::class, 'roles']);
     //Route::post('/export', [CompanyUserController::class, 'export'])->name('company-users.export');
 
-    Route::get('/profile/{id?}', [CompanyUserProfileController::class, 'profile'])->permission(Permission::USER_PROFILE_DATA_VIEW());
+    Route::get('/profile/{id?}', [CompanyUserProfileController::class, 'profile']);
     Route::post('/validate-photo/{id?}', [CompanyUserProfileController::class, 'validatePhoto']);
     Route::post('/upload-photo/{id?}', [CompanyUserProfileController::class, 'uploadPhoto']);
     Route::put('/data-info/{id?}', [CompanyUserProfileController::class, 'updateDataInfo']);
@@ -37,7 +37,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/identity-data/{id?}', [CompanyUserProfileController::class, 'identityData'])->permission(Permission::USER_PROFILE_IDENTITY_UPDATE());
     Route::post('/send-otp/{id?}', [CompanyUserProfileController::class, 'sendOtp']);
     Route::post('/validate-otp/{id?}', [CompanyUserProfileController::class, 'validateOtp']);
-    Route::get('/show-data-info/{id?}', [CompanyUserProfileController::class, 'showDataInfo'])->permission(Permission::USER_PROFILE_DATA_VIEW());
+    Route::get('/show-data-info/{id?}', [CompanyUserProfileController::class, 'showDataInfo']);
     Route::get('/show-contact-information/{id?}', [CompanyUserProfileController::class, 'showContactInformation'])->permission(Permission::USER_PROFILE_CONTACT_VIEW());
     Route::get('/show-identity-data/{id?}', [CompanyUserProfileController::class, 'showidentityData'])->permission(Permission::USER_PROFILE_IDENTITY_VIEW());
 

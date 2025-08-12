@@ -7,7 +7,6 @@ return [
         // ================================================================================================
 
         // User Profile module permissions
-        'USER_PROFILE_DATA_VIEW' => 'settings.user-profile*data.view',
 
         'USER_PROFILE_CONTACT_VIEW' => 'settings.user-profile*contact.view',
         'USER_PROFILE_CONTACT_UPDATE' => 'settings.user-profile*contact.update',
