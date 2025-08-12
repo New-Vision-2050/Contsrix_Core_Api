@@ -8,7 +8,7 @@ return [
 
         // User Profile module permissions
         'USER_PROFILE_DATA_VIEW' => 'settings.user-profile*data.view',
-        'USER_PROFILE_DATA_UPDATE' => 'settings.user-profile*data.update',
+
         'USER_PROFILE_CONTACT_VIEW' => 'settings.user-profile*contact.view',
         'USER_PROFILE_CONTACT_UPDATE' => 'settings.user-profile*contact.update',
         'USER_PROFILE_IDENTITY_VIEW' => 'settings.user-profile*identity.view',
@@ -32,17 +32,7 @@ return [
         'PROFILE_BANK_INFO_UPDATE' => 'settings.user-profile*bank-information.update',
         'PROFILE_BANK_INFO_DELETE' => 'settings.user-profile*bank-information.delete',
 
-        // Family Information
-        'PROFILE_FAMILY_INFO_VIEW' => 'settings.user-profile*family-information.view',
-        'PROFILE_FAMILY_INFO_CREATE' => 'settings.user-profile*family-information.create',
-        'PROFILE_FAMILY_INFO_UPDATE' => 'settings.user-profile*family-information.update',
-        'PROFILE_FAMILY_INFO_DELETE' => 'settings.user-profile*family-information.delete',
 
-        // Education Information
-        'PROFILE_EDUCATION_VIEW' => 'settings.user-profile*education.view',
-        'PROFILE_EDUCATION_CREATE' => 'settings.user-profile*education.create',
-        'PROFILE_EDUCATION_UPDATE' => 'settings.user-profile*education.update',
-        'PROFILE_EDUCATION_DELETE' => 'settings.user-profile*education.delete',
 
         // Experience Information
         'PROFILE_EXPERIENCE_VIEW' => 'settings.user-profile*experience.view',
