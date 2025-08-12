@@ -167,7 +167,7 @@ class AttendanceRepository extends BaseRepository
     public function getAttendanceByDateRange(UuidInterface $userId, Carbon $startDate, Carbon $endDate): Collection
     {
         return Attendance::where('user_id', $userId)
-            ->whereBetween('clock_in_time', [$startDate, $endDate])
+            ->whereBetween('start_time', [$startDate.' 00:00:00', $endDate . ' 23:59:59'])
             ->orderBy('start_time', 'desc')
             ->get();
     }

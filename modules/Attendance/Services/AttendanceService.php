@@ -339,8 +339,9 @@ class AttendanceService
         $endDate = $endDate ? Carbon::parse($endDate) : now()->endOfMonth();
 
         // 1. Get all attendance records for the period.
-        $attendances = $this->attendanceRepository->getAttendanceByDateRange($userId, $startDate, $endDate);
+        $records  = $this->attendanceRepository->getAttendanceByDateRange($userId, $startDate, $endDate);
 
+        $attendances = $this->processAttendancePeriods($records);
         // 2. Calculate the base total for percentages.
         // We will use the total number of records in the given date range as the base "100%".
         $totalRecords = $attendances->count();
