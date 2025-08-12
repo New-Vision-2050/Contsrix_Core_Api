@@ -32,7 +32,7 @@ class AttendanceFilter extends SearchModelFilter
 
     public function endDate($date)
     {
-        return $this->whereDate('end_time', '<=', $date);
+        return $this->whereDate('start_time', '<=', $date);
     }
 
     public function clockInTimeFrom($time)
