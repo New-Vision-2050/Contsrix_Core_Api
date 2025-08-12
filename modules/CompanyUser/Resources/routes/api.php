@@ -39,7 +39,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/validate-otp/{id?}', [CompanyUserProfileController::class, 'validateOtp']);
     Route::get('/show-data-info/{id?}', [CompanyUserProfileController::class, 'showDataInfo']);
     Route::get('/show-contact-information/{id?}', [CompanyUserProfileController::class, 'showContactInformation'])->permission(Permission::USER_PROFILE_CONTACT_VIEW());
-    Route::get('/show-identity-data/{id?}', [CompanyUserProfileController::class, 'showidentityData'])->permission(Permission::USER_PROFILE_IDENTITY_VIEW());
+    Route::get('/show-identity-data/{id?}', [CompanyUserProfileController::class, 'showidentityData'])->permission(Permission::USER_PROFILE_IDENTITY_VIEW(),Permission::PROFILE_PASSPORT_INFO_VIEW(),Permission::PROFILE_BORDER_NUMBER_VIEW(),Permission::PROFILE_RESIDENCE_INFO_VIEW());
 
 
     Route::get('/widget/user/{id}', [CompanyUserProfileController::class, 'widget']);
