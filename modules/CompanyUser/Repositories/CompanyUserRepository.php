@@ -565,7 +565,8 @@ class CompanyUserRepository extends BaseRepository
         } else {
             UserProfessionalData::create($data);
         }
-        // $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
+        
+        $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
     }
 
     public function setAddress(array $addressData)
