@@ -65,7 +65,7 @@ class AutoAttendanceService
             ->whereNotIn('email', config('constrix.emails'))
             ->whereDate('created_at', '<=', $endDate)
             ->when($userId, function ($query) use ($userId) {
-                return $query->where('id', $userId->toString());
+                return $query->where('id', $userId);
             })
             ->with(['professionalData.attendanceConstraint'])
             ->get();
@@ -86,7 +86,6 @@ class AutoAttendanceService
             ->get();
 
         $groupedAttendance = [];
-                dd($groupedAttendance,$realAttendanceRecords,$allRelevantUserIds,$allDates);
         foreach ($realAttendanceRecords as $record) {
             $userId = (string)$record->user_id;
             $dateKey = Carbon::parse($record->start_time)->timezone($timezone)->format('Y-m-d');
