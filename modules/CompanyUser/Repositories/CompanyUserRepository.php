@@ -235,6 +235,7 @@ class CompanyUserRepository extends BaseRepository
             // Handle additional data based on role
             if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
                 $this->handleEmployeeData($user, $companyRole['company_id'], $mainBranchId, $companyUserData);
+                $this->autoAttendanceService->generateAttendanceUsers($companyRole['company_id'], $user->id);
             }
 
             // Handle address if provided
@@ -290,7 +291,7 @@ class CompanyUserRepository extends BaseRepository
                 // Get main branch ID based on branches parameter
                 $mainBranchData = $this->getMainBranchData($companyUserRoleData['company_id'], $branches);
                 $this->handleEmployeeData($user, $companyUserRoleData['company_id'], $mainBranchData['branchId']);
-
+                $this->autoAttendanceService->generateAttendanceUsers($companyUserRoleData['company_id'], $user->id);
                 // Create branch association for employee
                 $this->createBranchAssociation($user, $companyUserCompany, $mainBranchData['branchId']);
             } elseif ($branches !== null) {
