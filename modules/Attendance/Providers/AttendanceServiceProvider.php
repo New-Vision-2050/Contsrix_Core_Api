@@ -124,7 +124,7 @@ class AttendanceServiceProvider extends ServiceProvider
     {
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
-            $schedule->command('attendance:create-waiting')->everyMinute();
+            $schedule->command('attendance:create-waiting')->everySixHours();
             // $schedule->command('attendance:update-status')->everyThreeHours();
         });
     }

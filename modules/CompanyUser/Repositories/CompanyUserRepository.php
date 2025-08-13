@@ -562,11 +562,14 @@ class CompanyUserRepository extends BaseRepository
 
         if ($userProfessionalData) {
             $userProfessionalData->update($data);
+            $professionalData = $userProfessionalData->refresh();
         } else {
-            UserProfessionalData::create($data);
+            $professionalData = UserProfessionalData::create($data);
         }
-        
-        $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
+
+        if($professionalData && $professionalData->attendance_constraint_id){
+            $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
+        }
     }
 
     public function setAddress(array $addressData)
