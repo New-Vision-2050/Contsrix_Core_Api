@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Modules\RoleAndPermission\Presenters;
 
 use Modules\RoleAndPermission\Models\Permission;
-use Modules\RoleAndPermission\Models\RoleAndPermission;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\User\Models\User;
+use Ramsey\Uuid\Uuid;
 
 class PermissionPresenter extends AbstractPresenter
 {
@@ -19,9 +20,51 @@ class PermissionPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $nameParts = explode('.', $this->permission->name);
+        $translatedName = '';
+        if (count($nameParts) >= 2) {
+            // Skip the first part (module name) and translate the rest
+            for ($i = count($nameParts) - 1; $i >= 1; $i--) {
+                if ($i == 1 && str_contains($nameParts[$i], "*")) {
+                    $resources = explode('*', $nameParts[$i]);
+                    if (Uuid::isValid($resources[1])) {
+                        // If it's a UUID, group by the part before asterisk
+                        $translatedName .= " " . $resources[0];
+                    } else {
+                        // If it's not a UUID, group by the part after asterisk
+                        $translatedName .= " " . __('names.' . $resources[1]);
+
+                        $translatedName .= " " . __('names.' . $resources[0]);
+                    }
+
+
+                    break;
+                }
+                $translatedName .= ($translatedName ? ' ' : '') . __('names.' . $nameParts[$i]);
+            }
+        } elseif (count($nameParts) == 1) {
+            $translatedName = __('names.' . $nameParts[0]);
+        } else {
+            $translatedName = __('names.' . $this->permission->name);
+        }
         return [
             'id' => $this->permission->id,
-            'name' => $this->permission->name,
+            'name' => $translatedName,
+            'status' => $this->permission->status,
+            'user_count' => $this->getUserCount(),
+            "key" => $this->permission->key,
         ];
+    }
+
+    /**
+     * Get the count of users who have this permission
+     * This counts both directly assigned permissions and permissions via roles
+     *
+     * @return int
+     */
+    protected function getUserCount(): int
+    {
+        // Count users who have this permission directly or through a role
+        return User::permission($this->permission->name)->count();
     }
 }
