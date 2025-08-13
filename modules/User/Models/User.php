@@ -213,6 +213,6 @@ class User extends Authenticatable implements JWTSubject, Auditable
     }
     public function professionalData()
     {
-        return $this->hasOne(UserProfessionalData::class, 'user_id', 'id');
+        return $this->hasOne(UserProfessionalData::class, 'user_id', 'id')->withoutTenancy();
     }
 }
