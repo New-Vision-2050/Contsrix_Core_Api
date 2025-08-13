@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Http\Middleware\IntializeTenantMiddleware;
-use App\Http\Middleware\TenancePermision;
-use Illuminate\Foundation\Http\Kernel;
-use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -122,13 +119,6 @@ class TenancyServiceProvider extends ServiceProvider
 
 
         $this->makeTenancyMiddlewareHighestPriority();
-        /** @var Kernel $kernel */
-        $kernel = app()->make(Kernel::class);
-
-        $kernel->addToMiddlewarePriorityBefore(
-            SubstituteBindings::class,
-            TenancePermision::class,
-        );
     }
 
     protected function bootEvents()

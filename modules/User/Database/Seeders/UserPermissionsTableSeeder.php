@@ -5,7 +5,6 @@ namespace Modules\User\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\App;
-use Modules\Company\CompanyCore\Models\Company;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\RoleAndPermission\Models\Role;
 use Ranium\SeedOnce\Traits\SeedOnce;
@@ -32,6 +31,7 @@ class UserPermissionsTableSeeder extends Seeder
                 {
                     Permission::firstOrCreate(["name"=>$module.".".$operation],["name"=>$module.".".$operation]);
                 }
+
             }
 
         }

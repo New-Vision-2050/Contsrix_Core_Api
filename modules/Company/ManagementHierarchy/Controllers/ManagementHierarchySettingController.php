@@ -25,7 +25,6 @@ use Modules\Company\ManagementHierarchy\Presenters\ManagementPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementWithRelationsPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyLookupsPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\NonCopiedHierarchyPresenter;
-use Modules\Company\ManagementHierarchy\Presenters\NonCopiedHierarchyWithDetailsPresenter;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\Company\ManagementHierarchy\Requests\CreateBranchRequest;
 use Modules\Company\ManagementHierarchy\Requests\CreateDepartmentRequest;
@@ -250,20 +249,5 @@ class ManagementHierarchySettingController extends Controller
                 'message' => 'Failed to delete department hierarchy: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Get a single non-copied hierarchy with its relations
-     */
-    public function showNonCopiedHierarchy( $id)
-    {
-
-        $hierarchy = $this->nonCopiedHierarchiesService->findNonCopiedHierarchyById($id);
-
-        if (!$hierarchy) {
-            return Json::error(__("validations.management-not-found"), 404);
-        }
-
-        return Json::item((new ManagementWithRelationsPresenter($hierarchy))->getData());
     }
 }

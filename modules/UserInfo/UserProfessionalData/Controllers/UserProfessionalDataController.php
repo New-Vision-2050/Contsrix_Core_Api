@@ -35,8 +35,8 @@ class UserProfessionalDataController extends Controller
         $user = $this->userRepository->getUser($userId);
 
         $item = $this->userProfessionalDataService->get(
-            Uuid::fromString($user->global_company_user_id),
             Uuid::fromString($user->company_id),
+            Uuid::fromString($user->global_company_user_id),
         );
         if (!$item) {
             return Json::item(null);
@@ -50,7 +50,7 @@ class UserProfessionalDataController extends Controller
 
         $user = $this->userRepository->getUser($userId);
         $createCreateUserProfessionalDataDTO->global_id = $user->global_company_user_id;
-        $createCreateUserProfessionalDataDTO->user_id = $userId->toString();
+        $createCreateUserProfessionalDataDTO->company_id = $user->company_id;
 
         $createdItem = $this->userProfessionalDataService->create($createCreateUserProfessionalDataDTO);
 

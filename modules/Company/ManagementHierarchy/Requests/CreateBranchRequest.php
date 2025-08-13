@@ -45,14 +45,6 @@ class CreateBranchRequest extends FormRequest
             "state_id" => "required|exists:states,id",
             "city_id" => "required|exists:cities,id",
 
-            'default_constraint_id' => [
-                'nullable',
-                'uuid',
-                Rule::exists('attendance_constraints', 'id')->where(function ($query) {
-                    $query->where('company_id', $this->declareCompanyAndBranchUsingRequest()[0]->id);
-                }),
-            ],
-
         ];
     }
 
@@ -107,8 +99,6 @@ class CreateBranchRequest extends FormRequest
             countryId: (string)$this->get('country_id'),
             stateId: (string)$this->get('state_id'),
             cityId: (string)$this->get('city_id'),
-            defaultConstraintId: $this->get('default_constraint_id')
-
         );
     }
 }

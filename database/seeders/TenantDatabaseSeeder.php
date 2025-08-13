@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Database\Seeders\CompanyPackageAssignmentSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
@@ -18,6 +17,7 @@ class TenantDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+//        $this->call(RolesAndPermissionsSeeder::class);
 //        $this->call(CountrySeederTableSeeder::class);
 //        $this->call(TimeZoneSeederTableSeeder::class);
 //        $this->call(LanguageSeederTableSeeder::class);
@@ -27,8 +27,6 @@ class TenantDatabaseSeeder extends Seeder
 //        $this->call(CompanyModulesSeederTableSeeder::class);
         $this->call(GenaralAdminSeedTableSeeder::class);
 
-        $this->call(CompanyPackageAssignmentSeeder::class);
-
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
@@ -36,6 +34,5 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(DefaultIdentifierSeederTableSeeder::class);
 
         $this->call(DefaultLoginWaySeederTableSeeder::class);
-//        $this->call(MainPackageSeeder::class);
     }
 }

@@ -10,7 +10,6 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Country\Handlers\DeleteCountryHandler;
 use Modules\Country\Handlers\UpdateCountryHandler;
-use Modules\Country\Presenters\CityPresenter;
 use Modules\Country\Presenters\CountryCurrencyPresenter;
 use Modules\Country\Presenters\CountryPresenter;
 use Modules\Country\Presenters\CountryStateCityPresenter;
@@ -41,15 +40,6 @@ class CountryController extends Controller
         );
 
         return Json::items(CountryPresenter::collection($list['data']),paginationSettings:$list['pagination']);
-    }
-    public function getCity(GetCountryListRequest $request): JsonResponse
-    {
-        $list = $this->countryService->listCity(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
-        );
-
-        return Json::items(CityPresenter::collection($list['data']),paginationSettings:$list['pagination']);
     }
 
 

@@ -23,11 +23,7 @@ class ManagementHierarchySimpleDataPresenter extends AbstractPresenter
 
         return [
             'id' => $this->managementHierarchy->id,
-            "name"=>$this->managementHierarchy->name,
-            'latitude' => $this->managementHierarchy->latitude,
-            'longitude' => $this->managementHierarchy->longitude,
-            'address' => $this->managementHierarchy->address,
-            'type' => $this->managementHierarchy->type,
+            "name"=>$this->managementHierarchy->name
         ];
     }
 }

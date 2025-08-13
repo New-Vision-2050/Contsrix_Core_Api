@@ -33,8 +33,7 @@ class AssignRoleCompanyUserHandler
         $data = [
             "name" => $userInCompany->name,
             "company_name" => $userInCompany->company?->name,
-            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
-            "serial_no" => $userInCompany->company?->serial_no
+            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain
         ];
         $userInCompany->notify(new SendDomainForUser($data));
 

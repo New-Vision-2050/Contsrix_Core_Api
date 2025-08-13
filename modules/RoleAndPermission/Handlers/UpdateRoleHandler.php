@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\RoleAndPermission\Handlers;
 
+use Modules\RoleAndPermission\Commands\UpdateRoleAndPermissionCommand;
 use Modules\RoleAndPermission\Commands\UpdateRoleCommand;
 use Modules\RoleAndPermission\Repositories\RoleRepository;
 
@@ -16,6 +17,6 @@ class UpdateRoleHandler
 
     public function handle(UpdateRoleCommand $updateRoleCommand)
     {
-        $this->repository->updateRole($updateRoleCommand->getId(), $updateRoleCommand->toArray(), $updateRoleCommand->getPermissions());
+        $this->repository->updateRole($updateRoleCommand->getId(), $updateRoleCommand->toArray());
     }
 }

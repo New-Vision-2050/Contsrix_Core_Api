@@ -58,11 +58,11 @@ class CompanyServiceProvider extends ModuleServiceProvider
     }
     public function registerCommands(): void
     {
-        // if ($this->app->runningInConsole()) {
-        //     $this->commands([
-        //         \Modules\Company\CompanyCore\Console\CheckCompanyActivityCommand::class,
-        //     ]);
-        // }
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Modules\Company\CompanyCore\Console\CheckCompanyActivityCommand::class,
+            ]);
+        }
     }
 
     /**

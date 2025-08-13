@@ -32,13 +32,6 @@ return [
     'job_title_id_required' => 'The job title field is required.',
     'job_code_required' => 'The job code field is required.',
 
-    'attendance-list' => 'Attendance List',
-    'attendance-list*attendance-list' => 'Attendance List',
-    'attendance-map' => 'Attendance Map',
-    'attendance-list*attendance-map' => 'Attendance Map',
-    'attendance-constraints' => 'Attendance Constraints',
-    'attendance-constraints*attendance-constraints' => 'Attendance Constraints',
-
 
     'between' => [
         'array' => 'The :attribute field must have between :min and :max items.',
@@ -114,8 +107,8 @@ return [
         'string' => 'The :attribute field must not be greater than :max characters.',
     ],
     'max_digits' => 'The :attribute field must not have more than :max digits.',
-    'mimes' => 'The :attribute field must have one of the following extensions: :values.',
-    'mimetypes' => 'The :attribute field must have one of the following extensions: :values.',
+    'mimes' => 'The :attribute field must be a file of type: :values.',
+    'mimetypes' => 'The :attribute field must be a file of type: :values.',
     'min' => [
         'array' => 'The :attribute field must have at least :min items.',
         'file' => 'The :attribute field must be at least :min kilobytes.',
@@ -209,7 +202,6 @@ return [
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
-    "management-not-found"=>"management not found",
     "company-not-active"=>"company not active",
     "branch-not-found"=>"branch not found",
     "integrity-error"=>"integrity error",
@@ -408,9 +400,6 @@ return [
         'description' => [
             'required' => 'The description is required.',
         ],
-        'role' => [
-            'cannot_deactivate' => 'Cannot deactivate this role because it is assigned to users.',
-        ],
         'document_number' => [
             'required' => 'The document number is required.',
             'numeric' => 'The document number must be a number.',
@@ -517,19 +506,9 @@ return [
     'date_end_required' => 'The certificate expiry date is required.',
     'date_end_date' => 'The certificate expiry date must be a valid date.',
     'graduation_date_date' => 'Graduation date must be a valid date.',
-
+    
     // Company user deletion validation messages
     'admin_account_cannot_be_deleted' => 'The admin account cannot be deleted.',
     'cannot_delete_yourself' => 'You cannot delete your own account.',
     'cannot_delete_company_owner' => 'A company owner account cannot be deleted.',
-    'regular' => 'regular',
-    'male' => 'male',
-    'female' => 'female',
-    'day_status' => [
-        'work_day'=> 'work day',
-        'holiday'=>'holiday',
-        'day_off_or_weekend'=> 'day off or weekend',
-        'in_loction'=>'in loction',
-        'clocked_out'=> 'clocked out'
-    ]
 ];

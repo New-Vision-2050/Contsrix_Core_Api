@@ -8,11 +8,14 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\User\Repositories\UserRepository;
-
+use Modules\UserInfo\EmploymentContract\Handlers\DeleteEmploymentContractHandler;
+use Modules\UserInfo\EmploymentContract\Handlers\UpdateEmploymentContractHandler;
 use Modules\UserInfo\EmploymentContract\Presenters\EmploymentContractPresenter;
 use Modules\UserInfo\EmploymentContract\Requests\CreateEmploymentContractRequest;
+use Modules\UserInfo\EmploymentContract\Requests\DeleteEmploymentContractRequest;
 use Modules\UserInfo\EmploymentContract\Requests\GetEmploymentContractListRequest;
 use Modules\UserInfo\EmploymentContract\Requests\GetEmploymentContractRequest;
+use Modules\UserInfo\EmploymentContract\Requests\UpdateEmploymentContractRequest;
 use Modules\UserInfo\EmploymentContract\Services\EmploymentContractCRUDService;
 use Ramsey\Uuid\Uuid;
 

@@ -9,14 +9,12 @@ use App\Scopes\CustomTenantScope;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
-
 use Modules\Company\ManagementHierarchy\Models\SourceManagementHierarchy;
-use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\User\Models\User;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Ramsey\Uuid\UuidInterface;
 use function PHPUnit\Framework\throwException;
 
@@ -132,7 +130,7 @@ class ManagementHierarchyRepository extends BaseRepository
         ]);
     }
 
-    public function createBranch(array $branchData, array $addressData,): ManagementHierarchy
+    public function createBranch(array $branchData, array $addressData): ManagementHierarchy
     {
         try {
             DB::beginTransaction();
@@ -154,11 +152,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
             $managementHierarchy->address()->create($addressData + ["company_id" => $managementHierarchy->company_id]);
 
-            if (isset($branchData['default_constraint_id']) && $branchData['default_constraint_id'] !== null) {
-                    $managementHierarchy->attendanceConstraints()->attach($branchData['default_constraint_id'], [
-                        'is_default' => true
-                    ]);
-            }
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -268,15 +262,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy->fresh();
 
             $managementHierarchy->address()->update($addressData);
-            
-            // Dispatch event for branch location update instead of direct method call
-            if (isset($branchData['latitude']) && isset($branchData['longitude'])) {
-                event(new \Modules\Company\ManagementHierarchy\Events\BranchLocationUpdatedEvent(
-                    $id,
-                    $branchData['latitude'],
-                    $branchData['longitude']
-                ));
-            }
+
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -788,7 +774,7 @@ class ManagementHierarchyRepository extends BaseRepository
 //                    $managementData['parent_id'] = $parentDetail ? $parentDetail->management_hierarchy_id : null;
 //                }
 
-                $managementHierarchy->update(["name" => $managementData["name"]]);
+                $managementHierarchy->update(["name"=>$managementData["name"]]);
 
                 // Update the detail
                 $detail->update($managementDetail);
@@ -966,19 +952,5 @@ class ManagementHierarchyRepository extends BaseRepository
             ->where('is_active', 1)
             ->select(['id', 'name'])
             ->get();
-    }
-
-    public function findNonCopiedHierarchyById( $id): ?SourceManagementHierarchy
-    {
-        return SourceManagementHierarchy::query()
-            ->with([
-                'details.managementHierarchy',
-                'company',
-                'jobTypes',
-                'jobTitles',
-                'relatedBranches',
-                "relatedManagements"
-            ])
-            ->find($id);
     }
 }

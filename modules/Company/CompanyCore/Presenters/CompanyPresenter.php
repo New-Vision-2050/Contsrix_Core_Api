@@ -10,9 +10,6 @@ use Modules\Company\CompanyField\Presenters\CompanyFieldPresenter;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
-use Modules\Subscription\CompanyAccessProgram\Presenters\CompanyAccessProgramSimplePresenter;
-use Modules\Subscription\Package\Models\Package;
-use Modules\Subscription\Package\Presenters\PackageSimplePresenter;
 
 class CompanyPresenter extends AbstractPresenter
 {
@@ -83,9 +80,6 @@ class CompanyPresenter extends AbstractPresenter
             "main_branch" => [
                 "name" => $this->company->mainBranch?->name
             ],
-            "packages" =>PackageSimplePresenter::collection($this->company->packages),
-            "company_access_programs" =>CompanyAccessProgramSimplePresenter::collection($this->company->distinctCompanyAccessPrograms),
-
 
             // These data points are now available through separate API endpoints
             // Access via: /api/companies/company-profile/company-legal-data

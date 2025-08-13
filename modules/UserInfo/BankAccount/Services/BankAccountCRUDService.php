@@ -17,7 +17,7 @@ class BankAccountCRUDService
     ) {
     }
 
-public function create(CreateBankAccountDTO $createBankAccountDTO): BankAccount
+    public function create(CreateBankAccountDTO $createBankAccountDTO): BankAccount
     {
          return $this->repository->createBankAccount($createBankAccountDTO->toArray());
     }

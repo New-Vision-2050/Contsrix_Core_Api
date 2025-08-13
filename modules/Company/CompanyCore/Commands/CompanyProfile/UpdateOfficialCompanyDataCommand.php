@@ -16,8 +16,7 @@ class UpdateOfficialCompanyDataCommand
         private string              $phone,
         private string              $branchName,
         private string              $companyTypeId,
-        private ManagementHierarchy $branch,
-        private array              $packages
+        private ManagementHierarchy $branch
     )
     {
     }
@@ -62,10 +61,5 @@ class UpdateOfficialCompanyDataCommand
         }
 
         return $data;
-    }
-
-    public function packages()
-    {
-        return $this->packages;
     }
 }

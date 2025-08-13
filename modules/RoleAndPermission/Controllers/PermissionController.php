@@ -9,17 +9,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\RoleAndPermission\Handlers\DeletePermissionHandler;
 use Modules\RoleAndPermission\Handlers\UpdatePermissionHandler;
-use Modules\RoleAndPermission\Presenters\PermissionLookupPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Requests\CreatePermissionRequest;
 use Modules\RoleAndPermission\Requests\DeletePermissionRequest;
 use Modules\RoleAndPermission\Requests\GetPermissionListRequest;
 use Modules\RoleAndPermission\Requests\GetPermissionRequest;
-use Modules\RoleAndPermission\Requests\SetStatusPermissionRequest;
 use Modules\RoleAndPermission\Requests\UpdatePermissionRequest;
 use Modules\RoleAndPermission\Services\PermissionCRUDService;
-use Modules\RoleAndPermission\Services\PermissionLookupService;
-use Modules\RoleAndPermission\Presenters\PermissionWidgetsPresenter;
 use Ramsey\Uuid\Uuid;
 
 class PermissionController extends Controller
@@ -27,9 +23,9 @@ class PermissionController extends Controller
     public function __construct(
         private PermissionCRUDService   $permissionService,
         private UpdatePermissionHandler $updatePermissionHandler,
-        private DeletePermissionHandler $deletePermissionHandler,
-        private PermissionLookupService $permissionLookupService,
-        private PermissionLookupPresenter $permissionLookupPresenter
+        private DeletePermissionHandler $deletePermissionHandler
+
+
     )
     {
     }
@@ -41,28 +37,7 @@ class PermissionController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items( PermissionPresenter::collection($list['data']), paginationSettings: $list['pagination']);
-    }
-
-    public function permissionAsLookup(GetPermissionListRequest $request): JsonResponse
-    {
-
-
-        if($request->has("package_id")){
-            $permissions = $this->permissionLookupService->getPermissionsForPackage($request->get("package_id"));
-            $presented = $this->permissionLookupPresenter->present($permissions);
-            return Json::item($presented);
-
-
-        }
-        if(tenant('is_central_company')){
-            $list = $this->permissionService->listPermissionAsLookup();
-            return Json::item($list);
-        }
-
-        $permissions = $this->permissionLookupService->getPermissionsForCompany();
-        $presented = $this->permissionLookupPresenter->present($permissions);
-        return Json::item($presented);
+        return Json::item(['permissions' => PermissionPresenter::collection($list['data']), 'pagination' => $list['pagination']]);
     }
 
     public function show(GetPermissionRequest $request): JsonResponse
@@ -90,7 +65,7 @@ class PermissionController extends Controller
 
         $item = $this->permissionService->get($command->getId());
 
-        $presenter = new PermissionPresenter($item);
+        $presenter = new permissionPresenter($item);
 
         return Json::item($presenter->getData());
     }
@@ -102,32 +77,5 @@ class PermissionController extends Controller
         return Json::deleted();
     }
 
-    /**
-     * Set the status of a permission (activate or deactivate).
-     *
-     * @param SetStatusPermissionRequest $request
-     * @return JsonResponse
-     */
-    public function setStatus(SetStatusPermissionRequest $request): JsonResponse
-    {
-        $permission = $this->permissionService->setStatus(
-            $request->getPermissionId(),
-            $request->getStatus()
-        );
 
-        $message = $request->getStatus() ? 'Permission activated successfully.' : 'Permission deactivated successfully.';
-
-        $presenter = new PermissionPresenter($permission);
-
-        return Json::item($presenter->getData(), message: $message);
-    }
-
-    public function getPermissionWidgetsData(): JsonResponse
-    {
-        $widgetsData = $this->permissionService->getPermissionWidgetsData();
-
-        return Json::item(
-            (new PermissionWidgetsPresenter($widgetsData))->getData()
-        );
-    }
 }

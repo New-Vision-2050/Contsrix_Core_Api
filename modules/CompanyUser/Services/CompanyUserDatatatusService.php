@@ -60,7 +60,7 @@ class CompanyUserDatatatusService
         $jobOffer = $this->jobOfferRepository->getJobOffer($companyId, $globalId);
         $userPrivileges = $this->userPrivilegeRepository->getUserPrivilegeList($companyId, $globalId, 1);
         $userDataContactInfo = $this->contactinfoRepository->getContactinfo($companyId, $globalId);
-        $userProfessionalData = $this->userProfessionalDataRepository->getUserProfessionalData( $globalId , $companyId);
+        $userProfessionalData = $this->userProfessionalDataRepository->getUserProfessionalData($companyId, $globalId);
 
         $hasIdentity = $this->hasIdentityInfo($companyUser, $company->country_id);
         $hasIdentityInfoUser = $this->hasIdentityInfoUser($companyUser, $company->country_id);

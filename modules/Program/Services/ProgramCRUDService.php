@@ -19,7 +19,7 @@ class ProgramCRUDService
 
     public function create(CreateProgramDTO $createProgramDTO): Program
     {
-        return $this->repository->createProgram($createProgramDTO->toArray());
+         return $this->repository->createProgram($createProgramDTO->toArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -35,10 +35,5 @@ class ProgramCRUDService
         return $this->repository->getProgram(
             id: $id,
         );
-    }
-
-    public function selectList(): Collection
-    {
-        return $this->repository->selectList();
     }
 }

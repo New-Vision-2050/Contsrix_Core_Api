@@ -2,7 +2,6 @@
 
 namespace App\Exceptions;
 
-use Spatie\Permission\Exceptions\UnauthorizedException;
 use Throwable;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
@@ -30,18 +29,10 @@ class Handler
                 'success' => false,
                 'message' => __('validation.unauthorized'),
             ], 403),
-            $e instanceof UnauthorizedException => response()->json([
-                'success' => false,
-                'message' => __('validation.unauthorized'),
-                'error' => $e->getMessage() , // Hide error details in production
-                "trace"=> $e->getTrace(), // Hide error details in production <==>
-            ], 404),
 
             $e instanceof NotFoundHttpException => response()->json([
                 'success' => false,
                 'message' => __('validation.resource_not_found'),
-                'error' => $e->getMessage() , // Hide error details in production
-                "trace"=> $e->getTrace(), // Hide error details in production <==>
             ], 404),
 
             $e instanceof CustomException => response()->json([
@@ -52,8 +43,8 @@ class Handler
             default => response()->json([
                 'success' => false,
                 'message' => 'Something went wrong, please try again later.',
-                'error' =>  $e->getMessage() , // Hide error details in production
-                "trace"=> $e->getTrace() , // Hide error details in production <==>
+                'error' => env('APP_DEBUG') ? $e->getMessage() : null, // Hide error details in production
+                "trace"=>env('APP_DEBUG') ? $e->getTrace() : null, // Hide error details in production <==>
             ], 500),
         };
     }

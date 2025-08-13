@@ -41,7 +41,6 @@ class GenaralAdminSeedTableSeeder extends Seeder
                 "company_id" => tenant("id"),
             ]
         );
-
     }
     //}
 }

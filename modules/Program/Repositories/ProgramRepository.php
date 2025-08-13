@@ -47,19 +47,4 @@ class ProgramRepository extends BaseRepository
     {
         return $this->delete($id);
     }
-    public function selectList(): Collection
-    {
-        return $this->model::with([
-            'subEntities:id,name,slug,main_program_id,super_entity,origin_super_entity,is_active',
-            'children:id,name,slug,is_active,parent_id',
-            'children.subEntities:id,name,slug,main_program_id,super_entity,origin_super_entity,is_active',
-            'children.subEntities.children:id,name,slug,main_program_id,super_entity,origin_super_entity,is_active',
-            'subEntities.children:id,name,slug,main_program_id,super_entity,origin_super_entity,is_active'
-        ])
-            ->select('id', 'name' ,'slug', 'is_active', 'parent_id')
-            ->whereNull('parent_id')
-            ->where('is_active', true)
-            ->get();
-    }
-
 }

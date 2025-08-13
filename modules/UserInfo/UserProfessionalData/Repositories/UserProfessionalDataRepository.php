@@ -7,7 +7,6 @@ namespace Modules\UserInfo\UserProfessionalData\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Modules\Attendance\Events\UpdateAttendance;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -33,10 +32,11 @@ class UserProfessionalDataRepository extends BaseRepository
         );
     }
 
-    public function getUserProfessionalData(UuidInterface $globalId,$companyId): ?UserProfessionalData
+    public function getUserProfessionalData(UuidInterface $companyId, UuidInterface $globalId): ?UserProfessionalData
     {
         return $this->model->where([
-            'global_id' => $globalId, 'company_id' => $companyId
+            'global_id' => $globalId,
+            'company_id' => $companyId,
         ])->first();
     }
 
@@ -51,12 +51,10 @@ class UserProfessionalDataRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $userProfessionalData = $this->model->where([
-                'user_id' => $data['user_id'],
+                'global_id' => $data['global_id'],
+                'company_id' => $data['company_id'],
             ])->first();
-
-            $oldConstraintId = $userProfessionalData ? $userProfessionalData->attendance_constraint_id : null;
-
-            $user = $this->userRepository->findOneBy(["id"=>$data["user_id"]]);
+            $user = $this->userRepository->findOneBy(["global_company_user_id"=>$data["global_id"],"company_id"=>$data["company_id"]]);
             $managementHierarchyId = null;
 
             if($data["management_id"]!=null){
@@ -72,19 +70,15 @@ class UserProfessionalDataRepository extends BaseRepository
             if ($userProfessionalData) {
                 $userProfessionalData->update($data);
                 DB::commit();
-                $userProfessionalData->refresh();
-            }else{
-                $userProfessionalData =  $this->model->create($data);
-                DB::commit();
+
+                return $userProfessionalData;
             }
+            $userProfessionalData =  $this->model->create($data);
+            DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception(__("validation.create-not-successful"),500);
         }
-            if ($oldConstraintId !== $userProfessionalData->attendance_constraint_id) {
-                UpdateAttendance::dispatch($userProfessionalData->attendance_constraint_id);
-            }
-
         return $userProfessionalData;
     }
 
@@ -120,23 +114,5 @@ class UserProfessionalDataRepository extends BaseRepository
     public function deleteUserProfessionalData(UuidInterface $id): bool
     {
         return $this->delete($id);
-    }
-
-    public function getById(string $id): ?UserProfessionalData
-    {
-        return UserProfessionalData::with([
-            'attendanceConstraint',
-            'branch.defaultAttendanceConstraint'
-        ])->find($id);
-    }
-
-    public function getByGlobalId(string $globalId): ?UserProfessionalData
-    {
-        return UserProfessionalData::where('global_id', $globalId)
-            ->with([
-                'attendanceConstraint',
-                'branch.defaultAttendanceConstraint'
-            ])
-        ->first();
     }
 }

@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\UserInfo\UserProfessionalData\Database\factories\UserProfessionalDataFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Country\Models\Country;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\JobType\Models\JobType;
@@ -37,14 +36,12 @@ class UserProfessionalData extends Model
     protected $fillable = [
         'company_id',
         'global_id',
-        'user_id',
         'branch_id',
         'management_id',
 //        'department_id',
         'job_type_id',
         'job_title_id',
         'job_code',
-        'attendance_constraint_id'
     ];
 
     protected $casts = [
@@ -80,10 +77,6 @@ class UserProfessionalData extends Model
     {
         return $this->belongsTo(JobType::class);
     }
-    public function attendanceConstraint()
-    {
-        return $this->belongsTo(AttendanceConstraint::class);
-    }
 
     public function jobTitle()
     {
@@ -95,6 +88,5 @@ class UserProfessionalData extends Model
         return $this->belongsTo(User::class, 'global_id', 'global_company_user_id')
             ->where('users.company_id', '=', $this->company_id);
     }
-
 
 }
