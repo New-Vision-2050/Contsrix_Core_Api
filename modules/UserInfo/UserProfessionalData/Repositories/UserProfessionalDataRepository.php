@@ -7,6 +7,7 @@ namespace Modules\UserInfo\UserProfessionalData\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Events\UpdateAttendance;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -52,6 +53,9 @@ class UserProfessionalDataRepository extends BaseRepository
             $userProfessionalData = $this->model->where([
                 'user_id' => $data['user_id'],
             ])->first();
+
+            $oldConstraintId = $userProfessionalData ? $userProfessionalData->attendance_constraint_id : null;
+
             $user = $this->userRepository->findOneBy(["id"=>$data["user_id"]]);
             $managementHierarchyId = null;
 
@@ -68,15 +72,19 @@ class UserProfessionalDataRepository extends BaseRepository
             if ($userProfessionalData) {
                 $userProfessionalData->update($data);
                 DB::commit();
-
-                return $userProfessionalData;
+                $userProfessionalData->refresh();
+            }else{
+                $userProfessionalData =  $this->model->create($data);
+                DB::commit();
             }
-            $userProfessionalData =  $this->model->create($data);
-            DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception(__("validation.create-not-successful"),500);
         }
+            if ($oldConstraintId !== $userProfessionalData->attendance_constraint_id) {
+                UpdateAttendance::dispatch($userProfessionalData->attendance_constraint_id);
+            }
+
         return $userProfessionalData;
     }
 
