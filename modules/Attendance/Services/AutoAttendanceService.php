@@ -63,7 +63,6 @@ class AutoAttendanceService
 
         $allRelevantUsers = User::where('company_id', $companyId)
             ->whereNotIn('email', config('constrix.emails'))
-            ->whereDate('created_at', '<=', $endDate)
             ->when($userId, function ($query) use ($userId) {
                 return $query->where('id', $userId);
             })
