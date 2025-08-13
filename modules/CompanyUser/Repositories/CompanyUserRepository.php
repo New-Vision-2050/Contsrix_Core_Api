@@ -565,9 +565,9 @@ class CompanyUserRepository extends BaseRepository
         } else {
             $professionalData = UserProfessionalData::create($data);
         }
-        
+
         if($professionalData && $professionalData->attendance_constraint_id){
-            $this->autoAttendanceService->generateAttendanceUsers($companyId);
+            $this->autoAttendanceService->generateAttendanceUsers($companyId, $user->id);
         }
     }
 
