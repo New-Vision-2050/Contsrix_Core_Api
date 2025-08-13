@@ -568,7 +568,6 @@ class CompanyUserRepository extends BaseRepository
         }
 
         if($professionalData && $professionalData->attendance_constraint_id){
-            dd($professionalData->attendance_constraint_id,$companyId,$user->id);
             $this->autoAttendanceService->generateAttendanceUsers($companyId,$user->id);
         }
     }
