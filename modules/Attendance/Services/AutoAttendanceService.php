@@ -65,7 +65,7 @@ class AutoAttendanceService
             ->whereNotIn('email', config('constrix.emails'))
             ->whereDate('created_at', '<=', $endDate)
             ->when($userId, function ($query) use ($userId) {
-                return $query->where('id', $userId);
+                return $query->where('id', $userId->toString());
             })
             ->with(['professionalData.attendanceConstraint'])
             ->get();
