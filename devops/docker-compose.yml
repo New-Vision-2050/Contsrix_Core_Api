@@ -4,27 +4,11 @@ services:
       context: ..
       dockerfile: devops/Dockerfile
     image: backend-${DEPLOYMENT_ID}
-    restart: unless-stopped
+    restart: always
     deploy:
       replicas: 3
       restart_policy:
         condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend-${DEPLOYMENT_ID}.rule=Host(`core-be-${DEPLOYMENT_ID}.constrix-nv.com`)"
@@ -33,8 +17,6 @@ services:
       - "traefik.http.routers.backend-${DEPLOYMENT_ID}.tls=true"
       #      - "traefik.http.routers.nextjs-${DEPLOYMENT_ID}.middlewares=security-headers,rate-limit"
       - "traefik.http.services.backend-${DEPLOYMENT_ID}.loadbalancer.server.port=80"
-      - "traefik.http.services.backend-${DEPLOYMENT_ID}.loadbalancer.healthcheck.path=/health"
-      - "traefik.http.services.backend-${DEPLOYMENT_ID}.loadbalancer.healthcheck.interval=30s"
     networks:
       - traefik_network
 
