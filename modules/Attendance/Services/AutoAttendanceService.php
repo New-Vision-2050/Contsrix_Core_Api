@@ -101,7 +101,7 @@ class AutoAttendanceService
 
 
         foreach ($allRelevantUsers as $user) {
-            $constraint = $user->professionalData?->attendanceConstraint ?? null;
+            $constraint = $user->professionalData->attendanceConstraint;
             if($constraint){
 
 
