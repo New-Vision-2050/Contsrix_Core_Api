@@ -15,6 +15,7 @@ use Modules\Subscription\Package\Models\Package;
 use Modules\Country\Models\Country;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
+use Ramsey\Uuid\Uuid;
 
 class MainPackageSeeder extends Seeder
 {
@@ -31,6 +32,7 @@ class MainPackageSeeder extends Seeder
                 return CompanyAccessProgram::firstOrCreate([
                     'name' => 'Main Access Program',
                 ], [
+                    'id' => \Ramsey\Uuid\Uuid::uuid4()->toString(), // Explicitly generate UUID
                     'is_active' => true,
                     'is_main_program' => true,
                 ]);
