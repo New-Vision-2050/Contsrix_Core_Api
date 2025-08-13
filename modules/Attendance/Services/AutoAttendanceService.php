@@ -86,6 +86,7 @@ class AutoAttendanceService
             ->get();
 
         $groupedAttendance = [];
+                dd($groupedAttendance,$realAttendanceRecords,$allRelevantUserIds,$allDates);
         foreach ($realAttendanceRecords as $record) {
             $userId = (string)$record->user_id;
             $dateKey = Carbon::parse($record->start_time)->timezone($timezone)->format('Y-m-d');
