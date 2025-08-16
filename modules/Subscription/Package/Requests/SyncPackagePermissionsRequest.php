@@ -11,8 +11,8 @@ class SyncPackagePermissionsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'permissions' => ['required', 'array'],
-            'permissions.*' => ['nullable', 'string', 'exists:permissions,id'],
+            'permissions' => ['sometimes', 'array'],
+            'permissions.*' => ['required_with:permissions', 'string', 'exists:permissions,id'],
             'limits' => ['sometimes', 'array'],
             'limits.*.permission_id' => ['required_with:limits', 'string', 'exists:permissions,id'],
             'limits.*.number' => ['required_with:limits', 'integer', 'min:1'],
