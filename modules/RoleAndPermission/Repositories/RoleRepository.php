@@ -106,6 +106,6 @@ class RoleRepository extends BaseRepository
      */
     public function findByCompanyId(string $companyId): Collection
     {
-        return $this->model->where('company_id', $companyId)->get();
+        return $this->model->withoutTenancy()->where('company_id', $companyId)->get();
     }
 }
