@@ -773,7 +773,8 @@ class ManagementHierarchyRepository extends BaseRepository
             $sourceManagementHierarchy->update([
                 'name' => $managementData['name'],
                 'type' => $managementData['type'],
-                'company_id' => $managementData['company_id']
+                'company_id' => $managementData['company_id'],
+                "parent_id" => $managementData["parent_id"]
             ]);
 
             // Find the management hierarchy detail
