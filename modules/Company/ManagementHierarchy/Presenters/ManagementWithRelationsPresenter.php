@@ -65,7 +65,7 @@ class ManagementWithRelationsPresenter extends AbstractPresenter
             'job_types' => $this->getJobTypes(),
             'job_titles' => $this->getJobTitles(),
             'related_branches' => $this->getRelatedBranches(),
-            'related_managements' => $this->getRelatedBranches(),
+            'related_managements' => $this->getRelatedManagements(),
             'created_at' => $this->sourceManagementHierarchy->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->sourceManagementHierarchy->updated_at?->format('Y-m-d H:i:s'),
         ];
