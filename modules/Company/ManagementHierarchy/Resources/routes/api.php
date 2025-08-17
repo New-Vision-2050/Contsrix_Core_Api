@@ -19,7 +19,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/non-copied', [ManagementHierarchySettingController::class, 'getNonCopiedHierarchies']);
     Route::get('/non-copied/all', [ManagementHierarchySettingController::class, 'getAllNonCopiedHierarchies']);
     Route::get('/non-copied/{id}', [ManagementHierarchySettingController::class, 'showNonCopiedHierarchy']);
-    Route::get('/lookups', [ManagementHierarchySettingController::class, 'getLookupsForChoise']);
+    Route::get('/lookups', [ManagementHierarchySettingController::class, 'getLookupsForChoices']);
     Route::get('/job_titles', [ManagementHierarchySettingController::class, 'getJobTitles']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
