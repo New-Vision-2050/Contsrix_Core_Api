@@ -162,6 +162,9 @@ class TenancyServiceProvider extends ServiceProvider
 
             // Our custom middleware to convert X-Domain to X-Tenant
             \App\Http\Middleware\DomainToTenantMiddleware::class,
+            
+            // Our custom middleware to ensure tenant compatibility (must run before InitializeTenancyByRequestData)
+            \App\Http\Middleware\TenantCompatibilityMiddleware::class,
 
             Middleware\InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,

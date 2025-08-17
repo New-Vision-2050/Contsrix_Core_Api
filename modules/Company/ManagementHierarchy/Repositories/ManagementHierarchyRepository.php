@@ -268,7 +268,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy->fresh();
 
             $managementHierarchy->address()->update($addressData);
-            
+
             // Dispatch event for branch location update instead of direct method call
             if (isset($branchData['latitude']) && isset($branchData['longitude'])) {
                 event(new \Modules\Company\ManagementHierarchy\Events\BranchLocationUpdatedEvent(
@@ -668,6 +668,8 @@ class ManagementHierarchyRepository extends BaseRepository
             "is_main" => 1
         ]);
 
+        $parentId = $managementData["parent_id"] ?? null;
+
 
         // Create the management hierarchy
         $relatedSourceManagementHierarchy = SourceManagementHierarchy::query()->where('id', $managementData['parent_id'])->first();
@@ -677,7 +679,7 @@ class ManagementHierarchyRepository extends BaseRepository
         $managementDetail['branch_id'] = $mainBranch->id;
 
 
-        $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name" => $managementData["name"], "type" => $managementData["type"], "company_id" => $managementData["company_id"]]);
+        $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name" => $managementData["name"], "type" => $managementData["type"], "company_id" => $managementData["company_id"] , "parent_id" => $parentId]);
 
 
         $managementHierarchy = $this->createManagement($managementData, $managementDetail + ["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $deputyManagers);
@@ -771,7 +773,8 @@ class ManagementHierarchyRepository extends BaseRepository
             $sourceManagementHierarchy->update([
                 'name' => $managementData['name'],
                 'type' => $managementData['type'],
-                'company_id' => $managementData['company_id']
+                'company_id' => $managementData['company_id'],
+                "parent_id" => $managementData["parent_id"]
             ]);
 
             // Find the management hierarchy detail
