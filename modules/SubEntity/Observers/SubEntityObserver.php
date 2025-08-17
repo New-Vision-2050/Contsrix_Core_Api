@@ -9,6 +9,7 @@ use Modules\SubEntity\Models\SubEntity;
 use Modules\RoleAndPermission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Subscription\CompanyAccessProgram\Repositories\CompanyAccessProgramRepository;
 use Modules\Subscription\Package\Repositories\PackageRepository;
 use Modules\Subscription\Package\Services\PackageAssignmentService;
 
@@ -16,7 +17,8 @@ class SubEntityObserver
 {
     public function __construct(
         private PackageAssignmentService $packageAssignmentService,
-        private PackageRepository $packageRepository
+        private PackageRepository $packageRepository,
+        private CompanyAccessProgramRepository $companyAccessProgramRepository,
     ) {
     }
 
@@ -27,6 +29,24 @@ class SubEntityObserver
 
             // Add this block to trigger recalculation
             $mainPackage = $this->packageRepository->findByName('Main Package');
+            $mainProgram = $this->companyAccessProgramRepository->findByName('Main Access Program');
+
+            $programData =  [
+                'company_access_program_id' => $mainProgram->id,
+                'program_id' => $subEntity->mainProgram->slug,
+
+            ];
+
+            $mainProgram->programs()->updateOrCreate($programData, $programData);
+
+            $subEntityData = [
+                'company_access_program_id' => $mainProgram->id,
+                'sub_entity_id' => $subEntity->name,
+
+            ];
+
+            $mainProgram->subEntities()->updateOrCreate($subEntityData, $subEntityData);
+
             if ($mainPackage) {
                 $this->packageAssignmentService->recalculate($mainPackage);
             }
