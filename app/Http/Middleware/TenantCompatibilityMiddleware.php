@@ -76,9 +76,13 @@ class TenantCompatibilityMiddleware
 
         // Check if user's company_id matches the tenant
         if ($user->company_id != $tenantId) {
-            return $this->forbiddenResponse(
-                "User company ({$user->company_id}) is not compatible with tenant ({$tenantId})"
-            );
+            // Auto-initialize tenant to user's company_id instead of forbidden
+            $request->headers->set('X-Tenant', $user->company_id);
+
+//            // Also update company_id in request data if it's not a GET request
+//            if ($request->method() !== 'GET' && empty($request->get('company_id'))) {
+//                $request->merge(['company_id' => $user->company_id]);
+//            }
         }
 
         return $next($request);
