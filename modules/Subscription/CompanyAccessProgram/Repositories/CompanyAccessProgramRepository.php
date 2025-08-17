@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\CompanyAccessProgram\Repositories;
 
+use Modules\Subscription\Package\Models\Package;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
@@ -187,7 +188,10 @@ class CompanyAccessProgramRepository extends BaseRepository
     {
         return $this->delete($id);
     }
-
+    public function findByName(string $name): ?CompanyAccessProgram
+    {
+        return $this->model->where('name', $name)->first();
+    }
     public function getPackageFormMeta(string $id): CompanyAccessProgram
     {
         return $this->model->where('id', $id)

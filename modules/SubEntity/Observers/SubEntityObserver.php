@@ -9,6 +9,7 @@ use Modules\SubEntity\Models\SubEntity;
 use Modules\RoleAndPermission\Models\Permission;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Subscription\CompanyAccessProgram\Repositories\CompanyAccessProgramRepository;
 use Modules\Subscription\Package\Repositories\PackageRepository;
 use Modules\Subscription\Package\Services\PackageAssignmentService;
 
@@ -16,7 +17,8 @@ class SubEntityObserver
 {
     public function __construct(
         private PackageAssignmentService $packageAssignmentService,
-        private PackageRepository $packageRepository
+        private PackageRepository $packageRepository,
+        private CompanyAccessProgramRepository $companyAccessProgramRepository,
     ) {
     }
 
@@ -27,6 +29,24 @@ class SubEntityObserver
 
             // Add this block to trigger recalculation
             $mainPackage = $this->packageRepository->findByName('Main Package');
+            $mainProgram = $this->companyAccessProgramRepository->findByName('Main Access Program');
+
+            $programData =  [
+                'company_access_program_id' => $mainProgram->id,
+                'program_id' => $subEntity->mainProgram->slug,
+
+            ];
+
+            $mainProgram->programs()->updateOrCreate($programData, $programData);
+
+            $subEntityData = [
+                'company_access_program_id' => $mainProgram->id,
+                'sub_entity_id' => $subEntity->name,
+
+            ];
+
+            $mainProgram->subEntities()->updateOrCreate($subEntityData, $subEntityData);
+
             if ($mainPackage) {
                 $this->packageAssignmentService->recalculate($mainPackage);
             }
@@ -38,12 +58,38 @@ class SubEntityObserver
      */
     public function updated(SubEntity $subEntity): void
     {
-        // Update permission names and keys when SubEntity name or slug changes
-        if ($subEntity->isDirty('name') || $subEntity->isDirty('slug')) {
-            $oldName = $subEntity->getOriginal('name');
-            $oldSlug = $subEntity->getOriginal('slug');
-            $this->updatePermissionNamesAndKeys($subEntity, $oldName, $oldSlug);
-        }
+        DB::transaction(function () use ($subEntity) {
+            // Update permission names and keys when SubEntity name or slug changes
+            if ($subEntity->isDirty('name') || $subEntity->isDirty('slug')) {
+                $oldName = $subEntity->getOriginal('name');
+                $oldSlug = $subEntity->getOriginal('slug');
+                $this->updatePermissionNamesAndKeys($subEntity, $oldName, $oldSlug);
+            }
+
+            // Update Main Program assignment
+            $mainPackage = $this->packageRepository->findByName('Main Package');
+            $mainProgram = $this->companyAccessProgramRepository->findByName('Main Access Program');
+
+            if ($mainProgram && $subEntity->mainProgram) {
+                $programData = [
+                    'company_access_program_id' => $mainProgram->id,
+                    'program_id' => $subEntity->mainProgram->slug,
+                ];
+
+                $mainProgram->programs()->updateOrCreate($programData, $programData);
+
+                $subEntityData = [
+                    'company_access_program_id' => $mainProgram->id,
+                    'sub_entity_id' => $subEntity->name,
+                ];
+
+                $mainProgram->subEntities()->updateOrCreate($subEntityData, $subEntityData);
+
+                if ($mainPackage) {
+                    $this->packageAssignmentService->recalculate($mainPackage);
+                }
+            }
+        });
     }
 
     /**
@@ -52,8 +98,24 @@ class SubEntityObserver
     public function deleting(SubEntity $subEntity): void
     {
         DB::transaction(function () use ($subEntity) {
-            // Add this block to trigger recalculation BEFORE deleting
+            // Remove from Main Program before deletion
             $mainPackage = $this->packageRepository->findByName('Main Package');
+            $mainProgram = $this->companyAccessProgramRepository->findByName('Main Access Program');
+
+            if ($mainProgram && $subEntity->mainProgram) {
+                // Remove program assignment
+                $mainProgram->programs()->where([
+                    'company_access_program_id' => $mainProgram->id,
+                    'program_id' => $subEntity->mainProgram->slug,
+                ])->delete();
+
+                // Remove sub-entity assignment
+                $mainProgram->subEntities()->where([
+                    'company_access_program_id' => $mainProgram->id,
+                    'sub_entity_id' => $subEntity->name,
+                ])->delete();
+            }
+
             if ($mainPackage) {
                 $this->packageAssignmentService->recalculate($mainPackage);
             }
