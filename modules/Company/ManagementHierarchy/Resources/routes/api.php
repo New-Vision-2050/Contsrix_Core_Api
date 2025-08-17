@@ -27,7 +27,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::get('/{id}', [ManagementHierarchySettingController::class, 'showNonCopiedHierarchy']);
 
         Route::post('/', [ManagementHierarchySettingController::class, 'createManagementWithLookupsForChoise']);
-        Route::post('/{id}', [ManagementHierarchySettingController::class, 'updateManagementWithLookupsForChoise']);
+        Route::put('/{id}', [ManagementHierarchySettingController::class, 'updateManagementWithLookupsForChoise']);
         Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteManagementWithLookupsForChoise']);
 
     });
@@ -35,7 +35,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::get('/{id}', [ManagementHierarchySettingController::class, 'showNonCopiedHierarchy']);
 
         Route::post('/', [ManagementHierarchySettingController::class, 'createDepartmentWithManagementsForDropDown']);
-        Route::post('/{id}', [ManagementHierarchySettingController::class, 'updateDepartmentWithManagementsForDropDown']);
+        Route::put('/{id}', [ManagementHierarchySettingController::class, 'updateDepartmentWithManagementsForDropDown']);
         Route::delete('/{id}', [ManagementHierarchySettingController::class, 'deleteDepartmentWithManagementsForDropDown']);
 
     });
