@@ -29,9 +29,26 @@ class SourceManagementHierarchy extends Model
         "type",
         "company_id",
         "is_active",
+        "parent_id",
     ];
 
 
+
+    /**
+     * Get the parent source management hierarchy.
+     */
+    public function parent()
+    {
+        return $this->belongsTo(SourceManagementHierarchy::class, 'parent_id');
+    }
+
+    /**
+     * Get the children source management hierarchies.
+     */
+    public function children()
+    {
+        return $this->hasMany(SourceManagementHierarchy::class, 'parent_id');
+    }
 
     /**
      * Get the management hierarchy that this management unit belongs to.
