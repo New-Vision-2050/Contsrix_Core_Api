@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Subscription\Package\Repositories;
 
+use App\Exceptions\CustomException;
 use Illuminate\Support\Str;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Facades\DB;
@@ -186,6 +187,11 @@ class PackageRepository extends BaseRepository
 
     public function syncPermissions(Package $package, array $permissionIds, array $limits = []): void
     {
+        // Prevent syncing permissions for Main Package
+        if ($package->name === 'Main Package') {
+            throw new CustomException("Main Package '{$package->name}' cannot have its permissions synced. Main packages are system-managed and protected from permission modifications.");
+        }
+
         // Prepare sync data with limits
         $syncData = [];
 
