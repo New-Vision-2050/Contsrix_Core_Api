@@ -1,0 +1,14 @@
+{
+    "name": "LeavePolicy",
+    "alias": "leavepolicy",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Leave\\LeavePolicy\\Providers\\LeavePolicyServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Leave"
+}
