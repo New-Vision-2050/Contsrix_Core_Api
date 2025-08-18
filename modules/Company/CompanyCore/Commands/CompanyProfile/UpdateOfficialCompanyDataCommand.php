@@ -17,7 +17,7 @@ class UpdateOfficialCompanyDataCommand
         private string              $branchName,
         private string              $companyTypeId,
         private ManagementHierarchy $branch,
-        private array              $packages
+        private ?array              $packages
     )
     {
     }

@@ -70,6 +70,15 @@ class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request): JsonResponse
     {
+        // Get the role being updated to check if it's super-admin
+        $roleId = Uuid::fromString($request->route('id'));
+        $existingRole = $this->roleCRUDService->get($roleId);
+
+        // Prevent updating the super-admin role
+        if ($existingRole->name === 'super-admin') {
+            return Json::error('The super-admin role cannot be updated', httpStatus: 400);
+        }
+
         $command = $request->createUpdateRoleCommand();
         $this->updateRoleHandler->handle($command);
 

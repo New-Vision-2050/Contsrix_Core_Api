@@ -168,6 +168,8 @@ return [
     'create-successful' => 'تم الحفظ بنجاح',
     'update-not-successful' => 'فشل التعديل',
     'update-successful' => 'تم التعديل بنجاح',
+    'central_company_cannot_update_packages' => 'الشركات المركزية لا يمكنها تحديث باقاتها',
+    'company_cannot_update_own_packages' => 'الشركات لا يمكنها تحديث باقاتها الخاصة',
     "user-name" => "اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
     "user-email-error" => " البريد الالكتروني موجود ضمن النظام بأسم :name .",
     "user-email-success" => "البريد الالكتروني غير موجود ضمن النظام",
