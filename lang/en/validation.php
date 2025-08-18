@@ -201,6 +201,8 @@ return [
     "create-successful"=>"Create successful",
     "update-not-successful"=>"Update not successful",
     "update-successful"=>"Update successful",
+    "central_company_cannot_update_packages"=>"Central companies cannot update their packages",
+    "company_cannot_update_own_packages"=>"Companies cannot update their own packages",
     'user-name' => 'The name must consist of three Arabic words without any symbols.',
     'user-email-error' => 'The email is already exist in the system in name :name',
     'user-email-success' => 'The email is already exist in the system ',
