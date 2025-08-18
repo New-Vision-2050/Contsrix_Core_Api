@@ -22,7 +22,7 @@ class CentralCompanyPackageUpdateRule implements ValidationRule
 
         // Get current packages assigned to the company
         $currentPackages = $company->packages()->pluck('id')->toArray();
-        $newPackages = $value;
+        $newPackages = $value ?? []; // Handle null packages (for central companies)
 
         // Compare arrays to check if packages are being modified
         sort($currentPackages);
