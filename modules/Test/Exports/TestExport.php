@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Exports;
+namespace Modules\Test\Exports;
 
 use App\Exports\BaseExport;
-use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Services\$STUDLY_NAME$CRUDService;
+use Modules\Test\Services\TestCRUDService;
 
-class $STUDLY_NAME$Export extends BaseExport
+class TestExport extends BaseExport
 {
     public function __construct(
-         $STUDLY_NAME$CRUDService $$LOWER_NAME$Service,
+         TestCRUDService $testService,
          array $filters = []
     ) {
     }
@@ -20,7 +20,7 @@ class $STUDLY_NAME$Export extends BaseExport
      */
     public function collection()
     {
-        return $this->$LOWER_NAME$Service->getForExport($this->filters);
+        return $this->testService->getForExport($this->filters);
     }
 
     public function headings(): array

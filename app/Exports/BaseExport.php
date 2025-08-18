@@ -25,7 +25,7 @@ abstract class BaseExport implements FromCollection, WithHeadings, WithMapping, 
         $this->filters = $filters;
     }
 
-    public function collection(): Collection
+    public function collection()
     {
         return $this->service->getForExport($this->filters);
     }
