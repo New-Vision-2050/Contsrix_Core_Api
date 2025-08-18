@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Repositories;
+namespace $NAMESPACE$;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
 use Ramsey\Uuid\UuidInterface;
-use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Models\$STUDLY_NAME$;
+use $MODEL_NAMESPACE$;
 use App\Traits\HasExport;
 
 /**
- * @property $STUDLY_NAME$ $model
- * @method $STUDLY_NAME$ findOneOrFail($id)
- * @method $STUDLY_NAME$ findOneByOrFail(array $data)
+ * @property $MODEL$ $model
+ * @method $MODEL$ findOneOrFail($id)
+ * @method $MODEL$ findOneByOrFail(array $data)
  */
-class $STUDLY_NAME$Repository extends BaseRepository
+class $CLASS$ extends BaseRepository
 {
     use HasExport;
 
-    public function __construct($STUDLY_NAME$ $model)
+    public function __construct($MODEL$ $model)
     {
         parent::__construct($model);
     }
@@ -30,14 +30,14 @@ class $STUDLY_NAME$Repository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function get$STUDLY_NAME$(UuidInterface $id): $STUDLY_NAME$
+    public function get$STUDLY_NAME$(UuidInterface $id): $MODEL$
     {
         return $this->findOneByOrFail([
             'id' => $id->toString(),
         ]);
     }
 
-    public function create$STUDLY_NAME$(array $data): $STUDLY_NAME$
+    public function create$STUDLY_NAME$(array $data): $MODEL$
     {
         return $this->create($data);
     }
@@ -50,5 +50,16 @@ class $STUDLY_NAME$Repository extends BaseRepository
     public function delete$STUDLY_NAME$(UuidInterface $id): bool
     {
         return $this->delete($id);
+    }
+
+    /**
+     * Get relationships to load for export
+     * Override to specify relationships for this model
+     */
+    protected function getExportRelationships(): array
+    {
+        return [
+            $EXPORT_RELATIONSHIPS$
+        ];
     }
 }

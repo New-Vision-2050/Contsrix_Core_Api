@@ -6,7 +6,7 @@ use Modules\Leave\PublicHoliday\Controllers\PublicHolidayController;
 Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [PublicHolidayController::class, 'index']);
     Route::post('/', [PublicHolidayController::class, 'store']);
-    Route::get('/export', [PublicHolidayController::class, 'export']);
+    Route::post('/export', [PublicHolidayController::class, 'export']);
 
     Route::get('/{id}', [PublicHolidayController::class, 'show']);
     Route::put('/{id}', [PublicHolidayController::class, 'update']);
