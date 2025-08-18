@@ -12,6 +12,6 @@ class LeavePolicyFilter extends SearchModelFilter
 
         public function name($name)
         {
-            return $this->where('name', $name);
+            return $this->where('name', 'LIKE', '%' . $name . '%');
         }
 }

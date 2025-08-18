@@ -16,6 +16,9 @@ use Modules\Leave\LeavePolicy\Requests\GetLeavePolicyListRequest;
 use Modules\Leave\LeavePolicy\Requests\GetLeavePolicyRequest;
 use Modules\Leave\LeavePolicy\Requests\UpdateLeavePolicyRequest;
 use Modules\Leave\LeavePolicy\Services\LeavePolicyCRUDService;
+use Modules\Leave\LeavePolicy\Exports\LeavePolicyExport;
+use Modules\Leave\LeavePolicy\Requests\ExportLeavePolicyRequest;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 
 class LeavePolicyController extends Controller
@@ -72,5 +75,19 @@ class LeavePolicyController extends Controller
         $this->deleteLeavePolicyHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    /**
+     * Export leave policies to a file
+     *
+     * @param ExportLeavePolicyRequest $request
+     */
+    public function export(ExportLeavePolicyRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'leave_policies.' . $format;
+        $filters = $request->getFilters();
+        
+        return Excel::download(new LeavePolicyExport($this->leavePolicyService, $filters), $fileName);
     }
 }

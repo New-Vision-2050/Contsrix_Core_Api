@@ -6,6 +6,8 @@ use Modules\Leave\LeavePolicy\Controllers\LeavePolicyController;
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [LeavePolicyController::class, 'index']);
     Route::post('/', [LeavePolicyController::class, 'store']);
+    Route::get('/export', [LeavePolicyController::class, 'export']);
+
     Route::get('/{id}', [LeavePolicyController::class, 'show']);
     Route::put('/{id}', [LeavePolicyController::class, 'update']);
     Route::delete('/{id}', [LeavePolicyController::class, 'delete']);

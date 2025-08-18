@@ -6,6 +6,7 @@ namespace Modules\Leave\LeavePolicy\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Leave\LeavePolicy\Models\LeavePolicy;
 
@@ -46,5 +47,33 @@ class LeavePolicyRepository extends BaseRepository
     public function deleteLeavePolicy(UuidInterface $id): bool
     {
         return $this->delete($id);
+    }
+
+    public function getForExport(array $filters = []): SupportCollection
+    {
+        $query = $this->model->newQuery()
+            ->where('company_id', tenant('id'));
+
+        // Apply name filter if provided
+        if (!empty($filters['name'])) {
+            $query->where('name', 'LIKE', '%' . $filters['name'] . '%');
+        }
+
+        // Apply total_days filter if provided
+        if (isset($filters['total_days'])) {
+            $query->where('total_days', $filters['total_days']);
+        }
+
+        // Apply day_type filter if provided
+        if (!empty($filters['day_type'])) {
+            $query->where('day_type', $filters['day_type']);
+        }
+
+        // Apply specific IDs filter if provided
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->get();
     }
 }

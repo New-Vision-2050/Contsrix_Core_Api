@@ -47,4 +47,30 @@ class LeaveTypeRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    /**
+     * Get leave types for export with optional filtering
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->newQuery();
+
+        // Apply name filter if provided
+        if (!empty($filters['name'])) {
+            $query->where('name', 'LIKE', '%' . $filters['name'] . '%');
+        }
+
+        // Apply specific IDs filter if provided
+        if (!empty($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        // Order by name for consistent export
+        $query->orderBy('name');
+
+        return $query->get();
+    }
 }
