@@ -76,7 +76,7 @@ class RoleController extends Controller
 
         // Prevent updating the super-admin role
         if ($existingRole->name === 'super-admin') {
-            return Json::error('The super-admin role cannot be updated', httpStatus: 404);
+            return Json::error('The super-admin role cannot be updated', httpStatus: 400);
         }
 
         $command = $request->createUpdateRoleCommand();
