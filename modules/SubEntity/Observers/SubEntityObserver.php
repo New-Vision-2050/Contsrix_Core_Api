@@ -139,8 +139,9 @@ class SubEntityObserver
         $createdPermissions = [];
 
         foreach (SubEntity::PERMISSION_ACTIONS as $action) {
+            $actionSmall = strtolower($action);
             $permission = Permission::firstOrCreate([
-                'name' => "{$module}.{$resource}.{$action}",
+                'name' => "{$module}.{$resource}.{$actionSmall}",
                 "key" => "DYNAMIC." . $subEntity->slug . "_$action",
 
             ], [
@@ -173,11 +174,14 @@ class SubEntityObserver
         $newResource = $subEntity->name . '*' . $subEntity->id;
 
         foreach (SubEntity::PERMISSION_ACTIONS as $action) {
-            $permission = Permission::where('name', "{$module}.{$oldResource}.{$action}")->first();
+            $actionSmall = strtolower($action);
+
+            $permission = Permission::where('name', "{$module}.{$oldResource}.{$actionSmall}")->first();
 
             if ($permission) {
+
                 // Update both name and key
-                $permission->name = "{$module}.{$newResource}.{$action}";
+                $permission->name = "{$module}.{$newResource}.{$actionSmall}";
                 $permission->key = "DYNAMIC." . $subEntity->slug . "_$action";
                 $permission->save();
 
@@ -210,7 +214,8 @@ class SubEntityObserver
 
                 // Collect permissions that need to be deleted
                 foreach (SubEntity::PERMISSION_ACTIONS as $action) {
-                    $permission = Permission::where('name', "{$module}.{$resource}.{$action}")->first();
+                    $actionSmall = strtolower($action);
+                    $permission = Permission::where('name', "{$module}.{$resource}.{$actionSmall}")->first();
 
                     if ($permission) {
                         $permissionsToDelete[] = $permission;
@@ -257,8 +262,8 @@ class SubEntityObserver
                 // Assign to main package
                 $this->assignPermissionsToMainPackage($subEntity, $permissions);
 
-                // Assign to super-admin role
-                $this->assignPermissionsToSuperAdminRole($subEntity, $permissions);
+                // Assign to admin and super-admin roles
+                $this->assignPermissionsToAdminRoles($subEntity, $permissions);
             });
         } catch (\Exception $e) {
             Log::error('Failed to auto-assign permissions to main package and super-admin role', [
@@ -329,43 +334,50 @@ class SubEntityObserver
     }
 
     /**
-     * Assign permissions to super-admin role
+     * Assign permissions to admin and super-admin roles
      */
-    protected function assignPermissionsToSuperAdminRole(SubEntity $subEntity, array $permissions): void
+    protected function assignPermissionsToAdminRoles(SubEntity $subEntity, array $permissions): void
     {
-        $superAdminRole = \Modules\RoleAndPermission\Models\Role::where('name', 'super-admin')
-            ->where('company_id', tenant('id'))
-            ->first();
+        $roleNames = ['admin', 'super-admin'];
+        
+        foreach ($roleNames as $roleName) {
+            $role = \Modules\RoleAndPermission\Models\Role::where('name', $roleName)
+                ->where('company_id', tenant('id'))
+                ->first();
 
-        if (!$superAdminRole) {
-            Log::warning('Super-admin role not found for auto-assignment', [
-                'company_id' => tenant('company_id'),
-                'sub_entity' => $subEntity->id
-            ]);
-            return;
-        }
+            if (!$role) {
+                Log::warning("{$roleName} role not found for auto-assignment", [
+                    'company_id' => tenant('company_id'),
+                    'sub_entity' => $subEntity->id,
+                    'role_name' => $roleName
+                ]);
+                continue;
+            }
 
-        // Get current role permissions
-        $currentPermissions = $superAdminRole->permissions()->pluck('permissions.id')->toArray();
+            // Get current role permissions
+            $currentPermissions = $role->permissions()->pluck('permissions.id')->toArray();
 
-        // Add new permissions to the role
-        $permissionsToAdd = [];
-        foreach ($permissions as $permission) {
-            if (!in_array($permission->id, $currentPermissions)) {
-                $permissionsToAdd[] = $permission->id;
+            // Add new permissions to the role
+            $permissionsToAdd = [];
+            foreach ($permissions as $permission) {
+                if (!in_array($permission->id, $currentPermissions)) {
+                    $permissionsToAdd[] = $permission->id;
+                }
+            }
+
+            if (!empty($permissionsToAdd)) {
+                // Attach new permissions (keeping existing ones)
+                $role->permissions()->attach($permissionsToAdd);
+
+                Log::info("Auto-assigned permissions to {$roleName} role", [
+                    'role_id' => $role->id,
+                    'role_name' => $roleName,
+                    'new_permissions' => $permissionsToAdd,
+                    'sub_entity' => $subEntity->id
+                ]);
             }
         }
-
-        if (!empty($permissionsToAdd)) {
-            // Attach new permissions (keeping existing ones)
-            $superAdminRole->permissions()->attach($permissionsToAdd);
-
-            Log::info('Auto-assigned permissions to super-admin role', [
-                'role_id' => $superAdminRole->id,
-                'new_permissions' => $permissionsToAdd,
-                'sub_entity' => $subEntity->id
-            ]);
-        }
+        
         \Artisan::call("optimize:clear");
     }
 
