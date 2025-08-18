@@ -33,7 +33,10 @@ class UpdateOfficialCompanyDataHandler
             DB::beginTransaction();
             $this->repository->updateCompany($updateOfficialCompanyDataCommand->getId(), $updateOfficialCompanyDataCommand->toArray());
 
-            $this->packageAssignmentService->assignPackagesToCompany((string)$updateOfficialCompanyDataCommand->getId() , $updateOfficialCompanyDataCommand->packages());
+            // Only update packages if they are provided (for central companies, packages might be null/empty)
+            if ($updateOfficialCompanyDataCommand->packages() !== null && !empty($updateOfficialCompanyDataCommand->packages())) {
+                $this->packageAssignmentService->assignPackagesToCompany((string)$updateOfficialCompanyDataCommand->getId() , $updateOfficialCompanyDataCommand->packages());
+            }
 
 
             $this->managementHierarchyRepository->updateWhere(["id" => $branch->id], [
