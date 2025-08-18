@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Leave\PublicHoliday\Presenters;
+
+use Modules\Leave\PublicHoliday\Models\PublicHoliday;
+use BasePackage\Shared\Presenters\AbstractPresenter;
+
+class PublicHolidayPresenter extends AbstractPresenter
+{
+    private PublicHoliday $publicHoliday;
+
+    public function __construct(PublicHoliday $publicHoliday)
+    {
+        $this->publicHoliday = $publicHoliday;
+    }
+
+    protected function present(bool $isListing = false): array
+    {
+        return [
+            'id' => $this->publicHoliday->id,
+            'name' => $this->publicHoliday->name,
+            'country_id' => $this->publicHoliday->country_id,
+            'date_start' => $this->publicHoliday->date_start?->format('Y-m-d'),
+            'date_end' => $this->publicHoliday->date_end?->format('Y-m-d'),
+            'country' => $this->publicHoliday->country ? [
+                'id' => $this->publicHoliday->country->id,
+                'name' => $this->publicHoliday->country->name,
+            ] : null,
+        ];
+    }
+}
