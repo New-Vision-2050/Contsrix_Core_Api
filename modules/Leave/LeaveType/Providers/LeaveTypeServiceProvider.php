@@ -28,7 +28,7 @@ class LeaveTypeServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/leave_types')
+        Route::prefix('api/v1/leave-types')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

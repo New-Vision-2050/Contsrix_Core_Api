@@ -16,7 +16,7 @@ class UpdatePublicHolidayRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'country_id' => 'required|string|uuid|exists:countries,id',
+            'country_id' => 'required|string|exists:countries,id',
             'date_start' => 'required|date|date_format:Y-m-d',
             'date_end' => 'required|date|date_format:Y-m-d|after_or_equal:date_start',
         ];
@@ -30,7 +30,6 @@ class UpdatePublicHolidayRequest extends FormRequest
             'name.max' => __('leave.public_holiday.name.max'),
             'country_id.required' => __('leave.public_holiday.country_id.required'),
             'country_id.string' => __('leave.public_holiday.country_id.string'),
-            'country_id.uuid' => __('leave.public_holiday.country_id.uuid'),
             'country_id.exists' => __('leave.public_holiday.country_id.exists'),
             'date_start.required' => __('leave.public_holiday.date_start.required'),
             'date_start.date' => __('leave.public_holiday.date_start.date'),

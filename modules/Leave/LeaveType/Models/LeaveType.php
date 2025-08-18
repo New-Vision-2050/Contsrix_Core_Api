@@ -32,12 +32,13 @@ class LeaveType extends Model
         'name',
         'is_payed',
         'is_deduct_from_balance',
+        "company_id",
     ];
 
     protected $casts = [
         'id' => 'string',
 //        'is_payed' => 'boolean',
-        'is_deduct_from_balance' => 'boolean',
+//        'is_deduct_from_balance' => 'boolean',
     ];
 
     protected static function newFactory(): LeaveTypeFactory

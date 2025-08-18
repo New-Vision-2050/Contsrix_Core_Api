@@ -28,7 +28,7 @@ class PublicHolidayServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/public_holidays')
+        Route::prefix('api/v1/public-holidays')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

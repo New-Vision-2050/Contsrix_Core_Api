@@ -28,7 +28,7 @@ class LeavePolicyServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/leave_policies')
+        Route::prefix('api/v1/leave-policies')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

@@ -29,6 +29,7 @@ class CreateLeavePolicyDTO
             'max_days_per_request' => $this->max_days_per_request,
             'upgrade_condition' => $this->upgrade_condition,
             'is_allow_half_day' => $this->is_allow_half_day,
+            "company_id"=>tenant("id")
         ];
     }
 

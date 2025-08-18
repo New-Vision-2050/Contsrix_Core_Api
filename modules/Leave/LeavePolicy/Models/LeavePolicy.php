@@ -36,14 +36,15 @@ class LeavePolicy extends Model
         'max_days_per_request',
         'upgrade_condition',
         'is_allow_half_day',
+        "company_id",
     ];
 
     protected $casts = [
         'id' => 'string',
         'total_days' => 'integer',
-        'is_rollover_allowed' => 'boolean',
+//        'is_rollover_allowed' => 'boolean',
         'max_days_per_request' => 'integer',
-        'is_allow_half_day' => 'boolean',
+//        'is_allow_half_day' => 'boolean',
     ];
 
     protected static function newFactory(): LeavePolicyFactory

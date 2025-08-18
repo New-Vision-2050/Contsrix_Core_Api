@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('public_holidays', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->uuid('country_id');
+            $table->unsignedBigInteger('country_id');
             $table->date('date');
             $table->timestamps();
 

@@ -13,7 +13,7 @@ class CreateLeaveTypeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:leave_types,name,NULL,id,company_id,' . tenant('id'),
             'is_payed' => 'sometimes|boolean',
             'is_deduct_from_balance' => 'sometimes|boolean',
         ];

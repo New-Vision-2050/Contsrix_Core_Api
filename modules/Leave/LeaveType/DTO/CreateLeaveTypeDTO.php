@@ -21,6 +21,7 @@ class CreateLeaveTypeDTO
             'name' => $this->name,
             'is_payed' => $this->is_payed,
             'is_deduct_from_balance' => $this->is_deduct_from_balance,
+            'company_id' => tenant('id'),
         ];
     }
 

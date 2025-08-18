@@ -50,6 +50,11 @@ class LeaveTypeController extends Controller
     {
         $createdItem = $this->leaveTypeService->create($request->createCreateLeaveTypeDTO());
 
+        // Debug: Check if item was created
+        if (!$createdItem) {
+            return Json::error('Failed to create leave type');
+        }
+
         $presenter = new LeaveTypePresenter($createdItem);
 
         return Json::item($presenter->getData());

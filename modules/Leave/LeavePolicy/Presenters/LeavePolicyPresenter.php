@@ -23,10 +23,10 @@ class LeavePolicyPresenter extends AbstractPresenter
             'name' => $this->leavePolicy->name,
             'total_days' => $this->leavePolicy->total_days,
             'day_type' => $this->leavePolicy->day_type,
-            'is_rollover_allowed' => $this->leavePolicy->is_rollover_allowed,
+            'is_rollover_allowed' => $this->leavePolicy->is_rollover_allowed?1:0,
             'max_days_per_request' => $this->leavePolicy->max_days_per_request,
             'upgrade_condition' => $this->leavePolicy->upgrade_condition,
-            'is_allow_half_day' => $this->leavePolicy->is_allow_half_day,
+            'is_allow_half_day' => $this->leavePolicy->is_allow_half_day?1:0,
         ];
     }
 }
