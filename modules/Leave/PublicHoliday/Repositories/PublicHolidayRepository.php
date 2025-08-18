@@ -53,7 +53,6 @@ class PublicHolidayRepository extends BaseRepository
     public function getForExport(array $filters = []): SupportCollection
     {
         $query = $this->model->newQuery()
-            ->where('company_id', tenant('id'))
             ->with('country:id,name');
 
         // Apply name filter if provided
