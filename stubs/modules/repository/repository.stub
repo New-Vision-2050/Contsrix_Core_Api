@@ -6,8 +6,10 @@ namespace $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Ramsey\Uuid\UuidInterface;
 use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Models\$STUDLY_NAME$;
+use App\Traits\HasExport;
 
 /**
  * @property $STUDLY_NAME$ $model
@@ -16,6 +18,8 @@ use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Models\$STUDLY_NAME$;
  */
 class $STUDLY_NAME$Repository extends BaseRepository
 {
+    use HasExport;
+
     public function __construct($STUDLY_NAME$ $model)
     {
         parent::__construct($model);

@@ -8,6 +8,8 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Leave\PublicHoliday\Models\PublicHoliday;
+use Illuminate\Support\Collection as SupportCollection;
+
 
 /**
  * @property PublicHoliday $model
@@ -46,5 +48,39 @@ class PublicHolidayRepository extends BaseRepository
     public function deletePublicHoliday(UuidInterface $id): bool
     {
         return $this->delete($id);
+    }
+
+    public function getForExport(array $filters = []): SupportCollection
+    {
+        $query = $this->model->newQuery()
+            ->where('company_id', tenant('id'))
+            ->with('country:id,name');
+
+        // Apply name filter if provided
+        if (!empty($filters['name'])) {
+            $query->where('name', 'LIKE', '%' . $filters['name'] . '%');
+        }
+
+        // Apply country_id filter if provided
+        if (isset($filters['country_id'])) {
+            $query->where('country_id', $filters['country_id']);
+        }
+
+        // Apply date_start filter if provided
+        if (!empty($filters['date_start'])) {
+            $query->where('date_start', '>=', $filters['date_start']);
+        }
+
+        // Apply date_end filter if provided
+        if (!empty($filters['date_end'])) {
+            $query->where('date_end', '<=', $filters['date_end']);
+        }
+
+        // Apply specific IDs filter if provided
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->get();
     }
 }

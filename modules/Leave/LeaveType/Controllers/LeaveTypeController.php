@@ -16,6 +16,9 @@ use Modules\Leave\LeaveType\Requests\GetLeaveTypeListRequest;
 use Modules\Leave\LeaveType\Requests\GetLeaveTypeRequest;
 use Modules\Leave\LeaveType\Requests\UpdateLeaveTypeRequest;
 use Modules\Leave\LeaveType\Services\LeaveTypeCRUDService;
+use Modules\Leave\LeaveType\Exports\LeaveTypeExport;
+use Modules\Leave\LeaveType\Requests\ExportLeaveTypeRequest;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 
 class LeaveTypeController extends Controller
@@ -77,5 +80,20 @@ class LeaveTypeController extends Controller
         $this->deleteLeaveTypeHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    /**
+     * Export leave types to a file
+     *
+     * @param ExportLeaveTypeRequest $request
+     */
+    public function export(ExportLeaveTypeRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'leave_types.' . $format;
+
+        $filters = $request->getFilters();
+
+        return Excel::download(new LeaveTypeExport($this->leaveTypeService, $filters), $fileName);
     }
 }

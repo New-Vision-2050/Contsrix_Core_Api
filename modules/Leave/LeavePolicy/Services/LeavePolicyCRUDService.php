@@ -36,4 +36,9 @@ class LeavePolicyCRUDService
             id: $id,
         );
     }
+
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters);
+    }
 }

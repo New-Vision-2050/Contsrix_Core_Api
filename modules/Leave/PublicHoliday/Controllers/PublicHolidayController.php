@@ -16,6 +16,9 @@ use Modules\Leave\PublicHoliday\Requests\GetPublicHolidayListRequest;
 use Modules\Leave\PublicHoliday\Requests\GetPublicHolidayRequest;
 use Modules\Leave\PublicHoliday\Requests\UpdatePublicHolidayRequest;
 use Modules\Leave\PublicHoliday\Services\PublicHolidayCRUDService;
+use Modules\Leave\PublicHoliday\Exports\PublicHolidayExport;
+use Modules\Leave\PublicHoliday\Requests\ExportPublicHolidayRequest;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 
 class PublicHolidayController extends Controller
@@ -72,5 +75,19 @@ class PublicHolidayController extends Controller
         $this->deletePublicHolidayHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    /**
+     * Export public holidays to a file
+     *
+     * @param ExportPublicHolidayRequest $request
+     */
+    public function export(ExportPublicHolidayRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'public_holidays.' . $format;
+        $filters = $request->getFilters();
+        
+        return Excel::download(new PublicHolidayExport($this->publicHolidayService, $filters), $fileName);
     }
 }

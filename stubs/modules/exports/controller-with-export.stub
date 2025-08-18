@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $NAMESPACE$;
+
+use BasePackage\Shared\Presenters\Json;
+use App\Http\Controllers\Controller;
+use App\Traits\HasExportController;
+use Illuminate\Http\JsonResponse;
+use $HANDLER_DELETE_NAMESPACE$;
+use $HANDLER_UPDATE_NAMESPACE$;
+use $PRESENTER_NAMESPACE$;
+use $REQUEST_CREATE_NAMESPACE$;
+use $REQUEST_DELETE_NAMESPACE$;
+use $REQUEST_GET_LIST_NAMESPACE$;
+use $REQUEST_GET_NAMESPACE$;
+use $REQUEST_UPDATE_NAMESPACE$;
+use $REQUEST_EXPORT_NAMESPACE$;
+use $SERVICE_NAMESPACE$;
+use $EXPORT_NAMESPACE$;
+use Maatwebsite\Excel\Facades\Excel;
+use Ramsey\Uuid\Uuid;
+
+class $CLASS$ extends Controller
+{
+    use HasExportController;
+
+    public function __construct(
+        private $SERVICE_CLASS$ $service,
+        private $UPDATE_HANDLER_CLASS$ $updateHandler,
+        private $DELETE_HANDLER_CLASS$ $deleteHandler,
+    ) {
+    }
+
+    public function index($GET_LIST_REQUEST_CLASS$ $request): JsonResponse
+    {
+        $list = $this->service->list(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items($PRESENTER_CLASS$::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function show($GET_REQUEST_CLASS$ $request): JsonResponse
+    {
+        $item = $this->service->get(Uuid::fromString($request->route('id')));
+
+        $presenter = new $PRESENTER_CLASS$($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function store($CREATE_REQUEST_CLASS$ $request): JsonResponse
+    {
+        $createdItem = $this->service->create($request->create$CREATE_DTO_METHOD$());
+
+        $presenter = new $PRESENTER_CLASS$($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function update($UPDATE_REQUEST_CLASS$ $request): JsonResponse
+    {
+        $command = $request->create$UPDATE_COMMAND_METHOD$();
+        $this->updateHandler->handle($command);
+
+        $item = $this->service->get($command->getId());
+
+        $presenter = new $PRESENTER_CLASS$($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function delete($DELETE_REQUEST_CLASS$ $request): JsonResponse
+    {
+        $this->deleteHandler->handle(Uuid::fromString($request->route('id')));
+
+        return Json::deleted();
+    }
+
+    /**
+     * Export $LOWER_NAME$ to a file
+     *
+     * @param $EXPORT_REQUEST_CLASS$ $request
+     */
+    public function export($EXPORT_REQUEST_CLASS$ $request)
+    {
+        return $this->handleExport($request, $EXPORT_CLASS$::class, '$SNAKE_NAME$');
+    }
+}
