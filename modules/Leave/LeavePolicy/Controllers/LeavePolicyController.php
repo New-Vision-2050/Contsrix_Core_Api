@@ -15,6 +15,8 @@ use Modules\Leave\LeavePolicy\Requests\DeleteLeavePolicyRequest;
 use Modules\Leave\LeavePolicy\Requests\GetLeavePolicyListRequest;
 use Modules\Leave\LeavePolicy\Requests\GetLeavePolicyRequest;
 use Modules\Leave\LeavePolicy\Requests\UpdateLeavePolicyRequest;
+use Modules\Leave\LeavePolicy\Requests\UpdateRolloverAllowedRequest;
+use Modules\Leave\LeavePolicy\Requests\UpdateHalfDayAllowedRequest;
 use Modules\Leave\LeavePolicy\Services\LeavePolicyCRUDService;
 use Modules\Leave\LeavePolicy\Exports\LeavePolicyExport;
 use Modules\Leave\LeavePolicy\Requests\ExportLeavePolicyRequest;
@@ -75,6 +77,28 @@ class LeavePolicyController extends Controller
         $this->deleteLeavePolicyHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function updateRolloverAllowed(UpdateRolloverAllowedRequest $request): JsonResponse
+    {
+        $this->leavePolicyService->updateRolloverAllowed($request->createUpdateRolloverAllowedDTO());
+
+        $item = $this->leavePolicyService->get(Uuid::fromString($request->route('id')));
+
+        $presenter = new LeavePolicyPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function updateHalfDayAllowed(UpdateHalfDayAllowedRequest $request): JsonResponse
+    {
+        $this->leavePolicyService->updateHalfDayAllowed($request->createUpdateHalfDayAllowedDTO());
+
+        $item = $this->leavePolicyService->get(Uuid::fromString($request->route('id')));
+
+        $presenter = new LeavePolicyPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 
     /**

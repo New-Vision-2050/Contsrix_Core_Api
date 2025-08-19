@@ -49,6 +49,16 @@ class LeavePolicyRepository extends BaseRepository
         return $this->delete($id);
     }
 
+    public function updateRolloverAllowed(UuidInterface $id, bool $isRolloverAllowed): bool
+    {
+        return $this->update($id, ['is_rollover_allowed' => $isRolloverAllowed]);
+    }
+
+    public function updateHalfDayAllowed(UuidInterface $id, bool $isAllowHalfDay): bool
+    {
+        return $this->update($id, ['is_allow_half_day' => $isAllowHalfDay]);
+    }
+
     public function getForExport(array $filters = []): SupportCollection
     {
         $query = $this->model->newQuery()

@@ -10,5 +10,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::get('/{id}', [LeavePolicyController::class, 'show']);
     Route::put('/{id}', [LeavePolicyController::class, 'update']);
+    Route::put('/{id}/rollover-allowed', [LeavePolicyController::class, 'updateRolloverAllowed']);
+    Route::put('/{id}/half-day-allowed', [LeavePolicyController::class, 'updateHalfDayAllowed']);
     Route::delete('/{id}', [LeavePolicyController::class, 'delete']);
 });
