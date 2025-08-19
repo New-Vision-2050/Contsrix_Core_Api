@@ -10,7 +10,7 @@ class LeaveTypeFilter extends SearchModelFilter
 {
        public $relations = [];
 
-        public function name($name)
+        public function search($name)
         {
             return $this->where('name', 'LIKE', '%' . $name . '%');
         }
