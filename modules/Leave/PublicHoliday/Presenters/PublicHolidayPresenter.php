@@ -20,7 +20,7 @@ class PublicHolidayPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->publicHoliday->id,
-            'name' => $this->publicHoliday->name,
+            'name' => $this->publicHoliday->name_ar ?? $this->publicHoliday->name,
             'country_id' => $this->publicHoliday->country_id,
             'date_start' => $this->publicHoliday->date_start?->format('Y-m-d'),
             'date_end' => $this->publicHoliday->date_end?->format('Y-m-d'),

@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::table('public_holidays', function (Blueprint $table) {
             // Add new fields for enhanced holiday management
             $table->string('country_code', 2)->nullable()->after('country_id')->index();
+            $table->string('name_ar')->nullable()->after('name'); // Arabic name
             $table->year('year')->nullable()->after('date_end')->index();
             $table->enum('holiday_type', ['national', 'local', 'religious', 'observance', 'other'])
                   ->default('national')->after('year')->index();
             $table->boolean('is_recurring')->default(true)->after('holiday_type');
             $table->text('description')->nullable()->after('is_recurring');
-            $table->string('external_api_id')->nullable()->after('description')->index();
+            $table->string('external_api_id')->nullable()->after('description_ar')->index();
             $table->json('api_data')->nullable()->after('external_api_id');
             $table->json('tags')->nullable()->after('api_data');
             $table->boolean('is_active')->default(true)->after('tags')->index();
@@ -54,10 +55,12 @@ return new class extends Migration
             // Drop columns
             $table->dropColumn([
                 'country_code',
+                'name_ar',
                 'year',
                 'holiday_type',
                 'is_recurring',
                 'description',
+                'description_ar',
                 'external_api_id',
                 'api_data',
                 'tags',
