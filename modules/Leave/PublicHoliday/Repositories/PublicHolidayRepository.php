@@ -28,6 +28,17 @@ class PublicHolidayRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+
+    public function paginatedWithConditions(array $conditions = [], $page = 1, $perPage = 10)
+    {
+        $query = $this->model->where($conditions)->filter(request()->all());
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+        return array_merge($paginationArray, [
+            'data' => $paginatedData
+        ]);
+    }
     public function getPublicHoliday(UuidInterface $id): PublicHoliday
     {
         return $this->findOneByOrFail([

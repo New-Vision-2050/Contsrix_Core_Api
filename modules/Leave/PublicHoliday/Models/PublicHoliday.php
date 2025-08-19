@@ -29,8 +29,17 @@ class PublicHoliday extends Model
     protected $fillable = [
         'name',
         'country_id',
+        'country_code',
         'date_start',
         'date_end',
+        'year',
+        'holiday_type',
+        'is_recurring',
+        'description',
+        'external_api_id',
+        'api_data',
+        'tags',
+        'is_active',
     ];
 
     protected $casts = [
@@ -38,6 +47,11 @@ class PublicHoliday extends Model
         'country_id' => 'string',
         'date_start' => 'date',
         'date_end' => 'date',
+        'year' => 'integer',
+        'is_recurring' => 'boolean',
+        'is_active' => 'boolean',
+        'api_data' => 'array',
+        'tags' => 'array',
     ];
 
     /**
@@ -46,6 +60,78 @@ class PublicHoliday extends Model
     public function country()
     {
         return $this->belongsTo(\Modules\Country\Models\Country::class, 'country_id');
+    }
+
+    /**
+     * Scope to get active holidays only
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope to get holidays for a specific year
+     */
+    public function scopeForYear($query, int $year)
+    {
+        return $query->where('year', $year);
+    }
+
+    /**
+     * Scope to get holidays for a specific country
+     */
+    public function scopeForCountry($query, string $countryId)
+    {
+        return $query->where('country_id', $countryId);
+    }
+
+    /**
+     * Scope to get holidays for a specific country code
+     */
+    public function scopeForCountryCode($query, string $countryCode)
+    {
+        return $query->where('country_code', $countryCode);
+    }
+
+    /**
+     * Scope to get holidays by type
+     */
+    public function scopeByType($query, string $type)
+    {
+        return $query->where('holiday_type', $type);
+    }
+
+    /**
+     * Scope to get holidays within date range
+     */
+    public function scopeInDateRange($query, $startDate, $endDate)
+    {
+        return $query->where(function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('date_start', [$startDate, $endDate])
+              ->orWhereBetween('date_end', [$startDate, $endDate])
+              ->orWhere(function ($q2) use ($startDate, $endDate) {
+                  $q2->where('date_start', '<=', $startDate)
+                     ->where('date_end', '>=', $endDate);
+              });
+        });
+    }
+
+    /**
+     * Check if this holiday is on a specific date
+     */
+    public function isOnDate($date): bool
+    {
+        $checkDate = \Carbon\Carbon::parse($date);
+        return $checkDate->between($this->date_start, $this->date_end);
+    }
+
+    /**
+     * Get holiday duration in days
+     */
+    public function getDurationAttribute(): int
+    {
+        return $this->date_start->diffInDays($this->date_end) + 1;
     }
 
     protected static function newFactory(): PublicHolidayFactory
