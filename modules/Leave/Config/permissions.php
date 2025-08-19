@@ -13,7 +13,7 @@ return [
         'LEAVE_TYPE_CREATE' => 'human-resources.settings*leave-type.create',
         'LEAVE_TYPE_UPDATE' => 'human-resources.settings*leave-type.update',
         'LEAVE_TYPE_DELETE' => 'human-resources.settings*leave-type.delete',
-        'LEAVE_TYPE_ACTIVATE' => 'human-resources.settings*leave-type.activate',
+//        'LEAVE_TYPE_ACTIVATE' => 'human-resources.settings*leave-type.activate',
         'LEAVE_TYPE_EXPORT' => 'human-resources.settings*leave-type.export',
 
         // Leave Policy Management
@@ -22,7 +22,7 @@ return [
         'LEAVE_POLICY_CREATE' => 'human-resources.settings*leave-policy.create',
         'LEAVE_POLICY_UPDATE' => 'human-resources.settings*leave-policy.update',
         'LEAVE_POLICY_DELETE' => 'human-resources.settings*leave-policy.delete',
-        'LEAVE_POLICY_ACTIVATE' => 'human-resources.settings*leave-policy.activate',
+//        'LEAVE_POLICY_ACTIVATE' => 'human-resources.settings*leave-policy.activate',
         'LEAVE_POLICY_EXPORT' => 'human-resources.settings*leave-policy.export',
 
         // Public Holiday Management
@@ -31,7 +31,7 @@ return [
         'PUBLIC_HOLIDAY_CREATE' => 'human-resources.settings*public-holiday.create',
         'PUBLIC_HOLIDAY_UPDATE' => 'human-resources.settings*public-holiday.update',
         'PUBLIC_HOLIDAY_DELETE' => 'human-resources.settings*public-holiday.delete',
-        'PUBLIC_HOLIDAY_ACTIVATE' => 'human-resources.settings*public-holiday.activate',
+//        'PUBLIC_HOLIDAY_ACTIVATE' => 'human-resources.settings*public-holiday.activate',
         'PUBLIC_HOLIDAY_EXPORT' => 'human-resources.settings*public-holiday.export',
     ]
 ];
