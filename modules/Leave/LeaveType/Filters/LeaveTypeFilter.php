@@ -14,4 +14,10 @@ class LeaveTypeFilter extends SearchModelFilter
         {
             return $this->where('name', 'LIKE', '%' . $name . '%');
         }
+        public function branchId($branchId)
+        {
+            return $this->whereHas('branches', function($q) use($branchId){
+                $q->where('branches.id', $branchId);
+            });
+        }
 }

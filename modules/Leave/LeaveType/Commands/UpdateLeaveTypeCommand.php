@@ -14,6 +14,7 @@ class UpdateLeaveTypeCommand
         private bool $is_payed = false,
         private bool $is_deduct_from_balance = false,
         private ?string $conditions = null,
+        private array $branch_ids = [],
     ) {
     }
 
@@ -42,6 +43,11 @@ class UpdateLeaveTypeCommand
         return $this->conditions;
     }
 
+    public function getBranchIds(): array
+    {
+        return $this->branch_ids;
+    }
+
     public function toArray(): array
     {
         return [
@@ -49,6 +55,7 @@ class UpdateLeaveTypeCommand
             'is_payed' => $this->is_payed,
             'is_deduct_from_balance' => $this->is_deduct_from_balance,
             'conditions' => $this->conditions,
+            'branch_ids' => $this->branch_ids,
         ];
     }
 }

@@ -17,6 +17,8 @@ class CreateLeaveTypeRequest extends FormRequest
             'is_payed' => 'sometimes|boolean',
             'is_deduct_from_balance' => 'sometimes|boolean',
             'conditions' => 'nullable|string|max:1000',
+            'branch_ids' => 'nullable|array',
+            'branch_ids.*' => 'required_with:branch_ids|integer|exists:management_hierarchies,id',
         ];
     }
 
@@ -30,6 +32,10 @@ class CreateLeaveTypeRequest extends FormRequest
             'is_deduct_from_balance.boolean' => __('leave.leave_type.is_deduct_from_balance.boolean'),
             'conditions.string' => __('leave.leave_type.conditions.string'),
             'conditions.max' => __('leave.leave_type.conditions.max'),
+            'branch_ids.array' => __('leave.leave_type.branch_ids.array'),
+            'branch_ids.*.required' => __('leave.leave_type.branch_ids.required'),
+            'branch_ids.*.integer' => __('leave.leave_type.branch_ids.integer'),
+            'branch_ids.*.exists' => __('leave.leave_type.branch_ids.exists'),
         ];
     }
 
@@ -40,6 +46,7 @@ class CreateLeaveTypeRequest extends FormRequest
             is_payed: (bool) $this->get('is_payed', false),
             is_deduct_from_balance: (bool) $this->get('is_deduct_from_balance', false),
             conditions: $this->get('conditions'),
+            branch_ids: $this->get('branch_ids', []),
         );
     }
 }
