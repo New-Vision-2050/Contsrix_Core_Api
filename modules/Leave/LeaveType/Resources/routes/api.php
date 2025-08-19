@@ -13,7 +13,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         ->permission(Permission::LEAVE_TYPE_EXPORT());
 
     Route::get('/{id}', [LeaveTypeController::class, 'show'])
-        ->permission(Permission::LEAVE_TYPE_VIEW());
+        ->permission(Permission::LEAVE_TYPE_VIEW(),Permission::LEAVE_TYPE_UPDATE());
     Route::put('/{id}', [LeaveTypeController::class, 'update'])
         ->permission(Permission::LEAVE_TYPE_UPDATE());
     Route::delete('/{id}', [LeaveTypeController::class, 'delete'])

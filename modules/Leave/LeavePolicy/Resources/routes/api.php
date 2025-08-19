@@ -13,7 +13,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         ->permission(Permission::LEAVE_POLICY_EXPORT());
 
     Route::get('/{id}', [LeavePolicyController::class, 'show'])
-        ->permission(Permission::LEAVE_POLICY_VIEW());
+        ->permission(Permission::LEAVE_POLICY_VIEW(),Permission::LEAVE_POLICY_UPDATE());
     Route::put('/{id}', [LeavePolicyController::class, 'update'])
         ->permission(Permission::LEAVE_POLICY_UPDATE());
     Route::put('/{id}/rollover-allowed', [LeavePolicyController::class, 'updateRolloverAllowed'])
