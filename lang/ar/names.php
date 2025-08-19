@@ -222,6 +222,9 @@ return [
     "user-list"=>"المستخدمين",
     "program-management" => "ادارة البرامج",
     "support-data" => "الدعم",
+    "leave-policy"=>"سياسة الاجازات",
+    "leave-type"=>"نوع الاجازات",
+    "public-holiday"=>" العطلات العامة",
 
 
 ];
