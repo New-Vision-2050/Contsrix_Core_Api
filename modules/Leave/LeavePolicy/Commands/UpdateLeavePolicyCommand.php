@@ -62,7 +62,7 @@ class UpdateLeavePolicyCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'name' => $this->name,
             'total_days' => $this->total_days,
             'day_type' => $this->day_type,
@@ -70,6 +70,6 @@ class UpdateLeavePolicyCommand
             'max_days_per_request' => $this->max_days_per_request,
             'upgrade_condition' => $this->upgrade_condition,
             'is_allow_half_day' => $this->is_allow_half_day,
-        ]);
+        ];
     }
 }

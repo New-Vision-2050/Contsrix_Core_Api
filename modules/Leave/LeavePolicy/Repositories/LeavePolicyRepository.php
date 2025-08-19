@@ -39,7 +39,7 @@ class LeavePolicyRepository extends BaseRepository
         return $this->create($data);
     }
 
-    public function updateLeavePolicy(UuidInterface $id, array $data): bool
+    public function updateLeavePolicy(UuidInterface $id, array $data)
     {
         return $this->update($id, $data);
     }

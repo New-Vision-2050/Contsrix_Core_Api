@@ -32,6 +32,7 @@ class LeaveType extends Model
         'name',
         'is_payed',
         'is_deduct_from_balance',
+        'conditions',
         "company_id",
     ];
 

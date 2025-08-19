@@ -60,7 +60,7 @@ class LeavePolicyController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function update(UpdateLeavePolicyRequest $request): JsonResponse
+    public function update(UpdateLeavePolicyRequest $request)
     {
         $command = $request->createUpdateLeavePolicyCommand();
         $this->updateLeavePolicyHandler->handle($command);
@@ -111,7 +111,7 @@ class LeavePolicyController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'leave_policies.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new LeavePolicyExport($this->leavePolicyService, $filters), $fileName);
     }
 }
