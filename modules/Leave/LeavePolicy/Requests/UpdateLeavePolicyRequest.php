@@ -8,9 +8,15 @@ use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
 use Modules\Leave\LeavePolicy\Commands\UpdateLeavePolicyCommand;
 use Modules\Leave\LeavePolicy\Handlers\UpdateLeavePolicyHandler;
+use Modules\Leave\LeavePolicy\Rules\AnnualYearProtectionRules;
 
 class UpdateLeavePolicyRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
@@ -22,6 +28,18 @@ class UpdateLeavePolicyRequest extends FormRequest
             'upgrade_condition' => 'nullable|string|max:500',
             'is_allow_half_day' => 'sometimes|boolean',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $id = Uuid::fromString($this->route('id'));
+            $protectionErrors = AnnualYearProtectionRules::validateUpdateFields($id, $this->all());
+            
+            foreach ($protectionErrors as $field => $message) {
+                $validator->errors()->add($field, $message);
+            }
+        });
     }
 
     public function messages(): array
