@@ -6,6 +6,7 @@ namespace Modules\Leave\PublicHoliday\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Leave\PublicHoliday\Models\PublicHoliday;
 use Illuminate\Support\Collection as SupportCollection;
@@ -48,12 +49,12 @@ class PublicHolidayRepository extends BaseRepository
 
     public function createPublicHoliday(array $data): PublicHoliday
     {
-        return $this->create($data);
+        return $this->create($data+["year"=>Carbon::parse($data['date_start'])->year,"holiday_type"=>"national"]);
     }
 
     public function updatePublicHoliday(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        return $this->update($id, $data+["year"=>Carbon::parse($data['date_start'])->year,"holiday_type"=>"national"]);
     }
 
     public function deletePublicHoliday(UuidInterface $id): bool
