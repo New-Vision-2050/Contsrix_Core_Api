@@ -10,7 +10,7 @@ class CreateLeavePolicyDTO
 {
     public function __construct(
         public readonly string $name,
-        public readonly ?int $total_days = null,
+        public readonly ?string $total_days = null,
         public readonly ?string $day_type = null,
         public readonly bool $is_rollover_allowed = false,
         public readonly ?int $max_days_per_request = null,
