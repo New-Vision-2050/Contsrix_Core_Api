@@ -45,11 +45,11 @@ class UpdatePublicHolidayCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'name' => $this->name,
             'country_id' => $this->country_id,
             'date_start' => $this->date_start->format('Y-m-d'),
             'date_end' => $this->date_end->format('Y-m-d'),
-        ]);
+        ];
     }
 }

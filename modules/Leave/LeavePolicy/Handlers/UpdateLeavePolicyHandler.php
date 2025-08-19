@@ -16,6 +16,6 @@ class UpdateLeavePolicyHandler
 
     public function handle(UpdateLeavePolicyCommand $updateLeavePolicyCommand)
     {
-        $this->repository->updateLeavePolicy($updateLeavePolicyCommand->getId(), $updateLeavePolicyCommand->toArray());
+        return $this->repository->updateLeavePolicy($updateLeavePolicyCommand->getId(), $updateLeavePolicyCommand->toArray());
     }
 }

@@ -13,6 +13,7 @@ class UpdateLeaveTypeCommand
         private string $name,
         private bool $is_payed = false,
         private bool $is_deduct_from_balance = false,
+        private ?string $conditions = null,
     ) {
     }
 
@@ -36,12 +37,18 @@ class UpdateLeaveTypeCommand
         return $this->is_deduct_from_balance;
     }
 
+    public function getConditions(): ?string
+    {
+        return $this->conditions;
+    }
+
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'name' => $this->name,
             'is_payed' => $this->is_payed,
             'is_deduct_from_balance' => $this->is_deduct_from_balance,
-        ]);
+            'conditions' => $this->conditions,
+        ];
     }
 }
