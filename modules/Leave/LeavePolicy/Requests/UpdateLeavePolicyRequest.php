@@ -20,7 +20,7 @@ class UpdateLeavePolicyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:leave_policies,name,' . $this->route('id') . ',id,company_id,' . tenant('id'),
             'total_days' => 'nullable|integer|min:0',
             'day_type' => 'nullable|string|max:100',
             'is_rollover_allowed' => 'sometimes|boolean',
@@ -35,7 +35,7 @@ class UpdateLeavePolicyRequest extends FormRequest
         $validator->after(function ($validator) {
             $id = Uuid::fromString($this->route('id'));
             $protectionErrors = AnnualYearProtectionRules::validateUpdateFields($id, $this->all());
-            
+
             foreach ($protectionErrors as $field => $message) {
                 $validator->errors()->add($field, $message);
             }

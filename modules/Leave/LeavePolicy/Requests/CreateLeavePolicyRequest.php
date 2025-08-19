@@ -13,9 +13,9 @@ class CreateLeavePolicyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:leave_policies,name,NULL,id,company_id,' . tenant('id'),
             'total_days' => 'nullable|integer|min:0',
-            'day_type' => 'nullable|string|max:100',
+            'day_type' => 'nullable|string|in:work_day,calender',
             'is_rollover_allowed' => 'sometimes|boolean',
             'max_days_per_request' => 'nullable|integer|min:0',
             'upgrade_condition' => 'nullable|string|max:500',
@@ -45,7 +45,7 @@ class CreateLeavePolicyRequest extends FormRequest
     {
         return new CreateLeavePolicyDTO(
             name: $this->get('name'),
-            total_days: $this->get('total_days'),
+            total_days: (string)$this->get('total_days'),
             day_type: $this->get('day_type'),
             is_rollover_allowed: (bool) $this->get('is_rollover_allowed', false),
             max_days_per_request: $this->get('max_days_per_request'),
