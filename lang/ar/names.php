@@ -39,8 +39,10 @@ return [
     'companies' => 'الشركات',
     'role' => 'دور',
     'roles' => 'الأدوار',
+    'roles*roles' => 'الأدوار',
     'permission' => 'صلاحية',
     'permissions' => 'الصلاحيات',
+    'permissions*permissions' => 'الصلاحيات',
     'identifier' => 'معرّف',
     'login-way' => 'طريقة تسجيل الدخول',
     'driver' => 'مزود الخدمة',
@@ -75,12 +77,14 @@ return [
     // Settings module
     // SubEntity Module
     'sub-entity' => 'كيان فرعي',
+    'users*sub-entity' => 'كيان فرعي',
     'sub-entities' => 'الكيانات الفرعية',
     'system' => 'النظام',
     'sub-entity-attributes' => 'خصائص الكيان الفرعي',
     'sub-entity-validation' => 'التحقق من الكيان الفرعي',
     'sub-entity-selection' => 'اختيار الكيان الفرعي',
     'super-entity' => 'كيان رئيسي',
+    'users*super-entity' => 'كيان رئيسي',
     'super-entities' => 'الكيانات الرئيسية',
     'super-entity-attributes' => 'خصائص الكيان الرئيسي',
     'super-entity-registration' => 'تسجيل الكيان الرئيسي',
@@ -222,9 +226,17 @@ return [
     "user-list"=>"المستخدمين",
     "program-management" => "ادارة البرامج",
     "support-data" => "الدعم",
+    "company-profile*support-data" => "الدعم",
     "leave-policy"=>"سياسة الاجازات",
+    "settings*leave-policy"=>"سياسة الاجازات",
     "leave-type"=>"نوع الاجازات",
+    "settings*leave-type"=>"نوع الاجازات",
     "public-holiday"=>" العطلات العامة",
+    "settings*public-holiday"=>" العطلات العامة",
+    "companies-list*companies-list"=>"الشركات",
+    "user-list*users"=>"المستخدمين",
+    "program-and-packages*package"=>"الباقات",
+    "program-and-packages*company-access-program"=>"برنامج الوصول للشركة",
 
 
 ];
