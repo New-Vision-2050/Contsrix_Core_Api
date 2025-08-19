@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Leave\PublicHoliday\Commands\SeedHolidaysCommand;
 use Modules\Leave\PublicHoliday\Commands\TestApiCommand;
+use Modules\Leave\PublicHoliday\Commands\TestTranslationsCommand;
+use Modules\Leave\PublicHoliday\Commands\UpdateTranslationsCommand;
+use Modules\Leave\PublicHoliday\Commands\UpdateSeederWithArabicCommand;
 
 class PublicHolidayServiceProvider extends ModuleServiceProvider
 {
@@ -45,6 +48,8 @@ class PublicHolidayServiceProvider extends ModuleServiceProvider
             $this->commands([
                 SeedHolidaysCommand::class,
                 TestApiCommand::class,
+                TestTranslationsCommand::class,
+                UpdateTranslationsCommand::class,
             ]);
         }
     }

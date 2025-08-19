@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use Modules\Leave\PublicHoliday\Services\HolidayTranslationService;
 
 class CalendarificApiService
 {
@@ -86,8 +87,14 @@ class CalendarificApiService
             // Parse date - handle both simple dates and datetime with timezone
             $date = Carbon::parse($dateString);
 
+            // Get holiday name and generate Arabic translation
+            $englishName = $holiday['name'] ?? 'Unknown Holiday';
+            $translationService = new HolidayTranslationService();
+            $arabicName = $translationService->getArabicName($englishName);
+
             return [
-                'name' => $holiday['name'] ?? 'Unknown Holiday',
+                'name' => $englishName,
+                'name_ar' => $arabicName !== $englishName ? $arabicName : null,
                 'country_code' => $countryCode,
                 'year' => $year,
                 'date_start' => $date->format('Y-m-d'),
@@ -95,6 +102,7 @@ class CalendarificApiService
                 'holiday_type' => $this->determineHolidayType($holiday),
                 'is_recurring' => true,
                 'description' => $holiday['description'] ?? null,
+                'description_ar' => null, // API doesn't provide Arabic descriptions
                 'external_api_id' => $holiday['urlid'] ?? null,
                 'api_data' => json_encode([
                     'type' => $holiday['type'] ?? [],
@@ -118,6 +126,7 @@ class CalendarificApiService
             // Return a fallback holiday
             return [
                 'name' => $holiday['name'] ?? 'Unknown Holiday',
+                'name_ar' => null,
                 'country_code' => $countryCode,
                 'year' => $year,
                 'date_start' => $year . '-01-01',
@@ -125,6 +134,7 @@ class CalendarificApiService
                 'holiday_type' => 'other',
                 'is_recurring' => true,
                 'description' => 'Error processing holiday data: ' . $e->getMessage(),
+                'description_ar' => null,
                 'external_api_id' => null,
                 'api_data' => json_encode($holiday),
                 'tags' => json_encode(['error']),
