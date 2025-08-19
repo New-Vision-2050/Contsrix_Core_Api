@@ -120,5 +120,6 @@ class DatabaseSeeder extends Seeder
         $this->call(SyncUserIdsInUserProfessionalDataSeeder::class);
         $this->call(LeavePolicySeeder::class);
 
+        $this->call(PublicHolidaysTableSeeder::class);
     }
 }

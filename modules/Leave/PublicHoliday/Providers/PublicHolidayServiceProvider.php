@@ -6,6 +6,8 @@ namespace Modules\Leave\PublicHoliday\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\Leave\PublicHoliday\Commands\SeedHolidaysCommand;
+use Modules\Leave\PublicHoliday\Commands\TestApiCommand;
 
 class PublicHolidayServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +21,7 @@ class PublicHolidayServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerCommands();
     }
 
     public function register(): void
@@ -31,6 +34,18 @@ class PublicHolidayServiceProvider extends ModuleServiceProvider
         Route::prefix('api/v1/public-holidays')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
+    }
 
+    /**
+     * Register console commands
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SeedHolidaysCommand::class,
+                TestApiCommand::class,
+            ]);
+        }
     }
 }
