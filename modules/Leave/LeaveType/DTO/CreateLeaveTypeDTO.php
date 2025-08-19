@@ -13,6 +13,7 @@ class CreateLeaveTypeDTO
         public readonly bool $is_payed = false,
         public readonly bool $is_deduct_from_balance = false,
         public readonly ?string $conditions = null,
+        public readonly array $branch_ids = [],
     ) {
     }
 
@@ -24,6 +25,7 @@ class CreateLeaveTypeDTO
             'is_deduct_from_balance' => $this->is_deduct_from_balance,
             'conditions' => $this->conditions,
             'company_id' => tenant('id'),
+            'branch_ids' => $this->branch_ids,
         ];
     }
 
@@ -45,5 +47,10 @@ class CreateLeaveTypeDTO
     public function getConditions(): ?string
     {
         return $this->conditions;
+    }
+
+    public function getBranchIds(): array
+    {
+        return $this->branch_ids;
     }
 }

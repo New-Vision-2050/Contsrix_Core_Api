@@ -23,24 +23,43 @@ class LeaveTypeRepository extends BaseRepository
 
     public function getLeaveTypeList(?int $page, ?int $perPage = 10): Collection
     {
+        // For listing, we might want to include branches for filtering/display
+        // but typically listing doesn't need the relationship data
         return $this->paginatedList([], $page, $perPage);
     }
 
     public function getLeaveType(UuidInterface $id): LeaveType
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->with('branches')
+            ->where('id', $id->toString())
+            ->firstOrFail();
     }
 
     public function createLeaveType(array $data): LeaveType
     {
-        return $this->create($data);
+        $leaveType = $this->create($data);
+        
+        // Sync branches if provided
+        if (isset($data['branch_ids']) && is_array($data['branch_ids'])) {
+            $leaveType->branches()->sync($data['branch_ids']);
+        }
+        
+        return $leaveType;
     }
 
     public function updateLeaveType(UuidInterface $id, array $data): bool
     {
-        return $this->update($id, $data);
+        $leaveType = $this->findOneOrFail($id);
+        
+        // Update the basic data
+        $updated = $this->update($id, $data);
+        
+        // Sync branches if provided
+        if (isset($data['branch_ids']) && is_array($data['branch_ids'])) {
+            $leaveType->branches()->sync($data['branch_ids']);
+        }
+        
+        return $updated;
     }
 
     public function deleteLeaveType(UuidInterface $id): bool
