@@ -8,16 +8,17 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class LeaveTypeFilter extends SearchModelFilter
 {
-       public $relations = [];
+    public $relations = [];
 
-        public function search($name)
-        {
-            return $this->where('name', 'LIKE', '%' . $name . '%');
-        }
-        public function branchId($branchId)
-        {
-            return $this->whereHas('branches', function($q) use($branchId){
-                $q->where('branches.id', $branchId);
-            });
-        }
+    public function search($name)
+    {
+        return $this->where('name', 'LIKE', '%' . $name . '%');
+    }
+
+    public function branchId($branchId)
+    {
+        return $this->whereHas('branches', function ($q) use ($branchId) {
+            $q->where('management_hierarchies.id', $branchId);
+        });
+    }
 }
