@@ -15,7 +15,7 @@ class LeaveTypeFilter extends SearchModelFilter
         return $this->where('name', 'LIKE', '%' . $name . '%');
     }
 
-    public function branchId($branchId)
+    public function branch($branchId)
     {
         return $this->whereHas('branches', function ($q) use ($branchId) {
             $q->where('management_hierarchies.id', $branchId);
