@@ -152,7 +152,7 @@ class MainPackageSeeder extends Seeder
 
             $permissions = Permission::where(function($query) use ($excludedPermissionPatterns) {
                 foreach ($excludedPermissionPatterns as $pattern) {
-                    $query->where('name', 'NOT LIKE', "%{$pattern}.%");
+                    $query->where('name', 'NOT LIKE', "{$pattern}.".".%");
                 }
             })->pluck('id');
 
