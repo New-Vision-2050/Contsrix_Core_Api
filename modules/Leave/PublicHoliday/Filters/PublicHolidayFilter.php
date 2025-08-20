@@ -29,7 +29,7 @@ class PublicHolidayFilter extends SearchModelFilter
     }
 
 
-    public function countryId($country_id)
+    public function country($country_id)
     {
         return $this->where('country_id',$country_id );
     }
