@@ -12,9 +12,13 @@ class HolidayTranslationService
     private array $translations = [
         // Islamic Holidays
         'Eid al-Fitr' => 'عيد الفطر',
+
         'Eid el Fitr' => 'عيد الفطر',
         'Eid al-Fitr Holiday' => 'إجازة عيد الفطر',
+
+        'Eid al-Fitr holiday'=> 'إجازة عيد الفطر',
         'Eid el Fitr Holiday' => 'إجازة عيد الفطر',
+        "Eid al-Adha holiday"=>"إجازة عيد الأضحى",
         'Eid al-Adha' => 'عيد الأضحى',
         'Eid al-Adha Holiday' => 'إجازة عيد الأضحى',
         'Arafat Day' => 'يوم عرفة',
@@ -27,6 +31,7 @@ class HolidayTranslationService
         'Ashura' => 'عاشوراء',
         'Islamic New Year' => 'رأس السنة الهجرية',
         'Hijri New Year' => 'رأس السنة الهجرية',
+        "Flag Day"=>"عيد العلم",
 
         // Egyptian National Holidays
         'Revolution Day January 25' => 'ثورة 25 يناير',
@@ -39,6 +44,9 @@ class HolidayTranslationService
         'Sinai Liberation Day' => 'عيد تحرير سيناء',
         'Labor Day' => 'عيد العمال',
         'Spring Festival' => 'شم النسيم',
+        "National Day"=>"اليوم الوطني",
+        "Waqfat Arafat Day"=>"يوم وقفة عرفة",
+        "Arafat (Hajj) Day"=>"يوم عرفة (حجة)",
 
         // Coptic/Christian Holidays
         'Coptic Christmas Day' => 'عيد الميلاد المجيد',
@@ -70,7 +78,6 @@ class HolidayTranslationService
         'UAE National Day' => 'اليوم الوطني الإماراتي',
         'Commemoration Day' => 'يوم الشهيد',
         'Martyrs\' Day' => 'يوم الشهيد',
-        'New Year\'s Day' => 'رأس السنة الميلادية',
 
         // Kuwaiti Holidays
         'Kuwait National Day' => 'العيد الوطني الكويتي',
