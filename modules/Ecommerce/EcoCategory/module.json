@@ -1,0 +1,14 @@
+{
+    "name": "EcoCategory",
+    "alias": "ecocategory",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoCategory\\Providers\\EcoCategoryServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
