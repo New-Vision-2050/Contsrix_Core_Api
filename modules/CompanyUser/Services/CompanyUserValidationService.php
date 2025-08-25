@@ -85,7 +85,7 @@ class CompanyUserValidationService
                 'status' => 0,
                 'status_in_all_companies' => 1,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
-                "user_id"=>$userInCompany->id,
+                "user_id"=>$userInCompany?->id,
                 "roles" => $this->getRolesAndPermissions($companyUserCompany),
 
                 'validate' => 'required',
