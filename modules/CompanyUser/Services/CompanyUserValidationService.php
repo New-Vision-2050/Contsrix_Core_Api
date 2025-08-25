@@ -96,6 +96,7 @@ class CompanyUserValidationService
                 "name"=>$user->name,
                 "job_title_id"=>$user->job_title_id,
                 "identity"=>$user->identity ,
+                "residence"=>$user->residence ,
                 "country_id"=>$user->country_id
             ];
         } else {
