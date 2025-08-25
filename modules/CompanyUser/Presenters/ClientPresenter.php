@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Modules\User\Presenters;
+namespace Modules\CompanyUser\Presenters;
 
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\User\Models\User;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class UserRolesPresenter extends AbstractPresenter
+class ClientPresenter extends AbstractPresenter
 {
     private User $user;
     private $role;
 
-    public function __construct(User $user,$role = CompanyUserRole::EMPLOYEE->value)
+    public function __construct(User $user,$role = CompanyUserRole::CLIENT->value)
     {
         $this->user = $user;
         $this->role = $role;
@@ -30,7 +30,12 @@ class UserRolesPresenter extends AbstractPresenter
             "branches"=>ManagementHierarchyPresenter::collection($this->user->managementHierarchies($this->role)->get()),
             "status"=>$this->user->status,
             "residence"=>$this->user->companyUser->residence,
-            "client_data"=>$this->user->clientDetail
+            "type"=>$this->user->clientDetail?->type,
+            "broker_id"=>$this->user->clientDetail?->broker_id,
+            "company_representative_name"=>$this->user->clientDetail?->company_representative_name,
+            "registration_number"=>$this->user->clientDetail?->registration_number,
+            "company_name"=>$this->user->clientDetail?->company_name,
         ];
     }
 }
+

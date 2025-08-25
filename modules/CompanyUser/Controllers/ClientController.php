@@ -11,6 +11,7 @@ use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeues
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
+use Modules\CompanyUser\Presenters\ClientPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
@@ -42,7 +43,7 @@ class ClientController extends Controller
         );
 
 
-        return Json::items(UserRolesPresenter::collection($list['data'],CompanyUserRole::CLIENT->value),paginationSettings: $list['pagination']);
+        return Json::items(ClientPresenter::collection($list['data'],CompanyUserRole::CLIENT->value),paginationSettings: $list['pagination']);
     }
 
 
