@@ -53,7 +53,7 @@ class CreateClientRequest extends FormRequest
                 'email'
             ],
             'residence' => ['nullable', new ResidenceValidationRule($email)],
-            "branch_ids" => "nullable|array",
+            "branch_ids" => "required|array",
             "branch_ids.*" => "exists:management_hierarchies,id,type,branch",
             "latitude" => "nullable",
             "longitude" => "nullable",

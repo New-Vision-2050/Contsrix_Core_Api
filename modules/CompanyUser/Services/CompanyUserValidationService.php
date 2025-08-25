@@ -83,6 +83,7 @@ class CompanyUserValidationService
                 'sentence' => __("validation.user-email-error", ["name" => $user->name]),
                 'sub_title' => 'email',
                 'status' => 0,
+                'status_in_all_companies' => 1,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
                 "roles" => $this->getRolesAndPermissions($companyUserCompany),
 
@@ -100,6 +101,7 @@ class CompanyUserValidationService
             $this->errors[] = [
                 'sentence' => __("validation.user-email-success"),
                 'sub_title' => 'email',
+                'status_in_all_companies' => 0,
                 'status' => 1,
                 "branches" => [],
                 "status_in_company" => 0,
