@@ -32,6 +32,7 @@ class ClientPresenter extends AbstractPresenter
             "residence"=>$this->user->companyUser->residence,
             "type"=>$this->user->clientDetail?->type,
             "broker_id"=>$this->user->clientDetail?->broker_id,
+            "broker"=>["id"=>$this->user->clientDetail?->broker?->id,"name"=>$this->user->clientDetail?->broker?->name],
             "company_representative_name"=>$this->user->clientDetail?->company_representative_name,
             "registration_number"=>$this->user->clientDetail?->registration_number,
             "company_name"=>$this->user->clientDetail?->company_name,
