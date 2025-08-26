@@ -709,4 +709,35 @@ class CompanyUserRepository extends BaseRepository
     {
         return $this->model->with($relations)->get();
     }
+
+    /**
+     * Update the status of a user role in company_user_company table
+     *
+     * @param string $userId
+     * @param string $roleId
+     * @param int $status
+     * @return CompanyUserCompany
+     * @throws CustomException
+     */
+    public function updateUserRoleStatus(string $userId,  $roleId, int $status): CompanyUserCompany
+    {
+        // Find the CompanyUserCompany record based on user_id and role_id
+        $companyUserCompany = CompanyUserCompany::where('role', $roleId)
+            ->whereHas('companyUser', function ($query) use ($userId) {
+                $query->whereHas('users', function ($subQuery) use ($userId) {
+                    $subQuery->where('id', $userId);
+                });
+            })
+            ->first();
+
+        if (!$companyUserCompany) {
+            throw new CustomException('User role not found or user does not have access to this role', 404);
+        }
+
+        // Update the status
+        $companyUserCompany->status =(string) $status;
+        $companyUserCompany->save();
+
+        return $companyUserCompany->refresh();
+    }
 }

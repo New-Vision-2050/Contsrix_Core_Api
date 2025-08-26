@@ -28,8 +28,9 @@ class ClientPresenter extends AbstractPresenter
             'email' => $this->user->email,
             'phone' => $this->user->phone,
             "branches"=>ManagementHierarchyPresenter::collection($this->user->managementHierarchies($this->role)->get()),
-            "status"=>$this->user->status,
-            "residence"=>$this->user->companyUser->residence,
+            "status" => $this->user->companyUserCompanies->filter(function($item) {
+                return $item->getAttributes()['role'] == CompanyUserRole::CLIENT->value;
+            })->first()->status ??"نشط" == "نشط" ? 1:0,
             "type"=>$this->user->clientDetail?->type,
             "broker_id"=>$this->user->clientDetail?->broker_id,
             "broker"=>$this->user->clientDetail?->broker_id !=null?["id"=>$this->user->clientDetail?->broker?->id,"name"=>$this->user->clientDetail?->broker?->name]:null,
