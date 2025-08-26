@@ -15,6 +15,7 @@ use Modules\Subscription\Package\Models\Package;
 use Modules\Country\Models\Country;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
+use Modules\Subscription\Package\Services\PackageAssignmentService;
 use Ramsey\Uuid\Uuid;
 
 class MainPackageSeeder extends Seeder
@@ -182,6 +183,10 @@ class MainPackageSeeder extends Seeder
 
 
             $package->companyFields()->sync($companyFields);
+
+            //main package assigned to many companies to effect any change in sub companies
+
+            app(PackageAssignmentService::class)->recalculate($package);
 
             // 4. Assign the package to the first company
 //            $company =tenant("id")? Company::find(tenant("id")): Company::first();
