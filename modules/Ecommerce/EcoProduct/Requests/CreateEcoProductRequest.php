@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Modules\Ecommerce\EcoProduct\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Ramsey\Uuid\Uuid;
 use Modules\Ecommerce\EcoProduct\DTO\CreateEcoProductDTO;
-
-use function PHPSTORM_META\type;
+use Illuminate\Validation\Rules\File;
 
 class CreateEcoProductRequest extends FormRequest
 {
@@ -30,6 +30,20 @@ class CreateEcoProductRequest extends FormRequest
             'category_id' => ['required', 'uuid', 'exists:eco_categories,id'],
             'brand_id' => ['nullable', 'uuid', 'exists:eco_brands,id'],
             'sub_category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
+            'main_image' => [
+                'required', // Main image is mandatory
+                // File::image()
+                //     ->min(10) // Minimum 10 KB
+                //     ->max(2 * 1024) // Maximum 2 MB (2 * 1024 KB)
+                //     ->dimensions(Rule::dimensions()->maxWidth(2000)->maxHeight(2000)), // Max dimensions
+            ],
+            'other_images' => ['nullable', 'array', 'max:5'], // Allow up to 5 additional images
+            'other_images.*' => [ // Rules for each item in the 'other_images' array
+                // File::image()
+                //     ->min(10)
+                //     ->max(2 * 1024)
+                //     ->dimensions(Rule::dimensions()->maxWidth(2000)->maxHeight(2000)),
+            ],
             "type" => ['required', 'string', 'max:255'],
             // Multilingual Name
             'name' => ['required', 'array'],
@@ -63,6 +77,8 @@ class CreateEcoProductRequest extends FormRequest
             'seo.meta_title' => ['nullable', 'string', 'max:255'],
             'seo.meta_description' => ['nullable', 'string', 'max:2000'],
             'seo.meta_keywords' => ['nullable', 'string', 'max:255'],
+            'associated_product_ids' => ['nullable', 'array'],
+            'associated_product_ids.*' => ['uuid', 'exists:eco_products,id'],
         ];
     }
 
@@ -157,6 +173,25 @@ class CreateEcoProductRequest extends FormRequest
             'seo.meta_description.max' => __('ecoproduct::validation.seo_meta_description_max'),
             'seo.meta_keywords.string' => __('ecoproduct::validation.seo_meta_keywords_string'),
             'seo.meta_keywords.max' => __('ecoproduct::validation.seo_meta_keywords_max'),
+
+            //associated_products
+            'associated_product_ids.array' => __('ecoproduct::validation.associated_product_ids_array'),
+            'associated_product_ids.*.uuid' => __('ecoproduct::validation.associated_product_ids_uuid'),
+            'associated_product_ids.*.exists' => __('ecoproduct::validation.associated_product_ids_exists'),
+
+            // Product Images
+            'main_image.required' => __('ecoproduct::validation.main_image_required'),
+            'main_image.image' => __('ecoproduct::validation.main_image_image'),
+            'main_image.min' => __('ecoproduct::validation.main_image_min'),
+            'main_image.max' => __('ecoproduct::validation.main_image_max'),
+            'main_image.dimensions' => __('ecoproduct::validation.main_image_dimensions'),
+
+            'other_images.array' => __('ecoproduct::validation.other_images_array'),
+            'other_images.max' => __('ecoproduct::validation.other_images_max'),
+            'other_images.*.image' => __('ecoproduct::validation.other_images_item_image'),
+            'other_images.*.min' => __('ecoproduct::validation.other_images_item_min'),
+            'other_images.*.max' => __('ecoproduct::validation.other_images_item_max'),
+            'other_images.*.dimensions' => __('ecoproduct::validation.other_images_item_dimensions'),
         ];
     }
 
@@ -183,21 +218,25 @@ class CreateEcoProductRequest extends FormRequest
             description: $description,
             price: (float) $validatedData['price'],
             sku: $validatedData['sku'],
-            stock: $validatedData['stock'] ?? null,
+            stock: (int)$validatedData['stock'] ?? null,
             warehouseId: Uuid::fromString($validatedData['warehouse_id']),
-            requiresShipping: $validatedData['requires_shipping'] ?? false,
-            unlimitedQuantity: $validatedData['unlimited_quantity'] ?? false,
-            isTaxable: $validatedData['is_taxable'] ?? true,
-            priceIncludesVat: $validatedData['price_includes_vat'] ?? false,
-            vatPercentage: $validatedData['vat_percentage'] ?? null,
-            isVisible: $validatedData['is_visible'] ?? true,
+            requiresShipping: (bool)$validatedData['requires_shipping'] ?? 1,
+            unlimitedQuantity: (bool)$validatedData['unlimited_quantity'] ?? 0,
+            isTaxable: (bool)$validatedData['is_taxable'] ?? true,
+            priceIncludesVat: (bool)$validatedData['price_includes_vat'] ?? 0,
+            vatPercentage: (float)$validatedData['vat_percentage'] ?? null,
+            isVisible: (bool)$validatedData['is_visible'] ?? true,
             brandId: !empty($validatedData['brand_id']) ? Uuid::fromString($validatedData['brand_id']) : null,
             categoryId: !empty($validatedData['category_id']) ? Uuid::fromString($validatedData['category_id']) : null,
             subCategoryId: !empty($validatedData['sub_category_id']) ? Uuid::fromString($validatedData['sub_category_id']) : null,
             type: $validatedData['type'] ?? null,
+            taxes: $validatedData['taxes'] ?? null,
             details: $validatedData['details'] ?? null,
             customFields: $validatedData['custom_fields'] ?? null,
             seo: $seoData,
+            associatedProductIds: $validatedData['associated_product_ids'] ?? [],
+            mainImage: $this->file('main_image'), // NEW: Pass UploadedFile object
+            otherImages: $this->file('other_images') ?? [], // NEW: Pass array of UploadedFile objects
         );
     }
 }

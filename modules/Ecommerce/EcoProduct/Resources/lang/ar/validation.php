@@ -80,4 +80,34 @@ return [
         'seo_meta_description_max' => 'لا يجوز أن يتجاوز الوصف التعريفي :max أحرف.',
         'seo_meta_keywords_string' => 'يجب أن تكون الكلمات المفتاحية نصًا.',
         'seo_meta_keywords_max' => 'لا يجوز أن تتجاوز الكلمات المفتاحية :max أحرف.',
+
+        // Product Associated Products
+        'associated_product_ids_array' => 'يجب أن يكون حقل المنتجات المرتبطة مصفوفة من معرفات المنتجات.',
+        'associated_product_ids_uuid' => 'يجب أن يكون كل معرف منتج مرتبط بتنسيق UUID صالح.',
+        'associated_product_ids_exists' => 'معرف منتج مرتبط واحد أو أكثر غير موجود.',
+
+        'category_id_required' => 'معرف الفئة مطلوب.',
+        'category_id_uuid' => 'يجب أن يكون معرف الفئة بتنسيق UUID صالح.',
+        'category_id_exists' => 'معرف الفئة المحدد غير موجود.',
+        'brand_id_uuid' => 'يجب أن يكون معرف العلامة التجارية بتنسيق UUID صالح.',
+        'brand_id_exists' => 'معرف العلامة التجارية المحدد غير موجود.',
+        'sub_category_id_uuid' => 'يجب أن يكون معرف الفئة الفرعية بتنسيق UUID صالح.',
+        'sub_category_id_exists' => 'معرف الفئة الفرعية المحدد غير موجود.',
+        'type_required' => 'نوع المنتج مطلوب.',
+        'type_string' => 'يجب أن يكون نوع المنتج نصًا.',
+        'type_max' => 'لا يجوز أن يتجاوز نوع المنتج :max أحرف.',
+
+        // NEW: Image messages
+        'main_image_required' => 'الصورة الرئيسية مطلوبة للمنتج.',
+        'main_image_image' => 'يجب أن تكون الصورة الرئيسية ملف صورة (jpeg, png, bmp, gif, svg, webp).',
+        'main_image_min' => 'يجب أن لا تقل حجم الصورة الرئيسية عن :min كيلوبايت.',
+        'main_image_max' => 'لا يجوز أن يتجاوز حجم الصورة الرئيسية :max كيلوبايت.',
+        'main_image_dimensions' => 'أبعاد الصورة الرئيسية غير صالحة.',
+
+        'other_images_array' => 'يجب أن يكون حقل الصور الإضافية مصفوفة.',
+        'other_images_max' => 'يمكنك تحميل :max صور إضافية كحد أقصى.',
+        'other_images_item_image' => 'يجب أن تكون كل صورة إضافية ملف صورة.',
+        'other_images_item_min' => 'يجب أن لا يقل حجم كل صورة إضافية عن :min كيلوبايت.',
+        'other_images_item_max' => 'لا يجوز أن يتجاوز حجم كل صورة إضافية :max كيلوبايت.',
+        'other_images_item_dimensions' => 'أبعاد كل صورة إضافية غير صالحة.',
 ];

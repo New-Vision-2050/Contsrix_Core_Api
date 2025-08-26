@@ -37,9 +37,12 @@ class EcoProductRepository extends BaseRepository
     {
         $details = $data['details'] ?? null;
         $customFields = $data['custom_fields'] ?? null;
-        $seo = $data['seo'] ?? null;
 
-        unset($data['details'], $data['custom_fields'], $data['seo']);
+        $seo = $data['seo'] ?? null;
+        $associatedProductIds = $data['associated_product_ids'] ?? [];
+        $taxes = $data['taxes'] ?? [];
+
+        unset($data['details'], $data['custom_fields'], $data['seo'], $data['associated_product_ids'], $data['taxes']);
 
         $ecoProduct =  $this->model::create($data);
 
@@ -51,10 +54,21 @@ class EcoProductRepository extends BaseRepository
             $ecoProduct->customFields()->createMany($customFields);
         }
         if ($seo) {
-
             $ecoProduct->seo()->create($seo);
         }
 
+        if (!empty($associatedProductIds)) {
+            $ecoProduct->associatedProducts()->attach($associatedProductIds);
+        }
+
+        if ($taxes) {
+            $taxes = array_map(function ($tax) use ($ecoProduct) {
+                $tax['company_id'] = $ecoProduct->company_id;
+                return $tax;
+            }, $taxes);
+
+            $ecoProduct->taxes()->createMany($taxes);
+        }
         return $ecoProduct;
     }
 
