@@ -126,7 +126,7 @@ class DashboardWidgetsService
         $total = $this->getTotalClientsCount($companyId, $endDate);
 
 
-        $percentageChange = $this->calculatePercentageChange( $total,$currentActive);
+        $percentageChange = $this->calculatePercentage( $currentActive,$total);
 
         return [
             'type' => 'active_clients',
@@ -221,6 +221,15 @@ class DashboardWidgetsService
             return $current > 0 ? 100.0 : 0.0;
         }
 
-        return round((($current - $previous) / $previous) * 100, 1);
+        return round((($current - $previous) / $previous+$current) * 100, 1);
+    }
+
+    private function calculatePercentage(int $thisMonth, int $total): float
+    {
+        if ($total == 0) {
+            return $thisMonth > 0 ? 100.0 : 0.0;
+        }
+
+        return ($thisMonth / $total) * 100;
     }
 }
