@@ -8,6 +8,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
 use Modules\Ecommerce\EcoProduct\DTO\CreateEcoProductDTO;
 
+use function PHPSTORM_META\type;
+
 class CreateEcoProductRequest extends FormRequest
 {
 
@@ -28,7 +30,7 @@ class CreateEcoProductRequest extends FormRequest
             'category_id' => ['required', 'uuid', 'exists:eco_categories,id'],
             'brand_id' => ['nullable', 'uuid', 'exists:eco_brands,id'],
             'sub_category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
-
+            "type" => ['required', 'string', 'max:255'],
             // Multilingual Name
             'name' => ['required', 'array'],
             'name.ar' => ['required', 'string', 'max:255'],
@@ -189,6 +191,10 @@ class CreateEcoProductRequest extends FormRequest
             priceIncludesVat: $validatedData['price_includes_vat'] ?? false,
             vatPercentage: $validatedData['vat_percentage'] ?? null,
             isVisible: $validatedData['is_visible'] ?? true,
+            brandId: !empty($validatedData['brand_id']) ? Uuid::fromString($validatedData['brand_id']) : null,
+            categoryId: !empty($validatedData['category_id']) ? Uuid::fromString($validatedData['category_id']) : null,
+            subCategoryId: !empty($validatedData['sub_category_id']) ? Uuid::fromString($validatedData['sub_category_id']) : null,
+            type: $validatedData['type'] ?? null,
             details: $validatedData['details'] ?? null,
             customFields: $validatedData['custom_fields'] ?? null,
             seo: $seoData,
