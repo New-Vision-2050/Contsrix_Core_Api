@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::create('eco_products', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('company_id')->index();
+            $table->uuid('company_id')->index(); // Assuming 'companies' table exists and has uuid 'id'
 
             $table->decimal('price', 10, 2);
             $table->string('sku')->unique(); // product code (SKU)
 
             $table->unsignedBigInteger('stock')->nullable();
-            $table->uuid('warehouse_id')->index();
+            $table->uuid('warehouse_id')->index(); // Assuming 'warehouses' table exists and has uuid 'id'
 
             $table->tinyInteger('requires_shipping')->default(0); // requires shipping
             $table->tinyInteger('unlimited_quantity')->default(0); // unlimited stock
@@ -35,30 +35,37 @@ return new class extends Migration
         Schema::create('product_taxes', function (Blueprint $table) {
            $table->uuid('id')->primary();
            $table->uuid('company_id')->index();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->uuid('country_id')->nullable(); // country for tax
+
+            $table->foreignUuid('product_id')->constrained('eco_products')->onDelete('cascade');
+            $table->uuid('country_id')->nullable(); // country for tax (assuming 'countries' table has uuid 'id')
             $table->string('tax_number')->nullable(); // tax registration number
             $table->decimal('tax_percentage', 5, 2)->nullable(); // tax percentage
             $table->tinyInteger('is_active')->default(1); // enable/disable this tax
             $table->timestamps();
         });
+
         Schema::create('product_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+
+            $table->foreignUuid('product_id')->constrained('eco_products')->onDelete('cascade');
             $table->string('label');   // e.g. "Color"
             $table->string('value');   // e.g. "Black"
             $table->timestamps();
         });
+
         Schema::create('product_custom_fields', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+
+            $table->foreignUuid('product_id')->constrained('eco_products')->onDelete('cascade');
             $table->string('field_name');  // e.g. "Warranty Period"
             $table->string('field_value'); // e.g. "2 years"
             $table->timestamps();
         });
+
         Schema::create('product_seo', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+
+            $table->foreignUuid('product_id')->constrained('eco_products')->onDelete('cascade');
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
             $table->string('meta_keywords')->nullable();
@@ -68,10 +75,11 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('product_taxes');
-        Schema::dropIfExists('products');
-        Schema::dropIfExists('product_details');
-        Schema::dropIfExists('product_custom_fields');
+        // Drop tables in reverse order to avoid foreign key constraint issues
         Schema::dropIfExists('product_seo');
+        Schema::dropIfExists('product_custom_fields');
+        Schema::dropIfExists('product_details');
+        Schema::dropIfExists('product_taxes');
+        Schema::dropIfExists('eco_products'); // Corrected: Should drop 'eco_products'
     }
 };

@@ -16,12 +16,14 @@ class CreateEcoProductDTO
         public string $sku,
         public ?int $stock,
         public UuidInterface $warehouseId,
-        public bool $requiresShipping = false,
-        public bool $unlimitedQuantity = false,
-        public bool $isTaxable = true,
-        public bool $priceIncludesVat = false,
+        public bool $requiresShipping,
+        public bool $unlimitedQuantity,
+        public bool $isTaxable,
+        public bool $priceIncludesVat,
         public ?float $vatPercentage,
-        public bool $isVisible = true,
+        public bool $isVisible,
+
+        public ?array $taxes = null,
         public ?array $details = null,
         public ?array $customFields = null,
         public ?array $seo = null,
@@ -44,6 +46,11 @@ class CreateEcoProductDTO
             'price_includes_vat' => $this->priceIncludesVat,
             'vat_percentage' => $this->vatPercentage,
             'is_visible' => $this->isVisible,
+            'taxes' => $this->taxes,
+            'details' => $this->details,
+            'customFields' => $this->customFields,
+            'seo' => $this->seo
+
         ]);
     }
 }
