@@ -8,6 +8,8 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\UserCanAccessManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Requests\AssignUsersToManagementHierarchyRequest;
 use Modules\Company\ManagementHierarchy\Services\UserCanAccessManagementHierarchyService;
@@ -65,12 +67,9 @@ class UserCanAccessManagementHierarchyController extends Controller
         try {
             $assignments = $this->userAccessService->getManagementHierarchiesByUser($userId);
 
-            $presentedData = $assignments->map(function ($assignment) {
-                $presenter = new UserCanAccessManagementHierarchyPresenter($assignment);
-                return $presenter->getData();
-            });
+            $presentedData = ManagementHierarchySimpleDataPresenter::collection($assignments);
 
-            return Json::items($presentedData->toArray());
+            return Json::items($presentedData);
         } catch (Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
