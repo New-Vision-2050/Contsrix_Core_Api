@@ -43,6 +43,10 @@ class EcoProduct extends Model
         // Translatable fields must also be in fillable for spatie/laravel-translatable to work
         'name',
         'description',
+        'category_id',
+        'sub_category_id',
+        'brand_id',
+        'type',
     ];
 
     protected $casts = [

@@ -21,6 +21,17 @@ class EcoProductPresenter extends AbstractPresenter
         return [
             'id' => $this->ecoProduct->id,
             'name' => $this->ecoProduct->name,
+            'description' => $this->ecoProduct->description,
+            'price' => $this->ecoProduct->price,
+            'sku' => $this->ecoProduct->sku,
+            'stock' => $this->ecoProduct->stock,
+            'warehouse_id' => $this->ecoProduct->warehouse_id,
+            'requires_shipping' => $this->ecoProduct->requires_shipping,
+            'unlimited_quantity' => $this->ecoProduct->unlimited_quantity,
+            'is_taxable' => $this->ecoProduct->is_taxable,
+            'price_includes_vat' => $this->ecoProduct->price_includes_vat,
+            'vat_percentage' => $this->ecoProduct->vat_percentage,
+            'is_visible' => $this->ecoProduct->is_visible,
         ];
     }
 }

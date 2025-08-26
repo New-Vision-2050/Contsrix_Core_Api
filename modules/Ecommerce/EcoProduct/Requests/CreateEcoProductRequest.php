@@ -38,7 +38,7 @@ class CreateEcoProductRequest extends FormRequest
 
             // Product Taxes (array of tax objects)
             'taxes' => ['nullable', 'array'],
-            'taxes.*.country_id' => ['nullable', 'uuid', 'exists:countries,id'],
+            'taxes.*.country_id' => ['nullable',  'exists:countries,id'],
             'taxes.*.tax_number' => ['nullable', 'string', 'max:255'],
             'taxes.*.tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'taxes.*.is_active' => ['boolean'],
@@ -118,7 +118,6 @@ class CreateEcoProductRequest extends FormRequest
 
             // Product Taxes
             'taxes.array' => __('ecoproduct::validation.taxes_array'),
-            'taxes.*.country_id.uuid' => __('ecoproduct::validation.taxes_country_id_uuid'),
             'taxes.*.country_id.exists' => __('ecoproduct::validation.taxes_country_id_exists'),
             'taxes.*.tax_number.string' => __('ecoproduct::validation.taxes_tax_number_string'),
             'taxes.*.tax_number.max' => __('ecoproduct::validation.taxes_tax_number_max'),
@@ -174,7 +173,7 @@ class CreateEcoProductRequest extends FormRequest
         }
 
         return new CreateEcoProductDTO(
-            companyId: Uuid::fromString($validatedData['company_id']),
+            companyId: Uuid::fromString(tenant("id")),
             name: $validatedData['name'],
             description: $description,
             price: (float) $validatedData['price'],

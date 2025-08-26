@@ -1,0 +1,14 @@
+{
+    "name": "Warehous",
+    "alias": "warehous",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\Warehous\\Providers\\WarehousServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

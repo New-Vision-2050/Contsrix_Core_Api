@@ -43,8 +43,8 @@ class EcoProductRepository extends BaseRepository
 
         $ecoProduct =  $this->model::create($data);
 
-
         if ($details) {
+
             $ecoProduct->details()->createMany($details);
         }
         if ($customFields) {
@@ -57,9 +57,6 @@ class EcoProductRepository extends BaseRepository
 
         return $ecoProduct;
     }
-
-
-
 
     public function updateEcoProduct(UuidInterface $id, array $data): bool
     {

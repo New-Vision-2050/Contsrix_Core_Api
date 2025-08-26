@@ -45,7 +45,7 @@ return new class extends Migration
         });
 
         Schema::create('product_details', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
             $table->foreignUuid('product_id')->constrained('eco_products')->onDelete('cascade');
             $table->string('label');   // e.g. "Color"
@@ -54,7 +54,7 @@ return new class extends Migration
         });
 
         Schema::create('product_custom_fields', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
             $table->foreignUuid('product_id')->constrained('eco_products')->onDelete('cascade');
             $table->string('field_name');  // e.g. "Warranty Period"
@@ -63,7 +63,7 @@ return new class extends Migration
         });
 
         Schema::create('product_seo', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
 
             $table->foreignUuid('product_id')->constrained('eco_products')->onDelete('cascade');
             $table->string('meta_title')->nullable();
