@@ -11,6 +11,10 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'index']);
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
 
+        // Broker Dashboard Widgets Routes
+        Route::get('/widgets', [\Modules\CompanyUser\Controllers\BrokerController::class, 'widgets']);
+
+
     });
 
     Route::group(["prefix"=>"employees"],function (){
