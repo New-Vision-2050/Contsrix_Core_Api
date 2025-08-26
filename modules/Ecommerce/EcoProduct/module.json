@@ -1,0 +1,14 @@
+{
+    "name": "EcoProduct",
+    "alias": "ecoproduct",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoProduct\\Providers\\EcoProductServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
