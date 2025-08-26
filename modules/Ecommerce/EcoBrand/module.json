@@ -1,0 +1,14 @@
+{
+    "name": "EcoBrand",
+    "alias": "ecobrand",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoBrand\\Providers\\EcoBrandServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
