@@ -99,8 +99,8 @@ class DashboardWidgetsService
         $currentAdded = $this->getClientsAddedLastMonthCount($companyId, $startDate, $endDate);
 
         // Previous period for comparison
-        $previousStart = Carbon::parse()->subMonths(1)->startOfMonth();
-        $previousEnd = Carbon::parse()->subMonths(1)->endOfMonth();
+        $previousStart = Carbon::now()->subMonths(1)->startOfMonth();
+        $previousEnd = Carbon::now()->subMonths(1)->endOfMonth();
         $previousAdded = $this->getClientsAddedLastMonthCount($companyId, $previousStart, $previousEnd);
 
         $percentageChange = $this->calculatePercentageChange($currentAdded, $previousAdded);
