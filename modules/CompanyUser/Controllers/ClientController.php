@@ -52,10 +52,9 @@ class ClientController extends Controller
 
 
 
-    public function store(CreateClientRequest $request): JsonResponse
+    public function store(CreateClientRequest $request)
     {
         $createdItem = $this->clientCRUDService->create($request->createCreateClientDTO(), $request->createCreateCompanyUserCompanyRoleDTO(),$request->createSetUserAddressDTO());
-
         $presenter = new CompanyUserPresenter($createdItem);
 
         return Json::item($presenter->getData());

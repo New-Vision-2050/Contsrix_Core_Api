@@ -61,7 +61,9 @@ class CreateClientRequest extends FormRequest
             'registration_number' => 'nullable|string',
             "company_representative_name" => 'nullable|string',
             "broker_id" => 'nullable|string|exists:users,id',
-            "message_address"=>"nullable|email"
+            "message_address"=>"nullable|email",
+            "company_id"=>"required_if:type,2"
+
 
 
 
@@ -119,7 +121,7 @@ class CreateClientRequest extends FormRequest
     public function createCreateCompanyUserCompanyRoleDTO(): CreateCompanyUserCompanyRoleDTO
     {
         return new CreateCompanyUserCompanyRoleDTO(
-            company_id: Uuid::fromString( tenant("id")),//will create for current company
+            company_id: Uuid::fromString($this->get("company_id") ??tenant("id")),//will create for current company
             role: (string)CompanyUserRole::CLIENT->value,
 
         );

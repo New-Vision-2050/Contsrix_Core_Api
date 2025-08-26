@@ -45,18 +45,18 @@ class CompanyUserRepository extends BaseRepository
 {
 
     public function __construct(
-        CompanyUser                                      $model,
-        private UserRepository                           $userRepository,
-        private JobTitleRepository                       $jobTitleRepository,
-        private CompanyRepository                        $companyRepository,
-        private ManagementHierarchyRepository            $managementHierarchyRepository,
-        private UserProfessionalDataRepository           $userProfessionalDataRepository,
-        private CompanyUserCompanyRepository             $companyUserCompanyRepository,
-        private CompanyUserAddressRepository             $companyUserAddressRepository,
-        private ClientDetailRepository                   $clientDetailRepository,
-        private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository,
-        private AttendanceConstraintRepository           $attendanceConstraintRepository,
-        private AutoAttendanceService                    $autoAttendanceService,
+        CompanyUser                                        $model,
+        private UserRepository                             $userRepository,
+        private JobTitleRepository                         $jobTitleRepository,
+        private CompanyRepository                          $companyRepository,
+        private ManagementHierarchyRepository              $managementHierarchyRepository,
+        private UserProfessionalDataRepository             $userProfessionalDataRepository,
+        private CompanyUserCompanyRepository               $companyUserCompanyRepository,
+        private CompanyUserAddressRepository               $companyUserAddressRepository,
+        private ClientDetailRepository                     $clientDetailRepository,
+        private CompanyUserManagementHierarchyRepository   $companyUserManagementHierarchyRepository,
+        private AttendanceConstraintRepository             $attendanceConstraintRepository,
+        private AutoAttendanceService                      $autoAttendanceService,
         private UserCanAccessManagementHierarchyRepository $userCanAccessManagementHierarchyRepository,
 
     )
@@ -211,6 +211,15 @@ class CompanyUserRepository extends BaseRepository
                     $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
                 }
             }
+//if client organization type is 2 then create user in same company and temp new company
+            if (CompanyUserRole::CLIENT->value == $companyRole['role'] && $clientDetail !== null) {
+
+                if ($clientDetail["type"] == 2) {
+                    $newCompanyClientId = $companyRole["company_id"];
+                    $companyRole["company_id"] = tenant("id");
+
+                }
+            }
 
             // Find or create company user
             $companyUser = $this->findOrCreateCompanyUser(array_merge($companyUserData, $phone));
@@ -254,6 +263,21 @@ class CompanyUserRepository extends BaseRepository
                     ["user_id" => $user->id],
                     $clientDetail + ["user_id" => $user->id]
                 );
+
+
+                if ($clientDetail["type"] == 2) {
+                    $user = $this->findOrCreateUserInCompany(
+                        $companyUser,
+                        $newCompanyClientId,
+                        $companyUserData['name'],
+                        $companyRole['role']
+                    );
+                    $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole , ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
+
+
+                }
+
+
             }
 
             DB::commit();
@@ -395,7 +419,6 @@ class CompanyUserRepository extends BaseRepository
             $user->assignRole($role);//assign super admin role for first user
 
             $this->userCanAccessManagementHierarchyRepository->assignUsersToManagementHierarchy(new AssignUsersToManagementHierarchyDTO(branchId: $branch->id, userIds: [$user->id]));
-
 
 
             $branch->update(["manager_id" => $user->id]);
