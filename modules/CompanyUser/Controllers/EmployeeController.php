@@ -21,6 +21,7 @@ use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\Employee\EmployeeCRUDService;
 use Modules\User\Models\User;
+use Modules\User\Presenters\EmployeePresenter;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Presenters\UserRolesPresenter;
 use Ramsey\Uuid\Uuid;
@@ -43,7 +44,7 @@ class EmployeeController extends Controller
         );
 
 
-        return Json::items(UserRolesPresenter::collection($list['data'],CompanyUserRole::EMPLOYEE->value),paginationSettings: $list['pagination']);
+        return Json::items(EmployeePresenter::collection($list['data'],CompanyUserRole::EMPLOYEE->value),paginationSettings: $list['pagination']);
     }
 
 
