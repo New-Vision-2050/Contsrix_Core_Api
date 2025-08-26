@@ -81,4 +81,34 @@ return [
         'seo_meta_keywords_string' => 'The meta keywords must be a string.',
         'seo_meta_keywords_max' => 'The meta keywords may not be greater than :max characters.',
 
+        // Product Associated Products
+        'associated_product_ids_array' => 'The associated products field must be an array of product IDs.',
+        'associated_product_ids_uuid' => 'Each associated product ID must be a valid UUID.',
+        'associated_product_ids_exists' => 'One or more associated product IDs do not exist.',
+
+         'category_id_required' => 'The category ID is required.',
+        'category_id_uuid' => 'The category ID must be a valid UUID.',
+        'category_id_exists' => 'The selected category ID does not exist.',
+        'brand_id_uuid' => 'The brand ID must be a valid UUID.',
+        'brand_id_exists' => 'The selected brand ID does not exist.',
+        'sub_category_id_uuid' => 'The sub-category ID must be a valid UUID.',
+        'sub_category_id_exists' => 'The selected sub-category ID does not exist.',
+        'type_required' => 'The product type is required.',
+        'type_string' => 'The product type must be a string.',
+        'type_max' => 'The product type may not be greater than :max characters.',
+
+        // NEW: Image messages
+        'main_image_required' => 'A main image is required for the product.',
+        'main_image_image' => 'The main image must be an image file (jpeg, png, bmp, gif, svg, webp).',
+        'main_image_min' => 'The main image must be at least :min KB.',
+        'main_image_max' => 'The main image may not be greater than :max KB.',
+        'main_image_dimensions' => 'The main image has invalid dimensions.',
+
+        'other_images_array' => 'The additional images field must be an array.',
+        'other_images_max' => 'You may upload a maximum of :max additional images.',
+        'other_images_item_image' => 'Each additional image must be an image file.',
+        'other_images_item_min' => 'Each additional image must be at least :min KB.',
+        'other_images_item_max' => 'Each additional image may not be greater than :max KB.',
+        'other_images_item_dimensions' => 'Each additional image has invalid dimensions.',
+
 ];

@@ -10,16 +10,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Ecommerce\EcoProduct\Database\factories\EcoProductFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Ecommerce\EcoBrand\Models\EcoBrand;
+use Modules\Ecommerce\EcoCategory\Models\EcoCategory;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class EcoProduct extends Model
+class EcoProduct extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
     //use SoftDeletes; // Uncomment if you intend to use soft deletes
-
+    use InteractsWithMedia;
     protected $table = 'eco_products'; // Explicitly define table name for clarity
 
     public array $translatable = ['name', 'description'];
@@ -66,7 +74,18 @@ class EcoProduct extends Model
     {
         return EcoProductFactory::new();
     }
-
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
+    }
+    public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
+    {
+        $media->getFullUrl(); // Ensure this is using your custom method
+    }
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id', 'id');
+    }
     // Define relationships
     public function taxes(): HasMany
     {
@@ -83,8 +102,47 @@ class EcoProduct extends Model
         return $this->hasMany(ProductCustomField::class, 'product_id', 'id');
     }
 
-    public function seo(): HasMany // Or HasOne if you only allow one SEO entry per product
+    public function seo(): HasOne
     {
-        return $this->hasMany(ProductSEO::class, 'product_id', 'id');
+        return $this->hasOne(ProductSEO::class, 'product_id', 'id');
+    }
+        /**
+     * Get the products associated with this product.
+     */
+    public function associatedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            EcoProduct::class,
+            'product_product', // Pivot table name
+            'product_id',      // Foreign key on the pivot table for THIS product
+            'related_product_id' // Foreign key on the pivot table for the RELATED product
+        );
+    }
+
+    /**
+     * Get the products that this product is associated with.
+     * Useful if you want to find products that list *this* product as an associated item.
+     */
+    public function inverseAssociatedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            EcoProduct::class,
+            'product_product',
+            'related_product_id', // Foreign key on the pivot table for THIS product (as a related item)
+            'product_id'          // Foreign key on the pivot table for the MAIN product
+        );
+    }
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(EcoCategory::class, 'category_id', 'id');
+    }
+
+    public function subCategory(): BelongsTo
+    {
+        return $this->belongsTo(EcoCategory::class, 'sub_category_id', 'id');
+    }
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(EcoBrand::class, 'brand_id', 'id');
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Ecommerce\EcoProduct\Handlers\DeleteEcoProductHandler;
 use Modules\Ecommerce\EcoProduct\Handlers\UpdateEcoProductHandler;
+use Modules\Ecommerce\EcoProduct\Presenters\EcoProductDetailsPresenter;
 use Modules\Ecommerce\EcoProduct\Presenters\EcoProductPresenter;
 use Modules\Ecommerce\EcoProduct\Requests\CreateEcoProductRequest;
 use Modules\Ecommerce\EcoProduct\Requests\DeleteEcoProductRequest;
@@ -41,7 +42,7 @@ class EcoProductController extends Controller
     {
         $item = $this->ecoProductService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new EcoProductPresenter($item);
+        $presenter = new EcoProductDetailsPresenter($item);
 
         return Json::item($presenter->getData());
     }
@@ -62,7 +63,7 @@ class EcoProductController extends Controller
 
         $item = $this->ecoProductService->get($command->getId());
 
-        $presenter = new EcoProductPresenter($item);
+        $presenter = new EcoProductDetailsPresenter($item);
 
         return Json::item( $presenter->getData());
     }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Country\Models\Country;
 
 class ProductTax extends Model
 {
@@ -40,5 +41,10 @@ class ProductTax extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(EcoProduct::class, 'product_id', 'id');
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'country_id', 'id');
     }
 }

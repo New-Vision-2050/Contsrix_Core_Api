@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Ecommerce\EcoProduct\DTO;
 
+use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 
 class CreateEcoProductDTO
@@ -30,6 +31,9 @@ class CreateEcoProductDTO
         public ?array $details = null,
         public ?array $customFields = null,
         public ?array $seo = null,
+        public array $associatedProductIds = [],
+        public UploadedFile $mainImage, // Single UploadedFile
+        public array $otherImages = [], //Array of UploadedFile
     ) {
     }
 
@@ -55,8 +59,11 @@ class CreateEcoProductDTO
             'brand_id' => $this->brandId,
             'taxes' => $this->taxes,
             'details' => $this->details,
-            'customFields' => $this->customFields,
-            'seo' => $this->seo
+            'custom_fields' => $this->customFields,
+            'seo' => $this->seo,
+            'associated_product_ids' => $this->associatedProductIds,
+            'main_image' => $this->mainImage,
+            'other_images' => $this->otherImages
 
         ]);
     }
