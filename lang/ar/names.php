@@ -33,7 +33,14 @@ return [
     'users' => 'المستخدمين',
     'organization-list*users' => 'المستخدمين',
     'client' => 'عميل',
+
+    'clients' => 'العملاء',
+    'clients*clients' => 'العملاء',
+
     'broker' => 'وسيط',
+    'brokers' => 'الوسطاء',
+    'brokers*brokers' => 'الوسطاء',
+
     'employee' => 'موظف',
     'company' => 'شركة',
     'companies' => 'الشركات',
