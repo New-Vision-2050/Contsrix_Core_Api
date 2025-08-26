@@ -15,8 +15,10 @@ use Modules\Attendance\Repositories\AttendanceConstraintRepository;
 use Modules\Attendance\Services\AutoAttendanceService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Company\ManagementHierarchy\Repositories\UserCanAccessManagementHierarchyRepository;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\ClientDetail;
@@ -54,7 +56,8 @@ class CompanyUserRepository extends BaseRepository
         private ClientDetailRepository                   $clientDetailRepository,
         private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository,
         private AttendanceConstraintRepository           $attendanceConstraintRepository,
-        private AutoAttendanceService $autoAttendanceService
+        private AutoAttendanceService                    $autoAttendanceService,
+        private UserCanAccessManagementHierarchyRepository $userCanAccessManagementHierarchyRepository,
 
     )
     {
@@ -391,6 +394,9 @@ class CompanyUserRepository extends BaseRepository
             setPermissionsTeamId($companyId);
             $user->assignRole($role);//assign super admin role for first user
 
+            $this->userCanAccessManagementHierarchyRepository->assignUsersToManagementHierarchy(new AssignUsersToManagementHierarchyDTO(branchId: $branch->id, userIds: [$user->id]));
+
+
 
             $branch->update(["manager_id" => $user->id]);
 
@@ -536,8 +542,8 @@ class CompanyUserRepository extends BaseRepository
 
         // $attendanceConstraint = $this->attendanceConstraintRepository->model->getConstraintBybranch($branchId);
         $attendanceConstraint = AttendanceConstraint::withoutTenancy()
-        ->whereJsonContains('branch_ids', (string) $branchId)
-        ->first();
+            ->whereJsonContains('branch_ids', (string)$branchId)
+            ->first();
         if (!$attendanceConstraint) {
             $attendanceConstraint = AttendanceConstraint::where('company_id', $companyId)->withoutTenancy()->first();
         }
@@ -566,7 +572,7 @@ class CompanyUserRepository extends BaseRepository
             $professionalData = UserProfessionalData::create($data);
         }
 
-        if($professionalData && $professionalData->attendance_constraint_id){
+        if ($professionalData && $professionalData->attendance_constraint_id) {
             $this->autoAttendanceService->generateAttendanceUsers($companyId, $user->id);
         }
     }
@@ -719,7 +725,7 @@ class CompanyUserRepository extends BaseRepository
      * @return CompanyUserCompany
      * @throws CustomException
      */
-    public function updateUserRoleStatus(string $userId,  $roleId, int $status): CompanyUserCompany
+    public function updateUserRoleStatus(string $userId, $roleId, int $status): CompanyUserCompany
     {
         // Find the CompanyUserCompany record based on user_id and role_id
         $companyUserCompany = CompanyUserCompany::where('role', $roleId)
@@ -735,7 +741,7 @@ class CompanyUserRepository extends BaseRepository
         }
 
         // Update the status
-        $companyUserCompany->status =(string) $status;
+        $companyUserCompany->status = (string)$status;
         $companyUserCompany->save();
 
         return $companyUserCompany->refresh();
