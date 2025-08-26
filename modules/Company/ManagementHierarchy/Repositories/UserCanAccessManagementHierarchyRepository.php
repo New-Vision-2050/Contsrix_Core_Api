@@ -7,6 +7,7 @@ namespace Modules\Company\ManagementHierarchy\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Models\UserCanAccessManagementHierarchy;
 use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\User\Models\User;
@@ -66,10 +67,11 @@ class UserCanAccessManagementHierarchyRepository extends BaseRepository
      */
     public function getManagementHierarchiesByUser(string $userId): Collection
     {
-        return $this->model
+        $ids =  $this->model
             ->where('user_id', $userId)
             ->with(['user', 'managementHierarchy'])
-            ->get();
+            ->pluck("management_hierarchy_id")->toArray();
+        return ManagementHierarchy::query()->whereIn("id", $ids)->get();
     }
 
     /**
