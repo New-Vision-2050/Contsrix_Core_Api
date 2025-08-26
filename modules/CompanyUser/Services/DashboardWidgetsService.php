@@ -85,7 +85,7 @@ class DashboardWidgetsService
             'title' => __('names.total_clients'),
             'count' => $currentClients,
             'previous_count' => $previousClients,
-            'percentage_change' => $percentageChange,
+            'percentage_change' => 100,
             'trend' => $percentageChange > 0 ? 'up' : ($percentageChange < 0 ? 'down' : 'stable'),
         ];
     }
@@ -99,8 +99,8 @@ class DashboardWidgetsService
         $currentAdded = $this->getClientsAddedLastMonthCount($companyId, $startDate, $endDate);
 
         // Previous period for comparison
-        $previousStart = Carbon::parse($startDate)->subMonths(1);
-        $previousEnd = Carbon::parse($endDate)->subMonths(1);
+        $previousStart = Carbon::parse()->subMonths(1)->startOfMonth();
+        $previousEnd = Carbon::parse()->subMonths(1)->endOfMonth();
         $previousAdded = $this->getClientsAddedLastMonthCount($companyId, $previousStart, $previousEnd);
 
         $percentageChange = $this->calculatePercentageChange($currentAdded, $previousAdded);
@@ -123,17 +123,16 @@ class DashboardWidgetsService
         // Current period active clients
         $currentActive = $this->getActiveClientsCount($companyId, $endDate);
 
-        // Previous period for comparison
-        $previousEnd = Carbon::parse($endDate)->subMonths(1);
-        $previousActive = $this->getActiveClientsCount($companyId, $previousEnd);
+        $total = $this->getTotalClientsCount($companyId, $endDate);
 
-        $percentageChange = $this->calculatePercentageChange($currentActive, $previousActive);
+
+        $percentageChange = $this->calculatePercentageChange( $total,$currentActive);
 
         return [
             'type' => 'active_clients',
             'title' => __('names.active_clients'),
             'count' => $currentActive,
-            'previous_count' => $previousActive,
+            'previous_count' => $total,
             'percentage_change' => $percentageChange,
             'trend' => $percentageChange > 0 ? 'up' : ($percentageChange < 0 ? 'down' : 'stable'),
         ];
