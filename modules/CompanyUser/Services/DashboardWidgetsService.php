@@ -213,7 +213,7 @@ class DashboardWidgetsService
     }
 
     /**
-     * Calculate percentage change between current and previous values
+     * Calculate percentage change between current and previous values (as multiplier)
      */
     private function calculatePercentageChange(int $current, int $previous): float
     {
@@ -221,7 +221,7 @@ class DashboardWidgetsService
             return $current > 0 ? 100.0 : 0.0;
         }
 
-        return round((($current - $previous) / $previous) * 100, 1);
+        return round(($current / $previous) * 100, 1);
     }
 
     private function calculatePercentage(int $thisMonth, int $total): float
