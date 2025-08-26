@@ -257,6 +257,6 @@ class ManagementHierarchy extends Model
 
     public function usersCanAccess()
     {
-        return $this->belongsToMany(User::class,"user_can_access_management_hierarchies","management_hierarchy_id","user_id");
+        return $this->belongsToMany(User::class,"users_can_access_management_hierarchies","management_hierarchy_id","user_id");
     }
 }
