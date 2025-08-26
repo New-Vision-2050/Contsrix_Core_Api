@@ -15,6 +15,7 @@ use Modules\Subscription\Package\Models\Package;
 use Modules\Country\Models\Country;
 use Modules\Company\CompanyType\Models\CompanyType;
 use Modules\Company\CompanyField\Models\CompanyField;
+use Modules\Subscription\Package\Services\PackageAssignmentService;
 use Ramsey\Uuid\Uuid;
 
 class MainPackageSeeder extends Seeder
@@ -148,11 +149,27 @@ class MainPackageSeeder extends Seeder
 
 
 
+            $clientPackage = Package::firstOrCreate([
+                'name' => 'Client Package',
+                'company_access_program_id' => $accessProgram->id,
+            ], [
+                'price' => 0.00,
+                'currency' => 'USD',
+                'subscription_period' => 1,
+                'subscription_period_unit' => PeriodUnitEnum::Year->value,
+                'trial_period' => 0,
+                'trial_period_unit' => PeriodUnitEnum::Day->value,
+                'is_active' => true,
+                'is_main_package' =>1
+            ]);
+
+
+
             $totalPermissions = Permission::count();
 
             $permissions = Permission::where(function($query) use ($excludedPermissionPatterns) {
                 foreach ($excludedPermissionPatterns as $pattern) {
-                    $query->where('name', 'NOT LIKE', "%{$pattern}.%");
+                    $query->where('name', 'NOT LIKE', "{$pattern}.".".%");
                 }
             })->pluck('id');
 
@@ -166,6 +183,10 @@ class MainPackageSeeder extends Seeder
 
 
             $package->companyFields()->sync($companyFields);
+
+            //main package assigned to many companies to effect any change in sub companies
+
+            app(PackageAssignmentService::class)->recalculate($package);
 
             // 4. Assign the package to the first company
 //            $company =tenant("id")? Company::find(tenant("id")): Company::first();

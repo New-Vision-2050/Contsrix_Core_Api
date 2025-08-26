@@ -1,0 +1,14 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use $CONTROLLER_NAMESPACE$;
+
+Route::group(['middleware' => ['auth:api',$TENANCY_MIDDLEWARE$]], function () {
+    Route::get('/', [$CONTROLLER_CLASS$::class, 'index']);
+    Route::post('/', [$CONTROLLER_CLASS$::class, 'store']);
+    Route::get('/export', [$CONTROLLER_CLASS$::class, 'export']);
+
+    Route::get('/{id}', [$CONTROLLER_CLASS$::class, 'show']);
+    Route::put('/{id}', [$CONTROLLER_CLASS$::class, 'update']);
+    Route::delete('/{id}', [$CONTROLLER_CLASS$::class, 'delete']);
+});

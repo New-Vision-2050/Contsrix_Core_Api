@@ -254,4 +254,9 @@ class ManagementHierarchy extends Model
         return $this->morphToMany(AttendanceConstraint::class, 'constrainable')
                     ->wherePivot('is_default', true);
     }
+
+    public function usersCanAccess()
+    {
+        return $this->belongsToMany(User::class,"users_can_access_management_hierarchies","management_hierarchy_id","user_id");
+    }
 }

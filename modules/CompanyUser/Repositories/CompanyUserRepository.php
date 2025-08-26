@@ -15,8 +15,10 @@ use Modules\Attendance\Repositories\AttendanceConstraintRepository;
 use Modules\Attendance\Services\AutoAttendanceService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Company\ManagementHierarchy\Repositories\UserCanAccessManagementHierarchyRepository;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\ClientDetail;
@@ -43,18 +45,19 @@ class CompanyUserRepository extends BaseRepository
 {
 
     public function __construct(
-        CompanyUser                                      $model,
-        private UserRepository                           $userRepository,
-        private JobTitleRepository                       $jobTitleRepository,
-        private CompanyRepository                        $companyRepository,
-        private ManagementHierarchyRepository            $managementHierarchyRepository,
-        private UserProfessionalDataRepository           $userProfessionalDataRepository,
-        private CompanyUserCompanyRepository             $companyUserCompanyRepository,
-        private CompanyUserAddressRepository             $companyUserAddressRepository,
-        private ClientDetailRepository                   $clientDetailRepository,
-        private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository,
-        private AttendanceConstraintRepository           $attendanceConstraintRepository,
-        private AutoAttendanceService $autoAttendanceService
+        CompanyUser                                        $model,
+        private UserRepository                             $userRepository,
+        private JobTitleRepository                         $jobTitleRepository,
+        private CompanyRepository                          $companyRepository,
+        private ManagementHierarchyRepository              $managementHierarchyRepository,
+        private UserProfessionalDataRepository             $userProfessionalDataRepository,
+        private CompanyUserCompanyRepository               $companyUserCompanyRepository,
+        private CompanyUserAddressRepository               $companyUserAddressRepository,
+        private ClientDetailRepository                     $clientDetailRepository,
+        private CompanyUserManagementHierarchyRepository   $companyUserManagementHierarchyRepository,
+        private AttendanceConstraintRepository             $attendanceConstraintRepository,
+        private AutoAttendanceService                      $autoAttendanceService,
+        private UserCanAccessManagementHierarchyRepository $userCanAccessManagementHierarchyRepository,
 
     )
     {
@@ -208,6 +211,15 @@ class CompanyUserRepository extends BaseRepository
                     $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
                 }
             }
+//if client organization type is 2 then create user in same company and temp new company
+            if (CompanyUserRole::CLIENT->value == $companyRole['role'] && $clientDetail !== null) {
+
+                if ($clientDetail["type"] == 2) {
+                    $newCompanyClientId = $companyRole["company_id"];
+                    $companyRole["company_id"] = tenant("id");
+
+                }
+            }
 
             // Find or create company user
             $companyUser = $this->findOrCreateCompanyUser(array_merge($companyUserData, $phone));
@@ -251,6 +263,21 @@ class CompanyUserRepository extends BaseRepository
                     ["user_id" => $user->id],
                     $clientDetail + ["user_id" => $user->id]
                 );
+
+
+                if ($clientDetail["type"] == 2) {
+                    $user = $this->findOrCreateUserInCompany(
+                        $companyUser,
+                        $newCompanyClientId,
+                        $companyUserData['name'],
+                        $companyRole['role']
+                    );
+                    $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole , ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
+
+
+                }
+
+
             }
 
             DB::commit();
@@ -390,6 +417,8 @@ class CompanyUserRepository extends BaseRepository
             $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id", $companyId)->first();
             setPermissionsTeamId($companyId);
             $user->assignRole($role);//assign super admin role for first user
+
+            $this->userCanAccessManagementHierarchyRepository->assignUsersToManagementHierarchy(new AssignUsersToManagementHierarchyDTO(branchId: $branch->id, userIds: [$user->id]));
 
 
             $branch->update(["manager_id" => $user->id]);
@@ -536,8 +565,8 @@ class CompanyUserRepository extends BaseRepository
 
         // $attendanceConstraint = $this->attendanceConstraintRepository->model->getConstraintBybranch($branchId);
         $attendanceConstraint = AttendanceConstraint::withoutTenancy()
-        ->whereJsonContains('branch_ids', (string) $branchId)
-        ->first();
+            ->whereJsonContains('branch_ids', (string)$branchId)
+            ->first();
         if (!$attendanceConstraint) {
             $attendanceConstraint = AttendanceConstraint::where('company_id', $companyId)->withoutTenancy()->first();
         }
@@ -566,7 +595,7 @@ class CompanyUserRepository extends BaseRepository
             $professionalData = UserProfessionalData::create($data);
         }
 
-        if($professionalData && $professionalData->attendance_constraint_id){
+        if ($professionalData && $professionalData->attendance_constraint_id) {
             $this->autoAttendanceService->generateAttendanceUsers($companyId, $user->id);
         }
     }
@@ -708,5 +737,36 @@ class CompanyUserRepository extends BaseRepository
     function getAllWithRelations($relations = [])
     {
         return $this->model->with($relations)->get();
+    }
+
+    /**
+     * Update the status of a user role in company_user_company table
+     *
+     * @param string $userId
+     * @param string $roleId
+     * @param int $status
+     * @return CompanyUserCompany
+     * @throws CustomException
+     */
+    public function updateUserRoleStatus(string $userId, $roleId, int $status): CompanyUserCompany
+    {
+        // Find the CompanyUserCompany record based on user_id and role_id
+        $companyUserCompany = CompanyUserCompany::where('role', $roleId)
+            ->whereHas('companyUser', function ($query) use ($userId) {
+                $query->whereHas('users', function ($subQuery) use ($userId) {
+                    $subQuery->where('id', $userId);
+                });
+            })
+            ->first();
+
+        if (!$companyUserCompany) {
+            throw new CustomException('User role not found or user does not have access to this role', 404);
+        }
+
+        // Update the status
+        $companyUserCompany->status = (string)$status;
+        $companyUserCompany->save();
+
+        return $companyUserCompany->refresh();
     }
 }

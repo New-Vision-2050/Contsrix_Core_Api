@@ -51,6 +51,8 @@ class CompanyPackageAssignmentSeeder extends Seeder
         // Find Main Package by name
         $mainPackage = Package::where('name', 'Main Package')->first();
 
+        $clientPackage = Package::where('name', 'Client Package')->first();
+
         if (!$mainPackage) {
             Log::error('CompanyPackageAssignmentSeeder: Main Package not found. Please run MainPackageSeeder first.');
             throw new \Exception('Main Package not found. Please run MainPackageSeeder first.');
@@ -61,6 +63,10 @@ class CompanyPackageAssignmentSeeder extends Seeder
         if (!$company) {
             Log::error("CompanyPackageAssignmentSeeder: Company with ID {$companyId} not found");
             return;
+        }
+        if($company->is_client == 1)
+        {
+            $mainPackage = $clientPackage;
         }
 
         // Check if company already has the Main Package assigned
@@ -92,18 +98,27 @@ class CompanyPackageAssignmentSeeder extends Seeder
         // Find Main Package
         $mainPackage = Package::where('name', 'Main Package')->first();
 
+        $clientPackage = Package::where('name', 'Client Package')->first();
+
+
+        $company = Company::find($companyId);
+        if (!$company) {
+            Log::error("CompanyPackageAssignmentSeeder: Company with ID {$companyId} not found");
+            return;
+        }
+
+        if($company->is_client == 1)
+        {
+            $mainPackage = $clientPackage;
+        }
+
+
         if (!$mainPackage) {
             Log::error('CompanyPackageAssignmentSeeder: Main Package not found for permissions assignment');
             return;
         }
 
-        // Get all permissions from Main Package
-        $packagePermissions = $mainPackage->permissions;
 
-        if ($packagePermissions->isEmpty()) {
-            Log::warning('CompanyPackageAssignmentSeeder: Main Package has no permissions assigned');
-            return;
-        }
 
         // Create super-admin role
         $superAdminRole = Role::firstOrCreate(
@@ -125,6 +140,13 @@ class CompanyPackageAssignmentSeeder extends Seeder
             ]
         );
 
+        // Get all permissions from Main Package
+        $packagePermissions = $mainPackage->permissions;
+
+        if ($packagePermissions->isEmpty()) {
+            Log::warning('CompanyPackageAssignmentSeeder: Main Package has no permissions assigned');
+            return;
+        }
         // Assign Main Package permissions to both roles
         $superAdminRole->syncPermissions($packagePermissions);
         $adminRole->syncPermissions($packagePermissions);
@@ -148,7 +170,7 @@ class CompanyPackageAssignmentSeeder extends Seeder
         if ($user) {
             // Set permissions team ID for company context
             setPermissionsTeamId($companyId);
-            
+
             // Assign super-admin role if not already assigned
             if (!$user->hasRole('super-admin')) {
                 $user->assignRole('super-admin');

@@ -30,7 +30,7 @@ class PermissionLookupPresenter
 
                         }
                         else{
-                            $translatedName .= " " . __('names.' . $resources[0]);
+                            $translatedName .= " " . __('names.' . $nameParts[$i]);
                         }
                         break;
                     }

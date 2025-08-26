@@ -10,6 +10,8 @@ use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
 use Modules\JobTitle\Database\Seeders\JobTitleModulesSeederTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\User\Database\Seeders\GenaralAdminSeedTableSeeder;
+use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
+use Modules\Leave\LeaveType\Database\Seeders\LeaveTypeBranchSeeder;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -36,6 +38,10 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(DefaultIdentifierSeederTableSeeder::class);
 
         $this->call(DefaultLoginWaySeederTableSeeder::class);
+
+        // Create default Annual Year leave policy for new companies
+        $this->call(LeavePolicySeeder::class);
+
 //        $this->call(MainPackageSeeder::class);
     }
 }

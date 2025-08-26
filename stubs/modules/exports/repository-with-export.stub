@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+namespace $NAMESPACE$;
+
+use BasePackage\Shared\Repositories\BaseRepository;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
+use Ramsey\Uuid\UuidInterface;
+use $MODEL_NAMESPACE$;
+use App\Traits\HasExport;
+
+/**
+ * @property $MODEL$ $model
+ * @method $MODEL$ findOneOrFail($id)
+ * @method $MODEL$ findOneByOrFail(array $data)
+ */
+class $CLASS$ extends BaseRepository
+{
+    use HasExport;
+
+    public function __construct($MODEL$ $model)
+    {
+        parent::__construct($model);
+    }
+
+    public function get$STUDLY_NAME$List(?int $page, ?int $perPage = 10): Collection
+    {
+        return $this->paginatedList([], $page, $perPage);
+    }
+
+    public function get$STUDLY_NAME$(UuidInterface $id): $MODEL$
+    {
+        return $this->findOneByOrFail([
+            'id' => $id->toString(),
+        ]);
+    }
+
+    public function create$STUDLY_NAME$(array $data): $MODEL$
+    {
+        return $this->create($data);
+    }
+
+    public function update$STUDLY_NAME$(UuidInterface $id, array $data): bool
+    {
+        return $this->update($id, $data);
+    }
+
+    public function delete$STUDLY_NAME$(UuidInterface $id): bool
+    {
+        return $this->delete($id);
+    }
+
+    /**
+     * Get relationships to load for export
+     * Override to specify relationships for this model
+     */
+    protected function getExportRelationships(): array
+    {
+        return [
+            $EXPORT_RELATIONSHIPS$
+        ];
+    }
+}

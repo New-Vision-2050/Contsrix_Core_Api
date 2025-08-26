@@ -18,15 +18,15 @@ class PackageObserver
     public function updating(Package $package): ?bool
     {
         // Block direct updates to packages named "Main Package"
-        if ($package->name === 'Main Package' && $this->isDirectUpdate()) {
+        if (($package->name === 'Main Package'||$package->name === 'Client Package') && $this->isDirectUpdate()) {
             Log::warning("Attempted to directly update Main Package", [
                 'package_id' => $package->id,
                 'package_name' => $package->name
             ]);
-            
+
             throw new \Exception("The 'Main Package' cannot be updated directly. It is managed automatically by the system.");
         }
-        
+
         return true;
     }
 
@@ -39,12 +39,12 @@ class PackageObserver
     public function deleting(Package $package): ?bool
     {
         // Block deletion of packages named "Main Package"
-        if ($package->name === 'Main Package') {
+        if ($package->name === 'Main Package' || $package->name === 'Client Package') {
             Log::warning("Attempted to delete Main Package", [
                 'package_id' => $package->id,
                 'package_name' => $package->name
             ]);
-            
+
             throw new \Exception("The 'Main Package' cannot be deleted. It is managed automatically by the system.");
         }
 
@@ -56,7 +56,7 @@ class PackageObserver
                 'package_name' => $package->name,
                 'companies_count' => $companiesCount
             ]);
-            
+
             throw new \Exception("Cannot delete package '{$package->name}' because it is assigned to {$companiesCount} company/companies. Please remove the package assignments first.");
         }
 
@@ -64,13 +64,13 @@ class PackageObserver
             'package_id' => $package->id,
             'package_name' => $package->name
         ]);
-        
+
         return true;
     }
 
     /**
      * Check if this is a direct update (not from system/auto-update)
-     * 
+     *
      * @return bool
      */
     private function isDirectUpdate(): bool
@@ -78,16 +78,16 @@ class PackageObserver
         // Check if the update is coming from our auto-update system
         // We'll set a flag in the request or use a different approach
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-        
+
         // If the update is coming from our listener, allow it
         foreach ($trace as $frame) {
-            if (isset($frame['class']) && 
+            if (isset($frame['class']) &&
                 str_contains($frame['class'], 'CreateMainPackageListener') ||
                 str_contains($frame['class'], 'UpdateMainPackageListener')) {
                 return false; // This is a system update, allow it
             }
         }
-        
+
         return true; // This is a direct update, block it
     }
 }
