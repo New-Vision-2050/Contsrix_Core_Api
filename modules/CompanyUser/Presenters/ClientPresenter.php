@@ -22,15 +22,16 @@ class ClientPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $status = $this->user->companyUserCompanies->filter(function($item) {
+            return $item->getAttributes()['role'] == CompanyUserRole::CLIENT->value;
+        })->first()->status ??"نشط" ;
         return [
             'id' => $this->user->id,
             'name' => $this->user->name,
             'email' => $this->user->email,
             'phone' => $this->user->phone,
             "branches"=>ManagementHierarchyPresenter::collection($this->user->managementHierarchies($this->role)->get()),
-            "status" => $this->user->companyUserCompanies->filter(function($item) {
-                return $item->getAttributes()['role'] == CompanyUserRole::CLIENT->value;
-            })->first()->status ??"نشط" == "نشط" ? 1:0,
+            "status" => $status  == "نشط" ? 1:0,
             "type"=>$this->user->clientDetail?->type,
             "broker_id"=>$this->user->clientDetail?->broker_id,
             "broker"=>$this->user->clientDetail?->broker_id !=null?["id"=>$this->user->clientDetail?->broker?->id,"name"=>$this->user->clientDetail?->broker?->name]:null,
