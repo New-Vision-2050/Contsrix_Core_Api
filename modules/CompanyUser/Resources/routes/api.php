@@ -23,6 +23,10 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'index']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
 
+        // Dashboard Widgets Routes
+        Route::get('/widgets', [\Modules\CompanyUser\Controllers\ClientController::class, 'getWidgets']);
+
+
     });
     Route::get('/', [CompanyUserController::class, 'index'])->permission(Permission::USER_LIST());
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
