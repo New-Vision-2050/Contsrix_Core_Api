@@ -148,6 +148,22 @@ class MainPackageSeeder extends Seeder
 
 
 
+            $clientPackage = Package::firstOrCreate([
+                'name' => 'Client Package',
+                'company_access_program_id' => $accessProgram->id,
+            ], [
+                'price' => 0.00,
+                'currency' => 'USD',
+                'subscription_period' => 1,
+                'subscription_period_unit' => PeriodUnitEnum::Year->value,
+                'trial_period' => 0,
+                'trial_period_unit' => PeriodUnitEnum::Day->value,
+                'is_active' => true,
+                'is_main_package' =>1
+            ]);
+
+
+
             $totalPermissions = Permission::count();
 
             $permissions = Permission::where(function($query) use ($excludedPermissionPatterns) {
