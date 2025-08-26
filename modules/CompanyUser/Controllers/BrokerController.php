@@ -17,6 +17,8 @@ use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Modules\CompanyUser\Services\BrokerDashboardWidgetsService;
+use Modules\CompanyUser\Presenters\BrokerDashboardWidgetsPresenter;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Presenters\UserRolesPresenter;
@@ -28,10 +30,11 @@ class BrokerController extends Controller
     use PreDeclareComapnyAndBranchDependOnReqeuest;
 
     public function __construct(
-        private BrokerCRUDService        $brokerCRUDService,
-        private UserCRUDService          $userCRUDService,
-        private UpdateCompanyUserHandler $updateCompanyUserHandler,
-        private DeleteCompanyUserHandler $deleteCompanyUserHandler,
+        private BrokerCRUDService               $brokerCRUDService,
+        private UserCRUDService                 $userCRUDService,
+        private UpdateCompanyUserHandler        $updateCompanyUserHandler,
+        private DeleteCompanyUserHandler        $deleteCompanyUserHandler,
+        private BrokerDashboardWidgetsService   $brokerDashboardWidgetsService,
     )
     {
     }
@@ -56,6 +59,20 @@ class BrokerController extends Controller
 
         return Json::item($presenter->getData());
     }
+
+    /**
+     * Get broker dashboard widgets data
+     */
+    public function widgets(): JsonResponse
+    {
+        $widgetsData = $this->brokerDashboardWidgetsService->getWidgetsData(tenant("id"));
+
+        $presentedData = BrokerDashboardWidgetsPresenter::presentWidgets($widgetsData);
+
+        return Json::items($presentedData);
+    }
+
+
 
 
 }

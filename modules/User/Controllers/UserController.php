@@ -25,6 +25,7 @@ use Modules\User\Handlers\UpdateUserLoginWayHandler;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Presenters\UserWithLoginWayPresenter;
 use Modules\User\Requests\AssignRolesForUserRequest;
+use Modules\User\Requests\ChangeUserRoleStatusRequest;
 use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
 use Modules\User\Requests\GetAdminUsersRequest;
@@ -38,6 +39,7 @@ use Modules\User\Requests\UpdateUserRequest;
 use Modules\User\Services\UserAuditService;
 use Modules\User\Services\UserCRUDService;
 use Modules\User\Services\UserRoleAndPermissionService;
+use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Ramsey\Uuid\Uuid;
 
 class UserController extends Controller
@@ -50,6 +52,7 @@ class UserController extends Controller
         private UpdateUserLoginWayHandler    $updateUserLoginWayHandler,
         private AssignRoleForUserHandler     $assignRoleForUserHandler,
         private DeleteUserHandler            $deleteUserHandler,
+        private CompanyUserRepository        $companyUserRepository,
     )
     {
     }
@@ -230,5 +233,34 @@ class UserController extends Controller
         $filename = 'users_export_' . now()->format('Y-m-d_H-i-s');
 
         return Excel::download($export, $filename . '.' . $format);
+    }
+
+    /**
+     * Change the status of a user role in company_user_company table
+     *
+     * @param ChangeUserRoleStatusRequest $request
+     * @return JsonResponse
+     */
+    public function changeUserRoleStatus(ChangeUserRoleStatusRequest $request): JsonResponse
+    {
+        try {
+            $updatedRole = $this->companyUserRepository->updateUserRoleStatus(
+                $request->getUserId(),
+                $request->getRoleId(),
+                $request->getStatus()
+            );
+
+            return Json::success(__("validation.updated_successfully"), [
+                'user_role' => [
+                    'id' => $updatedRole->id,
+                    'user_id' => $request->getUserId(),
+                    'role_id' => $request->getRoleId(),
+                    'status' => $updatedRole->status,
+                    'updated_at' => $updatedRole->updated_at
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), $e->getCode() ?: 500);
+        }
     }
 }

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
+use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetail;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchyDetailManager;
 
@@ -31,7 +32,7 @@ class ManagementHierarchyRepository extends BaseRepository
 
     public $nextId;
 
-    public function __construct(ManagementHierarchy $model)
+    public function __construct(ManagementHierarchy $model, private UserCanAccessManagementHierarchyRepository $userCanAccessManagementHierarchyRepository)
     {
         parent::__construct($model);
         $last = $model->query()
@@ -147,7 +148,11 @@ class ManagementHierarchyRepository extends BaseRepository
                 $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة  ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id, "reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], []);
 
             } else {
+                $users = User::query()->where("id", $branchData["manager_id"])->orWhere("is_owner",1)->pluck("id")->toArray();
                 $sourceManagementHierarchy = SourceManagementHierarchy::query()->first();
+                $this->userCanAccessManagementHierarchyRepository->assignUsersToManagementHierarchy(new AssignUsersToManagementHierarchyDTO(branchId: $managementHierarchy->id, userIds: $users));
+
+
                 $this->createManagement(["company_id" => $managementHierarchy->company_id, "parent_id" => $managementHierarchy->id, "is_main" => 1, "name" => " الادارة العامة لفرع $managementHierarchy->name ", "type" => "management", "manager_id" => $managementHierarchy->manager_id, "phone" => $managementHierarchy->phone, "phone_code" => $managementHierarchy->phone_code, "email" => $managementHierarchy->email], ["description" => "الادارة العامة", "branch_id" => $managementHierarchy->id, "reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], []);
             }
 

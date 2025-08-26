@@ -28,6 +28,20 @@ return [
 
     'branch_id_required' => 'The branch field is required.',
     'management_id_required' => 'The management field is required.',
+
+    // User Access validation messages
+    'user_access' => [
+        'branch_id_required' => 'The branch field is required.',
+        'branch_id_integer' => 'The branch field must be an integer.',
+        'branch_id_exists' => 'The selected branch is invalid.',
+        'user_ids_required' => 'The user IDs field is required.',
+        'user_ids_array' => 'The user IDs field must be an array.',
+        'user_ids_min' => 'At least one user must be selected.',
+        'user_id_required' => 'Each user ID is required.',
+        'user_id_string' => 'Each user ID must be a string.',
+        'user_id_uuid' => 'Each user ID must be a valid UUID.',
+        'user_id_exists' => 'One or more selected users are invalid.',
+    ],
     'job_type_id_required' => 'The job type field is required.',
     'job_title_id_required' => 'The job title field is required.',
     'job_code_required' => 'The job code field is required.',

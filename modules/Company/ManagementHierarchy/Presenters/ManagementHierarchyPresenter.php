@@ -53,7 +53,15 @@ class ManagementHierarchyPresenter extends AbstractPresenter
             "department_count" => $hierarchyCounts['department_count'],
             "management_count" => $hierarchyCounts['management_count'],
             "branch_count" => $hierarchyCounts['branch_count'],
-            "user_count"=>$users?->count()
+            "user_count"=>$users?->count(),
+            "users_can_access"=>$this->managementHierarchy->usersCanAccess !=null ?$this->managementHierarchy->usersCanAccess->map(function ($userCanAccess) {
+                return [
+                    "id"=>$userCanAccess->id,
+                    "name"=>$userCanAccess->name,
+                    "email"=>$userCanAccess->email,
+                    "phone"=>$userCanAccess->phone,
+                ];
+            }):null
         ];
     }
 }

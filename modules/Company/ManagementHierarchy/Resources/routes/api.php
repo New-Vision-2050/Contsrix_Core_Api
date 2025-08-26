@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyCloneController;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchyController;
 use Modules\Company\ManagementHierarchy\Controllers\ManagementHierarchySettingController;
+use Modules\Company\ManagementHierarchy\Controllers\UserCanAccessManagementHierarchyController;
 use Modules\Company\ManagementHierarchy\Controllers\WidgetsController;
 use Modules\RoleAndPermission\Enums\Permission;
 
@@ -23,6 +24,26 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/job_titles', [ManagementHierarchySettingController::class, 'getJobTitles']);
     Route::post('/create-branch', [ManagementHierarchyController::class, 'createBranch']);
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
+    // User Access Management Routes
+    Route::group(['prefix' => 'user-access'], function () {
+        Route::get('/', [UserCanAccessManagementHierarchyController::class, 'index'])
+            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+
+        Route::post('/assign-users', [UserCanAccessManagementHierarchyController::class, 'assignUsers'])
+            ->permission(Permission::ORGANIZATION_BRANCH_UPDATE(), Permission::ORGANIZATION_MANAGEMENT_UPDATE());
+
+        Route::get('/branch/{managementHierarchyId}/users', [UserCanAccessManagementHierarchyController::class, 'getUsersByBranch'])
+            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+
+        Route::get('/user/{userId}/branches', [UserCanAccessManagementHierarchyController::class, 'getBranchesByUser'])
+            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+
+        Route::delete('/user/{userId}/branch/{managementHierarchyId}', [UserCanAccessManagementHierarchyController::class, 'removeUserFromBranch'])
+            ->permission(Permission::ORGANIZATION_BRANCH_UPDATE(), Permission::ORGANIZATION_MANAGEMENT_UPDATE());
+
+        Route::get('/check/{userId}/{managementHierarchyId}', [UserCanAccessManagementHierarchyController::class, 'checkUserAccess'])
+            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+    });
     Route::group(["prefix" => "management-with-relations"], function () {
         Route::get('/{id}', [ManagementHierarchySettingController::class, 'showNonCopiedHierarchy']);
 
@@ -55,6 +76,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/clone-department', [ManagementHierarchyCloneController::class, 'cloneManagement']);
     Route::get('/linked-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'getLinkedDepartments']);
     Route::post('/sync-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'syncLinkedDepartments']);
+
+
 
     // Widgets API - single endpoint for all widgets
 });

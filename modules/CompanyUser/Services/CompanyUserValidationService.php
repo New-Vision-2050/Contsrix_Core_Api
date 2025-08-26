@@ -83,7 +83,9 @@ class CompanyUserValidationService
                 'sentence' => __("validation.user-email-error", ["name" => $user->name]),
                 'sub_title' => 'email',
                 'status' => 0,
+                'status_in_all_companies' => 1,
                 "status_in_company" => $userInCompany == null ? 0 : 1,
+                "user_id"=>$userInCompany?->id,
                 "roles" => $this->getRolesAndPermissions($companyUserCompany),
 
                 'validate' => 'required',
@@ -94,12 +96,14 @@ class CompanyUserValidationService
                 "name"=>$user->name,
                 "job_title_id"=>$user->job_title_id,
                 "identity"=>$user->identity ,
+                "residence"=>$user->companyUser?->residence ,
                 "country_id"=>$user->country_id
             ];
         } else {
             $this->errors[] = [
                 'sentence' => __("validation.user-email-success"),
                 'sub_title' => 'email',
+                'status_in_all_companies' => 0,
                 'status' => 1,
                 "branches" => [],
                 "status_in_company" => 0,

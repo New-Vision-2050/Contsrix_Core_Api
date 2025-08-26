@@ -17,7 +17,7 @@ Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(fu
     Route::get('/current-auth-company', [CompanyController::class, 'getCurrentCompanyLoggedIn'])->name('companies.current-auth-company');
     Route::post('/export', [CompanyController::class, 'export'])->name('companies.export')->permission(Permission::COMPANY_EXPORT());
     Route::get('/widget', [CompanyController::class, 'widget']);
-    Route::post('/', [CompanyController::class, 'store'])->name('companies.store')->permission(Permission::COMPANY_CREATE());
+    Route::post('/', [CompanyController::class, 'store'])->name('companies.store');//TODO ->permission(Permission::COMPANY_CREATE(),Permission::CLIENT_CREATE());
     Route::post('/validated', [CompanyController::class, 'validated']);
     Route::post('/test', [CompanyController::class, 'test']);
 

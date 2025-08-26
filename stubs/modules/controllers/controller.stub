@@ -16,6 +16,9 @@ use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Get$STUDLY_NAME$ListRequest;
 use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Get$STUDLY_NAME$Request;
 use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Update$STUDLY_NAME$Request;
 use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Services\$STUDLY_NAME$CRUDService;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Exports\$STUDLY_NAME$Export;
+use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Requests\Export$STUDLY_NAME$Request;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 
 class $STUDLY_NAME$Controller extends Controller
@@ -72,5 +75,19 @@ class $STUDLY_NAME$Controller extends Controller
         $this->delete$STUDLY_NAME$Handler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    /**
+     * Export $LOWER_NAME$ to a file
+     *
+     * @param Export$STUDLY_NAME$Request $request
+     */
+    public function export(Export$STUDLY_NAME$Request $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = '$SNAKE_MODULE_NAME$.' . $format;
+        $filters = $request->getFilters();
+        
+        return Excel::download(new $STUDLY_NAME$Export($this->$CAMEL_MODULE_NAME$Service, $filters), $fileName);
     }
 }

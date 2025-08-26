@@ -35,9 +35,9 @@ class UserRepository extends BaseRepository
 
     public function getUser(UuidInterface $id): User
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->withoutTenancy()->findOrFail(
+             $id->toString()
+        );
     }
 
     public function getUserByEmail($email): User

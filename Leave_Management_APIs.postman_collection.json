@@ -1,0 +1,540 @@
+{
+	"info": {
+		"_postman_id": "leave-management-apis-2025",
+		"name": "Leave Management APIs - Enhanced",
+		"description": "Comprehensive API collection for Leave Management modules including PublicHoliday, LeaveType, and LeavePolicy with all enhanced fields and multilingual validation support.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🏖️ Public Holiday Management",
+			"item": [
+				{
+					"name": "Get All Public Holidays",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}",
+								"description": "en for English, ar for Arabic"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/public-holidays",
+							"host": ["{{base_url}}"],
+							"path": ["api", "public-holidays"]
+						},
+						"description": "Retrieve all public holidays with date ranges, country information, and multilingual support."
+					}
+				},
+				{
+					"name": "Get Public Holiday by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/public-holidays/{{holiday_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "public-holidays", "{{holiday_id}}"]
+						},
+						"description": "Get specific public holiday details including date range and country relationship."
+					}
+				},
+				{
+					"name": "Create Public Holiday",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Christmas Holiday\",\n    \"country_id\": \"{{country_uuid}}\",\n    \"date_start\": \"2025-12-25\",\n    \"date_end\": \"2025-12-26\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/public-holidays",
+							"host": ["{{base_url}}"],
+							"path": ["api", "public-holidays"]
+						},
+						"description": "Create new public holiday with date range support. Fields:\n- name: Holiday name (required, max 255 chars)\n- country_id: Valid country UUID (required)\n- date_start: Start date in Y-m-d format (required)\n- date_end: End date >= start date (required)"
+					}
+				},
+				{
+					"name": "Update Public Holiday",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Extended Christmas Holiday\",\n    \"country_id\": \"{{country_uuid}}\",\n    \"date_start\": \"2025-12-24\",\n    \"date_end\": \"2025-12-27\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/public-holidays/{{holiday_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "public-holidays", "{{holiday_id}}"]
+						},
+						"description": "Update existing public holiday with enhanced date range validation and multilingual error messages."
+					}
+				},
+				{
+					"name": "Delete Public Holiday",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/public-holidays/{{holiday_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "public-holidays", "{{holiday_id}}"]
+						},
+						"description": "Delete specific public holiday by UUID."
+					}
+				}
+			],
+			"description": "Enhanced Public Holiday APIs with date range support, country relationships, and Arabic/English validation messages."
+		},
+		{
+			"name": "📝 Leave Type Management",
+			"item": [
+				{
+					"name": "Get All Leave Types",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/leave-types",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-types"]
+						},
+						"description": "Retrieve all leave types with payment and balance deduction settings."
+					}
+				},
+				{
+					"name": "Get Leave Type by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/leave-types/{{leave_type_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-types", "{{leave_type_id}}"]
+						},
+						"description": "Get specific leave type details including payment and balance settings."
+					}
+				},
+				{
+					"name": "Create Leave Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Annual Leave\",\n    \"is_payed\": true,\n    \"is_deduct_from_balance\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/leave-types",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-types"]
+						},
+						"description": "Create new leave type with enhanced fields:\n- name: Leave type name (required, max 255 chars)\n- is_payed: Whether leave is paid (optional boolean, default false)\n- is_deduct_from_balance: Whether to deduct from balance (optional boolean, default false)"
+					}
+				},
+				{
+					"name": "Update Leave Type",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Paid Annual Leave\",\n    \"is_payed\": true,\n    \"is_deduct_from_balance\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/leave-types/{{leave_type_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-types", "{{leave_type_id}}"]
+						},
+						"description": "Update existing leave type with payment and balance deduction settings."
+					}
+				},
+				{
+					"name": "Delete Leave Type",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/leave-types/{{leave_type_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-types", "{{leave_type_id}}"]
+						},
+						"description": "Delete specific leave type by UUID."
+					}
+				}
+			],
+			"description": "Enhanced Leave Type APIs with payment settings, balance deduction options, and multilingual support."
+		},
+		{
+			"name": "📋 Leave Policy Management",
+			"item": [
+				{
+					"name": "Get All Leave Policies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/leave-policies",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-policies"]
+						},
+						"description": "Retrieve all leave policies with comprehensive policy settings."
+					}
+				},
+				{
+					"name": "Get Leave Policy by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/leave-policies/{{leave_policy_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-policies", "{{leave_policy_id}}"]
+						},
+						"description": "Get specific leave policy with all enhanced settings."
+					}
+				},
+				{
+					"name": "Create Leave Policy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Standard Annual Leave Policy\",\n    \"total_days\": 21,\n    \"day_type\": \"working_days\",\n    \"is_rollover_allowed\": true,\n    \"max_days_per_request\": 10,\n    \"upgrade_condition\": \"After 2 years of service\",\n    \"is_allow_half_day\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/leave-policies",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-policies"]
+						},
+						"description": "Create comprehensive leave policy with enhanced fields:\n- name: Policy name (required, max 255 chars)\n- total_days: Total leave days allowance (optional integer, min 0)\n- day_type: Type of days (optional string, max 100 chars)\n- is_rollover_allowed: Allow rollover to next year (optional boolean, default false)\n- max_days_per_request: Max days per single request (optional integer, min 0)\n- upgrade_condition: Conditions for policy upgrade (optional string)\n- is_allow_half_day: Allow half-day leave (optional boolean, default false)"
+					}
+				},
+				{
+					"name": "Update Leave Policy",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Enhanced Annual Leave Policy\",\n    \"total_days\": 25,\n    \"day_type\": \"calendar_days\",\n    \"is_rollover_allowed\": false,\n    \"max_days_per_request\": 15,\n    \"upgrade_condition\": \"Senior employees with 3+ years\",\n    \"is_allow_half_day\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/leave-policies/{{leave_policy_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-policies", "{{leave_policy_id}}"]
+						},
+						"description": "Update existing leave policy with all enhanced settings and validation."
+					}
+				},
+				{
+					"name": "Delete Leave Policy",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Accept-Language",
+								"value": "{{language}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/leave-policies/{{leave_policy_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "leave-policies", "{{leave_policy_id}}"]
+						},
+						"description": "Delete specific leave policy by UUID."
+					}
+				}
+			],
+			"description": "Comprehensive Leave Policy APIs with enhanced fields for day allowances, rollover settings, upgrade conditions, and half-day support."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-set language header if not specified",
+					"if (!pm.request.headers.has('Accept-Language')) {",
+					"    pm.request.headers.add({",
+					"        key: 'Accept-Language',",
+					"        value: pm.environment.get('language') || 'en'",
+					"    });",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-test for successful responses",
+					"pm.test('Status code is successful', function () {",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]);",
+					"});",
+					"",
+					"// Test for proper JSON response",
+					"if (pm.response.code !== 204) {",
+					"    pm.test('Response is valid JSON', function () {",
+					"        pm.response.to.have.jsonBody();",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"description": "Base URL for the API server"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"description": "Bearer token for authentication - Set this in your environment"
+		},
+		{
+			"key": "language",
+			"value": "en",
+			"description": "Language for validation messages: 'en' for English, 'ar' for Arabic"
+		},
+		{
+			"key": "country_uuid",
+			"value": "01234567-89ab-cdef-0123-456789abcdef",
+			"description": "Sample country UUID - Replace with actual country ID"
+		},
+		{
+			"key": "holiday_id",
+			"value": "",
+			"description": "Public holiday UUID for testing - Set after creating a holiday"
+		},
+		{
+			"key": "leave_type_id",
+			"value": "",
+			"description": "Leave type UUID for testing - Set after creating a leave type"
+		},
+		{
+			"key": "leave_policy_id",
+			"value": "",
+			"description": "Leave policy UUID for testing - Set after creating a leave policy"
+		}
+	]
+}

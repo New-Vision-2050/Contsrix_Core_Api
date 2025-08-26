@@ -9,9 +9,12 @@ use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\DTO\Create$STUDLY_NAME$DTO;
 use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Models\$STUDLY_NAME$;
 use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Repositories\$STUDLY_NAME$Repository;
 use Ramsey\Uuid\UuidInterface;
+use App\Traits\HasExportService;
 
 class $STUDLY_NAME$CRUDService
 {
+    use HasExportService;
+
     public function __construct(
         private $STUDLY_NAME$Repository $repository,
     ) {
