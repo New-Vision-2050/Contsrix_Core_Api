@@ -25,6 +25,9 @@ class CreateEcoProductRequest extends FormRequest
             'price_includes_vat' => ['boolean'],
             'vat_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'is_visible' => ['boolean'],
+            'category_id' => ['required', 'uuid', 'exists:eco_categories,id'],
+            'brand_id' => ['nullable', 'uuid', 'exists:eco_brands,id'],
+            'sub_category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
 
             // Multilingual Name
             'name' => ['required', 'array'],
