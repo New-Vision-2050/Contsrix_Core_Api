@@ -124,16 +124,15 @@ class BrokerDashboardWidgetsService
         $currentActive = $this->getActiveBrokersCount($companyId, $endDate);
 
         // Previous period for comparison
-        $previousEnd = Carbon::parse($endDate)->subMonths(1);
-        $previousActive = $this->getActiveBrokersCount($companyId, $previousEnd);
+        $total = $this->getTotalBrokersCount($companyId,$endDate);
 
-        $percentageChange = $this->calculatePercentageChange($currentActive, $previousActive);
+        $percentageChange = $this->calculatePercentage($currentActive, $total);
 
         return [
             'type' => 'active_brokers',
             'title' => __('names.active_brokers'),
             'count' => $currentActive,
-            'previous_count' => $previousActive,
+            'previous_count' => $total,
             'percentage_change' => $percentageChange,
             'trend' => $percentageChange > 0 ? 'up' : ($percentageChange < 0 ? 'down' : 'stable'),
         ];
@@ -222,6 +221,14 @@ class BrokerDashboardWidgetsService
             return $current > 0 ? 100.0 : 0.0;
         }
 
-        return round((($current - $previous) / $previous) * 100, 1);
+        return round((($current - $previous) / $previous + $current ) * 100, 1);
+    }
+    private function calculatePercentage(int $thisMonth, int $total): float
+    {
+        if ($total == 0) {
+            return $thisMonth > 0 ? 100.0 : 0.0;
+        }
+
+        return ($thisMonth / $total) * 100;
     }
 }
