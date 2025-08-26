@@ -245,5 +245,17 @@ return [
     "program-and-packages*package"=>"الباقات",
     "program-and-packages*company-access-program"=>"برنامج الوصول للشركة",
 
+    // Client Dashboard Widgets
+    "total_clients" => "اجمالي عدد العملاء",
+    "clients_added_last_month" => "العملاء المضافين اخر شهر", 
+    "active_clients" => "العملاء النشطيين",
+    "suspended_clients" => "العملاء المعلقين",
+
+    // Broker Dashboard Widgets
+    "total_brokers" => "اجمالي عدد الوسطاء",
+    "brokers_added_last_month" => "الوسطاء المضافين اخر شهر",
+    "active_brokers" => "الوسطاء النشطيين", 
+    "suspended_brokers" => "الوسطاء المعلقين",
+
 
 ];
