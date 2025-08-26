@@ -221,7 +221,7 @@ class BrokerDashboardWidgetsService
             return $current > 0 ? 100.0 : 0.0;
         }
 
-        return round((($current - $previous) / $previous + $current ) * 100, 1);
+        return round((($current - $previous) / $previous  ) * 100, 1);
     }
     private function calculatePercentage(int $thisMonth, int $total): float
     {
