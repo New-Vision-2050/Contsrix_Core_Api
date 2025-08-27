@@ -23,6 +23,7 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\ClientDetail;
 use Modules\CompanyUser\Models\CompanyUserAddress;
+use Modules\CompanyUser\Repositories\BrokerDetailRepository;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\JobTitle\Models\JobTitle;
@@ -54,6 +55,7 @@ class CompanyUserRepository extends BaseRepository
         private CompanyUserCompanyRepository               $companyUserCompanyRepository,
         private CompanyUserAddressRepository               $companyUserAddressRepository,
         private ClientDetailRepository                     $clientDetailRepository,
+        private BrokerDetailRepository                     $brokerDetailRepository,
         private CompanyUserManagementHierarchyRepository   $companyUserManagementHierarchyRepository,
         private AttendanceConstraintRepository             $attendanceConstraintRepository,
         private AutoAttendanceService                      $autoAttendanceService,
@@ -242,7 +244,7 @@ class CompanyUserRepository extends BaseRepository
     }
 
 
-    public function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null): CompanyUser
+    public function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null, array $brokerDetail = null)
     {
         try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
@@ -261,6 +263,16 @@ class CompanyUserRepository extends BaseRepository
                 if ($clientDetail["type"] == 2) {
                     $newCompanyClientId = $companyRole["company_id"];
                     $companyRole["company_id"] = tenant("id");
+
+                }
+            }
+
+
+            if (CompanyUserRole::BROKER->value == $companyRole['role'] && $brokerDetail !== null) {
+
+                if ($brokerDetail["type"] == 2) {
+                    $newCompanyClientId = $companyRole["company_id"];
+                    $brokerDetail["company_id"] = tenant("id");
 
                 }
             }
@@ -317,14 +329,28 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-                    $clientDetail->update(["company_id"=>$newCompanyClientId]);
-
-
+                    $clientDetail->update(["company_id" => $newCompanyClientId]);
                 }
-
-
             }
+            // Handle broker details if broker role
+            if (CompanyUserRole::BROKER->value == $companyRole['role'] && $brokerDetail !== null) {
 
+                $brokerDetail = $this->brokerDetailRepository->updateOrCreate(
+                    ["user_id" => $user->id],
+                    $brokerDetail + ["user_id" => $user->id, "company_id" => $companyRole['company_id']]
+                );
+                if ($brokerDetail["type"] == 2) {
+                    $user = $this->findOrCreateUserInCompany(
+                        $companyUser,
+                        $newCompanyClientId,
+                        $companyUserData['name'],
+                        $companyRole['role']
+                    );
+                    $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
+                    $brokerDetail->update(["company_id" => $newCompanyClientId]);
+                }
+            }
+//
             DB::commit();
             return $companyUser;
         } catch (\Exception $exception) {
@@ -389,7 +415,7 @@ class CompanyUserRepository extends BaseRepository
 
             $companyUser->restore();
         }
-        $companyUser->update(["global_id" => $companyUser->id]);
+        $companyUser->update($companyUserData);
 
         return $companyUser->fresh();
     }

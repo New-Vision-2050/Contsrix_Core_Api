@@ -12,6 +12,7 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
+use Modules\CompanyUser\Presenters\BrokerPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
@@ -50,7 +51,7 @@ class BrokerController extends Controller
         );
 
 
-        return Json::items(UserRolesPresenter::collection($list['data'], CompanyUserRole::BROKER->value), paginationSettings: $list['pagination']);
+        return Json::items(BrokerPresenter::collection($list['data'], CompanyUserRole::BROKER->value), paginationSettings: $list['pagination']);
     }
 
 
@@ -61,11 +62,11 @@ class BrokerController extends Controller
         );
 
 
-        return Json::item((new UserRolesPresenter($broker, CompanyUserRole::BROKER->value))->getData());
+        return Json::item((new BrokerPresenter($broker, CompanyUserRole::BROKER->value))->getData());
     }
 
 
-    public function store(CreateBrokerRequest $request): JsonResponse
+    public function store(CreateBrokerRequest $request)
     {
         $createdItem = $this->brokerCRUDService->create($request->createCreateBrokerDTO(), $request->createCreateCompanyUserCompanyRoleDTO(), $request->createSetUserAddressDTO());
 

@@ -56,6 +56,11 @@ class CreateBrokerRequest extends FormRequest
             "branch_ids.*" => "exists:management_hierarchies,id,type,branch",
             "latitude" => "nullable",
             "longitude" => "nullable",
+            "message_address" => "nullable|email",
+            'type' => 'required|integer',
+            'registration_number' => 'nullable|string',
+            'company_representative_name' => 'nullable|string',
+            'company_name' => 'nullable|string',
 
 
         ];
@@ -83,7 +88,11 @@ class CreateBrokerRequest extends FormRequest
             phone: $this->get('phone'),
             residence: $this->get('residence'),
             branchIds: $this->get('branch_ids'),
-            messageAddress : $this->messageAddress
+            messageAddress: $this->get("message_address"),
+            type: (int)$this->get("type"),
+            registrationNumber: $this->get("registration_number"),
+            companyRepresentativeName: $this->get("company_representative_name"),
+            companyName: $this->get("company_name")
 
         );
     }
