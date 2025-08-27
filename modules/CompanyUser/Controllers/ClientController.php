@@ -19,6 +19,7 @@ use Modules\CompanyUser\Presenters\DashboardWidgetsPresenter;
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
+use Modules\CompanyUser\Requests\Client\GetClientRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\Client\ClientCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
@@ -39,7 +40,7 @@ class ClientController extends Controller
     ) {
     }
 
-    public function index(GetBrokerRequest $request): JsonResponse
+    public function index(GetClientRequest $request): JsonResponse
     {
         $list = $this->clientCRUDService->list(
             (int) $request->get('page', 1),
@@ -48,6 +49,14 @@ class ClientController extends Controller
 
 
         return Json::items(ClientPresenter::collection($list['data'],CompanyUserRole::CLIENT->value),paginationSettings: $list['pagination']);
+    }
+
+
+    public function show(GetClientRequest $request): JsonResponse
+    {
+        $client = $this->clientCRUDService->show($request->route('id'));
+        return Json::item((new ClientPresenter($client))->getData());
+
     }
 
 

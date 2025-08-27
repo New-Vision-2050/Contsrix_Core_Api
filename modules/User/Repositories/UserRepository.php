@@ -99,6 +99,31 @@ class UserRepository extends BaseRepository
         return array_merge($paginationArray, ['data' => $paginatedData]);
     }
 
+
+    public function getUserInCurrentCompanyByRole($id , array $relations = [], $type = null )
+    {
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+        $user = $query->with(array_merge(
+            $relations,
+            [
+                "companyUserCompanies" => function ($query) {
+                    $query->where("company_id", tenant("id"));
+                }
+            ]
+        ))->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companyUserCompanies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        })->where("company_id", tenant("id"))->where("id", $id)->first();
+        //TODO filter with branches very important
+
+        return $user;
+    }
+
     public function getBrokerInCurrentCompanyWith($page = 1, $perPage = 10)
     {
         $type = CompanyUserRole::BROKER->value;
