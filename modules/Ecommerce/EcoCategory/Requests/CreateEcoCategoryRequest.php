@@ -26,6 +26,8 @@ class CreateEcoCategoryRequest extends FormRequest
             'description' => ['required', 'array'],
             'description.ar' => ['required', 'string', 'max:1000'],
             'description.en' => ['nullable', 'string', 'max:1000'],
+
+            'parent_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
         ];
     }
 
@@ -65,7 +67,8 @@ class CreateEcoCategoryRequest extends FormRequest
         return new CreateEcoCategoryDTO(
             companyId: Uuid::fromString(tenant("id")),
             name: $validatedData['name'],
-            description: $validatedData['description']
+            description: $validatedData['description'],
+            perentId: $validatedData['parent_id']
         );
     }
 }

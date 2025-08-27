@@ -31,7 +31,8 @@ class EcoCategoryController extends Controller
     {
         $list = $this->ecoCategoryService->list(
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int) $request->get('per_page', 10),
+            ['children', 'parent']
         );
 
         return Json::items(EcoCategoryPresenter::collection($list['data']), paginationSettings: $list['pagination']);
