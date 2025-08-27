@@ -6,6 +6,7 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
+use Modules\CompanyUser\Models\BrokerDetail;
 use Modules\CompanyUser\Models\ClientDetail;
 use Modules\Setting\Models\LoginWay;
 use App\Traits\CustomBelongsToTenant;
@@ -236,6 +237,12 @@ class User extends Authenticatable implements JWTSubject, Auditable
             'global_company_user_id', // Local key on User table
             'company_id'              // Local key on pivot table
         )->withoutTenancy()->distinct();
+    }
+
+
+    public function brokerDetail()
+    {
+        return $this->hasOne(BrokerDetail::class);
     }
 
 

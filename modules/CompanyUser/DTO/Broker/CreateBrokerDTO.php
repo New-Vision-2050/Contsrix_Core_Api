@@ -15,7 +15,11 @@ class CreateBrokerDTO
 
         public ?string $residence,
         public ?array $branchIds,
-        public ?string $messageAddress
+        public ?string $messageAddress,
+        public int $type,
+        public ?string $registrationNumber,
+        public ?string $companyRepresentativeName,
+        public ?string $companyName
 
 
     )
@@ -51,6 +55,14 @@ class CreateBrokerDTO
         return $this->branchIds;
     }
 
-
+    public function brokerDetailToArray(): array
+    {
+        return [
+            'type' => $this->type,
+            'registration_number' => $this->registrationNumber,
+            'company_representative_name' => $this->companyRepresentativeName,
+            'company_name' => $this->companyName,
+        ];
+    }
 
 }

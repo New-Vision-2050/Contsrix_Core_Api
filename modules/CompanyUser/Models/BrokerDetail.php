@@ -10,18 +10,13 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\User\Models\User;
 
-// use BasePackage\Shared\Traits\HasTranslations;
-
-class ClientDetail extends Model
+class BrokerDetail extends Model
 {
     use UuidTrait;
     use BaseFilterable;
 
-    // use HasTranslations;
-    // use SoftDeletes;
-
     public array $translatable = [];
-    protected $table = 'client_details';
+    protected $table = 'broker_details';
 
     public $incrementing = false;
 
@@ -29,24 +24,22 @@ class ClientDetail extends Model
 
     protected $fillable = [
         "type",
-        "broker_id",
         "company_representative_name",
         "registration_number",
+        "company_name",
         "user_id",
         "company_id"
-
-
     ];
 
     protected $casts = [
         'id' => 'string',
     ];
 
-
-    public function broker()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'broker_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
+
     public function company()
     {
         return $this->belongsTo(Company::class);
