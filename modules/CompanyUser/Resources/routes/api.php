@@ -14,6 +14,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
         // Broker Dashboard Widgets Routes
         Route::get('/widgets', [\Modules\CompanyUser\Controllers\BrokerController::class, 'widgets']);
+        Route::delete('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'deleteBrokerRole']);
 
 
     });
@@ -31,6 +32,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
         // Dashboard Widgets Routes
         Route::get('/widgets', [\Modules\CompanyUser\Controllers\ClientController::class, 'getWidgets']);
+        Route::delete('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'deleteClientRole']);
 
 
     });
@@ -67,6 +69,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/{id}/assign-role-for-current-company', [CompanyUserController::class, 'assignRoleForCurrentCompany']);
     Route::delete('/{id}', [CompanyUserController::class, 'delete'])->permission(Permission::USER_DELETE());
     Route::delete('/{id}/specific-role', [CompanyUserController::class, 'deleteForSpecificRole']);
+    Route::delete('/users/{user_id}/specific-role', [CompanyUserController::class, 'deleteUserSpecificRole']);
     Route::post('/export', [UserController::class, 'export'])->permission(Permission::USER_EXPORT())->name("users.export");
 
 });

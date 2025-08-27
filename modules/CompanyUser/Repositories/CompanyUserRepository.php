@@ -151,6 +151,50 @@ class CompanyUserRepository extends BaseRepository
 
     }
 
+    public function deleteUserRole(UuidInterface $userId, int $role)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Get user and company_id from users table
+            $user = $this->userRepository->find($userId);
+
+            if (!$user) {
+                throw new \Exception(__("validation.user-not-found"), 404);
+            }
+
+            $companyId = $user->company_id;
+            if (!$companyId) {
+                throw new \Exception(__("validation.user-has-no-company"), 400);
+            }
+
+            // Find the company user by global_company_user_id
+            $companyUser = $this->findOneBy(['global_id' => $user->global_company_user_id]);
+            $this->canDelete($companyUser);
+
+
+            $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId, "role" => $role]);
+
+            if ($this->companyUserCompanyRepository->countWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]) == 0) {
+                $this->userRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]);
+
+            }
+
+            if ($this->companyUserCompanyRepository->countWhere(["global_company_user_id" => $companyUser->global_id]) == 0) {
+                $this->model->withoutParentModel()->find($companyUser->id)->delete();
+            }
+
+            DB::commit();
+
+            // Return the stored data instead of the potentially deleted record
+            return $companyUser;
+
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new \Exception(__("validation.delete-not-successful"), 500);
+        }
+    }
+
     public function getCompanyUserList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
@@ -272,8 +316,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyUserData['name'],
                         $companyRole['role']
                     );
-                    $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole , ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-
+                    $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
 
 
                 }

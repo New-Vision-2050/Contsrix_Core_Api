@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
+use Modules\CompanyUser\Handlers\DeleteUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 use Modules\CompanyUser\Presenters\ClientPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
@@ -20,6 +21,7 @@ use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
 use Modules\CompanyUser\Requests\Client\GetClientRequest;
+use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\Client\ClientCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
@@ -36,6 +38,7 @@ class ClientController extends Controller
         private ClientCRUDService $clientCRUDService,
         private UpdateCompanyUserHandler $updateCompanyUserHandler,
         private DeleteCompanyUserHandler $deleteCompanyUserHandler,
+        private DeleteUserRoleHandler $deleteUserRoleHandler,
         private DashboardWidgetsService $dashboardWidgetsService,
     ) {
     }
@@ -87,7 +90,16 @@ class ClientController extends Controller
         return Json::item($presentedData, message: 'Dashboard widgets retrieved successfully');
     }
 
+    /**
+     * Delete client role for a specific user
+     */
+    public function deleteClientRole(DeleteUserRoleRequest $request)
+    {
+        $command = $request->createDeleteRoleCommand(CompanyUserRole::CLIENT->value);
+        $this->deleteUserRoleHandler->handle($command);
 
+        return Json::deleted();
+    }
 
 
 }
