@@ -38,7 +38,7 @@ class ClientPresenter extends AbstractPresenter
             "broker"=>$this->user->clientDetail?->broker_id !=null?["id"=>$this->user->clientDetail?->broker?->id,"name"=>$this->user->clientDetail?->broker?->name]:null,
             "company_representative_name"=>$this->user->clientDetail?->company_representative_name,
             "registration_number"=>$this->user->clientDetail?->registration_number,
-            "company_name"=>$this->user->clientDetail?->company_name,
+            "company_name"=>$this->user?->companies->where("is_client",1)?->first()?->name
         ];
     }
 }
