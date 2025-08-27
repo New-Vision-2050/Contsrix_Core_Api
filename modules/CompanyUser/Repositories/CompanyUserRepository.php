@@ -426,21 +426,22 @@ class CompanyUserRepository extends BaseRepository
     private function findOrCreateUserInCompany(CompanyUser $companyUser, $companyId, string $name, $role, ?array $branches = null): User
     {
         // Try to find existing user in company
-        $user = $this->userRepository->findOneBy([
+        $user = $this->userRepository->model->withoutTenancy()->where([
             "global_company_user_id" => $companyUser->global_id,
             "company_id" => $companyId
-        ]);
+        ])->withTrashed()->first();
+
+        $mainBranchData = $this->getMainBranchData($companyId, $branches);
 
         if (!$user) {
             // Get main branch data
-            $mainBranchData = $this->getMainBranchData($companyId, $branches);
 
             // Try to find user in any company
-            $existingUser = $this->userRepository->findOneBy([
+            $existingUser = $this->userRepository->model->withoutTenancy()->where([
                 "global_company_user_id" => $companyUser->global_id
-            ]);
+            ])->first();
 
-            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner", 1)->count();
+            $usersInCompanyCount = $this->companyRepository->model->withoutTenancy()->where(["id" => $companyId])->first()?->users()->where("is_owner", 1)->count();
             $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
 
             if ($existingUser) {
@@ -465,9 +466,26 @@ class CompanyUserRepository extends BaseRepository
                     'management_hierarchy_id' => $role == CompanyUserRole::EMPLOYEE->value ? $mainBranchData['managementId'] : null,
                 ]);
             }
-        } else {
+        }
+
+        elseif( $user->deleted_at !== null){
             // Restore if necessary
             $user->restore();
+            $user = $user->fresh();
+        }
+        else{
+            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner", 1)->count();
+            $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
+            $user->update([
+                'name' => $name,
+                'email' => $companyUser->email,
+                'company_id' => $companyId,
+                'phone' => $companyUser->phone,
+                'phone_code' => $companyUser->phone_code,
+                'global_company_user_id' => $companyUser->global_id,
+                'is_owner' => $isOwner,
+                'management_hierarchy_id' => $role == CompanyUserRole::EMPLOYEE->value ? $mainBranchData['managementId'] : null,
+            ]);
             $user = $user->fresh();
         }
 
@@ -518,7 +536,8 @@ class CompanyUserRepository extends BaseRepository
             $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(
                 $companyRole + ["global_company_user_id" => $companyUser->id]
             );
-        } elseif ($companyUserCompany->deleted_at !== null) {
+        }
+        elseif ($companyUserCompany->deleted_at !== null) {
             $companyUserCompany->restore();
         }
 
