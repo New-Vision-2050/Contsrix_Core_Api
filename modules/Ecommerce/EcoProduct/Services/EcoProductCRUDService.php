@@ -28,7 +28,6 @@ class EcoProductCRUDService
         $otherImageFiles = $createEcoProductDTO->otherImages;
 
         if ($mainImageFile->isFile()) {
-            $createEcoProduct->clearMediaCollection('eco_product_main_image');
             $companyName =  $createEcoProduct->company->name ?? 'UnknownCompany';
             $path = $companyName . '/ecommerce/' . $createEcoProduct->name ;
 

@@ -16,6 +16,7 @@ class UpdateEcoProductHandler
 
     public function handle(UpdateEcoProductCommand $updateEcoProductCommand)
     {
-        $this->repository->updateEcoProduct($updateEcoProductCommand->getId(), $updateEcoProductCommand->toArray());
+        // FIX: Pass the entire command object to the repository method
+        $this->repository->updateEcoProduct($updateEcoProductCommand->getId(), $updateEcoProductCommand);
     }
 }

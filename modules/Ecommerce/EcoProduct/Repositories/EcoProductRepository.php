@@ -6,8 +6,10 @@ namespace Modules\Ecommerce\EcoProduct\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Ecommerce\EcoProduct\Commands\UpdateEcoProductCommand;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
+use Modules\Shared\Media\Services\FileUploadService;
 
 /**
  * @property EcoProduct $model
@@ -16,7 +18,10 @@ use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
  */
 class EcoProductRepository extends BaseRepository
 {
-    public function __construct(EcoProduct $model)
+    public function __construct(
+        EcoProduct $model,
+        private FileUploadService $fileUploadService,
+    )
     {
         parent::__construct($model);
     }
@@ -72,9 +77,99 @@ class EcoProductRepository extends BaseRepository
         return $ecoProduct;
     }
 
-    public function updateEcoProduct(UuidInterface $id, array $data): bool
+  public function updateEcoProduct(UuidInterface $id, UpdateEcoProductCommand $command): EcoProduct
     {
-        return $this->update($id, $data);
+        $ecoProduct = $this->findOneOrFail($id);
+        $productData = $command->toArray();
+
+        $mainImageFile = $command->getMainImage();
+        $otherImageFiles = $command->getOtherImages();
+        $otherImagesToDelete = $command->getOtherImagesToDelete();
+
+        // Update the main EcoProduct record
+        $ecoProduct->update($productData);
+
+        if ($command->getTaxes() !== null) { // Check if 'taxes' field was provided in the update request
+            $ecoProduct->taxes()->delete(); // Delete all old taxes associated with this product
+            if (!empty($command->getTaxes())) {
+                $taxesToCreate = array_map(function($tax) use ($ecoProduct) {
+                    $tax['company_id'] = $ecoProduct->company_id; // Ensure company_id is set for new taxes
+                    return $tax;
+                }, $command->getTaxes());
+                $ecoProduct->taxes()->createMany($taxesToCreate); // Create new taxes
+            }
+        }
+
+        // Details: Similar to taxes, replacing all if provided.
+        if ($command->getDetails() !== null) {
+            $ecoProduct->details()->delete();
+            if (!empty($command->getDetails())) {
+                $ecoProduct->details()->createMany($command->getDetails());
+            }
+        }
+
+        // Custom Fields: Similar to taxes, replacing all if provided.
+        if ($command->getCustomFields() !== null) {
+            $ecoProduct->customFields()->delete();
+            if (!empty($command->getCustomFields())) {
+                $ecoProduct->customFields()->createMany($command->getCustomFields());
+            }
+        }
+
+        if ($command->getSeo() !== null) {
+            $seoData = $command->getSeo();
+            if (!empty($seoData)) {
+                $ecoProduct->seo()->updateOrCreate(
+                    ['product_id' => $ecoProduct->id],
+                    $seoData
+                );
+            } else {
+                $ecoProduct->seo()->delete();
+            }
+        }
+
+        if ($command->getAssociatedProductIds() !== null) {
+            $ecoProduct->associatedProducts()->sync($command->getAssociatedProductIds());
+        }
+
+        $companyName =  $ecoProduct->company->name ?? 'UnknownCompany';
+        $path = $companyName . '/ecommerce/' . $ecoProduct->name ;
+
+        if ($otherImageFiles) {
+            $this->fileUploadService->uploadFile(
+                $ecoProduct,
+                $otherImageFiles,
+                $path,
+                'eco_product_other_image',
+                "public"
+            );
+        }
+
+        if (!empty($otherImagesToDelete)) {
+            foreach ($otherImagesToDelete as $mediaIdToDelete) {
+                $mediaItem = $ecoProduct->getMedia('eco_product_other_image')->find($mediaIdToDelete);
+                if ($mediaItem) {
+                    $mediaItem->delete();
+                }
+            }
+        }
+
+        if ($mainImageFile) {
+            $ecoProduct->clearMediaCollection('eco_product_main_image');
+            $this->fileUploadService->uploadFile(
+                $ecoProduct,
+                $mainImageFile,
+                $path,
+                'eco_product_main_image',
+                "public"
+            );
+        }elseif ($command->getDeleteMainImage() === true) { // Case 2: Explicitly asked to delete main image
+            $ecoProduct->clearMediaCollection('eco_product_main_image');
+        }
+
+
+
+        return $ecoProduct->load(['taxes', 'details', 'customFields', 'seo', 'associatedProducts']);
     }
 
     public function deleteEcoProduct(UuidInterface $id): bool
