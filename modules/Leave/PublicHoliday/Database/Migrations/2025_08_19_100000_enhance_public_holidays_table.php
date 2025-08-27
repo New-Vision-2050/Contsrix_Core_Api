@@ -20,7 +20,7 @@ return new class extends Migration
                   ->default('national')->after('year')->index();
             $table->boolean('is_recurring')->default(true)->after('holiday_type');
             $table->text('description')->nullable()->after('is_recurring');
-            $table->string('external_api_id')->nullable()->after('description_ar')->index();
+            $table->string('external_api_id')->nullable()->after('description')->index();
             $table->json('api_data')->nullable()->after('external_api_id');
             $table->json('tags')->nullable()->after('api_data');
             $table->boolean('is_active')->default(true)->after('tags')->index();
