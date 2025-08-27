@@ -25,6 +25,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::group(["prefix"=>"clients"],function (){
         Route::get('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'index']);
+        Route::get('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
 
         // Dashboard Widgets Routes
