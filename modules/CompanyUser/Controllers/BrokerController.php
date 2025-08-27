@@ -10,11 +10,13 @@ use Illuminate\Http\JsonResponse;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
+use Modules\CompanyUser\Handlers\DeleteUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
+use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\BrokerDashboardWidgetsService;
@@ -34,6 +36,7 @@ class BrokerController extends Controller
         private UserCRUDService                 $userCRUDService,
         private UpdateCompanyUserHandler        $updateCompanyUserHandler,
         private DeleteCompanyUserHandler        $deleteCompanyUserHandler,
+        private DeleteUserRoleHandler           $deleteUserRoleHandler,
         private BrokerDashboardWidgetsService   $brokerDashboardWidgetsService,
     )
     {
@@ -48,6 +51,17 @@ class BrokerController extends Controller
 
 
         return Json::items(UserRolesPresenter::collection($list['data'], CompanyUserRole::BROKER->value), paginationSettings: $list['pagination']);
+    }
+
+
+    public function show(GetBrokerRequest $request): JsonResponse
+    {
+        $broker = $this->brokerCRUDService->show(
+            $request->route('id')
+        );
+
+
+        return Json::item((new UserRolesPresenter($broker, CompanyUserRole::BROKER->value))->getData());
     }
 
 
@@ -72,7 +86,17 @@ class BrokerController extends Controller
         return Json::items($presentedData);
     }
 
+    /**
+     * Delete broker role for a specific user
+     */
+    public function deleteBrokerRole(DeleteUserRoleRequest $request)
+    {
+        $command = $request->createDeleteRoleCommand(CompanyUserRole::BROKER->value);
 
+        $this->deleteUserRoleHandler->handle($command);
+
+        return Json::deleted();
+    }
 
 
 }

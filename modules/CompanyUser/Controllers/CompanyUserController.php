@@ -12,6 +12,7 @@ use Modules\CompanyUser\Events\UserUpdated;
 use Modules\CompanyUser\Handlers\AssignRoleCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserRoleHandler;
+use Modules\CompanyUser\Handlers\DeleteUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
 use Modules\CompanyUser\Handlers\UpdateTimeZoneCompanyUserHandler;
 use Modules\CompanyUser\Models\CompanyUser;
@@ -23,6 +24,7 @@ use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
 use Modules\CompanyUser\Requests\CreateCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserRequest;
 use Modules\CompanyUser\Requests\DeleteCompanyUserSpecificRoleRequest;
+use Modules\CompanyUser\Requests\DeleteUserSpecificRoleRequest;
 use Modules\CompanyUser\Requests\ExportCompanyUsersRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserListRequest;
 use Modules\CompanyUser\Requests\GetCompanyUserRequest;
@@ -44,6 +46,7 @@ class CompanyUserController extends Controller
         private UpdateTimeZoneCompanyUserHandler $updateTimeZoneCompanyUserHandler,
         private AssignRoleCompanyUserHandler     $assignRoleCompanyUserHandler,
         private DeleteCompanyUserRoleHandler     $deleteCompanyUserRoleHandler,
+        private DeleteUserRoleHandler            $deleteUserRoleHandler,
         private DeleteCompanyUserHandler         $deleteCompanyUserHandler,
         private UserCRUDService $userCRUDService
     )
@@ -189,6 +192,14 @@ class CompanyUserController extends Controller
 
         $command = $request->createDeleteRoleCommand();
         $this->deleteCompanyUserRoleHandler->handle($command);
+
+        return Json::deleted();
+    }
+
+    public function deleteUserSpecificRole(DeleteUserSpecificRoleRequest $request): JsonResponse
+    {
+        $command = $request->createDeleteRoleCommand();
+        $this->deleteUserRoleHandler->handle($command);
 
         return Json::deleted();
     }
