@@ -22,11 +22,12 @@ class EcoCategoryCRUDService
          return $this->repository->createEcoCategory($createEcoCategoryDTO->toArray());
     }
 
-    public function list(int $page = 1, int $perPage = 10): array
+    public function list(int $page = 1, int $perPage = 10, array $relations = []): array
     {
         return $this->repository->paginated(
             page: $page,
             perPage: $perPage,
+            relations: $relations
         );
     }
 

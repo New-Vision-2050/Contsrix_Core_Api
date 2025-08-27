@@ -11,7 +11,8 @@ class UpdateEcoCategoryCommand
     public function __construct(
         private UuidInterface $id,
         private array $name,
-        private ?array $description
+        private ?array $description,
+        private ?string $perentId
     ) {
     }
 
@@ -24,7 +25,8 @@ class UpdateEcoCategoryCommand
     {
         return array_filter([
             'name' => $this->name,
-            'description' => $this->description
+            'description' => $this->description,
+            'parent_id' => $this->perentId
         ]);
 
     }

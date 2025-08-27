@@ -21,6 +21,8 @@ class UpdateEcoCategoryRequest extends FormRequest
             'description' => ['required', 'array'],
             'description.ar' => ['required', 'string', 'max:1000'],
             'description.en' => ['nullable', 'string', 'max:1000'],
+
+            'parent_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
         ];
     }
 
@@ -42,6 +44,8 @@ class UpdateEcoCategoryRequest extends FormRequest
             'description.ar.max' => __('ecocategory::validation.description_ar_max'),
             'description.en.string' => __('ecocategory::validation.description_en_string'),
             'description.en.max' => __('ecocategory::validation.description_en_max'),
+
+             'parent_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
         ];
     }
 
@@ -52,7 +56,8 @@ class UpdateEcoCategoryRequest extends FormRequest
         return new UpdateEcoCategoryCommand(
             id: Uuid::fromString($this->route('id')),
             name: $validatedData['name'],
-            description: $validatedData['description']
+            description: $validatedData['description'],
+            perentId: $validatedData['parent_id']
         );
     }
 }

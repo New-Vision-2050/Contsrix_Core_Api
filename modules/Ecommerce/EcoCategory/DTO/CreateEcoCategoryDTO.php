@@ -11,7 +11,8 @@ class CreateEcoCategoryDTO
     public function __construct(
         public UuidInterface $companyId,
         public array $name,
-        public ?array $description
+        public ?array $description,
+        public ?string $perentId
     ) {
     }
 
@@ -20,7 +21,8 @@ class CreateEcoCategoryDTO
         return [
             'company_id' => $this->companyId,
             'name' => $this->name,
-            'description' => $this->description
+            'description' => $this->description,
+            'parent_id' => $this->perentId
         ];
     }
 }

@@ -25,6 +25,38 @@ class EcoCategoryRepository extends BaseRepository
     {
         return $this->paginatedList([], $page, $perPage);
     }
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc',
+        array $relations = [] 
+    ) {
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all())->where($conditions);
+        } else {
+            $query = $this->model->where($conditions);
+        }
+
+        if (!empty($relations)) {
+            $query->with($relations);
+        }
+
+        $count = $query->count();
+
+        $paginatedData = $query
+            ->orderBy($orderBy, $sortBy)
+            ->forPage($page, $perPage)
+            ->get();
+
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
 
     public function getEcoCategory(UuidInterface $id): EcoCategory
     {

@@ -21,7 +21,13 @@ class EcoCategoryPresenter extends AbstractPresenter
         return [
             'id' => $this->ecoCategory->id,
             'name' => $this->ecoCategory->name,
-            'description' => $this->ecoCategory->description
+            'description' => $this->ecoCategory->description,
+            'parent' => $this->ecoCategory->parent
+                ? [
+                    'id' => $this->ecoCategory->parent->id,
+                    'name' => $this->ecoCategory->parent->name,
+                ]
+                : null,
         ];
     }
 }
