@@ -7,6 +7,7 @@ namespace Modules\CompanyUser\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Company\CompanyCore\Models\Company;
 use Modules\User\Models\User;
 
 // use BasePackage\Shared\Traits\HasTranslations;
@@ -32,6 +33,7 @@ class ClientDetail extends Model
         "company_representative_name",
         "registration_number",
         "user_id",
+        "company_id"
 
 
     ];
@@ -44,5 +46,9 @@ class ClientDetail extends Model
     public function broker()
     {
         return $this->belongsTo(User::class, 'broker_id');
+    }
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

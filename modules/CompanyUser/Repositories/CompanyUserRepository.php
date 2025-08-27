@@ -303,7 +303,7 @@ class CompanyUserRepository extends BaseRepository
 
             // Handle client details if client role
             if (CompanyUserRole::CLIENT->value == $companyRole['role'] && $clientDetail !== null) {
-                $this->clientDetailRepository->updateOrCreate(
+                $clientDetail = $this->clientDetailRepository->updateOrCreate(
                     ["user_id" => $user->id],
                     $clientDetail + ["user_id" => $user->id]
                 );
@@ -317,6 +317,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
+                    $clientDetail->update(["company_id"=>$newCompanyClientId]);
 
 
                 }
