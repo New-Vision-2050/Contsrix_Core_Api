@@ -50,6 +50,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use HasRoles;
     use \OwenIt\Auditing\Auditable;
     use CustomBelongsToTenant;
+    use \Staudenmeir\EloquentHasManyDeep\HasRelationships;
+
 
 
     use SoftDeletes;
@@ -220,4 +222,21 @@ class User extends Authenticatable implements JWTSubject, Auditable
     {
         return $this->hasOne(UserProfessionalData::class, 'user_id', 'id')->withoutTenancy();
     }
+    /**
+     * Get all companies for this user using hasManyThrough relationship
+     * User -> CompanyUserCompany (pivot) -> Company
+     */
+    public function companies()
+    {
+        return $this->hasManyThrough(
+            Company::class,
+            CompanyUserCompany::class,
+            'global_company_user_id', // Foreign key on pivot table
+            'id',                     // Foreign key on Company table
+            'global_company_user_id', // Local key on User table
+            'company_id'              // Local key on pivot table
+        )->withoutTenancy()->distinct();
+    }
+
+
 }
