@@ -275,6 +275,7 @@ class CompanyUserRepository extends BaseRepository
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole , ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
 
 
+
                 }
 
 

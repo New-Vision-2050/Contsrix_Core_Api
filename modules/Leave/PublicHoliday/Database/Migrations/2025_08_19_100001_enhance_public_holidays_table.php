@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::table('public_holidays', function (Blueprint $table) {
             // Add new fields for enhanced holiday management
             $table->text('description_ar')->nullable()->after('description'); // Arabic description
-            $table->string('name_ar')->nullable()->after('name'); // Arabic name
 
 
         });
