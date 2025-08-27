@@ -51,6 +51,17 @@ class BrokerController extends Controller
     }
 
 
+    public function show(GetBrokerRequest $request): JsonResponse
+    {
+        $broker = $this->brokerCRUDService->show(
+            $request->route('id')
+        );
+
+
+        return Json::item((new UserRolesPresenter($broker, CompanyUserRole::BROKER->value))->getData());
+    }
+
+
     public function store(CreateBrokerRequest $request): JsonResponse
     {
         $createdItem = $this->brokerCRUDService->create($request->createCreateBrokerDTO(), $request->createCreateCompanyUserCompanyRoleDTO(), $request->createSetUserAddressDTO());

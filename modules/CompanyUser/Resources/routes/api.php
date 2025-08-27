@@ -9,6 +9,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::group(["prefix"=>"brokers"],function (){
         Route::get('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'index']);
+        Route::get('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
 
         // Broker Dashboard Widgets Routes

@@ -66,6 +66,12 @@ class BrokerCRUDService
         return $users;
     }
 
+
+    public function show($id)
+    {
+        return $this->userRepository->getUserInCurrentCompanyByRole($id, [], CompanyUserRole::BROKER->value);
+    }
+
     public function get(UuidInterface $id): CompanyUser
     {
         return $this->repository->getCompanyUser(
