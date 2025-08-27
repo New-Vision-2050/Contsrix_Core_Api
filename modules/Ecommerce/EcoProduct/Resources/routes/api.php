@@ -7,6 +7,6 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
     Route::get('/', [EcoProductController::class, 'index']);
     Route::post('/', [EcoProductController::class, 'store']);
     Route::get('/{id}', [EcoProductController::class, 'show']);
-    Route::put('/{id}', [EcoProductController::class, 'update']);
+    Route::post('/{id}', [EcoProductController::class, 'update']);
     Route::delete('/{id}', [EcoProductController::class, 'delete']);
 });
