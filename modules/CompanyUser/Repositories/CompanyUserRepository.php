@@ -859,4 +859,33 @@ class CompanyUserRepository extends BaseRepository
 
         return $companyUserCompany->refresh();
     }
+
+    /**
+     * Get company users for export with specific role
+     *
+     * @param array $filters
+     * @param int $role
+     * @return \Illuminate\Support\Collection
+     */
+    public function getForExport(array $filters = [], int $role = null): \Illuminate\Support\Collection
+    {
+        $query = $this->model->newQuery()
+            ->with(['users', 'companies'])
+            ->whereHas('users',fn ($q) => $q->where('company_id', tenant('id')));
+
+        // Filter by role if specified
+        if ($role !== null) {
+            $query->whereHas('companies', function ($q) use ($role) {
+                $q->where('company_id', tenant('id'))
+                  ->where('company_users_companies.role', $role);
+            });
+        }
+
+        // Filter by specific IDs if provided
+        if (!empty($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->get();
+    }
 }

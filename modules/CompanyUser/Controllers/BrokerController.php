@@ -7,6 +7,8 @@ namespace Modules\CompanyUser\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\CompanyUser\Exports\BrokerExport;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
@@ -17,6 +19,7 @@ use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
+use Modules\CompanyUser\Requests\Broker\ExportBrokerRequest;
 use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
@@ -43,7 +46,7 @@ class BrokerController extends Controller
     {
     }
 
-    public function index(GetBrokerRequest $request): JsonResponse
+    public function index(GetBrokerRequest $request)
     {
         $list = $this->brokerCRUDService->list(
             (int)$request->get('page', 1),
@@ -96,6 +99,22 @@ class BrokerController extends Controller
         $this->deleteUserRoleHandler->handle($command);
 
         return Json::deleted();
+    }
+
+    /**
+     * Export brokers to Excel or CSV
+     */
+    public function export(ExportBrokerRequest $request)
+    {
+        $filters = $request->getFilters();
+        $format = $request->get('format', 'xlsx');
+        
+        $filename = 'brokers_' . date('Y-m-d_H-i-s') . '.' . $format;
+        
+        return Excel::download(
+            new BrokerExport($this->brokerCRUDService, $filters),
+            $filename
+        );
     }
 
 

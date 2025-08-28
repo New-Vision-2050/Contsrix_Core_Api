@@ -102,4 +102,15 @@ class BrokerCRUDService
 
         return $users;
     }
+
+    /**
+     * Get brokers for export
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters, CompanyUserRole::BROKER->value);
+    }
 }

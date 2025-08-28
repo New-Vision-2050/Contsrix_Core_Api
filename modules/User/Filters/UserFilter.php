@@ -27,6 +27,15 @@ class UserFilter extends SearchModelFilter
         });
 
     }
+
+    public function search($search)
+    {
+        return $this->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                ->orWhere('email', 'LIKE', "%{$search}%");
+        });
+
+    }
     public function management($managementId)
     {
 

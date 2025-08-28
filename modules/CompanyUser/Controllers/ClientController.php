@@ -8,6 +8,8 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\CompanyUser\Exports\ClientExport;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
@@ -21,6 +23,7 @@ use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
 use Modules\CompanyUser\Requests\Client\GetClientRequest;
+use Modules\CompanyUser\Requests\Client\ExportClientRequest;
 use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\Client\ClientCRUDService;
@@ -99,6 +102,22 @@ class ClientController extends Controller
         $this->deleteUserRoleHandler->handle($command);
 
         return Json::deleted();
+    }
+
+    /**
+     * Export clients to Excel or CSV
+     */
+    public function export(ExportClientRequest $request)
+    {
+        $filters = $request->getFilters();
+        $format = $request->get('format', 'xlsx');
+        
+        $filename = 'clients_' . date('Y-m-d_H-i-s') . '.' . $format;
+        
+        return Excel::download(
+            new ClientExport($this->clientCRUDService, $filters),
+            $filename
+        );
     }
 
 
