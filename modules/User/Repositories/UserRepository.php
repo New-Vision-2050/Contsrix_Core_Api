@@ -96,7 +96,7 @@ class UserRepository extends BaseRepository
                     })
                     ->when(request()->has("branch_id"), function ($query) {
                         $query->whereHas('managementHierarchy', function ($hierarchyQuery) {
-                            $hierarchyQuery->where('management_hierarchy_id', request()->branch_id);
+                            $hierarchyQuery->where('management_hierarchies.id', request()->branch_id);
 
                         });
                     });
