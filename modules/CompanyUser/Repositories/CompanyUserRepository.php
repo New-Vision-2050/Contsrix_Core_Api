@@ -296,6 +296,7 @@ class CompanyUserRepository extends BaseRepository
             // Create or update company user role
             $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore($companyRole + ["global_company_user_id" => $companyUser->global_id]);
 
+
             // Handle branch assignments
             $mainBranchId = $this->handleBranchAssignments($user, $companyUserCompany, $companyRole, $branches);
 
@@ -303,7 +304,11 @@ class CompanyUserRepository extends BaseRepository
             if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
                 $this->handleEmployeeData($user, $companyRole['company_id'], $mainBranchId, $companyUserData);
             }
-
+            $userBranchId =auth()->user()?->professionalData?->branch_id;
+            if($userBranchId == null)
+            {
+                $userBranchId = $mainBranchId;
+            }
             // Handle address if provided
             if ($address !== null) {
                 $this->companyUserAddressRepository->updateOrCreate(
@@ -328,7 +333,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-                    $clientDetail->update(["company_id" => $newCompanyClientId]);
+                    $clientDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner||auth()->user()->email == "admin@constrix-nv.com"]);
                 }
             }
             // Handle broker details if broker role
@@ -346,7 +351,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-                    $brokerDetail->update(["company_id" => $newCompanyClientId]);
+                    $brokerDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
                 }
             }
 //

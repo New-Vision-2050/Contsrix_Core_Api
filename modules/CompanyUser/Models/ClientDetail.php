@@ -33,7 +33,9 @@ class ClientDetail extends Model
         "company_representative_name",
         "registration_number",
         "user_id",
-        "company_id"
+        "company_id",
+        "original_branch_id",
+        "is_created_by_owner"
 
 
     ];
