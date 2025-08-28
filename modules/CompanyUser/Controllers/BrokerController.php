@@ -69,7 +69,6 @@ class BrokerController extends Controller
     public function store(CreateBrokerRequest $request)
     {
         $createdItem = $this->brokerCRUDService->create($request->createCreateBrokerDTO(), $request->createCreateCompanyUserCompanyRoleDTO(), $request->createSetUserAddressDTO());
-
         $presenter = new CompanyUserPresenter($createdItem);
 
         return Json::item($presenter->getData());
