@@ -103,5 +103,16 @@ class ClientCRUDService
         );
     }
 
+    /**
+     * Get clients for export
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters, CompanyUserRole::CLIENT->value);
+    }
+
 
 }

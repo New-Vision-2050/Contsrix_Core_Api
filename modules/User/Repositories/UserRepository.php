@@ -88,9 +88,18 @@ class UserRepository extends BaseRepository
         ));
         $query = $query->when($type != null, function ($query) use ($type) {
             $query->whereHas("companyUserCompanies", function ($query) use ($type) {
-                $query->where("company_users_companies.role", $type);
+                $query->where("company_users_companies.role", $type)->when(request()->has("status"),function ($query) {
+                    $query->where("company_users_companies.status", request()->status);
+                });
             });
-        })->where("company_id", tenant("id"));
+        })->when(request()->has("branch_id"), function ($query) use ($type) {
+            $query->whereHas('companyUserCompanyManagementHierarchies', function ($hierarchyQuery) use ( $type) {
+                    $hierarchyQuery->where('management_hierarchy_id', request()->branch_id)
+
+                });
+        })
+
+            ->where("company_id", tenant("id"));
         //TODO filter with branches very important
 
         $count = $query->count();
