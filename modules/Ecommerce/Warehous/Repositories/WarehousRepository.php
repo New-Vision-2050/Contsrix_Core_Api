@@ -35,11 +35,24 @@ class WarehousRepository extends BaseRepository
 
     public function createWarehous(array $data): Warehous
     {
+        if ($data['is_default'] === 1) {
+            $this->model->where('company_id', $data['company_id'])
+                    ->where('is_default',1)
+                    ->update(['is_default' => 0]);
+        }
         return $this->create($data);
     }
 
     public function updateWarehous(UuidInterface $id, array $data): bool
     {
+        $warehous = $this->getWarehous($id);
+
+        if ($data['is_default'] == 1) {
+            $this->model->where('company_id',$warehous->company_id)
+                    ->where('is_default',1)
+                    ->update(['is_default' => 0]);
+        }
+
         return $this->update($id, $data);
     }
 

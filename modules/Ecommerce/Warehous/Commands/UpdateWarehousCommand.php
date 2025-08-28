@@ -10,7 +10,15 @@ class UpdateWarehousCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
+        public ?string $name = null,
+        public ?bool $isDefault = null,
+        public ?string $countryId = null,
+        public ?string $cityId = null,
+        public ?string $district = null,
+        public ?string $street = null,
+        public ?float $latitude = null,
+        public ?float $longitude = null,
+
     ) {
     }
 
@@ -28,6 +36,13 @@ class UpdateWarehousCommand
     {
         return array_filter([
             'name' => $this->name,
-        ]);
+            'is_default' => $this->isDefault,
+            'country_id' => $this->countryId,
+            'city_id' => $this->cityId,
+            'district' => $this->district,
+            'street' => $this->street,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+        ], fn ($value) => !is_null($value));
     }
 }

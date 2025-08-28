@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Ecommerce\Warehous\Database\factories\WarehousFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Country\Models\City;
+use Modules\Country\Models\Country;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class Warehous extends Model
@@ -28,6 +32,13 @@ class Warehous extends Model
     protected $fillable = [
         'name',
         'company_id',
+        'is_default',
+        'country_id',
+        'city_id',
+        'district',
+        'street',
+        'latitude',
+        'longitude',
     ];
 
     protected $casts = [
@@ -37,5 +48,18 @@ class Warehous extends Model
     protected static function newFactory(): WarehousFactory
     {
         return WarehousFactory::new();
+    }
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class);
     }
 }
