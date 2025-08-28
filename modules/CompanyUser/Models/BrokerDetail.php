@@ -28,7 +28,10 @@ class BrokerDetail extends Model
         "registration_number",
         "company_name",
         "user_id",
-        "company_id"
+        "company_id",
+        "original_branch_id",
+        "is_created_by_owner"
+
     ];
 
     protected $casts = [

@@ -333,7 +333,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-                    $clientDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner]);
+                    $clientDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner||auth()->user()->email == "admin@constrix-nv.com"]);
                 }
             }
             // Handle broker details if broker role
@@ -351,7 +351,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-                    $brokerDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner]);
+                    $brokerDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
                 }
             }
 //
