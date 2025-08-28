@@ -78,6 +78,7 @@ class CreateCompanyRequest extends FormRequest
             companyFieldId:  $this->get('company_field_id'),
             generalManagerId:  $this->get('general_manager_id'),
             isClient: $this->get('is_client') ?? 0,
+            isBroker: $this->get('is_broker') ?? 0,
             // registrationTypeId:  $this->get('registration_type_id'),
             // registrationNo:  $this->get('registration_no') ?? '',
         );

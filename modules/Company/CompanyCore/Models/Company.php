@@ -99,7 +99,9 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
         'complete_data',
         'date_activate',
         'serial_no',
-        'image_path',"is_client"
+        'image_path',
+        "is_client",
+        "is_broker"
     ];
     protected $casts = [
         'id' => 'string',
@@ -127,7 +129,8 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             "is_central_company",
             "check_activity",
             "registration_type_id",
-            "is_client"
+            "is_client",
+            "is_broker"
         ];
     }
 
