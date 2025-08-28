@@ -71,7 +71,8 @@ class UserCanAccessManagementHierarchyRepository extends BaseRepository
             ->where('user_id', $userId)
             ->with(['user', 'managementHierarchy'])
             ->pluck("management_hierarchy_id")->toArray();
-        return ManagementHierarchy::query()->whereIn("id", $ids)->get();
+        $user = User::find($userId);
+        return ManagementHierarchy::query()->whereIn("id", $ids)->orWhere("id",$user?->professionalData?->branch_id )->get();
     }
 
     /**

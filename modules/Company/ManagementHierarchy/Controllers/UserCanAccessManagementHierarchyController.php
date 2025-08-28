@@ -12,14 +12,20 @@ use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\UserCanAccessManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Requests\AssignUsersToManagementHierarchyRequest;
+use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCRUDService;
 use Modules\Company\ManagementHierarchy\Services\UserCanAccessManagementHierarchyService;
+use Modules\Setting\Services\SettingCRUDService;
+use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
 
 class UserCanAccessManagementHierarchyController extends Controller
 {
     public function __construct(
-        private UserCanAccessManagementHierarchyService $userAccessService
-    ) {
+        private UserCanAccessManagementHierarchyService $userAccessService,
+        private SettingCRUDService                      $settingCRUDService,
+        private ManagementHierarchyCRUDService          $managementHierarchyCRUDService,
+    )
+    {
     }
 
     /**
@@ -52,7 +58,6 @@ class UserCanAccessManagementHierarchyController extends Controller
             $assignments = $this->userAccessService->getUsersByManagementHierarchy($managementHierarchyId);
 
 
-
             return Json::items(UserPresenter::collection($assignments));
         } catch (Exception $e) {
             return Json::error($e->getMessage(), 500);
@@ -65,7 +70,19 @@ class UserCanAccessManagementHierarchyController extends Controller
     public function getBranchesByUser(string $userId): JsonResponse
     {
         try {
+
             $assignments = $this->userAccessService->getManagementHierarchiesByUser($userId);
+            $user = User::find($userId);
+
+            if (request()->has("role")) {
+                $settings = $this->settingCRUDService->getShareClientAndBroker();
+                if ((request()->role == 2 && $settings->where("key", "is_share_client")->first()->value == 1)
+                    || (request()->role == 3 && $settings->where("key", "is_share_broker")->first()->value == 1)
+                    || $user->is_owner == 1 || $user->email == "admin@constrix-nv.com"
+                ) {
+                    $assignments = $this->managementHierarchyCRUDService->listWithoutPagination();
+                }
+            }
 
             $presentedData = ManagementHierarchySimpleDataPresenter::collection($assignments);
 
