@@ -8,10 +8,12 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Setting\Handlers\DeleteSettingHandler;
+use Modules\Setting\Presenters\ClientAndBrokerPresenter;
 use Modules\Setting\Presenters\SettingPresenter;
 use Modules\Setting\Requests\CreateSettingRequest;
 use Modules\Setting\Requests\DeleteSettingRequest;
 use Modules\Setting\Requests\GetSettingListRequest;
+use Modules\Setting\Requests\UpdateSettingsRequest;
 use Modules\Setting\Services\SettingCRUDService;
 
 class SettingController extends Controller
@@ -42,5 +44,18 @@ class SettingController extends Controller
         $this->deleteSettingHandler->handle($request->get('key'));
 
         return Json::deleted();
+    }
+
+    public function getShareClientAndBroker()
+    {
+         $data = $this->settingService->getShareClientAndBroker();
+         return Json::item((new ClientAndBrokerPresenter($data))->getData());
+    }
+
+    public function updateSettings(UpdateSettingsRequest $request): JsonResponse
+    {
+        $updatedSettings = $this->settingService->updateSettings($request->getSettings());
+        
+        return Json::items(SettingPresenter::collection($updatedSettings));
     }
 }

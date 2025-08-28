@@ -37,4 +37,14 @@ class SettingCRUDService
     {
         return $this->repository->findOneBy(['key'=>$key])?->value;
     }
+
+    public function getShareClientAndBroker()
+    {
+        return $this->repository->getKeys(["is_share_client","is_share_broker"]);
+    }
+
+    public function updateSettings(array $settings): array
+    {
+        return $this->repository->updateSettings($settings);
+    }
 }
