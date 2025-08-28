@@ -117,7 +117,7 @@ class CreateBrokerRequest extends FormRequest
     public function createCreateCompanyUserCompanyRoleDTO(): CreateCompanyUserCompanyRoleDTO
     {
         return new CreateCompanyUserCompanyRoleDTO(
-            company_id: Uuid::fromString( tenant("id")),//will create for current company
+            company_id: Uuid::fromString($this->get("company_id") ??Uuid::fromString(tenant("id"))),//will create for current company
             role: (string)CompanyUserRole::BROKER->value,
 
         );

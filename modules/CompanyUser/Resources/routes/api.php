@@ -9,11 +9,12 @@ use Modules\RoleAndPermission\Enums\Permission;
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::group(["prefix"=>"brokers"],function (){
         Route::get('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'index']);
+        Route::get('/widgets', [\Modules\CompanyUser\Controllers\BrokerController::class, 'widgets']);
+
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
 
         // Broker Dashboard Widgets Routes
-        Route::get('/widgets', [\Modules\CompanyUser\Controllers\BrokerController::class, 'widgets']);
         Route::delete('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'deleteBrokerRole']);
 
 
@@ -27,11 +28,12 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::group(["prefix"=>"clients"],function (){
         Route::get('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'index']);
+        Route::get('/widgets', [\Modules\CompanyUser\Controllers\ClientController::class, 'getWidgets']);
+
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
 
         // Dashboard Widgets Routes
-        Route::get('/widgets', [\Modules\CompanyUser\Controllers\ClientController::class, 'getWidgets']);
         Route::delete('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'deleteClientRole']);
 
 

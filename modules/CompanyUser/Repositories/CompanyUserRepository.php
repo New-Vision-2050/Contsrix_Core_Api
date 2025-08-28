@@ -269,7 +269,6 @@ class CompanyUserRepository extends BaseRepository
 
 
             if (CompanyUserRole::BROKER->value == $companyRole['role'] && $brokerDetail !== null) {
-
                 if ($brokerDetail["type"] == 2) {
                     $newCompanyClientId = $companyRole["company_id"];
                     $brokerDetail["company_id"] = tenant("id");
@@ -411,6 +410,7 @@ class CompanyUserRepository extends BaseRepository
 
         if (!$companyUser) {
             $companyUser = $this->create($companyUserData);
+            $companyUser->update(["global_id"=>$companyUser->id]);
         } elseif ($companyUser->deleted_at !== null) {
 
             $companyUser->restore();
