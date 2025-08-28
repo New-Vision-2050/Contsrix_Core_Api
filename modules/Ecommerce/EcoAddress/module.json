@@ -1,0 +1,14 @@
+{
+    "name": "EcoAddress",
+    "alias": "ecoaddress",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoAddress\\Providers\\EcoAddressServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
