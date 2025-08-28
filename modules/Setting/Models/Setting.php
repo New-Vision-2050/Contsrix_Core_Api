@@ -14,7 +14,7 @@ class Setting extends Model
 
 
 
-    protected $primaryKey = 'key';
+    protected $primaryKey = 'id';
 
     protected $fillable = [
         "key",

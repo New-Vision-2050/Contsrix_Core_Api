@@ -5,7 +5,10 @@ use Modules\Setting\Controllers\SettingController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [SettingController::class, 'index']);
+    Route::get('/client-and-broker', [SettingController::class, 'getShareClientAndBroker']);
+
     Route::post('/', [SettingController::class, 'store']);
+    Route::put('/', [SettingController::class, 'updateSettings']);
     Route::delete('/', [SettingController::class, 'delete']);
 
     Route::group(["prefix"=>"login-way"], function () {

@@ -34,4 +34,24 @@ class SettingRepository extends BaseRepository
     {
         return $this->findOneBy(['key' => $key])->delete();
     }
+
+    public function getKeys($keys)
+    {
+        return Setting::query()->whereIn('key', $keys)->get();
+    }
+
+    public function updateSettings(array $settings): array
+    {
+        $updatedSettings = [];
+        
+        foreach ($settings as $setting) {
+            $updatedSetting = $this->updateOrCreate(
+                ['key' => $setting['key']], 
+                ['key' => $setting['key'], 'value' => $setting['value']]
+            );
+            $updatedSettings[] = $updatedSetting;
+        }
+        
+        return $updatedSettings;
+    }
 }
