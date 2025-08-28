@@ -304,9 +304,8 @@ class CompanyUserRepository extends BaseRepository
             if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
                 $this->handleEmployeeData($user, $companyRole['company_id'], $mainBranchId, $companyUserData);
             }
-            $userBranchId =auth()->user()?->professionalData?->branch_id;
-            if($userBranchId == null)
-            {
+            $userBranchId = auth()->user()?->professionalData?->branch_id;
+            if ($userBranchId == null) {
                 $userBranchId = $mainBranchId;
             }
             // Handle address if provided
@@ -333,7 +332,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-                    $clientDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner||auth()->user()->email == "admin@constrix-nv.com"]);
+                    $clientDetail->update(["company_id" => $newCompanyClientId, "original_branch_id" => $userBranchId, "is_created_by_owner" => auth()->user()->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
                 }
             }
             // Handle broker details if broker role
@@ -351,7 +350,7 @@ class CompanyUserRepository extends BaseRepository
                         $companyRole['role']
                     );
                     $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
-                    $brokerDetail->update(["company_id" => $newCompanyClientId,"original_branch_id"=>$userBranchId,"is_created_by_owner"=>$user->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
+                    $brokerDetail->update(["company_id" => $newCompanyClientId, "original_branch_id" => $userBranchId, "is_created_by_owner" => auth()->user()->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
                 }
             }
 //
@@ -415,7 +414,7 @@ class CompanyUserRepository extends BaseRepository
 
         if (!$companyUser) {
             $companyUser = $this->create($companyUserData);
-            $companyUser->update(["global_id"=>$companyUser->id]);
+            $companyUser->update(["global_id" => $companyUser->id]);
         } elseif ($companyUser->deleted_at !== null) {
 
             $companyUser->restore();
@@ -471,14 +470,11 @@ class CompanyUserRepository extends BaseRepository
                     'management_hierarchy_id' => $role == CompanyUserRole::EMPLOYEE->value ? $mainBranchData['managementId'] : null,
                 ]);
             }
-        }
-
-        elseif( $user->deleted_at !== null){
+        } elseif ($user->deleted_at !== null) {
             // Restore if necessary
             $user->restore();
             $user = $user->fresh();
-        }
-        else{
+        } else {
             $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner", 1)->count();
             $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
             $user->update([
@@ -541,8 +537,7 @@ class CompanyUserRepository extends BaseRepository
             $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(
                 $companyRole + ["global_company_user_id" => $companyUser->id]
             );
-        }
-        elseif ($companyUserCompany->deleted_at !== null) {
+        } elseif ($companyUserCompany->deleted_at !== null) {
             $companyUserCompany->restore();
         }
 
@@ -876,13 +871,13 @@ class CompanyUserRepository extends BaseRepository
     {
         $query = $this->model->newQuery()
             ->with(['users', 'companies'])
-            ->whereHas('users',fn ($q) => $q->where('company_id', tenant('id')));
+            ->whereHas('users', fn($q) => $q->where('company_id', tenant('id')));
 
         // Filter by role if specified
         if ($role !== null) {
             $query->whereHas('companies', function ($q) use ($role) {
                 $q->where('company_id', tenant('id'))
-                  ->where('company_users_companies.role', $role);
+                    ->where('company_users_companies.role', $role);
             });
         }
 
