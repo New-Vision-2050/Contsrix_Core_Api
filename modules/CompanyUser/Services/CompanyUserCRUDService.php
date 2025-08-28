@@ -159,19 +159,17 @@ class CompanyUserCRUDService
             }
             //check if the user is already in the branches
             if (count($branches) == count($branchIds) && count(array_intersect( $branches->pluck("management_hierarchy_id")->toArray(),$branchIds)) == count($branches)) {
-//                if ($role == CompanyUserRole::CLIENT->value) {
-//                    throw new CustomException(__("validation.client-already-exist-in-thies-branches"), 400);
-//                }
-//
-                if ($role == CompanyUserRole::EMPLOYEE->value) {
-                    throw new CustomException(__("validation.employee-already-exist"), 400);
-
+                if ($role == CompanyUserRole::CLIENT->value) {
+                    throw new CustomException(__("validation.client-already-exist-in-thies-branches"), 400);
                 }
 
-//                else {
-//                    throw new CustomException(__("validation.broker-already-exist-in-thies-branches"), 400);
-//
-//                }
+                elseif ($role == CompanyUserRole::EMPLOYEE->value) {
+                    throw new CustomException(__("validation.employee-already-exist"), 400);
+
+                } else {
+                    throw new CustomException(__("validation.broker-already-exist-in-thies-branches"), 400);
+
+                }
             }
 
         }
