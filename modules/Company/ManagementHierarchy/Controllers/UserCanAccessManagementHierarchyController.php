@@ -80,7 +80,7 @@ class UserCanAccessManagementHierarchyController extends Controller
                     || (request()->role == 3 && $settings->where("key", "is_share_broker")->first()->value == 1)
                     || $user->is_owner == 1 || $user->email == "admin@constrix-nv.com"
                 ) {
-                    $assignments = $this->managementHierarchyCRUDService->listWithoutPagination();
+                    $assignments = $this->managementHierarchyCRUDService->listWithoutPagination("branch");
                 }
             }
 
