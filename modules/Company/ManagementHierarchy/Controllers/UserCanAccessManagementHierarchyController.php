@@ -72,7 +72,7 @@ class UserCanAccessManagementHierarchyController extends Controller
         try {
 
             $assignments = $this->userAccessService->getManagementHierarchiesByUser($userId);
-            $user = User::find($userId);
+            $user = User::findOrFail($userId);
 
             if (request()->has("role")) {
                 $settings = $this->settingCRUDService->getShareClientAndBroker();
