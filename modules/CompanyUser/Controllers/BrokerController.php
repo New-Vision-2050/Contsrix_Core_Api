@@ -108,9 +108,9 @@ class BrokerController extends Controller
     {
         $filters = $request->getFilters();
         $format = $request->get('format', 'xlsx');
-        
+
         $filename = 'brokers_' . date('Y-m-d_H-i-s') . '.' . $format;
-        
+
         return Excel::download(
             new BrokerExport($this->brokerCRUDService, $filters),
             $filename
