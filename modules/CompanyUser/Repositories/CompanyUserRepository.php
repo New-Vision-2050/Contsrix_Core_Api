@@ -267,11 +267,12 @@ class CompanyUserRepository extends BaseRepository
                 }
             }
 
-
             if (CompanyUserRole::BROKER->value == $companyRole['role'] && $brokerDetail !== null) {
+
                 if ($brokerDetail["type"] == 2) {
+
                     $newCompanyClientId = $companyRole["company_id"];
-                    $brokerDetail["company_id"] = tenant("id");
+                    $companyRole["company_id"] = tenant("id");
 
                 }
             }
