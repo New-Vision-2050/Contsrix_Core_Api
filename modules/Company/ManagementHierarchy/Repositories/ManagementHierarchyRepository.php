@@ -48,7 +48,7 @@ class ManagementHierarchyRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getAll()
+    public function getAll($type = null)
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
 
@@ -63,7 +63,9 @@ class ManagementHierarchyRepository extends BaseRepository
                 )->get();
         }
 
-        $query = $this->model->filter(request()->all());
+        $query = $this->model->filter(request()->all())->when($type !=null ,function ($query) use ($type) {
+            $query->where("type", $type);
+        });
 
         if (request()->has("parent_children_id")) {
             $parentNode = $this->model->where("id", request()->parent_children_id)
