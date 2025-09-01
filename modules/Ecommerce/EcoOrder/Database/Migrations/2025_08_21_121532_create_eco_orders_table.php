@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table) {
+        Schema::create('eco_orders', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('eco_client_id')->nullable();
             $table->tinyInteger('is_guest')->default(0);
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('coupon_discount_bearer', 191)->default('inhouse');
             $table->string('shipping_responsibility', 255)->nullable();
             $table->uuid('shipping_method_id')->default(0);
-            $table->double('shipping_cost', 8, 2)->default(0);
+            $table->decimal('shipping_cost', 8, 2)->default(0);
             $table->tinyInteger('is_shipping_free')->default(0);
             $table->string('order_group_id', 191)->default('def-order-group');
             $table->string('verification_code', 191)->default('0');
@@ -46,7 +46,7 @@ return new class extends Migration
             $table->uuid('billing_address')->nullable();
             $table->text('billing_address_data')->nullable();
             $table->string('order_type', 191)->default('default_type');
-            $table->double('extra_discount', 8, 2)->default(0);
+            $table->decimal('extra_discount', 8, 2)->default(0);
             $table->string('extra_discount_type', 191)->nullable();
             $table->decimal('refer_and_earn_discount', 10, 2)->default(0);
             $table->string('free_delivery_bearer', 255)->nullable();
@@ -61,6 +61,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('eco_orders');
     }
 };

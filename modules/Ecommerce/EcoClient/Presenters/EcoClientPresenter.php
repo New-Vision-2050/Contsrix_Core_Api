@@ -26,8 +26,8 @@ class EcoClientPresenter extends AbstractPresenter
             'email' => $this->ecoClient->email,
             'phone_code' => $this->ecoClient->phone_code,
             'phone' => $this->ecoClient->phone,
+            'tag' => $this->ecoClient->tag,
             'profile_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
-
         ];
     }
 }

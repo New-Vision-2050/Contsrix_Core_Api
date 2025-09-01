@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoOrder\Providers;
+namespace Modules\Ecommerce\EcoOrderDetail\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 
-class EcoOrderServiceProvider extends ModuleServiceProvider
+class EcoOrderDetailServiceProvider extends ModuleServiceProvider
 {
     public static function getModuleName(): string
     {
-        return 'EcoOrder';
+        return 'EcoOrderDetail';
     }
 
     public function boot(): void
@@ -28,7 +28,7 @@ class EcoOrderServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/ecommerce/orders')
+        Route::prefix('api/v1/ecommerce/order_details')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

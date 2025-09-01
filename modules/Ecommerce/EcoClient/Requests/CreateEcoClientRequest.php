@@ -64,7 +64,7 @@ class CreateEcoClientRequest extends FormRequest
             password: $validatedData['password'],
             phoneCode: $validatedData['phone_code'] ?? null,
             phone: $validatedData['phone'] ?? null,
-            profileImage: $validatedData['profile_image']
+            profileImage: $this->file('profile_image')
         );
     }
 }
