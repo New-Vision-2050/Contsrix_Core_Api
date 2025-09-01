@@ -6,6 +6,7 @@ namespace Modules\Ecommerce\EcoOrder\Presenters;
 
 use Modules\Ecommerce\EcoOrder\Models\EcoOrder;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Ecommerce\EcoClient\Presenters\EcoClientPresenter;
 
 class EcoOrderPresenter extends AbstractPresenter
 {
@@ -18,9 +19,15 @@ class EcoOrderPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+
         return [
             'id' => $this->ecoOrder->id,
-            'name' => $this->ecoOrder->name,
+            'client' => $this->ecoOrder->client? (new EcoClientPresenter($this->ecoOrder->client))->getData():null,
+            'created_at'=> $this->ecoOrder->created_at->format('Y-m-d'),
+            'qty' => $this->ecoOrder->details->sum('qty'),
+            'order_status' => $this->ecoOrder->order_status,
+            'payment_status' => $this->ecoOrder->payment_status,
+            'order_amount'=> $this->ecoOrder->order_amount, 
         ];
     }
 }

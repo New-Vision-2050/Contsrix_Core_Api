@@ -80,11 +80,6 @@ class EcoOrder extends Model
         'third_party_delivery_tracking_id',
     ];
 
-
-
-
-
-
     protected $casts = [
         'id' => 'string',
         'eco_client_id' => 'string',
@@ -161,7 +156,7 @@ class EcoOrder extends Model
 
     // public function billingAddress(): BelongsTo
     // {
-    //     return $this->belongsTo(ShippingAddress::class, 'billing_address');
+    //     return $this->belongsTo(ShippingAddress::class, 'billing_address_id');
     // }
 
     // public function deliveryMan(): BelongsTo
