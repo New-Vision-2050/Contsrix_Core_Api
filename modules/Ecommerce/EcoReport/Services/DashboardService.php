@@ -21,11 +21,10 @@ class DashboardService
     public function getDashboardData(string $period = 'today'): array
     {
         $cacheKey = "dashboard_data_{$period}";
-        $cacheTtl = 60; // 1 minute in seconds
+        $cacheTtl = 1360; // 1 minute in seconds
 
         return Cache::remember($cacheKey, $cacheTtl, function () use ($period) {
             return [
-                'summary' => $this->getSummaryMetrics($period),
                 'orders' => $this->getOrdersData($period),
                 'shipping' => $this->getShippingMethods($period),
                 'payment' => $this->getPaymentMethods($period),
