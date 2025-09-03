@@ -139,6 +139,65 @@ class DashboardController extends Controller
     }
     
     /**
+     * Get warehouse sales data
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getWarehouseSalesData(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'today');
+        $data = $this->dashboardService->getDashboardData($period);
+        
+        return Json::item($data['warehouse_sales']);
+    }
+    
+    /**
+     * Get conversion rates data
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getConversionRates(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'today');
+        $data = $this->dashboardService->getDashboardData($period);
+        
+        return Json::item($data['conversion_rates']);
+    }
+    
+    /**
+     * Get paginated warehouse sales data
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getWarehouseSalesDataPaginated(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'today');
+        $page = (int) $request->get('page', 1);
+        $perPage = (int) $request->get('per_page', 10);
+        
+        $data = $this->dashboardService->getWarehouseSalesDataPaginated($period, $page, $perPage);
+        
+        return Json::item($data);
+    }
+    
+    /**
+     * Get discount sections data
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getDiscountSectionsData(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'month');
+        $data = $this->dashboardService->getDiscountSectionsData($period);
+        
+        return Json::item($data);
+    }
+    
+    /**
      * Clear dashboard cache
      *
      * @return JsonResponse

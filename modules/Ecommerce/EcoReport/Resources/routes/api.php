@@ -24,6 +24,9 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
         Route::get('/order-status', [DashboardController::class, 'getOrderStatusSummary']);
         Route::get('/processing-time', [DashboardController::class, 'getAverageProcessingTime']);
         Route::get('/delivery-time', [DashboardController::class, 'getAverageDeliveryTime']);
+        Route::get('/warehouse-sales', [DashboardController::class, 'getWarehouseSalesDataPaginated']);
+        Route::get('/conversion-rates', [DashboardController::class, 'getConversionRates']);
+        Route::get('/discount-sections', [DashboardController::class, 'getDiscountSectionsData']);
         Route::post('/clear-cache', [DashboardController::class, 'clearCache']);
     });
 });
