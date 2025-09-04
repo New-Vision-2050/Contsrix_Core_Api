@@ -27,6 +27,9 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
         Route::get('/warehouse-sales', [DashboardController::class, 'getWarehouseSalesDataPaginated']);
         Route::get('/conversion-rates', [DashboardController::class, 'getConversionRates']);
         Route::get('/discount-sections', [DashboardController::class, 'getDiscountSectionsData']);
+        Route::get('/metrics', [DashboardController::class, 'getDashboardMetrics']);
+        Route::get('/products', [DashboardController::class, 'getProductsManagement']);
+        Route::get('/client-sections', [DashboardController::class, 'getDashboardClient']);
         Route::post('/clear-cache', [DashboardController::class, 'clearCache']);
     });
 });

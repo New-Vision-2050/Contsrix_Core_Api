@@ -35,6 +35,7 @@ class EcoClient extends Model implements HasMedia
         'phone',
         'phone_code',
         'password',
+        'gender'
     ];
 
     protected $casts = [

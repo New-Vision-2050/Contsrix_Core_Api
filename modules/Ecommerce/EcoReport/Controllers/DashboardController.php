@@ -28,7 +28,7 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data);
     }
 
@@ -42,7 +42,7 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data['summary']);
     }
 
@@ -56,7 +56,7 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data['orders']);
     }
 
@@ -70,7 +70,7 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data['shipping']);
     }
 
@@ -84,7 +84,7 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data['payment']);
     }
 
@@ -98,10 +98,10 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data['order_status']);
     }
-    
+
     /**
      * Get average processing time
      *
@@ -112,14 +112,14 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item([
             'value' => 5,
             'unit' => 'دقائق',
             'label' => 'متوسط وقت تجهيز الطلب'
         ]);
     }
-    
+
     /**
      * Get average delivery time
      *
@@ -130,14 +130,14 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item([
             'value' => 5,
             'unit' => 'دقائق',
             'label' => 'متوسط وقت توصيل الطلب'
         ]);
     }
-    
+
     /**
      * Get warehouse sales data
      *
@@ -148,10 +148,10 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data['warehouse_sales']);
     }
-    
+
     /**
      * Get conversion rates data
      *
@@ -162,10 +162,10 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'today');
         $data = $this->dashboardService->getDashboardData($period);
-        
+
         return Json::item($data['conversion_rates']);
     }
-    
+
     /**
      * Get paginated warehouse sales data
      *
@@ -177,12 +177,12 @@ class DashboardController extends Controller
         $period = $request->get('period', 'today');
         $page = (int) $request->get('page', 1);
         $perPage = (int) $request->get('per_page', 10);
-        
+
         $data = $this->dashboardService->getWarehouseSalesDataPaginated($period, $page, $perPage);
-        
+
         return Json::item($data);
     }
-    
+
     /**
      * Get discount sections data
      *
@@ -193,10 +193,32 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'month');
         $data = $this->dashboardService->getDiscountSectionsData($period);
-        
+
         return Json::item($data);
     }
-    
+
+    /**
+     * Get dashboard metrics matching the UI layout
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getDashboardClient(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'month');
+        $data = $this->dashboardService->getDashboardClient($period);
+
+        return Json::item($data);
+    }
+
+    public function getProductsManagement(Request $request): JsonResponse
+    {
+        $period = $request->get('period', 'month');
+        $data = $this->dashboardService->getProductsManagementData($period);
+
+        return Json::item($data);
+    }
+
     /**
      * Clear dashboard cache
      *
@@ -205,11 +227,11 @@ class DashboardController extends Controller
     public function clearCache(): JsonResponse
     {
         $periods = ['today', 'week', 'month', 'year'];
-        
+
         foreach ($periods as $period) {
             Cache::forget("dashboard_data_{$period}");
         }
-        
+
         return Json::success('Cache cleared successfully');
     }
 }
