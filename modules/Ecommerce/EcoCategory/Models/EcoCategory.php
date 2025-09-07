@@ -31,6 +31,7 @@ class EcoCategory extends Model
         'name',
         'description',
         'parent_id',
+        'is_active'
     ];
 
     protected $casts = [
