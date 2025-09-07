@@ -11,8 +11,8 @@ class CreateEcoProductDTO
 {
     public function __construct(
         public UuidInterface $companyId,
-        public array $name,
-        public ?array $description,
+        public string $name,
+        public ?string $description,
         public float $price,
         public string $sku,
         public ?int $stock,
