@@ -57,7 +57,7 @@ class EcoBrandController extends Controller
 
     public function update(UpdateEcoBrandRequest $request): JsonResponse
     {
-        $command = $request->createUpdateEcoBrandCommand();
+        $command = $request->createUpdateEcoBrandCommand(); 
         $this->updateEcoBrandHandler->handle($command);
 
         $item = $this->ecoBrandService->get($command->getId());
