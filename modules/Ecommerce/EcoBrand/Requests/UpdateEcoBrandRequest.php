@@ -14,13 +14,13 @@ class UpdateEcoBrandRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'array'],
-            'name.ar' => ['required', 'string', 'max:255'],
-            'name.en' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string'],
+            // 'name.ar' => ['required', 'string', 'max:255'],
+            // 'name.en' => ['nullable', 'string', 'max:255'],
 
-            'description' => ['required', 'array'],
-            'description.ar' => ['required', 'string', 'max:1000'],
-            'description.en' => ['nullable', 'string', 'max:1000'],
+            'description' => ['required', 'string'],
+            // 'description.ar' => ['required', 'string', 'max:1000'],
+            // 'description.en' => ['nullable', 'string', 'max:1000'],
         ];
     }
     public function messages(): array
@@ -43,6 +43,7 @@ class UpdateEcoBrandRequest extends FormRequest
             'description.en.max' => __('ecobrand::validation.description_en_max'),
         ];
     }
+
     public function createUpdateEcoBrandCommand(): UpdateEcoBrandCommand
     {
         $validatedData = $this->validated();

@@ -10,8 +10,8 @@ class UpdateEcoBrandCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private array $name,
-        private ?array $description
+        private string $name,
+        private ?string $description
     ) {
     }
 

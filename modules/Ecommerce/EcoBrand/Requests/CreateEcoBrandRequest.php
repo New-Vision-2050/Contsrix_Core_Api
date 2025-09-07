@@ -13,13 +13,13 @@ class CreateEcoBrandRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'array'],
-            'name.ar' => ['required', 'string', 'max:255'],
-            'name.en' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            // 'name.ar' => ['required', 'string', 'max:255'],
+            // 'name.en' => ['nullable', 'string', 'max:255'],
 
-            'description' => ['required', 'array'],
-            'description.ar' => ['required', 'string', 'max:1000'],
-            'description.en' => ['nullable', 'string', 'max:1000'],
+            'description' => ['required', 'string', 'max:255'],
+            // 'description.ar' => ['required', 'string', 'max:1000'],
+            // 'description.en' => ['nullable', 'string', 'max:1000'],
         ];
     }
     public function messages(): array
