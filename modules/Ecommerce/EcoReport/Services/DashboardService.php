@@ -25,7 +25,6 @@ class DashboardService
 
         // return Cache::remember($cacheKey, $cacheTtl, function () use ($period) {
             return [
-                'summary' => $this->getSummaryMetrics($period),
                 'orders' => $this->getOrdersData($period),
                 'shipping' => $this->getShippingMethods($period),
                 'payment' => $this->getPaymentMethods($period),
@@ -43,7 +42,7 @@ class DashboardService
      * @param string $period
      * @return array
      */
-    protected function getSummaryMetrics(string $period): array
+    public function getSummaryMetrics(string $period = 'today'): array
     {
         $dateRange = $this->getDateRange($period);
 
@@ -852,17 +851,6 @@ class DashboardService
         try {
             $dateRange = $this->getDateRange($period);
 
-            // Calculate cart to order conversion rate
-            $totalCarts = EcoOrder::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
-                ->where('order_status', 'in_cart')
-                ->count();
-
-            $completedOrders = EcoOrder::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
-                ->whereIn('order_status', ['completed', 'delivered', 'shipped'])
-                ->count();
-
-            $cartConversionRate = $totalCarts > 0 ? round(($completedOrders / ($totalCarts + $completedOrders)) * 100) : 88;
-
             // Calculate product view to purchase conversion
             $totalProducts = EcoProduct::where('is_visible', 1)->count();
             $productsWithOrders = DB::table('eco_order_details as od')
@@ -874,28 +862,7 @@ class DashboardService
 
             $productConversionRate = $totalProducts > 0 ? round(($productsWithOrders / $totalProducts) * 100) : 15;
 
-            // Calculate previous period for trends
-            $previousPeriod = $this->getPreviousPeriod($period);
-            $prevTotalCarts = EcoOrder::whereBetween('created_at', [$previousPeriod['start'], $previousPeriod['end']])
-                ->where('order_status', 'in_cart')
-                ->count();
-
-            $prevCompletedOrders = EcoOrder::whereBetween('created_at', [$previousPeriod['start'], $previousPeriod['end']])
-                ->whereIn('order_status', ['completed', 'delivered', 'shipped'])
-                ->count();
-
-            $prevCartConversionRate = $prevTotalCarts > 0 ? round(($prevCompletedOrders / ($prevTotalCarts + $prevCompletedOrders)) * 100) : 0;
-            $cartTrend = $prevCartConversionRate > 0 ? $cartConversionRate - $prevCartConversionRate : 15;
-
             return [
-                'cart_conversion' => [
-                    'value' => $cartConversionRate,
-                    'unit' => '%',
-                    'label' => 'معدل تحويل سلة المشتريات لطلبات',
-                    'trend' => ($cartTrend >= 0 ? '+' : '') . $cartTrend . '%',
-                    'trend_direction' => $cartTrend >= 0 ? 'up' : 'down',
-                    'icon' => 'shopping-cart'
-                ],
                 'product_conversion' => [
                     'value' => $productConversionRate,
                     'unit' => 'منتجات',
@@ -909,14 +876,6 @@ class DashboardService
         } catch (\Exception $e) {
             // Fallback data matching the dashboard image
             return [
-                'cart_conversion' => [
-                    'value' => 88,
-                    'unit' => '%',
-                    'label' => 'معدل تحويل سلة المشتريات لطلبات',
-                    'trend' => '+15%',
-                    'trend_direction' => 'up',
-                    'icon' => 'shopping-cart'
-                ],
                 'product_conversion' => [
                     'value' => 8,
                     'unit' => 'منتجات',
@@ -1203,8 +1162,14 @@ class DashboardService
             // Get products with sales data
             $query = EcoProduct::query()
                 ->with(['category'])
-                ->leftJoin('eco_order_details', 'eco_products.id', '=', 'eco_order_details.eco_product_id')
-                ->leftJoin('eco_orders', 'eco_order_details.eco_order_id', '=', 'eco_orders.id')
+                ->leftJoin('eco_order_details', function($join) use ($startDate, $endDate) {
+                    $join->on('eco_products.id', '=', 'eco_order_details.eco_product_id');
+                })
+                ->leftJoin('eco_orders', function($join) use ($startDate, $endDate) {
+                    $join->on('eco_order_details.eco_order_id', '=', 'eco_orders.id')
+                         ->whereBetween('eco_orders.created_at', [$startDate, $endDate])
+                         ->where('eco_orders.order_status', '!=', 'cancelled');
+                })
                 ->select([
                     'eco_products.id',
                     'eco_products.name',
@@ -1218,8 +1183,6 @@ class DashboardService
                     DB::raw('COALESCE(SUM(eco_order_details.qty), 0) as total_sold'),
                     DB::raw('COALESCE(SUM(eco_order_details.qty * eco_order_details.price), 0) as total_revenue')
                 ])
-                ->whereBetween('eco_orders.created_at', [$startDate, $endDate])
-                ->where('eco_orders.order_status', '!=', 'cancelled')
                 ->groupBy([
                     'eco_products.id',
                     'eco_products.name',
