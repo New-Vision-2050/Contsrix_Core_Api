@@ -78,6 +78,16 @@ class EcoClientController extends Controller
     }
 
     /**
+     * Get client statistics cards for dashboard
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $stats = $this->ecoClientService->getClientStatistics();
+        
+        return Json::item($stats);
+    }
+
+    /**
      * Export ecoclient to a file
      *
      * @param ExportEcoClientRequest $request
