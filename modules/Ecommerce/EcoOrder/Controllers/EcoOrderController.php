@@ -90,4 +90,14 @@ class EcoOrderController extends Controller
         
         return Excel::download(new EcoOrderExport($this->ecoOrderService, $filters), $fileName);
     }
+
+    /**
+     * Get order statistics for dashboard cards
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $statistics = $this->ecoOrderService->getOrderStatistics();
+        
+        return Json::item($statistics);
+    }
 }

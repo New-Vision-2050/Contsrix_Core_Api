@@ -10,8 +10,8 @@ class CreateEcoCategoryDTO
 {
     public function __construct(
         public UuidInterface $companyId,
-        public array $name,
-        public ?array $description,
+        public string $name,
+        public ?string $description,
         public ?string $perentId
     ) {
     }

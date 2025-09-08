@@ -28,7 +28,7 @@ class EcoOrderServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/eco_orders')
+        Route::prefix('api/v1/ecommerce/orders')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

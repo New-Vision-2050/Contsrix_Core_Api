@@ -46,14 +46,14 @@ class CreateEcoProductRequest extends FormRequest
             ],
             "type" => ['required', 'string', 'max:255'],
             // Multilingual Name
-            'name' => ['required', 'array'],
-            'name.ar' => ['required', 'string', 'max:255'],
-            'name.en' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string'],
+            // 'name.ar' => ['required', 'string', 'max:255'],
+            // 'name.en' => ['nullable', 'string', 'max:255'],
 
             // Multilingual Description
-            'description' => ['nullable', 'array'],
-            'description.ar' => ['required_with:description', 'string', 'max:1000'],
-            'description.en' => ['nullable', 'string', 'max:1000'],
+            'description' => ['nullable', 'string'],
+            // 'description.ar' => ['required_with:description', 'string', 'max:1000'],
+            // 'description.en' => ['nullable', 'string', 'max:1000'],
 
             // Product Taxes (array of tax objects)
             'taxes' => ['nullable', 'array'],

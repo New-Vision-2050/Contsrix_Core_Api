@@ -1,0 +1,14 @@
+{
+    "name": "EcoReport",
+    "alias": "ecoreport",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoReport\\Providers\\EcoReportServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

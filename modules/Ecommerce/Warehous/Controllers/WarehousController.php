@@ -73,4 +73,14 @@ class WarehousController extends Controller
 
         return Json::deleted();
     }
+
+    /**
+     * Get warehouse statistics for dashboard cards
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $statistics = $this->warehousService->getWarehouseStatistics();
+        
+        return Json::item($statistics);
+    }
 }

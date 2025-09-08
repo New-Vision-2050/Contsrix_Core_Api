@@ -74,4 +74,14 @@ class EcoCategoryController extends Controller
 
         return Json::deleted();
     }
+
+    /**
+     * Get category statistics cards for dashboard
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $stats = $this->ecoCategoryService->getCategoryStatistics();
+        
+        return Json::item($stats);
+    }
 }

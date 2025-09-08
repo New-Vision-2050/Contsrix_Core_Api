@@ -48,6 +48,14 @@ class EcoProduct extends Model implements HasMedia
         'price_includes_vat',
         'vat_percentage',
         'is_visible',
+
+        // Discount fields
+        'has_discount',
+        'discount_amount',
+        'discount_percentage',
+        'discount_start_date',
+        'max_discount_amount',
+        'discount_end_date',
         // Translatable fields must also be in fillable for spatie/laravel-translatable to work
         'name',
         'description',
@@ -67,6 +75,11 @@ class EcoProduct extends Model implements HasMedia
         'price_includes_vat' => 'boolean',
         'vat_percentage' => 'float',
         'is_visible' => 'boolean',
+        'has_discount' => 'boolean',
+        'discount_amount' => 'float',
+        'discount_percentage' => 'float',
+        'discount_start_date' => 'datetime',
+        'discount_end_date' => 'datetime',
         // No need to cast 'name' or 'description' as they are handled by HasTranslations
     ];
 

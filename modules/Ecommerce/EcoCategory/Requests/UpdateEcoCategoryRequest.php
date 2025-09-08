@@ -14,13 +14,13 @@ class UpdateEcoCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'array'],
-            'name.ar' => ['required', 'string', 'max:255'],
-            'name.en' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string'],
+            // 'name.ar' => ['required', 'string', 'max:255'],
+            // 'name.en' => ['nullable', 'string', 'max:255'],
 
-            'description' => ['required', 'array'],
-            'description.ar' => ['required', 'string', 'max:1000'],
-            'description.en' => ['nullable', 'string', 'max:1000'],
+            'description' => ['required', 'string'],
+            // 'description.ar' => ['required', 'string', 'max:1000'],
+            // 'description.en' => ['nullable', 'string', 'max:1000'],
 
             'parent_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
         ];

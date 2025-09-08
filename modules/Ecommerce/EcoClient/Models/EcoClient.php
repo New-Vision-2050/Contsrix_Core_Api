@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Ecommerce\EcoClient\Database\factories\EcoClientFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Ecommerce\EcoOrder\Models\EcoOrder;
 //use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -35,6 +36,7 @@ class EcoClient extends Model implements HasMedia
         'phone',
         'phone_code',
         'password',
+        'gender'
     ];
 
     protected $casts = [
@@ -70,5 +72,9 @@ class EcoClient extends Model implements HasMedia
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+    public function orders()
+    {
+        return $this->hasMany(EcoOrder::class);
     }
 }

@@ -30,6 +30,7 @@ class CreateEcoClientRequest extends FormRequest
             'phone_code' => ['nullable', 'string', 'max:10'],
             'phone' => ['nullable', 'string', 'max:20'],
             'profile_image' => ['nullable', 'image', 'max:2048'],
+            'gender' => ['nullable', 'string', 'max:191'],
         ];
     }
     public function messages(): array
@@ -64,7 +65,8 @@ class CreateEcoClientRequest extends FormRequest
             password: $validatedData['password'],
             phoneCode: $validatedData['phone_code'] ?? null,
             phone: $validatedData['phone'] ?? null,
-            profileImage: $validatedData['profile_image']
+            profileImage: $this->file('profile_image')
+
         );
     }
 }

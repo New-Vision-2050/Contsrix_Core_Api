@@ -7,8 +7,10 @@ namespace Modules\Ecommerce\EcoOrder\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\DB;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Ecommerce\EcoOrder\Models\EcoOrder;
+use Modules\Ecommerce\EcoOrderDetail\Models\EcoOrderDetail;
 use App\Traits\HasExport;
 
 /**
@@ -39,7 +41,24 @@ class EcoOrderRepository extends BaseRepository
 
     public function createEcoOrder(array $data): EcoOrder
     {
-        return $this->create($data);
+        return DB::transaction(function () use ($data) {
+            // Extract details from data
+            $details = $data['details'] ?? [];
+            unset($data['details']);
+            
+            // Create the order
+            $order = $this->create($data);
+            
+            // Create order details if provided
+            if (!empty($details)) {
+                foreach ($details as $detail) {
+                    $detail['eco_order_id'] = $order->id;
+                    EcoOrderDetail::create($detail);
+                }
+            }
+            
+            return $order;
+        });
     }
 
     public function updateEcoOrder(UuidInterface $id, array $data): bool
