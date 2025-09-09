@@ -47,8 +47,8 @@ return [
 
         's3_public' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID','DO0036ZMPRMYU7F4KQML'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY','yyDWIZyP0xqlEfdfQ4DIxJmS6K+cqZWegdQ1PCTBtqs'),
+            'key' => env('AWS_ACCESS_KEY_ID',""),
+            'secret' => env('AWS_SECRET_ACCESS_KEY',""),
             'region' => env('AWS_DEFAULT_REGION','us-east-1'),
             'bucket' => env('MINIO_PUBLIC_BUCKET','constrix-local'),
             'url' => env('AWS_URL',''),
@@ -60,8 +60,8 @@ return [
 
         's3_private' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID','DO0036ZMPRMYU7F4KQML'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY','yyDWIZyP0xqlEfdfQ4DIxJmS6K+cqZWegdQ1PCTBtqs'),
+            'key' => env('AWS_ACCESS_KEY_ID',""),
+            'secret' => env('AWS_SECRET_ACCESS_KEY',""),
             'region' => env('AWS_DEFAULT_REGION','us-east-1'),
             'bucket' => env('MINIO_PRIVATE_BUCKET','contrix-local-private'),
             'url' => env('AWS_URL'),
