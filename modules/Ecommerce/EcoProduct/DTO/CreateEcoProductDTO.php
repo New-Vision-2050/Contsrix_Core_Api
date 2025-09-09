@@ -32,7 +32,7 @@ class CreateEcoProductDTO
         public ?array $customFields = null,
         public ?array $seo = null,
         public array $associatedProductIds = [],
-        public UploadedFile $mainImage, // Single UploadedFile
+        public ?UploadedFile $mainImage, // Single UploadedFile
         public array $otherImages = [], //Array of UploadedFile
     ) {
     }
