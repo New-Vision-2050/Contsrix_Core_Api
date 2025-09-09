@@ -26,7 +26,8 @@ class EcoProductPresenter extends AbstractPresenter
             'id' => $this->ecoProduct->id,
             'name' => $this->ecoProduct->name,
             'price' => $this->ecoProduct->price,
-            'main_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+            'stock' => $this->ecoProduct->stock,
+            'main_image' =>''// $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
 
         ];
     }

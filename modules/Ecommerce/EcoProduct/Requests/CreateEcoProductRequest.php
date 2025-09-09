@@ -31,7 +31,7 @@ class CreateEcoProductRequest extends FormRequest
             'brand_id' => ['nullable', 'uuid', 'exists:eco_brands,id'],
             'sub_category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
             'main_image' => [
-                'required', // Main image is mandatory
+                'nullable', // Main image is mandatory
                 // File::image()
                 //     ->min(10) // Minimum 10 KB
                 //     ->max(2 * 1024) // Maximum 2 MB (2 * 1024 KB)
