@@ -27,7 +27,7 @@ class EcoProductCRUDService
         $mainImageFile = $createEcoProductDTO->mainImage;
         $otherImageFiles = $createEcoProductDTO->otherImages;
 
-        if ($mainImageFile->isFile()) {
+        if ($mainImageFile) {
             $companyName =  $createEcoProduct->company->name ?? 'UnknownCompany';
             $path = $companyName . '/ecommerce/' . $createEcoProduct->name ;
 
@@ -76,7 +76,7 @@ class EcoProductCRUDService
         try {
             // Get total products count
             $totalProducts = EcoProduct::count();
-            
+
             // Get categories count
             $categoriesCount = EcoProduct::distinct('category_id')
                 ->whereNotNull('category_id')
@@ -85,12 +85,12 @@ class EcoProductCRUDService
             $productsInStock = EcoProduct::where('is_visible', 1)
                 ->where('stock', '>', 0)
                 ->count();
-                
+
             // Get low stock products
             $lowStockProducts = EcoProduct::where('stock', '<=', 10)
                 ->where('stock', '>', 0)
                 ->count();
-                
+
             return [
                 'total_products' => [
                     'value' => $totalProducts,
