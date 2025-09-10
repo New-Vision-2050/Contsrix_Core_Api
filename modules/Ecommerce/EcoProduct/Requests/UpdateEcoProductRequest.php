@@ -41,14 +41,10 @@ class UpdateEcoProductRequest extends FormRequest
             "type" => ['nullable', 'string', 'max:255'],
 
             // Multilingual Name
-            'name' => ['nullable', 'array'],
-            'name.ar' => ['required_with:name', 'string', 'max:255'],
-            'name.en' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string'],
 
             // Multilingual Description
-            'description' => ['nullable', 'array'],
-            'description.ar' => ['required_with:description', 'string', 'max:1000'],
-            'description.en' => ['nullable', 'string', 'max:1000'],
+            'description' => ['required', 'string'],
 
             // Product Taxes (for syncing existing or adding new ones)
             'taxes' => ['nullable', 'array'],

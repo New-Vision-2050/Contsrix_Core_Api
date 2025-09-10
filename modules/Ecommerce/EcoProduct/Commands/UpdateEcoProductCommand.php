@@ -11,8 +11,8 @@ class UpdateEcoProductCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private ?array $name = null,
-        private ?array $description = null,
+        private ?string $name = null,
+        private ?string $description = null,
         private ?float $price = null,
         private ?string $sku = null,
         private ?int $stock = null,
@@ -40,8 +40,8 @@ class UpdateEcoProductCommand
     }
 
     public function getId(): UuidInterface { return $this->id; }
-    public function getName(): ?array { return $this->name; }
-    public function getDescription(): ?array { return $this->description; }
+    public function getName(): ?string { return $this->name; }
+    public function getDescription(): ?string { return $this->description; }
     public function getPrice(): ?float { return $this->price; }
     public function getSku(): ?string { return $this->sku; }
     public function getStock(): ?int { return $this->stock; }
