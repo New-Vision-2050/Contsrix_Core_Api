@@ -73,7 +73,7 @@ class UpdateEcoProductCommand
             'price' => $this->price,
             'sku' => $this->sku,
             'stock' => $this->stock,
-            'warehouse_id' => $this->warehouseId->toString(),
+            'warehouse_id' => $this->warehouseId?->toString(),
             'requires_shipping' => $this->requiresShipping,
             'unlimited_quantity' => $this->unlimitedQuantity,
             'is_taxable' => $this->isTaxable,

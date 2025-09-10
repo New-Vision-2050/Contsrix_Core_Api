@@ -169,16 +169,16 @@ class UpdateEcoProductRequest extends FormRequest
             id: $productId,
             name: $validatedData['name'],
             description: $description,
-            price: (float) $validatedData['price'],
-            sku: $validatedData['sku'],
-            stock: (int)$validatedData['stock'] ?? null,
-            warehouseId: Uuid::fromString($validatedData['warehouse_id']),
-            requiresShipping: (bool)$validatedData['requires_shipping'] ?? 1,
-            unlimitedQuantity: (bool)$validatedData['unlimited_quantity'] ?? 0,
-            isTaxable: (bool)$validatedData['is_taxable'] ?? true,
-            priceIncludesVat: (bool)$validatedData['price_includes_vat'] ?? 0,
-            vatPercentage: (float)$validatedData['vat_percentage'] ?? null,
-            isVisible: (bool)$validatedData['is_visible'] ?? true,
+            price: isset($validatedData['price']) ? (float)$validatedData['price'] : null,
+            sku: $validatedData['sku'] ?? null,
+            stock: isset($validatedData['stock']) ? (int)$validatedData['stock'] : null,
+            warehouseId: !empty($validatedData['warehouse_id'])? Uuid::fromString($validatedData['warehouse_id']): null,
+            requiresShipping: (bool)($validatedData['requires_shipping'] ?? 1),
+            unlimitedQuantity: (bool)($validatedData['unlimited_quantity'] ?? 0),
+            isTaxable: (bool)($validatedData['is_taxable'] ?? true),
+            priceIncludesVat: (bool)($validatedData['price_includes_vat'] ?? 0),
+            vatPercentage: isset($validatedData['vat_percentage']) ? (float)$validatedData['vat_percentage'] : null,
+            isVisible: (bool)($validatedData['is_visible'] ?? true),
             brandId: !empty($validatedData['brand_id']) ? Uuid::fromString($validatedData['brand_id']) : null,
             categoryId: !empty($validatedData['category_id']) ? Uuid::fromString($validatedData['category_id']) : null,
             subCategoryId: !empty($validatedData['sub_category_id']) ? Uuid::fromString($validatedData['sub_category_id']) : null,
@@ -188,10 +188,10 @@ class UpdateEcoProductRequest extends FormRequest
             customFields: $validatedData['custom_fields'] ?? null,
             seo: $seoData,
             associatedProductIds: $validatedData['associated_product_ids'] ?? [],
-            mainImage: $this->file('main_image'), // NEW: Pass UploadedFile object
-            otherImages: $this->file('other_images') ?? [], // NEW: Pass array of UploadedFile objects
+            mainImage: $this->file('main_image'),
+            otherImages: $this->file('other_images') ?? [],
             otherImagesToDelete: $validatedData['other_images_to_delete'] ?? [],
-            deleteMainImage: (bool)$validatedData['delete_main_image'] ?? false, // NEW: Pass the flag
+            deleteMainImage: (bool)($validatedData['delete_main_image'] ?? 0),
         );
     }
 }
