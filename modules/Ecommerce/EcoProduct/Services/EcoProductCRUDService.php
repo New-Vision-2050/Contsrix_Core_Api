@@ -92,19 +92,19 @@ class EcoProductCRUDService
                 ->count();
 
             return [
-                'total_products' => [
+                [
                     'number' => $totalProducts,
                     'title' => 'إجمالي عدد المنتجات',
                 ],
-                'categories_count' => [
+                [
                     'number' => $categoriesCount,
                     'title' => 'عدد التصنيفات',
                 ],
-                'products_in_stock' => [
+                [
                     'number' => $productsInStock,
                     'title' => 'المنتجات المتوفرة في المخزن',
                 ],
-                'low_stock_products' => [
+                [
                     'number' => $lowStockProducts,
                     'title' => 'عدد المنتجات',
                 ]
