@@ -93,28 +93,20 @@ class EcoProductCRUDService
 
             return [
                 'total_products' => [
-                    'value' => $totalProducts,
-                    'label' => 'إجمالي عدد المنتجات',
-                    'icon' => 'inventory',
-                    'color' => 'primary'
+                    'number' => $totalProducts,
+                    'title' => 'إجمالي عدد المنتجات',
                 ],
                 'categories_count' => [
-                    'value' => $categoriesCount,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'category',
-                    'color' => 'warning'
+                    'number' => $categoriesCount,
+                    'title' => 'عدد التصنيفات',
                 ],
                 'products_in_stock' => [
-                    'value' => $productsInStock,
-                    'label' => 'المنتجات المتوفرة في المخزن',
-                    'icon' => 'store',
-                    'color' => 'info'
+                    'number' => $productsInStock,
+                    'title' => 'المنتجات المتوفرة في المخزن',
                 ],
                 'low_stock_products' => [
-                    'value' => $lowStockProducts,
-                    'label' => 'عدد المنتجات',
-                    'icon' => 'warning',
-                    'color' => 'danger'
+                    'number' => $lowStockProducts,
+                    'title' => 'عدد المنتجات',
                 ]
             ];
 
@@ -122,28 +114,20 @@ class EcoProductCRUDService
             // Fallback data matching the image
             return [
                 'total_products' => [
-                    'value' => 125,
-                    'label' => 'إجمالي عدد المنتجات',
-                    'icon' => 'inventory',
-                    'color' => 'primary'
+                    'number' => 125,
+                    'title' => 'إجمالي عدد المنتجات',
                 ],
                 'categories_count' => [
-                    'value' => 6,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'category',
-                    'color' => 'warning'
+                    'number' => 6,
+                    'title' => 'عدد التصنيفات',
                 ],
                 'products_in_stock' => [
-                    'value' => 102,
-                    'label' => 'المنتجات المتوفرة في المخزن',
-                    'icon' => 'store',
-                    'color' => 'info'
+                    'number' => 102,
+                    'title' => 'المنتجات المتوفرة في المخزن',
                 ],
                 'low_stock_products' => [
-                    'value' => 16,
-                    'label' => 'عدد المنتجات',
-                    'icon' => 'warning',
-                    'color' => 'danger'
+                    'number' => 16,
+                    'title' => 'عدد المنتجات',
                 ]
             ];
         }
