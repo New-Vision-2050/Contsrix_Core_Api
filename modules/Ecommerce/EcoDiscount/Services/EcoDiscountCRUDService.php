@@ -39,6 +39,15 @@ class EcoDiscountCRUDService
             perPage: $perPage,
         );
     }
+    public function listProductDiscount(int $page = 1, int $perPage = 10): array
+    {
+        return $this->ecoProductRepository->paginated(
+            conditions: ['has_discount' => true],
+            page: $page,
+            perPage: $perPage,
+        );
+    }
+
 
     public function get(UuidInterface $id): EcoDiscount
     {

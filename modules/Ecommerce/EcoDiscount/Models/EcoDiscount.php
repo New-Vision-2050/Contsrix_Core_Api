@@ -35,6 +35,8 @@ class EcoDiscount extends Model
         'is_active',
         'applies_to', // 'all_products', 'specific_products', 'categories'
         'created_by',
+        'type_discount',//code,order,time,package
+        'priority', // 'basic', 'premium', 'vip'
     ];
 
     protected $casts = [
@@ -58,7 +60,7 @@ class EcoDiscount extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = Uuid::uuid4()->toString();
@@ -97,7 +99,7 @@ class EcoDiscount extends Model
         }
 
         $now = now();
-        
+
         if ($this->start_date && $now->lt($this->start_date)) {
             return false;
         }
@@ -184,7 +186,7 @@ class EcoDiscount extends Model
     public function scopeValid($query)
     {
         $now = now();
-        
+
         return $query->where('is_active', true)
             ->where(function ($q) use ($now) {
                 $q->whereNull('start_date')

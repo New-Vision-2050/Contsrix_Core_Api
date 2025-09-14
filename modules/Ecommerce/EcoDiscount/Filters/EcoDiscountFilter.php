@@ -8,10 +8,10 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class EcoDiscountFilter extends SearchModelFilter
 {
-       public $relations = [];
+    public $relations = [];
 
-        public function name($name)
-        {
-            return $this->where('name', $name);
-        }
+    public function typeDiscount($name)
+    {
+        return $this->where('type_discount', $name);
+    }
 }

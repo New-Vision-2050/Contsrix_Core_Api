@@ -26,63 +26,6 @@ class EcoDiscountRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function paginated(array $conditions = [], int $page = 1, int $perPage = 15, string $orderBy = 'created_at', string $sortBy = 'desc'): array
-    {
-        $query = $this->model->with(['products']);
-
-        // Apply conditions if provided
-        foreach ($conditions as $field => $value) {
-            if ($value !== null) {
-                // Handle special filtering cases
-                if ($field === 'product_id') {
-                    $query->whereHas('products', function ($q) use ($value) {
-                        $q->where('eco_products.id', $value);
-                    });
-                } elseif ($field === 'search') {
-                    $query->where(function ($q) use ($value) {
-                        $q->where('name', 'like', '%' . $value . '%')
-                          ->orWhere('code', 'like', '%' . $value . '%')
-                          ->orWhere('description', 'like', '%' . $value . '%');
-                    });
-                } elseif ($field === 'usage_status') {
-                    switch ($value) {
-                        case 'unused':
-                            $query->where('used_count', 0);
-                            break;
-                        case 'used':
-                            $query->where('used_count', '>', 0);
-                            break;
-                        case 'exhausted':
-                            $query->whereColumn('used_count', '>=', 'usage_limit');
-                            break;
-                    }
-                } elseif ($field === 'date_from') {
-                    $query->where('start_date', '>=', $value);
-                } elseif ($field === 'date_to') {
-                    $query->where('end_date', '<=', $value);
-                } else {
-                    $query->where($field, $value);
-                }
-            }
-        }
-
-        $total = $query->count();
-        $items = $query->offset(($page - 1) * $perPage)
-            ->limit($perPage)
-            ->orderBy($orderBy, $sortBy)
-            ->get();
-
-        return [
-            'data' => $items,
-            'pagination' => [
-                'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'last_page' => ceil($total / $perPage),
-            ]
-        ];
-    }
-
     public function getEcoDiscount(UuidInterface $id): EcoDiscount
     {
         return $this->findOneByOrFail([
@@ -129,7 +72,7 @@ class EcoDiscountRepository extends BaseRepository
 
     public function getDiscountStatistics(): array
     {
-        try {
+
             $totalDiscounts = $this->model->count();
             $activeDiscounts = $this->model->where('is_active', true)->count();
             $expiredDiscounts = $this->model->where('end_date', '<', now())->count();
@@ -137,49 +80,28 @@ class EcoDiscountRepository extends BaseRepository
 
             // Calculate total savings from orders
             $totalSavings = DB::table('eco_orders')
-                ->whereNotNull('discount_id')
+                ->whereNotNull('discount_amount')
                 ->sum('discount_amount') ?? 0;
 
             return [
-                'total_discounts' => [
+                [
                     'number' => $totalDiscounts,
                     'title' => 'إجمالي عدد التخفيضات',
                 ],
-                'active_discounts' => [
+                [
                     'number' => $activeDiscounts,
                     'title' => 'التخفيضات النشطة',
                 ],
-                'expired_discounts' => [
+                [
                     'number' => $expiredDiscounts,
                     'title' => 'التخفيضات المنتهية',
                 ],
-                'total_savings' => [
+                [
                     'number' => number_format($totalSavings, 0),
                     'title' => 'إجمالي المدخرات',
                 ]
             ];
-        } catch (\Exception $e) {
-            // Fallback data
-            return [
-                'total_discounts' => [
-                    'number' => 25,
-                    'title' => 'إجمالي عدد التخفيضات',
-                ],
-                'active_discounts' => [
-                    'number' => 18,
-                    'title' => 'التخفيضات النشطة',
-                ],
-                'expired_discounts' => [
-                    'number' => 7,
-                    'title' => 'التخفيضات المنتهية',
-                ],
-                'total_savings' => [
-                    'number' => '89,000',
-                    'title' => 'إجمالي المدخرات',
-                    'currency' => 'ريال'
-                ]
-            ];
-        }
+       
     }
 
     public function validateAndApplyDiscount(string $code, float $orderAmount, array $productIds = []): array

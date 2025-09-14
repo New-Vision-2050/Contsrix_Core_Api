@@ -12,7 +12,8 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::post('/export', [EcoDiscountController::class, 'export']);
 
     // Product discount management
-    Route::post('/product', [EcoDiscountController::class, 'storeDiscountProduct']);
+    Route::post('/products', [EcoDiscountController::class, 'storeDiscountProduct']);
+    Route::get('/products', [EcoDiscountController::class, 'indexProduct']);
 
     Route::get('/{id}', [EcoDiscountController::class, 'show']);
     Route::put('/{id}', [EcoDiscountController::class, 'update']);

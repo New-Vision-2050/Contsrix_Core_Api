@@ -13,7 +13,7 @@ class CreateEcoDiscountRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
             'code' => 'nullable|string|max:50|unique:eco_discounts,code',
             'type' => 'required|in:percentage,fixed_amount,buy_x_get_y',
@@ -21,19 +21,21 @@ class CreateEcoDiscountRequest extends FormRequest
             'min_order_amount' => 'nullable|numeric|min:0|max:999999.99',
             'max_discount_amount' => 'nullable|numeric|min:0|max:999999.99',
             'usage_limit' => 'nullable|integer|min:1|max:999999',
-            'start_date' => 'nullable|date|after_or_equal:today',
+            'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after:start_date',
-            'is_active' => 'boolean',
-            'applies_to' => 'required|in:all_products,specific_products,categories',
+            'is_active' => 'nullable|boolean',
+            'applies_to' => 'nullable|in:all_products,specific_products,categories',
             'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:eco_products,id',
+            'type_discount' => 'nullable|in:code,order,time,package',
+            'priority' => 'nullable|in:basic,premium,vip',
         ];
     }
 
     public function createCreateEcoDiscountDTO(): CreateEcoDiscountDTO
     {
         return new CreateEcoDiscountDTO(
-            name: $this['name'],
+            name: $this['name'] ?? null,
             description: $this['description'] ?? null,
             code: $this['code'] ?? null,
             type: $this['type'] ?? 'percentage',
@@ -46,6 +48,8 @@ class CreateEcoDiscountRequest extends FormRequest
             is_active: (bool) ($this['is_active'] ?? true),
             applies_to: $this['applies_to'] ?? 'all_products',
             product_ids: $this['product_ids'] ?? [],
+            type_discount: $this['type_discount'] ?? 'code',
+            priority: $this['priority'] ?? 'basic',
         );
     }
 }

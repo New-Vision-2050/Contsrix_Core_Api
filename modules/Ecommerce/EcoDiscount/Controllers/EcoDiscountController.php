@@ -54,6 +54,15 @@ class EcoDiscountController extends Controller
 
         return Json::item($presenter->getData());
     }
+    public function indexProduct(GetEcoDiscountListRequest $request): JsonResponse
+    {
+        $list = $this->ecoDiscountService->listProductDiscount(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(EcoDiscountProductPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
     public function storeDiscountProduct(CreateEcoDiscountProductRequest $request): JsonResponse
     {
         $command = $request->createUpdateEcoDiscountProductCommand();
