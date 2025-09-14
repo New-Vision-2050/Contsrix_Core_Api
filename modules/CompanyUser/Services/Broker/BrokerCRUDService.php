@@ -43,7 +43,7 @@ class BrokerCRUDService
 
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createBrokerDTO->getBranchIds());
 
-        $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray());
+        $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray(), null,$createBrokerDTO->brokerDetailToArray());
         $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
 
 
@@ -64,6 +64,12 @@ class BrokerCRUDService
         $users = $this->userRepository->getUserInCurrentCompanyWith([], CompanyUserRole::BROKER->value, $page, $perPage);
 
         return $users;
+    }
+
+
+    public function show($id)
+    {
+        return $this->userRepository->getUserInCurrentCompanyByRole($id, [], CompanyUserRole::BROKER->value);
     }
 
     public function get(UuidInterface $id): CompanyUser
@@ -95,5 +101,16 @@ class BrokerCRUDService
         $users['data'] = BrokerPresenter::collection($users['data']);
 
         return $users;
+    }
+
+    /**
+     * Get brokers for export
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters, CompanyUserRole::BROKER->value);
     }
 }

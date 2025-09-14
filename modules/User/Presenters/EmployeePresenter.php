@@ -31,7 +31,7 @@ class EmployeePresenter extends AbstractPresenter
             'job_title' => $this->formatJobTitle($this->user->companyUser?->jobTitle),
             'country' => $this->formatCountry($this->user->companyUser?->country),
             'status' => $this->user->status,
-            'branch' => $this->formatBranch($this->user->branch)
+            'branch' => $this->formatBranch($this->user?->managementHierarchy?->detail?->branch)
         ];
     }
 

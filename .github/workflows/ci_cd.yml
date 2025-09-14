@@ -35,6 +35,14 @@ jobs:
         run: |
           echo "Deployment ID: $DEPLOYMENT_ID"
 
+      - name: Debug Secrets
+        run: |
+          echo "DEPLOY_HOST is set: ${{ secrets.DEPLOY_HOST != '' }}"
+          echo "DEPLOY_USER is set: ${{ secrets.DEPLOY_USER != '' }}"
+          echo "DEPLOY_PORT is set: ${{ secrets.DEPLOY_PORT != '' }}"
+          echo "SSH Key is set: ${{ secrets.DEPLOY_SSH_KEY != '' }}"
+          echo "Branch: ${{ github.ref_name }}"
+
       - name: Clean Old Data
         uses: appleboy/ssh-action@v0.1.10
         with:

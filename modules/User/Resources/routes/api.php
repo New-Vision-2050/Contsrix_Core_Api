@@ -24,6 +24,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     Route::put('/{id}', [UserController::class, 'update'])->permission(Permission::USER_UPDATE());
     Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser'])->permission(Permission::USER_UPDATE());
-
+    Route::post('/change-role-status', [UserController::class, 'changeUserRoleStatus']);
     Route::delete('/{id}', [UserController::class, 'delete'])->permission(Permission::USER_DELETE());
 });

@@ -7,9 +7,12 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Services\DefaultConstraintService;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Events\CompanyCreatedEvent;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Company\ManagementHierarchy\Models\UserCanAccessManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Company\ManagementHierarchy\Repositories\UserCanAccessManagementHierarchyRepository;
 use Ramsey\Uuid\Uuid;
 
 class CreateHierarchyListener
@@ -21,7 +24,7 @@ class CreateHierarchyListener
      */
     public function __construct(
         private ManagementHierarchyRepository $managementHierarchyRepository,
-        private DefaultConstraintService $defaultConstraintService
+        private DefaultConstraintService $defaultConstraintService,
     )
     {
         //
@@ -48,7 +51,6 @@ class CreateHierarchyListener
             "company_id" => $event->data->id,
             "country_id" => $event->data->country_id
         ]);
-
         $this->defaultConstraintService->createForBranch($managementHierarchy);
 
 

@@ -1,0 +1,14 @@
+{
+    "name": "LeaveType",
+    "alias": "leavetype",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Leave\\LeaveType\\Providers\\LeaveTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Leave"
+}

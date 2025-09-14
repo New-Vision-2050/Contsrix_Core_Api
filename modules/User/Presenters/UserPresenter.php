@@ -28,9 +28,11 @@ class UserPresenter extends AbstractPresenter
             'is_super_admin' => $this->user->hasRole("super-admin")||$this->user->is_owner?1:0,
             'phone' => $this->user->phone,
             'management_hierarchy_id' => $this->user->management_hierarchy_id ,
+            "branch_id"=>$this->user->managementHierarchy?->detail?->branch_id,
             "roles"=>RoleSimplePresenter::collection($this->user->roles),
             "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
-            "is_central_company"=>tenant("is_central_company")
+            "is_central_company"=>tenant("is_central_company"),
+            "residence"=>$this->user->companyUser?->residence,
         ];
     }
 }

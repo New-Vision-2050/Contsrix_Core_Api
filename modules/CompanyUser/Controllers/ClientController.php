@@ -7,18 +7,28 @@ namespace Modules\CompanyUser\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Modules\CompanyUser\Exports\ClientExport;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Handlers\DeleteCompanyUserHandler;
+use Modules\CompanyUser\Handlers\DeleteUserRoleHandler;
 use Modules\CompanyUser\Handlers\UpdateCompanyUserHandler;
+use Modules\CompanyUser\Presenters\ClientPresenter;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
+use Modules\CompanyUser\Presenters\DashboardWidgetsPresenter;
 
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
+use Modules\CompanyUser\Requests\Client\GetClientRequest;
+use Modules\CompanyUser\Requests\Client\ExportClientRequest;
+use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\Client\ClientCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Modules\CompanyUser\Services\DashboardWidgetsService;
 use Modules\User\Models\User;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Presenters\UserRolesPresenter;
@@ -31,10 +41,12 @@ class ClientController extends Controller
         private ClientCRUDService $clientCRUDService,
         private UpdateCompanyUserHandler $updateCompanyUserHandler,
         private DeleteCompanyUserHandler $deleteCompanyUserHandler,
+        private DeleteUserRoleHandler $deleteUserRoleHandler,
+        private DashboardWidgetsService $dashboardWidgetsService,
     ) {
     }
 
-    public function index(GetBrokerRequest $request): JsonResponse
+    public function index(GetClientRequest $request): JsonResponse
     {
         $list = $this->clientCRUDService->list(
             (int) $request->get('page', 1),
@@ -42,18 +54,70 @@ class ClientController extends Controller
         );
 
 
-        return Json::items(UserRolesPresenter::collection($list['data'],CompanyUserRole::CLIENT->value),paginationSettings: $list['pagination']);
+        return Json::items(ClientPresenter::collection($list['data'],CompanyUserRole::CLIENT->value),paginationSettings: $list['pagination']);
+    }
+
+
+    public function show(GetClientRequest $request): JsonResponse
+    {
+        $client = $this->clientCRUDService->show($request->route('id'));
+        return Json::item((new ClientPresenter($client))->getData());
+
     }
 
 
 
-    public function store(CreateClientRequest $request): JsonResponse
+    public function store(CreateClientRequest $request)
     {
         $createdItem = $this->clientCRUDService->create($request->createCreateClientDTO(), $request->createCreateCompanyUserCompanyRoleDTO(),$request->createSetUserAddressDTO());
-
         $presenter = new CompanyUserPresenter($createdItem);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Get all dashboard widgets data
+     */
+    public function getWidgets(Request $request): JsonResponse
+    {
+        $companyId = $request->user()->company_id;
+        $dateRange = [
+            'start_date' => $request->input('start_date'),
+            'end_date' => $request->input('end_date'),
+        ];
+
+        $widgetsData = $this->dashboardWidgetsService->getWidgetsData($companyId, $dateRange);
+
+        $presentedData = DashboardWidgetsPresenter::presentWidgets($widgetsData);
+
+        return Json::item($presentedData, message: 'Dashboard widgets retrieved successfully');
+    }
+
+    /**
+     * Delete client role for a specific user
+     */
+    public function deleteClientRole(DeleteUserRoleRequest $request)
+    {
+        $command = $request->createDeleteRoleCommand(CompanyUserRole::CLIENT->value);
+        $this->deleteUserRoleHandler->handle($command);
+
+        return Json::deleted();
+    }
+
+    /**
+     * Export clients to Excel or CSV
+     */
+    public function export(ExportClientRequest $request)
+    {
+        $filters = $request->getFilters();
+        $format = $request->get('format', 'xlsx');
+        
+        $filename = 'clients_' . date('Y-m-d_H-i-s') . '.' . $format;
+        
+        return Excel::download(
+            new ClientExport($this->clientCRUDService, $filters),
+            $filename
+        );
     }
 
 

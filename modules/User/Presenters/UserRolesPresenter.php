@@ -29,6 +29,7 @@ class UserRolesPresenter extends AbstractPresenter
             'phone' => $this->user->phone,
             "branches"=>ManagementHierarchyPresenter::collection($this->user->managementHierarchies($this->role)->get()),
             "status"=>$this->user->status,
+            "residence"=>$this->user->companyUser->residence,
             "client_data"=>$this->user->clientDetail
         ];
     }

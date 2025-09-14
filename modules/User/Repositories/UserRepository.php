@@ -21,10 +21,11 @@ use Modules\Setting\Repositories\IdentifierSettingRepository;
 class UserRepository extends BaseRepository
 {
     public function __construct(
-        User $model,
-        private AuditRepository $auditRepository,
+        User                                $model,
+        private AuditRepository             $auditRepository,
         private IdentifierSettingRepository $identifierSettingRepository
-    ) {
+    )
+    {
         parent::__construct($model);
     }
 
@@ -35,9 +36,9 @@ class UserRepository extends BaseRepository
 
     public function getUser(UuidInterface $id): User
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->withoutTenancy()->findOrFail(
+            $id->toString()
+        );
     }
 
     public function getUserByEmail($email): User
@@ -61,7 +62,7 @@ class UserRepository extends BaseRepository
         })->where("company_id", tenant("id"))->first();
     }
 
-    public function getUserByGlobalIdWithBranches($global_id,$role=1)
+    public function getUserByGlobalIdWithBranches($global_id, $role = 1)
     {
         $user = $this->model->query()->where('global_company_user_id', $global_id)->where("company_id", tenant("id"))->first();
         return CompanyUserCompany::query()->where("company_id", tenant("id"))
@@ -74,7 +75,7 @@ class UserRepository extends BaseRepository
     public function getUserInCurrentCompanyWith(array $relations = [], $type = null, $page = 1, $perPage = 10)
     {
         if (method_exists($this->model, 'scopeFilter')) {
-            $query = $this->model->filter(request()->all());
+            $query = $this->model;//->filter(request()->all());
         } else {
             $query = $this->model;
         }
@@ -88,15 +89,51 @@ class UserRepository extends BaseRepository
         ));
         $query = $query->when($type != null, function ($query) use ($type) {
             $query->whereHas("companyUserCompanies", function ($query) use ($type) {
-                $query->where("company_users_companies.role", $type);
+                $query
+                    ->where("company_users_companies.role", $type)
+                    ->when(request()->has("status"), function ($query) {
+                        $query->where("company_users_companies.status", request()->status);
+                    })
+                    ->when(request()->has("branch_id"), function ($query) {
+                        $query->whereHas('managementHierarchy', function ($hierarchyQuery) {
+                            $hierarchyQuery->where('management_hierarchies.id', request()->branch_id);
+
+                        });
+                    });
             });
-        })->where("company_id", tenant("id"));
+        })
+            ->where("company_id", tenant("id"));
         //TODO filter with branches very important
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
         return array_merge($paginationArray, ['data' => $paginatedData]);
+    }
+
+
+    public function getUserInCurrentCompanyByRole($id, array $relations = [], $type = null)
+    {
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+        $user = $query->with(array_merge(
+            $relations,
+            [
+                "companyUserCompanies" => function ($query) {
+                    $query->where("company_id", tenant("id"));
+                }
+            ]
+        ))->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companyUserCompanies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        })->where("company_id", tenant("id"))->where("id", $id)->first();
+        //TODO filter with branches very important
+
+        return $user;
     }
 
     public function getBrokerInCurrentCompanyWith($page = 1, $perPage = 10)
@@ -122,7 +159,7 @@ class UserRepository extends BaseRepository
                 $query->where("company_users_companies.role", $type);
             });
         })->where("company_id", tenant("id"))
-         ->select('id', 'name', 'email', 'phone', 'status', 'global_company_user_id', 'company_id');
+            ->select('id', 'name', 'email', 'phone', 'status', 'global_company_user_id', 'company_id');
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
@@ -159,7 +196,7 @@ class UserRepository extends BaseRepository
                 $query->where("company_users_companies.role", $type);
             });
         })->where("company_id", tenant("id"))
-         ->select('id', 'name', 'email', 'phone', 'global_company_user_id', 'company_id', 'is_owner', 'management_hierarchy_id', 'status');
+            ->select('id', 'name', 'email', 'phone', 'global_company_user_id', 'company_id', 'is_owner', 'management_hierarchy_id', 'status');
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
@@ -232,9 +269,9 @@ class UserRepository extends BaseRepository
             $query = $this->model;
         }
         $query = $query->distinct("global_company_user_id")->withoutTenancy()->whereNotNull("management_hierarchy_id")//mean this is employee not any type else
-            ->whereHas('company', function ($query) {
-                $query->where('is_central_company', true);
-            });
+        ->whereHas('company', function ($query) {
+            $query->where('is_central_company', true);
+        });
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->orderBy('created_at', 'desc')->get();

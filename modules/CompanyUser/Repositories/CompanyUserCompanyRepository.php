@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\CompanyUser\Models\CompanyUserCompany;
+use function PHPUnit\Framework\assertStringEqualsStringIgnoringLineEndings;
 
 /**
  * @property CompanyUserCompany $model
@@ -41,6 +42,9 @@ class CompanyUserCompanyRepository extends BaseRepository
             return $this->create($data);
         } elseif ($companyUserCompany->deleted_at !== null) {
             $companyUserCompany->restore();
+        }else{
+             $companyUserCompany->update($data);
+             $companyUserCompany->fresh();
         }
 
         return $companyUserCompany;

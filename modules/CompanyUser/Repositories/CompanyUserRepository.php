@@ -15,12 +15,15 @@ use Modules\Attendance\Repositories\AttendanceConstraintRepository;
 use Modules\Attendance\Services\AutoAttendanceService;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Company\ManagementHierarchy\Repositories\UserCanAccessManagementHierarchyRepository;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Modules\CompanyUser\Models\ClientDetail;
 use Modules\CompanyUser\Models\CompanyUserAddress;
+use Modules\CompanyUser\Repositories\BrokerDetailRepository;
 use Modules\CompanyUser\Models\CompanyUserCompany;
 use Modules\CompanyUser\Models\CompanyUserCompanyManagementHierarchy;
 use Modules\JobTitle\Models\JobTitle;
@@ -43,18 +46,20 @@ class CompanyUserRepository extends BaseRepository
 {
 
     public function __construct(
-        CompanyUser                                      $model,
-        private UserRepository                           $userRepository,
-        private JobTitleRepository                       $jobTitleRepository,
-        private CompanyRepository                        $companyRepository,
-        private ManagementHierarchyRepository            $managementHierarchyRepository,
-        private UserProfessionalDataRepository           $userProfessionalDataRepository,
-        private CompanyUserCompanyRepository             $companyUserCompanyRepository,
-        private CompanyUserAddressRepository             $companyUserAddressRepository,
-        private ClientDetailRepository                   $clientDetailRepository,
-        private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository,
-        private AttendanceConstraintRepository           $attendanceConstraintRepository,
-        private AutoAttendanceService $autoAttendanceService
+        CompanyUser                                        $model,
+        private UserRepository                             $userRepository,
+        private JobTitleRepository                         $jobTitleRepository,
+        private CompanyRepository                          $companyRepository,
+        private ManagementHierarchyRepository              $managementHierarchyRepository,
+        private UserProfessionalDataRepository             $userProfessionalDataRepository,
+        private CompanyUserCompanyRepository               $companyUserCompanyRepository,
+        private CompanyUserAddressRepository               $companyUserAddressRepository,
+        private ClientDetailRepository                     $clientDetailRepository,
+        private BrokerDetailRepository                     $brokerDetailRepository,
+        private CompanyUserManagementHierarchyRepository   $companyUserManagementHierarchyRepository,
+        private AttendanceConstraintRepository             $attendanceConstraintRepository,
+        private AutoAttendanceService                      $autoAttendanceService,
+        private UserCanAccessManagementHierarchyRepository $userCanAccessManagementHierarchyRepository,
 
     )
     {
@@ -148,6 +153,50 @@ class CompanyUserRepository extends BaseRepository
 
     }
 
+    public function deleteUserRole(UuidInterface $userId, int $role)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Get user and company_id from users table
+            $user = $this->userRepository->find($userId);
+
+            if (!$user) {
+                throw new \Exception(__("validation.user-not-found"), 404);
+            }
+
+            $companyId = $user->company_id;
+            if (!$companyId) {
+                throw new \Exception(__("validation.user-has-no-company"), 400);
+            }
+
+            // Find the company user by global_company_user_id
+            $companyUser = $this->findOneBy(['global_id' => $user->global_company_user_id]);
+            $this->canDelete($companyUser);
+
+
+            $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId, "role" => $role]);
+
+            if ($this->companyUserCompanyRepository->countWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]) == 0) {
+                $this->userRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]);
+
+            }
+
+            if ($this->companyUserCompanyRepository->countWhere(["global_company_user_id" => $companyUser->global_id]) == 0) {
+                $this->model->withoutParentModel()->find($companyUser->id)->delete();
+            }
+
+            DB::commit();
+
+            // Return the stored data instead of the potentially deleted record
+            return $companyUser;
+
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new \Exception(__("validation.delete-not-successful"), 500);
+        }
+    }
+
     public function getCompanyUserList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
@@ -195,7 +244,7 @@ class CompanyUserRepository extends BaseRepository
     }
 
 
-    public function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null): CompanyUser
+    public function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null, array $brokerDetail = null)
     {
         try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
@@ -206,6 +255,25 @@ class CompanyUserRepository extends BaseRepository
                 $companyIdJobTitle = $this->jobTitleRepository->model->withoutTenancy()->where(["id" => $companyUserData["job_title_id"]])->first()->company_id;
                 if ($companyRole['company_id'] != $companyIdJobTitle) {
                     $companyUserData["job_title_id"] = $generalManagerJobTitle->id;
+                }
+            }
+//if client organization type is 2 then create user in same company and temp new company
+            if (CompanyUserRole::CLIENT->value == $companyRole['role'] && $clientDetail !== null) {
+
+                if ($clientDetail["type"] == 2) {
+                    $newCompanyClientId = $companyRole["company_id"];
+                    $companyRole["company_id"] = tenant("id");
+
+                }
+            }
+
+            if (CompanyUserRole::BROKER->value == $companyRole['role'] && $brokerDetail !== null) {
+
+                if ($brokerDetail["type"] == 2) {
+
+                    $newCompanyClientId = $companyRole["company_id"];
+                    $companyRole["company_id"] = tenant("id");
+
                 }
             }
 
@@ -229,6 +297,7 @@ class CompanyUserRepository extends BaseRepository
             // Create or update company user role
             $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore($companyRole + ["global_company_user_id" => $companyUser->global_id]);
 
+
             // Handle branch assignments
             $mainBranchId = $this->handleBranchAssignments($user, $companyUserCompany, $companyRole, $branches);
 
@@ -236,7 +305,10 @@ class CompanyUserRepository extends BaseRepository
             if (CompanyUserRole::EMPLOYEE->value == $companyRole['role']) {
                 $this->handleEmployeeData($user, $companyRole['company_id'], $mainBranchId, $companyUserData);
             }
-
+            $userBranchId = auth()->user()?->professionalData?->branch_id;
+            if ($userBranchId == null) {
+                $userBranchId = $mainBranchId;
+            }
             // Handle address if provided
             if ($address !== null) {
                 $this->companyUserAddressRepository->updateOrCreate(
@@ -247,12 +319,42 @@ class CompanyUserRepository extends BaseRepository
 
             // Handle client details if client role
             if (CompanyUserRole::CLIENT->value == $companyRole['role'] && $clientDetail !== null) {
-                $this->clientDetailRepository->updateOrCreate(
+                $clientDetail = $this->clientDetailRepository->updateOrCreate(
                     ["user_id" => $user->id],
                     $clientDetail + ["user_id" => $user->id]
                 );
-            }
 
+
+                if ($clientDetail["type"] == 2) {
+                    $user = $this->findOrCreateUserInCompany(
+                        $companyUser,
+                        $newCompanyClientId,
+                        $companyUserData['name'],
+                        $companyRole['role']
+                    );
+                    $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
+                    $clientDetail->update(["company_id" => $newCompanyClientId, "original_branch_id" => $userBranchId, "is_created_by_owner" => auth()->user()->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
+                }
+            }
+            // Handle broker details if broker role
+            if (CompanyUserRole::BROKER->value == $companyRole['role'] && $brokerDetail !== null) {
+
+                $brokerDetail = $this->brokerDetailRepository->updateOrCreate(
+                    ["user_id" => $user->id],
+                    $brokerDetail + ["user_id" => $user->id, "company_id" => $companyRole['company_id']]
+                );
+                if ($brokerDetail["type"] == 2) {
+                    $user = $this->findOrCreateUserInCompany(
+                        $companyUser,
+                        $newCompanyClientId,
+                        $companyUserData['name'],
+                        $companyRole['role']
+                    );
+                    $companyUserCompany = $this->companyUserCompanyRepository->createOrRestore(array_merge($companyRole, ["global_company_user_id" => $companyUser->global_id, "company_id" => $newCompanyClientId]));
+                    $brokerDetail->update(["company_id" => $newCompanyClientId, "original_branch_id" => $userBranchId, "is_created_by_owner" => auth()->user()->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
+                }
+            }
+//
             DB::commit();
             return $companyUser;
         } catch (\Exception $exception) {
@@ -313,11 +415,12 @@ class CompanyUserRepository extends BaseRepository
 
         if (!$companyUser) {
             $companyUser = $this->create($companyUserData);
+            $companyUser->update(["global_id" => $companyUser->id]);
         } elseif ($companyUser->deleted_at !== null) {
 
             $companyUser->restore();
         }
-        $companyUser->update(["global_id" => $companyUser->id]);
+        $companyUser->update($companyUserData);
 
         return $companyUser->fresh();
     }
@@ -328,21 +431,22 @@ class CompanyUserRepository extends BaseRepository
     private function findOrCreateUserInCompany(CompanyUser $companyUser, $companyId, string $name, $role, ?array $branches = null): User
     {
         // Try to find existing user in company
-        $user = $this->userRepository->findOneBy([
+        $user = $this->userRepository->model->withoutTenancy()->where([
             "global_company_user_id" => $companyUser->global_id,
             "company_id" => $companyId
-        ]);
+        ])->withTrashed()->first();
+
+        $mainBranchData = $this->getMainBranchData($companyId, $branches);
 
         if (!$user) {
             // Get main branch data
-            $mainBranchData = $this->getMainBranchData($companyId, $branches);
 
             // Try to find user in any company
-            $existingUser = $this->userRepository->findOneBy([
+            $existingUser = $this->userRepository->model->withoutTenancy()->where([
                 "global_company_user_id" => $companyUser->global_id
-            ]);
+            ])->first();
 
-            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner", 1)->count();
+            $usersInCompanyCount = $this->companyRepository->model->withoutTenancy()->where(["id" => $companyId])->first()?->users()->where("is_owner", 1)->count();
             $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
 
             if ($existingUser) {
@@ -367,9 +471,23 @@ class CompanyUserRepository extends BaseRepository
                     'management_hierarchy_id' => $role == CompanyUserRole::EMPLOYEE->value ? $mainBranchData['managementId'] : null,
                 ]);
             }
-        } else {
+        } elseif ($user->deleted_at !== null) {
             // Restore if necessary
             $user->restore();
+            $user = $user->fresh();
+        } else {
+            $usersInCompanyCount = $this->companyRepository->findOneBy(["id" => $companyId])->users()->where("is_owner", 1)->count();
+            $isOwner = $usersInCompanyCount === 0 ? 1 : 0;
+            $user->update([
+                'name' => $name,
+                'email' => $companyUser->email,
+                'company_id' => $companyId,
+                'phone' => $companyUser->phone,
+                'phone_code' => $companyUser->phone_code,
+                'global_company_user_id' => $companyUser->global_id,
+                'is_owner' => $isOwner,
+                'management_hierarchy_id' => $role == CompanyUserRole::EMPLOYEE->value ? $mainBranchData['managementId'] : null,
+            ]);
             $user = $user->fresh();
         }
 
@@ -390,6 +508,8 @@ class CompanyUserRepository extends BaseRepository
             $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id", $companyId)->first();
             setPermissionsTeamId($companyId);
             $user->assignRole($role);//assign super admin role for first user
+
+            $this->userCanAccessManagementHierarchyRepository->assignUsersToManagementHierarchy(new AssignUsersToManagementHierarchyDTO(branchId: $branch->id, userIds: [$user->id]));
 
 
             $branch->update(["manager_id" => $user->id]);
@@ -536,8 +656,8 @@ class CompanyUserRepository extends BaseRepository
 
         // $attendanceConstraint = $this->attendanceConstraintRepository->model->getConstraintBybranch($branchId);
         $attendanceConstraint = AttendanceConstraint::withoutTenancy()
-        ->whereJsonContains('branch_ids', (string) $branchId)
-        ->first();
+            ->whereJsonContains('branch_ids', (string)$branchId)
+            ->first();
         if (!$attendanceConstraint) {
             $attendanceConstraint = AttendanceConstraint::where('company_id', $companyId)->withoutTenancy()->first();
         }
@@ -566,7 +686,7 @@ class CompanyUserRepository extends BaseRepository
             $professionalData = UserProfessionalData::create($data);
         }
 
-        if($professionalData && $professionalData->attendance_constraint_id){
+        if ($professionalData && $professionalData->attendance_constraint_id) {
             $this->autoAttendanceService->generateAttendanceUsers($companyId, $user->id);
         }
     }
@@ -708,5 +828,65 @@ class CompanyUserRepository extends BaseRepository
     function getAllWithRelations($relations = [])
     {
         return $this->model->with($relations)->get();
+    }
+
+    /**
+     * Update the status of a user role in company_user_company table
+     *
+     * @param string $userId
+     * @param string $roleId
+     * @param int $status
+     * @return CompanyUserCompany
+     * @throws CustomException
+     */
+    public function updateUserRoleStatus(string $userId, $roleId, int $status): CompanyUserCompany
+    {
+        // Find the CompanyUserCompany record based on user_id and role_id
+        $companyUserCompany = CompanyUserCompany::where('role', $roleId)
+            ->whereHas('companyUser', function ($query) use ($userId) {
+                $query->whereHas('users', function ($subQuery) use ($userId) {
+                    $subQuery->where('id', $userId);
+                });
+            })
+            ->first();
+
+        if (!$companyUserCompany) {
+            throw new CustomException('User role not found or user does not have access to this role', 404);
+        }
+
+        // Update the status
+        $companyUserCompany->status = (string)$status;
+        $companyUserCompany->save();
+
+        return $companyUserCompany->refresh();
+    }
+
+    /**
+     * Get company users for export with specific role
+     *
+     * @param array $filters
+     * @param int $role
+     * @return \Illuminate\Support\Collection
+     */
+    public function getForExport(array $filters = [], int $role = null): \Illuminate\Support\Collection
+    {
+        $query = $this->model->newQuery()
+            ->with(['users', 'companies'])
+            ->whereHas('users', fn($q) => $q->where('company_id', tenant('id')));
+
+        // Filter by role if specified
+        if ($role !== null) {
+            $query->whereHas('companies', function ($q) use ($role) {
+                $q->where('company_id', tenant('id'))
+                    ->where('company_users_companies.role', $role);
+            });
+        }
+
+        // Filter by specific IDs if provided
+        if (!empty($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        return $query->get();
     }
 }

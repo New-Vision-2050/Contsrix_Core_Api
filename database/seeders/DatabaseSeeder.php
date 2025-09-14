@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
+use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
@@ -37,6 +38,7 @@ use Modules\Shared\TimeZone\Database\Seeders\TimeZoneCountrySeederTableSeeder;
 use Modules\Shared\Privilege\Database\Seeders\PrivilegeModulesSeederTableSeeder;
 use Modules\Shared\ProfessionalBodie\Database\Seeders\ProfessionalBodiessSeeder;
 use Modules\Company\CompanyCore\Database\Seeders\CompanyModulesSeederTableSeeder;
+use Modules\Ecommerce\Warehous\Database\Seeders\WarehousSeederTableSeeder;
 use Modules\Shared\TypePrivilege\Database\Seeders\TypePrivilegeSeederTableSeeder;
 use Modules\Shared\TypeAllowance\Database\Seeders\TypeAllowancesSeederTableSeeder;
 use Modules\Shared\BankTypeAccount\Database\Seeders\MaritalStatusSeederTableSeeder;
@@ -104,7 +106,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(ProgramDatabaseSeeder::class);
         $this->call(RegistrationFormsSeeder::class);
-        $this->call(SubEntityDatabaseSeeder::class);
+//        $this->call(SubEntityDatabaseSeeder::class);
         $this->call(BankTypeAccountSeederTableSeeder::class);
         $this->call(SeedersMaritalStatusSeederTableSeeder::class);
         $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
@@ -117,6 +119,12 @@ class DatabaseSeeder extends Seeder
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
         $this->call(SyncUserIdsInUserProfessionalDataSeeder::class);
-        
+
+        $this->call(WarehousSeederTableSeeder::class);
+
+        $this->call(LeavePolicySeeder::class);
+
+        $this->call(PublicHolidaysTableSeeder::class);
+
     }
 }

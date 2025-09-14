@@ -54,6 +54,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string $date_activate Date when the company was activated.
  * @property string $serial_no Serial number associated with the company.
  * @property string $image_path Path to the company's image.
+ * @property int $is_client Path to the company's image.
  *
  * @method static CompanyFactory factory(...$parameters)
  * @method  __call(string $method, array $parameters)
@@ -98,7 +99,9 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
         'complete_data',
         'date_activate',
         'serial_no',
-        'image_path'
+        'image_path',
+        "is_client",
+        "is_broker"
     ];
     protected $casts = [
         'id' => 'string',
@@ -126,6 +129,8 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             "is_central_company",
             "check_activity",
             "registration_type_id",
+            "is_client",
+            "is_broker"
         ];
     }
 
@@ -249,20 +254,20 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             if (!empty($model->serial_no)) {
                 return;
             }
-            
+
             // Generate a UUID-based serial number that is guaranteed to be unique
             // Format: CX-{first 8 chars of UUID}
             $uuid = \Illuminate\Support\Str::uuid()->toString();
             $shortUuid = substr($uuid, 0, 8); // Take first 8 characters of the UUID
-            
+
             // Generate the serial number with a prefix
             $model->serial_no = 'CX-' . $shortUuid;
-            
+
             // Double-check that this serial number doesn't already exist (extremely unlikely but possible)
             // If it does, generate a new one
             $attempts = 0;
             $maxAttempts = 5;
-            
+
             while (\Illuminate\Support\Facades\DB::table('companies')->where('serial_no', $model->serial_no)->exists()) {
                 if ($attempts >= $maxAttempts) {
                     // If we've tried too many times, use a timestamp-based fallback
@@ -270,7 +275,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
                     $model->serial_no = 'CX-' . dechex($timestamp);
                     break;
                 }
-                
+
                 // Generate a new UUID and try again
                 $uuid = \Illuminate\Support\Str::uuid()->toString();
                 $shortUuid = substr($uuid, 0, 8);

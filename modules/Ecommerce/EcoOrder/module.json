@@ -1,0 +1,14 @@
+{
+    "name": "EcoOrder",
+    "alias": "ecoorder",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoOrder\\Providers\\EcoOrderServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

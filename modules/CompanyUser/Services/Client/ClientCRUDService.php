@@ -68,6 +68,11 @@ class ClientCRUDService
         return $user;
     }
 
+    public function show($id)
+    {
+        return $this->userRepository->getUserInCurrentCompanyByRole($id, [], CompanyUserRole::CLIENT->value);
+    }
+
 
     public function list(int $page = 1, int $perPage = 10): array
     {
@@ -96,6 +101,17 @@ class ClientCRUDService
         return $this->repository->findByEmail(
             email: $email,
         );
+    }
+
+    /**
+     * Get clients for export
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters, CompanyUserRole::CLIENT->value);
     }
 
 

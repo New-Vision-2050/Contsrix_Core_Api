@@ -1,0 +1,14 @@
+{
+    "name": "OrderTransaction",
+    "alias": "ordertransaction",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\OrderTransaction\\Providers\\OrderTransactionServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

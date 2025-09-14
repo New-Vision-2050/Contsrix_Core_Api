@@ -1,0 +1,345 @@
+{
+	"info": {
+		"_postman_id": "broker-dashboard-widgets-api",
+		"name": "Broker Dashboard Widgets API",
+		"description": "API endpoints for broker dashboard widgets in Constrix API project",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Broker Widgets",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "company_id",
+						"value": "{{company_id}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/brokers/widgets",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"brokers",
+						"widgets"
+					]
+				},
+				"description": "Get all broker dashboard widgets: total brokers, brokers added last month, active brokers, suspended brokers"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/brokers/widgets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"brokers", 
+								"widgets"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [],
+					"cookie": [],
+					"body": "{\n    \"data\": [\n        {\n            \"title\": \"اجمالي عدد الوسطاء\",\n            \"total\": 127,\n            \"percentage\": 18\n        },\n        {\n            \"title\": \"الوسطاء المضافين اخر شهر\",\n            \"total\": 25,\n            \"percentage\": -14\n        },\n        {\n            \"title\": \"الوسطاء النشطيين\",\n            \"total\": 115,\n            \"percentage\": 12\n        },\n        {\n            \"title\": \"الوسطاء المعلقين\",\n            \"total\": 12,\n            \"percentage\": -8\n        }\n    ]\n}"
+				}
+			]
+		},
+		{
+			"name": "Get Broker Widgets Summary",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "company_id",
+						"value": "{{company_id}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/brokers/widgets/summary",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"brokers",
+						"widgets",
+						"summary"
+					]
+				},
+				"description": "Get summary of all broker widgets including totals and trends"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/brokers/widgets/summary",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"brokers",
+								"widgets",
+								"summary"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [],
+					"cookie": [],
+					"body": "{\n    \"data\": {\n        \"total_widgets\": 4,\n        \"summary\": {\n            \"total_brokers\": 127,\n            \"brokers_added_last_month\": 25,\n            \"active_brokers\": 115,\n            \"suspended_brokers\": 12\n        },\n        \"trends\": {\n            \"total_brokers_trend\": 18.0,\n            \"brokers_added_trend\": -14.0,\n            \"active_brokers_trend\": 12.0,\n            \"suspended_brokers_trend\": -8.0\n        }\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Get Total Brokers Widget",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "company_id",
+						"value": "{{company_id}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/brokers/widgets/total_brokers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"brokers",
+						"widgets",
+						"total_brokers"
+					]
+				},
+				"description": "Get specific widget data for total brokers count"
+			}
+		},
+		{
+			"name": "Get Brokers Added Last Month Widget",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "company_id",
+						"value": "{{company_id}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/brokers/widgets/brokers_added_last_month",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"brokers",
+						"widgets",
+						"brokers_added_last_month"
+					]
+				},
+				"description": "Get specific widget data for brokers added last month"
+			}
+		},
+		{
+			"name": "Get Active Brokers Widget",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "company_id",
+						"value": "{{company_id}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/brokers/widgets/active_brokers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"brokers",
+						"widgets",
+						"active_brokers"
+					]
+				},
+				"description": "Get specific widget data for active brokers (status = 1)"
+			}
+		},
+		{
+			"name": "Get Suspended Brokers Widget",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "company_id",
+						"value": "{{company_id}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/brokers/widgets/suspended_brokers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"brokers",
+						"widgets",
+						"suspended_brokers"
+					]
+				},
+				"description": "Get specific widget data for suspended brokers (status = -1)"
+			}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "your_bearer_token_here",
+			"type": "string"
+		},
+		{
+			"key": "company_id",
+			"value": "your_company_uuid_here",
+			"type": "string"
+		}
+	]
+}
