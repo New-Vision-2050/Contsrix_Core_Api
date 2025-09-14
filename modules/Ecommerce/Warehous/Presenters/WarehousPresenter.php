@@ -23,7 +23,7 @@ class WarehousPresenter extends AbstractPresenter
         return [
             'id' => $this->warehous->id,
             'name' => $this->warehous->name,
-            'is_default' => $this->warehous->is_default,
+            'is_default' => (int) $this->warehous->is_default,
             'country' => $this->warehous->country ?( new CountryPresenter($this->warehous->country))->getData() : null,
             'city' => $this->warehous->city ?( new CityPresenter($this->warehous->city))->getData() : null,
             'district' => $this->warehous->district,

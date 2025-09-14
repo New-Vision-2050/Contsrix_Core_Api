@@ -9,7 +9,7 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateEcoDiscountProductCommand
 {
     public function __construct(
-        private UuidInterface $id,
+        private UuidInterface $productId,
         private ?bool $hasDiscount = null,
         private ?float $discountAmount = null,
         private ?float $discountPercentage = null,
@@ -21,7 +21,7 @@ class UpdateEcoDiscountProductCommand
 
     public function getId(): UuidInterface
     {
-        return $this->id;
+        return $this->productId;
     }
 
     public function getHasDiscount(): ?bool
@@ -57,27 +57,27 @@ class UpdateEcoDiscountProductCommand
     public function toArray(): array
     {
         $data = [];
-        
+
         if ($this->hasDiscount !== null) {
             $data['has_discount'] = $this->hasDiscount;
         }
-        
+
         if ($this->discountAmount !== null) {
             $data['discount_amount'] = $this->discountAmount;
         }
-        
+
         if ($this->discountPercentage !== null) {
             $data['discount_percentage'] = $this->discountPercentage;
         }
-        
+
         if ($this->discountStartDate !== null) {
             $data['discount_start_date'] = $this->discountStartDate;
         }
-        
+
         if ($this->discountEndDate !== null) {
             $data['discount_end_date'] = $this->discountEndDate;
         }
-        
+
         if ($this->maxDiscountAmount !== null) {
             $data['max_discount_amount'] = $this->maxDiscountAmount;
         }

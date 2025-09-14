@@ -10,9 +10,9 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/statistics', [EcoDiscountController::class, 'getStatistics']);
     Route::post('/apply', [EcoDiscountController::class, 'applyDiscount']);
     Route::post('/export', [EcoDiscountController::class, 'export']);
-    
+
     // Product discount management
-    Route::put('/product/{id}', [EcoDiscountController::class, 'storeDiscountProduct']);
+    Route::post('/product', [EcoDiscountController::class, 'storeDiscountProduct']);
 
     Route::get('/{id}', [EcoDiscountController::class, 'show']);
     Route::put('/{id}', [EcoDiscountController::class, 'update']);

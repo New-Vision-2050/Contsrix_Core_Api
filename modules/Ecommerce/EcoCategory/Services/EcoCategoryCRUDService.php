@@ -46,35 +46,35 @@ class EcoCategoryCRUDService
         try {
             // Get total categories count
             $totalCategories = EcoCategory::count();
-            
+
             // Get active categories count
             $activeCategories = EcoCategory::where('is_active', 1)->count();
             // Get categories with products
             $categoriesWithProducts = EcoCategory::whereHas('products')->count();
-            
+
             // Get parent categories (main categories)
             $parentCategories = EcoCategory::whereNull('parent_id')->count();
 
             return [
-                'total_categories' => [
+                [
                     'value' => $totalCategories,
                     'label' => 'إجمالي عدد التصنيفات',
                     'icon' => 'category',
                     'color' => 'primary'
                 ],
-                'active_categories' => [
+                [
                     'value' => $activeCategories,
                     'label' => 'عدد التصنيفات الفعالة',
                     'icon' => 'visibility',
                     'color' => 'success'
                 ],
-                'categories_with_products' => [
+                [
                     'value' => $categoriesWithProducts,
                     'label' => 'التصنيفات المتوفرة في المتجر',
                     'icon' => 'store',
                     'color' => 'info'
                 ],
-                'parent_categories' => [
+                [
                     'value' => $parentCategories,
                     'label' => 'عدد التصنيفات',
                     'icon' => 'folder',
@@ -85,25 +85,25 @@ class EcoCategoryCRUDService
         } catch (\Exception $e) {
             // Fallback data matching the image
             return [
-                'total_categories' => [
+                [
                     'value' => 125,
                     'label' => 'إجمالي عدد التصنيفات',
                     'icon' => 'category',
                     'color' => 'primary'
                 ],
-                'active_categories' => [
+                [
                     'value' => 102,
                     'label' => 'عدد التصنيفات',
                     'icon' => 'visibility',
                     'color' => 'success'
                 ],
-                'categories_with_products' => [
+                [
                     'value' => 6,
                     'label' => 'التصنيفات المتوفرة في المتجر',
                     'icon' => 'store',
                     'color' => 'info'
                 ],
-                'parent_categories' => [
+                [
                     'value' => 16,
                     'label' => 'عدد التصنيفات',
                     'icon' => 'folder',

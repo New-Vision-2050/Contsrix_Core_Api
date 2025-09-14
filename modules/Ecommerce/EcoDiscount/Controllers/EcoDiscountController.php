@@ -21,7 +21,9 @@ use Modules\Ecommerce\EcoDiscount\Services\EcoDiscountCRUDService;
 use Modules\Ecommerce\EcoDiscount\Exports\EcoDiscountExport;
 use Modules\Ecommerce\EcoDiscount\Requests\ExportEcoDiscountRequest;
 use Maatwebsite\Excel\Facades\Excel;
+use Modules\Ecommerce\EcoDiscount\Presenters\EcoDiscountProductPresenter;
 use Modules\Ecommerce\EcoDiscount\Requests\CreateEcoDiscountProductRequest;
+use Modules\Ecommerce\EcoProduct\Presenters\EcoProductPresenter;
 use Ramsey\Uuid\Uuid;
 
 class EcoDiscountController extends Controller
@@ -57,9 +59,8 @@ class EcoDiscountController extends Controller
         $command = $request->createUpdateEcoDiscountProductCommand();
         $this->updateEcoDiscountProductHandler->handle($command);
 
-        // Get the updated product from EcoProduct service instead
         $item = $this->ecoDiscountService->getProduct($command->getId());
-        $presenter = new \Modules\Ecommerce\EcoProduct\Presenters\EcoProductPresenter($item);
+        $presenter = new EcoDiscountProductPresenter($item);
 
         return Json::item($presenter->getData());
     }
@@ -98,7 +99,7 @@ class EcoDiscountController extends Controller
     public function getStatistics(): JsonResponse
     {
         $statistics = $this->ecoDiscountService->getStatistics();
-        
+
         return Json::item($statistics);
     }
 
@@ -137,7 +138,7 @@ class EcoDiscountController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'eco_discount.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new EcoDiscountExport($this->ecoDiscountService, $filters), $fileName);
     }
 }
