@@ -12,6 +12,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Country\Models\City;
 use Modules\Country\Models\Country;
+use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -39,6 +40,7 @@ class Warehous extends Model
         'street',
         'latitude',
         'longitude',
+        'is_active'
     ];
 
     protected $casts = [
@@ -61,5 +63,9 @@ class Warehous extends Model
     public function city()
     {
         return $this->belongsTo(City::class);
+    }
+    public function products()
+    {
+        return $this->hasMany(EcoProduct::class,'warehouse_id');
     }
 }

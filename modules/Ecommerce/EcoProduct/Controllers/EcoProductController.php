@@ -74,4 +74,15 @@ class EcoProductController extends Controller
 
         return Json::deleted();
     }
+
+    /**
+     * Get product statistics cards for dashboard
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $stats = $this->ecoProductService->getProductStatistics();
+        
+        return Json::item($stats);
+    }
+
 }

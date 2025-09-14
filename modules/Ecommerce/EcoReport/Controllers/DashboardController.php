@@ -41,9 +41,9 @@ class DashboardController extends Controller
     public function getSummaryMetrics(Request $request): JsonResponse
     {
         $period = $request->get('period', 'today');
-        $data = $this->dashboardService->getDashboardData($period);
+        $data = $this->dashboardService->getSummaryMetrics($period);
 
-        return Json::item($data['summary']);
+        return Json::item($data);
     }
 
     /**

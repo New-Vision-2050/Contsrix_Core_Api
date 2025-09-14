@@ -7,6 +7,9 @@ use Modules\Ecommerce\EcoCategory\Controllers\EcoCategoryController;
 Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
     Route::get('/', [EcoCategoryController::class, 'index']);
     Route::post('/', [EcoCategoryController::class, 'store']);
+    
+    Route::get('/statistics', [EcoCategoryController::class, 'getStatistics']);
+    
     Route::get('/{id}', [EcoCategoryController::class, 'show']);
     Route::put('/{id}', [EcoCategoryController::class, 'update']);
     Route::delete('/{id}', [EcoCategoryController::class, 'delete']);

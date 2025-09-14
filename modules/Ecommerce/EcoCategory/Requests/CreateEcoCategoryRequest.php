@@ -68,7 +68,7 @@ class CreateEcoCategoryRequest extends FormRequest
             companyId: Uuid::fromString(tenant("id")),
             name: $validatedData['name'],
             description: $validatedData['description'],
-            perentId: $validatedData['parent_id']
+            perentId: $validatedData['parent_id']??null
         );
     }
 }

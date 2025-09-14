@@ -57,7 +57,7 @@ class UpdateEcoCategoryRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             name: $validatedData['name'],
             description: $validatedData['description'],
-            perentId: $validatedData['parent_id']
+            perentId: $validatedData['parent_id']??null
         );
     }
 }
