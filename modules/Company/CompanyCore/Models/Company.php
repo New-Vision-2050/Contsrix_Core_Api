@@ -232,6 +232,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     {
         return $this->hasMany(CompanyOfficialDocument::class, 'company_id');
     }
+
     public function companyFields()
     {
         return $this->belongsToMany(CompanyField::class, 'company_company_fields', 'company_id', 'company_field_id');
@@ -261,7 +262,8 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             $shortUuid = substr($uuid, 0, 8); // Take first 8 characters of the UUID
 
             // Generate the serial number with a prefix
-            $model->serial_no = 'CX-' . $shortUuid;
+            $model->serial_no = strtoupper($model->user_name) ?? "CX";
+            $model->serial_no .= "-" . $shortUuid;
 
             // Double-check that this serial number doesn't already exist (extremely unlikely but possible)
             // If it does, generate a new one
@@ -272,14 +274,16 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
                 if ($attempts >= $maxAttempts) {
                     // If we've tried too many times, use a timestamp-based fallback
                     $timestamp = time();
-                    $model->serial_no = 'CX-' . dechex($timestamp);
+                    $model->serial_no = strtoupper($model->user_name)?? "CX";
+                    $model->serial_no .= dechex($timestamp);
                     break;
                 }
 
                 // Generate a new UUID and try again
                 $uuid = \Illuminate\Support\Str::uuid()->toString();
                 $shortUuid = substr($uuid, 0, 8);
-                $model->serial_no = 'CX-' . $shortUuid;
+                $model->serial_no = strtoupper($model->user_name) ?? "CX";
+                $model->serial_no .= "-" . $shortUuid;
                 $attempts++;
             }
         });

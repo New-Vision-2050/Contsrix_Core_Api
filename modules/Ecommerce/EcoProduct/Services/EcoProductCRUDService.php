@@ -113,19 +113,19 @@ class EcoProductCRUDService
         } catch (\Exception $e) {
             // Fallback data matching the image
             return [
-                'total_products' => [
+                [
                     'number' => 125,
                     'title' => 'إجمالي عدد المنتجات',
                 ],
-                'categories_count' => [
+                [
                     'number' => 6,
                     'title' => 'عدد التصنيفات',
                 ],
-                'products_in_stock' => [
+                [
                     'number' => 102,
                     'title' => 'المنتجات المتوفرة في المخزن',
                 ],
-                'low_stock_products' => [
+                [
                     'number' => 16,
                     'title' => 'عدد المنتجات',
                 ]
