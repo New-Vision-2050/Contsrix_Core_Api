@@ -28,7 +28,7 @@ class CompanyUserPresenter extends AbstractPresenter
         return [
             'id' => $this->companyUser->id,
             'global_id' => $this->companyUser->global_id,
-            'user_id' => $this->userId,
+            'user_id' => $this->companyUser->users()->where("company_id",tenant("id")),
             'name' => $this->companyUser->name,
             'email' => $this->companyUser->email,
             "residence" => $this->companyUser->residence,
