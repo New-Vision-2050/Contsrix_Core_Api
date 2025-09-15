@@ -1,0 +1,14 @@
+{
+    "name": "EcoBusinessActivity",
+    "alias": "ecobusinessactivity",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoBusinessActivity\\Providers\\EcoBusinessActivityServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
