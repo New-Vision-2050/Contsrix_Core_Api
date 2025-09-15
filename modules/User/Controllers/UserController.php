@@ -40,6 +40,8 @@ use Modules\User\Services\UserAuditService;
 use Modules\User\Services\UserCRUDService;
 use Modules\User\Services\UserRoleAndPermissionService;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\CompanyUser\Requests\SendEmailToUserRequest;
+use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Ramsey\Uuid\Uuid;
 
 class UserController extends Controller
@@ -53,6 +55,7 @@ class UserController extends Controller
         private AssignRoleForUserHandler     $assignRoleForUserHandler,
         private DeleteUserHandler            $deleteUserHandler,
         private CompanyUserRepository        $companyUserRepository,
+        private CompanyUserCRUDService       $companyUserCRUDService,
     )
     {
     }
@@ -262,5 +265,25 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 500);
         }
+    }
+
+    public function sendEmail(SendEmailToUserRequest $request)
+    {
+        $userId = $request->getUserId();
+        $companyId = tenant('id');
+
+        // Get the company user
+        $user = $this->userService->get($userId);
+
+        $companyUser = $this->companyUserRepository->getCompanyUserGlobalId(UUid::fromString($user->global_company_user_id));
+
+        // Send email using the service method
+        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($companyUser, $companyId);
+
+        return Json::item([
+            'message' => 'Email sent successfully',
+            'user_id' => $userId,
+            'company_id' => $companyId
+        ]);
     }
 }
