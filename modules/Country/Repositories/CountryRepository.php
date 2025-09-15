@@ -58,18 +58,18 @@ class CountryRepository extends BaseRepository
     $data = [];
        if ($countryId== null && $stateId == null) {
            $data = $this->model->when(request()->has("name"),function ($q){
-               $q->where("name",request()->name);
+               $q->where("name","LIKE","%".request()->name."%");
            })->get();
 
        }
        elseif ($countryId!= null) {
            $data = State::query()->where("country_id", $countryId)->when(request()->has("name"),function ($q){
-               $q->where("name",request()->name);
+               $q->where("name","LIKE","%".request()->name."%");
            })->get();
 
        }elseif ($stateId!= null) {
            $data = City::query()->where("state_id", $stateId)->when(request()->has("name"),function ($q){
-               $q->where("name",request()->name);
+               $q->where("name","LIKE","%".request()->name."%");
            })->get();
        }
 
