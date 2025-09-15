@@ -1,0 +1,14 @@
+{
+    "name": "EcoShopAddress",
+    "alias": "ecoshopaddress",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoShopAddress\\Providers\\EcoShopAddressServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
