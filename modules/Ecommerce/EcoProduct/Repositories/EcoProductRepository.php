@@ -176,4 +176,9 @@ class EcoProductRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function updateDiscountProduct(UuidInterface $id,array $data): bool
+    {
+        return $this->update($id, $data);
+    }
 }

@@ -61,22 +61,22 @@ class DashboardService
         }
 
         return [
-            'total_products' => [
+            [
                 'value' => $totalProducts,
                 'label' => 'إجمالي عدد المنتجات',
                 'icon' => 'box'
             ],
-            'active_products' => [
+            [
                 'value' => $activeProducts,
                 'label' => 'المنتجات المعروضة في المتجر',
                 'icon' => 'store'
             ],
-            'categories_count' => [
+            [
                 'value' => $categoriesCount,
                 'label' => 'عدد التصنيفات',
                 'icon' => 'category'
             ],
-            'returns_count' => [
+            [
                 'value' => $returnsCount,
                 'label' => 'عدد المرتجعات',
                 'icon' => 'return'
