@@ -261,7 +261,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
             $shortUuid = substr($uuid, 0, 8); // Take first 8 characters of the UUID
 
             // Generate the serial number with a prefix
-            $model->serial_no = 'CX-' . $shortUuid;
+            $model->serial_no = $model->user_name??"CX" ."-". $shortUuid;
 
             // Double-check that this serial number doesn't already exist (extremely unlikely but possible)
             // If it does, generate a new one

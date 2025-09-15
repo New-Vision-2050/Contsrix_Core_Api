@@ -70,7 +70,7 @@ class CompanyRepository extends BaseRepository
         $url = $this->parseDomain($data["user_name"]);
         try {
             DB::beginTransaction();
-            $company = $this->create($data);
+            $company = $this->create(array_merge($data,["is_active"=>1,"date_activate"=>Carbon::now()->addMonths(3)->format("Y-m-d")]));
             $company->domains()->create([
                 'domain' => $url,
             ]);
