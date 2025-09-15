@@ -272,7 +272,7 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
                 if ($attempts >= $maxAttempts) {
                     // If we've tried too many times, use a timestamp-based fallback
                     $timestamp = time();
-                    $model->serial_no = 'CX-' . dechex($timestamp);
+                    $model->serial_no = $model->user_name??"CX" ."-". dechex($timestamp);
                     break;
                 }
 
