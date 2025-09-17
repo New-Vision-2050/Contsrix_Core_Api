@@ -7,12 +7,16 @@ namespace Modules\CompanyUser\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\User\Models\User;
+
 // use BasePackage\Shared\Traits\HasTranslations;
 
 class ClientDetail extends Model
 {
     use UuidTrait;
     use BaseFilterable;
+
     // use HasTranslations;
     // use SoftDeletes;
 
@@ -29,6 +33,9 @@ class ClientDetail extends Model
         "company_representative_name",
         "registration_number",
         "user_id",
+        "company_id",
+        "original_branch_id",
+        "is_created_by_owner"
 
 
     ];
@@ -36,4 +43,14 @@ class ClientDetail extends Model
     protected $casts = [
         'id' => 'string',
     ];
+
+
+    public function broker()
+    {
+        return $this->belongsTo(User::class, 'broker_id');
+    }
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 }

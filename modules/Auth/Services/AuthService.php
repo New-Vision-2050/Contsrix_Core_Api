@@ -2,6 +2,7 @@
 
 namespace Modules\Auth\Services;
 
+use App\Exceptions\CustomException;
 use Carbon\Carbon;
 use Faker\Core\Uuid;
 use Ichtrojan\Otp\Otp;
@@ -21,6 +22,8 @@ use Modules\Auth\Repositories\OtpRepository;
 use Modules\Auth\Repositories\VerficationDataRepository;
 use Modules\Auth\Repositories\VerficationQuestionRepository;
 use Modules\Auth\Services\OtpServices\SendOtpEmail;
+use Modules\Company\CompanyCore\Repositories\CompanyRepository;
+use Modules\CompanyUser\Models\CompanyUser;
 use Modules\Setting\Models\LoginWay;
 use Modules\Setting\Models\LoginWayStep;
 use Modules\Setting\Repositories\LoginWayRepository;
@@ -41,7 +44,8 @@ class AuthService
         private LoginWayRepository            $loginWayRepository,
         private VerficationDataRepository     $verficationDataRepository,
         private UserCRUDService               $userCRUDService,
-        private VerficationQuestionRepository $verficationQuestionRepository
+        private VerficationQuestionRepository $verficationQuestionRepository,
+        private CompanyRepository             $companyRepository
     )
     {
     }
@@ -50,16 +54,16 @@ class AuthService
     {
         $isContinueWithOTP = $this->settingCRUDService->getValue('continue_with_otp');
         if ($isContinueWithOTP) {
-            $user = $this->userRepository->getUserByEmail($authDTO->getEmail());
+            $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
             $this->sendOtpEmail->loginWithOtp($user->id);
             return [null, $user];
         }
+        $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
 
-        $token = JWTAuth::attempt($authDTO->toArray());
+        $token = JWTAuth::fromUser($user);
         if (!$token) {
             throw new \ErrorException(__("validation.invalid-credential"), 403);
         }
-        $user = auth()->user();
         return [$token, $user];
     }
 
@@ -104,8 +108,8 @@ class AuthService
 
     public function ResetPassword(ResetPasswordCommand $resetPasswordCommand)
     {
-        $token  = $this->verficationDataRepository->findOneBy(["token" => $resetPasswordCommand->getToken()]);
-        if (true || $token && isset($token->data["can_reset_password"]) && $token->data["can_reset_password"]==1) {
+        $token = $this->verficationDataRepository->findOneBy(["token" => $resetPasswordCommand->getToken()]);
+        if (true || $token && isset($token->data["can_reset_password"]) && $token->data["can_reset_password"] == 1) {
             $user = $this->userCRUDService->getUserByIdentifier($resetPasswordCommand->getIdentifier());
 
             $this->userRepository->updateUser($user->id, ["password" => $resetPasswordCommand->getPassword()]);
@@ -193,8 +197,8 @@ class AuthService
         $firstLogin = $user->password == null ? 1 : 0;
 
         if ($user->password == null) {
-            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier(),$firstLogin);
-            return [$loginWay->id, null, $step, 1,$firstLogin];
+            $this->sendOtpEmail->resetPassword($getLoginWaysDTO->getIdentifier(), $firstLogin);
+            return [$loginWay->id, null, $step, 1, $firstLogin];
         }
 
         $this->sendOtpByStep($step, $getLoginWaysDTO->getIdentifier());
@@ -322,6 +326,56 @@ class AuthService
         $this->sendOtpByStep($step, $alternativeDTO->getIdentifier());
 
         return [$verficationData->data["login_way"]["id"], $verficationData->token, $step];
+
+    }
+
+    public function getDataForLoginAsAdmin($companyId)
+    {
+        $company = $this->companyRepository->findOneBy(["id" => $companyId]);
+        if($company->is_active == 0)
+        {
+             throw new CustomException(__("validation.company-not-active"),403);
+        }
+        tenancy()->end();
+        tenancy()->initialize($company->id);
+        $user = $this->userCRUDService->getUserBy(['email' => "admin@constrix-nv.com"]);
+        if (empty($user)) {
+            $user = User::firstOrCreate(
+                ['email' => 'admin@constrix-nv.com',],
+                [
+                    'name' => 'Admin',
+                    'email' => 'admin@constrix-nv.com',
+                    "phone" => "966542138116",
+                    "phone_code" => "966",
+                    'password' => "Test1234",
+                    "global_company_user_id" => CompanyUser::query()->withoutParentModel(
+                        )->where("email", "admin@constrix-nv.com")->first()->global_id,
+                    "company_id" => tenant("id"),
+                ]
+            );
+            $user->assignRole('super-admin');
+        }
+
+        $token = $this->verficationDataRepository->createToken($user->id, ["login_as_admin" => 1])->token;
+
+        return ["url" => "https://" . $company->domains()->first()->domain, "token" => $token];
+
+
+    }
+
+    public function loginAsAdmin($token)
+    {
+
+
+        $verficationData = $this->verficationDataRepository->validateToken($token);
+
+
+        $user = $this->userRepository->findOneBy(["id" => $verficationData->user_id]);
+        $token = JWTAuth::fromUser($user);
+
+
+        return [$token,$user];
+
 
     }
 

@@ -10,17 +10,25 @@ use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeues
 use Ramsey\Uuid\Uuid;
 use Modules\Company\CompanyCore\Commands\UpdateCompanyCommand;
 use App\Rules\Company\CompanyCore\Rules\RegistrationNoRule;
+use App\Rules\Company\CompanyCore\Rules\CentralCompanyPackageUpdateRule;
 class UpdateOfficialCompanyData extends FormRequest
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
     public function rules(): array
     {
+        // Get current company to check if it's central
+        [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
+        
         return [
             'name_en' => 'required|string',
             'email' => 'required|email|string',//|unique:companies,email,' . Uuid::fromString(tenant("id")
             'phone' => 'required|string',
             'branch_name' => 'required|string',
             'company_type_id' => 'required|exists:company_types,id',
+            'packages' => $company->is_central_company 
+                ? ['sometimes', 'array', new CentralCompanyPackageUpdateRule()]
+                : ['required', 'array', new CentralCompanyPackageUpdateRule()],
+            "packages.*" => 'required_with:packages|exists:packages,id',
         ];
     }
     public function messages(): array
@@ -46,7 +54,8 @@ class UpdateOfficialCompanyData extends FormRequest
             phone: $this->get('phone'),
             branchName: $this->get('branch_name'),
             companyTypeId: $this->get('company_type_id'),
-            branch : $branch
+            branch : $branch,
+            packages : $this->get('packages'),
         );
     }
 }

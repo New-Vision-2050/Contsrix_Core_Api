@@ -1,0 +1,14 @@
+{
+    "name": "EcoLanguage",
+    "alias": "ecolanguage",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoLanguage\\Providers\\EcoLanguageServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

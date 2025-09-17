@@ -6,6 +6,10 @@ namespace Modules\UserInfo\ProfessionalCertificate\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\CompanyUser\Repositories\CompanyUserRepository;
+use Modules\Shared\Media\Services\FileUploadService;
+use Ramsey\Uuid\Nonstandard\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalCertificate;
 
@@ -16,7 +20,12 @@ use Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalCertificate;
  */
 class ProfessionalCertificateRepository extends BaseRepository
 {
-    public function __construct(ProfessionalCertificate $model)
+    public function __construct(
+        ProfessionalCertificate $model,
+        private CompanyUserRepository $companyUserRepository,
+        private FileUploadService $fileUploadService,
+
+    )
     {
         parent::__construct($model);
     }
@@ -37,13 +46,47 @@ class ProfessionalCertificateRepository extends BaseRepository
         ]);
     }
 
-    public function createProfessionalCertificate(array $data): ProfessionalCertificate
+    public function createProfessionalCertificate(array $data , $file = null): ProfessionalCertificate
     {
-        return $this->create($data);
+        $certificate = $this->create($data);
+        $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($data['global_id']));
+        if ($file) {
+            $certificate->clearMediaCollection('upload');
+            $companyName = Company::find($data['company_id'])?->name ?? 'UnknownCompany';
+            $path = $companyName . '/' . $user->name;
+
+            $this->fileUploadService->uploadFile(
+                $certificate,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+        return $certificate;
+
     }
 
-    public function updateProfessionalCertificate(UuidInterface $id, array $data): bool
+    public function updateProfessionalCertificate(UuidInterface $id, array $data , $file = null): bool
     {
+        $certificate = $this->findOneBy(["id" => $id]);
+        $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($certificate->global_id));
+        if ($file) {
+            $certificate->clearMediaCollection('upload');
+            $companyName = Company::find($certificate->company_id)?->name ?? 'UnknownCompany';
+            $path = $companyName . '/' . $user->name;
+
+            $this->fileUploadService->uploadFile(
+                $certificate,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+
         return $this->update($id, $data);
     }
 

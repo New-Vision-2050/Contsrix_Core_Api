@@ -11,7 +11,9 @@ use Modules\Auth\Handlers\MakeOtpHandler;
 use Modules\Auth\Requests\ChangeEmailRequest;
 use Modules\Auth\Requests\CheckVerificationQuestionRequest;
 use Modules\Auth\Requests\ForgetPasswordRequest;
+use Modules\Auth\Requests\getDataForLoginAsAdminRequest;
 use Modules\Auth\Requests\GetLoginWaysRequest;
+use Modules\Auth\Requests\LoginAsAdminRequest;
 use Modules\Auth\Requests\LoginRequest;
 use Modules\Auth\Requests\LoginStepAlternativeRequest;
 use Modules\Auth\Requests\LoginStepsRequest;
@@ -162,6 +164,22 @@ class AuthController extends Controller
         $this->changeEmailHandler->handle($command);
 
         return Json::success("success");
+    }
+
+
+    public function getDataForLoginAsAdmin(getDataForLoginAsAdminRequest $request)
+    {
+       $data= $this->authService->getDataForLoginAsAdmin($request->company_id);
+
+        return Json::item($data);
+    }
+
+    public function loginAsAdmin(LoginAsAdminRequest $request)
+    {
+       [$token,$user]= $this->authService->loginAsAdmin($request->token);
+
+
+        return Json::item(["token" => $token,"user" => (new UserPresenter($user))->getData()]);
     }
 
 }

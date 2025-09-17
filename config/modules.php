@@ -59,6 +59,8 @@ return [
             'requests/getList' => 'Requests/Get$STUDLY_NAME$ListRequest.php',
             'requests/update' => 'Requests/Update$STUDLY_NAME$Request.php',
             'requests/delete' => 'Requests/Delete$STUDLY_NAME$Request.php',
+            'exports/export' => 'Exports/$STUDLY_NAME$Export.php',
+            'exports/export-request' => 'Requests/Export$STUDLY_NAME$Request.php',
             'routes/api' => 'Resources/routes/api.php',
             //'scaffold/config' => 'Resources/config/config.php',
             'scaffold/provider' => 'Providers/$STUDLY_NAME$ServiceProvider.php',
@@ -77,6 +79,8 @@ return [
             'controllers/controller' => $replacementList,
             'handler/delete' => $replacementList,
             'handler/update' => $replacementList,
+            'exports/export' => $replacementList,
+            'exports/export-request' => $replacementList,
             'json' => ['LOWER_NAME', 'STUDLY_NAME', 'MODULE_NAMESPACE', 'PROVIDER_NAMESPACE'],
             'model' => [
                 'LOWER_NAME',
@@ -165,6 +169,7 @@ return [
             'presenters' => ['path' => 'Presenters', 'generate' => true],
             'filter' => ['path' => 'Middleware', 'generate' => false],
             'request' => ['path' => 'Requests', 'generate' => true],
+            'exports' => ['path' => 'Exports', 'generate' => true],
             'provider' => ['path' => 'Providers', 'generate' => false],
 //            'lang' => ['path' => 'Resources/lang', 'generate' => true],
 //            'views' => ['path' => 'Resources/views', 'generate' => false],
@@ -287,7 +292,7 @@ return [
     */
 
     'cache' => [
-        'enabled' => env('MODULE_CACHE_ENABLED', env('APP_ENV') == 'production'),
+        'enabled' => env('MODULE_CACHE_ENABLED', false),
         'driver' => 'file',
         'key' => 'laravel-modules',
         'lifetime' => null,

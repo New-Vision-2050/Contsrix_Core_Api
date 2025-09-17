@@ -15,9 +15,9 @@ class UpdateContactinfoRequest extends FormRequest
     {
         return [
             'email' => 'required|email',
-            'other_phone' => 'nullable',
+            'other_phone' => 'nullable|phone',
             'code_other_phone' => 'nullable',
-            'phone' => 'required|string',
+            'phone' => 'required|string|phone',
             'phone_code' => 'required|string',
             'landline_number' => 'nullable',
         ];

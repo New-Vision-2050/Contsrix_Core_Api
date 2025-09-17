@@ -31,10 +31,16 @@ use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\User\Repositories\UserRepository;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Cache;
+use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 
-
+/**
+ * Class CompanyController
+ * @package Modules\Company\CompanyCore\Controllers
+ */
 class CompanyController extends Controller
 {
+    use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
         private CompanyCRUDService $companyService,
         private UpdateCompanyHandler $updateCompanyHandler,
@@ -72,7 +78,7 @@ class CompanyController extends Controller
     {
         $createdItem = $this->companyService->create($request->createCreateCompanyDTO());
 
-        // Clear widget cache when a new company is created
+
         $this->companyWidgetService->clearWidgetCache();
 
         $presenter = new CompanyPresenter($createdItem);
@@ -86,7 +92,10 @@ class CompanyController extends Controller
         $command = $request->createUpdateCompanyCommand();
         $this->updateCompanyHandler->handle($command);
 
-        // Clear widget cache when a company is updated
+        // Clear cache for current company logged in
+        $cacheKey = 'current_company_logged_in_' . $command->getId() . '_' . $request->branch_id;
+        Cache::forget($cacheKey);
+
         $this->companyWidgetService->clearWidgetCache();
 
         $item = $this->companyService->get($command->getId());
@@ -173,7 +182,12 @@ class CompanyController extends Controller
 
     public function getCompanyByHost(Request $request)
     {
-        $company = $this->companyService->getCompanyByHost($request->header('X-DOMAIN') ?? $request->getHost());
+        if($request->has('identifier_code')) {
+            $company = $this->companyService->getCompanyByIdentifierCode($request->identifier_code);
+        }
+        if(empty($company)) {
+            $company = $this->companyService->getCompanyByHost($request->header('X-DOMAIN') ?? $request->getHost());
+        }
         return Json::item((new CompanyUnAuthPresenter($company))->getData());
     }
 

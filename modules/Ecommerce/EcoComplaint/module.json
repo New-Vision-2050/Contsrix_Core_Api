@@ -1,0 +1,14 @@
+{
+    "name": "EcoComplaint",
+    "alias": "ecocomplaint",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoComplaint\\Providers\\EcoComplaintServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

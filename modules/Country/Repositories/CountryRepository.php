@@ -6,6 +6,7 @@ namespace Modules\Country\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Modules\Country\Models\City;
 use Modules\Country\Models\State;
 use Normalizer;
@@ -56,22 +57,39 @@ class CountryRepository extends BaseRepository
     {
     $data = [];
        if ($countryId== null && $stateId == null) {
-           $data = $this->model->get();
+           $data = $this->model->when(request()->has("name"),function ($q){
+               $q->where("name","LIKE","%".request()->name."%");
+           })->get();
 
        }
        elseif ($countryId!= null) {
-           $data = State::query()->where("country_id", $countryId)->get();
+           $data = State::query()->where("country_id", $countryId)->when(request()->has("name"),function ($q){
+               $q->where("name","LIKE","%".request()->name."%");
+           })->get();
 
        }elseif ($stateId!= null) {
-           $data = City::query()->where("state_id", $stateId)->get();
+           $data = City::query()->where("state_id", $stateId)->when(request()->has("name"),function ($q){
+               $q->where("name","LIKE","%".request()->name."%");
+           })->get();
        }
 
         return $data;
     }
 
+    public function getStateWithBranchAuthUser()
+    {
+       $countryId = Auth::user()?->userProfessionalData?->branch?->address?->country_id;
+
+       $data = State::query()->where("country_id", $countryId)->get();
+       return $data;
+
+}
     public function findBySimplifiedWay($simplifiedName):?Country
     {
-        $country = $this->model->whereRaw('LOWER(name) = ?', [$simplifiedName])->first();
+        $country = $this->model
+            ->whereRaw('LOWER(iso2) = ?', [$simplifiedName])
+            ->orWhereRaw('LOWER(iso3) = ?', [$simplifiedName])
+            ->first();
         return $country;
 
     }

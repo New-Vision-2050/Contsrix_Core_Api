@@ -6,6 +6,8 @@ use Stancl\Tenancy\Features\UserImpersonation;
 
 Route::group(['middleware' => ['throttle:35,1',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]],function (){
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login-as-admin', [AuthController::class, 'loginAsAdmin']);
+
     Route::post('/login-step', [AuthController::class, 'loginBySteps']);
     Route::post('/login-otp', [AuthController::class, 'loginWithOtp']);
     Route::post('/validate-reset-password-otp', [AuthController::class, 'validateOtp']);
@@ -24,6 +26,8 @@ Route::group(['middleware' => ['auth:api']
 ], function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/get-data-for-login-as-admin', [AuthController::class, 'getDataForLoginAsAdmin']);
+
 
 });
 

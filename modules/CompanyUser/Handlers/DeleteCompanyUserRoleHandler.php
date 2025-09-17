@@ -19,7 +19,12 @@ class DeleteCompanyUserRoleHandler
     public function handle(DeleteRoleForCompanyUserCommand $command)
     {
         $this->repository->deleteCompanyUserRole($command->getId(), $command->getCompanyId(), $command->getRole());
-        event(new UserRoleDeleted(["id"=>$command->getId(),"company_id"=> $command->getCompanyId(), "role"=>$command->getRole()]));
+
+        try {
+            event(new UserRoleDeleted(["id" => $command->getId(), "company_id" => $command->getCompanyId(), "role" => $command->getRole()]));
+        } catch (\Exception $e) {
+            //do nothing
+        }
 
     }
 

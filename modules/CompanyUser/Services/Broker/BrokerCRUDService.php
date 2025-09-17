@@ -43,16 +43,10 @@ class BrokerCRUDService
 
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createBrokerDTO->getBranchIds());
 
-        $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray());
+        $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray(), null,$createBrokerDTO->brokerDetailToArray());
+        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
 
 
-        //here i do not email up till now
-//        $data = [
-//            "name" => $userInCompany->name,
-//            "company_name" => $userInCompany->company?->name,
-//            "domain_name" => $userInCompany->company?->domains()->first()?->domain
-//        ];
-//        $userInCompany->notify(new SendDomainForUser($data));
 
         try {
             event(new UserCreated($createBrokerDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
@@ -70,6 +64,12 @@ class BrokerCRUDService
         $users = $this->userRepository->getUserInCurrentCompanyWith([], CompanyUserRole::BROKER->value, $page, $perPage);
 
         return $users;
+    }
+
+
+    public function show($id)
+    {
+        return $this->userRepository->getUserInCurrentCompanyByRole($id, [], CompanyUserRole::BROKER->value);
     }
 
     public function get(UuidInterface $id): CompanyUser
@@ -101,5 +101,16 @@ class BrokerCRUDService
         $users['data'] = BrokerPresenter::collection($users['data']);
 
         return $users;
+    }
+
+    /**
+     * Get brokers for export
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters, CompanyUserRole::BROKER->value);
     }
 }

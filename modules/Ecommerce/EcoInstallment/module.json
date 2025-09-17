@@ -1,0 +1,14 @@
+{
+    "name": "EcoInstallment",
+    "alias": "ecoinstallment",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoInstallment\\Providers\\EcoInstallmentServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

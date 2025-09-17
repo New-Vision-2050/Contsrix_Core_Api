@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\UserInfo\UserEducationalCourse\Presenters;
 
+use Modules\Shared\Media\Presenters\MediaPresenter;
 use Modules\UserInfo\UserEducationalCourse\Models\UserEducationalCourse;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
@@ -18,6 +19,7 @@ class UserEducationalCoursePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $media=$this->userEducationalCourse->getFirstMedia('upload');
         return [
             'id' => $this->userEducationalCourse->id,
             'company_name' => $this->userEducationalCourse->company_name,
@@ -27,6 +29,7 @@ class UserEducationalCoursePresenter extends AbstractPresenter
             'certificate' => $this->userEducationalCourse->certificate,
             'date_obtain' => $this->userEducationalCourse->date_obtain,
             'date_end' => $this->userEducationalCourse->date_end,
+            "file"=>$media != null ? (new MediaPresenter($media))->getData():null
         ];
     }
 }

@@ -10,6 +10,7 @@ use Modules\Company\CompanyCore\Commands\UpdateCompanyCommand;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Subscription\Package\Services\PackageAssignmentService;
 
 class UpdateOfficialCompanyDataHandler
 {
@@ -17,6 +18,7 @@ class UpdateOfficialCompanyDataHandler
 
     public function __construct(
         private CompanyRepository             $repository,
+        private PackageAssignmentService      $packageAssignmentService,
         private ManagementHierarchyRepository $managementHierarchyRepository,
     )
     {
@@ -30,6 +32,12 @@ class UpdateOfficialCompanyDataHandler
         try {
             DB::beginTransaction();
             $this->repository->updateCompany($updateOfficialCompanyDataCommand->getId(), $updateOfficialCompanyDataCommand->toArray());
+
+            // Only update packages if they are provided (for central companies, packages might be null/empty)
+            if ($updateOfficialCompanyDataCommand->packages() !== null && !empty($updateOfficialCompanyDataCommand->packages())) {
+                $this->packageAssignmentService->assignPackagesToCompany((string)$updateOfficialCompanyDataCommand->getId() , $updateOfficialCompanyDataCommand->packages());
+            }
+
 
             $this->managementHierarchyRepository->updateWhere(["id" => $branch->id], [
                 "name" => $updateOfficialCompanyDataCommand->getBranchName(),

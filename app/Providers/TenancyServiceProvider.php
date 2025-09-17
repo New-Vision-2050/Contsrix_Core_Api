@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Http\Middleware\IntializeTenantMiddleware;
+use App\Http\Middleware\TenancePermision;
+use Illuminate\Foundation\Http\Kernel;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -119,6 +122,13 @@ class TenancyServiceProvider extends ServiceProvider
 
 
         $this->makeTenancyMiddlewareHighestPriority();
+        /** @var Kernel $kernel */
+        $kernel = app()->make(Kernel::class);
+
+        $kernel->addToMiddlewarePriorityBefore(
+            SubstituteBindings::class,
+            TenancePermision::class,
+        );
     }
 
     protected function bootEvents()
@@ -152,6 +162,9 @@ class TenancyServiceProvider extends ServiceProvider
 
             // Our custom middleware to convert X-Domain to X-Tenant
             \App\Http\Middleware\DomainToTenantMiddleware::class,
+            
+            // Our custom middleware to ensure tenant compatibility (must run before InitializeTenancyByRequestData)
+            \App\Http\Middleware\TenantCompatibilityMiddleware::class,
 
             Middleware\InitializeTenancyByDomain::class,
             Middleware\InitializeTenancyBySubdomain::class,

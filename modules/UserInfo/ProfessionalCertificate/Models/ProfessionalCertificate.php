@@ -10,14 +10,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserInfo\ProfessionalCertificate\Database\factories\ProfessionalCertificateFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Shared\ProfessionalBodie\Models\ProfessionalBodie;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class ProfessionalCertificate extends Model
+class ProfessionalCertificate extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use InteractsWithMedia;
     //use HasTranslations;
     //use SoftDeletes;
 

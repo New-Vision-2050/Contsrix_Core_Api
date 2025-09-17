@@ -18,6 +18,9 @@ class CreateCompanyDTO
         // public string $registrationTypeId,
         // public string $registrationNo,
         public string $generalManagerId,
+        public $isBroker = 0,
+
+        public $isClient = 0
     ) {
     }
 
@@ -28,7 +31,9 @@ class CreateCompanyDTO
             'user_name' => $this->userName,
             'country_id' => $this->countryId,
             // 'company_field_id' => $this->companyFieldId,//TODO Fix this
-            'general_manager_id' => $this->generalManagerId
+            'general_manager_id' => $this->generalManagerId,
+            "is_client" => $this->isClient,
+            "is_broker" => $this->isBroker,
         ];
     }
 }

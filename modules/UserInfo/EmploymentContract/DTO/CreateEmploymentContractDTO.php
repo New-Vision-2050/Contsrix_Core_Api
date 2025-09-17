@@ -12,24 +12,24 @@ class CreateEmploymentContractDTO
         public string $company_id,
         public string $global_id,
 
-        public string $contract_number,
-        public string $start_date,
-        public string $commencement_date,
-        public string $contract_duration,
+        public ?string $contract_number,
+        public ?string $start_date,
+        public ?string $commencement_date,
+        public ?string $contract_duration,
 
-        public string $notice_period,
-        public string $probation_period,
-        public string $nature_work_id,
-        public string $type_working_hour_id,
+        public ?string $notice_period,
+        public ?string $probation_period,
+        public ?string $nature_work_id,
+        public ?string $type_working_hour_id,
 
-        public string $working_hours,
-        public string $annual_leave,
-        public string $country_id,
-        public string $right_terminate_id,
+        public ?string $working_hours,
+        public ?string $annual_leave,
+        public ?string $state_id,
+        public ?string $right_terminate_id,
 
-        public string $contract_duration_unit,
-        public string $notice_period_unit,
-        public string $probation_period_unit,
+        public ?string $contract_duration_unit,
+        public ?string $notice_period_unit,
+        public ?string $probation_period_unit,
     ) {
     }
 
@@ -51,7 +51,7 @@ class CreateEmploymentContractDTO
 
             'working_hours' => $this->working_hours,
             'annual_leave' => $this->annual_leave,
-            'country_id' => $this->country_id,
+            'state_id' => $this->state_id,
             'right_terminate_id' => $this->right_terminate_id,
 
             'contract_duration_unit' => $this->contract_duration_unit,

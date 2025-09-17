@@ -28,7 +28,8 @@ class Program extends Model
     protected $fillable = [
         'name',
         'is_active',
-        'parent_id'
+        'parent_id',
+        "slug"
     ];
 
     protected $casts = [
@@ -57,7 +58,13 @@ class Program extends Model
         return ProgramFactory::new();
     }
 
-    public function subEntities() {
+    public function children()
+    {
+        return $this->hasMany(self::class, 'parent_id')->where('is_active', true);
+    }
+
+    public function subEntities()
+    {
         return $this->hasMany(SubEntity::class, 'main_program_id')->where('is_active', true);
     }
 }

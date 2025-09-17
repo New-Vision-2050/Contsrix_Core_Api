@@ -3,13 +3,12 @@
 namespace Modules\Program\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use Modules\Program\Models\Program;
-use Ranium\SeedOnce\Traits\SeedOnce;
 use Illuminate\Database\Eloquent\Model;
 
 class ProgramDatabaseSeeder extends Seeder
 {
-    use SeedOnce;
 
     /**
      * Run the database seeds.
@@ -25,10 +24,11 @@ class ProgramDatabaseSeeder extends Seeder
             ['en' => 'human-resources', 'ar' => 'الموارد البشرية'],
             ['en' => 'settings', 'ar' => 'الإعدادت'],
             ['en' => 'users', 'ar' => 'المستخدمين'],
+            ['en' => 'client relations', 'ar' => 'علاقات العملاء'],
         ];
 
         foreach ($programs as $programName) {
-            Program::firstOrCreate (
+            Program::firstOrCreate (["slug"=>Str::slug($programName['en'])],
                 ['name' => $programName]
             );
         }

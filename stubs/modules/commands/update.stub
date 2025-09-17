@@ -26,8 +26,8 @@ class Update$STUDLY_NAME$Command
 
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'name' => $this->name,
-        ]);
+        ];
     }
 }

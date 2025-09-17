@@ -44,4 +44,9 @@ return [
         'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    'calendarific' => [
+        'api_key' => env('CALENDARIFIC_API_KEY', 'G2XGP0u6w8FihkwuRxUDzOjjT321JeJ5'),
+        'base_url' => env('CALENDARIFIC_BASE_URL', 'https://calendarific.com/api/v2'),
+    ],
+
 ];

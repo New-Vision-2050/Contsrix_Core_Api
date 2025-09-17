@@ -73,5 +73,10 @@ class CompanyUserCompany extends Pivot
         return $this->belongsToMany(ManagementHierarchy::class , "company_users_company_management_hierarchies","company_user_company_id","management_hierarchy_id");
     }
 
+    public function companyUser()
+    {
+        return $this->belongsTo(CompanyUser::class,"global_company_user_id", "global_id");
+    }
+
 
 }

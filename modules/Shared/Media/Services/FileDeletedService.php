@@ -2,9 +2,6 @@
 
 namespace Modules\Shared\Media\Services;
 
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Config;
-
 class FileDeletedService
 {
     public function deleteFile($model, $inputFiles, string $collectionName): void

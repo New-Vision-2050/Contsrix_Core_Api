@@ -8,7 +8,7 @@ return [
     'welcome' => 'اهلا',
     'you-tried-to-change-password-with' => 'لقد حاولت تغيير كلمه المرور عن طريق',
     'you-tried-to-first-login-with' => 'لقد حاولت الدخول للمرة الاولي عن طريق',
-    
+
     "you-tried-to-change-email-with"=>"لقد حاولت تغيير البريد الالكتروني عن طريق: :email",
     "change-your-email" => "تغيير البريد الالكتروني عبر كلمة المرور المؤقتة",
     "change-your-phone" => "تغيير رقم الهاتف عبر كلمة المرور المؤقتة",
@@ -21,5 +21,6 @@ return [
     'rights' => 'كل الحقوق محفوظة لدي شركه نيو فيجي © 2025',
     "you-are-added-to-company"=>"لقد تم اضافتك لشركة :company",
     "your-domain-is"=>" النطاق الخاص بشركتك هو",
+    "serial_no"=>"رقم المعرف الخاص بشركتك هو",
 
 ];

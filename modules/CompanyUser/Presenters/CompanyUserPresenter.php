@@ -28,7 +28,7 @@ class CompanyUserPresenter extends AbstractPresenter
         return [
             'id' => $this->companyUser->id,
             'global_id' => $this->companyUser->global_id,
-            'user_id' => $this->userId,
+            'user_id' => $this->companyUser->users()->where("company_id",tenant("id"))->first()?->id,
             'name' => $this->companyUser->name,
             'email' => $this->companyUser->email,
             "residence" => $this->companyUser->residence,
@@ -49,7 +49,7 @@ class CompanyUserPresenter extends AbstractPresenter
             "companies" => CompanyUsersPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
             'Job_role' => '-',
             'date_appointment' => '-',
-            'branch'=>'-',
+            'branch'=>$this->companyUser->userProfessionalData?->branch != null ? $this->companyUser->userProfessionalData?->branch?->name :"-" ,
             'other_phone'=> $this->companyUser->other_phone??'-',
             'code_other_phone' => $this->companyUser->code_other_phone,
             'address' => $this->companyUser->address??'-',

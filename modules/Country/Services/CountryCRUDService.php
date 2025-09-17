@@ -7,6 +7,7 @@ namespace Modules\Country\Services;
 use Illuminate\Support\Collection;
 use Modules\Country\DTO\CreateCountryDTO;
 use Modules\Country\Models\Country;
+use Modules\Country\Repositories\CityRepository;
 use Modules\Country\Repositories\CountryRepository;
 use Ramsey\Uuid\UuidInterface;
 
@@ -14,6 +15,7 @@ class CountryCRUDService
 {
     public function __construct(
         private CountryRepository $repository,
+        private CityRepository $cityRepository,
     ) {
     }
 
@@ -26,6 +28,13 @@ class CountryCRUDService
     {
         return $this->repository->paginated(
             ['status' => '1'],
+            page: $page,
+            perPage: $perPage,
+        );
+    }
+        public function listCity(int $page = 1, int $perPage = 10): array
+    {
+        return $this->cityRepository->paginated(
             page: $page,
             perPage: $perPage,
         );
@@ -49,5 +58,11 @@ class CountryCRUDService
     {
         return $this->repository->getCountryWithSatesWithCities(request()->country_id,request()->state_id);
 
+    }
+
+    public function getStatesByCountryBranch()
+
+    {
+       return $this->repository->getStateWithBranchAuthUser();
     }
 }

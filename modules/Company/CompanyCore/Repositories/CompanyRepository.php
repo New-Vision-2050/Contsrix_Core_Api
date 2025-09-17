@@ -40,6 +40,11 @@ class CompanyRepository extends BaseRepository
 
     }
 
+    public function getByIdentifierCode($identifierCode)
+    {
+        return $this->model->where("serial_no", $identifierCode)->where('is_active', 1)->firstOrFail();
+    }
+
     public function getCompany(UuidInterface $id): Company
     {
         return $this->findOneByOrFail([
@@ -65,7 +70,7 @@ class CompanyRepository extends BaseRepository
         $url = $this->parseDomain($data["user_name"]);
         try {
             DB::beginTransaction();
-            $company = $this->create($data);
+            $company = $this->create(array_merge($data,["is_active"=>1,"date_activate"=>Carbon::now()->addMonths(3)->format("Y-m-d")]));
             $company->domains()->create([
                 'domain' => $url,
             ]);
@@ -185,6 +190,8 @@ class CompanyRepository extends BaseRepository
         ]))->first();
     }
 
+
+
     public function getAllWithRelations(array $relations = []): Collection
     {
         $query = $this->model->with($relations)->where(['is_central_company' => 0]);
@@ -208,5 +215,29 @@ class CompanyRepository extends BaseRepository
     public function getLastCreatedCompany(): ?Company
     {
         return $this->model->latest('created_at')->with($this->relations)->first();
+    }
+
+    /**
+     * Count records by criteria
+     */
+    public function countWhere(array $conditions): int
+    {
+        return $this->model->where($conditions)->count();
+    }
+
+    /**
+     * Sync packages for a company.
+     */
+    public function syncPackages(Company $company, array $syncData): void
+    {
+        $company->packages()->sync($syncData);
+    }
+
+    /**
+     * Find company with packages.
+     */
+    public function findWithPackages(string $companyId): Company
+    {
+        return $this->model->with('packages')->findOrFail($companyId);
     }
 }

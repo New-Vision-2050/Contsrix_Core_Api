@@ -30,4 +30,14 @@ class SubEntityRecordsController extends Controller
 
         return Json::items(CompanyUserPresenter::collection($list["data"] ?? []),paginationSettings: $list['pagination'] ?? []);
     }
+
+    public function widgets(GetSubEntityRecordsRequest $request): JsonResponse
+    {
+        $widgetsData = $this->subEntityRecordsService->getWidgetsData(
+            $request->get('sub_entity_id'),
+            $request->get('registration_form_id')
+        );
+
+        return Json::item($widgetsData, message: 'Sub entity records widgets retrieved successfully');
+    }
 }

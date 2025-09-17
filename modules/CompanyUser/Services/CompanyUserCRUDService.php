@@ -39,7 +39,8 @@ class CompanyUserCRUDService
         $data = [
             "name" => $userInCompany->name,
             "company_name" => $userInCompany->company?->name,
-            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain
+            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
+            "serial_no" => $userInCompany->company?->serial_no
         ];
         $userInCompany->notify(new SendDomainForUser($data));
 
@@ -50,6 +51,19 @@ class CompanyUserCRUDService
         }
 
         return $user;
+    }
+
+
+    public function sendEmailAssignToCompanyToUser($user , $companyId)
+    {
+        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id, "company_id" => $companyId]);
+        $data = [
+            "name" => $userInCompany->name,
+            "company_name" => $userInCompany->company?->name,
+            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
+            "serial_no" => $userInCompany->company?->serial_no
+        ];
+        $userInCompany->notify(new SendDomainForUser($data));
     }
 
 
@@ -147,7 +161,9 @@ class CompanyUserCRUDService
             if (count($branches) == count($branchIds) && count(array_intersect( $branches->pluck("management_hierarchy_id")->toArray(),$branchIds)) == count($branches)) {
                 if ($role == CompanyUserRole::CLIENT->value) {
                     throw new CustomException(__("validation.client-already-exist-in-thies-branches"), 400);
-                } elseif ($role == CompanyUserRole::EMPLOYEE->value) {
+                }
+
+                elseif ($role == CompanyUserRole::EMPLOYEE->value) {
                     throw new CustomException(__("validation.employee-already-exist"), 400);
 
                 } else {

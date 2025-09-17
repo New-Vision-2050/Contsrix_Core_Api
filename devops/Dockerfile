@@ -47,6 +47,10 @@ RUN composer install --no-scripts
 
 EXPOSE 80
 
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www \
     && chmod +x /usr/bin/supervisord

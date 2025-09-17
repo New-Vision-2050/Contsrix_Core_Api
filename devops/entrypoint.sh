@@ -2,34 +2,64 @@
 
 set -e
 
-# Generate .env file from environment variables if it doesn't exist
-#if [ ! -f /var/www/.env ]; then
-#    echo "Generating .env file..."
-#    cat <<EOL > /var/www/.env
-#APP_ENV=${APP_ENV}
-#APP_DEBUG=${APP_DEBUG}
-#
-#DB_HOST=${DB_HOST}
-#DB_PORT=${DB_PORT}
-#DB_USER=${DB_USER}
-#DB_PASSWORD=${DB_PASSWORD}
-#DB_NAME=${DB_NAME}-${DEPLOYMENT_ID}
-#EOL
-#fi
+# Function to log with timestamp
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
 
-# Run Laravel Artisan commands
-echo "Running Laravel commands..."
-yes | composer dump-autoload
-php artisan storage:link
-yes | php artisan migrate --force
-yes | php artisan db:seed --force
+# Function to handle errors
+handle_error() {
+    log "ERROR: $1"
+    exit 1
+}
 
+log "Starting container initialization..."
+
+# Check if .env file exists
+if [ ! -f /var/www/.env ]; then
+    handle_error ".env file not found. Container cannot start without environment configuration."
+fi
 
 # Ensure storage/logs directory exists and has correct permissions
-echo "Setting up log directory permissions..."
+log "Setting up storage directories and permissions..."
 mkdir -p /var/www/storage/logs
-chmod -R 775 /var/www/storage/logs
-chown -R www-data:www-data /var/www/storage/logs
+mkdir -p /var/www/storage/framework/sessions
+mkdir -p /var/www/storage/framework/views
+mkdir -p /var/www/storage/framework/cache
+mkdir -p /var/www/bootstrap/cache
+
+chmod -R 775 /var/www/storage
+chmod -R 775 /var/www/bootstrap/cache
+chown -R www-data:www-data /var/www/storage
+chown -R www-data:www-data /var/www/bootstrap/cache
+
+# Test database connection before running migrations
+log "Testing database connection..."
+php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connection successful';" || handle_error "Database connection failed"
+
+# Run Laravel Artisan commands with error handling
+log "Running composer dump-autoload..."
+composer dump-autoload || handle_error "Composer dump-autoload failed"
+
+log "Creating storage link..."
+php artisan storage:link || log "Storage link already exists or failed (non-critical)"
+
+log "Running database migrations..."
+php artisan migrate --force || handle_error "Database migration failed"
+
+# Optional: Run seeders (uncomment if needed)
+# log "Running database seeders..."
+# php artisan db:seed --force || log "Database seeding failed (non-critical)"
+
+# Clear and cache configuration
+log "Optimizing Laravel..."
+php artisan config:clear || log "Config clear failed (non-critical)"
+php artisan config:cache || log "Config cache failed (non-critical)"
+php artisan route:clear || log "Route clear failed (non-critical)"
+php artisan view:clear || log "View clear failed (non-critical)"
+
+log "Container initialization completed successfully"
 
 # Start Supervisor
+log "Starting supervisord..."
 exec "$@"

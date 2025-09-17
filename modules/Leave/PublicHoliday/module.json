@@ -1,0 +1,14 @@
+{
+    "name": "PublicHoliday",
+    "alias": "publicholiday",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Leave\\PublicHoliday\\Providers\\PublicHolidayServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Leave"
+}

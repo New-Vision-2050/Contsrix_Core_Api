@@ -11,6 +11,7 @@ use Modules\Company\ManagementHierarchy\DTO\CreateBranchDTO;
 use Ramsey\Uuid\Uuid;
 use Modules\Company\ManagementHierarchy\Commands\UpdateManagementHierarchyCommand;
 use Modules\Company\ManagementHierarchy\Handlers\UpdateManagementHierarchyHandler;
+use Illuminate\Validation\Rule;
 
 class UpdateBranchRequest extends FormRequest
 {
@@ -32,8 +33,16 @@ class UpdateBranchRequest extends FormRequest
             "country_id" => "required|exists:countries,id",
             "state_id" => "required|exists:states,id",
             "city_id" => "required|exists:cities,id",
+            'default_constraint_id' => [
+                'nullable',
+                'uuid',
+                Rule::exists('attendance_constraints', 'id')->where(function ($query) {
+                    $query->where('company_id', $this->declareCompanyAndBranchUsingRequest()[0]->id);
+                }),
+            ],
         ];
     }
+
 
     public function createUpdateBranchCommand(): UpdateBranchCommand
     {
@@ -52,6 +61,7 @@ class UpdateBranchRequest extends FormRequest
             countryId: (string)$this->get('country_id'),
             stateId: (string)$this->get('state_id'),
             cityId: (string)$this->get('city_id'),
+            defaultConstraintId: $this->get('default_constraint_id')?? null
         );
     }
 }

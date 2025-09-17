@@ -1,0 +1,14 @@
+{
+    "name": "EcoShop",
+    "alias": "ecoshop",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoShop\\Providers\\EcoShopServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

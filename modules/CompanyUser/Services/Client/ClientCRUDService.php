@@ -48,6 +48,7 @@ class ClientCRUDService
 
 
         $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(), $createClientDTO->clientDetailToArray());
+        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
 
 
         //here i do not email up till now
@@ -65,6 +66,11 @@ class ClientCRUDService
         }
 
         return $user;
+    }
+
+    public function show($id)
+    {
+        return $this->userRepository->getUserInCurrentCompanyByRole($id, [], CompanyUserRole::CLIENT->value);
     }
 
 
@@ -95,6 +101,17 @@ class ClientCRUDService
         return $this->repository->findByEmail(
             email: $email,
         );
+    }
+
+    /**
+     * Get clients for export
+     *
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters, CompanyUserRole::CLIENT->value);
     }
 
 

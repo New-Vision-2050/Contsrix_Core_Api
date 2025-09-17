@@ -28,9 +28,30 @@ return [
 
     'branch_id_required' => 'The branch field is required.',
     'management_id_required' => 'The management field is required.',
+
+    // User Access validation messages
+    'user_access' => [
+        'branch_id_required' => 'The branch field is required.',
+        'branch_id_integer' => 'The branch field must be an integer.',
+        'branch_id_exists' => 'The selected branch is invalid.',
+        'user_ids_required' => 'The user IDs field is required.',
+        'user_ids_array' => 'The user IDs field must be an array.',
+        'user_ids_min' => 'At least one user must be selected.',
+        'user_id_required' => 'Each user ID is required.',
+        'user_id_string' => 'Each user ID must be a string.',
+        'user_id_uuid' => 'Each user ID must be a valid UUID.',
+        'user_id_exists' => 'One or more selected users are invalid.',
+    ],
     'job_type_id_required' => 'The job type field is required.',
     'job_title_id_required' => 'The job title field is required.',
     'job_code_required' => 'The job code field is required.',
+
+    'attendance-list' => 'Attendance List',
+    'attendance-list*attendance-list' => 'Attendance List',
+    'attendance-map' => 'Attendance Map',
+    'attendance-list*attendance-map' => 'Attendance Map',
+    'attendance-constraints' => 'Attendance Constraints',
+    'attendance-constraints*attendance-constraints' => 'Attendance Constraints',
 
 
     'between' => [
@@ -107,8 +128,8 @@ return [
         'string' => 'The :attribute field must not be greater than :max characters.',
     ],
     'max_digits' => 'The :attribute field must not have more than :max digits.',
-    'mimes' => 'The :attribute field must be a file of type: :values.',
-    'mimetypes' => 'The :attribute field must be a file of type: :values.',
+    'mimes' => 'The :attribute field must have one of the following extensions: :values.',
+    'mimetypes' => 'The :attribute field must have one of the following extensions: :values.',
     'min' => [
         'array' => 'The :attribute field must have at least :min items.',
         'file' => 'The :attribute field must be at least :min kilobytes.',
@@ -194,6 +215,8 @@ return [
     "create-successful"=>"Create successful",
     "update-not-successful"=>"Update not successful",
     "update-successful"=>"Update successful",
+    "central_company_cannot_update_packages"=>"Central companies cannot update their packages",
+    "company_cannot_update_own_packages"=>"Companies cannot update their own packages",
     'user-name' => 'The name must consist of three Arabic words without any symbols.',
     'user-email-error' => 'The email is already exist in the system in name :name',
     'user-email-success' => 'The email is already exist in the system ',
@@ -202,6 +225,8 @@ return [
     "identity-or-passport-required"=>"At least one of the identity fields (identity , Passport) is required",
     "passport-or-residence-or-border_number-required"=>"At least one of the identity fields (Passport, Residence, Border Number) is required",
     "company-not-found"=>"company not found",
+    "management-not-found"=>"management not found",
+    "company-not-active"=>"company not active",
     "branch-not-found"=>"branch not found",
     "integrity-error"=>"integrity error",
     "login-way-not-found"=>"login way not found",
@@ -294,7 +319,7 @@ return [
         'file_required' => 'A file is required.',
         'file_mimes' => 'The file must be one of the following types: pdf, jpeg, jpg, png, doc, docx.',
         'regestration_number_required' => 'The registration number is required for this type.',
-
+        'start_date_less_than_8_days' => 'The start date must be at least 8 days before the end date.',
     ],
     'company' => [
         'name_required' => 'Company name is required.',
@@ -402,6 +427,9 @@ return [
         'description' => [
             'required' => 'The description is required.',
         ],
+        'role' => [
+            'cannot_deactivate' => 'Cannot deactivate this role because it is assigned to users.',
+        ],
         'document_number' => [
             'required' => 'The document number is required.',
             'numeric' => 'The document number must be a number.',
@@ -508,4 +536,19 @@ return [
     'date_end_required' => 'The certificate expiry date is required.',
     'date_end_date' => 'The certificate expiry date must be a valid date.',
     'graduation_date_date' => 'Graduation date must be a valid date.',
+
+    // Company user deletion validation messages
+    'admin_account_cannot_be_deleted' => 'The admin account cannot be deleted.',
+    'cannot_delete_yourself' => 'You cannot delete your own account.',
+    'cannot_delete_company_owner' => 'A company owner account cannot be deleted.',
+    'regular' => 'regular',
+    'male' => 'male',
+    'female' => 'female',
+    'day_status' => [
+        'work_day'=> 'work day',
+        'holiday'=>'holiday',
+        'day_off_or_weekend'=> 'day off or weekend',
+        'in_loction'=>'in loction',
+        'clocked_out'=> 'clocked out'
+    ]
 ];

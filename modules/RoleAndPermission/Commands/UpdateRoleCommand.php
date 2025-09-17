@@ -11,6 +11,7 @@ class UpdateRoleCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
+        private ?array $permissions = null,
     ) {
     }
 
@@ -29,5 +30,9 @@ class UpdateRoleCommand
         return array_filter([
             'name' => $this->name,
         ]);
+    }
+    public function getPermissions(): ?array
+    {
+        return $this->permissions;
     }
 }

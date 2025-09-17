@@ -6,6 +6,7 @@ namespace Modules\User\Models;
 
 use App\Casts\UuidCast;
 
+use Modules\CompanyUser\Models\BrokerDetail;
 use Modules\CompanyUser\Models\ClientDetail;
 use Modules\Setting\Models\LoginWay;
 use App\Traits\CustomBelongsToTenant;
@@ -28,10 +29,18 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\User\Database\factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
+/**
+ * @property string $id
+ * @property string $name
+ * @property string $email
+ * @property string|null $phone
+ * @property-read CompanyUser|null $companyUser
+ * @property-read UserProfessionalData|null $professionalData
+ */
 class User extends Authenticatable implements JWTSubject, Auditable
 {
     use HasFactory;
@@ -42,6 +51,8 @@ class User extends Authenticatable implements JWTSubject, Auditable
     use HasRoles;
     use \OwenIt\Auditing\Auditable;
     use CustomBelongsToTenant;
+    use \Staudenmeir\EloquentHasManyDeep\HasRelationships;
+
 
 
     use SoftDeletes;
@@ -196,6 +207,43 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public function branch()
     {
         return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id')
-            ->where('type', operator: 'branch');
+            ->where('type','branch');
     }
+
+    public function managementHierarchy()
+    {
+        return $this->belongsTo(ManagementHierarchy::class, 'management_hierarchy_id');
+    }
+
+    public function userProfessionalData()
+    {
+        return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_company_user_id')->where("company_id", "=", tenant("id"));
+    }
+    public function professionalData()
+    {
+        return $this->hasOne(UserProfessionalData::class, 'user_id', 'id')->withoutTenancy();
+    }
+    /**
+     * Get all companies for this user using hasManyThrough relationship
+     * User -> CompanyUserCompany (pivot) -> Company
+     */
+    public function companies()
+    {
+        return $this->hasManyThrough(
+            Company::class,
+            CompanyUserCompany::class,
+            'global_company_user_id', // Foreign key on pivot table
+            'id',                     // Foreign key on Company table
+            'global_company_user_id', // Local key on User table
+            'company_id'              // Local key on pivot table
+        )->withoutTenancy()->distinct();
+    }
+
+
+    public function brokerDetail()
+    {
+        return $this->hasOne(BrokerDetail::class);
+    }
+
+
 }

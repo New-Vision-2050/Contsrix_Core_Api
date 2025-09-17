@@ -168,6 +168,8 @@ return [
     'create-successful' => 'تم الحفظ بنجاح',
     'update-not-successful' => 'فشل التعديل',
     'update-successful' => 'تم التعديل بنجاح',
+    'central_company_cannot_update_packages' => 'الشركات المركزية لا يمكنها تحديث باقاتها',
+    'company_cannot_update_own_packages' => 'الشركات لا يمكنها تحديث باقاتها الخاصة',
     "user-name" => "اسم المستخدم يحتوي علي ثلاث كلمات عربي لا يتخللها اي رموز",
     "user-email-error" => " البريد الالكتروني موجود ضمن النظام بأسم :name .",
     "user-email-success" => "البريد الالكتروني غير موجود ضمن النظام",
@@ -176,6 +178,8 @@ return [
     "identity-or-passport-required" => "يجب ادخال رقم الهوية او رقم الجواز",
     "passport-or-residence-or-border_number-required" => "يجب ادخال رقم الجواز او رقم الاقامة او رقم الحدود",
     "company-not-found" => "الشركة غير موجودة",
+    "management-not-found" => "الادارة غير موجودة",
+    "company-not-active" => "الشركة غير نشطة",
     "branch-not-found" => "الفرع غير موجود",
     "integrity-error" => "البيانات غير موحدة ",
     "login-way-not-found" => "طريقة الدخول غير موجودة",
@@ -267,6 +271,7 @@ return [
         'file_required' => 'الملف مطلوب.',
         'file_mimes' => 'يجب أن يكون نوع الملف pdf أو jpeg أو jpg أو png أو doc أو docx.',
         'regestration_number_required' => 'رقم التسجيل مطلوب لهذا النوع.',
+        'start_date_less_than_8_days' => 'يجب أن يكون تاريخ البدء أكثر من 8 أيام قبل تاريخ الانتهاء.',
     ],
 
 
@@ -390,6 +395,9 @@ return [
             'before' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء.',
             'date_format' => 'يجب أن يكون تاريخ الإشعار بالتنسيق Y-m-d.',
         ],
+        'role' => [
+            'cannot_deactivate' => 'لا يمكن إلغاء تنشيط هذا الدور لأنه معين لمستخدمين.',
+        ],
     ],
     'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
 
@@ -487,4 +495,18 @@ return [
     'date_end_date' => 'تاريخ انتهاء الشهادة يجب أن يكون تاريخًا صحيحًا.',
     'graduation_date_date' => 'يجب أن يكون تاريخ التخرج تاريخًا صحيحًا.',
 
+    'admin_account_cannot_be_deleted' => 'لا يمكن حذف حساب المسؤول.',
+    'cannot_delete_yourself' => 'لا يمكنك حذف حسابك الشخصي.',
+    'cannot_delete_company_owner' => 'لا يمكن حذف حساب مالك الشركة.',
+    'regular' => 'منتظم',
+    'male' => 'ذكر',
+    'female' => 'أنثى',
+    "program-management"=>"ادارة البرامج",
+    'day_status' => [
+        'work_day'=>'مطلوب للحضور',
+        'holiday'=>'اجازه',
+        'day_off_or_weekend'=>'اجازه',
+        'in_loction'=>'في الموقع',
+        'clocked_out'=> 'تم الانصراف'
+    ]
 ];
