@@ -51,6 +51,8 @@ use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializatio
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsNewSeederTableSeeder;
 use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializationsUpdateSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
+use Modules\Shared\Payment\Database\Seeders\PaymentModulesSeederTableSeeder;
+use Modules\Shared\Payment\Models\Payment;
 use Modules\UserInfo\UserProfessionalData\Database\seeders\SyncUserIdsInUserProfessionalDataSeeder;
 
 
@@ -125,6 +127,6 @@ class DatabaseSeeder extends Seeder
         $this->call(LeavePolicySeeder::class);
 
         $this->call(PublicHolidaysTableSeeder::class);
-
+        $this->call(PaymentModulesSeederTableSeeder::class);
     }
 }
