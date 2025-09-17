@@ -20,7 +20,7 @@ use Modules\Subscription\Package\Models\Package;
 class CompanyAccessProgramProgram extends Model
 {
     use HasFactory;
-    use UuidTrait;
+//    use UuidTrait;
     use BaseFilterable;
 
     public $incrementing = false;
