@@ -13,7 +13,7 @@ use Carbon\Carbon;
 
 class SubEntityRecordsService
 {
-     protected $mappedRegistrationForms = [
+    protected $mappedRegistrationForms = [
         CompanyUserRole::BROKER->value,
         CompanyUserRole::EMPLOYEE->value,
         CompanyUserRole::CLIENT->value,
@@ -21,19 +21,20 @@ class SubEntityRecordsService
 
 
     public function __construct(
-        protected  SuperEntityService $superEntityService,
-        protected SubEntityCRUDService $subEntityCRUDService,
-        protected CompanyUserRepository $companyUserRepository,
+        protected SuperEntityService          $superEntityService,
+        protected SubEntityCRUDService        $subEntityCRUDService,
+        protected CompanyUserRepository       $companyUserRepository,
         protected RegistrationFormCRUDService $registrationFormCRUDService
-    ) {
+    )
+    {
     }
 
 
-   public function getRecords(string $subEntityId, string $registrationFormId, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
+    public function getRecords(string $subEntityId, string $registrationFormId, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
-        if(in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+        if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
             return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map);
         }
 
@@ -45,7 +46,8 @@ class SubEntityRecordsService
         return $model::where('registration_form_id', $registrationFormId)->paginate($perPage);
     }
 
-    protected function getSuperEntityModel(string $superEntityId): string {
+    protected function getSuperEntityModel(string $superEntityId): string
+    {
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
@@ -58,7 +60,7 @@ class SubEntityRecordsService
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
-        if(in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+        if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
             return $this->getMappedRecordsWidgets($registrationForm->company_user_role_map);
         }
 
@@ -91,14 +93,14 @@ class SubEntityRecordsService
             $q->where("company_users_companies.status", 1);
         })->count();
         $suspendedRecords = (clone $query)->whereHas("companies", function ($q) {
-            $q->where("company_users_companies.status", -1);
+            $q->where("company_users_companies.status", 0);
         })->count();
 
         // Get last month data for comparison
         $lastMonth = Carbon::now();
         $recordsAddedLastMonth = (clone $query)->where('created_at', '>=', $lastMonth->startOfMonth())
-                                               ->where('created_at', '<=', $lastMonth->endOfMonth())
-                                               ->count();
+            ->where('created_at', '<=', $lastMonth->endOfMonth())
+            ->count();
 
         // Get previous month data for percentage calculation
         $prevMonth = Carbon::now()->subMonth();
@@ -107,22 +109,35 @@ class SubEntityRecordsService
             $q->where("company_users_companies.status", 1);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
+        $type = "العملاء";
+        if(CompanyUserRole::BROKER->value == $type) {
+            $type = "الوسطاء";
+        }
+        elseif(CompanyUserRole::EMPLOYEE->value == $type) {
+            $type = "الموظفين";
+        }
+
+
         return [
-            'total_records' => [
-                'count' => $totalRecords,
-                'percentage_change' => $this->calculatePercentageChange($totalRecords, $totalRecordsPrevMonth)
+            [
+                "title" => " احمالي عدد$type",
+                'total' => $totalRecords,
+                'percentage' => 100,
             ],
-            'records_added_last_month' => [
+            [
+                "title" => "$type المضافين اخر الشهر ",
                 'count' => $recordsAddedLastMonth,
-                'percentage_change' => 0 // No comparison for this metric
+                'percentage' =>  $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords) // No comparison for this metric
             ],
-            'active_records' => [
-                'count' => $activeRecords,
-                'percentage_change' => $this->calculatePercentageChange($activeRecords, $activeRecordsPrevMonth)
+            [
+                "title" => "$type النشيطين ",
+                'total' => $activeRecords,
+                'percentage' => $this->calculatePercentageChange($activeRecords, $totalRecords)
             ],
-            'suspended_records' => [
+           [
+                "title" => "$type المعلقين ",
                 'count' => $suspendedRecords,
-                'percentage_change' => 0 // Could add comparison if needed
+                'percentage' => $this->calculatePercentageChange($suspendedRecords, $totalRecords) // Could add comparison if needed
             ]
         ];
     }
@@ -139,15 +154,15 @@ class SubEntityRecordsService
         // Get last month data
         $lastMonth = Carbon::now();
         $recordsAddedLastMonth = (clone $query)->where('created_at', '>=', $lastMonth->startOfMonth())
-                                               ->where('created_at', '<=', $lastMonth->endOfMonth())
-                                               ->count();
+            ->where('created_at', '<=', $lastMonth->endOfMonth())
+            ->count();
 
         // Get previous month data for percentage calculation
         $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
         $activeRecordsPrevMonth = (clone $query)->where('status', 1)
-                                                ->where('created_at', '<=', $prevMonth->endOfMonth())
-                                                ->count();
+            ->where('created_at', '<=', $prevMonth->endOfMonth())
+            ->count();
 
         return [
             'total_records' => [
@@ -156,11 +171,11 @@ class SubEntityRecordsService
             ],
             'records_added_last_month' => [
                 'count' => $recordsAddedLastMonth,
-                'percentage_change' => 0
+                'percentage_change' => $this->calculatePercentageChange($recordsAddedLastMonth ,$totalRecords)
             ],
             'active_records' => [
                 'count' => $activeRecords,
-                'percentage_change' => $this->calculatePercentageChange($activeRecords, $activeRecordsPrevMonth)
+                'percentage_change' => $this->calculatePercentageChange($activeRecords, $totalRecords)
             ],
             'suspended_records' => [
                 'count' => $suspendedRecords,
@@ -175,6 +190,6 @@ class SubEntityRecordsService
             return $current > 0 ? 100.0 : 0.0;
         }
 
-        return round((($current - $previous) / $previous) * 100, 2);
+        return round(($current / $previous) * 100, 2);
     }
 }
