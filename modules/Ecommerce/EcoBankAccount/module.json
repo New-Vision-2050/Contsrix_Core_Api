@@ -1,0 +1,14 @@
+{
+    "name": "EcoBankAccount",
+    "alias": "ecobankaccount",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoBankAccount\\Providers\\EcoBankAccountServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
