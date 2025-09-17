@@ -7,7 +7,7 @@ namespace Modules\Shared\Payment\Presenters;
 use Modules\Shared\Payment\Models\Payment;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class PaymentPresenters extends AbstractPresenter
+class PaymentPresenter extends AbstractPresenter
 {
     private Payment $payment;
 
