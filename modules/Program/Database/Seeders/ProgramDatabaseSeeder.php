@@ -3,6 +3,7 @@
 namespace Modules\Program\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use Modules\Program\Models\Program;
 use Illuminate\Database\Eloquent\Model;
 
@@ -27,7 +28,7 @@ class ProgramDatabaseSeeder extends Seeder
         ];
 
         foreach ($programs as $programName) {
-            Program::firstOrCreate (
+            Program::firstOrCreate (["slug"=>Str::slug($programName['en'])],
                 ['name' => $programName]
             );
         }

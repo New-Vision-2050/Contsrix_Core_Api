@@ -74,11 +74,11 @@ class SubEntityRecordsService
     {
         // Get filtered query using same logic as the original method but without pagination
         $query = $this->companyUserRepository->getModel();
-        
+
         if (method_exists($query, 'scopeFilter')) {
             $query = $query->filter(request()->all());
         }
-        
+
         $query = $query->when($type != null, function ($query) use ($type) {
             $query->whereHas("companies", function ($query) use ($type) {
                 $query->where("company_users_companies.role", $type);
@@ -95,13 +95,13 @@ class SubEntityRecordsService
         })->count();
 
         // Get last month data for comparison
-        $lastMonth = Carbon::now()->subMonth();
+        $lastMonth = Carbon::now();
         $recordsAddedLastMonth = (clone $query)->where('created_at', '>=', $lastMonth->startOfMonth())
                                                ->where('created_at', '<=', $lastMonth->endOfMonth())
                                                ->count();
 
         // Get previous month data for percentage calculation
-        $prevMonth = Carbon::now()->subMonths(2);
+        $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
         $activeRecordsPrevMonth = (clone $query)->whereHas("companies", function ($q) {
             $q->where("company_users_companies.status", 1);
@@ -137,13 +137,13 @@ class SubEntityRecordsService
         $suspendedRecords = (clone $query)->where('status', -1)->count();
 
         // Get last month data
-        $lastMonth = Carbon::now()->subMonth();
+        $lastMonth = Carbon::now();
         $recordsAddedLastMonth = (clone $query)->where('created_at', '>=', $lastMonth->startOfMonth())
                                                ->where('created_at', '<=', $lastMonth->endOfMonth())
                                                ->count();
 
         // Get previous month data for percentage calculation
-        $prevMonth = Carbon::now()->subMonths(2);
+        $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
         $activeRecordsPrevMonth = (clone $query)->where('status', 1)
                                                 ->where('created_at', '<=', $prevMonth->endOfMonth())
