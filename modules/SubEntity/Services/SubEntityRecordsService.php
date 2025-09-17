@@ -51,7 +51,7 @@ class SubEntityRecordsService
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getMappedRecords(int $page = 1, int $perPage = 10, $type,$branchId = null): array    {
+    protected function getMappedRecords( $page = 1,  $perPage = 10, $type,$branchId = null): array    {
         return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type,null,$branchId);
     }
 
