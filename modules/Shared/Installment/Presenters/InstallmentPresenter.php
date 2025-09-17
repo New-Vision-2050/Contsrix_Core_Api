@@ -7,7 +7,7 @@ namespace Modules\Shared\Installment\Presenters;
 use Modules\Shared\Installment\Models\Installment;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class InstallmentPresenters extends AbstractPresenter
+class InstallmentPresenter extends AbstractPresenter
 {
     private Installment $installment;
 
