@@ -109,12 +109,13 @@ class SubEntityRecordsService
             $q->where("company_users_companies.status", 1);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
-        $type = "العملاء";
         if(CompanyUserRole::BROKER->value == $type) {
             $type = "الوسطاء";
         }
         elseif(CompanyUserRole::EMPLOYEE->value == $type) {
             $type = "الموظفين";
+        }else{
+            $type="العملاء";
         }
 
 
@@ -123,7 +124,6 @@ class SubEntityRecordsService
                 "title" => " احمالي عدد$type",
                 'total' => $totalRecords,
                 'percentage' => 100,
-                "type"=>$type
             ],
             [
                 "title" => "$type المضافين اخر الشهر ",
