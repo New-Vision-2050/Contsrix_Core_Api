@@ -37,4 +37,5 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     // sub-entity records
     Route::get('/records/list', [SubEntityRecordsController::class, 'index']);
+    Route::get('/records/widgets', [SubEntityRecordsController::class, 'widgets']);
 });
