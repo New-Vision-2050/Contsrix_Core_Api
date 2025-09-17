@@ -28,7 +28,8 @@ class Program extends Model
     protected $fillable = [
         'name',
         'is_active',
-        'parent_id'
+        'parent_id',
+        "slug"
     ];
 
     protected $casts = [
