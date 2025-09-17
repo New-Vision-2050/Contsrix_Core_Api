@@ -123,6 +123,7 @@ class SubEntityRecordsService
                 "title" => " احمالي عدد$type",
                 'total' => $totalRecords,
                 'percentage' => 100,
+                "type"=>$type
             ],
             [
                 "title" => "$type المضافين اخر الشهر ",
