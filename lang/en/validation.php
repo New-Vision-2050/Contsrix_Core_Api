@@ -281,6 +281,9 @@ return [
         "state_id"=>"state",
         "city_id"=>"city",
         "country_id"=>"country",
+        "branch_id"=>"branch",
+        "management_id"=>"managemant",
+
 
     ],
 
