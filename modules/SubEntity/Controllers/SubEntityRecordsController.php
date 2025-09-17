@@ -23,6 +23,7 @@ class SubEntityRecordsController extends Controller
         $list = $this->subEntityRecordsService->getRecords(
             $request->get('sub_entity_id'),
             $request->get('registration_form_id'),
+            $request->get('branch_id'),
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );

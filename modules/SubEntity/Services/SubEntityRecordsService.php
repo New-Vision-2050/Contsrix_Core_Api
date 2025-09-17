@@ -13,11 +13,7 @@ use Carbon\Carbon;
 
 class SubEntityRecordsService
 {
-    protected $mappedRegistrationForms = [
-        CompanyUserRole::BROKER->value,
-        CompanyUserRole::EMPLOYEE->value,
-        CompanyUserRole::CLIENT->value,
-    ];
+
 
 
     public function __construct(
@@ -28,6 +24,7 @@ class SubEntityRecordsService
     )
     {
     }
+
 
 
     public function getRecords(string $subEntityId, string $registrationFormId, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
@@ -51,9 +48,9 @@ class SubEntityRecordsService
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getMappedRecords(int $page = 1, int $perPage = 10, $type): array
+    protected function getMappedRecords(int $page = 1, int $perPage = 10, $type,$branchId = null): array
     {
-        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type);
+        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type,null,$branchId);
     }
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array
