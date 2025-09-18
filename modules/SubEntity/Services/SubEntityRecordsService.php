@@ -126,7 +126,7 @@ class SubEntityRecordsService
             ],
             [
                 "title" => "$type المضافين اخر الشهر ",
-                'count' => $recordsAddedLastMonth,
+                'total' => $recordsAddedLastMonth,
                 'percentage' =>  $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords) // No comparison for this metric
             ],
             [
@@ -136,7 +136,7 @@ class SubEntityRecordsService
             ],
            [
                 "title" => "$type المعلقين ",
-                'count' => $suspendedRecords,
+                'total' => $suspendedRecords,
                 'percentage' => $this->calculatePercentageChange($suspendedRecords, $totalRecords) // Could add comparison if needed
             ]
         ];
