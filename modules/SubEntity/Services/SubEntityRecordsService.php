@@ -35,7 +35,7 @@ class SubEntityRecordsService
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
         if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map);
+            return $this->getMappedRecords($page??1, $perPage??10, $registrationForm->company_user_role_map);
         }
 
         //get sub_entity
