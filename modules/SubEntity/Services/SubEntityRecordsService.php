@@ -30,12 +30,12 @@ class SubEntityRecordsService
     }
 
 
-    public function getRecords(string $subEntityId, string $registrationFormId, int $page = 1, int $perPage = 10): array|Collection|LengthAwarePaginator
+    public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, $page = 1,  $perPage = 10): array|Collection|LengthAwarePaginator
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
         if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map);
+            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map,$branchId);
         }
 
         //get sub_entity
