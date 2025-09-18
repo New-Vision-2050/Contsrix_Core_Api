@@ -30,12 +30,12 @@ class SubEntityRecordsService
     }
 
 
-    public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, $page = 1,  $perPage = 10): array|Collection|LengthAwarePaginator
+    public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, $page = 1, $perPage = 10): array|Collection|LengthAwarePaginator
     {
         $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
         if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map,$branchId);
+            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map, $branchId);
         }
 
         //get sub_entity
@@ -51,8 +51,9 @@ class SubEntityRecordsService
         return $this->superEntityService->getModelForId($superEntityId);
     }
 
-    protected function getMappedRecords( $page = 1,  $perPage = 10, $type,$branchId = null): array    {
-        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type,null,$branchId);
+    protected function getMappedRecords($page = 1, $perPage = 10, $type, $branchId = null): array
+    {
+        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type, null, $branchId);
     }
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array
@@ -108,13 +109,12 @@ class SubEntityRecordsService
             $q->where("company_users_companies.status", 1);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
-        if(CompanyUserRole::BROKER->value == $type) {
+        if (CompanyUserRole::BROKER->value == $type) {
             $type = "الوسطاء";
-        }
-        elseif(CompanyUserRole::EMPLOYEE->value == $type) {
+        } elseif (CompanyUserRole::EMPLOYEE->value == $type) {
             $type = "الموظفين";
-        }else{
-            $type="العملاء";
+        } else {
+            $type = "العملاء";
         }
 
 
@@ -127,14 +127,14 @@ class SubEntityRecordsService
             [
                 "title" => "$type المضافين اخر الشهر ",
                 'total' => $recordsAddedLastMonth,
-                'percentage' =>  $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords) // No comparison for this metric
+                'percentage' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords) // No comparison for this metric
             ],
             [
                 "title" => "$type النشيطين ",
                 'total' => $activeRecords,
                 'percentage' => $this->calculatePercentageChange($activeRecords, $totalRecords)
             ],
-           [
+            [
                 "title" => "$type المعلقين ",
                 'total' => $suspendedRecords,
                 'percentage' => $this->calculatePercentageChange($suspendedRecords, $totalRecords) // Could add comparison if needed
@@ -171,7 +171,7 @@ class SubEntityRecordsService
             ],
             'records_added_last_month' => [
                 'count' => $recordsAddedLastMonth,
-                'percentage_change' => $this->calculatePercentageChange($recordsAddedLastMonth ,$totalRecords)
+                'percentage_change' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords)
             ],
             'active_records' => [
                 'count' => $activeRecords,
