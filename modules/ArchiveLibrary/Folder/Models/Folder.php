@@ -37,7 +37,13 @@ class Folder extends Model implements HasMedia
 
     protected $casts = [
         'id' => 'string',
+        'password' => 'hashed',
     ];
+    protected $hidden = [
+        'password',
+    ];
+
+
 
     public function getMediaUrlsAttribute()
     {
