@@ -26,6 +26,10 @@ use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoFavoritesSettingRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoFilterSettingRequest;
 use Modules\Ecommerce\EcoAppSetting\Services\EcoFilterSettingCRUDService;
 use Modules\Ecommerce\EcoAppSetting\Presenters\EcoFilterSettingPresenter;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoProductCardSettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoFilterDisplaySettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoTermsSettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoCartSettingRequest;
 use Modules\Ecommerce\EcoAppSetting\Services\EcoAppSettingCRUDService;
 use Modules\Ecommerce\EcoAppSetting\Exports\EcoAppSettingExport;
 use Modules\Ecommerce\EcoAppSetting\Requests\ExportEcoAppSettingRequest;
@@ -180,5 +184,45 @@ class EcoAppSettingController extends Controller
         $data = EcoFilterSettingPresenter::collection($items);
 
         return Json::item(['filters' => $data]);
+    }
+
+    public function upsertProductCard(UpsertEcoProductCardSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoProductCardSettingDTO();
+        $item = $this->ecoAppSettingService->upsertProductCard($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertFilterDisplay(UpsertEcoFilterDisplaySettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoFilterDisplaySettingDTO();
+        $item = $this->ecoAppSettingService->upsertFilterDisplay($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertTerms(UpsertEcoTermsSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoTermsSettingDTO();
+        $item = $this->ecoAppSettingService->upsertTerms($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertCart(UpsertEcoCartSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoCartSettingDTO();
+        $item = $this->ecoAppSettingService->upsertCart($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 }
