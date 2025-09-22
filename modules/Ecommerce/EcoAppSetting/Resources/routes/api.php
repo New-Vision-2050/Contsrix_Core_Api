@@ -9,6 +9,10 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/upsert-theme', [EcoAppSettingController::class, 'upsertTheme']);
     Route::post('/upsert-front-page', [EcoAppSettingController::class, 'upsertFrontPage']);
     Route::post('/upsert-banner', [EcoAppSettingController::class, 'upsertBanner']);
+    Route::post('/upsert-product-display', [EcoAppSettingController::class, 'upsertProductDisplay']);
+    Route::post('/upsert-favorites', [EcoAppSettingController::class, 'upsertFavorites']);
+    Route::post('/upsert-filters', [EcoAppSettingController::class, 'upsertFilters']);
+    Route::get('/filters', [EcoAppSettingController::class, 'getFiltersByCompany']);
     Route::get('/company', [EcoAppSettingController::class, 'getByCompany']);
     Route::get('/banner', [EcoAppSettingController::class, 'getBannerByCompany']);
     Route::post('/export', [EcoAppSettingController::class, 'export']);

@@ -13,6 +13,8 @@ use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoAppSettingThemeDTO;
 use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoAppSettingFrontPageDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoProductDisplaySettingDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoFavoritesSettingDTO;
 use Modules\Shared\Media\Services\FileUploadService;
 
 class EcoAppSettingCRUDService
@@ -79,6 +81,26 @@ class EcoAppSettingCRUDService
                 "public"
             );
         }
+        return $ecoAppSetting;
+    }
+
+    public function upsertProductDisplay(UpsertEcoProductDisplaySettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
+        return $ecoAppSetting;
+    }
+
+    public function upsertFavorites(UpsertEcoFavoritesSettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
         return $ecoAppSetting;
     }
 }
