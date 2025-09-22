@@ -1,0 +1,14 @@
+{
+    "name": "EcoAppSetting",
+    "alias": "ecoappsetting",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoAppSetting\\Providers\\EcoAppSettingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

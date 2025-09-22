@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\EcoCategory\Controllers\EcoCategoryController;
 
 
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
+Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [EcoCategoryController::class, 'index']);
     Route::post('/', [EcoCategoryController::class, 'store']);
     

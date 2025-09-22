@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\EcoBankAccount\Controllers\EcoBankAccountController;
 
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
+Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [EcoBankAccountController::class, 'index']);
     Route::post('/', [EcoBankAccountController::class, 'store']);
     Route::post('/export', [EcoBankAccountController::class, 'export']);

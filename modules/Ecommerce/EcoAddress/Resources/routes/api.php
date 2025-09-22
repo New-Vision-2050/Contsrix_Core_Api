@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\EcoAddress\Controllers\EcoAddressController;
 
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
+Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [EcoAddressController::class, 'index']);
     Route::post('/', [EcoAddressController::class, 'store']);
     Route::post('/export', [EcoAddressController::class, 'export']);
