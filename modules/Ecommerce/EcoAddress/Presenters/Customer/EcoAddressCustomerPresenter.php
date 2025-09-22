@@ -2,15 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAddress\Presenters;
+namespace Modules\Ecommerce\EcoAddress\Presenters\Customer;
 
-use Modules\Country\Presenters\CountryStateCityPresenter;
-use Modules\Ecommerce\EcoAddress\Models\EcoAddress;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Ecommerce\EcoAddress\Models\EcoAddress;
 use Modules\Country\Presenters\CityPresenter;
 use Modules\Country\Presenters\CountryPresenter;
-
-class EcoAddressPresenter extends AbstractPresenter
+class EcoAddressCustomerPresenter extends AbstractPresenter
 {
     private EcoAddress $ecoAddress;
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAddress\Commands;
+namespace Modules\Ecommerce\EcoAddress\Commands\Dashboard;
 
 use Ramsey\Uuid\UuidInterface;
 
-class UpdateEcoAddressCommand
+class UpdateEcoAddressDashboardCommand
 {
     public function __construct(
         private UuidInterface $id,

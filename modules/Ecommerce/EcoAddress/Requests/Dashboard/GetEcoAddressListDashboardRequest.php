@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAddress\Requests;
+namespace Modules\Ecommerce\EcoAddress\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Ramsey\Uuid\Uuid;
 
-class GetEcoAddressListRequest extends FormRequest
+class GetEcoAddressListDashboardRequest extends FormRequest
 {
     public function rules(): array
     {

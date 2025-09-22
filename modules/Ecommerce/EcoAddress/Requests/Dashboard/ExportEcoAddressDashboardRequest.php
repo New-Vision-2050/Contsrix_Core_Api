@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAddress\Requests;
+namespace Modules\Ecommerce\EcoAddress\Requests\Dashboard;
 
-use App\Http\Requests\BaseExportRequest;
+use Illuminate\Foundation\Http\FormRequest;
 
-class ExportEcoAddressRequest extends BaseExportRequest
+class ExportEcoAddressDashboardRequest extends FormRequest
 {
     protected function getModelSpecificRules(): array
     {

@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAddress\Services;
+namespace Modules\Ecommerce\EcoAddress\Services\Customer;
 
 use Illuminate\Support\Collection;
 use Modules\Ecommerce\EcoAddress\DTO\CreateEcoAddressDTO;
+use Modules\Ecommerce\EcoAddress\DTO\UpdateEcoAddressDTO;
 use Modules\Ecommerce\EcoAddress\Models\EcoAddress;
 use Modules\Ecommerce\EcoAddress\Repositories\EcoAddressRepository;
 use Ramsey\Uuid\UuidInterface;
-use App\Traits\HasExportService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Modules\Ecommerce\EcoAddress\DTO\Customer\CreateEcoAddressCustomerDTO;
 
-class EcoAddressCRUDService
+class EcoAddressCustomerService
 {
-    use HasExportService;
-
     public function __construct(
         private EcoAddressRepository $repository,
     ) {
     }
 
-    public function create(CreateEcoAddressDTO $createEcoAddressDTO): EcoAddress
+    public function create(CreateEcoAddressCustomerDTO $createEcoAddressDTO): EcoAddress
     {
         if ($createEcoAddressDTO->isDefault === true) {
         // Unset other default addresses of the same type for this client/company
@@ -28,10 +28,9 @@ class EcoAddressCRUDService
                     ->where('eco_client_id', $createEcoAddressDTO->ecoClientId)
                     ->where('is_default',1)
                     ->update(['is_default' => 0]);
-    }
-
-
-         return $this->repository->createEcoAddress($createEcoAddressDTO->toArray());
+        }
+           
+        return $this->repository->createEcoAddress($createEcoAddressDTO->toArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array

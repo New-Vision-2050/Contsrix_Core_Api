@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAddress\Requests;
+namespace Modules\Ecommerce\EcoAddress\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Ecommerce\EcoAddress\DTO\CreateEcoAddressDTO;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Validation\Rule;
-class CreateEcoAddressRequest extends FormRequest
+use Modules\Ecommerce\EcoAddress\DTO\Dashboard\CreateEcoAddressDashboardDTO;
+
+class CreateEcoAddressDashboardRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -88,11 +90,11 @@ class CreateEcoAddressRequest extends FormRequest
         ];
     }
 
-    public function createCreateEcoAddressDTO(): CreateEcoAddressDTO
+    public function createCreateEcoAddressDTO(): CreateEcoAddressDashboardDTO
     {
 
         $validatedData = $this->validated();
-        return new CreateEcoAddressDTO(
+        return new CreateEcoAddressDashboardDTO(
             companyId: Uuid::fromString(tenant("id")),
             ecoClientId: $validatedData['eco_client_id'],
             firstName: $validatedData['first_name'],

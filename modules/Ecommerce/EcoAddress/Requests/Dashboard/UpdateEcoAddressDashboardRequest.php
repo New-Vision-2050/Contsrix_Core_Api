@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAddress\Requests;
+namespace Modules\Ecommerce\EcoAddress\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoAddress\Commands\UpdateEcoAddressCommand;
-use Modules\Ecommerce\EcoAddress\Models\EcoAddress; // Import model
 use Illuminate\Validation\Rule;
+use Modules\Ecommerce\EcoAddress\Commands\Dashboard\UpdateEcoAddressDashboardCommand;
 
-class UpdateEcoAddressRequest extends FormRequest
+class UpdateEcoAddressDashboardRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -66,10 +65,10 @@ class UpdateEcoAddressRequest extends FormRequest
         ];
     }
 
-    public function createUpdateEcoAddressCommand(): UpdateEcoAddressCommand
+    public function createUpdateEcoAddressCommand(): UpdateEcoAddressDashboardCommand
     {
         $validatedData = $this->validated();
-        return new UpdateEcoAddressCommand(
+        return new UpdateEcoAddressDashboardCommand(
             id: Uuid::fromString($this->route('id')),
             firstName: $validatedData['first_name'] ?? null,
             lastName: $validatedData['last_name'] ?? null,
@@ -86,3 +85,4 @@ class UpdateEcoAddressRequest extends FormRequest
         );
     }
 }
+
