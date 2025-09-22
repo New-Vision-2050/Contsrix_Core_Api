@@ -22,6 +22,7 @@ class EcoCategoryPresenter extends AbstractPresenter
             'id' => $this->ecoCategory->id,
             'name' => $this->ecoCategory->name,
             'description' => $this->ecoCategory->description,
+            'is_active' => $this->ecoCategory->is_active,
             'parent' => $this->ecoCategory->parent
                 ? [
                     'id' => $this->ecoCategory->parent->id,
