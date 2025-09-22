@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\Folder\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\ArchiveLibrary\File\Models\File;
@@ -60,6 +61,12 @@ class FolderRepository extends BaseRepository
 
     public function deleteFolder(UuidInterface $id): bool
     {
+        $folder = $this->getFolder($id);
+        if(count($folder->children) !=0)
+            throw new CustomException(__("validation.can-not-delete-has-children"));
+        if(count($folder->files) !=0)
+            throw new CustomException(__("validation.can-not-delete-has-children"));
+
         return $this->delete($id);
     }
     public function canViewFolder($folderId, $userId): bool
