@@ -2,31 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoShop\Services;
+namespace Modules\Ecommerce\EcoShop\Services\Dashboard;
 
-use Illuminate\Support\Collection;
-use Modules\Ecommerce\EcoShop\DTO\CreateEcoShopDTO;
-use Modules\Ecommerce\EcoShop\DTO\UpsertEcoShopDTO;
+use Modules\Ecommerce\EcoShop\DTO\Dashboard\CreateEcoShopDashboardDTO;
 use Modules\Ecommerce\EcoShop\Models\EcoShop;
 use Modules\Ecommerce\EcoShop\Repositories\EcoShopRepository;
+use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
-use App\Traits\HasExportService;
+use Illuminate\Http\UploadedFile;
 
-class EcoShopCRUDService
+class EcoShopDashboardCRUDService
 {
-    use HasExportService;
-
     public function __construct(
         private EcoShopRepository $repository,
+        private FileUploadService $fileUploadService,
     ) {
     }
 
-    public function create(CreateEcoShopDTO $createEcoShopDTO): EcoShop
+    public function create(CreateEcoShopDashboardDTO $createEcoShopDTO): EcoShop
     {
          return $this->repository->createEcoShop($createEcoShopDTO->toArray());
     }
 
-    public function upsert(CreateEcoShopDTO $createEcoShopDTO): EcoShop
+    public function upsert(CreateEcoShopDashboardDTO $createEcoShopDTO): EcoShop
     {
         // Check if shop already exists for this company
         $existingShop = $this->repository->findByCompanyId($createEcoShopDTO->getCompanyId());

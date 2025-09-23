@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoShop\Requests;
+namespace Modules\Ecommerce\EcoShop\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
 use Modules\Ecommerce\EcoShop\DTO\CreateEcoShopDTO;
+use Modules\Ecommerce\EcoShop\DTO\Dashboard\CreateEcoShopDashboardDTO;
 
-class CreateEcoShopRequest extends FormRequest
+class CreateEcoShopDashboardRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -46,9 +47,9 @@ class CreateEcoShopRequest extends FormRequest
         ];
     }
 
-    public function createCreateEcoShopDTO(): CreateEcoShopDTO
+    public function createCreateEcoShopDTO(): CreateEcoShopDashboardDTO
     {
-        return new CreateEcoShopDTO(
+        return new CreateEcoShopDashboardDTO(
             companyId: Uuid::fromString(tenant("id")),
             name: $this->get('name'),
             description: $this->get('description'),

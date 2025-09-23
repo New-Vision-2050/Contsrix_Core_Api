@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoShop\Requests;
+namespace Modules\Ecommerce\EcoShop\Requests\Dashboard;
 
 use App\Http\Requests\BaseExportRequest;
 
-class ExportEcoShopRequest extends BaseExportRequest
+class ExportEcoShopDashboardRequest extends BaseExportRequest
 {
     protected function getModelSpecificRules(): array
     {

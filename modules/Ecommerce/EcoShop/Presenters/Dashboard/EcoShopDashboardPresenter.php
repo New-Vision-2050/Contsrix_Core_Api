@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoShop\Presenters;
+namespace Modules\Ecommerce\EcoShop\Presenters\Dashboard;
 
-use Modules\Ecommerce\EcoShop\Models\EcoShop;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Ecommerce\EcoShop\Models\EcoShop;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
-class EcoShopPresenter extends AbstractPresenter
+class EcoShopDashboardPresenter extends AbstractPresenter
 {
     private EcoShop $ecoShop;
 
