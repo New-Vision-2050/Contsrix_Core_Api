@@ -29,7 +29,8 @@ return new class extends Migration
 
             // Indexes
             $table->index('company_id');
-            $table->unique(['company_id']); // One app setting per company
+            $table->index('type_page');
+            $table->unique(['company_id', 'type_page']); // One banner setting per company per page type
        });
     }
 

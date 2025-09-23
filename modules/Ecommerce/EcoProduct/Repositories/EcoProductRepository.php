@@ -6,6 +6,7 @@ namespace Modules\Ecommerce\EcoProduct\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Ecommerce\EcoProduct\Commands\Dashboard\UpdateEcoProductDashboardCommand;
 use Modules\Ecommerce\EcoProduct\Commands\UpdateEcoProductCommand;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
@@ -77,7 +78,7 @@ class EcoProductRepository extends BaseRepository
         return $ecoProduct;
     }
 
-  public function updateEcoProduct(UuidInterface $id, UpdateEcoProductCommand $command): EcoProduct
+  public function updateEcoProduct(UuidInterface $id, UpdateEcoProductDashboardCommand $command): EcoProduct
     {
         $ecoProduct = $this->findOneOrFail($id);
         $productData = $command->toArray();
@@ -166,9 +167,7 @@ class EcoProductRepository extends BaseRepository
         }elseif ($command->getDeleteMainImage() === true) { // Case 2: Explicitly asked to delete main image
             $ecoProduct->clearMediaCollection('eco_product_main_image');
         }
-
-
-
+        
         return $ecoProduct->load(['taxes', 'details', 'customFields', 'seo', 'associatedProducts']);
     }
 

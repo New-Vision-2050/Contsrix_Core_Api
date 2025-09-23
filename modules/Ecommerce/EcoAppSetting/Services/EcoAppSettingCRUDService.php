@@ -13,6 +13,12 @@ use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoAppSettingThemeDTO;
 use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoAppSettingFrontPageDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoProductDisplaySettingDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoFavoritesSettingDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoProductCardSettingDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoFilterDisplaySettingDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoTermsSettingDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoCartSettingDTO;
 use Modules\Shared\Media\Services\FileUploadService;
 
 class EcoAppSettingCRUDService
@@ -79,6 +85,83 @@ class EcoAppSettingCRUDService
                 "public"
             );
         }
+        return $ecoAppSetting;
+    }
+
+    public function upsertProductDisplay(UpsertEcoProductDisplaySettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
+        return $ecoAppSetting;
+    }
+
+    public function upsertFavorites(UpsertEcoFavoritesSettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
+        return $ecoAppSetting;
+    }
+
+    public function upsertProductCard(UpsertEcoProductCardSettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
+        return $ecoAppSetting;
+    }
+
+    public function upsertFilterDisplay(UpsertEcoFilterDisplaySettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
+        return $ecoAppSetting;
+    }
+
+    public function upsertTerms(UpsertEcoTermsSettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
+        return $ecoAppSetting;
+    }
+
+    public function upsertCart(UpsertEcoCartSettingDTO $upsertDTO): EcoAppSetting
+    {
+        $ecoAppSetting = $this->repository->upsertByCompanyId(
+            $upsertDTO->company_id->toString(),
+            $upsertDTO->toArray()
+        );
+
+        // Handle empty cart image upload
+        $emptyCartImage = $upsertDTO->getEmptyCartImage();
+        if ($emptyCartImage) {
+            // Clear existing empty cart images before uploading new one
+            $ecoAppSetting->clearMediaCollection('empty_cart_image');
+            
+            $path = $ecoAppSetting->company->name . '/ecommerce/settings/cart';
+
+            $this->fileUploadService->uploadFile(
+                $ecoAppSetting,
+                [$emptyCartImage],
+                $path,
+                'empty_cart_image',
+                "public"
+            );
+        }
+
         return $ecoAppSetting;
     }
 }

@@ -32,9 +32,9 @@ class EcoAddressServiceProvider extends ModuleServiceProvider
     }
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/ecommerce/addresses')
+        Route::prefix('api/v1/ecommerce')
             ->middleware('api')
-            ->group($this->getModulePath() . '/Resources/routes/api.php');
+            ->group($this->getModulePath() . '/Resources/routes/dashboard.php');
 
     }
 }

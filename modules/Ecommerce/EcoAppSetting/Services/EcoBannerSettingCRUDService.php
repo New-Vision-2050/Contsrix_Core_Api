@@ -19,8 +19,10 @@ class EcoBannerSettingCRUDService
 
     public function upsert(UpsertEcoBannerSettingDTO $upsertDTO): EcoBannerSetting
     {
-        $ecoBannerSetting = $this->repository->upsertByCompanyId(
+        // Use company_id and type_page as composite key for upsert
+        $ecoBannerSetting = $this->repository->upsertByCompanyAndTypePage(
             $upsertDTO->company_id->toString(),
+            $upsertDTO->type_page,
             $upsertDTO->toArray()
         );
 
@@ -44,5 +46,10 @@ class EcoBannerSettingCRUDService
     public function getByCompany(string $companyId): ?EcoBannerSetting
     {
         return $this->repository->findByCompanyId($companyId);
+    }
+
+    public function getByCompanyAndTypePage(string $companyId, ?string $typePage): ?EcoBannerSetting
+    {
+        return $this->repository->findByCompanyAndTypePage($companyId, $typePage);
     }
 }

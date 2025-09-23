@@ -21,6 +21,15 @@ use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoAppSettingFrontPageRequest
 use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoBannerSettingRequest;
 use Modules\Ecommerce\EcoAppSetting\Services\EcoBannerSettingCRUDService;
 use Modules\Ecommerce\EcoAppSetting\Presenters\EcoBannerSettingPresenter;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoProductDisplaySettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoFavoritesSettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoFilterSettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Services\EcoFilterSettingCRUDService;
+use Modules\Ecommerce\EcoAppSetting\Presenters\EcoFilterSettingPresenter;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoProductCardSettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoFilterDisplaySettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoTermsSettingRequest;
+use Modules\Ecommerce\EcoAppSetting\Requests\UpsertEcoCartSettingRequest;
 use Modules\Ecommerce\EcoAppSetting\Services\EcoAppSettingCRUDService;
 use Modules\Ecommerce\EcoAppSetting\Exports\EcoAppSettingExport;
 use Modules\Ecommerce\EcoAppSetting\Requests\ExportEcoAppSettingRequest;
@@ -31,9 +40,8 @@ class EcoAppSettingController extends Controller
 {
     public function __construct(
         private EcoAppSettingCRUDService $ecoAppSettingService,
-        private UpdateEcoAppSettingHandler $updateEcoAppSettingHandler,
-        private DeleteEcoAppSettingHandler $deleteEcoAppSettingHandler,
         private EcoBannerSettingCRUDService $ecoBannerSettingService,
+        private EcoFilterSettingCRUDService $ecoFilterSettingService,
     ) {
     }
 
@@ -63,25 +71,6 @@ class EcoAppSettingController extends Controller
         $presenter = new EcoAppSettingPresenter($createdItem);
 
         return Json::item($presenter->getData());
-    }
-
-    public function update(UpdateEcoAppSettingRequest $request): JsonResponse
-    {
-        $command = $request->createUpdateEcoAppSettingCommand();
-        $this->updateEcoAppSettingHandler->handle($command);
-
-        $item = $this->ecoAppSettingService->get($command->getId());
-
-        $presenter = new EcoAppSettingPresenter($item);
-
-        return Json::item( $presenter->getData());
-    }
-
-    public function delete(DeleteEcoAppSettingRequest $request): JsonResponse
-    {
-        $this->deleteEcoAppSettingHandler->handle(Uuid::fromString($request->route('id')));
-
-        return Json::deleted();
     }
 
     /**
@@ -151,6 +140,88 @@ class EcoAppSettingController extends Controller
         }
 
         $presenter = new EcoBannerSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertProductDisplay(UpsertEcoProductDisplaySettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoProductDisplaySettingDTO();
+        $item = $this->ecoAppSettingService->upsertProductDisplay($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertFavorites(UpsertEcoFavoritesSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoFavoritesSettingDTO();
+        $item = $this->ecoAppSettingService->upsertFavorites($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertFilters(UpsertEcoFilterSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoFilterSettingDTO();
+        $items = $this->ecoFilterSettingService->upsert($command);
+        return Json::item(EcoFilterSettingPresenter::collection($items));
+
+    }
+
+    public function getFiltersByCompany(): JsonResponse
+    {
+        $companyId = tenant("id");
+        $items = $this->ecoFilterSettingService->getByCompany($companyId);
+
+        if ($items->isEmpty()) {
+            return Json::error('Filter settings not found for this company', 404);
+        }
+
+        $data = EcoFilterSettingPresenter::collection($items);
+
+        return Json::item(['filters' => $data]);
+    }
+
+    public function upsertProductCard(UpsertEcoProductCardSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoProductCardSettingDTO();
+        $item = $this->ecoAppSettingService->upsertProductCard($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertFilterDisplay(UpsertEcoFilterDisplaySettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoFilterDisplaySettingDTO();
+        $item = $this->ecoAppSettingService->upsertFilterDisplay($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertTerms(UpsertEcoTermsSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoTermsSettingDTO();
+        $item = $this->ecoAppSettingService->upsertTerms($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function upsertCart(UpsertEcoCartSettingRequest $request): JsonResponse
+    {
+        $command = $request->createUpsertEcoCartSettingDTO();
+        $item = $this->ecoAppSettingService->upsertCart($command);
+
+        $presenter = new EcoAppSettingPresenter($item);
 
         return Json::item($presenter->getData());
     }
