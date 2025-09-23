@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Presenters;
+namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Country\Presenters\CountryPresenter;
 use Modules\Ecommerce\EcoProduct\Models\ProductTax;
 
-class ProductTaxPresenter extends AbstractPresenter
+class ProductTaxDashboardPresenter extends AbstractPresenter
 {
     private ProductTax $productTax;
 

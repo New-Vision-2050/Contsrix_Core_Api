@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\DTO;
+namespace Modules\Ecommerce\EcoProduct\DTO\Dashboard;
 
 use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 
-class CreateEcoProductDTO
+class CreateEcoProductDashboardDTO
 {
     public function __construct(
         public UuidInterface $companyId,

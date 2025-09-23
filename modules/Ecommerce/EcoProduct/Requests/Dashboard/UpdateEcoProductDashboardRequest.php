@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Requests;
+namespace Modules\Ecommerce\EcoProduct\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Modules\Ecommerce\EcoProduct\Commands\Dashboard\UpdateEcoProductDashboardCommand;
 use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoProduct\Commands\UpdateEcoProductCommand;
-use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Rule;
 
-class UpdateEcoProductRequest extends FormRequest
+class UpdateEcoProductDashboardRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -148,7 +147,7 @@ class UpdateEcoProductRequest extends FormRequest
     /**
      * Create an UpdateEcoProductCommand from the validated request data.
      */
-    public function createUpdateEcoProductCommand(): UpdateEcoProductCommand
+    public function createUpdateEcoProductCommand(): UpdateEcoProductDashboardCommand
     {
         $validatedData = $this->validated();
         $productId = Uuid::fromString($this->route('id'));
@@ -165,7 +164,7 @@ class UpdateEcoProductRequest extends FormRequest
             $seoData = null;
         }
 
-        return new UpdateEcoProductCommand(
+        return new UpdateEcoProductDashboardCommand(
             id: $productId,
             name: $validatedData['name'],
             description: $description,

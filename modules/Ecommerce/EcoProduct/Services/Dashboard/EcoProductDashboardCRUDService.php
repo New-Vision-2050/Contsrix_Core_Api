@@ -2,24 +2,27 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Services;
+namespace Modules\Ecommerce\EcoProduct\Services\Dashboard;
 
 use Illuminate\Support\Collection;
-use Modules\Ecommerce\EcoProduct\DTO\CreateEcoProductDTO;
+use Modules\Ecommerce\EcoProduct\DTO\Dashboard\CreateEcoProductDashboardDTO;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use Modules\Ecommerce\EcoProduct\Repositories\EcoProductRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
+use App\Traits\HasExportService;
 
-class EcoProductCRUDService
+class EcoProductDashboardCRUDService
 {
+    use HasExportService;
+
     public function __construct(
         private EcoProductRepository $repository,
         private FileUploadService $fileUploadService,
     ) {
     }
 
-    public function create(CreateEcoProductDTO $createEcoProductDTO): EcoProduct
+    public function create(CreateEcoProductDashboardDTO $createEcoProductDTO): EcoProduct
     {
 
         $createEcoProduct = $this->repository->createEcoProduct($createEcoProductDTO->toArray());
@@ -68,9 +71,6 @@ class EcoProductCRUDService
         );
     }
 
-    /**
-     * Get product statistics for dashboard cards
-     */
     public function getProductStatistics(): array
     {
         try {

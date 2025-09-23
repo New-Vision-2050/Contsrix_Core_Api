@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Presenters;
+namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
 
-use Modules\Ecommerce\EcoCategory\Presenters\EcoCategoryPresenter;
-use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use Modules\Ecommerce\EcoBrand\Presenters\EcoBrandPresenter;
+use Modules\Ecommerce\EcoCategory\Presenters\EcoCategoryPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 
-class EcoProductDetailsPresenter extends AbstractPresenter
+class EcoProductDashboardDetailsPresenter extends AbstractPresenter
 {
     private EcoProduct $ecoProduct;
 
@@ -39,11 +39,11 @@ class EcoProductDetailsPresenter extends AbstractPresenter
             'category' => $this->ecoProduct->category ? (new EcoCategoryPresenter($this->ecoProduct->category))->getData() : null,
             'brand' => $this->ecoProduct->brand ? (new EcoBrandPresenter($this->ecoProduct->brand))->getData() : null,
             'type' => $this->ecoProduct->type,
-            'taxes' => ProductTaxPresenter::collection($this->ecoProduct->taxes),
-            'details' => ProductDetailPresenter::collection($this->ecoProduct->details),
-            'custom_fields' => ProductCustomFieldPresenter::collection($this->ecoProduct->customFields),
-            'seo' => $this->ecoProduct->seo ? (new ProductSEOPresenter($this->ecoProduct->seo))->getData() : null,
-            'associated_product' => EcoProductPresenter::collection($this->ecoProduct->associatedProducts),
+            'taxes' => ProductTaxDashboardPresenter::collection($this->ecoProduct->taxes),
+            'details' => ProductDetailDashboardPresenter::collection($this->ecoProduct->details),
+            'custom_fields' => ProductCustomFieldDashboardPresenter::collection($this->ecoProduct->customFields),
+            'seo' => $this->ecoProduct->seo ? (new ProductSEODashboardPresenter($this->ecoProduct->seo))->getData() : null,
+            'associated_product' => EcoProductDashboardPresenter::collection($this->ecoProduct->associatedProducts),
             'main_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
             'other_images' => MediaPresenter::collection($this->ecoProduct->getMedia('eco_product_other_image')),
         ];

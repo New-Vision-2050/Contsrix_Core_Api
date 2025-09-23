@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Requests;
+namespace Modules\Ecommerce\EcoProduct\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Modules\Ecommerce\EcoProduct\DTO\Dashboard\CreateEcoProductDashboardDTO;
 use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoProduct\DTO\CreateEcoProductDTO;
-use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\Rule;
 
-class CreateEcoProductRequest extends FormRequest
+class CreateEcoProductDashboardRequest extends FormRequest
 {
 
     public function rules(): array
@@ -198,7 +197,7 @@ class CreateEcoProductRequest extends FormRequest
     /**
      * Create a DTO from the validated request data.
      */
-    public function createCreateEcoProductDTO(): CreateEcoProductDTO
+    public function createCreateEcoProductDTO(): CreateEcoProductDashboardDTO
     {
         $validatedData = $this->validated();
 
@@ -212,7 +211,7 @@ class CreateEcoProductRequest extends FormRequest
             $seoData = null;
         }
 
-        return new CreateEcoProductDTO(
+        return new CreateEcoProductDashboardDTO(
             companyId: Uuid::fromString(tenant("id")),
             name: $validatedData['name'],
             description: $description,

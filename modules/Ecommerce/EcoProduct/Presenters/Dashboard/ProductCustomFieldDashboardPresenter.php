@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Presenters;
+namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Ecommerce\EcoProduct\Models\ProductCustomField;
 
-class ProductCustomFieldPresenter extends AbstractPresenter
+class ProductCustomFieldDashboardPresenter extends AbstractPresenter
 {
     private ProductCustomField $productCustomField;
 

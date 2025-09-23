@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Commands;
+namespace Modules\Ecommerce\EcoProduct\Commands\Dashboard;
 
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Http\UploadedFile;
 
-class UpdateEcoProductCommand
+class UpdateEcoProductDashboardCommand
 {
     public function __construct(
         private UuidInterface $id,
