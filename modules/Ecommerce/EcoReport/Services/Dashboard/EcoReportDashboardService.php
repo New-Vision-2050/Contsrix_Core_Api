@@ -1,6 +1,8 @@
 <?php
 
-namespace Modules\Ecommerce\EcoReport\Services;
+declare(strict_types=1);
+
+namespace Modules\Ecommerce\EcoReport\Services\Dashboard;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -8,9 +10,7 @@ use Carbon\Carbon;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use Modules\Ecommerce\EcoCategory\Models\EcoCategory;
 use Modules\Ecommerce\EcoOrder\Models\EcoOrder;
-use Modules\Ecommerce\EcoOrderDetail\Models\EcoOrderDetail;
-
-class DashboardService
+class EcoReportDashboardService
 {
     /**
      * Get the main dashboard data

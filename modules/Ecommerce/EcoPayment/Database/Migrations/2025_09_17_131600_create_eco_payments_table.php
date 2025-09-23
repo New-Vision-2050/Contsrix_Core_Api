@@ -17,7 +17,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('payment_id')->references('id')->on('payments')->onDelete('cascade');
+            // $table->foreign('payment_id')->references('id')->on('payments')->onDelete('cascade');
             
             $table->unique(['company_id', 'payment_id']);
         });
