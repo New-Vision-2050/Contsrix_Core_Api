@@ -88,7 +88,7 @@ class DocumentTypeController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'document_type.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new DocumentTypeExport($this->documentTypeService, $filters), $fileName);
     }
 }

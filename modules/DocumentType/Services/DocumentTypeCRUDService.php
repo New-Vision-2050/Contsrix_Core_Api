@@ -28,7 +28,6 @@ class DocumentTypeCRUDService
     public function list(array $filters, int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
-            filters: $filters,
             page: $page,
             perPage: $perPage,
         );
