@@ -18,6 +18,7 @@ use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\RoleAndPermission\DTO\CreateRoleDTO;
 use Modules\User\Repositories\UserRepository;
 use RabbitMQ\Jobs\BroadcastMessage;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
 class CompanyUserCRUDService
@@ -27,6 +28,7 @@ class CompanyUserCRUDService
     public function __construct(
         private CompanyUserRepository $repository,
         private UserRepository        $userRepository,
+        private CompanyRepository     $companyRepository
     )
     {
     }
@@ -56,12 +58,13 @@ class CompanyUserCRUDService
 
     public function sendEmailAssignToCompanyToUser($user , $companyId)
     {
-        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id, "company_id" => $companyId]);
+        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id])->first();
+        $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
         $data = [
             "name" => $userInCompany->name,
-            "company_name" => $userInCompany->company?->name,
-            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
-            "serial_no" => $userInCompany->company?->serial_no
+            "company_name" => $company->name,
+            "domain_name" => "https://".$company->domains()->first()?->domain,
+            "serial_no" => $company->serial_no
         ];
         $userInCompany->notify(new SendDomainForUser($data));
     }
