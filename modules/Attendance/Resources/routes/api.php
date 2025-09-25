@@ -18,7 +18,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 | is assigned the "api" middleware group and "auth:api" middleware.
 |
 */
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
+Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(function () {
 
 // Attendance Management Routes
 Route::prefix('attendance')->group(function () {

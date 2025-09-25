@@ -1,0 +1,14 @@
+{
+    "name": "EcoPayment",
+    "alias": "ecopayment",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\EcoPayment\\Providers\\EcoPaymentServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

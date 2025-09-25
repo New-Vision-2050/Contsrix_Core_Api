@@ -14,15 +14,16 @@ class UpdateEcoCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string'],
+            'name' => ['nullable', 'string'],
             // 'name.ar' => ['required', 'string', 'max:255'],
             // 'name.en' => ['nullable', 'string', 'max:255'],
 
-            'description' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
             // 'description.ar' => ['required', 'string', 'max:1000'],
             // 'description.en' => ['nullable', 'string', 'max:1000'],
 
             'parent_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
+            'is_active' => ['required', 'boolean'],
         ];
     }
 
@@ -55,9 +56,10 @@ class UpdateEcoCategoryRequest extends FormRequest
 
         return new UpdateEcoCategoryCommand(
             id: Uuid::fromString($this->route('id')),
-            name: $validatedData['name'],
-            description: $validatedData['description'],
-            perentId: $validatedData['parent_id']??null
+            name: $this->get('name'),
+            description: $this->get('description'),
+            perentId: $this->get('parent_id'),
+            isActive: $this->get('is_active')
         );
     }
 }
