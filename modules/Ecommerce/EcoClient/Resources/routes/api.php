@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\EcoClient\Controllers\EcoClientController;
 
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
+Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [EcoClientController::class, 'index']);
     Route::post('/', [EcoClientController::class, 'store']);
     Route::post('/export', [EcoClientController::class, 'export']);

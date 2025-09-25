@@ -10,9 +10,10 @@ class UpdateEcoCategoryCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
+        private ?string $name,
         private ?string $description,
-        private ?string $perentId
+        private ?string $perentId,
+        private ?int $isActive
     ) {
     }
 
@@ -26,8 +27,10 @@ class UpdateEcoCategoryCommand
         return array_filter([
             'name' => $this->name,
             'description' => $this->description,
-            'parent_id' => $this->perentId
-        ]);
-
+            'parent_id' => $this->perentId,
+            'is_active' => $this->isActive
+        ], function ($value) {
+            return $value !== null;
+        });
     }
 }

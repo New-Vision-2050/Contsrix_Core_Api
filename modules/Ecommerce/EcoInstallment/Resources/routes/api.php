@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\EcoInstallment\Controllers\EcoInstallmentController;
 
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
+Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [EcoInstallmentController::class, 'index']);
     Route::post('/', [EcoInstallmentController::class, 'upsert']);
     Route::post('/export', [EcoInstallmentController::class, 'export']);
