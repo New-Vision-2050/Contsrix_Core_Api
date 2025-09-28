@@ -16,7 +16,7 @@ class UpdateNotificationSettingsRequest extends FormRequest
         return [
             'type' => 'sometimes|string|in:' . implode(',', NotificationSettings::getTypeOptions()),
             'email' => 'nullable|email|max:255|required_if:type,mail|required_if:type,both',
-            'phone' => 'nullable|string|max:20|required_if:type,mail|required_if:type,both',
+            'phone' => 'nullable|string|max:20|required_if:type,phone|required_if:type,both',
             'reminder_type' => 'sometimes|string|in:' . implode(',', NotificationSettings::getReminderTypeOptions()),
             'message' => 'nullable|string|max:1000',
             'is_active' => 'sometimes|boolean',
