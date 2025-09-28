@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\Handlers;
+namespace Modules\Ecommerce\EcoBankAccount\Handlers\Dashboard;
 
 use Modules\Ecommerce\EcoBankAccount\Repositories\EcoBankAccountRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class DeleteEcoBankAccountHandler
+class DeleteEcoBankAccountDashboardHandler
 {
     public function __construct(
         private EcoBankAccountRepository $repository,

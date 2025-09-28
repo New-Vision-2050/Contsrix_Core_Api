@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\Requests;
+namespace Modules\Ecommerce\EcoBankAccount\Requests\Dashboard;
 
 use App\Http\Requests\BaseExportRequest;
 
-class ExportEcoBankAccountRequest extends BaseExportRequest
+class ExportEcoBankAccountDashboardRequest extends BaseExportRequest
 {
     protected function getModelSpecificRules(): array
     {

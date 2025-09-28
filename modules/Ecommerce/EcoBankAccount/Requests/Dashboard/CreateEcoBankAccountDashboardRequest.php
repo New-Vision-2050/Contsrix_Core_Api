@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\Requests;
+namespace Modules\Ecommerce\EcoBankAccount\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoBankAccount\DTO\CreateEcoBankAccountDTO;
+use Modules\Ecommerce\EcoBankAccount\DTO\Dashboard\CreateEcoBankAccountDashboardDTO;
 
-class CreateEcoBankAccountRequest extends FormRequest
+class CreateEcoBankAccountDashboardRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -47,7 +47,7 @@ class CreateEcoBankAccountRequest extends FormRequest
                     ->where('company_id', tenant('id'))
                     ->where('is_primary', true)
                     ->exists();
-                
+
                 if ($existingPrimary) {
                     $validator->errors()->add('is_primary', 'يوجد حساب أساسي بالفعل لهذه الشركة.');
                 }
@@ -55,9 +55,9 @@ class CreateEcoBankAccountRequest extends FormRequest
         });
     }
 
-    public function createCreateEcoBankAccountDTO(): CreateEcoBankAccountDTO
+    public function createCreateEcoBankAccountDTO(): CreateEcoBankAccountDashboardDTO
     {
-        return new CreateEcoBankAccountDTO(
+        return new CreateEcoBankAccountDashboardDTO(
             companyId: Uuid::fromString(tenant('id')),
             bankId: $this->input('bank_id'),
             accountHolderName: $this->input('account_holder_name'),
