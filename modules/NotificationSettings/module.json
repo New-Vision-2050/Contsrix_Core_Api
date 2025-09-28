@@ -1,0 +1,14 @@
+{
+    "name": "NotificationSettings",
+    "alias": "notificationsettings",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\NotificationSettings\\Providers\\NotificationSettingsServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}
