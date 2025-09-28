@@ -6,6 +6,7 @@ namespace Modules\NotificationSettings\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\NotificationSettings\Commands\SendDocumentNotificationsCommand;
 
 class NotificationSettingsServiceProvider extends ModuleServiceProvider
 {
@@ -19,11 +20,24 @@ class NotificationSettingsServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerCommands();
     }
 
     public function register(): void
     {
         $this->registerRoutes();
+    }
+
+    /**
+     * Register the module commands
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SendDocumentNotificationsCommand::class,
+            ]);
+        }
     }
 
     public function mapRoutes(): void
