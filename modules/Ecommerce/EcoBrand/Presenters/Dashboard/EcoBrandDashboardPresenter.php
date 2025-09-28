@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBrand\Presenters;
+namespace Modules\Ecommerce\EcoBrand\Presenters\Dashboard;
 
 use Modules\Ecommerce\EcoBrand\Models\EcoBrand;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class EcoBrandPresenter extends AbstractPresenter
+class EcoBrandDashboardPresenter extends AbstractPresenter
 {
     private EcoBrand $ecoBrand;
 

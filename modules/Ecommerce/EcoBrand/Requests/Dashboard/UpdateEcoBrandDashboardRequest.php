@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBrand\Requests;
+namespace Modules\Ecommerce\EcoBrand\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Ecommerce\EcoBrand\Commands\Dashboard\UpdateEcoBrandDashboardCommand;
 use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoBrand\DTO\CreateEcoBrandDTO;
 
-class CreateEcoBrandRequest extends FormRequest
+class UpdateEcoBrandDashboardRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string'],
             // 'name.ar' => ['required', 'string', 'max:255'],
             // 'name.en' => ['nullable', 'string', 'max:255'],
 
-            'description' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
             // 'description.ar' => ['required', 'string', 'max:1000'],
             // 'description.en' => ['nullable', 'string', 'max:1000'],
         ];
@@ -43,12 +43,12 @@ class CreateEcoBrandRequest extends FormRequest
         ];
     }
 
-    public function createCreateEcoBrandDTO(): CreateEcoBrandDTO
+    public function createUpdateEcoBrandCommand(): UpdateEcoBrandDashboardCommand
     {
         $validatedData = $this->validated();
 
-        return new CreateEcoBrandDTO(
-            companyId: Uuid::fromString(tenant("id")),
+        return new UpdateEcoBrandDashboardCommand(
+            id: Uuid::fromString($this->route('id')),
             name: $validatedData['name'],
             description: $validatedData['description']
         );

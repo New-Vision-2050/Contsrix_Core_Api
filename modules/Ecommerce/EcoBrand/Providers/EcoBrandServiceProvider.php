@@ -31,9 +31,9 @@ class EcoBrandServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/ecommerce/brands')
+        Route::prefix('api/v1/ecommerce/dashboard/brands')
             ->middleware('api')
-            ->group($this->getModulePath() . '/Resources/routes/api.php');
+            ->group($this->getModulePath() . '/Resources/routes/dashboard.php');
 
     }
 }

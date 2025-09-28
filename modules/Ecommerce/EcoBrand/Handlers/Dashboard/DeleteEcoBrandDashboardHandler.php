@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBrand\Handlers;
+namespace Modules\Ecommerce\EcoBrand\Handlers\Dashboard;
 
 use Modules\Ecommerce\EcoBrand\Repositories\EcoBrandRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class DeleteEcoBrandHandler
+class DeleteEcoBrandDashboardHandler
 {
     public function __construct(
         private EcoBrandRepository $repository,
