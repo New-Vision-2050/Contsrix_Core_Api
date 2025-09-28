@@ -28,8 +28,8 @@ class EcoBusinessActivityServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/ecommerce/business-activities')
+        Route::prefix('api/v1/ecommerce/dashboard/business-activities')
             ->middleware('api')
-            ->group($this->getModulePath() . '/Resources/routes/api.php');
+            ->group($this->getModulePath() . '/Resources/routes/dashboard.php');
     }
 }

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBusinessActivity\Requests;
+namespace Modules\Ecommerce\EcoBusinessActivity\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoBusinessActivity\DTO\CreateEcoBusinessActivityDTO;
+use Modules\Ecommerce\EcoBusinessActivity\DTO\Dashboard\CreateEcoBusinessActivityDashboardDTO;
 
-class CreateEcoBusinessActivityRequest extends FormRequest
+class CreateEcoBusinessActivityDashboardRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -41,9 +41,9 @@ class CreateEcoBusinessActivityRequest extends FormRequest
         ];
     }
 
-    public function createCreateEcoBusinessActivityDTO(): CreateEcoBusinessActivityDTO
+    public function createCreateEcoBusinessActivityDTO(): CreateEcoBusinessActivityDashboardDTO
     {
-        return new CreateEcoBusinessActivityDTO(
+        return new CreateEcoBusinessActivityDashboardDTO(
             companyId: Uuid::fromString(tenant("id")),
             companyFieldId: Uuid::fromString($this->get('company_field_id')),
             businessName: $this->get('business_name'),

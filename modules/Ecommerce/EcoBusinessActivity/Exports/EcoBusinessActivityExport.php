@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Modules\Ecommerce\EcoBusinessActivity\Exports;
 
 use App\Exports\BaseExport;
-use Modules\Ecommerce\EcoBusinessActivity\Services\EcoBusinessActivityCRUDService;
+use Modules\Ecommerce\EcoBusinessActivity\Services\Dashboard\EcoBusinessActivityCRUDDashboardService;
 
 class EcoBusinessActivityExport extends BaseExport
 {
     public function __construct(
-         EcoBusinessActivityCRUDService $ecobusinessactivityService,
+         EcoBusinessActivityCRUDDashboardService $ecobusinessactivityService,
          array $filters = []
     ) {
     }
