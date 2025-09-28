@@ -24,7 +24,7 @@ class UpdateDocumentTypeRequest extends FormRequest
         return new UpdateDocumentTypeCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
-            is_active: $this->get('is_active'),
+            is_active: (int)$this->get('is_active'),
         );
     }
 }

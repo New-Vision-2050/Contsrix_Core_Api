@@ -10,7 +10,7 @@ class CreateDocumentTypeDTO
 {
     public function __construct(
         public readonly string $name,
-        public readonly bool $is_active = true,
+        public readonly int $is_active = 1,
         public readonly ?string $company_id = null
     ) {
     }
