@@ -122,7 +122,6 @@ class NotificationSettingsCRUDService
     {
         $notificationSetting = $this->get($id);
         return $this->repository->updateNotificationSettings(
-            $id,
             ['is_active' => !$notificationSetting->is_active]
         );
     }
