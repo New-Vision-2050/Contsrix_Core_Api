@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
+use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
@@ -132,5 +133,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PaymentModulesSeederTableSeeder::class);
         $this->call(InstallmentModulesSeederTableSeeder::class);
         $this->call(DocumentTypeSeederTableSeeder::class);
+
+        $this->call(DefaultNotificationSettingsSeeder::class);
     }
 }
