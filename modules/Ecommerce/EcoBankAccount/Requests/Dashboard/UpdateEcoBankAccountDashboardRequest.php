@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\Requests;
+namespace Modules\Ecommerce\EcoBankAccount\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoBankAccount\Commands\UpdateEcoBankAccountCommand;
+use Modules\Ecommerce\EcoBankAccount\Commands\Dashboard\UpdateEcoBankAccountDashboardCommand;
 use Modules\Ecommerce\EcoBankAccount\Handlers\UpdateEcoBankAccountHandler;
 
-class UpdateEcoBankAccountRequest extends FormRequest
+class UpdateEcoBankAccountDashboardRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -38,9 +38,9 @@ class UpdateEcoBankAccountRequest extends FormRequest
         ];
     }
 
-    public function createUpdateEcoBankAccountCommand(): UpdateEcoBankAccountCommand
+    public function createUpdateEcoBankAccountCommand(): UpdateEcoBankAccountDashboardCommand
     {
-        return new UpdateEcoBankAccountCommand(
+        return new UpdateEcoBankAccountDashboardCommand(
             id: Uuid::fromString($this->route('id')),
             bankId: $this->input('bank_id'),
             accountHolderName: $this->input('account_holder_name'),

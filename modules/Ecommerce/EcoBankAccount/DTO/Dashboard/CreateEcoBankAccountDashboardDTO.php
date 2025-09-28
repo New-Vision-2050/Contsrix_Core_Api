@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\DTO;
+namespace Modules\Ecommerce\EcoBankAccount\DTO\Dashboard;
 
 use Ramsey\Uuid\UuidInterface;
 
-class CreateEcoBankAccountDTO
+class CreateEcoBankAccountDashboardDTO
 {
     public function __construct(
         public UuidInterface $companyId,

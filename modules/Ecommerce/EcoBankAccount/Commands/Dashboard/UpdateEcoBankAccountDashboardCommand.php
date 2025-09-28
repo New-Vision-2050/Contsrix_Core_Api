@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\Commands;
+namespace Modules\Ecommerce\EcoBankAccount\Commands\Dashboard;
 
 use Ramsey\Uuid\UuidInterface;
 
-class UpdateEcoBankAccountCommand
+class UpdateEcoBankAccountDashboardCommand
 {
     public function __construct(
         private UuidInterface $id,

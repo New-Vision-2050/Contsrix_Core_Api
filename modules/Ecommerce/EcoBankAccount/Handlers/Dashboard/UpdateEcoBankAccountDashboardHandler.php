@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\Handlers;
+namespace Modules\Ecommerce\EcoBankAccount\Handlers\Dashboard;
 
 use Modules\Ecommerce\EcoBankAccount\Commands\UpdateEcoBankAccountCommand;
 use Modules\Ecommerce\EcoBankAccount\Repositories\EcoBankAccountRepository;
 
-class UpdateEcoBankAccountHandler
+class UpdateEcoBankAccountDashboardHandler
 {
     public function __construct(
         private EcoBankAccountRepository $repository,
     ) {
     }
 
-    public function handle(UpdateEcoBankAccountCommand $updateEcoBankAccountCommand)
+    public function handle(UpdateEcoBankAccountDashboardCommand $updateEcoBankAccountCommand)
     {
         $this->repository->updateEcoBankAccount($updateEcoBankAccountCommand->getId(), $updateEcoBankAccountCommand->toArray());
     }

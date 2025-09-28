@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBankAccount\Presenters;
+namespace Modules\Ecommerce\EcoBankAccount\Presenters\Dashboard;
 
 use Modules\Ecommerce\EcoBankAccount\Models\EcoBankAccount;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Country\Presenters\CountryPresenter;
 use Modules\Shared\Bank\Presenters\BankPresenter;
 
-class EcoBankAccountPresenter extends AbstractPresenter
+class EcoBankAccountDashboardPresenter extends AbstractPresenter
 {
     private EcoBankAccount $ecoBankAccount;
 
