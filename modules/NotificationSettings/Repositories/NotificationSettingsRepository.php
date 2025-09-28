@@ -32,7 +32,7 @@ class NotificationSettingsRepository extends BaseRepository
 
     public function getNotificationSettings(): NotificationSettings
     {
-        return $this->model->query()->first();
+        return $this->model->query()->where("company_id",tenant("id"))->first();
     }
 
     public function createNotificationSettings(array $data): NotificationSettings
@@ -42,7 +42,7 @@ class NotificationSettingsRepository extends BaseRepository
 
     public function updateNotificationSettings( array $data): bool
     {
-        return $this->model->query()->first()->update( $data);
+        return $this->model->query()->where("company_id",tenant("id"))->first()->update( $data);
     }
 
     public function deleteNotificationSettings(UuidInterface $id): bool
