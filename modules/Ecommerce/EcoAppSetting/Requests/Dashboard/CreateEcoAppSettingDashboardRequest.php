@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Modules\Ecommerce\EcoAppSetting\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Ramsey\Uuid\Uuid;
-use Modules\Ecommerce\EcoAppSetting\DTO\CreateEcoAppSettingDTO;
 use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\CreateEcoAppSettingDashboardDTO;
 
 class CreateEcoAppSettingDashboardRequest extends FormRequest

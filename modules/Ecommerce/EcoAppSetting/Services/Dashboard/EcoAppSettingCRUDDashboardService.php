@@ -2,26 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAppSetting\Services;
+namespace Modules\Ecommerce\EcoAppSetting\Services\Dashboard;
 
-use Illuminate\Support\Collection;
-use Modules\Ecommerce\EcoAppSetting\DTO\CreateEcoAppSettingDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoAppSettingDTO;
+
 use Modules\Ecommerce\EcoAppSetting\Models\EcoAppSetting;
 use Modules\Ecommerce\EcoAppSetting\Repositories\EcoAppSettingRepository;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoAppSettingThemeDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoAppSettingFrontPageDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoProductDisplaySettingDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoFavoritesSettingDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoProductCardSettingDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoFilterDisplaySettingDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoTermsSettingDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoCartSettingDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\CreateEcoAppSettingDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoAppSettingFrontPageDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoAppSettingThemeDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoCartSettingDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoFavoritesSettingDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoFilterDisplaySettingDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoProductCardSettingDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoProductDisplaySettingDashboardDTO;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoTermsSettingDashboardDTO;
 use Modules\Shared\Media\Services\FileUploadService;
 
-class EcoAppSettingCRUDService
+class EcoAppSettingCRUDDashboardService
 {
     use HasExportService;
 
@@ -31,7 +30,7 @@ class EcoAppSettingCRUDService
     ) {
     }
 
-    public function create(CreateEcoAppSettingDTO $createEcoAppSettingDTO): EcoAppSetting
+    public function create(CreateEcoAppSettingDashboardDTO $createEcoAppSettingDTO): EcoAppSetting
     {
          return $this->repository->createEcoAppSetting($createEcoAppSettingDTO->toArray());
     }
@@ -51,7 +50,7 @@ class EcoAppSettingCRUDService
         );
     }
 
-    public function upsertTheme(UpsertEcoAppSettingThemeDTO $upsertDTO): EcoAppSetting
+    public function upsertTheme(UpsertEcoAppSettingThemeDashboardDTO $upsertDTO): EcoAppSetting
     {
         return $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -64,7 +63,7 @@ class EcoAppSettingCRUDService
         return $this->repository->findByCompanyId($companyId);
     }
 
-    public function upsertFrontPage(UpsertEcoAppSettingFrontPageDTO $upsertDTO): EcoAppSetting
+    public function upsertFrontPage(UpsertEcoAppSettingFrontPageDashboardDTO $upsertDTO): EcoAppSetting
     {
         $ecoAppSetting = $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -88,7 +87,7 @@ class EcoAppSettingCRUDService
         return $ecoAppSetting;
     }
 
-    public function upsertProductDisplay(UpsertEcoProductDisplaySettingDTO $upsertDTO): EcoAppSetting
+    public function upsertProductDisplay(UpsertEcoProductDisplaySettingDashboardDTO $upsertDTO): EcoAppSetting
     {
         $ecoAppSetting = $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -98,7 +97,7 @@ class EcoAppSettingCRUDService
         return $ecoAppSetting;
     }
 
-    public function upsertFavorites(UpsertEcoFavoritesSettingDTO $upsertDTO): EcoAppSetting
+    public function upsertFavorites(UpsertEcoFavoritesSettingDashboardDTO $upsertDTO): EcoAppSetting
     {
         $ecoAppSetting = $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -108,7 +107,7 @@ class EcoAppSettingCRUDService
         return $ecoAppSetting;
     }
 
-    public function upsertProductCard(UpsertEcoProductCardSettingDTO $upsertDTO): EcoAppSetting
+    public function upsertProductCard(UpsertEcoProductCardSettingDashboardDTO $upsertDTO): EcoAppSetting
     {
         $ecoAppSetting = $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -118,7 +117,7 @@ class EcoAppSettingCRUDService
         return $ecoAppSetting;
     }
 
-    public function upsertFilterDisplay(UpsertEcoFilterDisplaySettingDTO $upsertDTO): EcoAppSetting
+    public function upsertFilterDisplay(UpsertEcoFilterDisplaySettingDashboardDTO $upsertDTO): EcoAppSetting
     {
         $ecoAppSetting = $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -128,7 +127,7 @@ class EcoAppSettingCRUDService
         return $ecoAppSetting;
     }
 
-    public function upsertTerms(UpsertEcoTermsSettingDTO $upsertDTO): EcoAppSetting
+    public function upsertTerms(UpsertEcoTermsSettingDashboardDTO $upsertDTO): EcoAppSetting
     {
         $ecoAppSetting = $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -138,7 +137,7 @@ class EcoAppSettingCRUDService
         return $ecoAppSetting;
     }
 
-    public function upsertCart(UpsertEcoCartSettingDTO $upsertDTO): EcoAppSetting
+    public function upsertCart(UpsertEcoCartSettingDashboardDTO $upsertDTO): EcoAppSetting
     {
         $ecoAppSetting = $this->repository->upsertByCompanyId(
             $upsertDTO->company_id->toString(),
@@ -150,7 +149,7 @@ class EcoAppSettingCRUDService
         if ($emptyCartImage) {
             // Clear existing empty cart images before uploading new one
             $ecoAppSetting->clearMediaCollection('empty_cart_image');
-            
+
             $path = $ecoAppSetting->company->name . '/ecommerce/settings/cart';
 
             $this->fileUploadService->uploadFile(

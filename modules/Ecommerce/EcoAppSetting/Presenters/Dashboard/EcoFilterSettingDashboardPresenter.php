@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAppSetting\Presenters;
+namespace Modules\Ecommerce\EcoAppSetting\Presenters\Dashboard;
 
 use Modules\Ecommerce\EcoAppSetting\Models\EcoFilterSetting;
 
-class EcoFilterSettingPresenter
+class EcoFilterSettingDashboardPresenter
 {
     private EcoFilterSetting $ecoFilterSetting;
 

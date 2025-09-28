@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAppSetting\Services;
+namespace Modules\Ecommerce\EcoAppSetting\Services\Dashboard;
 
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoBannerSettingDashboardDTO;
 use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoBannerSettingDTO;
 use Modules\Ecommerce\EcoAppSetting\Models\EcoBannerSetting;
 use Modules\Ecommerce\EcoAppSetting\Repositories\EcoBannerSettingRepository;
 use Modules\Shared\Media\Services\FileUploadService;
 
-class EcoBannerSettingCRUDService
+class EcoBannerSettingCRUDDashboardService
 {
     public function __construct(
         private EcoBannerSettingRepository $repository,
@@ -17,7 +18,7 @@ class EcoBannerSettingCRUDService
     ) {
     }
 
-    public function upsert(UpsertEcoBannerSettingDTO $upsertDTO): EcoBannerSetting
+    public function upsert(UpsertEcoBannerSettingDashboardDTO $upsertDTO): EcoBannerSetting
     {
         // Use company_id and type_page as composite key for upsert
         $ecoBannerSetting = $this->repository->upsertByCompanyAndTypePage(

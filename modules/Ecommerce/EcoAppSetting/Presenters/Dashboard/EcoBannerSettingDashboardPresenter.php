@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAppSetting\Presenters;
+namespace Modules\Ecommerce\EcoAppSetting\Presenters\Dashboard;
 
 use Modules\Ecommerce\EcoAppSetting\Models\EcoBannerSetting;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 
-class EcoBannerSettingPresenter
+class EcoBannerSettingDashboardPresenter
 {
     private EcoBannerSetting $ecoBannerSetting;
 

@@ -9,16 +9,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Ecommerce\EcoAppSetting\Presenters\Dashboard\EcoAppSettingDashboardPresenter;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\CreateEcoAppSettingDashboardRequest;
-use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpdateEcoAppSettingDashboardRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\GetEcoAppSettingDashboardRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\GetEcoAppSettingListDashboardRequest;
-use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\DeleteEcoAppSettingDashboardRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\ExportEcoAppSettingDashboardRequest;
-use Modules\Ecommerce\EcoAppSetting\Services\Dashboard\EcoAppSettingDashboardCRUDService;
-use Modules\Ecommerce\EcoAppSetting\Handlers\Dashboard\UpdateEcoAppSettingDashboardHandler;
-use Modules\Ecommerce\EcoAppSetting\Handlers\Dashboard\DeleteEcoAppSettingDashboardHandler;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Ecommerce\EcoAppSetting\Exports\EcoAppSettingExport;
+use Modules\Ecommerce\EcoAppSetting\Presenters\Dashboard\EcoBannerSettingDashboardPresenter;
+use Modules\Ecommerce\EcoAppSetting\Presenters\Dashboard\EcoFilterSettingDashboardPresenter;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpsertEcoAppSettingFrontPageDashboardRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpsertEcoAppSettingThemeDashboardRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpsertEcoBannerSettingDashboardRequest;
@@ -29,14 +26,17 @@ use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpsertEcoFilterSettingDas
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpsertEcoProductCardSettingDashboardRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpsertEcoProductDisplaySettingDashboardRequest;
 use Modules\Ecommerce\EcoAppSetting\Requests\Dashboard\UpsertEcoTermsSettingDashboardRequest;
+use Modules\Ecommerce\EcoAppSetting\Services\Dashboard\EcoAppSettingCRUDDashboardService;
+use Modules\Ecommerce\EcoAppSetting\Services\Dashboard\EcoBannerSettingCRUDDashboardService;
+use Modules\Ecommerce\EcoAppSetting\Services\Dashboard\EcoFilterSettingCRUDDashboardService;
 use Ramsey\Uuid\Uuid;
 
 class EcoAppSettingDashboardController extends Controller
 {
     public function __construct(
-        private EcoAppSettingDashboardCRUDService $ecoAppSettingService,
-        private UpdateEcoAppSettingDashboardHandler $updateEcoAppSettingHandler,
-        private DeleteEcoAppSettingDashboardHandler $deleteEcoAppSettingHandler,
+        private EcoAppSettingCRUDDashboardService $ecoAppSettingService,
+        private EcoBannerSettingCRUDDashboardService $ecoBannerSettingService,
+        private EcoFilterSettingCRUDDashboardService $ecoFilterSettingService,
     ) {
     }
 
@@ -46,8 +46,8 @@ class EcoAppSettingDashboardController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
-
-        return Json::items(EcoAppSettingDashboardPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+   
+        return Json::items(EcoAppSettingDashboardPresenter::collection($list['data']),$list['pagination']);
     }
 
     public function show(GetEcoAppSettingDashboardRequest $request): JsonResponse

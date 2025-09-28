@@ -6,7 +6,6 @@ namespace Modules\Ecommerce\EcoAppSetting\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoProductCardSettingDashboardDTO;
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoProductCardSettingDTO;
 use Ramsey\Uuid\Uuid;
 
 class UpsertEcoProductCardSettingDashboardRequest extends FormRequest

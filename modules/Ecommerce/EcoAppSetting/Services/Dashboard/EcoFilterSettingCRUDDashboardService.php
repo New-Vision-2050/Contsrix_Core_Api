@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoAppSetting\Services;
+namespace Modules\Ecommerce\EcoAppSetting\Services\Dashboard;
 
-use Modules\Ecommerce\EcoAppSetting\DTO\UpsertEcoFilterSettingDTO;
-use Modules\Ecommerce\EcoAppSetting\Models\EcoFilterSetting;
+
 use Modules\Ecommerce\EcoAppSetting\Repositories\EcoFilterSettingRepository;
 use Modules\Ecommerce\EcoAppSetting\Repositories\EcoAppSettingRepository;
 use Illuminate\Support\Collection;
+use Modules\Ecommerce\EcoAppSetting\DTO\Dashboard\UpsertEcoFilterSettingDashboardDTO;
 
-class EcoFilterSettingCRUDService
+class EcoFilterSettingCRUDDashboardService
 {
     public function __construct(
         private EcoFilterSettingRepository $filterRepository,
@@ -18,7 +18,7 @@ class EcoFilterSettingCRUDService
     ) {
     }
 
-    public function upsert(UpsertEcoFilterSettingDTO $upsertDTO): Collection
+    public function upsert(UpsertEcoFilterSettingDashboardDTO $upsertDTO): Collection
     {
         $companyId = $upsertDTO->company_id->toString();
 
@@ -43,7 +43,7 @@ class EcoFilterSettingCRUDService
 
             $filters->push($filter);
         }
-        
+
         return $filters;
     }
 
