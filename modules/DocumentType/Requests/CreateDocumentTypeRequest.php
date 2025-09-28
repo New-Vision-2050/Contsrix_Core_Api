@@ -22,7 +22,7 @@ class CreateDocumentTypeRequest extends FormRequest
     {
         return new CreateDocumentTypeDTO(
             name: $this->get('name'),
-            is_active: (bool) $this->get('is_active', 1),
+            is_active: (int) $this->get('is_active', 1),
             company_id: tenant('id')
         );
     }

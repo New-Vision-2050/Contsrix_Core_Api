@@ -11,7 +11,7 @@ class UpdateDocumentTypeCommand
     public function __construct(
         private UuidInterface $id,
         private ?string $name,
-        private ?bool $is_active
+        private ?int $is_active
     ) {
     }
 
