@@ -6,7 +6,7 @@ namespace Modules\Ecommerce\EcoProduct\Presenters\Customer;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
-use Modules\Ecommerce\EcoBrand\Presenters\EcoBrandPresenter;
+use Modules\Ecommerce\EcoBrand\Presenters\Dashboard\EcoBrandDashboardPresenter;
 use Modules\Ecommerce\EcoCategory\Presenters\EcoCategoryPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 
@@ -49,7 +49,7 @@ class EcoProductCustomerDetailsPresenter extends AbstractPresenter
             'category' => $this->ecoProduct->category ? 
                 (new EcoCategoryPresenter($this->ecoProduct->category))->getData() : null,
             'brand' => $this->ecoProduct->brand ? 
-                (new EcoBrandPresenter($this->ecoProduct->brand))->getData() : null,
+                (new EcoBrandDashboardPresenter($this->ecoProduct->brand))->getData() : null,
             
             // Customer-specific features
             'can_purchase' => $this->canPurchase(),

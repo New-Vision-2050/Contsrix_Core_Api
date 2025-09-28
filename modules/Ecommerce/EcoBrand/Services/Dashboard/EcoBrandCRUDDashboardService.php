@@ -2,22 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBrand\Services;
+namespace Modules\Ecommerce\EcoBrand\Services\Dashboard;
 
-use Illuminate\Support\Collection;
-use Modules\Ecommerce\EcoBrand\DTO\CreateEcoBrandDTO;
+use Modules\Ecommerce\EcoBrand\DTO\Dashboard\CreateEcoBrandDashboardDTO;
 use Modules\Ecommerce\EcoBrand\Models\EcoBrand;
 use Modules\Ecommerce\EcoBrand\Repositories\EcoBrandRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class EcoBrandCRUDService
+class EcoBrandCRUDDashboardService
 {
     public function __construct(
         private EcoBrandRepository $repository,
     ) {
     }
 
-    public function create(CreateEcoBrandDTO $createEcoBrandDTO): EcoBrand
+    public function create(CreateEcoBrandDashboardDTO $createEcoBrandDTO): EcoBrand
     {
          return $this->repository->createEcoBrand($createEcoBrandDTO->toArray());
     }

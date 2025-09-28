@@ -6,7 +6,7 @@ namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
-use Modules\Ecommerce\EcoBrand\Presenters\EcoBrandPresenter;
+use Modules\Ecommerce\EcoBrand\Presenters\Dashboard\EcoBrandDashboardPresenter;
 use Modules\Ecommerce\EcoCategory\Presenters\EcoCategoryPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 

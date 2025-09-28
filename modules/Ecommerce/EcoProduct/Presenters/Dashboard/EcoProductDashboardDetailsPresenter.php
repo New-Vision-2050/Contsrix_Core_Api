@@ -6,7 +6,7 @@ namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
-use Modules\Ecommerce\EcoBrand\Presenters\EcoBrandPresenter;
+use Modules\Ecommerce\EcoBrand\Presenters\Dashboard\EcoBrandDashboardPresenter;
 use Modules\Ecommerce\EcoCategory\Presenters\EcoCategoryPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 
@@ -37,7 +37,7 @@ class EcoProductDashboardDetailsPresenter extends AbstractPresenter
             'vat_percentage' => $this->ecoProduct->vat_percentage,
             'is_visible' => (int)$this->ecoProduct->is_visible,
             'category' => $this->ecoProduct->category ? (new EcoCategoryPresenter($this->ecoProduct->category))->getData() : null,
-            'brand' => $this->ecoProduct->brand ? (new EcoBrandPresenter($this->ecoProduct->brand))->getData() : null,
+            'brand' => $this->ecoProduct->brand ? (new EcoBrandDashboardPresenter($this->ecoProduct->brand))->getData() : null,
             'type' => $this->ecoProduct->type,
             'taxes' => ProductTaxDashboardPresenter::collection($this->ecoProduct->taxes),
             'details' => ProductDetailDashboardPresenter::collection($this->ecoProduct->details),
