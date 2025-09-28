@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBusinessActivity\Services;
+namespace Modules\Ecommerce\EcoBusinessActivity\Services\Dashboard;
 
 use Illuminate\Support\Collection;
-use Modules\Ecommerce\EcoBusinessActivity\DTO\CreateEcoBusinessActivityDTO;
+use Modules\Ecommerce\EcoBusinessActivity\DTO\Dashboard\CreateEcoBusinessActivityDashboardDTO;
 use Modules\Ecommerce\EcoBusinessActivity\Models\EcoBusinessActivity;
 use Modules\Ecommerce\EcoBusinessActivity\Repositories\EcoBusinessActivityRepository;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 
-class EcoBusinessActivityCRUDService
+class EcoBusinessActivityCRUDDashboardService
 {
     use HasExportService;
 
@@ -20,12 +20,12 @@ class EcoBusinessActivityCRUDService
     ) {
     }
 
-    public function create(CreateEcoBusinessActivityDTO $createEcoBusinessActivityDTO): EcoBusinessActivity
+    public function create(CreateEcoBusinessActivityDashboardDTO $createEcoBusinessActivityDTO): EcoBusinessActivity
     {
          return $this->repository->createEcoBusinessActivity($createEcoBusinessActivityDTO->toArray());
     }
 
-    public function upsert(CreateEcoBusinessActivityDTO $createEcoBusinessActivityDTO): EcoBusinessActivity
+    public function upsert(CreateEcoBusinessActivityDashboardDTO $createEcoBusinessActivityDTO): EcoBusinessActivity
     {
         // Check if business activity already exists for this company
         $existingActivity = $this->repository->findByCompanyId($createEcoBusinessActivityDTO->getCompanyId());

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBusinessActivity\Presenters;
+namespace Modules\Ecommerce\EcoBusinessActivity\Presenters\Dashboard;
 
 use Modules\Ecommerce\EcoBusinessActivity\Models\EcoBusinessActivity;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Company\CompanyField\Presenters\CompanyFieldPresenter;
 
-class EcoBusinessActivityPresenter extends AbstractPresenter
+class EcoBusinessActivityDashboardPresenter extends AbstractPresenter
 {
     private EcoBusinessActivity $ecoBusinessActivity;
 

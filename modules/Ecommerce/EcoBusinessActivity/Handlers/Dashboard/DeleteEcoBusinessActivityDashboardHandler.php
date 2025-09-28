@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoBusinessActivity\Handlers;
+namespace Modules\Ecommerce\EcoBusinessActivity\Handlers\Dashboard;
 
 use Modules\Ecommerce\EcoBusinessActivity\Repositories\EcoBusinessActivityRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class DeleteEcoBusinessActivityHandler
+class DeleteEcoBusinessActivityDashboardHandler
 {
     public function __construct(
         private EcoBusinessActivityRepository $repository,
