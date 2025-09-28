@@ -36,7 +36,7 @@ class CompanyOfficialDocumentPresenter extends AbstractPresenter
             "start_date" => $this->companyOfficialDocument->start_date,
             "end_date" => $this->companyOfficialDocument->end_date,
             "notification_date" => $this->companyOfficialDocument->notification_date,
-            "document_type" => $this->companyOfficialDocument->documentType->name,
+            "document_type" => $this->companyOfficialDocument->documentType?->name,
             "document_type_id" => $this->companyOfficialDocument->document_type_id,
             "logs"=>ActivityLogPresenter::collection($this->companyOfficialDocument->activityLogs),
             'company_legal_data_id'=> $this->companyOfficialDocument->company_legal_data_id,

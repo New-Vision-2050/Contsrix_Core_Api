@@ -11,6 +11,7 @@ use Modules\ActivityLog\Models\ActivityLog;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\DocumentType\Models\DocumentType;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -74,7 +75,7 @@ class CompanyOfficialDocument extends Model implements HasMedia
 
     public function documentType()
     {
-        return $this->belongsTo(CompanyRegistrationType::class, 'document_type_id', 'id');
+    return $this->belongsTo(DocumentType::class, 'document_type_id', 'id');
     }
 
     public function activityLogs()
