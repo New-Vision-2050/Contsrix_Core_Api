@@ -42,6 +42,7 @@ class NotificationSettingsController extends Controller
 
     public function show(GetNotificationSettingsRequest $request): JsonResponse
     {
+
         $item = $this->notificationSettingsService->get();
 
         $presenter = new NotificationSettingsPresenter($item);
