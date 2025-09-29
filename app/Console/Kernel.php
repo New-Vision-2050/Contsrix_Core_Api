@@ -4,7 +4,6 @@ namespace App\Console;
 
 use App\Console\Commands\CreateWaitingAttendanceCommand;
 use App\Console\Commands\UpdateAttendanceStatusCommand;
-use Modules\NotificationSettings\Commands\SendDocumentNotificationsCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -29,10 +28,10 @@ class Kernel extends ConsoleKernel
     {
         // Create waiting attendance records early in the morning (5:00 AM)
         $schedule->command(CreateWaitingAttendanceCommand::class)
-            ->everyThreeHours()
-            ->timezone('Asia/Riyadh')
-            ->withoutOverlapping()
-            ->appendOutputTo(storage_path('logs/attendance-waiting.log'));
+                ->everyThreeHours()
+                ->timezone('Asia/Riyadh')
+                ->withoutOverlapping()
+                ->appendOutputTo(storage_path('logs/attendance-waiting.log'));
 
         // Update attendance statuses at the end of the workday (7:00 PM)
         // This will mark users as absent if they didn't clock in
@@ -42,12 +41,6 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-status-update.log'));
 
-        // Send document notifications daily at 9:00 AM
-        $schedule->command(SendDocumentNotificationsCommand::class)
-            ->dailyAt('09:00')
-            ->timezone('Asia/Riyadh')
-            ->withoutOverlapping()
-            ->appendOutputTo(storage_path('logs/document-notifications.log'));
 
     }
 
