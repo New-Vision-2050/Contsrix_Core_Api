@@ -18,12 +18,13 @@ use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
-class CompanyOfficialDocument extends Model implements HasMedia
+class CompanyOfficialDocument extends Model implements HasMedia , Auditable
 {
     use UuidTrait;
     use BaseFilterable;
     use BelongsToPrimaryModel;
     use InteractsWithMedia;
+    use OwenIt\Auditing\Contracts\Auditable;
 
     // use HasTranslations;
     // use SoftDeletes;

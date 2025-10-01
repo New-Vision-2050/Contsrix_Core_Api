@@ -19,12 +19,13 @@ use Modules\Shared\JobType\Models\JobType;
 use Modules\JobTitle\Models\JobTitle;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
+use OwenIt\Auditing\Contracts\Auditable;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class ManagementHierarchy extends Model
+class ManagementHierarchy extends Model implements Auditable
 {
     use HasFactory;
     use BaseFilterable;
@@ -32,6 +33,8 @@ class ManagementHierarchy extends Model
     use CustomBelongsToTenant;
     use CalculateTreeManagementHierarchy;
     use HasRelationships; // Add the trait from staudenmeir/eloquent-has-many-deep
+    use \OwenIt\Auditing\Auditable;
+
 
     //use HasTranslations;
     //use SoftDeletes;

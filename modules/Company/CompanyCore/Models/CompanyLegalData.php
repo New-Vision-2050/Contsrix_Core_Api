@@ -17,19 +17,21 @@ use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Country\Models\Country;
 use Modules\User\Models\User;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 
-class CompanyLegalData extends Model implements HasMedia
+class CompanyLegalData extends Model implements HasMedia, Auditable
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
     use BelongsToPrimaryModel;
+    use \OwenIt\Auditing\Auditable;
 
 //    use HasTranslations;
 

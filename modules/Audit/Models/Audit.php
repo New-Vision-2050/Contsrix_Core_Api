@@ -13,7 +13,7 @@ use Modules\User\Models\User;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class Audit extends Model
+class Audit extends \OwenIt\Auditing\Models\Audit
 {
     use HasFactory;
     use UuidTrait;
@@ -22,7 +22,7 @@ class Audit extends Model
     //use SoftDeletes;
 
     //public array $translatable = [];
-    public $with = ['user'];
+//    public $with = ['user'];
 
     public $incrementing = false;
 
