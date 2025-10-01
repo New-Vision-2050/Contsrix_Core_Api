@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Models;
 
 use Modules\User\Models\User;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Stancl\Tenancy\DatabaseConfig;
 use Modules\Country\Models\Country;
@@ -60,7 +61,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @method  __call(string $method, array $parameters)
  * @method  __callStatic(string $method, array $parameters)
  */
-class Company extends BaseTenant implements TenantWithDatabase, HasMedia
+class Company extends BaseTenant implements TenantWithDatabase, HasMedia, Auditable
 {
     use HasFactory;
     use UuidTrait;
@@ -73,6 +74,8 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia
     use CustomBelongsToTenant;
     use HasRelationships;
     use HasTranslations;
+    use \OwenIt\Auditing\Auditable;
+
 
     public array $translatable = ["name"];
 

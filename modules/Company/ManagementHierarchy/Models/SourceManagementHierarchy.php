@@ -10,13 +10,15 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\Shared\JobType\Models\JobType;
 use Modules\User\Models\User;
+use OwenIt\Auditing\Contracts\Auditable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
-class SourceManagementHierarchy extends Model
+class SourceManagementHierarchy extends Model implements Auditable
 {
-    use HasFactory;
 
     use BelongsToTenant;
+    use \OwenIt\Auditing\Auditable;
+
 
 
     protected $table = 'source_management_hierarchies';
