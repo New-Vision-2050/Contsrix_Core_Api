@@ -37,6 +37,8 @@ class File extends Model implements HasMedia
         'reference_number',
         'start_date',
         'end_date',
+        'folder_id',
+        'access_type',
     ];
 
     protected $casts = [

@@ -129,4 +129,60 @@ class FolderRepository extends BaseRepository
             ->where('permission_type', 'view')
             ->exists();
     }
+
+    public function getFoldersAndFilesByParent(?string $parentId, $userId): array
+    {
+        // Query folders based on parent_id
+        $foldersQuery = $this->model->query();
+
+        if ($parentId === null) {
+            $foldersQuery->whereNull('parent_id');
+        } else {
+            $foldersQuery->where('parent_id', $parentId);
+        }
+
+        // Get all folders
+        $allFolders = $foldersQuery->get();
+
+        // Filter folders based on access type and permissions
+        $folders = $allFolders->filter(function ($folder) use ($userId) {
+            if ($folder->access_type === 'public') {
+                return true;
+            }
+
+            // Check if user has permission for private folder
+            return UserFolderPermission::where('folder_id', $folder->id)
+                ->where('user_id', $userId)
+                ->exists();
+        })->values();
+
+        // Query files based on parent_id (folder_id)
+        $filesQuery = File::query();
+
+        if ($parentId === null) {
+            $filesQuery->whereNull('folder_id');
+        } else {
+            $filesQuery->where('folder_id', $parentId);
+        }
+
+        // Get all files
+        $allFiles = $filesQuery->get();
+
+        // Filter files based on access type and permissions
+        $files = $allFiles->filter(function ($file) use ($userId) {
+            if ($file->access_type === 'public') {
+                return true;
+            }
+
+            // Check if user has permission for private file
+            return UserFilePermission::where('file_id', $file->id)
+                ->where('user_id', $userId)
+                ->exists();
+        })->values();
+
+        return [
+            'folders' => $folders,
+            'files' => $files,
+        ];
+    }
 }

@@ -19,6 +19,7 @@ use Modules\ArchiveLibrary\Folder\Requests\UpdateFolderRequest;
 use Modules\ArchiveLibrary\Folder\Requests\UploadFileRequest;
 use Modules\ArchiveLibrary\Folder\Services\FileService;
 use Modules\ArchiveLibrary\Folder\Services\FolderCRUDService;
+use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\Uuid;
 
@@ -115,6 +116,17 @@ class FolderController extends Controller
         return Json::items($list['data'], paginationSettings: $list['pagination']);
     }
 
+    public function getFoldersAndFiles(GetFolderListRequest $request): JsonResponse
+    {
+        $userId = auth()->user()->id;
+        $parentId = $request->get('parent_id');
 
+        $data = $this->folderService->getFoldersAndFiles($userId, $parentId);
+
+        return Json::item([
+            'folders' => FolderPresenter::collection($data['folders']),
+            'files' => FilePresenter::collection($data['files']),
+        ]);
+    }
 
 }

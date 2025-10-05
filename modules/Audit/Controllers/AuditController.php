@@ -19,19 +19,30 @@ use Ramsey\Uuid\Uuid;
 class AuditController extends Controller
 {
     public function __construct(
-        private AuditCRUDService $auditService,
+        private AuditCRUDService   $auditService,
         private DeleteAuditHandler $deleteAuditHandler,
-    ) {
+    )
+    {
     }
 
     public function index(GetAuditListRequest $request)
     {
 
         $list = $this->auditService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
         );
-        return Json::items(AuditPresenter::collection($list['data']),paginationSettings: $list['pagination']);
+        return Json::items(AuditPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function activityLog(GetAuditListRequest $request)
+    {
+
+        $list = $this->auditService->groupedByDate();
+        return response(["code" => "SUCCESS_WITH_LIST_PAYLOAD_OBJECTS",
+            "message" => null,
+            "payload"=>$list
+        ]);
     }
 
     public function show(GetAuditRequest $request): JsonResponse
@@ -42,7 +53,6 @@ class AuditController extends Controller
 
         return Json::item($presenter->getData());
     }
-
 
 
     public function delete(DeleteAuditRequest $request): JsonResponse
