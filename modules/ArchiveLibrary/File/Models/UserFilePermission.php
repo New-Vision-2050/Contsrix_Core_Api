@@ -16,7 +16,6 @@ use Modules\ArchiveLibrary\Folder\Models\Folder;
 class UserFilePermission extends Model
 {
     use HasFactory;
-    use UuidTrait;
     use BaseFilterable;
     //use HasTranslations;
     //use SoftDeletes;
@@ -30,6 +29,8 @@ class UserFilePermission extends Model
     protected $fillable = [
         'user_id',
         'file_id',
+        "folder_id",
+
         'permission_type'
     ];
 

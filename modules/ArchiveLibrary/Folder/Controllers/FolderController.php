@@ -79,7 +79,7 @@ class FolderController extends Controller
 
         return Json::deleted();
     }
-    public function getChildFolders(string $id, GetFolderListRequest $request): JsonResponse
+    public function getChildFolders(string $id, GetFolderListRequest $request)
     {
         $parentId = Uuid::fromString($id);
 
@@ -88,7 +88,6 @@ class FolderController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
-
         return Json::items(FolderPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
     public function file(UploadFileRequest $request)

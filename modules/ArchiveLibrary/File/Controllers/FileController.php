@@ -41,12 +41,13 @@ class FileController extends Controller
     {
         $item = $this->fileService->get(Uuid::fromString($request->route('id')));
 
+
         $presenter = new FilePresenter($item);
 
         return Json::item($presenter->getData());
     }
 
-    public function store(CreateFileRequest $request): JsonResponse
+    public function store(CreateFileRequest $request)
     {
         $createdItem = $this->fileService->create($request->createCreateFileDTO());
 

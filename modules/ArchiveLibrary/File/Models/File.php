@@ -10,14 +10,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\ArchiveLibrary\File\Database\factories\FileFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
+use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class File extends Model
+class File extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use InteractsWithMedia;
+
     //use HasTranslations;
     //use SoftDeletes;
 
@@ -29,23 +34,44 @@ class File extends Model
 
     protected $fillable = [
         'name',
+        'reference_number',
+        'start_date',
+        'end_date',
     ];
 
     protected $casts = [
         'id' => 'string',
+        'reference_number' => 'string',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
     protected $appends = ['media_urls'];
 
     public function getMediaUrlsAttribute()
     {
+        if (!$this->media) {
+            return [];
+        }
         return $this->media->map(fn($media) => $media->getFullUrl());
     }
+
     protected static function newFactory(): FileFactory
     {
         return FileFactory::new();
     }
+
     public function folder()
     {
         return $this->belongsTo(Folder::class);
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(
+            \Modules\User\Models\User::class,
+            'user_file_permissions',
+            'file_id',
+            'user_id'
+        )->withPivot('folder_id', 'permission_type')->withTimestamps();
     }
 }

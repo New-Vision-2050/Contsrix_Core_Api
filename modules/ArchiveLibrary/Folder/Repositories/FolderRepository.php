@@ -62,9 +62,25 @@ class FolderRepository extends BaseRepository
         return $folder;
     }
 
-    public function updateFolder(UuidInterface $id, array $data): bool
+
+
+    public function updateFolder(UuidInterface $id, array $data, array $userIds = []): bool
     {
-        return $this->update($id, $data);
+        try {
+            $folder = $this->getFolder($id);
+
+            // Update folder attributes
+            $updated = $this->update($id, $data);
+
+            // Sync user relationships - this will remove old users and add new ones
+            if (!empty($userIds) || $folder->access_type === 'private') {
+                $folder->users()->sync($userIds);
+            }
+
+            return $updated;
+        } catch (\Exception $e) {
+            throw new CustomException(__("validation.update-not-successful"));
+        }
     }
 
     public function deleteFolder(UuidInterface $id): bool
