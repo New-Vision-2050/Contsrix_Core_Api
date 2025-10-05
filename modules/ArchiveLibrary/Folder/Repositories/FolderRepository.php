@@ -7,6 +7,7 @@ namespace Modules\ArchiveLibrary\Folder\Repositories;
 use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Mockery\Exception;
 use Modules\ArchiveLibrary\File\Models\File;
 use Modules\ArchiveLibrary\File\Models\UserFilePermission;
 use Ramsey\Uuid\UuidInterface;
@@ -49,9 +50,16 @@ class FolderRepository extends BaseRepository
     {
         return $this->paginatedList(['parent_id' => $parentId->toString()], $page, $perPage);
     }
-    public function createFolder(array $data): Folder
+    public function createFolder(array $data , array $userIds): Folder
     {
-        return $this->create($data);
+        try{
+            $folder  = $this->create($data);
+            $folder->users()->attach($userIds);
+
+        }catch (Exception $e){
+            throw new CustomException(__("validation.create-not-successful"));
+        }
+        return $folder;
     }
 
     public function updateFolder(UuidInterface $id, array $data): bool
