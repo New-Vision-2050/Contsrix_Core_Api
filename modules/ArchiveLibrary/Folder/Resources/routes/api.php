@@ -9,6 +9,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/child-folders/{id}', [FolderController::class, 'getChildFolders']);
     Route::post('/file', [FolderController::class, 'file']);
     Route::get('/{id}', [FolderController::class, 'show']);
-    Route::put('/{id}', [FolderController::class, 'update']);
+    Route::post('/{id}', [FolderController::class, 'update']);
     Route::delete('/{id}', [FolderController::class, 'delete']);
 });

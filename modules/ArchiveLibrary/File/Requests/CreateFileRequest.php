@@ -13,7 +13,14 @@ class CreateFileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => 'required|string|max:255',
+            'reference_number' => 'required|unique:files,reference_number',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'user_ids' => 'required_if:access_type,private|array',
+            'user_ids.*' => 'sometimes|exists:users,id',
+            "access_type"=>"required|in:private,public",
+            "file"=>"required|mimes:pdf,jpeg,jpg,png,doc,docx"
         ];
     }
 
@@ -21,6 +28,11 @@ class CreateFileRequest extends FormRequest
     {
         return new CreateFileDTO(
             name: $this->get('name'),
+            referenceNumber: $this->get('reference_number'),
+            startDate: $this->get('start_date'),
+            endDate: $this->get('end_date'),
+            userIds: $this->get('user_ids', []),
+            file: $this->file('file'),
         );
     }
 }
