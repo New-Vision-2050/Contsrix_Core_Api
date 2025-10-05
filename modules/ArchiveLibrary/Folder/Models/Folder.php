@@ -11,6 +11,7 @@ use Modules\ArchiveLibrary\Folder\Database\factories\FolderFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\File\Models\File;
 //use BasePackage\Shared\Traits\HasTranslations;
+use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -32,7 +33,8 @@ class Folder extends Model implements HasMedia
     protected $fillable = [
         'name',
         'parent_id',
-        'access_type'
+        'access_type',
+        "password"
     ];
 
     protected $casts = [
@@ -65,6 +67,11 @@ class Folder extends Model implements HasMedia
     public function registerMediaConversions(\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $media->getFullUrl();
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class,"user_folder_permissions","folder_id","user_id");
     }
     protected static function newFactory(): FolderFactory
     {
