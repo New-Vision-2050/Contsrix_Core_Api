@@ -33,7 +33,7 @@ class AuditRepository extends BaseRepository
             ->when(request()->has('user_id'), function ($q) {
                 $q->where('user_id', request()->user_id);
             })
-            ->when(request()->has('type') && request()->has('type') !="null", function ($q) {
+            ->when(request()->has('type') && request()->type !=null, function ($q) {
                 $q->where('event', request()->type);
             })
 
