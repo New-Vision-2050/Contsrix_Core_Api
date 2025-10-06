@@ -37,7 +37,7 @@ class AuditRepository extends BaseRepository
                 $q->where('event', request()->type);
             })
 
-            ->when(!auth()->user()->hasRole("super-admin")&&!auth()->user()->hasRole("admin")&&!auth()->user()->is_owner, function ($q) {
+            ->when((!auth()->user()->hasRole("super-admin"))&&(!auth()->user()->hasRole("admin"))&&(!auth()->user()->is_owner), function ($q) {
                 $q->where('user_id', request()->user_id);
             })
             ->when(request()->has('time_from'), function ($q) {
