@@ -33,17 +33,17 @@ class AuditRepository extends BaseRepository
             ->when(request()->has('user_id'), function ($q) {
                 $q->where('user_id', request()->user_id);
             })
-            ->when(request()->has('type'), function ($q) {
+            ->when(request()->has('type') && request()->has('type') !="null", function ($q) {
                 $q->where('event', request()->type);
             })
 
             ->when((!auth()->user()->hasRole("super-admin"))&&(!auth()->user()->hasRole("admin"))&&(!auth()->user()->is_owner), function ($q) {
                 $q->where('user_id', request()->user_id);
             })
-            ->when(request()->has('time_from'), function ($q) {
+            ->when(request()->has('time_from') && request()->has('time_from') !="null" , function ($q) {
                 $q->whereDate('created_at', '>=', request()->time_from);
             })
-            ->when(request()->has('time_to'), function ($q) {
+            ->when(request()->has('time_to')&& request()->has('time_to') !="null", function ($q) {
                 $q->whereDate('created_at', '<=', request()->time_to);
             })
             ->paginate($limit)->getCollection()->groupBy(fn($pv) => $pv->created_at->format('Y-m-d'));
