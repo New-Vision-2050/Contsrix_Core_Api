@@ -21,9 +21,9 @@ class AuditPresenter extends AbstractPresenter
         return [
             'id' => $this->audit->id,
             'user' => [
-                'id' => $this->audit->user->id,
-                'name' => $this->audit->user->name,
-                'email' => $this->audit->user->email,
+                'id' => $this->audit?->user?->id,
+                'name' => $this->audit->user?->name,
+                'email' => $this->audit->user?->email,
             ],
             'event' => $this->audit->event,
             'auditable_id' => $this->audit->auditable_id,
@@ -45,16 +45,16 @@ class AuditPresenter extends AbstractPresenter
     {
         $modelName = $this->getModelNameFromType($this->audit->auditable_type);
         $event = $this->audit->event;
-        
+
         // Get Arabic event text
         $eventText = $this->getEventText($event);
-        
+
         // Get Arabic model name
         $modelNameArabic = $this->getModelNameArabic($modelName);
-        
+
         // Get actual name of the auditable entity
         $entityName = $this->getAuditableEntityName();
-        
+
         return $eventText . $modelNameArabic . $entityName;
     }
 
@@ -111,14 +111,14 @@ class AuditPresenter extends AbstractPresenter
         try {
             // Get the auditable model class
             $auditableClass = $this->audit->auditable_type;
-            
+
             if (!class_exists($auditableClass)) {
                 return 'غير معروف';
             }
 
             // Find the entity by ID
             $entity = $auditableClass::find($this->audit->auditable_id);
-            
+
             if (!$entity) {
                 return 'غير موجود';
             }
