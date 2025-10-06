@@ -34,6 +34,7 @@ class UserRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+
     public function getUser(UuidInterface $id): User
     {
         return $this->model->withoutTenancy()->findOrFail(
