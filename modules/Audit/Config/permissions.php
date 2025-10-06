@@ -2,7 +2,7 @@
 
 return [
     'permissions' => [
-//        'AUDIT_LIST' => 'settings.audit-list*audit-list.list',
+        'AUDIT_LIST' => 'settings.audit-list*audit-list.list',
 
     ]
 ];
