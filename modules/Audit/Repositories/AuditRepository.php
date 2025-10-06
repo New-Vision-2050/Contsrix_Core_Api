@@ -29,10 +29,17 @@ class AuditRepository extends BaseRepository
     public function groupedBy()
     {
         $limit = request()->has('limit') ? request()->limit : 10;
-        return Audit::query()->orderByDesc('id')->
-        when(request()->has('user_id'), function ($q) {
-            $q->where('user_id', request()->user_id);
-        })
+        return Audit::query()->orderByDesc('id')
+            ->when(request()->has('user_id'), function ($q) {
+                $q->where('user_id', request()->user_id);
+            })
+            ->when(request()->has('type'), function ($q) {
+                $q->where('event', request()->type);
+            })
+
+            ->when(!auth()->user()->hasRole("super-admin")&&!auth()->user()->hasRole("admin")&&!auth()->user()->is_owner, function ($q) {
+                $q->where('user_id', request()->user_id);
+            })
             ->when(request()->has('time_from'), function ($q) {
                 $q->whereDate('created_at', '>=', request()->time_from);
             })

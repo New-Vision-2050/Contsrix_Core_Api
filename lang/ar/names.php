@@ -256,7 +256,8 @@ return [
     "brokers_added_last_month" => "الوسطاء المضافين اخر شهر",
     "active_brokers" => "الوسطاء النشطيين",
     "suspended_brokers" => "الوسطاء المعلقين",
-    "client-relations"=>"علاقات العملاء"
+    "client-relations"=>"علاقات العملاء",
+    "audit-list"=>"السجل"
 
 
 ];
