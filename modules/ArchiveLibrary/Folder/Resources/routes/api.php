@@ -10,6 +10,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/child-folders/{id}', [FolderController::class, 'getChildFolders']);
     Route::post('/file', [FolderController::class, 'file']);
     Route::get('/{id}/users', [FolderController::class, 'getUsersAllowedByFolderId']);
+    Route::get('/{id}/audits', [FolderController::class, 'getFolderAudits']);
     Route::get('/{id}', [FolderController::class, 'show']);
     Route::post('/{id}', [FolderController::class, 'update']);
     Route::delete('/{id}', [FolderController::class, 'delete']);
