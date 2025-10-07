@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\ArchiveLibrary\Folder\Controllers\FolderController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [FolderController::class, 'showFolders']);
     Route::get('/contents', [FolderController::class, 'getFoldersAndFiles']);
     Route::post('/', [FolderController::class, 'store']);
