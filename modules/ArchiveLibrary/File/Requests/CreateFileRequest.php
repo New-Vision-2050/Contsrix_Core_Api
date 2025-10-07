@@ -33,6 +33,7 @@ class CreateFileRequest extends FormRequest
             endDate: $this->get('end_date'),
             userIds: $this->get('user_ids', []),
             file: $this->file('file'),
+            accessType: $this->get('access_type'),
         );
     }
 }

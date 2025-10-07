@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ArchiveLibrary\File\DTO;
 
 use Illuminate\Http\UploadedFile;
+use Modules\Subscription\Enums\PeriodUnitEnum;
 use Ramsey\Uuid\UuidInterface;
 
 class CreateFileDTO
@@ -16,6 +17,7 @@ class CreateFileDTO
         public string       $endDate,
         public array        $userIds = [],
         public UploadedFile $file,
+        public string $accessType,
     )
     {
     }
@@ -27,6 +29,7 @@ class CreateFileDTO
             'reference_number' => $this->referenceNumber,
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
+            "access_type"=>$this->accessType,
         ];
     }
 
