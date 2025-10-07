@@ -408,6 +408,7 @@ return [
     'study_rate_required' => 'Study rate is required.',
     'study_rate_numeric' => 'Study rate must be a number.',
     'graduation_date_required' => 'Graduation date is required.',
+    "access-denied"=>"access denied",
 
   'custom' => [
         'attribute-name' => [

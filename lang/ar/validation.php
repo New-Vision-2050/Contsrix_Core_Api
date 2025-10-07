@@ -400,6 +400,7 @@ return [
         ],
     ],
     'notification_date_7_days' => 'يجب أن يكون تاريخ الإشعار قبل تاريخ الانتهاء بسبعة أيام على الأقل.',
+    "access-denied"=>"غير مصرح",
 
     'address' => [
             'country_id' => [

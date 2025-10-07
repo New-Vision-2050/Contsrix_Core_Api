@@ -27,6 +27,7 @@ class FolderPresenter extends AbstractPresenter
             'file' => $this->folder->getFirstMedia("upload") ? (new MediaPresenter($this->folder->getFirstMedia('upload')))->getData(): null,
             "created_at"=>$this->folder->created_at,
             "updated_at"=>$this->folder->updated_at,
+            "is_password"=>$this->folder->password != null?1 : 0
         ];
     }
 }
