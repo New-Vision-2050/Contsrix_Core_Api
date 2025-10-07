@@ -127,4 +127,10 @@ class FolderCRUDService
         return $this->repository->getFoldersAndFilesByParent($parentId, $userId);
     }
 
+    public function getUsersAllowedByFolderId($folderId)
+    {
+
+        return $this->repository->getUsersAllowedByFolderId($folderId);
+    }
+
 }
