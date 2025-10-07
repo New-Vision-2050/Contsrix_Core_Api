@@ -19,7 +19,7 @@ class FolderCRUDService
 
     public function create(CreateFolderDTO $createFolderDTO): Folder
     {
-         return $this->repository->createFolder($createFolderDTO->toArray(),$createFolderDTO->getUserIds());
+         return $this->repository->createFolder($createFolderDTO->toArray(),$createFolderDTO->getUserIds(),$createFolderDTO->getFile());
     }
 
     public function list(int $page = 1, int $perPage = 10): array

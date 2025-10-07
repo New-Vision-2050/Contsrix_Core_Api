@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\ArchiveLibrary\File\Controllers\FileController;
 
-Route::group(['middleware' => ['auth:api']], function () {
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [FileController::class, 'index']);
     Route::post('/', [FileController::class, 'store']);
     Route::get('/{id}', [FileController::class, 'show']);

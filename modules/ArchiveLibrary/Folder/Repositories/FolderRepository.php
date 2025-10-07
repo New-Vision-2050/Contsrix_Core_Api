@@ -7,9 +7,11 @@ namespace Modules\ArchiveLibrary\Folder\Repositories;
 use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Mockery\Exception;
 use Modules\ArchiveLibrary\File\Models\File;
 use Modules\ArchiveLibrary\File\Models\UserFilePermission;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
@@ -22,7 +24,7 @@ use Modules\ArchiveLibrary\Folder\Models\UserFolderPermission;
  */
 class FolderRepository extends BaseRepository
 {
-    public function __construct(Folder $model)
+    public function __construct(Folder $model,private FileUploadService $uploadedFile)
     {
         parent::__construct($model);
     }
@@ -51,11 +53,13 @@ class FolderRepository extends BaseRepository
     {
         return $this->paginatedList(['parent_id' => $parentId->toString()], $page, $perPage);
     }
-    public function createFolder(array $data , array $userIds): Folder
+    public function createFolder(array $data , array $userIds ,?UploadedFile $file=null): Folder
     {
         try{
             $folder  = $this->create($data);
             $folder->users()->attach($userIds);
+            if($file)
+            $this->uploadedFile->uploadFile($folder,$file,'upload');
 
         }catch (Exception $e){
             throw new CustomException(__("validation.create-not-successful"));
@@ -65,7 +69,7 @@ class FolderRepository extends BaseRepository
 
 
 
-    public function updateFolder(UuidInterface $id, array $data, array $userIds = []): bool
+    public function updateFolder(UuidInterface $id, array $data, array $userIds = [],?UploadedFile $file =null): bool
     {
         try {
             $folder = $this->getFolder($id);
@@ -76,6 +80,11 @@ class FolderRepository extends BaseRepository
             // Sync user relationships - this will remove old users and add new ones
             if (!empty($userIds) || $folder->access_type === 'private') {
                 $folder->users()->sync($userIds);
+            }
+            if ($file == null)
+            {
+                $folder->clearMediaCollection('upload');
+                $this->uploadedFile->uploadFile($folder,$file,'upload');
             }
 
             return $updated;
