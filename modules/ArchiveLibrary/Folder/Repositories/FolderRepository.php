@@ -148,13 +148,14 @@ class FolderRepository extends BaseRepository
     {
         // Query folders based on parent_id
         $foldersQuery = $this->model->query();
-        $folder = $this->model->query()->where('id', $parentId)->first();
-        if ($folder->password != null  &&( !request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
-             throw new CustomException(__("validation.access-denied"));
-        }
+
         if ($parentId === null) {
             $foldersQuery->whereNull('parent_id');
         } else {
+            $folder = $this->model->query()->where('id', $parentId)->first();
+            if ($folder->password != null  &&( !request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
+                throw new CustomException(__("validation.access-denied"));
+            }
             $foldersQuery->where('parent_id', $parentId);
         }
 
