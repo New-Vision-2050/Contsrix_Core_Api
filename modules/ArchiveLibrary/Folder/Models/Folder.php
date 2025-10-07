@@ -44,9 +44,9 @@ class Folder extends Model implements HasMedia
         'id' => 'string',
         'password' => 'hashed',
     ];
-    protected $hidden = [
-        'password',
-    ];
+//    protected $hidden = [
+//        'password',
+//    ];
 
 
 

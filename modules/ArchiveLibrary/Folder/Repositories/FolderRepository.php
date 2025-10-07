@@ -8,6 +8,7 @@ use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Mockery\Exception;
 use Modules\ArchiveLibrary\File\Models\File;
 use Modules\ArchiveLibrary\File\Models\UserFilePermission;
@@ -24,7 +25,7 @@ use Modules\ArchiveLibrary\Folder\Models\UserFolderPermission;
  */
 class FolderRepository extends BaseRepository
 {
-    public function __construct(Folder $model,private FileUploadService $uploadedFile)
+    public function __construct(Folder $model, private FileUploadService $uploadedFile)
     {
         parent::__construct($model);
     }
@@ -33,7 +34,7 @@ class FolderRepository extends BaseRepository
     {
         $query = $this->model->query();
 
-        if ($parentId !=null) {
+        if ($parentId != null) {
             $query->where('parent_id', $parentId);
         } else {
             $query->whereNull('parent_id');
@@ -42,34 +43,35 @@ class FolderRepository extends BaseRepository
         return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
-    public function getFolder( $id): Folder
+    public function getFolder($id): Folder
     {
 
         return $this->findOneByOrFail([
             'id' => $id,
         ]);
     }
+
     public function getChildFolders(UuidInterface $parentId, int $page = 1, int $perPage = 10)
     {
         return $this->paginatedList(['parent_id' => $parentId->toString()], $page, $perPage);
     }
-    public function createFolder(array $data , array $userIds ,?UploadedFile $file=null): Folder
-    {
-        try{
-            $folder  = $this->create($data);
-            $folder->users()->attach($userIds);
-            if($file)
-            $this->uploadedFile->uploadFile($folder,$file,'upload');
 
-        }catch (Exception $e){
+    public function createFolder(array $data, array $userIds, ?UploadedFile $file = null): Folder
+    {
+        try {
+            $folder = $this->create($data);
+            $folder->users()->attach($userIds);
+            if ($file)
+                $this->uploadedFile->uploadFile($folder, $file, 'upload');
+
+        } catch (Exception $e) {
             throw new CustomException(__("validation.create-not-successful"));
         }
         return $folder;
     }
 
 
-
-    public function updateFolder(UuidInterface $id, array $data, array $userIds = [],?UploadedFile $file =null): bool
+    public function updateFolder(UuidInterface $id, array $data, array $userIds = [], ?UploadedFile $file = null): bool
     {
         try {
             $folder = $this->getFolder($id);
@@ -81,10 +83,9 @@ class FolderRepository extends BaseRepository
             if (!empty($userIds) || $folder->access_type === 'private') {
                 $folder->users()->sync($userIds);
             }
-            if ($file == null)
-            {
+            if ($file == null) {
                 $folder->clearMediaCollection('upload');
-                $this->uploadedFile->uploadFile($folder,$file,'upload');
+                $this->uploadedFile->uploadFile($folder, $file, 'upload');
             }
 
             return $updated;
@@ -96,19 +97,20 @@ class FolderRepository extends BaseRepository
     public function deleteFolder(UuidInterface $id): bool
     {
         $folder = $this->getFolder($id);
-        if(count($folder->children) !=0)
+        if (count($folder->children) != 0)
             throw new CustomException(__("validation.can-not-delete-has-children"));
-        if(count($folder->files) !=0)
+        if (count($folder->files) != 0)
             throw new CustomException(__("validation.can-not-delete-has-children"));
 
         return $this->delete($id);
     }
+
     public function canViewFolder($folderId, $userId): bool
     {
         $folder = $this->getFolder($folderId);
 
         // if ($folder->access_type === 'public') {
-            return true;
+        return true;
         // }
 
         // return UserFolderPermission::where('folder_id', $folderId)
@@ -116,14 +118,16 @@ class FolderRepository extends BaseRepository
         //     ->where('permission_type', 'view')
         //     ->exists();
     }
-    public function getViewableFilesInFolder( $folderId,  $userId): Collection
+
+    public function getViewableFilesInFolder($folderId, $userId): Collection
     {
         $files = File::where('folder_id', $folderId)->get();
 
         return $files->filter(function (File $file) use ($userId) {
-            return $this->canViewFile($file->id,$userId);
+            return $this->canViewFile($file->id, $userId);
         });
     }
+
     public function canViewFile(UuidInterface $fileId, UuidInterface $userId): bool
     {
         $file = File::find($fileId);
@@ -144,7 +148,10 @@ class FolderRepository extends BaseRepository
     {
         // Query folders based on parent_id
         $foldersQuery = $this->model->query();
-
+        $folder = $this->model->query()->where('id', $parentId)->first();
+        if ($folder->password != null  &&( !request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
+             throw new CustomException(__("validation.access-denied"));
+        }
         if ($parentId === null) {
             $foldersQuery->whereNull('parent_id');
         } else {
@@ -199,14 +206,11 @@ class FolderRepository extends BaseRepository
 
     public function getUsersAllowedByFolderId($folderId)
     {
-        $userIds =  UserFolderPermission::where('folder_id', $folderId)->pluck("user_id")->toArray();
-        if(count($userIds))
-        {
+        $userIds = UserFolderPermission::where('folder_id', $folderId)->pluck("user_id")->toArray();
+        if (count($userIds)) {
             return User::query()->whereIn("id", $userIds)->get();
-        }
-        else
-        {
-            return User::query()->where("company_id",tenant("id"))->get();
+        } else {
+            return User::query()->where("company_id", tenant("id"))->get();
         }
     }
 }
