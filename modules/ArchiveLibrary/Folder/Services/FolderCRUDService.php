@@ -134,4 +134,37 @@ class FolderCRUDService
         return $this->repository->getUsersAllowedByFolderId($folderId);
     }
 
+    /**
+     * Get audit logs for a folder and all its related files
+     */
+    public function getFolderAudits(UuidInterface $folderId)
+    {
+        $folder = $this->repository->getFolder($folderId);
+
+        // Get folder audits using explicit model class
+        $folderAudits = \Modules\Audit\Models\Audit::where('auditable_id', $folder->id)
+            ->where('auditable_type', \Modules\ArchiveLibrary\Folder\Models\Folder::class)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get all file IDs for this folder
+        $fileIds = $folder->files()->pluck('id')->toArray();
+
+        // Get audits for all files in this folder
+        $fileAudits = collect();
+        if (!empty($fileIds)) {
+            $fileAudits = \Modules\Audit\Models\Audit::whereIn('auditable_id', $fileIds)
+                ->where('auditable_type', \Modules\ArchiveLibrary\File\Models\File::class)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+        return $folderAudits->merge($fileAudits)->sortByDesc('created_at')->values();
+
+//        return [
+//            'folder_audits' => $folderAudits,
+//            'file_audits' => $fileAudits,
+//            'all_audits' => $folderAudits->merge($fileAudits)->sortByDesc('created_at')->values(),
+//        ];
+    }
+
 }

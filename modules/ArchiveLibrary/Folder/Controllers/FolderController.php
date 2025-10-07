@@ -21,6 +21,7 @@ use Modules\ArchiveLibrary\Folder\Requests\UploadFileRequest;
 use Modules\ArchiveLibrary\Folder\Services\FileService;
 use Modules\ArchiveLibrary\Folder\Services\FolderCRUDService;
 use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
+use Modules\Audit\Presenters\AuditPresenter;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\User\Presenters\UserPresenter;
 use Ramsey\Uuid\Uuid;
@@ -141,6 +142,22 @@ class FolderController extends Controller
             'folders' => FolderPresenter::collection($data['folders']),
             'files' => FilePresenter::collection($data['files']),
         ]);
+    }
+
+    /**
+     * Get audit logs for a folder and all its related files
+     */
+    public function getFolderAudits(Request $request): JsonResponse
+    {
+        $folderId = Uuid::fromString($request->route('id'));
+
+        $audits = $this->folderService->getFolderAudits($folderId);
+
+        return Json::items(
+//            'folder_audits' => AuditPresenter::collection($audits['folder_audits']),
+//            'file_audits' => AuditPresenter::collection($audits['file_audits']),
+            AuditPresenter::collection($audits)
+        );
     }
 
 }

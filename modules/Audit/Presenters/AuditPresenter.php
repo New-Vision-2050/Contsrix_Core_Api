@@ -98,6 +98,8 @@ class AuditPresenter extends AbstractPresenter
             'Employee' => 'موظف بأسم ',
             'Client' => 'عميل بأسم ',
             'Broker' => 'وسيط بأسم ',
+            'Folder' => 'مجلد بأسم ',
+            'File' => 'ملف بأسم ',
         ];
 
         return $modelNames[$modelName] ?? $modelName . ' بأسم ';

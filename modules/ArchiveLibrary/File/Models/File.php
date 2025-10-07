@@ -11,6 +11,7 @@ use Modules\ArchiveLibrary\File\Database\factories\FileFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\User\Models\User;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
@@ -18,13 +19,14 @@ use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
-class File extends Model implements HasMedia
+class File extends Model implements HasMedia , Auditable
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
     use BelongsToTenant;
+    use \OwenIt\Auditing\Auditable;
 
     //use HasTranslations;
     //use SoftDeletes;

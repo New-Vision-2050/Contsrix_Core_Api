@@ -12,17 +12,19 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\File\Models\File;
 //use BasePackage\Shared\Traits\HasTranslations;
 use Modules\User\Models\User;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
-class Folder extends Model implements HasMedia
+class Folder extends Model implements HasMedia ,Auditable
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
     use BelongsToTenant;
+    use \OwenIt\Auditing\Auditable;
     //use HasTranslations;
     //use SoftDeletes;
 
