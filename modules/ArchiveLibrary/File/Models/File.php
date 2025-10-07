@@ -13,6 +13,7 @@ use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -22,6 +23,7 @@ class File extends Model implements HasMedia
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use BelongsToPrimaryModel;
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -75,5 +77,11 @@ class File extends Model implements HasMedia
             'file_id',
             'user_id'
         )->withPivot('folder_id', 'permission_type')->withTimestamps();
+    }
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+
+        return "folder";
     }
 }

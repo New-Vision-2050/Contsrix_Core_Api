@@ -14,6 +14,7 @@ use Modules\ArchiveLibrary\File\Models\File;
 use Modules\User\Models\User;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Folder extends Model implements HasMedia
 {
@@ -21,6 +22,7 @@ class Folder extends Model implements HasMedia
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use BelongsToTenant;
     //use HasTranslations;
     //use SoftDeletes;
 
@@ -34,7 +36,8 @@ class Folder extends Model implements HasMedia
         'name',
         'parent_id',
         'access_type',
-        "password"
+        "password",
+        "company_id"
     ];
 
     protected $casts = [

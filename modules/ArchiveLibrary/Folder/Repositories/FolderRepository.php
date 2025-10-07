@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Mockery\Exception;
 use Modules\ArchiveLibrary\File\Models\File;
 use Modules\ArchiveLibrary\File\Models\UserFilePermission;
+use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\ArchiveLibrary\Folder\Models\UserFolderPermission;
@@ -184,5 +185,19 @@ class FolderRepository extends BaseRepository
             'folders' => $folders,
             'files' => $files,
         ];
+    }
+
+
+    public function getUsersAllowedByFolderId($folderId)
+    {
+        $userIds =  UserFolderPermission::where('folder_id', $folderId)->pluck("user_id")->toArray();
+        if(count($userIds))
+        {
+            return User::query()->whereIn("id", $userIds)->get();
+        }
+        else
+        {
+            return User::query()->where("company_id",tenant("id"))->get();
+        }
     }
 }
