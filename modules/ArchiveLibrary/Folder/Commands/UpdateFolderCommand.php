@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\Folder\Commands;
 
+use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 
 class UpdateFolderCommand
@@ -14,7 +15,8 @@ class UpdateFolderCommand
         private ?string $parentId,
         private ?string $password,
         private string $accessType,
-        private array $userIds = []
+        private array $userIds = [],
+        private ?UploadedFile $file,
     ) {
     }
 
@@ -50,11 +52,16 @@ class UpdateFolderCommand
 
     public function toArray(): array
     {
-        return array_filter([
+        return [
             'name' => $this->name,
             'parent_id' => $this->parentId,
             'password' => $this->password,
             'access_type' => $this->accessType,
-        ], fn($value) => $value !== null);
+        ];
+    }
+
+    public function getFile()
+    {
+        return $this->file;
     }
 }

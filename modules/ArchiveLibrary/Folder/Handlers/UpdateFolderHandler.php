@@ -19,7 +19,8 @@ class UpdateFolderHandler
         $this->repository->updateFolder(
             $updateFolderCommand->getId(),
             $updateFolderCommand->toArray(),
-            $updateFolderCommand->getUserIds()
+            $updateFolderCommand->getUserIds(),
+            $updateFolderCommand->getFile()
         );
     }
 }

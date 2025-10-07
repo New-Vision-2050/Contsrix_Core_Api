@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\Folder\DTO;
 
+use Illuminate\Http\UploadedFile;
+use Modules\ArchiveLibrary\Folder\Handlers\UpdateFolderHandler;
 use Ramsey\Uuid\UuidInterface;
 
 class CreateFolderDTO
@@ -13,7 +15,8 @@ class CreateFolderDTO
         public ?string $parentId,
         public ?string $password,
         public string $accessType,
-        public array $userIds=[]
+        public array $userIds=[],
+        private ?UploadedFile $file,
     ) {
     }
 
@@ -30,5 +33,10 @@ class CreateFolderDTO
     public function getUserIds()
     {
         return $this->userIds;
+    }
+
+    public function getFile()
+    {
+        return $this->file;
     }
 }
