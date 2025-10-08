@@ -147,35 +147,62 @@ class FolderRepository extends BaseRepository
             ->exists();
     }
 
-    public function getFoldersAndFilesByParent(?string $parentId, $userId, int $page = 1, int $perPage = 10): array
+    public function getFoldersAndFilesByParent(
+        ?string $parentId, 
+        $userId, 
+        int $page = 1, 
+        int $perPage = 10, 
+        ?string $documentType = null,
+        ?string $endDate = null,
+        ?string $endDateFrom = null,
+        ?string $endDateTo = null,
+        ?string $search = null,
+        string $searchType = 'all'
+    ): array
     {
-        // Query folders based on parent_id
-        $foldersQuery = $this->model->query()->withCount('files');
-
-        if ($parentId === null) {
-            $foldersQuery->whereNull('parent_id');
-        } else {
+        // Check password first if parent folder is provided
+        if ($parentId !== null) {
             $folder = $this->model->query()->where('id', $parentId)->first();
-            if ($folder->password != null  &&( !request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
+            if ($folder && $folder->password != null && (!request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
                 throw new CustomException(__("validation.access-denied"));
             }
-            $foldersQuery->where('parent_id', $parentId);
         }
 
-        // Get all folders with files count
-        $allFolders = $foldersQuery->get();
+        // Check if any file-specific filter is provided
+        $hasFileFilters = $documentType !== null 
+            || $endDate !== null 
+            || $endDateFrom !== null 
+            || $endDateTo !== null 
+            || ($search !== null && $search !== '');
 
-        // Filter folders based on access type and permissions
-        $folders = $allFolders->filter(function ($folder) use ($userId) {
-            if ($folder->access_type === 'public') {
-                return true;
+        // If file filters are provided, return empty folders array
+        if ($hasFileFilters) {
+            $folders = collect();
+        } else {
+            // Query folders based on parent_id
+            $foldersQuery = $this->model->query()->withCount('files');
+
+            if ($parentId === null) {
+                $foldersQuery->whereNull('parent_id');
+            } else {
+                $foldersQuery->where('parent_id', $parentId);
             }
 
-            // Check if user has permission for private folder
-            return UserFolderPermission::where('folder_id', $folder->id)
-                ->where('user_id', $userId)
-                ->exists();
-        })->values();
+            // Get all folders with files count
+            $allFolders = $foldersQuery->get();
+
+            // Filter folders based on access type and permissions
+            $folders = $allFolders->filter(function ($folder) use ($userId) {
+                if ($folder->access_type === 'public') {
+                    return true;
+                }
+
+                // Check if user has permission for private folder
+                return UserFolderPermission::where('folder_id', $folder->id)
+                    ->where('user_id', $userId)
+                    ->exists();
+            })->values();
+        }
 
         // Query files based on parent_id (folder_id)
         $filesQuery = File::query();
@@ -184,6 +211,63 @@ class FolderRepository extends BaseRepository
             $filesQuery->whereNull('folder_id');
         } else {
             $filesQuery->where('folder_id', $parentId);
+        }
+
+        // Filter by document type (MIME type) if provided
+        if ($documentType !== null) {
+            $mimeTypeMap = [
+                'pdf' => 'application/pdf',
+                'png' => 'image/png',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'txt' => 'text/plain',
+                'zip' => 'application/zip',
+                'rar' => 'application/x-rar-compressed',
+                'csv' => 'text/csv',
+            ];
+
+            $mimeType = $mimeTypeMap[$documentType] ?? null;
+
+            if ($mimeType) {
+                $filesQuery->whereHas('media', function ($query) use ($mimeType) {
+                    $query->where('mime_type', $mimeType);
+                });
+            }
+        }
+
+        // Filter by end_date if provided
+        if ($endDate !== null) {
+            // Exact date match
+            $filesQuery->whereDate('end_date', $endDate);
+        } elseif ($endDateFrom !== null || $endDateTo !== null) {
+            // Date range filter
+            if ($endDateFrom !== null) {
+                $filesQuery->whereDate('end_date', '>=', $endDateFrom);
+            }
+            if ($endDateTo !== null) {
+                $filesQuery->whereDate('end_date', '<=', $endDateTo);
+            }
+        }
+
+        // Apply search filter based on search type
+        if ($search !== null && $search !== '') {
+            $filesQuery->where(function ($query) use ($search, $searchType) {
+                if ($searchType === 'name') {
+                    // Search only in name
+                    $query->where('name', 'LIKE', '%' . $search . '%');
+                } elseif ($searchType === 'reference_number') {
+                    // Search only in reference_number
+                    $query->where('reference_number', 'LIKE', '%' . $search . '%');
+                } else {
+                    // Search in both name and reference_number (type = 'all')
+                    $query->where('name', 'LIKE', '%' . $search . '%')
+                          ->orWhere('reference_number', 'LIKE', '%' . $search . '%');
+                }
+            });
         }
 
         // Get all files

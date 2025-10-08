@@ -122,9 +122,31 @@ class FolderCRUDService
         }
     }
 
-    public function getFoldersAndFiles($userId, ?string $parentId, int $page = 1, int $perPage = 10): array
+    public function getFoldersAndFiles(
+        $userId, 
+        ?string $parentId, 
+        int $page = 1, 
+        int $perPage = 10, 
+        ?string $documentType = null,
+        ?string $endDate = null,
+        ?string $endDateFrom = null,
+        ?string $endDateTo = null,
+        ?string $search = null,
+        string $searchType = 'all'
+    ): array
     {
-        return $this->repository->getFoldersAndFilesByParent($parentId, $userId, $page, $perPage);
+        return $this->repository->getFoldersAndFilesByParent(
+            $parentId, 
+            $userId, 
+            $page, 
+            $perPage, 
+            $documentType,
+            $endDate,
+            $endDateFrom,
+            $endDateTo,
+            $search,
+            $searchType
+        );
     }
 
     public function getUsersAllowedByFolderId($folderId)
