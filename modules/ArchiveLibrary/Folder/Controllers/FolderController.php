@@ -146,17 +146,27 @@ class FolderController extends Controller
     }
 
     /**
-     * Get audit logs for a folder and all its related files
+     * Get audit logs based on type
+     * @param Request $request - Query param 'type': 'folder' (default) or 'file'
+     *                         - If 'folder': gets folder audits + all its files audits
+     *                         - If 'file': gets only that specific file's audits
      */
     public function getFolderAudits(Request $request): JsonResponse
     {
-        $folderId = Uuid::fromString($request->route('id'));
+        $id = Uuid::fromString($request->route('id'));
+        $type = $request->query('type', 'folder');
 
-        $audits = $this->folderService->getFolderAudits($folderId);
+        // Validate type parameter
+        if (!in_array($type, ['folder', 'file'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid type parameter. Must be "folder" or "file".'
+            ], 400);
+        }
+
+        $audits = $this->folderService->getFolderAudits($id, $type);
 
         return Json::items(
-//            'folder_audits' => AuditPresenter::collection($audits['folder_audits']),
-//            'file_audits' => AuditPresenter::collection($audits['file_audits']),
             AuditPresenter::collection($audits)
         );
     }

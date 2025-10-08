@@ -134,13 +134,24 @@ class FolderCRUDService
     }
 
     /**
-     * Get audit logs for a folder and all its related files
+     * Get audit logs based on type
+     * @param UuidInterface $id - Folder or File ID
+     * @param string $type - 'folder' or 'file'
      */
-    public function getFolderAudits(UuidInterface $folderId)
+    public function getFolderAudits(UuidInterface $id, string $type = 'folder')
     {
-        $folder = $this->repository->getFolder($folderId);
+        if ($type === 'file') {
+            // Get audits for a specific file only
+            return \Modules\Audit\Models\Audit::where('auditable_id', $id)
+                ->where('auditable_type', \Modules\ArchiveLibrary\File\Models\File::class)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
 
-        // Get folder audits using explicit model class
+        // Type is 'folder' - get folder and all its files audits
+        $folder = $this->repository->getFolder($id);
+
+        // Get folder audits
         $folderAudits = \Modules\Audit\Models\Audit::where('auditable_id', $folder->id)
             ->where('auditable_type', \Modules\ArchiveLibrary\Folder\Models\Folder::class)
             ->orderBy('created_at', 'desc')
@@ -157,13 +168,8 @@ class FolderCRUDService
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
-        return $folderAudits->merge($fileAudits)->sortByDesc('created_at')->values();
 
-//        return [
-//            'folder_audits' => $folderAudits,
-//            'file_audits' => $fileAudits,
-//            'all_audits' => $folderAudits->merge($fileAudits)->sortByDesc('created_at')->values(),
-//        ];
+        return $folderAudits->merge($fileAudits)->sortByDesc('created_at')->values();
     }
 
 }
