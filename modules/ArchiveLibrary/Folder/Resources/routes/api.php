@@ -5,6 +5,7 @@ use Modules\ArchiveLibrary\Folder\Controllers\FolderController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [FolderController::class, 'showFolders']);
+    Route::get('/get-all-folders', [FolderController::class, 'index']);
     Route::get('/contents', [FolderController::class, 'getFoldersAndFiles']);
     Route::post('/', [FolderController::class, 'store']);
     Route::get('/child-folders/{id}', [FolderController::class, 'getChildFolders']);
