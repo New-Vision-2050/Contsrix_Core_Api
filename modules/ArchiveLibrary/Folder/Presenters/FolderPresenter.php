@@ -77,6 +77,7 @@ class FolderPresenter extends AbstractPresenter
             'parent_id' => $this->folder?->parent_id,
             'access_type' => $this->folder->access_type,
             'file' => $this->folder->getFirstMedia("upload") ? (new MediaPresenter($this->folder->getFirstMedia('upload')))->getData(): null,
+            'files_count' => $this->folder->files_count ?? $this->folder->files()->count(),
             "created_at"=>$this->folder->created_at,
             "updated_at"=>$this->folder->updated_at,
             "is_password"=>$this->folder->password != null?1 : 0,
