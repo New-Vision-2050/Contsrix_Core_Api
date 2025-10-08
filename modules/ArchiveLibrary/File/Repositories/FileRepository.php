@@ -165,4 +165,67 @@ class FileRepository extends BaseRepository
 
             ->count();
     }
+
+    public function copyFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    {
+        try {
+            DB::beginTransaction();
+
+            $originalFile = $this->getFile($fileId);
+            
+            // Create a copy of the file
+            $copiedFile = $this->create([
+                'name' => $originalFile->name . ' (Copy)',
+                'reference_number' => $originalFile->reference_number,
+                'start_date' => $originalFile->start_date,
+                'end_date' => $originalFile->end_date,
+                'folder_id' => $targetFolderId?->toString(),
+                'access_type' => $originalFile->access_type,
+            ]);
+
+            // Copy media files
+            foreach ($originalFile->getMedia('upload') as $media) {
+                $copiedFile->addMediaFromUrl($media->getFullUrl())
+                    ->toMediaCollection('upload');
+            }
+
+            // Copy user permissions
+            $userIds = $originalFile->users->pluck('id')->toArray();
+            if (!empty($userIds)) {
+                $this->attachUsers($copiedFile, $userIds);
+            }
+
+            DB::commit();
+
+            return $copiedFile;
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new CustomException($exception->getMessage());
+        }
+    }
+
+    public function cutFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    {
+        try {
+            DB::beginTransaction();
+
+            $file = $this->getFile($fileId);
+            
+            // Update folder_id to move the file
+            $this->update($fileId, [
+                'folder_id' => $targetFolderId?->toString(),
+            ]);
+
+            // Update user permissions with new folder_id
+            UserFilePermission::where('file_id', $fileId->toString())
+                ->update(['folder_id' => $targetFolderId?->toString()]);
+
+            DB::commit();
+
+            return $this->getFile($fileId);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new CustomException($exception->getMessage());
+        }
+    }
 }
