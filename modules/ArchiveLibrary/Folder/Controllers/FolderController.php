@@ -135,13 +135,14 @@ class FolderController extends Controller
     {
         $userId = auth()->user()->id;
         $parentId = $request->get('parent_id');
+        $page = (int)$request->get('page', 1);
+        $perPage = (int)$request->get('per_page', 10);
 
-        $data = $this->folderService->getFoldersAndFiles($userId, $parentId);
+        $result = $this->folderService->getFoldersAndFiles($userId, $parentId, $page, $perPage);
 
         return Json::item([
-            'folders' => FolderPresenter::collection($data['folders']),
-            'files' => FilePresenter::collection($data['files']),
-        ]);
+            'folders' => FolderPresenter::collection($result['folders']),
+            'files' => FilePresenter::collection($result['files'])],["pagination"=>$result['pagination']]);
     }
 
     /**
