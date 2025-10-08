@@ -18,11 +18,11 @@ class UpdateFileRequest extends FormRequest
             'reference_number' => 'required|unique:files,reference_number,' . $this->route('id'),
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            "access_type"=>"required|in:private,public",
+            "access_type" => "required|in:private,public",
             'user_ids' => 'required_if:access_type,private|array',
             'user_ids.*' => 'sometimes|exists:users,id',
-            "file"=>"nullable",
-            "parent_id"=>"nullable|exists:folders,id",
+            "file" => "nullable",
+            "parent_id" => "nullable|exists:folders,id",
         ];
     }
 
@@ -36,8 +36,8 @@ class UpdateFileRequest extends FormRequest
             startDate: $this->get('start_date'),
             endDate: $this->get('end_date'),
             userIds: $this->get('user_ids', []),
-            file:$this->file('file'),
-            folderId:$this->get('folder_id'),
+            file: $this->hasFile('file') ? $this->file("file") : null,
+            folderId: $this->get('folder_id'),
         );
     }
 }

@@ -52,12 +52,23 @@ class UpdateFolderCommand
 
     public function toArray(): array
     {
-        return [
-            'name' => $this->name,
-            'parent_id' => $this->parentId,
-            'password' => $this->password,
-            'access_type' => $this->accessType,
-        ];
+        if($this->password == null)
+        {
+            return [
+                'name' => $this->name,
+                'parent_id' => $this->parentId,
+                'access_type' => $this->accessType,
+            ];
+        }
+
+        else
+        {
+            return [
+                'name' => $this->name,
+                'parent_id' => $this->parentId,
+                'access_type' => $this->accessType,
+            ]+["password"=> $this->password];
+        }
     }
 
     public function getFile()
