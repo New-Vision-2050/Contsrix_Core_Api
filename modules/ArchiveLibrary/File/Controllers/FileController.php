@@ -10,7 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Modules\ArchiveLibrary\File\Handlers\DeleteFileHandler;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
 use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
+use Modules\ArchiveLibrary\File\Requests\CopyFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CreateFileRequest;
+use Modules\ArchiveLibrary\File\Requests\CutFileRequest;
 use Modules\ArchiveLibrary\File\Requests\DeleteFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileListRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileRequest;
@@ -99,5 +101,29 @@ class FileController extends Controller
                 'almost_expired_files' => FilePresenter::collection($result['widgets']['almost_expired_files']),
             ]
         ]);
+    }
+
+    public function copyFile(CopyFileRequest $request): JsonResponse
+    {
+        $copiedFile = $this->fileService->copyFile(
+            $request->getFileId(),
+            $request->getFolderId()
+        );
+
+        $presenter = new FilePresenter($copiedFile);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function cutFile(CutFileRequest $request): JsonResponse
+    {
+        $movedFile = $this->fileService->cutFile(
+            $request->getFileId(),
+            $request->getFolderId()
+        );
+
+        $presenter = new FilePresenter($movedFile);
+
+        return Json::item($presenter->getData());
     }
 }

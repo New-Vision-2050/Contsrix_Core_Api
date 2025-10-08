@@ -78,4 +78,14 @@ class FileCRUDService
             'widgets' => $widgets,
         ];
     }
+
+    public function copyFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    {
+        return $this->repository->copyFile($fileId, $targetFolderId);
+    }
+
+    public function cutFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    {
+        return $this->repository->cutFile($fileId, $targetFolderId);
+    }
 }
