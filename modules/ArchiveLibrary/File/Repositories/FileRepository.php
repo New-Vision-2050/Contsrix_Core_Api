@@ -103,4 +103,66 @@ class FileRepository extends BaseRepository
         }
         $file->users()->sync($syncData);
     }
+
+    public function getFilesByFolder(?string $folderId): array
+    {
+        $query = $this->model->query();
+
+        if ($folderId === null) {
+            $query->whereNull('folder_id');
+        } else {
+            $query->where('folder_id', $folderId);
+        }
+
+
+
+        return [
+            'data' => $query->get(),
+            "count"=>$query->count()
+        ];
+    }
+
+    public function getTotalFilesCount(): int
+    {
+        return $this->model->query()->count();
+    }
+
+    public function getExpiredFilesCount($folderId): int
+    {
+        return $this->model->query()
+            ->whereNotNull('end_date')
+            ->where('end_date', '<', now())
+            ->where('folder_id', $folderId)
+            ->count();
+    }
+
+    public function getValidFilesCount($folderId): int
+    {
+        return $this->model->query()
+            ->whereNotNull('end_date')
+            ->where('end_date', '>=', now())
+            ->where('folder_id', $folderId)
+
+            ->count();
+    }
+
+    public function getAlmostExpiredFiles($folderId): Collection
+    {
+        $threeDaysFromNow = now()->addDays(3);
+
+        return $this->model->query()
+            ->whereNotNull('end_date')
+            ->where('end_date', '>=', now())
+            ->where('end_date', '<=', $threeDaysFromNow)
+            ->where('folder_id', $folderId)
+
+            ->get();
+    }
+
+    public function getAlmostExpiredFilesCount($folderId): int
+    {
+        return $this->getAlmostExpiredFiles($folderId)
+
+            ->count();
+    }
 }

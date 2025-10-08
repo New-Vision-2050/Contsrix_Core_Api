@@ -14,6 +14,7 @@ use Modules\ArchiveLibrary\File\Requests\CreateFileRequest;
 use Modules\ArchiveLibrary\File\Requests\DeleteFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileListRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileRequest;
+use Modules\ArchiveLibrary\File\Requests\GetFilesWithWidgetsRequest;
 use Modules\ArchiveLibrary\File\Requests\UpdateFileRequest;
 use Modules\ArchiveLibrary\File\Services\FileCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -21,17 +22,18 @@ use Ramsey\Uuid\Uuid;
 class FileController extends Controller
 {
     public function __construct(
-        private FileCRUDService $fileService,
+        private FileCRUDService   $fileService,
         private UpdateFileHandler $updateFileHandler,
         private DeleteFileHandler $deleteFileHandler,
-    ) {
+    )
+    {
     }
 
     public function index(GetFileListRequest $request): JsonResponse
     {
         $list = $this->fileService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
         );
 
         return Json::items(FilePresenter::collection($list['data']), paginationSettings: $list['pagination']);
@@ -65,7 +67,7 @@ class FileController extends Controller
 
         $presenter = new FilePresenter($item);
 
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteFileRequest $request): JsonResponse
@@ -73,5 +75,29 @@ class FileController extends Controller
         $this->deleteFileHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function getFilesWithWidgets(GetFilesWithWidgetsRequest $request): JsonResponse
+    {
+        $result = $this->fileService->getFilesWithWidgets(
+            $request->getFolderId()
+
+        );
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Files retrieved successfully',
+            'data' => [
+
+                'total_files_count' => $result['widgets']['total_files_count'],
+                'expired_files_count' => $result['widgets']['expired_files_count'],
+                'expired_files_percentage' => round($result['widgets']['expired_files_percentage'],2),
+                'valid_files_count' => $result['widgets']['valid_files_count'],
+                'valid_files_percentage' => round($result['widgets']['valid_files_percentage'],2),
+                'almost_expired_files_count' => $result['widgets']['almost_expired_files_count'],
+                'almost_expired_files_percentage' => round($result['widgets']['almost_expired_files_percentage'],2),
+                'almost_expired_files' => FilePresenter::collection($result['widgets']['almost_expired_files']),
+            ]
+        ]);
     }
 }

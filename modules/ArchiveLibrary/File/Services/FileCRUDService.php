@@ -53,4 +53,29 @@ class FileCRUDService
             id: $id,
         );
     }
+
+    public function getFilesWithWidgets(?string $folderId): array
+    {
+        $filesData = $this->repository->getFilesByFolder($folderId);
+
+        $expiredFilesCount= $this->repository->getExpiredFilesCount($folderId);
+        $validFilesCount= $this->repository->getValidFilesCount($folderId);
+        $almostExpiredFilesCount= $this->repository->getAlmostExpiredFilesCount($folderId);
+
+        $widgets = [
+            'total_files_count' => $this->repository->getTotalFilesCount(),
+            'expired_files_count' => $expiredFilesCount,
+            'expired_files_percentage' => $filesData['count'] !=0?($expiredFilesCount/$filesData['count'])*100:0,
+            'valid_files_count' => $validFilesCount,
+            'valid_files_percentage' => $filesData['count'] !=0?($validFilesCount/$filesData['count'])*100:0,
+            'almost_expired_files_count' => $almostExpiredFilesCount,
+            'almost_expired_files_percentage' => $filesData['count'] !=0?($almostExpiredFilesCount/$filesData['count'])*100:0,
+            'almost_expired_files' => $this->repository->getAlmostExpiredFiles($folderId),
+        ];
+
+        return [
+            'files' => $filesData['data'],
+            'widgets' => $widgets,
+        ];
+    }
 }
