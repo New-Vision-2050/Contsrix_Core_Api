@@ -17,7 +17,8 @@ class UpdateFileCommand
         private string $startDate,
         private string $endDate,
         private array $userIds = [],
-        private ?UploadedFile  $file
+        private ?UploadedFile  $file,
+        private ?string $folderId
     ) {
     }
 
@@ -59,6 +60,7 @@ class UpdateFileCommand
             'reference_number' => $this->referenceNumber,
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
+            "folder_id"=>$this->folderId
         ]);
     }
 

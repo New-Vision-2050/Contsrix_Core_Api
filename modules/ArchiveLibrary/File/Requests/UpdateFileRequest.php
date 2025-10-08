@@ -21,7 +21,8 @@ class UpdateFileRequest extends FormRequest
             "access_type"=>"required|in:private,public",
             'user_ids' => 'required_if:access_type,private|array',
             'user_ids.*' => 'sometimes|exists:users,id',
-            "file"=>"nullable"
+            "file"=>"nullable",
+            "parent_id"=>"nullable|exists:folders,id",
         ];
     }
 
@@ -35,7 +36,8 @@ class UpdateFileRequest extends FormRequest
             startDate: $this->get('start_date'),
             endDate: $this->get('end_date'),
             userIds: $this->get('user_ids', []),
-            file:$this->file('file')
+            file:$this->file('file'),
+            folderId:$this->get('folder_id'),
         );
     }
 }
