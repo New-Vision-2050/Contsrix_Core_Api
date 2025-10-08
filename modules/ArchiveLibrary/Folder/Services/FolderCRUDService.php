@@ -122,10 +122,9 @@ class FolderCRUDService
         }
     }
 
-    public function getFoldersAndFiles( $userId, ?string $parentId): array
+    public function getFoldersAndFiles($userId, ?string $parentId, int $page = 1, int $perPage = 10): array
     {
-
-        return $this->repository->getFoldersAndFilesByParent($parentId, $userId);
+        return $this->repository->getFoldersAndFilesByParent($parentId, $userId, $page, $perPage);
     }
 
     public function getUsersAllowedByFolderId($folderId)

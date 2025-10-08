@@ -147,7 +147,7 @@ class FolderRepository extends BaseRepository
             ->exists();
     }
 
-    public function getFoldersAndFilesByParent(?string $parentId, $userId): array
+    public function getFoldersAndFilesByParent(?string $parentId, $userId, int $page = 1, int $perPage = 10): array
     {
         // Query folders based on parent_id
         $foldersQuery = $this->model->query()->withCount('files');
@@ -201,9 +201,44 @@ class FolderRepository extends BaseRepository
                 ->exists();
         })->values();
 
+        // Calculate total items and pagination
+        $totalFolders = $folders->count();
+        $totalFiles = $files->count();
+        $totalItems = $totalFolders + $totalFiles;
+        $totalPages = (int)ceil($totalItems / $perPage);
+        $offset = ($page - 1) * $perPage;
+
+        // Determine how many folders and files to include in this page
+        $paginatedFolders = collect();
+        $paginatedFiles = collect();
+
+        if ($offset < $totalFolders) {
+            // We're still showing folders
+            $foldersToTake = min($perPage, $totalFolders - $offset);
+            $paginatedFolders = $folders->slice($offset, $foldersToTake);
+            
+            // If we have room for files on this page
+            $remainingSlots = $perPage - $foldersToTake;
+            if ($remainingSlots > 0) {
+                $paginatedFiles = $files->slice(0, $remainingSlots);
+            }
+        } else {
+            // We're past all folders, showing only files
+            $fileOffset = $offset - $totalFolders;
+            $paginatedFiles = $files->slice($fileOffset, $perPage);
+        }
+
         return [
-            'folders' => $folders,
-            'files' => $files,
+            'folders' => $paginatedFolders->values(),
+            'files' => $paginatedFiles->values(),
+            'pagination' => [
+                'total' => $totalItems,
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'last_page' => $totalPages,
+                'from' => $totalItems > 0 ? $offset + 1 : 0,
+                'to' => min($offset + $perPage, $totalItems),
+            ],
         ];
     }
 
