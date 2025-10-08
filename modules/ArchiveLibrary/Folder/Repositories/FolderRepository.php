@@ -32,7 +32,7 @@ class FolderRepository extends BaseRepository
 
     public function getFolderList(int $page, int $perPage = 10, ?UuidInterface $parentId = null)
     {
-        $query = $this->model->query();
+        $query = $this->model->query()->withCount('files');
 
         if ($parentId != null) {
             $query->where('parent_id', $parentId);
@@ -53,7 +53,10 @@ class FolderRepository extends BaseRepository
 
     public function getChildFolders(UuidInterface $parentId, int $page = 1, int $perPage = 10)
     {
-        return $this->paginatedList(['parent_id' => $parentId->toString()], $page, $perPage);
+        return $this->model->query()
+            ->withCount('files')
+            ->where('parent_id', $parentId->toString())
+            ->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function createFolder(array $data, array $userIds, ?UploadedFile $file = null): Folder
@@ -147,7 +150,7 @@ class FolderRepository extends BaseRepository
     public function getFoldersAndFilesByParent(?string $parentId, $userId): array
     {
         // Query folders based on parent_id
-        $foldersQuery = $this->model->query();
+        $foldersQuery = $this->model->query()->withCount('files');
 
         if ($parentId === null) {
             $foldersQuery->whereNull('parent_id');
@@ -159,7 +162,7 @@ class FolderRepository extends BaseRepository
             $foldersQuery->where('parent_id', $parentId);
         }
 
-        // Get all folders
+        // Get all folders with files count
         $allFolders = $foldersQuery->get();
 
         // Filter folders based on access type and permissions
