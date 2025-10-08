@@ -137,8 +137,25 @@ class FolderController extends Controller
         $parentId = $request->get('parent_id');
         $page = (int)$request->get('page', 1);
         $perPage = (int)$request->get('per_page', 10);
+        $documentType = $request->getDocumentType();
+        $endDate = $request->getEndDate();
+        $endDateFrom = $request->getEndDateFrom();
+        $endDateTo = $request->getEndDateTo();
+        $search = $request->getSearch();
+        $searchType = $request->getSearchType();
 
-        $result = $this->folderService->getFoldersAndFiles($userId, $parentId, $page, $perPage);
+        $result = $this->folderService->getFoldersAndFiles(
+            $userId, 
+            $parentId, 
+            $page, 
+            $perPage, 
+            $documentType,
+            $endDate,
+            $endDateFrom,
+            $endDateTo,
+            $search,
+            $searchType
+        );
 
         return Json::item([
             'folders' => FolderPresenter::collection($result['folders']),
