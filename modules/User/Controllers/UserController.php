@@ -14,6 +14,7 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\User\Presenters\UserBranchesPresenter;
 use Modules\User\Presenters\UserRolesPresenter;
+use Modules\User\Presenters\UserWithPermissionPresenter;
 use Modules\User\Requests\ExportUsersRequest;
 use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
@@ -98,7 +99,7 @@ class UserController extends Controller
     public function me()
     {
         $user = auth()->user();
-        $userPresenter = new UserPresenter($user);
+        $userPresenter = new UserWithPermissionPresenter($user);
         return Json::item($userPresenter->getData());
     }
 

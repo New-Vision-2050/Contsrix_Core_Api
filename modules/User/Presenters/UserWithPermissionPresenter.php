@@ -10,7 +10,7 @@ use Modules\RoleAndPermission\Presenters\RoleSimplePresenter;
 use Modules\User\Models\User;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class UserPresenter extends AbstractPresenter
+class UserWithPermissionPresenter extends AbstractPresenter
 {
     private User $user;
 
@@ -30,7 +30,7 @@ class UserPresenter extends AbstractPresenter
             'management_hierarchy_id' => $this->user->management_hierarchy_id ,
             "branch_id"=>$this->user->managementHierarchy?->detail?->branch_id,
             "roles"=>RoleSimplePresenter::collection($this->user->roles),
-//            "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
+            "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
             "is_central_company"=>tenant("is_central_company"),
             "residence"=>$this->user->companyUser?->residence,
         ];
