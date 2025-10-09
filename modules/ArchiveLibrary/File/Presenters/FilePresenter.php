@@ -78,7 +78,7 @@ class FilePresenter extends AbstractPresenter
             'start_date' => $this->file->start_date?->format('Y-m-d'),
             'end_date' => $this->file->end_date?->format('Y-m-d'),
             'access_type' => $this->file->access_type,
-            'file' => $this->file->media ? (new MediaPresenter($this->file->getFirstMedia('upload')))->getData(): null,
+            'file' => $this->file->getFirstMedia('upload') ? (new MediaPresenter($this->file->getFirstMedia('upload')))->getData():(new MediaPresenter($this->file->mediaFile))->getData(),
             'users' => $this->file->users ? $this->file->users->map(fn($user) => [
                 'id' => $user->id,
                 'name' => $user->name,

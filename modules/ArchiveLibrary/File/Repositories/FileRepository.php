@@ -172,7 +172,7 @@ class FileRepository extends BaseRepository
             DB::beginTransaction();
 
             $originalFile = $this->getFile($fileId);
-            
+
             // Create a copy of the file
             $copiedFile = $this->create([
                 'name' => $originalFile->name . ' (Copy)',
@@ -210,7 +210,7 @@ class FileRepository extends BaseRepository
             DB::beginTransaction();
 
             $file = $this->getFile($fileId);
-            
+
             // Update folder_id to move the file
             $this->update($fileId, [
                 'folder_id' => $targetFolderId?->toString(),
@@ -235,10 +235,10 @@ class FileRepository extends BaseRepository
             DB::beginTransaction();
 
             $file = $this->getFile(\Ramsey\Uuid\Uuid::fromString($fileId));
-            
+
             // Get existing user IDs before sync
             $existingUserIds = $file->fileShare()->pluck('user_id')->toArray();
-            
+
             // Sync users in file_shares table
             $file->fileShare()->sync($userIds);
 

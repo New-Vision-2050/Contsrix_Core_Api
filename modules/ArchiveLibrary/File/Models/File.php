@@ -7,6 +7,7 @@ namespace Modules\ArchiveLibrary\File\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Modules\ArchiveLibrary\File\Database\factories\FileFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
@@ -16,6 +17,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Modules\Shared\Media\Models\CustomMedia;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -34,6 +37,8 @@ class File extends Model implements HasMedia , Auditable
     //public array $translatable = [];
 
     public $incrementing = false;
+
+    protected $with = ["media"];
 
     protected $keyType = 'string';
 
@@ -90,5 +95,11 @@ class File extends Model implements HasMedia , Auditable
     public function fileShare()
     {
         return $this->belongsToMany(User::class,"file_shares","file_id","user_id");
+    }
+
+
+    public function mediaFile()
+    {
+       return $this->hasOne(CustomMedia::class , "file_id");
     }
 }
