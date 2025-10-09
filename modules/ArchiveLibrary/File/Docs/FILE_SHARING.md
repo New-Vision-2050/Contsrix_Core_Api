@@ -31,7 +31,7 @@ This feature allows users to share files with other users via email. The system 
 ```json
 {
     "status": true,
-    "message": "File shared successfully",
+    "message": "File shared successfully and notifications sent to new users",
     "data": {
         "file": {
             "id": "uuid",
@@ -44,10 +44,15 @@ This feature allows users to share files with other users via email. The system 
             "media_urls": ["https://..."]
         },
         "share_url": "https://example.com/api/shared-files/{file_id}",
-        "shared_with_count": 3
+        "shared_with_count": 3,
+        "new_users_count": 2,
+        "existing_users_count": 1,
+        "notifications_sent": 2
     }
 }
 ```
+
+**Note:** Emails are only sent to newly added users. Users who were already sharing the file will not receive duplicate notifications.
 
 ## Database Structure
 
@@ -87,8 +92,9 @@ The relationship uses Laravel's `sync()` method, which:
 **Location**: `modules/ArchiveLibrary/File/Controllers/FileController.php`
 - Handles HTTP request
 - Calls service method
-- Returns JSON response
-- Includes TODO for email notification implementation
+- Retrieves users to notify
+- Sends email notifications to all shared users
+- Returns JSON response with notification status
 
 ### 5. Route Registration
 **Location**: `modules/ArchiveLibrary/File/Resources/routes/api.php`
@@ -96,26 +102,49 @@ The relationship uses Laravel's `sync()` method, which:
 - Protected by auth:api middleware
 - Tenancy-enabled
 
-## Email Notification (TODO)
+### 6. FileSharedNotification
+**Location**: `modules/ArchiveLibrary/File/Notifications/FileSharedNotification.php`
+- Laravel notification class for email delivery
+- Sends file sharing notification to users
+- Includes file details (name, reference number, dates)
+- Contains action button to view the shared file
+- Shows who shared the file
 
-The current implementation includes a placeholder for sending emails to users. To implement:
+## Email Notification Implementation
 
-1. Create a notification class:
-```php
-php artisan make:notification FileSharedNotification
-```
+The email notification system is fully implemented with **smart notification logic**:
 
-2. Update the controller to send notifications:
-```php
-use Illuminate\Support\Facades\Notification;
-use App\Notifications\FileSharedNotification;
+### Smart Notification Logic
+The system intelligently determines which users to notify:
+1. **Before Sync**: Retrieves current users who already have access to the file
+2. **After Sync**: Compares new user list with existing users
+3. **Email Only New Users**: Sends notifications only to newly added users
+4. **No Duplicates**: Users who already had access receive no email
 
-// In shareFile method:
-$users = \Modules\User\Models\User::whereIn('id', $request->getUserIds())->get();
-Notification::send($users, new FileSharedNotification($result['share_url'], $result['file']));
-```
+**Example Scenarios:**
+- **Scenario 1**: File shared with User A, B, C for the first time
+  - Result: All 3 users receive email notifications
+  
+- **Scenario 2**: File already shared with User A. Now sharing with User A, B, C
+  - Result: Only User B and C receive email notifications (User A already has access)
+  
+- **Scenario 3**: File already shared with User A, B, C. Sharing again with same users
+  - Result: No emails sent (all users already have access)
 
-3. Implement the notification with email channel and mail message.
+**Email Content Includes:**
+- Personalized greeting with user's name
+- Name of the person who shared the file
+- File details (name, reference number, start/end dates)
+- Action button linking to the share URL
+- Professional email template using Laravel's MailMessage
+
+**Technical Details:**
+- Uses Laravel's Notification facade
+- Queued for better performance
+- Uses `array_diff()` to identify new users
+- Retrieves only new users from database for notification
+- Sends notifications in batch
+- Returns detailed counts (new vs existing users)
 
 ## Testing
 

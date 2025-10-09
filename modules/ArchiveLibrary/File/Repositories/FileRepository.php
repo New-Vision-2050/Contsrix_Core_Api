@@ -229,19 +229,29 @@ class FileRepository extends BaseRepository
         }
     }
 
-    public function shareFile(string $fileId, array $userIds): File
+    public function shareFile(string $fileId, array $userIds): array
     {
         try {
             DB::beginTransaction();
 
             $file = $this->getFile(\Ramsey\Uuid\Uuid::fromString($fileId));
             
+            // Get existing user IDs before sync
+            $existingUserIds = $file->fileShare()->pluck('user_id')->toArray();
+            
             // Sync users in file_shares table
             $file->fileShare()->sync($userIds);
 
+            // Determine newly added users
+            $newUserIds = array_diff($userIds, $existingUserIds);
+
             DB::commit();
 
-            return $file->fresh();
+            return [
+                'file' => $file->fresh(),
+                'new_user_ids' => array_values($newUserIds),
+                'existing_user_ids' => $existingUserIds,
+            ];
         } catch (\Exception $exception) {
             DB::rollBack();
             throw new CustomException($exception->getMessage());

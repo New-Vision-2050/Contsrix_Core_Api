@@ -91,15 +91,17 @@ class FileCRUDService
 
     public function shareFile(string $fileId, array $userIds): array
     {
-        $file = $this->repository->shareFile($fileId, $userIds);
+        $result = $this->repository->shareFile($fileId, $userIds);
         
         // Generate dummy share URL
         $shareUrl = config('app.url') . '/api/shared-files/' . $fileId;
         
         return [
-            'file' => $file,
+            'file' => $result['file'],
             'share_url' => $shareUrl,
             'shared_with_count' => count($userIds),
+            'new_user_ids' => $result['new_user_ids'],
+            'existing_user_ids' => $result['existing_user_ids'],
         ];
     }
 }
