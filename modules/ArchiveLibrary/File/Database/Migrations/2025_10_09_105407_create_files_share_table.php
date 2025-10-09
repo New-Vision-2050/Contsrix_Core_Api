@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('file_shares', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('user_id');
-            $table->foreignIdFor(File::class , 'file_id')->constrained()->cascadeOnDelete();
+            $table->uuid("file_id");
 
             $table->timestamps();
         });

@@ -88,4 +88,18 @@ class FileCRUDService
     {
         return $this->repository->cutFile($fileId, $targetFolderId);
     }
+
+    public function shareFile(string $fileId, array $userIds): array
+    {
+        $file = $this->repository->shareFile($fileId, $userIds);
+        
+        // Generate dummy share URL
+        $shareUrl = config('app.url') . '/api/shared-files/' . $fileId;
+        
+        return [
+            'file' => $file,
+            'share_url' => $shareUrl,
+            'shared_with_count' => count($userIds),
+        ];
+    }
 }

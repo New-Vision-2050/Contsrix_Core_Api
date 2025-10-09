@@ -228,4 +228,23 @@ class FileRepository extends BaseRepository
             throw new CustomException($exception->getMessage());
         }
     }
+
+    public function shareFile(string $fileId, array $userIds): File
+    {
+        try {
+            DB::beginTransaction();
+
+            $file = $this->getFile(\Ramsey\Uuid\Uuid::fromString($fileId));
+            
+            // Sync users in file_shares table
+            $file->fileShare()->sync($userIds);
+
+            DB::commit();
+
+            return $file->fresh();
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new CustomException($exception->getMessage());
+        }
+    }
 }
