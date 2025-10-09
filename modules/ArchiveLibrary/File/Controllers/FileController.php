@@ -7,8 +7,10 @@ namespace Modules\ArchiveLibrary\File\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Notification;
 use Modules\ArchiveLibrary\File\Handlers\DeleteFileHandler;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
+use Modules\ArchiveLibrary\File\Notifications\FileSharedNotification;
 use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
 use Modules\ArchiveLibrary\File\Requests\CopyFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CreateFileRequest;
@@ -20,6 +22,7 @@ use Modules\ArchiveLibrary\File\Requests\GetFilesWithWidgetsRequest;
 use Modules\ArchiveLibrary\File\Requests\ShareFileRequest;
 use Modules\ArchiveLibrary\File\Requests\UpdateFileRequest;
 use Modules\ArchiveLibrary\File\Services\FileCRUDService;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
 class FileController extends Controller
@@ -135,17 +138,42 @@ class FileController extends Controller
             $request->getUserIds()
         );
 
-        // TODO: Send emails to users with the share URL
-        // This would typically use Laravel Mail or a notification system
-        // Example: Notification::send($users, new FileSharedNotification($result['share_url']));
+        $notificationsSent = 0;
+        
+        // Only notify new users (not existing ones)
+        if (!empty($result['new_user_ids'])) {
+            // Get only the newly added users to notify
+            $newUsers = User::whereIn('id', $result['new_user_ids'])->get();
+            
+            // Get the authenticated user who is sharing
+            $sharedBy = auth()->user();
+            $sharedByName = $sharedBy->name ?? 'A user';
+
+            // Send email notifications only to new users
+            Notification::send(
+                $newUsers, 
+                new FileSharedNotification(
+                    $result['share_url'], 
+                    $result['file'],
+                    $sharedByName
+                )
+            );
+            
+            $notificationsSent = $newUsers->count();
+        }
 
         return response()->json([
             'status' => true,
-            'message' => 'File shared successfully',
+            'message' => $notificationsSent > 0 
+                ? 'File shared successfully and notifications sent to new users' 
+                : 'File shared successfully (no new users to notify)',
             'data' => [
                 'file' => (new FilePresenter($result['file']))->getData(),
                 'share_url' => $result['share_url'],
                 'shared_with_count' => $result['shared_with_count'],
+                'new_users_count' => count($result['new_user_ids']),
+                'existing_users_count' => count($result['existing_user_ids']),
+                'notifications_sent' => $notificationsSent,
             ]
         ]);
     }

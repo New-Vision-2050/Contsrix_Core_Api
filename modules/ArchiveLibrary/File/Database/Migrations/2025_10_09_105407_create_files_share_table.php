@@ -9,7 +9,6 @@ return new class extends Migration
     public function up()
     {
         Schema::create('file_shares', function (Blueprint $table) {
-            $table->uuid('id')->primary();
             $table->string('user_id');
             $table->uuid("file_id");
 
