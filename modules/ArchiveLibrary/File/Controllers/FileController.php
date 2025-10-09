@@ -17,6 +17,7 @@ use Modules\ArchiveLibrary\File\Requests\DeleteFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileListRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFilesWithWidgetsRequest;
+use Modules\ArchiveLibrary\File\Requests\ShareFileRequest;
 use Modules\ArchiveLibrary\File\Requests\UpdateFileRequest;
 use Modules\ArchiveLibrary\File\Services\FileCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -125,5 +126,27 @@ class FileController extends Controller
         $presenter = new FilePresenter($movedFile);
 
         return Json::item($presenter->getData());
+    }
+
+    public function shareFile(ShareFileRequest $request): JsonResponse
+    {
+        $result = $this->fileService->shareFile(
+            $request->getFileId(),
+            $request->getUserIds()
+        );
+
+        // TODO: Send emails to users with the share URL
+        // This would typically use Laravel Mail or a notification system
+        // Example: Notification::send($users, new FileSharedNotification($result['share_url']));
+
+        return response()->json([
+            'status' => true,
+            'message' => 'File shared successfully',
+            'data' => [
+                'file' => (new FilePresenter($result['file']))->getData(),
+                'share_url' => $result['share_url'],
+                'shared_with_count' => $result['shared_with_count'],
+            ]
+        ]);
     }
 }
