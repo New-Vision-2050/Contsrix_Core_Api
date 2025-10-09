@@ -86,7 +86,7 @@ class FolderRepository extends BaseRepository
             if (!empty($userIds) || $folder->access_type === 'private') {
                 $folder->users()->sync($userIds);
             }
-            if ($file == null) {
+            if ($file != null) {
                 $folder->clearMediaCollection('upload');
                 $this->uploadedFile->uploadFile($folder, $file, 'upload');
             }
@@ -148,10 +148,10 @@ class FolderRepository extends BaseRepository
     }
 
     public function getFoldersAndFilesByParent(
-        ?string $parentId, 
-        $userId, 
-        int $page = 1, 
-        int $perPage = 10, 
+        ?string $parentId,
+        $userId,
+        int $page = 1,
+        int $perPage = 10,
         ?string $documentType = null,
         ?string $endDate = null,
         ?string $endDateFrom = null,
@@ -169,10 +169,10 @@ class FolderRepository extends BaseRepository
         }
 
         // Check if any file-specific filter is provided
-        $hasFileFilters = $documentType !== null 
-            || $endDate !== null 
-            || $endDateFrom !== null 
-            || $endDateTo !== null 
+        $hasFileFilters = $documentType !== null
+            || $endDate !== null
+            || $endDateFrom !== null
+            || $endDateTo !== null
             || ($search !== null && $search !== '');
 
         // If file filters are provided, return empty folders array
@@ -300,7 +300,7 @@ class FolderRepository extends BaseRepository
             // We're still showing folders
             $foldersToTake = min($perPage, $totalFolders - $offset);
             $paginatedFolders = $folders->slice($offset, $foldersToTake);
-            
+
             // If we have room for files on this page
             $remainingSlots = $perPage - $foldersToTake;
             if ($remainingSlots > 0) {

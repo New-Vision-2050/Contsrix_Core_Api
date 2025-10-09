@@ -87,4 +87,8 @@ class File extends Model implements HasMedia , Auditable
 
         return "folder";
     }
+    public function fileShare()
+    {
+        return $this->belongsToMany(User::class,"file_shares","file_id","user_id");
+    }
 }
