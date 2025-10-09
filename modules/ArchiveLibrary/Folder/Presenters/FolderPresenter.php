@@ -14,6 +14,7 @@ class FolderPresenter extends AbstractPresenter
 {
     private Folder $folder;
     private static ?array $auditsCache = null;
+    private static ?array $fileSizesCache = null;
 
     public function __construct(Folder $folder)
     {
@@ -21,18 +22,20 @@ class FolderPresenter extends AbstractPresenter
     }
 
     /**
-     * Override collection method to prime the audit cache
+     * Override collection method to prime the audit and file sizes caches
      */
     public static function collection(iterable $collection, ...$additionalParams): array
     {
-        // Prime cache before processing collection
+        // Prime caches before processing collection
         self::primeAuditsCache(collect($collection));
+        self::primeFileSizesCache(collect($collection));
 
         // Process collection normally
         $result = parent::collection($collection, ...$additionalParams);
 
-        // Clear cache after processing
+        // Clear caches after processing
         self::clearAuditsCache();
+        self::clearFileSizesCache();
 
         return $result;
     }
@@ -69,6 +72,45 @@ class FolderPresenter extends AbstractPresenter
         self::$auditsCache = null;
     }
 
+    /**
+     * Prime the file sizes cache with a single query
+     * Calculates total size of all media files for each folder
+     */
+    private static function primeFileSizesCache(Collection $folders): void
+    {
+        if ($folders->isEmpty()) {
+            self::$fileSizesCache = [];
+            return;
+        }
+
+        $folderIds = $folders->pluck('id')->toArray();
+
+        // Get all files for all folders with their media sizes in a single optimized query
+        $fileSizes = \Modules\ArchiveLibrary\File\Models\File::whereIn('folder_id', $folderIds)
+            ->with(['media' => function ($query) {
+                $query->select('id', 'model_id', 'size');
+            }])
+            ->get()
+            ->groupBy('folder_id')
+            ->map(function ($files) {
+                // Sum all media sizes for all files in this folder
+                return $files->sum(function ($file) {
+                    return $file->media->sum('size');
+                });
+            })
+            ->all();
+
+        self::$fileSizesCache = $fileSizes;
+    }
+
+    /**
+     * Clear the file sizes cache
+     */
+    public static function clearFileSizesCache(): void
+    {
+        self::$fileSizesCache = null;
+    }
+
     protected function present(bool $isListing = false): array
     {
         return [
@@ -78,6 +120,7 @@ class FolderPresenter extends AbstractPresenter
             'access_type' => $this->folder->access_type,
             'file' => $this->folder->getFirstMedia("upload") ? (new MediaPresenter($this->folder->getFirstMedia('upload')))->getData(): null,
             'files_count' => $this->folder->files_count ?? $this->folder->files()->count(),
+            'size' => $this->getFolderSize(),
             "created_at"=>$this->folder->created_at,
             "updated_at"=>$this->folder->updated_at,
             "is_password"=>$this->folder->password != null?1 : 0,
@@ -100,5 +143,25 @@ class FolderPresenter extends AbstractPresenter
             ->first();
 
         return $lastAudit ? (new AuditPresenter($lastAudit))->getData() : null;
+    }
+
+    private function getFolderSize(): int
+    {
+        // Use cache if available
+        if (self::$fileSizesCache !== null) {
+            return self::$fileSizesCache[$this->folder->id] ?? 0;
+        }
+
+        // Fallback to direct query if cache not primed (single item presentation)
+        $totalSize = \Modules\ArchiveLibrary\File\Models\File::where('folder_id', $this->folder->id)
+            ->with(['media' => function ($query) {
+                $query->select('id', 'model_id', 'size');
+            }])
+            ->get()
+            ->sum(function ($file) {
+                return $file->media->sum('size');
+            });
+
+        return (int) $totalSize;
     }
 }
