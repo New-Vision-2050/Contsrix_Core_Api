@@ -86,19 +86,19 @@ class FolderPresenter extends AbstractPresenter
         $folderIds = $folders->pluck('id')->toArray();
 
         // Get all files for all folders with their media sizes in a single optimized query
-        $fileSizes = \Modules\ArchiveLibrary\File\Models\File::whereIn('folder_id', $folderIds)
-            ->with(['media' => function ($query) {
-                $query->select('id', 'model_id', 'size');
-            }])
-            ->get()
-            ->groupBy('folder_id')
-            ->map(function ($files) {
-                // Sum all media sizes for all files in this folder
-                return $files->sum(function ($file) {
-                    return $file->media->sum('size');
-                });
+        // Using DB join for better performance
+        $fileSizes = \DB::table('files')
+            ->join('media', function($join) {
+                $join->on('files.id', '=', 'media.model_id')
+                     ->where('media.model_type', '=', 'Modules\\ArchiveLibrary\\File\\Models\\File')
+                     ->where('media.collection_name', '=', 'upload');
             })
-            ->all();
+            ->whereIn('files.folder_id', $folderIds)
+            ->select('files.folder_id', \DB::raw('SUM(media.size) as total_size'))
+            ->groupBy('files.folder_id')
+            ->get()
+            ->pluck('total_size', 'folder_id')
+            ->toArray();
 
         self::$fileSizesCache = $fileSizes;
     }
@@ -149,18 +149,18 @@ class FolderPresenter extends AbstractPresenter
     {
         // Use cache if available
         if (self::$fileSizesCache !== null) {
-            return self::$fileSizesCache[$this->folder->id] ?? 0;
+            return (int) (self::$fileSizesCache[$this->folder->id] ?? 0);
         }
 
         // Fallback to direct query if cache not primed (single item presentation)
-        $totalSize = \Modules\ArchiveLibrary\File\Models\File::where('folder_id', $this->folder->id)
-            ->with(['media' => function ($query) {
-                $query->select('id', 'model_id', 'size');
-            }])
-            ->get()
-            ->sum(function ($file) {
-                return $file->media->sum('size');
-            });
+        $totalSize = \DB::table('files')
+            ->join('media', function($join) {
+                $join->on('files.id', '=', 'media.model_id')
+                     ->where('media.model_type', '=', 'Modules\\ArchiveLibrary\\File\\Models\\File')
+                     ->where('media.collection_name', '=', 'upload');
+            })
+            ->where('files.folder_id', $this->folder->id)
+            ->sum('media.size');
 
         return (int) $totalSize;
     }
