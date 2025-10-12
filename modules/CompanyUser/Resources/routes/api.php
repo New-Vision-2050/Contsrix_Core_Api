@@ -13,7 +13,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
-        Route::post('/export', [\Modules\CompanyUser\Controllers\BrokerController::class, 'export'])->permission(Permission::BROKER_EXPORT());
+        Route::post('/export', [\Modules\CompanyUser\Controllers\BrokerController::class, 'export']);
 
         // Broker Dashboard Widgets Routes
         Route::delete('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'deleteBrokerRole']);
@@ -33,7 +33,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
-        Route::post('/export', [\Modules\CompanyUser\Controllers\ClientController::class, 'export'])->permission(Permission::CLIENT_EXPORT());
+        Route::post('/export', [\Modules\CompanyUser\Controllers\ClientController::class, 'export']);
 
         // Dashboard Widgets Routes
         Route::delete('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'deleteClientRole']);

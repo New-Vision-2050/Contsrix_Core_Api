@@ -17,7 +17,7 @@ class FolderServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         $this->registerTranslations();
-        //$this->registerConfig();
+        $this->registerConfig();
         $this->registerMigrations();
     }
 
