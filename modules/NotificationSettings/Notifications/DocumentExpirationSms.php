@@ -12,7 +12,7 @@ use Modules\NotificationSettings\Models\NotificationSettings;
 use Carbon\Carbon;
 use App\Notifications\Drivers\SMS\MoraSms;
 
-class DocumentExpirationSms extends Notification implements ShouldQueue
+class DocumentExpirationSms extends Notification
 {
     use Queueable;
 
@@ -43,30 +43,30 @@ class DocumentExpirationSms extends Notification implements ShouldQueue
         $upcomingCount = $this->getUpcomingDocuments()->count();
         $itemLabel = $this->itemType === 'file' ? 'ملف' : 'مستند';
         $itemsLabel = $this->itemType === 'file' ? 'ملفات' : 'مستندات';
-        
+
         $messageText = "🚨 تنبيه {$itemLabel}:\n";
-        
+
         if ($expiredCount > 0) {
             $messageText .= "⚠️ {$expiredCount} {$itemsLabel} منتهية الصلاحية\n";
         }
-        
+
         if ($upcomingCount > 0) {
             $messageText .= "📅 {$upcomingCount} {$itemsLabel} تنتهي اليوم\n";
         }
-        
+
         $messageText .= "📋 الإجمالي: {$totalCount} {$itemsLabel} تحتاج إلى اهتمام\n";
-        
+
         // Add custom message if provided
         if ($this->notificationSetting->message) {
             $messageText .= "\n💬 " . substr($this->notificationSetting->message, 0, 100) . "\n";
         }
-        
+
         // Add ALL item details
         $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
-        
+
         foreach ($this->documents as $item) {
             $status = Carbon::parse($item->$dateField)->isPast() ? '❌' : '⏰';
-            
+
             if ($this->itemType === 'file') {
                 $itemName = $item->name ?? 'ملف بدون اسم';
                 $referenceNum = $item->reference_number ? " ({$item->reference_number})" : '';
@@ -77,9 +77,9 @@ class DocumentExpirationSms extends Notification implements ShouldQueue
                 $messageText .= "{$status} {$docType} - {$companyName}\n";
             }
         }
-        
+
         $messageText .= "\nتحقق من النظام للحصول على التفاصيل الكاملة.";
-        
+
         // Return MoraSms object
         return (new MoraSms())
             ->to($notifiable->routeNotificationForSms())
@@ -92,7 +92,7 @@ class DocumentExpirationSms extends Notification implements ShouldQueue
     private function getExpiredDocuments(): Collection
     {
         $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
-        
+
         return $this->documents->filter(function ($item) use ($dateField) {
             return Carbon::parse($item->$dateField)->isPast();
         });
@@ -104,7 +104,7 @@ class DocumentExpirationSms extends Notification implements ShouldQueue
     private function getUpcomingDocuments(): Collection
     {
         $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
-        
+
         return $this->documents->filter(function ($item) use ($dateField) {
             return Carbon::parse($item->$dateField)->isToday();
         });

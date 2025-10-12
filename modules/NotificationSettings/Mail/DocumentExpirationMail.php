@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 use Modules\NotificationSettings\Models\NotificationSettings;
 use Carbon\Carbon;
 
-class DocumentExpirationMail extends Mailable implements ShouldQueue
+class DocumentExpirationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -31,7 +31,7 @@ class DocumentExpirationMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         $subject = $this->getEmailSubject();
-        
+
         return new Envelope(
             subject: $subject,
         );
@@ -65,11 +65,11 @@ class DocumentExpirationMail extends Mailable implements ShouldQueue
         $expiredCount = $this->getExpiredDocuments()->count();
         $itemLabel = $this->itemType === 'file' ? 'ملف' : 'مستند';
         $itemsLabel = $this->itemType === 'file' ? 'ملفات' : 'مستندات';
-        
+
         if ($expiredCount > 0) {
             return "🚨 تنبيه انتهاء صلاحية {$itemLabel} - {$expiredCount} منتهية، {$totalCount} إجمالي {$itemsLabel}";
         }
-        
+
         return "📋 إشعار {$itemLabel} - {$totalCount} {$itemsLabel} تحتاج إلى اهتمام";
     }
 
@@ -79,7 +79,7 @@ class DocumentExpirationMail extends Mailable implements ShouldQueue
     private function getExpiredDocuments(): Collection
     {
         $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
-        
+
         return $this->documents->filter(function ($item) use ($dateField) {
             return Carbon::parse($item->$dateField)->isPast();
         });
@@ -91,7 +91,7 @@ class DocumentExpirationMail extends Mailable implements ShouldQueue
     private function getUpcomingDocuments(): Collection
     {
         $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
-        
+
         return $this->documents->filter(function ($item) use ($dateField) {
             return Carbon::parse($item->$dateField)->isToday();
         });
