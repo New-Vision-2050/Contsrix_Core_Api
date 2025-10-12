@@ -123,10 +123,10 @@ class FolderCRUDService
     }
 
     public function getFoldersAndFiles(
-        $userId, 
-        ?string $parentId, 
-        int $page = 1, 
-        int $perPage = 10, 
+        $userId,
+        ?string $parentId,
+        int $page = 1,
+        int $perPage = 10,
         ?string $documentType = null,
         ?string $endDate = null,
         ?string $endDateFrom = null,
@@ -134,13 +134,13 @@ class FolderCRUDService
         ?string $search = null,
         string $searchType = 'all',
         ?int $branchId = null
-    ): array
+    )
     {
         return $this->repository->getFoldersAndFilesByParent(
-            $parentId, 
-            $userId, 
-            $page, 
-            $perPage, 
+            $parentId,
+            $userId,
+            $page,
+            $perPage,
             $documentType,
             $endDate,
             $endDateFrom,

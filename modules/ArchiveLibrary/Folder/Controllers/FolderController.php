@@ -131,7 +131,7 @@ class FolderController extends Controller
         return Json::items(UserPresenter::collection($users));
     }
 
-    public function getFoldersAndFiles(GetFolderListRequest $request): JsonResponse
+    public function getFoldersAndFiles(GetFolderListRequest $request)
     {
         $userId = auth()->user()->id;
         $parentId = $request->get('parent_id');
@@ -146,10 +146,10 @@ class FolderController extends Controller
         $branchId = $request->getBranchId();
 
         $result = $this->folderService->getFoldersAndFiles(
-            $userId, 
-            $parentId, 
-            $page, 
-            $perPage, 
+            $userId,
+            $parentId,
+            $page,
+            $perPage,
             $documentType,
             $endDate,
             $endDateFrom,
@@ -158,6 +158,7 @@ class FolderController extends Controller
             $searchType,
             $branchId
         );
+
 
         return Json::item([
             'folders' => FolderPresenter::collection($result['folders']),
