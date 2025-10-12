@@ -173,16 +173,19 @@ class DocumentNotificationService
             $notifyDate = Carbon::parse($item->$dateField);
             
             if ($reminderType === 'daily') {
-                // Send daily notifications for all eligible items
+                // Send daily notifications for all eligible items (due today or overdue)
                 return true;
             }
             
             if ($reminderType === 'weekly') {
-                // Send weekly notifications only on specific day of week or if overdue
-                $daysDifference = $today->diffInDays($notifyDate, false);
+                // Send weekly notifications every Monday for all overdue/due items
+                // OR send on the exact due date regardless of day
+                $isMonday = $today->dayOfWeek === Carbon::MONDAY;
+                $isDueToday = $today->isSameDay($notifyDate);
+                $isOverdue = $notifyDate->lt($today);
                 
-                // Send if it's exactly the notify date, or if it's Monday and the item is overdue
-                return $daysDifference === 0 || ($today->dayOfWeek === Carbon::MONDAY && $daysDifference < 0);
+                // Send if: it's the exact due date, OR it's Monday and item is due/overdue
+                return $isDueToday || ($isMonday && ($isDueToday || $isOverdue));
             }
             
             return true;
