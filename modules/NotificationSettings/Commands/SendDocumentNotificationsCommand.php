@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Modules\NotificationSettings\Services\DocumentNotificationService;
 use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
+use Modules\ArchiveLibrary\File\Models\File;
 use Carbon\Carbon;
 
 class SendDocumentNotificationsCommand extends Command
@@ -28,7 +29,7 @@ class SendDocumentNotificationsCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Send notifications for CompanyOfficialDocuments based on their notify_date and notification settings';
+    protected $description = 'Send notifications for CompanyOfficialDocuments and Files based on their notification_date/end_date and notification settings';
 
     public function __construct(
         private DocumentNotificationService $documentNotificationService,
@@ -89,25 +90,55 @@ class SendDocumentNotificationsCommand extends Command
 
         // Get documents that would be notified
         $documents = $this->getDocumentsToNotify();
+        $files = $this->getFilesToNotify();
 
-        $this->table(
-            ['Company', 'Document Type', 'Notify Date', 'Status', 'Days Since/Until'],
-            $documents->map(function ($document) {
-                $notifyDate = Carbon::parse($document->notification_date);
-                $today = Carbon::today();
-                $daysDiff = $today->diffInDays($notifyDate, false);
-                $status = $notifyDate->isPast() ? 'EXPIRED' : ($notifyDate->isToday() ? 'DUE TODAY' : 'UPCOMING');
-                $daysText = $notifyDate->isPast() ? "Overdue by {$daysDiff} days" : ($notifyDate->isToday() ? 'Due today' : "Due in {$daysDiff} days");
+        $this->info("\n📄 Documents ({$documents->count()}):");
+        if ($documents->isNotEmpty()) {
+            $this->table(
+                ['Company', 'Document Type', 'Notify Date', 'Status', 'Days Since/Until'],
+                $documents->map(function ($document) {
+                    $notifyDate = Carbon::parse($document->notification_date);
+                    $today = Carbon::today();
+                    $daysDiff = $today->diffInDays($notifyDate, false);
+                    $status = $notifyDate->isPast() ? 'EXPIRED' : ($notifyDate->isToday() ? 'DUE TODAY' : 'UPCOMING');
+                    $daysText = $notifyDate->isPast() ? "Overdue by {$daysDiff} days" : ($notifyDate->isToday() ? 'Due today' : "Due in {$daysDiff} days");
 
-                return [
-                    $document->company?->name ?? 'Unknown',
-                    $document->documentType?->name ?? 'Unknown Type',
-                    $notifyDate->format('Y-m-d'),
-                    $status,
-                    $daysText,
-                ];
-            })->toArray()
-        );
+                    return [
+                        $document->company?->name ?? 'Unknown',
+                        $document->documentType?->name ?? 'Unknown Type',
+                        $notifyDate->format('Y-m-d'),
+                        $status,
+                        $daysText,
+                    ];
+                })->toArray()
+            );
+        } else {
+            $this->line('  No documents require notification');
+        }
+
+        $this->info("\n📁 Files ({$files->count()}):");
+        if ($files->isNotEmpty()) {
+            $this->table(
+                ['File Name', 'Reference Number', 'End Date', 'Status', 'Days Since/Until'],
+                $files->map(function ($file) {
+                    $endDate = Carbon::parse($file->end_date);
+                    $today = Carbon::today();
+                    $daysDiff = $today->diffInDays($endDate, false);
+                    $status = $endDate->isPast() ? 'EXPIRED' : ($endDate->isToday() ? 'DUE TODAY' : 'UPCOMING');
+                    $daysText = $endDate->isPast() ? "Overdue by {$daysDiff} days" : ($endDate->isToday() ? 'Due today' : "Due in {$daysDiff} days");
+
+                    return [
+                        $file->name ?? 'Unnamed File',
+                        $file->reference_number ?? 'N/A',
+                        $endDate->format('Y-m-d'),
+                        $status,
+                        $daysText,
+                    ];
+                })->toArray()
+            );
+        } else {
+            $this->line('  No files require notification');
+        }
 
         // Test notification settings
         $testResults = $this->documentNotificationService->testNotifications();
@@ -124,7 +155,8 @@ class SendDocumentNotificationsCommand extends Command
         }
 
         $this->newLine();
-        $this->info("📊 Summary: {$documents->count()} documents would trigger notifications");
+        $totalItems = $documents->count() + $files->count();
+        $this->info("📊 Summary: {$totalItems} items would trigger notifications ({$documents->count()} documents, {$files->count()} files)");
         $this->info("📧 Active notification settings: " . count($testResults));
 
         return Command::SUCCESS;
@@ -182,6 +214,30 @@ class SendDocumentNotificationsCommand extends Command
         } else {
             // Default: get documents where notification_date is today or past
             $query->where('notification_date', '<=', Carbon::today());
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get files that need notification based on end_date
+     */
+    private function getFilesToNotify(?string $companyId = null, ?int $days = null): \Illuminate\Support\Collection
+    {
+        $query = File::query()
+            ->whereNotNull('end_date');
+
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+
+        if ($days !== null) {
+            // Get files expiring within X days
+            $targetDate = Carbon::today()->addDays($days);
+            $query->where('end_date', '<=', $targetDate);
+        } else {
+            // Default: get files where end_date is today or past
+            $query->where('end_date', '<=', Carbon::today());
         }
 
         return $query->get();

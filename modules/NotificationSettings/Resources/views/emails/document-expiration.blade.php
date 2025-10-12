@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Expiration Notification</title>
+    <title>إشعار انتهاء صلاحية المستندات</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -135,70 +135,56 @@
     </style>
 </head>
 <body>
+    @php
+        $itemLabel = $itemType === 'file' ? 'ملف' : 'مستند';
+        $itemsLabel = $itemType === 'file' ? 'ملفات' : 'مستندات';
+        $icon = $itemType === 'file' ? '📁' : '📄';
+        $dateField = $itemType === 'file' ? 'end_date' : 'notification_date';
+    @endphp
+    
     <div class="container">
         <div class="header">
-            <h1>📄 Document Expiration Notification</h1>
-            <p>Company: <span class="company-name">{{ $companyName }}</span></p>
+            <h1>{{ $icon }} إشعار انتهاء صلاحية {{ $itemLabel }}</h1>
+            <p style="color: #666; font-size: 14px;">إجمالي {{ $itemsLabel }}: {{ $totalDocuments }}</p>
         </div>
 
-        @if($hasExpiredDocuments)
+        @if($expiredDocuments && $expiredDocuments->count() > 0)
         <div class="alert danger">
             <span class="alert-icon">⚠️</span>
-            <strong>Urgent:</strong> You have documents that have already expired and require immediate attention!
+            <strong>عاجل:</strong> لديك {{ $itemsLabel }} منتهية الصلاحية وتحتاج إلى اهتمام فوري!
         </div>
-        @elseif($hasDueTodayDocuments)
+        @elseif($upcomingDocuments && $upcomingDocuments->count() > 0)
         <div class="alert">
             <span class="alert-icon">📅</span>
-            <strong>Reminder:</strong> You have documents expiring today!
+            <strong>تذكير:</strong> لديك {{ $itemsLabel }} تنتهي اليوم!
         </div>
         @endif
 
         @if($expiredDocuments && $expiredDocuments->count() > 0)
         <div class="document-section">
-            <h2 class="section-title">🚨 Expired Documents ({{ $expiredDocuments->count() }})</h2>
-            @foreach($expiredDocuments as $document)
+            <h2 class="section-title">🚨 {{ $itemsLabel }} منتهية الصلاحية ({{ $expiredDocuments->count() }})</h2>
+            @foreach($expiredDocuments as $item)
             <div class="document-item expired">
-                <div class="document-name">{{ $document->documentType?->name ?? 'Unknown Document Type' }}</div>
+                @if($itemType === 'file')
+                    <div class="document-name">{{ $item->name ?? 'ملف بدون اسم' }}</div>
+                    @if($item->reference_number)
+                    <div class="document-details">
+                        <strong>رقم المرجع:</strong> {{ $item->reference_number }}
+                    </div>
+                    @endif
+                @else
+                    <div class="document-name">{{ $item->documentType?->name ?? 'نوع مستند غير معروف' }}</div>
+                    <div class="document-details">
+                        <strong>الشركة:</strong> {{ $item->company?->name ?? 'شركة غير معروفة' }}
+                    </div>
+                @endif
                 <div class="document-details">
-                    <strong>Company:</strong> {{ $document->company?->name ?? 'Unknown Company' }}
-                </div>
-                <div class="document-details">
-                    <strong>Expired Date:</strong> 
+                    <strong>تاريخ الانتهاء:</strong> 
                     <span class="document-date date-expired">
-                        {{ \Carbon\Carbon::parse($document->notification_date)->format('M d, Y') }}
-                        ({{ \Carbon\Carbon::parse($document->notification_date)->diffForHumans() }})
+                        {{ \Carbon\Carbon::parse($item->$dateField)->format('Y-m-d') }}
+                        ({{ \Carbon\Carbon::parse($item->$dateField)->locale('ar')->diffForHumans() }})
                     </span>
                 </div>
-                @if($document->description)
-                <div class="document-details">
-                    <strong>Description:</strong> {{ $document->description }}
-                </div>
-                @endif
-            </div>
-            @endforeach
-        </div>
-        @endif
-
-        @if($dueTodayDocuments && $dueTodayDocuments->count() > 0)
-        <div class="document-section">
-            <h2 class="section-title">📅 Due Today ({{ $dueTodayDocuments->count() }})</h2>
-            @foreach($dueTodayDocuments as $document)
-            <div class="document-item due-today">
-                <div class="document-name">{{ $document->documentType?->name ?? 'Unknown Document Type' }}</div>
-                <div class="document-details">
-                    <strong>Company:</strong> {{ $document->company?->name ?? 'Unknown Company' }}
-                </div>
-                <div class="document-details">
-                    <strong>Due Date:</strong> 
-                    <span class="document-date date-due-today">
-                        {{ \Carbon\Carbon::parse($document->notification_date)->format('M d, Y') }} (Today)
-                    </span>
-                </div>
-                @if($document->description)
-                <div class="document-details">
-                    <strong>Description:</strong> {{ $document->description }}
-                </div>
-                @endif
             </div>
             @endforeach
         </div>
@@ -206,49 +192,51 @@
 
         @if($upcomingDocuments && $upcomingDocuments->count() > 0)
         <div class="document-section">
-            <h2 class="section-title">📋 Upcoming Documents ({{ $upcomingDocuments->count() }})</h2>
-            @foreach($upcomingDocuments as $document)
-            <div class="document-item">
-                <div class="document-name">{{ $document->documentType?->name ?? 'Unknown Document Type' }}</div>
+            <h2 class="section-title">📅 تنتهي اليوم ({{ $upcomingDocuments->count() }})</h2>
+            @foreach($upcomingDocuments as $item)
+            <div class="document-item due-today">
+                @if($itemType === 'file')
+                    <div class="document-name">{{ $item->name ?? 'ملف بدون اسم' }}</div>
+                    @if($item->reference_number)
+                    <div class="document-details">
+                        <strong>رقم المرجع:</strong> {{ $item->reference_number }}
+                    </div>
+                    @endif
+                @else
+                    <div class="document-name">{{ $item->documentType?->name ?? 'نوع مستند غير معروف' }}</div>
+                    <div class="document-details">
+                        <strong>الشركة:</strong> {{ $item->company?->name ?? 'شركة غير معروفة' }}
+                    </div>
+                @endif
                 <div class="document-details">
-                    <strong>Company:</strong> {{ $document->company?->name ?? 'Unknown Company' }}
-                </div>
-                <div class="document-details">
-                    <strong>Due Date:</strong> 
-                    <span class="document-date date-upcoming">
-                        {{ \Carbon\Carbon::parse($document->notification_date)->format('M d, Y') }}
-                        ({{ \Carbon\Carbon::parse($document->notification_date)->diffForHumans() }})
+                    <strong>تاريخ الاستحقاق:</strong> 
+                    <span class="document-date date-due-today">
+                        {{ \Carbon\Carbon::parse($item->$dateField)->format('Y-m-d') }} (اليوم)
                     </span>
                 </div>
-                @if($document->description)
-                <div class="document-details">
-                    <strong>Description:</strong> {{ $document->description }}
-                </div>
-                @endif
             </div>
             @endforeach
         </div>
         @endif
 
         @if((!$expiredDocuments || $expiredDocuments->count() === 0) && 
-            (!$dueTodayDocuments || $dueTodayDocuments->count() === 0) && 
             (!$upcomingDocuments || $upcomingDocuments->count() === 0))
         <div class="no-documents">
-            <p>✅ Great news! All your documents are up to date.</p>
+            <p>✅ أخبار رائعة! جميع {{ $itemsLabel }} محدثة.</p>
         </div>
         @endif
 
         @if($customMessage)
         <div class="custom-message">
-            <strong>Additional Message:</strong><br>
+            <strong>رسالة إضافية:</strong><br>
             {{ $customMessage }}
         </div>
         @endif
 
         <div class="footer">
-            <p><strong>Document Management System</strong></p>
-            <p>This is an automated notification. Please ensure all documents are renewed on time to maintain compliance.</p>
-            <p>Generated on {{ \Carbon\Carbon::now()->format('F j, Y \a\t g:i A') }}</p>
+            <p><strong>نظام إدارة المستندات</strong></p>
+            <p>هذا إشعار تلقائي. يرجى التأكد من تجديد جميع المستندات في الوقت المحدد للحفاظ على الامتثال.</p>
+            <p>تم الإنشاء في {{ \Carbon\Carbon::now()->locale('ar')->translatedFormat('d F Y الساعة h:i A') }}</p>
         </div>
     </div>
 </body>
