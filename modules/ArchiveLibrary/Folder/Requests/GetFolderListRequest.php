@@ -20,6 +20,7 @@ class GetFolderListRequest extends FormRequest
             'end_date_to' => 'nullable|date|after_or_equal:end_date_from',
             'search' => 'nullable|string|max:255',
             'type' => 'nullable|string|in:all,name,reference_number',
+            'branch_id' => 'nullable|integer|exists:management_hierarchies,id',
         ];
     }
 
@@ -51,5 +52,10 @@ class GetFolderListRequest extends FormRequest
     public function getSearchType(): string
     {
         return $this->input('type', 'all'); // Default to 'all' if not provided
+    }
+
+    public function getBranchId(): ?int
+    {
+        return $this->input('branch_id') ? (int) $this->input('branch_id') : null;
     }
 }

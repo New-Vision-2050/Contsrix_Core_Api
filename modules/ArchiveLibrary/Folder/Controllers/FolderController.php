@@ -143,6 +143,7 @@ class FolderController extends Controller
         $endDateTo = $request->getEndDateTo();
         $search = $request->getSearch();
         $searchType = $request->getSearchType();
+        $branchId = $request->getBranchId();
 
         $result = $this->folderService->getFoldersAndFiles(
             $userId, 
@@ -154,7 +155,8 @@ class FolderController extends Controller
             $endDateFrom,
             $endDateTo,
             $search,
-            $searchType
+            $searchType,
+            $branchId
         );
 
         return Json::item([
