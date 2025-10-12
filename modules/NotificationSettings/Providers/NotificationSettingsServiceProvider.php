@@ -21,6 +21,18 @@ class NotificationSettingsServiceProvider extends ModuleServiceProvider
         //$this->registerConfig();
         $this->registerMigrations();
         $this->registerCommands();
+        $this->registerViews();
+    }
+    
+    /**
+     * Register views
+     */
+    protected function registerViews(): void
+    {
+        $viewPath = resource_path('views/modules/' . strtolower($this->getModuleName()));
+        $sourcePath = $this->getModulePath() . '/Resources/views';
+
+        $this->loadViewsFrom(array_merge([$sourcePath], [$viewPath]), 'notification-settings');
     }
 
     public function register(): void

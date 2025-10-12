@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
 use Modules\NotificationSettings\Models\NotificationSettings;
 use Carbon\Carbon;
+use App\Notifications\Drivers\SMS\MoraSms;
 
 class DocumentExpirationSms extends Notification implements ShouldQueue
 {
@@ -18,6 +19,7 @@ class DocumentExpirationSms extends Notification implements ShouldQueue
     public function __construct(
         public Collection $documents,
         public NotificationSettings $notificationSetting,
+        public string $itemType = 'document',
     ) {
     }
 
@@ -34,67 +36,77 @@ class DocumentExpirationSms extends Notification implements ShouldQueue
     /**
      * Get the SMS representation of the notification.
      */
-    public function toSms(object $notifiable): string
+    public function toSms(object $notifiable): MoraSms
     {
         $totalCount = $this->documents->count();
         $expiredCount = $this->getExpiredDocuments()->count();
         $upcomingCount = $this->getUpcomingDocuments()->count();
+        $itemLabel = $this->itemType === 'file' ? 'ملف' : 'مستند';
+        $itemsLabel = $this->itemType === 'file' ? 'ملفات' : 'مستندات';
         
-        $message = "🚨 Document Alert:\n";
+        $messageText = "🚨 تنبيه {$itemLabel}:\n";
         
         if ($expiredCount > 0) {
-            $message .= "⚠️ {$expiredCount} documents EXPIRED\n";
+            $messageText .= "⚠️ {$expiredCount} {$itemsLabel} منتهية الصلاحية\n";
         }
         
         if ($upcomingCount > 0) {
-            $message .= "📅 {$upcomingCount} documents due TODAY\n";
+            $messageText .= "📅 {$upcomingCount} {$itemsLabel} تنتهي اليوم\n";
         }
         
-        $message .= "📋 Total: {$totalCount} documents require attention\n";
+        $messageText .= "📋 الإجمالي: {$totalCount} {$itemsLabel} تحتاج إلى اهتمام\n";
         
         // Add custom message if provided
         if ($this->notificationSetting->message) {
-            $message .= "\n💬 " . substr($this->notificationSetting->message, 0, 100) . "\n";
+            $messageText .= "\n💬 " . substr($this->notificationSetting->message, 0, 100) . "\n";
         }
         
-        // Add document details (limit to first 3 for SMS)
-        $topDocuments = $this->documents->take(3);
-        foreach ($topDocuments as $document) {
-            $status = Carbon::parse($document->notification_date)->isPast() ? '❌' : '⏰';
-            $companyName = $document->company?->name ?? 'Unknown Company';
-            $docType = $document->documentType?->name ?? 'Document';
+        // Add ALL item details
+        $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
+        
+        foreach ($this->documents as $item) {
+            $status = Carbon::parse($item->$dateField)->isPast() ? '❌' : '⏰';
             
-            $message .= "{$status} {$docType} - {$companyName}\n";
+            if ($this->itemType === 'file') {
+                $itemName = $item->name ?? 'ملف بدون اسم';
+                $referenceNum = $item->reference_number ? " ({$item->reference_number})" : '';
+                $messageText .= "{$status} {$itemName}{$referenceNum}\n";
+            } else {
+                $companyName = $item->company?->name ?? 'شركة غير معروفة';
+                $docType = $item->documentType?->name ?? 'مستند';
+                $messageText .= "{$status} {$docType} - {$companyName}\n";
+            }
         }
         
-        if ($this->documents->count() > 3) {
-            $remaining = $this->documents->count() - 3;
-            $message .= "... and {$remaining} more\n";
-        }
+        $messageText .= "\nتحقق من النظام للحصول على التفاصيل الكاملة.";
         
-        $message .= "\nCheck the system for full details.";
-        
-        // Ensure SMS doesn't exceed typical limits (160 chars for single SMS, 480 for multi-part)
-        return substr($message, 0, 480);
+        // Return MoraSms object
+        return (new MoraSms())
+            ->to($notifiable->routeNotificationForSms())
+            ->message($messageText);
     }
 
     /**
-     * Get expired documents (notification_date has passed)
+     * Get expired items (notification_date/end_date has passed)
      */
     private function getExpiredDocuments(): Collection
     {
-        return $this->documents->filter(function ($document) {
-            return Carbon::parse($document->notification_date)->isPast();
+        $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
+        
+        return $this->documents->filter(function ($item) use ($dateField) {
+            return Carbon::parse($item->$dateField)->isPast();
         });
     }
 
     /**
-     * Get upcoming documents (notification_date is today)
+     * Get upcoming items (notification_date/end_date is today)
      */
     private function getUpcomingDocuments(): Collection
     {
-        return $this->documents->filter(function ($document) {
-            return Carbon::parse($document->notification_date)->isToday();
+        $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
+        
+        return $this->documents->filter(function ($item) use ($dateField) {
+            return Carbon::parse($item->$dateField)->isToday();
         });
     }
 
@@ -106,7 +118,8 @@ class DocumentExpirationSms extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'type' => 'document_expiration',
+            'type' => $this->itemType === 'file' ? 'file_expiration' : 'document_expiration',
+            'item_type' => $this->itemType,
             'documents_count' => $this->documents->count(),
             'expired_count' => $this->getExpiredDocuments()->count(),
             'upcoming_count' => $this->getUpcomingDocuments()->count(),

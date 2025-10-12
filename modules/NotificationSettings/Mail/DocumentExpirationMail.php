@@ -9,17 +9,19 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
 use Modules\NotificationSettings\Models\NotificationSettings;
 use Carbon\Carbon;
 
-class DocumentExpirationMail extends Mailable
+class DocumentExpirationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
     public function __construct(
         public Collection $documents,
         public NotificationSettings $notificationSetting,
+        public string $itemType = 'document',
     ) {
     }
 
@@ -49,42 +51,49 @@ class DocumentExpirationMail extends Mailable
                 'expiredDocuments' => $this->getExpiredDocuments(),
                 'upcomingDocuments' => $this->getUpcomingDocuments(),
                 'customMessage' => $this->notificationSetting->message,
+                'itemType' => $this->itemType,
             ],
         );
     }
 
     /**
-     * Get email subject based on document status
+     * Get email subject based on item status
      */
     private function getEmailSubject(): string
     {
         $totalCount = $this->documents->count();
         $expiredCount = $this->getExpiredDocuments()->count();
+        $itemLabel = $this->itemType === 'file' ? 'ملف' : 'مستند';
+        $itemsLabel = $this->itemType === 'file' ? 'ملفات' : 'مستندات';
         
         if ($expiredCount > 0) {
-            return "🚨 Document Expiration Alert - {$expiredCount} Expired, {$totalCount} Total Documents";
+            return "🚨 تنبيه انتهاء صلاحية {$itemLabel} - {$expiredCount} منتهية، {$totalCount} إجمالي {$itemsLabel}";
         }
         
-        return "📋 Document Notification - {$totalCount} Documents Require Attention";
+        return "📋 إشعار {$itemLabel} - {$totalCount} {$itemsLabel} تحتاج إلى اهتمام";
     }
 
     /**
-     * Get expired documents (notification_date has passed)
+     * Get expired items (notification_date/end_date has passed)
      */
     private function getExpiredDocuments(): Collection
     {
-        return $this->documents->filter(function ($document) {
-            return Carbon::parse($document->notification_date)->isPast();
+        $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
+        
+        return $this->documents->filter(function ($item) use ($dateField) {
+            return Carbon::parse($item->$dateField)->isPast();
         });
     }
 
     /**
-     * Get upcoming documents (notification_date is today)
+     * Get upcoming items (notification_date/end_date is today)
      */
     private function getUpcomingDocuments(): Collection
     {
-        return $this->documents->filter(function ($document) {
-            return Carbon::parse($document->notification_date)->isToday();
+        $dateField = $this->itemType === 'file' ? 'end_date' : 'notification_date';
+        
+        return $this->documents->filter(function ($item) use ($dateField) {
+            return Carbon::parse($item->$dateField)->isToday();
         });
     }
 
