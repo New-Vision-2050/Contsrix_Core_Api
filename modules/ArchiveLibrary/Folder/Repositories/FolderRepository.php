@@ -159,7 +159,7 @@ class FolderRepository extends BaseRepository
         ?string $search = null,
         string $searchType = 'all',
         ?int $branchId = null
-    ): array
+    )
     {
         // Check password first if parent folder is provided
         if ($parentId !== null) {
@@ -183,9 +183,7 @@ class FolderRepository extends BaseRepository
             // Query folders based on parent_id
             $foldersQuery = $this->model->query()->withCount('files');
 
-            if ($parentId === null) {
-                $foldersQuery->whereNull('parent_id');
-            } else {
+            if ($parentId != null) {
                 $foldersQuery->where('parent_id', $parentId);
             }
 
@@ -208,9 +206,7 @@ class FolderRepository extends BaseRepository
         // Query files based on parent_id (folder_id)
         $filesQuery = File::query();
 
-        if ($parentId === null) {
-            $filesQuery->whereNull('folder_id');
-        } else {
+        if ($parentId != null) {
             $filesQuery->where('folder_id', $parentId);
         }
 
@@ -276,6 +272,7 @@ class FolderRepository extends BaseRepository
             $filesQuery->where('management_hierarchy_id', $branchId);
         }
 
+
         // Get all files
         $allFiles = $filesQuery->get();
 
@@ -290,7 +287,6 @@ class FolderRepository extends BaseRepository
                 ->where('user_id', $userId)
                 ->exists();
         })->values();
-
         // Calculate total items and pagination
         $totalFolders = $folders->count();
         $totalFiles = $files->count();
