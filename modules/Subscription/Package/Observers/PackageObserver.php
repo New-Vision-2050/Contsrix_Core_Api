@@ -18,14 +18,14 @@ class PackageObserver
     public function updating(Package $package): ?bool
     {
         // Block direct updates to packages named "Main Package"
-        if (($package->name === 'Main Package'||$package->name === 'Client Package') && $this->isDirectUpdate()) {
-            Log::warning("Attempted to directly update Main Package", [
-                'package_id' => $package->id,
-                'package_name' => $package->name
-            ]);
-
-            throw new \Exception("The 'Main Package' cannot be updated directly. It is managed automatically by the system.");
-        }
+//        if (($package->name === 'Main Package'||$package->name === 'Client Package') && $this->isDirectUpdate()) {
+//            Log::warning("Attempted to directly update Main Package", [
+//                'package_id' => $package->id,
+//                'package_name' => $package->name
+//            ]);
+//
+//            throw new \Exception("The 'Main Package' cannot be updated directly. It is managed automatically by the system.");
+//        }
 
         return true;
     }

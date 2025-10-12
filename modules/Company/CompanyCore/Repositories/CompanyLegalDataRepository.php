@@ -46,6 +46,7 @@ class CompanyLegalDataRepository extends BaseRepository
             DB::beginTransaction();
             $companyLegalData = $this->create($data);
             if (!is_null($file)) {
+
                 $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
             }
             DB::commit();

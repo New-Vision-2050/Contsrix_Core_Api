@@ -38,7 +38,7 @@ class File extends Model implements HasMedia , Auditable
 
     public $incrementing = false;
 
-    protected $with = ["media"];
+    protected $with = ["media","mediaFile"];
 
     protected $keyType = 'string';
 
