@@ -7,6 +7,7 @@ namespace Modules\Company\CompanyCore\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Support\Facades\DB;
 use Modules\ActivityLog\Repositories\ActivityLogRepository;
+use Modules\ArchiveLibrary\File\Models\File;
 use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
@@ -31,7 +32,16 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             DB::beginTransaction();
             $companyOfficialDocument = $this->create($data);
             foreach ($files as $file) {
-                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null,'files');
+                $fileModel = File::create([
+                    'name' => $data["name"],
+                    'folder_id' => config('folder.official_documents_uuid'),
+                    'access_type' => 'public',
+                    'company_id' => $data["company_id"],
+                    'management_hierarchy_id' => $data["management_hierarchy_id"],
+
+
+                ]);
+                $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null, $fileModel->id);
             }
             $this->activityLogRepository->createActivityLog(["action" => ["ar" => "إنشاء", "en" => "create"], "date" => Carbon::now()->format("Y-m-d H:i:s"), "user_id" => auth()->user()->id, "requestable_id" => $companyOfficialDocument->id, "requestable_type" => CompanyOfficialDocument::class]);
             DB::commit();
@@ -52,7 +62,16 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             $companyOfficialDocument->update($data);
             if ($files) {
                 foreach ($files as $file) {
-                    $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null,'files');
+                    $fileModel = File::create([
+                        'name' => $data["name"],
+                        'folder_id' => config('folder.official_documents_uuid'),
+                        'access_type' => 'public',
+                        'company_id' => $companyOfficialDocument->company_id,
+                        'management_hierarchy_id' => $companyOfficialDocument->management_hierarchy_id,
+
+
+                    ]);
+                    $this->fileUploadService->uploadFile($companyOfficialDocument, $file, "company",'upload','public',null, $fileModel->id);
                 }
             }
             if ($deletedFiles) {

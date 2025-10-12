@@ -132,7 +132,8 @@ class FolderCRUDService
         ?string $endDateFrom = null,
         ?string $endDateTo = null,
         ?string $search = null,
-        string $searchType = 'all'
+        string $searchType = 'all',
+        ?int $branchId = null
     ): array
     {
         return $this->repository->getFoldersAndFilesByParent(
@@ -145,7 +146,8 @@ class FolderCRUDService
             $endDateFrom,
             $endDateTo,
             $search,
-            $searchType
+            $searchType,
+            $branchId
         );
     }
 

@@ -157,7 +157,8 @@ class FolderRepository extends BaseRepository
         ?string $endDateFrom = null,
         ?string $endDateTo = null,
         ?string $search = null,
-        string $searchType = 'all'
+        string $searchType = 'all',
+        ?int $branchId = null
     ): array
     {
         // Check password first if parent folder is provided
@@ -173,7 +174,7 @@ class FolderRepository extends BaseRepository
             || $endDate !== null
             || $endDateFrom !== null
             || $endDateTo !== null
-            || ($search !== null && $search !== '');
+            || ($search !== null && $search !== ''||$branchId!==null);
 
         // If file filters are provided, return empty folders array
         if ($hasFileFilters) {
@@ -268,6 +269,11 @@ class FolderRepository extends BaseRepository
                           ->orWhere('reference_number', 'LIKE', '%' . $search . '%');
                 }
             });
+        }
+
+        // Filter by branch_id (management_hierarchy_id) if provided
+        if ($branchId !== null) {
+            $filesQuery->where('management_hierarchy_id', $branchId);
         }
 
         // Get all files
