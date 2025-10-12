@@ -14,7 +14,7 @@ use App\Notifications\Drivers\SMS\MoraSms;
 
 class DocumentExpirationSms extends Notification
 {
-    use Queueable;
+//    use Queueable;
 
     public function __construct(
         public Collection $documents,
