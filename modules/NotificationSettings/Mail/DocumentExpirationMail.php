@@ -16,7 +16,7 @@ use Carbon\Carbon;
 
 class DocumentExpirationMail extends Mailable
 {
-    use Queueable, SerializesModels;
+//    use Queueable, SerializesModels;
 
     public function __construct(
         public Collection $documents,
