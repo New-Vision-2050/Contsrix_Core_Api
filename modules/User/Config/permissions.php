@@ -19,7 +19,7 @@ return [
 //        'CLIENT_CREATE' => 'client-relations.clients*clients.create',
 //        'CLIENT_UPDATE' => 'client-relations.clients*clients.update',
 //        'CLIENT_DELETE' => 'client-relations.clients*clients.delete',
-//        'CLIENT_EXPORT' => 'client-relations.clients*clients.export',
+        'CLIENT_SETTING_UPDATE' => 'client-relations.client-setting*client-setting.update',
 //
 //        'BROKER_VIEW' => 'client-relations.brokers*brokers.view',
 //        'BROKER_LIST' => 'client-relations.brokers*brokers.list',

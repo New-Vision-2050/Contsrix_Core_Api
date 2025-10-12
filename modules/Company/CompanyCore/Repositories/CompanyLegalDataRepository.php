@@ -7,10 +7,13 @@ namespace Modules\Company\CompanyCore\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Modules\ArchiveLibrary\File\Models\File;
+use Modules\Company\CompanyCore\Events\CompanyLegalDataCreated;
 use Modules\Company\CompanyCore\Events\CompanyLegalDataUpdated;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
 use Modules\Company\CompanyCore\Models\Domain;
 use Modules\Company\CompanyRegistrationForm\Models\CompanyRegistrationForm;
+use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Company\CompanyCore\Models\Company;
@@ -27,27 +30,39 @@ use Modules\Shared\Media\Services\FileDeletedService;
 class CompanyLegalDataRepository extends BaseRepository
 {
     use PreDeclareComapnyAndBranchDependOnReqeuest;
+
     public function __construct(
-        CompanyLegalData $model,
-        private FileUploadService $fileUploadService,
+        CompanyLegalData                      $model,
+        private FileUploadService             $fileUploadService,
         private ManagementHierarchyRepository $managementHierarchyRepository,
-        private FileDeletedService $fileDeletedService,
-        )
+        private FileDeletedService            $fileDeletedService,
+    )
     {
         parent::__construct($model);
     }
+
     public function getCompanyLegalData($id): ?CompanyLegalData
     {
-       return $this->model->find($id);
+        return $this->model->find($id);
     }
+
     public function createCompanyLegalData(array $data, $file): CompanyLegalData
     {
         try {
             DB::beginTransaction();
             $companyLegalData = $this->create($data);
             if (!is_null($file)) {
+                $fileModel = File::create([
+                    'name' => CompanyRegistrationType::query()->where("id", $data["registration_type_id"])->first()->name,
+                    'folder_id' => config('folder.official_documents_uuid'),
+                    'access_type' => 'public',
+                    'company_id' => $data["company_id"],
+                    'management_hierarchy_id' => $data["management_hierarchy_id"],
 
-                $this->fileUploadService->uploadFile($companyLegalData, $file, "company");
+
+                ]);
+
+                $this->fileUploadService->uploadFile(model: $companyLegalData, file: $file, filePath: "company", fileId: $fileModel->id);
             }
             DB::commit();
 
@@ -116,24 +131,24 @@ class CompanyLegalDataRepository extends BaseRepository
                     }
 
 
-
                     // Only perform file deletion if 'files' array is present
                     // This ensures we keep files based on what's in the request
                     $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
-                }
-                else
-                {
-                        $legalData->clearMediaCollection('upload');
-                }
-
-                // First upload any new files
-                foreach ($item['file'] ?? [] as $newFile) {
-                    if (!is_string($newFile)) {
-                        $this->fileUploadService->uploadFile($legalData, $newFile, 'upload');
-                    }
-                }
+                } elseif (isset($item["file"]) && !is_string($item["file"])) {
+                    $legalData->clearMediaCollection('upload');
+                    $fileModel = File::create([
+                        'name' => CompanyRegistrationType::query()->where("id", $legalData->registration_type_id)->first()->name,
+                        'folder_id' => config('folder.official_documents_uuid'),
+                        'access_type' => 'public',
+                        'company_id' => $legalData->company_id,
+                        'management_hierarchy_id' => $legalData->management_hierarchy_id,
 
 
+                    ]);
+
+                    $this->fileUploadService->uploadFile($legalData, $item["file"], 'upload', fileId: $fileModel->id);
+                }
+                event(new CompanyLegalDataUpdated($legalData));
             }
             DB::commit();
 
@@ -150,7 +165,7 @@ class CompanyLegalDataRepository extends BaseRepository
     }
 
 
-    public function delete( $id)
+    public function delete($id)
     {
         try {
             DB::beginTransaction();

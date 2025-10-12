@@ -257,7 +257,8 @@ return [
     "active_brokers" => "الوسطاء النشطيين",
     "suspended_brokers" => "الوسطاء المعلقين",
     "client-relations"=>"علاقات العملاء",
-    "audit-list"=>"السجل"
+    "audit-list"=>"السجل",
+    "client-setting"=>"اعدادات العملاء"
 
 
 ];

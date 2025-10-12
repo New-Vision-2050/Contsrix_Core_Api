@@ -9,6 +9,8 @@ use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Shared\Media\Services\FileUploadService;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
+use Modules\Shared\Media\Models\CustomMedia;
+use Modules\Shared\Media\Observers\CustomMediaObserver;
 class MediaServiceProvider extends ModuleServiceProvider
 {
     public static function getModuleName(): string
@@ -21,7 +23,18 @@ class MediaServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerObservers();
         app()->bind(PathGenerator::class, \Modules\Shared\Media\MediaLibrary\CustomPathGenerator::class);
+    }
+
+    /**
+     * Register model observers.
+     *
+     * @return void
+     */
+    protected function registerObservers(): void
+    {
+        CustomMedia::observe(CustomMediaObserver::class);
     }
 
     public function register(): void

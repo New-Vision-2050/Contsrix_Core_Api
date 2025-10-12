@@ -15,7 +15,6 @@ class FileUploadService
         string $visibility = 'public',
         ?string $folderId = null,
         ?string $fileId = null,
-        ?string $branchId = null,
 
     ) {
         $disk = $visibility === 'public' ? 's3_public' : 's3_private';
@@ -52,6 +51,8 @@ class FileUploadService
                 ])
                 ->preservingOriginal()
                 ->toMediaCollection($collectionName, $disk);
+            $media->file_id = $fileId;
+            $media->save();
 
             $allMedia->push($media);
         }

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('files', function (Blueprint $table) {
-            $table->uuid('management_hierarchy_id')->index();
+            $table->uuid('management_hierarchy_id')->nullable()->index();
 
         });
     }

@@ -71,6 +71,18 @@ class FilePresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $file =$this->file->getFirstMedia('upload');
+        if($file)
+        {
+            $file = (new MediaPresenter($this->file->getFirstMedia('upload')))->getData();
+        }
+        elseif ($this->file->mediaFile)
+        {
+            $file = (new MediaPresenter($this->file->mediaFile))->getData();
+        }
+        else{
+            $file = null;
+        }
         return [
             'id' => $this->file->id,
             'name' => $this->file->name,
@@ -78,7 +90,7 @@ class FilePresenter extends AbstractPresenter
             'start_date' => $this->file->start_date?->format('Y-m-d'),
             'end_date' => $this->file->end_date?->format('Y-m-d'),
             'access_type' => $this->file->access_type,
-            'file' => $this->file->getFirstMedia('upload') ? (new MediaPresenter($this->file->getFirstMedia('upload')))->getData():(new MediaPresenter($this->file->mediaFile))->getData(),
+            'file' => $file,
             'users' => $this->file->users ? $this->file->users->map(fn($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
