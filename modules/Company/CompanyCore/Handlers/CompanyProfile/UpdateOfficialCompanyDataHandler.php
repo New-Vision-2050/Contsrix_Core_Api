@@ -29,7 +29,7 @@ class UpdateOfficialCompanyDataHandler
 
 
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-//        try {
+        try {
             DB::beginTransaction();
             $this->repository->updateCompany($updateOfficialCompanyDataCommand->getId(), $updateOfficialCompanyDataCommand->toArray());
 
@@ -45,10 +45,10 @@ class UpdateOfficialCompanyDataHandler
                 "email" => $updateOfficialCompanyDataCommand->getEmail(),
             ]);
 
-//            DB::commit();
-//        } catch (\Exception $e) {
-//            DB::rollBack();
-//            throw new \Exception(__("validation.update-not-successful"), 500);
-//        }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception(__("validation.update-not-successful"), 500);
+        }
     }
 }
