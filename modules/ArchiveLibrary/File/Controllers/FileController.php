@@ -17,15 +17,18 @@ use Modules\ArchiveLibrary\File\Requests\CopyFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CreateFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CutFileRequest;
 use Modules\ArchiveLibrary\File\Requests\DeleteFileRequest;
+use Modules\ArchiveLibrary\File\Requests\ExportFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileListRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFilesWithWidgetsRequest;
 use Modules\ArchiveLibrary\File\Requests\ShareFileRequest;
 use Modules\ArchiveLibrary\File\Requests\UpdateFileRequest;
 use Modules\ArchiveLibrary\File\Services\FileCRUDService;
+use Modules\ArchiveLibrary\File\Exports\FileExport;
 use Modules\ArchiveLibrary\Folder\Presenters\FolderPresenter;
 use Modules\ArchiveLibrary\Folder\Services\FolderCRUDService;
 use Modules\User\Models\User;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 
 class FileController extends Controller
@@ -199,5 +202,20 @@ class FileController extends Controller
                 'notifications_sent' => $notificationsSent,
             ]
         ]);
+    }
+
+    /**
+     * Export files to a file
+     *
+     * @param ExportFileRequest $request
+     */
+    public function export(ExportFileRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'files.' . $format;
+
+        $filters = $request->getFilters();
+
+        return Excel::download(new FileExport($this->fileService, $filters), $fileName);
     }
 }

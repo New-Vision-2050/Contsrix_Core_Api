@@ -264,4 +264,42 @@ class FileRepository extends BaseRepository
             throw new CustomException($exception->getMessage());
         }
     }
+
+    /**
+     * Get files for export
+     * 
+     * @param array $filters Array of filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        $query = $this->model->query();
+
+        if (isset($filters['ids']) && is_array($filters['ids']) && count($filters['ids'])) {
+            $query->whereIn('id', $filters['ids']);
+        }
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (isset($filters['folder_id'])) {
+            if ($filters['folder_id'] === 'null' || $filters['folder_id'] === null) {
+                $query->whereNull('folder_id');
+            } else {
+                $query->where('folder_id', $filters['folder_id']);
+            }
+        }
+
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                    ->orWhere('reference_number', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Include the folder and users relationships for export
+        return $query->with(['folder', 'users'])->get();
+    }
 }

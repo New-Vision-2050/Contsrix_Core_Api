@@ -104,4 +104,15 @@ class FileCRUDService
             'existing_user_ids' => $result['existing_user_ids'],
         ];
     }
+
+    /**
+     * Get files for export
+     * 
+     * @param array $filters
+     * @return Collection
+     */
+    public function getForExport(array $filters = []): Collection
+    {
+        return $this->repository->getForExport($filters);
+    }
 }
