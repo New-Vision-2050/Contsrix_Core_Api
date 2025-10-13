@@ -7,6 +7,7 @@ namespace Modules\Shared\Media\Models;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Modules\Shared\Media\MediaLibrary\CustomPathGenerator;
 use Modules\ArchiveLibrary\File\Models\File;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class CustomMedia extends Media
 {
@@ -43,6 +44,19 @@ class CustomMedia extends Media
     public function file()
     {
         return $this->belongsTo(File::class, 'file_id');
+    }
+
+    /**
+     * Get the owning model (polymorphic relationship).
+     * 
+     * This allows accessing the model that the media is attached to.
+     * Usage: $media->modelable (returns User, Company, Employee, etc.)
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     */
+    public function modelable(): MorphTo
+    {
+        return $this->morphTo('model');
     }
 
     public function getFullUrl(string $conversionName = ''): string
