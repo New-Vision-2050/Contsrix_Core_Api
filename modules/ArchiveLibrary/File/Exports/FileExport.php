@@ -46,7 +46,6 @@ class FileExport implements FromCollection, WithHeadings, WithMapping, ShouldAut
             'Access Type',
             'Status',
             'Folder',
-            'Shared With Users',
             'Created At',
             'Updated At',
         ];
@@ -67,7 +66,6 @@ class FileExport implements FromCollection, WithHeadings, WithMapping, ShouldAut
             $file->access_type ?? '-',
             $file->status === 1 ? 'Active' : 'Inactive',
             $file->folder?->name ?? 'Root',
-            $file->users?->count() ?? 0,
             $file->created_at->format('Y-m-d H:i:s'),
             $file->updated_at->format('Y-m-d H:i:s'),
         ];
