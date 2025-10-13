@@ -145,6 +145,7 @@ class FolderController extends Controller
         $search = $request->getSearch();
         $searchType = $request->getSearchType();
         $branchId = $request->getBranchId();
+        $sort = $request->getSort();
 
         $result = $this->folderService->getFoldersAndFiles(
             $userId,
@@ -157,7 +158,8 @@ class FolderController extends Controller
             $endDateTo,
             $search,
             $searchType,
-            $branchId
+            $branchId,
+            $sort
         );
 
 

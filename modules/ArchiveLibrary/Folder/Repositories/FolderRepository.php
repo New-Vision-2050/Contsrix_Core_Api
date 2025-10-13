@@ -158,7 +158,8 @@ class FolderRepository extends BaseRepository
         ?string $endDateTo = null,
         ?string $search = null,
         string $searchType = 'all',
-        ?int $branchId = null
+        ?int $branchId = null,
+        ?string $sort = null
     )
     {
         // Check password first if parent folder is provided
@@ -201,6 +202,15 @@ class FolderRepository extends BaseRepository
                     ->where('user_id', $userId)
                     ->exists();
             })->values();
+
+            // Apply sorting to folders if sort parameter is provided
+            if ($sort !== null) {
+                if ($sort === 'asc') {
+                    $folders = $folders->sortBy('name')->values();
+                } elseif ($sort === 'desc') {
+                    $folders = $folders->sortByDesc('name')->values();
+                }
+            }
         }
 
         // Query files based on parent_id (folder_id)
@@ -287,6 +297,15 @@ class FolderRepository extends BaseRepository
                 ->where('user_id', $userId)
                 ->exists();
         })->values();
+
+        // Apply sorting to files if sort parameter is provided
+        if ($sort !== null) {
+            if ($sort === 'asc') {
+                $files = $files->sortBy('name')->values();
+            } elseif ($sort === 'desc') {
+                $files = $files->sortByDesc('name')->values();
+            }
+        }
         // Calculate total items and pagination
         $totalFolders = $folders->count();
         $totalFiles = $files->count();
