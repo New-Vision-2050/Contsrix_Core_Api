@@ -121,6 +121,8 @@ class FolderPresenter extends AbstractPresenter
             'status' => $this->folder->status ?? 1,
             'file' => $this->folder->getFirstMedia("upload") ? (new MediaPresenter($this->folder->getFirstMedia('upload')))->getData(): null,
             'files_count' => $this->folder->files_count ?? $this->folder->files()->count(),
+            "can_delete"=>1 ,
+            "can_update"=>1,
             'size' => $this->getFolderSize(),
             "created_at"=>$this->folder->created_at,
             "updated_at"=>$this->folder->updated_at,
