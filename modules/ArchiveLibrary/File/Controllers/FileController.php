@@ -12,6 +12,7 @@ use Modules\ArchiveLibrary\File\Handlers\DeleteFileHandler;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
 use Modules\ArchiveLibrary\File\Notifications\FileSharedNotification;
 use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
+use Modules\ArchiveLibrary\File\Requests\ChangeArchiveStatusRequest;
 use Modules\ArchiveLibrary\File\Requests\CopyFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CreateFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CutFileRequest;
@@ -22,6 +23,8 @@ use Modules\ArchiveLibrary\File\Requests\GetFilesWithWidgetsRequest;
 use Modules\ArchiveLibrary\File\Requests\ShareFileRequest;
 use Modules\ArchiveLibrary\File\Requests\UpdateFileRequest;
 use Modules\ArchiveLibrary\File\Services\FileCRUDService;
+use Modules\ArchiveLibrary\Folder\Presenters\FolderPresenter;
+use Modules\ArchiveLibrary\Folder\Services\FolderCRUDService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
@@ -29,6 +32,7 @@ class FileController extends Controller
 {
     public function __construct(
         private FileCRUDService   $fileService,
+        private FolderCRUDService $folderService,
         private UpdateFileHandler $updateFileHandler,
         private DeleteFileHandler $deleteFileHandler,
     )
@@ -81,6 +85,25 @@ class FileController extends Controller
         $this->deleteFileHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function changeStatus(ChangeArchiveStatusRequest $request): JsonResponse
+    {
+        $id = Uuid::fromString($request->route('id'));
+        $type = $request->getType();
+        $status = $request->getStatus();
+
+        if ($type === 'file') {
+            $item = $this->fileService->get($id);
+            $item->update(['status' => $status]);
+            $presenter = new FilePresenter($item->fresh());
+        } else {
+            $item = $this->folderService->get($id);
+            $item->update(['status' => $status]);
+            $presenter = new FolderPresenter($item->fresh());
+        }
+
+        return Json::item($presenter->getData());
     }
 
     public function getFilesWithWidgets(GetFilesWithWidgetsRequest $request): JsonResponse

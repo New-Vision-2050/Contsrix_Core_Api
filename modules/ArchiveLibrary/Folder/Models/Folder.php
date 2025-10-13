@@ -38,6 +38,7 @@ class Folder extends Model implements HasMedia ,Auditable
         'name',
         'parent_id',
         'access_type',
+        'status',
         "password",
         "company_id"
     ];
@@ -45,6 +46,7 @@ class Folder extends Model implements HasMedia ,Auditable
     protected $casts = [
         'id' => 'string',
         'password' => 'hashed',
+        'status' => 'integer',
     ];
 //    protected $hidden = [
 //        'password',

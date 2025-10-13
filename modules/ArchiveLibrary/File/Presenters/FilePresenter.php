@@ -90,6 +90,7 @@ class FilePresenter extends AbstractPresenter
             'start_date' => $this->file->start_date?->format('Y-m-d'),
             'end_date' => $this->file->end_date?->format('Y-m-d'),
             'access_type' => $this->file->access_type,
+            'status' => $this->file->status ?? 1,
             'file' => $file,
             "can_delete"=>$this->file->management_hierarchy_id ==null ? 1 :0 ,
             "can_update"=>$this->file->management_hierarchy_id ==null ? 1 :0 ,
