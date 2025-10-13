@@ -258,7 +258,10 @@ return [
     "suspended_brokers" => "الوسطاء المعلقين",
     "client-relations"=>"علاقات العملاء",
     "audit-list"=>"السجل",
-    "client-setting"=>"اعدادات العملاء"
+    "client-setting"=>"اعدادات العملاء",
+    "archive-library"=>"المستندات و البيانات",
+    "folder"=>"المجلدات",
+    "file"=>"الملفات"
 
 
 ];
