@@ -21,6 +21,7 @@ class GetFolderListRequest extends FormRequest
             'search' => 'nullable|string|max:255',
             'type' => 'nullable|string|in:all,name,reference_number',
             'branch_id' => 'nullable|integer|exists:management_hierarchies,id',
+            'sort' => 'nullable|string|in:asc,desc',
         ];
     }
 
@@ -57,5 +58,10 @@ class GetFolderListRequest extends FormRequest
     public function getBranchId(): ?int
     {
         return $this->input('branch_id') ? (int) $this->input('branch_id') : null;
+    }
+
+    public function getSort(): ?string
+    {
+        return $this->input('sort');
     }
 }
