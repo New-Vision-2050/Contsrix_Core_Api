@@ -12,6 +12,7 @@ use Modules\ArchiveLibrary\Folder\Handlers\DeleteFolderHandler;
 use Modules\ArchiveLibrary\Folder\Handlers\UpdateFolderHandler;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\ArchiveLibrary\Folder\Presenters\FolderPresenter;
+use Modules\ArchiveLibrary\Folder\Requests\ChangeFolderStatusRequest;
 use Modules\ArchiveLibrary\Folder\Requests\CreateFolderRequest;
 use Modules\ArchiveLibrary\Folder\Requests\DeleteFolderRequest;
 use Modules\ArchiveLibrary\Folder\Requests\GetFolderListRequest;

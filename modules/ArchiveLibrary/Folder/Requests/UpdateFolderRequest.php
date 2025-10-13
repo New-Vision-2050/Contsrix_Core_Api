@@ -20,7 +20,8 @@ class UpdateFolderRequest extends FormRequest
             'access_type' => 'required|in:public,private',
             'user_ids' => 'required_if:access_type,private|array',
             'user_ids.*' => 'sometimes|exists:users,id',
-            "file"=>"nullable"
+            "file"=>"nullable",
+            "status" => "sometimes|integer|in:0,1"
         ];
     }
 
@@ -34,6 +35,7 @@ class UpdateFolderRequest extends FormRequest
             accessType: $this->get('access_type'),
             userIds: $this->get('user_ids', []),
             file: $this->hasFile('file') ? $this->file("file") : null,
+            status: $this->has('status') ? (int) $this->get('status') : null
         );
     }
 }

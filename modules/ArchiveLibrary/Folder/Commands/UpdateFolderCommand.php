@@ -17,6 +17,7 @@ class UpdateFolderCommand
         private string $accessType,
         private array $userIds = [],
         private ?UploadedFile $file,
+        private ?int $status = null
     ) {
     }
 
@@ -52,23 +53,21 @@ class UpdateFolderCommand
 
     public function toArray(): array
     {
-        if($this->password == null)
-        {
-            return [
-                'name' => $this->name,
-                'parent_id' => $this->parentId,
-                'access_type' => $this->accessType,
-            ];
+        $data = [
+            'name' => $this->name,
+            'parent_id' => $this->parentId,
+            'access_type' => $this->accessType,
+        ];
+
+        if($this->password !== null) {
+            $data['password'] = $this->password;
         }
 
-        else
-        {
-            return [
-                'name' => $this->name,
-                'parent_id' => $this->parentId,
-                'access_type' => $this->accessType,
-            ]+["password"=> $this->password];
+        if($this->status !== null) {
+            $data['status'] = $this->status;
         }
+
+        return $data;
     }
 
     public function getFile()

@@ -17,6 +17,7 @@ class CreateFolderDTO
         public string $accessType,
         public array $userIds=[],
         private ?UploadedFile $file,
+        public int $status = 1,
     ) {
     }
 
@@ -27,7 +28,7 @@ class CreateFolderDTO
             'parent_id'=> $this->parentId,
             "password"=>$this->password,
             "access_type"=>$this->accessType,
-
+            "status"=>$this->status
         ];
     }
     public function getUserIds()

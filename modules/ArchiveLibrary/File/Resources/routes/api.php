@@ -10,6 +10,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/copy', [FileController::class, 'copyFile']);
     Route::post('/cut', [FileController::class, 'cutFile']);
     Route::post('/share', [FileController::class, 'shareFile']);
+    Route::put('/{id}/change-status', [FileController::class, 'changeStatus']);
     Route::get('/{id}', [FileController::class, 'show']);
     Route::post('/{id}', [FileController::class, 'update']);
     Route::delete('/{id}', [FileController::class, 'delete']);

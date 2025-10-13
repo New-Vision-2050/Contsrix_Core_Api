@@ -51,6 +51,7 @@ class File extends Model implements HasMedia , Auditable
         'end_date',
         'folder_id',
         'access_type',
+        'status',
         "management_hierarchy_id"
     ];
 
@@ -59,6 +60,7 @@ class File extends Model implements HasMedia , Auditable
         'reference_number' => 'string',
         'start_date' => 'date',
         'end_date' => 'date',
+        'status' => 'integer',
     ];
     protected $appends = ['media_urls'];
 

@@ -18,7 +18,8 @@ class UpdateFileCommand
         private string $endDate,
         private array $userIds = [],
         private ?UploadedFile  $file,
-        private ?string $folderId
+        private ?string $folderId,
+        private ?int $status = null
     ) {
     }
 
@@ -60,8 +61,9 @@ class UpdateFileCommand
             'reference_number' => $this->referenceNumber,
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
-            "folder_id"=>$this->folderId
-        ]);
+            "folder_id"=>$this->folderId,
+            "status"=>$this->status
+        ], fn($value) => !is_null($value));
     }
 
     public function getFile()

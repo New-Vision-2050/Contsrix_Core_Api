@@ -118,6 +118,7 @@ class FolderPresenter extends AbstractPresenter
             'name' => $this->folder->name,
             'parent_id' => $this->folder?->parent_id,
             'access_type' => $this->folder->access_type,
+            'status' => $this->folder->status ?? 1,
             'file' => $this->folder->getFirstMedia("upload") ? (new MediaPresenter($this->folder->getFirstMedia('upload')))->getData(): null,
             'files_count' => $this->folder->files_count ?? $this->folder->files()->count(),
             'size' => $this->getFolderSize(),
