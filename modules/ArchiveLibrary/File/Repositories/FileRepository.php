@@ -61,9 +61,16 @@ class FileRepository extends BaseRepository
             DB::beginTransaction();
             $updated = $this->update($id, $data);
             $fileModel = $this->getFile($id);
-            if ($file) {
-                $fileModel->clearMediaCollection('upload');
-                $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
+            if ($file ) {
+                if ($fileModel->management_hierarchy_id !=null)
+                {
+                    $fileModel->clearMediaCollection('upload');
+                    $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
+                }
+                else{
+                    throw new CustomException("validation.update-not-successful");
+                }
+
             }
 
             DB::commit();

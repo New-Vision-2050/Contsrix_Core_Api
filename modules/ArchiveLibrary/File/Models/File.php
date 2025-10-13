@@ -19,6 +19,7 @@ use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Shared\Media\Models\CustomMedia;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -30,6 +31,7 @@ class File extends Model implements HasMedia , Auditable
     use InteractsWithMedia;
     use BelongsToTenant;
     use \OwenIt\Auditing\Auditable;
+    use HasRelationships;
 
     //use HasTranslations;
     //use SoftDeletes;
@@ -103,4 +105,78 @@ class File extends Model implements HasMedia , Auditable
     {
        return $this->hasOne(CustomMedia::class , "file_id");
     }
+
+
+
+    /**
+     * Get the first morphed model (if using single media file)
+     *
+     * Usage: $file->mediaFile->modelable or $file->getFirstMorphedModel()
+     *
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
+    public function getFirstMorphedModel()
+    {
+        return $this->mediaFile?->modelable;
+    }
+
+    /**
+     * Get models that are related through media (polymorphic relationship)
+     *
+     * Usage: $file->relatedThroughMedia(User::class)->get()
+     *
+     * @param string $relatedModel The model class you want to access (e.g., User::class)
+     * @return \Staudenmeir\EloquentHasManyDeep\HasManyDeep
+     */
+    public function relatedThroughMedia(string $relatedModel)
+    {
+        return $this->hasManyDeep(
+            $relatedModel,
+            [CustomMedia::class],
+            ['file_id', 'model_id'],  // Foreign keys: media.file_id, target.id (matches media.model_id)
+            ['id', 'id']               // Local keys: files.id, media.id
+        )->where('media.model_type', $relatedModel);
+    }
+
+    /**
+     * Replace the first media file with a new one without explicit deletion
+     * 
+     * This updates the existing media record's file content and metadata
+     *
+     * @param \Illuminate\Http\UploadedFile $file
+     * @param string $collectionName
+     * @return \Modules\Shared\Media\Models\CustomMedia|null
+     */
+    public function replaceMedia($uploadedFile, string $collectionName = 'default')
+    {
+        $existingMedia = $this->getFirstMedia($collectionName);
+        
+        if (!$existingMedia) {
+            // No existing media, just add new one
+            return $this->addMedia($uploadedFile)
+                ->toMediaCollection($collectionName);
+        }
+
+        // Store new file in same location (overwrites)
+        $disk = $existingMedia->disk;
+        $directory = dirname($existingMedia->getPath());
+        $fileName = $existingMedia->file_name;
+        
+        // Save new file with same filename (overwrites old file)
+        \Storage::disk($disk)->put(
+            str_replace(storage_path('app/public/'), '', $existingMedia->getPath()),
+            file_get_contents($uploadedFile->getRealPath())
+        );
+
+        // Update media metadata
+        $existingMedia->update([
+            'mime_type' => $uploadedFile->getMimeType(),
+            'size' => $uploadedFile->getSize(),
+            'name' => pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME),
+        ]);
+
+        return $existingMedia->fresh();
+    }
+
+
 }
