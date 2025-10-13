@@ -7,6 +7,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/', [FileController::class, 'index']);
     Route::get('/widgets', [FileController::class, 'getFilesWithWidgets']);
     Route::post('/', [FileController::class, 'store']);
+    Route::post('/export', [FileController::class, 'export'])->name('file.export');
     Route::post('/copy', [FileController::class, 'copyFile']);
     Route::post('/cut', [FileController::class, 'cutFile']);
     Route::post('/share', [FileController::class, 'shareFile']);
