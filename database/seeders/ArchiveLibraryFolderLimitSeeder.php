@@ -51,8 +51,8 @@ class ArchiveLibraryFolderLimitSeeder extends Seeder
             CompanyPermissionLimit::on('mysql')->create([
                 'company_id' => $company->id,
                 'permission_id' => $permission->id,
-                'limit' => 1000, // 1000 folders total
-                'actual_limit' => 1000, // 1000 folders available initially
+                'limit' => 120, // 1000 folders total
+                'actual_limit' => 120, // 1000 folders available initially
             ]);
 
             Log::info("Successfully set 1000 folder limit for archive library for company: {$company->id}");
