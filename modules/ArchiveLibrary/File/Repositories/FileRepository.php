@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Modules\ArchiveLibrary\File\Models\UserFilePermission;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Subscription\Package\Models\CompanyPermissionLimit;
 use Ramsey\Uuid\UuidInterface;
 use Modules\ArchiveLibrary\File\Models\File;
 
@@ -267,7 +268,7 @@ class FileRepository extends BaseRepository
 
     /**
      * Get files for export
-     * 
+     *
      * @param array $filters Array of filters
      * @return Collection
      */
@@ -301,5 +302,14 @@ class FileRepository extends BaseRepository
 
         // Include the folder and users relationships for export
         return $query->with(['folder', 'users'])->get();
+    }
+
+    public function getLimitSize()
+    {
+        return     CompanyPermissionLimit::where([
+            'company_id' => tenant("id"),
+        ])->whereHas("permission", function ($q) {
+            $q->where("name", "archive-library.archive-library*file.create");
+        })->first();
     }
 }

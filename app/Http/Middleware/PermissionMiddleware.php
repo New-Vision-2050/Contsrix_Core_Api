@@ -102,7 +102,7 @@ class PermissionMiddleware extends SpatiePermissionMiddleware
             $isUpdateOperation = str_contains(strtolower($perm), 'update') || $request->isMethod('PUT') || $request->isMethod('PATCH');
 
             // Check if this is a file-related permission (uses size-based limits)
-            $isFilePermission = str_contains(strtolower($perm), 'archive-library*file');
+            $isFilePermission = str_contains(strtolower($perm), 'archive-library*file')||str_contains(strtolower($perm), 'archive-library*folder');
 
             if ($isCreateOperation && $permissionLimit) {
                 // Check if limit is exceeded for CREATE operations

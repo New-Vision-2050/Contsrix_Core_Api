@@ -62,6 +62,11 @@ class FileCRUDService
         $validFilesCount= $this->repository->getValidFilesCount($folderId);
         $almostExpiredFilesCount= $this->repository->getAlmostExpiredFilesCount($folderId);
 
+        $limitSize = $this->repository->getLimitSize();
+        $allFileSpace= $limitSize->limit;
+        $allRemainFileSpace= abs( $limitSize->actual_limit);
+        $allConsumedFileSpace= abs($limitSize->limit - $limitSize->actual_limit);
+
         $widgets = [
             'total_files_count' => $this->repository->getTotalFilesCount(),
             'expired_files_count' => $expiredFilesCount,
@@ -71,6 +76,9 @@ class FileCRUDService
             'almost_expired_files_count' => $almostExpiredFilesCount,
             'almost_expired_files_percentage' => $filesData['count'] !=0?($almostExpiredFilesCount/$filesData['count'])*100:0,
             'almost_expired_files' => $this->repository->getAlmostExpiredFiles($folderId),
+            "all_file_space"=>$allFileSpace,
+            "all_remain_file_space"=>$allRemainFileSpace,
+            "all_consumed_file_space"=>$allConsumedFileSpace
         ];
 
         return [
@@ -92,10 +100,10 @@ class FileCRUDService
     public function shareFile(string $fileId, array $userIds): array
     {
         $result = $this->repository->shareFile($fileId, $userIds);
-        
+
         // Generate dummy share URL
         $shareUrl = config('app.url') . '/api/shared-files/' . $fileId;
-        
+
         return [
             'file' => $result['file'],
             'share_url' => $shareUrl,
@@ -107,7 +115,7 @@ class FileCRUDService
 
     /**
      * Get files for export
-     * 
+     *
      * @param array $filters
      * @return Collection
      */
