@@ -171,13 +171,28 @@ class MainPackageSeeder extends Seeder
                 foreach ($excludedPermissionPatterns as $pattern) {
                     $query->where('name', 'NOT LIKE', "{$pattern}.".".%");
                 }
-            })->pluck('id');
+            })->get();
 
             $excludedCount = $totalPermissions - $permissions->count();
 
             Log::info("MainPackageSeeder: Excluded {$excludedCount} permissions, assigning {$permissions->count()} permissions to Main Package");
 
-            $package->permissions()->sync($permissions);
+            // Build sync array with specific limits for archive-library permissions
+            $syncData = [];
+            foreach ($permissions as $permission) {
+                $limit = null; // Default limit is null
+                
+                // Set specific limits for archive-library permissions
+                if ($permission->name === 'archive-library.archive-library*file.create') {
+                    $limit = 1000;
+                } elseif ($permission->name === 'archive-library.archive-library*folder.create') {
+                    $limit = 100;
+                }
+                
+                $syncData[$permission->id] = ['limit' => $limit];
+            }
+
+            $package->permissions()->sync($syncData);
 
             $package->companyTypes()->sync($companyTypes);
 
