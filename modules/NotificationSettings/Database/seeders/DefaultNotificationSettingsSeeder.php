@@ -22,13 +22,14 @@ class DefaultNotificationSettingsSeeder extends Seeder
             // Create default notification setting for both email and SMS
             $defaultSetting = NotificationSettings::firstOrCreate(
                 [
+
+                    "company_id" => tenant("id")??"560005d6-04b8-53b3-9889-d312648288e3"
+                ],
+                [
                     'type' => 'both',
                     'email' => 'admin@constrix-nv.com',
                     'phone' => '0542138116',
                     'reminder_type' => 'weekly',
-                    "company_id" => tenant("id")??"560005d6-04b8-53b3-9889-d312648288e3"
-                ],
-                [
                     'message' => 'Default weekly notification reminder for system administrators.',
                     'is_active' => true,
                 ]
