@@ -14,7 +14,6 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Subscription\Package\DTO\CreatePackageDTO;
 use Modules\Subscription\Package\DTO\UpdatePackageDTO;
 use Modules\Subscription\Package\Models\PackageFeature;
-use Modules\RoleAndPermission\Models\Permission;
 
 /**
  * @property Package $model
@@ -193,26 +192,13 @@ class PackageRepository extends BaseRepository
             throw new CustomException("Main Package '{$package->name}' cannot have its permissions synced. Main packages are system-managed and protected from permission modifications.");
         }
 
-        // Get permissions with their names to check for archive-library permissions
-        $permissions = Permission::whereIn('id', $permissionIds)->get();
-
         // Prepare sync data with limits
         $syncData = [];
 
-        foreach ($permissions as $permission) {
-            // Check if limit was provided in the request
-            $limit = $limits[$permission->id] ?? null;
-            
-            // Override with specific limits for archive-library permissions if not explicitly set
-            if ($limit === null) {
-                if ($permission->name === 'archive-library.archive-library*file.create') {
-                    $limit = 1000;
-                } elseif ($permission->name === 'archive-library.archive-library*folder.create') {
-                    $limit = 100;
-                }
-            }
-            
-            $syncData[$permission->id] = ['limit' => $limit];
+        foreach ($permissionIds as $permissionId) {
+            $syncData[$permissionId] = [
+                'limit' => $limits[$permissionId] ?? null
+            ];
         }
 
         $package->permissions()->sync($syncData);
