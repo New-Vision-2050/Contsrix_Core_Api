@@ -129,6 +129,10 @@ class FileController extends Controller
                 'almost_expired_files_count' => $result['widgets']['almost_expired_files_count'],
                 'almost_expired_files_percentage' => round($result['widgets']['almost_expired_files_percentage'],2),
                 'almost_expired_files' => FilePresenter::collection($result['widgets']['almost_expired_files']),
+                "all_file_space"=>$result['widgets']["all_file_space"],
+                "all_remain_file_space"=>$result['widgets']["all_remain_file_space"],
+                "all_consumed_file_space"=>$result['widgets']["all_consumed_file_space"]
+
             ]
         ]);
     }
@@ -165,33 +169,33 @@ class FileController extends Controller
         );
 
         $notificationsSent = 0;
-        
+
         // Only notify new users (not existing ones)
         if (!empty($result['new_user_ids'])) {
             // Get only the newly added users to notify
             $newUsers = User::whereIn('id', $result['new_user_ids'])->get();
-            
+
             // Get the authenticated user who is sharing
             $sharedBy = auth()->user();
             $sharedByName = $sharedBy->name ?? 'A user';
 
             // Send email notifications only to new users
             Notification::send(
-                $newUsers, 
+                $newUsers,
                 new FileSharedNotification(
-                    $result['share_url'], 
+                    $result['share_url'],
                     $result['file'],
                     $sharedByName
                 )
             );
-            
+
             $notificationsSent = $newUsers->count();
         }
 
         return response()->json([
             'status' => true,
-            'message' => $notificationsSent > 0 
-                ? 'File shared successfully and notifications sent to new users' 
+            'message' => $notificationsSent > 0
+                ? 'File shared successfully and notifications sent to new users'
                 : 'File shared successfully (no new users to notify)',
             'data' => [
                 'file' => (new FilePresenter($result['file']))->getData(),

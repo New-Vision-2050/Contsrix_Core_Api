@@ -25,7 +25,7 @@ return [
         // ============================================================
         // Folder Management Permissions
         // ============================================================
-        'FOLDER_LIST' => 'archive-library.archive-library*archive-library.list',
+        'FOLDER_LIST' => 'archive-library.archive-library*folder.list',
         'FOLDER_CREATE' => 'archive-library.archive-library*folder.create',
         'FOLDER_UPDATE' => 'archive-library.archive-library*folder.update',
         'FOLDER_DELETE' => 'archive-library.archive-library*folder.delete',

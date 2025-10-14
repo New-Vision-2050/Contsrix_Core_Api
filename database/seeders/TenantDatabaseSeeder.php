@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Database\Seeders\CompanyPackageAssignmentSeeder;
+use Database\Seeders\ArchiveLibraryStorageLimitSeeder;
+use Database\Seeders\ArchiveLibraryFolderLimitSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
@@ -32,6 +34,10 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(GenaralAdminSeedTableSeeder::class);
 
         $this->call(CompanyPackageAssignmentSeeder::class);
+
+        // Set default storage limit for archive library (1000 MB for files, 1000 folders)
+        $this->call(ArchiveLibraryStorageLimitSeeder::class);
+        $this->call(ArchiveLibraryFolderLimitSeeder::class);
 
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(SettingSeeder::class);
