@@ -19,9 +19,9 @@ class ArchiveLibraryStorageLimitSeeder extends Seeder
     {
         try {
             // Get current company from tenant context
-            $company = Company::first();
+            $companyId = tenant("id");
 
-            if (!$company) {
+            if (!$companyId) {
                 Log::warning('No company found in tenant database. Skipping storage limit seeder.');
                 $this->command->warn('⚠ No company found in tenant database.');
                 return;
@@ -38,25 +38,25 @@ class ArchiveLibraryStorageLimitSeeder extends Seeder
 
             // Check if limit already exists for this company and permission
             $existingLimit = CompanyPermissionLimit::on('mysql')
-                ->where('company_id', $company->id)
+                ->where('company_id', $companyId)
                 ->where('permission_id', $permission->id)
                 ->first();
 
             if ($existingLimit) {
-                $this->command->info("ℹ Storage limit already exists for company {$company->name}. Current limit: {$existingLimit->limit} MB");
+                $this->command->info("ℹ Storage limit already exists for company {$companyId}. Current limit: {$existingLimit->limit} MB");
                 return;
             }
 
             // Create the storage limit (1000 MB) in central database
             CompanyPermissionLimit::on('mysql')->create([
-                'company_id' => $company->id,
+                'company_id' => $companyId,
                 'permission_id' => $permission->id,
                 'limit' => 1000, // 1000 MB total storage
                 'actual_limit' => 1000, // 1000 MB available initially
             ]);
 
-            Log::info("Successfully set 1000 MB storage limit for archive library files for company: {$company->id}");
-            $this->command->info("✓ Archive library storage limit (1000 MB) set for company: {$company->name}");
+            Log::info("Successfully set 1000 MB storage limit for archive library files for company: {$companyId}");
+            $this->command->info("✓ Archive library storage limit (1000 MB) set for company: {$companyId}");
 
         } catch (\Exception $e) {
             Log::error('Failed to set archive library storage limit', [
