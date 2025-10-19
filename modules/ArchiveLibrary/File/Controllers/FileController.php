@@ -17,6 +17,7 @@ use Modules\ArchiveLibrary\File\Requests\CopyFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CreateFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CutFileRequest;
 use Modules\ArchiveLibrary\File\Requests\DeleteFileRequest;
+use Modules\ArchiveLibrary\File\Requests\DownloadFileMediaRequest;
 use Modules\ArchiveLibrary\File\Requests\ExportFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileListRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileRequest;
@@ -221,5 +222,53 @@ class FileController extends Controller
         $filters = $request->getFilters();
 
         return Excel::download(new FileExport($this->fileService, $filters), $fileName);
+    }
+
+    /**
+     * Download file media
+     *
+     */
+    public function downloadMedia(DownloadFileMediaRequest $request)
+    {
+        $file = $this->fileService->get(Uuid::fromString($request->route('id')));
+
+        // Check if file is private and validate user access
+        if ($file->access_type === 'private') {
+            $userId = auth()->id();
+
+            // Check if user has access to this file
+            $hasAccess = $file->users()
+                ->where('user_id', $userId)
+                ->exists();
+
+            if (!$hasAccess) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Access denied. You do not have permission to download this file.',
+                ], 403);
+            }
+        }
+
+        $collection = $request->getCollection();
+
+        // Try to get media from the default media collection first
+        $mediaItem = $file->getFirstMedia($collection);
+
+        // If no media in the specified collection and collection is 'default',
+        // try to get media from the 'upload' collection via mediaFile relation
+        if (!$mediaItem && $collection === 'default') {
+            $mediaItem = $file->mediaFile;
+        }
+
+        // If still no media found, return error
+        if (!$mediaItem) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No media found for this file',
+            ], 404);
+        }
+
+        // Return the media file as downloadable response
+        return $mediaItem->toResponse(request());
     }
 }
