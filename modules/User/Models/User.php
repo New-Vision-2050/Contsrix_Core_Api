@@ -245,5 +245,20 @@ class User extends Authenticatable implements JWTSubject, Auditable
         return $this->hasOne(BrokerDetail::class);
     }
 
+    /**
+     * Get all favourite files for this user.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function favouriteFiles()
+    {
+        return $this->belongsToMany(
+            \Modules\ArchiveLibrary\File\Models\File::class,
+            'users_file_favourites',
+            'user_id',
+            'file_id'
+        )->withTimestamps();
+    }
+
 
 }

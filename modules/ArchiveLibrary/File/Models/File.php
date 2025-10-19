@@ -180,5 +180,20 @@ class File extends Model implements HasMedia , Auditable
         return $existingMedia->fresh();
     }
 
+    /**
+     * Get all users who have marked this file as favourite.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function favouritedByUsers()
+    {
+        return $this->belongsToMany(
+            \Modules\User\Models\User::class,
+            'users_file_favourites',
+            'file_id',
+            'user_id'
+        )->withTimestamps();
+    }
+
 
 }

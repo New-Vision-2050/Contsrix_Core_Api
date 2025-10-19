@@ -13,19 +13,23 @@ use Modules\ArchiveLibrary\File\Handlers\DeleteFileHandler;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
 use Modules\ArchiveLibrary\File\Notifications\FileSharedNotification;
 use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
+use Modules\ArchiveLibrary\File\Presenters\FavouriteFilePresenter;
 use Modules\ArchiveLibrary\File\Requests\ChangeArchiveStatusRequest;
 use Modules\ArchiveLibrary\File\Requests\CopyFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CreateFileRequest;
 use Modules\ArchiveLibrary\File\Requests\CutFileRequest;
 use Modules\ArchiveLibrary\File\Requests\DeleteFileRequest;
 use Modules\ArchiveLibrary\File\Requests\DownloadFileMediaRequest;
+use Modules\ArchiveLibrary\File\Requests\DownloadSingleFileRequest;
 use Modules\ArchiveLibrary\File\Requests\ExportFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileListRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFileRequest;
 use Modules\ArchiveLibrary\File\Requests\GetFilesWithWidgetsRequest;
+use Modules\ArchiveLibrary\File\Requests\ManageFavouritesRequest;
 use Modules\ArchiveLibrary\File\Requests\ShareFileRequest;
 use Modules\ArchiveLibrary\File\Requests\UpdateFileRequest;
 use Modules\ArchiveLibrary\File\Services\FileCRUDService;
+use Modules\ArchiveLibrary\File\Services\FileFavouritesService;
 use Modules\ArchiveLibrary\File\Exports\FileExport;
 use Modules\ArchiveLibrary\Folder\Presenters\FolderPresenter;
 use Modules\ArchiveLibrary\Folder\Services\FolderCRUDService;
@@ -40,6 +44,7 @@ class FileController extends Controller
         private FolderCRUDService $folderService,
         private UpdateFileHandler $updateFileHandler,
         private DeleteFileHandler $deleteFileHandler,
+        private FileFavouritesService $favouritesService,
     )
     {
     }
@@ -223,6 +228,102 @@ class FileController extends Controller
         $filters = $request->getFilters();
 
         return Excel::download(new FileExport($this->fileService, $filters), $fileName);
+    }
+
+    /**
+     * Download single file media
+     *
+     */
+    public function downloadSingleFile(DownloadSingleFileRequest $request)
+    {
+        $file = $this->fileService->get(Uuid::fromString($request->route('id')));
+        $collection = $request->getCollection();
+        $userId = auth()->id();
+
+        // Check if file is private and validate user access
+        if ($file->access_type === 'private') {
+            $hasAccess = $file->users()
+                ->where('user_id', $userId)
+                ->exists();
+
+            if (!$hasAccess) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Access denied. You do not have permission to download this file.',
+                ], 403);
+            }
+        }
+
+        // Try to get media
+        $mediaItem = $file->getFirstMedia($collection);
+
+        // If no media in the specified collection, try mediaFile relation
+        if (!$mediaItem && $collection === 'upload') {
+            $mediaItem = $file->mediaFile;
+        }
+
+        // If still no media found, return error
+        if (!$mediaItem) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No media found for this file',
+                'collection_checked' => $collection,
+                'media_count' => $file->media->count(),
+                'mediaFile_exists' => $file->mediaFile ? 'yes' : 'no',
+            ], 404);
+        }
+
+        try {
+            $disk = $mediaItem->disk;
+            $mediaPath = $mediaItem->getPath();
+            $fileName = $mediaItem->file_name;
+
+            // Check if file is stored on S3 or locally
+            if ($disk === 's3_public' || $disk === 's3' || str_starts_with($disk, 's3_')) {
+                // File is on S3 - stream directly from S3
+                $s3Path = str_replace('\\', '/', $mediaPath);
+                
+                if (!Storage::disk($disk)->exists($s3Path)) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File does not exist on S3',
+                        's3_path' => $s3Path,
+                        'disk' => $disk,
+                    ], 404);
+                }
+
+                // Get file content from S3
+                $fileContent = Storage::disk($disk)->get($s3Path);
+                $mimeType = $mediaItem->mime_type;
+
+                // Return file as download response
+                return response($fileContent, 200, [
+                    'Content-Type' => $mimeType,
+                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                    'Content-Length' => strlen($fileContent),
+                ]);
+            } else {
+                // File is stored locally
+                if (!file_exists($mediaPath)) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'File does not exist on local disk',
+                        'local_path' => $mediaPath,
+                    ], 404);
+                }
+
+                // Return local file as download
+                return response()->download($mediaPath, $fileName, [
+                    'Content-Type' => $mediaItem->mime_type,
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to download file',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -471,5 +572,69 @@ class FileController extends Controller
         });
 
         return $response;
+    }
+
+    /**
+     * Add files to user's favourites list
+     * Validates access for private files before adding
+     *
+     * @param ManageFavouritesRequest $request
+     * @return JsonResponse
+     */
+    public function addToFavourites(ManageFavouritesRequest $request): JsonResponse
+    {
+        $user = auth()->user();
+        $fileIds = $request->getFileIds();
+
+        $results = $this->favouritesService->addToFavourites($user, $fileIds);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Favourites processed successfully',
+            'data' => $results,
+            'summary' => [
+                'total_requested' => count($fileIds),
+                'added_count' => count($results['added']),
+                'already_favourite_count' => count($results['already_favourite']),
+                'access_denied_count' => count($results['access_denied']),
+                'not_found_count' => count($results['not_found'])
+            ]
+        ]);
+    }
+
+    /**
+     * Remove files from user's favourites list
+     *
+     * @param ManageFavouritesRequest $request
+     * @return JsonResponse
+     */
+    public function removeFromFavourites(ManageFavouritesRequest $request): JsonResponse
+    {
+        $user = auth()->user();
+        $fileIds = $request->getFileIds();
+
+        $removedCount = $this->favouritesService->removeFromFavourites($user, $fileIds);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Files removed from favourites successfully',
+            'data' => [
+                'removed_count' => $removedCount,
+                'requested_count' => count($fileIds)
+            ]
+        ]);
+    }
+
+    /**
+     * Get user's favourite files list
+     *
+     * @return JsonResponse
+     */
+    public function getFavourites(): JsonResponse
+    {
+        $user = auth()->user();
+        $favourites = $this->favouritesService->getFavourites($user);
+
+        return Json::items(FavouriteFilePresenter::collection($favourites));
     }
 }
