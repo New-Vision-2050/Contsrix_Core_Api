@@ -345,6 +345,7 @@ class FolderRepository extends BaseRepository
         return [
             'folders' => $paginatedFolders->values(),
             'files' => $paginatedFiles->values(),
+            "filessss"=>$files,
             'pagination' => [
                 'total' => $totalItems,
                 'per_page' => $perPage,
