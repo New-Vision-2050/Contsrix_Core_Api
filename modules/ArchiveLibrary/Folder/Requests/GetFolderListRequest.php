@@ -67,6 +67,6 @@ class GetFolderListRequest extends FormRequest
 
     public function getIsFavourite(): ?bool
     {
-        return $this->input('document_type') !== "fav" ? true : null;
+        return $this->input('document_type') == "fav" ? true : null;
     }
 }
