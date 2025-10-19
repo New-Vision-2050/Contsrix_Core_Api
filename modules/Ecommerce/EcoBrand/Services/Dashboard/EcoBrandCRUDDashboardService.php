@@ -16,9 +16,9 @@ class EcoBrandCRUDDashboardService
     ) {
     }
 
-    public function create(CreateEcoBrandDashboardDTO $createEcoBrandDTO): EcoBrand
+    public function create(CreateEcoBrandDashboardDTO $createEcoBrandDTO, $file = null): EcoBrand
     {
-         return $this->repository->createEcoBrand($createEcoBrandDTO->toArray());
+         return $this->repository->createEcoBrand($createEcoBrandDTO->toArray(), $file);
     }
 
     public function list(int $page = 1, int $perPage = 10): array

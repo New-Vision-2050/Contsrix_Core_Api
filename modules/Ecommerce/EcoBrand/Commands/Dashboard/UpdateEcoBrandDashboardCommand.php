@@ -10,8 +10,8 @@ class UpdateEcoBrandDashboardCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
-        private ?string $description
+        private ?array $name, // Changed to array for multilingual support
+        private ?array $description // Changed to array for multilingual support
     ) {
     }
 
@@ -26,6 +26,8 @@ class UpdateEcoBrandDashboardCommand
         return array_filter([
             'name' => $this->name,
             'description' => $this->description
-        ]);
+        ], function ($value) {
+            return $value !== null;
+        });
     }
 }

@@ -10,15 +10,15 @@ class CreateEcoBrandDashboardDTO
 {
     public function __construct(
         public UuidInterface $companyId,
-        public string $name,
-        public ?string $description
+        public array $name, // Changed to array for multilingual support
+        public ?array $description = null // Changed to array for multilingual support
     ) {
     }
 
     public function toArray(): array
     {
         return [
-            'company_id' => $this->companyId,
+            'company_id' => $this->companyId->toString(),
             'name' => $this->name,
             'description' => $this->description
         ];

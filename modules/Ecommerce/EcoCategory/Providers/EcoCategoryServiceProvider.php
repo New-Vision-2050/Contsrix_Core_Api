@@ -32,7 +32,7 @@ class EcoCategoryServiceProvider extends ModuleServiceProvider
     }
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/ecommerce/categories')
+        Route::prefix('api/v1/ecommerce/dashboard/categories')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

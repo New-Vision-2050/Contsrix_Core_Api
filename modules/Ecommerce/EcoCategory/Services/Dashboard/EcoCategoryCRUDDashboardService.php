@@ -2,24 +2,23 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoCategory\Services;
+namespace Modules\Ecommerce\EcoCategory\Services\Dashboard;
 
-use Illuminate\Support\Collection;
-use Modules\Ecommerce\EcoCategory\DTO\CreateEcoCategoryDTO;
+use Modules\Ecommerce\EcoCategory\DTO\Dashboard\CreateEcoCategoryDashboardDTO;
 use Modules\Ecommerce\EcoCategory\Models\EcoCategory;
 use Modules\Ecommerce\EcoCategory\Repositories\EcoCategoryRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class EcoCategoryCRUDService
+class EcoCategoryCRUDDashboardService
 {
     public function __construct(
         private EcoCategoryRepository $repository,
     ) {
     }
 
-    public function create(CreateEcoCategoryDTO $createEcoCategoryDTO): EcoCategory
+    public function create(CreateEcoCategoryDashboardDTO $createEcoCategoryDTO, $file = null): EcoCategory
     {
-         return $this->repository->createEcoCategory($createEcoCategoryDTO->toArray());
+         return $this->repository->createEcoCategory($createEcoCategoryDTO->toArray(), $file);
     }
 
     public function list(int $page = 1, int $perPage = 10, array $relations = []): array

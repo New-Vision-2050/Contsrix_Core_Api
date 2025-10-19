@@ -13,13 +13,16 @@ class CreateEcoBrandDashboardRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            // 'name.ar' => ['required', 'string', 'max:255'],
-            // 'name.en' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'array'],
+            'name.ar' => ['required', 'string', 'max:255'],
+            'name.en' => ['nullable', 'string', 'max:255'],
 
-            'description' => ['required', 'string', 'max:255'],
-            // 'description.ar' => ['required', 'string', 'max:1000'],
-            // 'description.en' => ['nullable', 'string', 'max:1000'],
+            'description' => ['nullable', 'array'],
+            'description.ar' => ['nullable', 'string', 'max:1000'],
+            'description.en' => ['nullable', 'string', 'max:1000'],
+            
+            // Image validation
+            'brand_image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'], // 5MB max
         ];
     }
     public function messages(): array
@@ -40,6 +43,12 @@ class CreateEcoBrandDashboardRequest extends FormRequest
             'description.ar.max' => __('ecobrand::validation.description_ar_max'),
             'description.en.string' => __('ecobrand::validation.description_en_string'),
             'description.en.max' => __('ecobrand::validation.description_en_max'),
+            
+            // Image validation messages
+            'brand_image.file' => 'صورة العلامة التجارية يجب أن تكون ملف',
+            'brand_image.image' => 'صورة العلامة التجارية يجب أن تكون صورة صحيحة',
+            'brand_image.mimes' => 'صورة العلامة التجارية يجب أن تكون من نوع: jpeg, png, jpg, gif, webp',
+            'brand_image.max' => 'حجم صورة العلامة التجارية يجب ألا يتجاوز 5 ميجابايت',
         ];
     }
 
@@ -50,7 +59,7 @@ class CreateEcoBrandDashboardRequest extends FormRequest
         return new CreateEcoBrandDashboardDTO(
             companyId: Uuid::fromString(tenant("id")),
             name: $validatedData['name'],
-            description: $validatedData['description']
+            description: $validatedData['description'] ?? null
         );
     }
 }

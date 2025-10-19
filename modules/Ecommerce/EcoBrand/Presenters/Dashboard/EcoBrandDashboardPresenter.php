@@ -6,6 +6,7 @@ namespace Modules\Ecommerce\EcoBrand\Presenters\Dashboard;
 
 use Modules\Ecommerce\EcoBrand\Models\EcoBrand;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class EcoBrandDashboardPresenter extends AbstractPresenter
 {
@@ -18,10 +19,19 @@ class EcoBrandDashboardPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $media = $this->ecoBrand->getFirstMedia('upload');
+        
         return [
             'id' => $this->ecoBrand->id,
-            'name' => $this->ecoBrand->name,
-            'description' => $this->ecoBrand->description
+            'name' => $this->ecoBrand->name, // Current locale translation
+            'name_ar' => $this->ecoBrand->getTranslation('name', 'ar'),
+            'name_en' => $this->ecoBrand->getTranslation('name', 'en'),
+            'description' => $this->ecoBrand->description,
+            'description_ar' => $this->ecoBrand->getTranslation('description', 'ar'),
+            'description_en' => $this->ecoBrand->getTranslation('description', 'en'),
+            
+            // Brand images
+            "file" => $media != null ? (new MediaPresenter($media))->getData() : null,
         ];
     }
 }

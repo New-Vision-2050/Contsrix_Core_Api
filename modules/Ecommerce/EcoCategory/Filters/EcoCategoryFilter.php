@@ -86,11 +86,26 @@ class EcoCategoryFilter extends SearchModelFilter
             case 'main':
             case 'parent':
             case 'root':
+            case 'category':
                 return $this->whereNull('parent_id');
             case 'sub':
             case 'child':
             case 'subcategory':
-                return $this->whereNotNull('parent_id');
+            case 'sub_category':
+                return $this->whereNotNull('parent_id')
+                           ->whereHas('parent', function ($q) {
+                               $q->whereNull('parent_id');
+                           });
+            case 'sub_sub_category':
+            case 'subsub':
+            case 'third_level':
+                return $this->whereNotNull('parent_id')
+                           ->whereHas('parent', function ($q) {
+                               $q->whereNotNull('parent_id')
+                                 ->whereHas('parent', function ($subQ) {
+                                     $subQ->whereNull('parent_id');
+                                 });
+                           });
             default:
                 return $this;
         }
@@ -149,9 +164,64 @@ class EcoCategoryFilter extends SearchModelFilter
                            ->whereHas('parent', function ($q) {
                                $q->whereNull('parent_id');
                            });
+            case 2:
+            case '2':
+                return $this->whereNotNull('parent_id')
+                           ->whereHas('parent', function ($q) {
+                               $q->whereNotNull('parent_id')
+                                 ->whereHas('parent', function ($subQ) {
+                                     $subQ->whereNull('parent_id');
+                                 });
+                           });
             default:
                 return $this;
         }
+    }
+
+    /**
+     * Filter to get only main categories (level 0)
+     */
+    public function onlyMainCategories()
+    {
+        return $this->whereNull('parent_id');
+    }
+
+    /**
+     * Filter to get only sub categories (level 1)
+     */
+    public function onlySubCategories()
+    {
+        return $this->whereNotNull('parent_id')
+                   ->whereHas('parent', function ($q) {
+                       $q->whereNull('parent_id');
+                   });
+    }
+
+    /**
+     * Filter to get only sub-sub categories (level 2)
+     */
+    public function onlySubSubCategories()
+    {
+        return $this->whereNotNull('parent_id')
+                   ->whereHas('parent', function ($q) {
+                       $q->whereNotNull('parent_id')
+                         ->whereHas('parent', function ($subQ) {
+                             $subQ->whereNull('parent_id');
+                         });
+                   });
+    }
+
+    /**
+     * Filter by priority range
+     */
+    public function priorityFrom($priority)
+    {
+        return $this->where('priority', '>=', $priority);
+    }
+
+    public function priorityTo($priority)
+    {
+        return $this->where('priority', '<=', $priority);
     }
 
     /**
