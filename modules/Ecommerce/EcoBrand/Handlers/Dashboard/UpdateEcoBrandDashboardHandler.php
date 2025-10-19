@@ -14,8 +14,8 @@ class UpdateEcoBrandDashboardHandler
     ) {
     }
 
-    public function handle(UpdateEcoBrandDashboardCommand $updateEcoBrandCommand)
+    public function handle(UpdateEcoBrandDashboardCommand $updateEcoBrandCommand, $file = null)
     {
-        $this->repository->updateEcoBrand($updateEcoBrandCommand->getId(), $updateEcoBrandCommand->toArray());
+        $this->repository->updateEcoBrand($updateEcoBrandCommand->getId(), $updateEcoBrandCommand->toArray(), $file);
     }
 }

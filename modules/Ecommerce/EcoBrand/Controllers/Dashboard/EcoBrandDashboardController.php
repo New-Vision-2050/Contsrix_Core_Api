@@ -48,7 +48,8 @@ class EcoBrandDashboardController extends Controller
 
     public function store(CreateEcoBrandDashboardRequest $request): JsonResponse
     {
-        $createdItem = $this->ecoBrandService->create($request->createCreateEcoBrandDTO());
+        $file = $request->file('brand_image');
+        $createdItem = $this->ecoBrandService->create($request->createCreateEcoBrandDTO(), $file);
 
         $presenter = new EcoBrandDashboardPresenter($createdItem);
 
@@ -57,8 +58,9 @@ class EcoBrandDashboardController extends Controller
 
     public function update(UpdateEcoBrandDashboardRequest $request): JsonResponse
     {
+        $file = $request->file('brand_image');
         $command = $request->createUpdateEcoBrandCommand();
-        $this->updateEcoBrandHandler->handle($command);
+        $this->updateEcoBrandHandler->handle($command, $file);
 
         $item = $this->ecoBrandService->get($command->getId());
 

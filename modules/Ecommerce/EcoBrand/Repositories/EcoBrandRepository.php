@@ -8,6 +8,8 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Ecommerce\EcoBrand\Models\EcoBrand;
+use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Company\CompanyCore\Models\Company;
 
 /**
  * @property EcoBrand $model
@@ -16,8 +18,10 @@ use Modules\Ecommerce\EcoBrand\Models\EcoBrand;
  */
 class EcoBrandRepository extends BaseRepository
 {
-    public function __construct(EcoBrand $model)
-    {
+    public function __construct(
+        EcoBrand $model,
+        private FileUploadService $fileUploadService
+    ) {
         parent::__construct($model);
     }
 
@@ -33,14 +37,47 @@ class EcoBrandRepository extends BaseRepository
         ]);
     }
 
-    public function createEcoBrand(array $data): EcoBrand
+    public function createEcoBrand(array $data, $file = null): EcoBrand
     {
-        return $this->create($data);
+        $brand = $this->create($data);
+        
+        if ($file) {
+            $brand->clearMediaCollection('upload');
+            $companyName = Company::find($data['company_id'])?->name ?? 'UnknownCompany';
+            $path = $companyName . '/brands';
+
+            $this->fileUploadService->uploadFile(
+                $brand,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+        return $brand;
     }
 
-    public function updateEcoBrand(UuidInterface $id, array $data): bool
+    public function updateEcoBrand(UuidInterface $id, array $data, $file = null): bool
     {
-        return $this->update($id, $data);
+        $updated = $this->update($id, $data);
+        
+        if ($file && $updated) {
+            $brand = $this->findOneOrFail($id);
+            $brand->clearMediaCollection('upload');
+            $companyName = Company::find($data['company_id'] ?? $brand->company_id)?->name ?? 'UnknownCompany';
+            $path = $companyName . '/brands';
+
+            $this->fileUploadService->uploadFile(
+                $brand,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+        return $updated;
     }
 
     public function deleteEcoBrand(UuidInterface $id): bool
