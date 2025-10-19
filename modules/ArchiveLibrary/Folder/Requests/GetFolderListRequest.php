@@ -27,7 +27,7 @@ class GetFolderListRequest extends FormRequest
 
     public function getDocumentType(): ?string
     {
-        return $this->input('document_type');
+        return $this->input('document_type') =="fav" ? null : $this->input('document_type');
     }
 
     public function getEndDate(): ?string
@@ -63,5 +63,10 @@ class GetFolderListRequest extends FormRequest
     public function getSort(): ?string
     {
         return $this->input('sort');
+    }
+
+    public function getIsFavourite(): ?bool
+    {
+        return $this->input('document_type') !== "fav" ? true : null;
     }
 }

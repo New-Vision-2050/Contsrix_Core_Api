@@ -153,6 +153,7 @@ class FolderRepository extends BaseRepository
         int $page = 1,
         int $perPage = 10,
         ?string $documentType = null,
+        ?bool $isFavourite = null,
         ?string $endDate = null,
         ?string $endDateFrom = null,
         ?string $endDateTo = null,
@@ -172,6 +173,7 @@ class FolderRepository extends BaseRepository
 
         // Check if any file-specific filter is provided
         $hasFileFilters = $documentType !== null
+            || $isFavourite !== null
             || $endDate !== null
             || $endDateFrom !== null
             || $endDateTo !== null
@@ -244,6 +246,13 @@ class FolderRepository extends BaseRepository
                     $query->where('mime_type', $mimeType);
                 });
             }
+        }
+
+        // Filter by favourite status if provided
+        if ($isFavourite !== null && $isFavourite === true) {
+            $filesQuery->whereHas('favouritedByUsers', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            });
         }
 
         // Filter by end_date if provided
