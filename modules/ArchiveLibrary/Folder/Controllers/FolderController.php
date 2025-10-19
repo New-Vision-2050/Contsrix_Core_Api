@@ -8,7 +8,6 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\ArchiveLibrary\File\Models\File;
 use Modules\ArchiveLibrary\Folder\Handlers\DeleteFolderHandler;
 use Modules\ArchiveLibrary\Folder\Handlers\UpdateFolderHandler;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
@@ -168,7 +167,7 @@ class FolderController extends Controller
 
         return Json::item([
             'folders' => FolderPresenter::collection($result['folders']),
-            'files' => FilePresenter::collection($result['files'])],["pagination"=>$result['pagination'],"filessss"=>$result['filessss'],"hh"=>File::get()]);
+            'files' => FilePresenter::collection($result['files'])],["pagination"=>$result['pagination']]);
 
     }
 
