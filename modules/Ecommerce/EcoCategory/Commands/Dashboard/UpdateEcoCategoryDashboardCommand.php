@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoCategory\Commands;
+namespace Modules\Ecommerce\EcoCategory\Commands\Dashboard;
 
 use Ramsey\Uuid\UuidInterface;
 
-class UpdateEcoCategoryCommand
+class UpdateEcoCategoryDashboardCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private ?string $name,
-        private ?string $description,
+        private ?array $name, // Changed to array for multilingual support
         private ?string $perentId,
-        private ?int $isActive
+        private ?int $priority = null,
     ) {
     }
 
@@ -26,9 +25,8 @@ class UpdateEcoCategoryCommand
     {
         return array_filter([
             'name' => $this->name,
-            'description' => $this->description,
             'parent_id' => $this->perentId,
-            'is_active' => $this->isActive
+            'priority' => $this->priority,
         ], function ($value) {
             return $value !== null;
         });

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoCategory\Handlers;
+namespace Modules\Ecommerce\EcoCategory\Handlers\Dashboard;
 
 use Modules\Ecommerce\EcoCategory\Repositories\EcoCategoryRepository;
 use Ramsey\Uuid\UuidInterface;
 
-class DeleteEcoCategoryHandler
+class DeleteEcoCategoryDashboardHandler
 {
     public function __construct(
         private EcoCategoryRepository $repository,

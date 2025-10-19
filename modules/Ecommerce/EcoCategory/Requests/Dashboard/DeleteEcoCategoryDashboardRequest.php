@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoCategory\Requests;
+namespace Modules\Ecommerce\EcoCategory\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Ramsey\Uuid\Uuid;
 
-class DeleteEcoCategoryRequest extends FormRequest
+class DeleteEcoCategoryDashboardRequest extends FormRequest
 {
     public function rules(): array
     {

@@ -8,6 +8,8 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\Ecommerce\EcoCategory\Models\EcoCategory;
+use Modules\Shared\Media\Services\FileUploadService;
+use Modules\Company\CompanyCore\Models\Company;
 
 /**
  * @property EcoCategory $model
@@ -16,8 +18,10 @@ use Modules\Ecommerce\EcoCategory\Models\EcoCategory;
  */
 class EcoCategoryRepository extends BaseRepository
 {
-    public function __construct(EcoCategory $model)
-    {
+    public function __construct(
+        EcoCategory $model,
+        private FileUploadService $fileUploadService
+    ) {
         parent::__construct($model);
     }
 
@@ -65,15 +69,47 @@ class EcoCategoryRepository extends BaseRepository
         ]);
     }
 
-    public function createEcoCategory(array $data): EcoCategory
+    public function createEcoCategory(array $data, $file = null): EcoCategory
     {
+        $category = $this->create($data);
+        
+        if ($file) {
+            $category->clearMediaCollection('upload');
+            $companyName = Company::find($data['company_id'])?->name ?? 'UnknownCompany';
+            $path = $companyName . '/categories';
 
-        return $this->create($data);
+            $this->fileUploadService->uploadFile(
+                $category,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+        return $category;
     }
 
-    public function updateEcoCategory(UuidInterface $id, array $data): bool
+    public function updateEcoCategory(UuidInterface $id, array $data, $file = null): bool
     {
-        return $this->update($id, $data);
+        $updated = $this->update($id, $data);
+        
+        if ($file && $updated) {
+            $category = $this->findOneOrFail($id);
+            $category->clearMediaCollection('upload');
+            $companyName = Company::find($data['company_id'] ?? $category->company_id)?->name ?? 'UnknownCompany';
+            $path = $companyName . '/categories';
+
+            $this->fileUploadService->uploadFile(
+                $category,
+                $file,
+                $path,
+                'upload',
+                "public"
+            );
+        }
+
+        return $updated;
     }
 
     public function deleteEcoCategory(UuidInterface $id): bool
