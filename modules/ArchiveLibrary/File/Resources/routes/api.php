@@ -33,7 +33,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/{id}', [FileController::class, 'show'])
       ;
 
-    Route::get('/{id}/download', [FileController::class, 'downloadMedia'])
+    Route::post('/download', [FileController::class, 'downloadMedia'])
         ->permission(Permission::FOLDER_LIST());
 
     Route::post('/{id}', [FileController::class, 'update'])

@@ -14,6 +14,8 @@ class DownloadFileMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|uuid|exists:files,id',
             'collection' => 'sometimes|string|in:default,upload',
         ];
     }
@@ -24,8 +26,21 @@ class DownloadFileMediaRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'ids.required' => __('validation.required', ['attribute' => 'ids']),
+            'ids.array' => __('validation.array', ['attribute' => 'ids']),
+            'ids.min' => 'At least one file ID is required',
+            'ids.*.uuid' => 'Each file ID must be a valid UUID',
+            'ids.*.exists' => 'One or more file IDs do not exist',
             'collection.in' => __('validation.in', ['attribute' => 'collection']),
         ];
+    }
+
+    /**
+     * Get the file IDs array from request
+     */
+    public function getFileIds(): array
+    {
+        return $this->get('ids', []);
     }
 
     /**

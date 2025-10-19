@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\File\Handlers\DeleteFileHandler;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
 use Modules\ArchiveLibrary\File\Notifications\FileSharedNotification;
@@ -225,50 +226,250 @@ class FileController extends Controller
     }
 
     /**
-     * Download file media
+     * Download file media as ZIP (multiple files)
      *
      */
     public function downloadMedia(DownloadFileMediaRequest $request)
     {
-        $file = $this->fileService->get(Uuid::fromString($request->route('id')));
+        $fileIds = $request->getFileIds();
+        $collection = $request->getCollection();
+        $userId = auth()->id();
 
-        // Check if file is private and validate user access
-        if ($file->access_type === 'private') {
-            $userId = auth()->id();
+        $accessDeniedFiles = [];
+        $missingMediaFiles = [];
+        $successfulFiles = [];
+        $debugInfo = [
+            'file_ids_count' => count($fileIds),
+            'collection' => $collection,
+            'user_id' => $userId,
+        ];
 
-            // Check if user has access to this file
-            $hasAccess = $file->users()
-                ->where('user_id', $userId)
-                ->exists();
+        // Validate access for each file
+        foreach ($fileIds as $fileId) {
+            $file = $this->fileService->get(Uuid::fromString($fileId));
 
-            if (!$hasAccess) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Access denied. You do not have permission to download this file.',
-                ], 403);
+            // Check if file is private and validate user access
+            if ($file->access_type === 'private') {
+                $hasAccess = $file->users()
+                    ->where('user_id', $userId)
+                    ->exists();
+
+                if (!$hasAccess) {
+                    $accessDeniedFiles[] = [
+                        'id' => $file->id,
+                        'name' => $file->name
+                    ];
+                    continue;
+                }
+            }
+
+            // Try to get media
+            $mediaItem = $file->getFirstMedia($collection);
+
+            // If no media in the specified collection, try mediaFile relation
+            if (!$mediaItem && $collection === 'upload') {
+                $mediaItem = $file->mediaFile;
+            }
+
+            if (!$mediaItem) {
+                $missingMediaFiles[] = [
+                    'id' => $file->id,
+                    'name' => $file->name,
+                    'collection_checked' => $collection,
+                    'media_count' => $file->media->count(),
+                    'mediaFile_exists' => $file->mediaFile ? 'yes' : 'no',
+                ];
+                continue;
+            }
+
+            $successfulFiles[] = [
+                'file' => $file,
+                'media' => $mediaItem,
+                'media_id' => $mediaItem->id,
+                'media_file_name' => $mediaItem->file_name,
+                'media_path' => $mediaItem->getPath(),
+            ];
+        }
+
+        // If no files can be downloaded
+        if (empty($successfulFiles)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No files available for download',
+                'debug' => $debugInfo,
+                'access_denied' => $accessDeniedFiles,
+                'missing_media' => $missingMediaFiles,
+            ], 403);
+        }
+
+        // Create ZIP file with proper path separators
+        $zipFileName = 'files_' . now()->format('Y-m-d_His') . '.zip';
+        $tempDir = storage_path('app' . DIRECTORY_SEPARATOR . 'temp');
+        $zipPath = $tempDir . DIRECTORY_SEPARATOR . $zipFileName;
+
+        // Ensure temp directory exists
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to create ZIP file. Path: ' . $zipPath,
+            ], 500);
+        }
+
+        // Add files to ZIP
+        $fileCounter = [];
+        $addedFilesCount = 0;
+        $skippedFiles = [];
+        $tempFiles = []; // Track temporary files for cleanup
+
+        foreach ($successfulFiles as $item) {
+            $media = $item['media'];
+            $file = $item['file'];
+
+            $originalFileName = $media->file_name;
+
+            // Handle duplicate filenames by adding counter
+            if (isset($fileCounter[$originalFileName])) {
+                $fileCounter[$originalFileName]++;
+                $pathInfo = pathinfo($originalFileName);
+                $fileName = $pathInfo['filename'] . '_' . $fileCounter[$originalFileName] . '.' . ($pathInfo['extension'] ?? '');
+            } else {
+                $fileCounter[$originalFileName] = 1;
+                $fileName = $originalFileName;
+            }
+
+            try {
+                // Check if file is stored on S3 or locally
+                $disk = $media->disk;
+                $mediaPath = $media->getPath();
+
+                if ($disk === 's3_public' || $disk === 's3' || str_starts_with($disk, 's3_')) {
+                    // File is on S3 - download to temp location
+                    $s3Path = str_replace('\\', '/', $mediaPath); // Normalize path for S3
+                    
+                    if (Storage::disk($disk)->exists($s3Path)) {
+                        $tempFilePath = $tempDir . DIRECTORY_SEPARATOR . 'download_' . uniqid() . '_' . $fileName;
+                        $fileContent = Storage::disk($disk)->get($s3Path);
+                        file_put_contents($tempFilePath, $fileContent);
+                        
+                        $tempFiles[] = $tempFilePath; // Track for cleanup
+                        
+                        if ($zip->addFile($tempFilePath, $fileName)) {
+                            $addedFilesCount++;
+                        } else {
+                            $skippedFiles[] = [
+                                'file_id' => $file->id,
+                                'file_name' => $file->name,
+                                'media_file_name' => $fileName,
+                                'reason' => 'Failed to add S3 file to ZIP'
+                            ];
+                        }
+                    } else {
+                        $skippedFiles[] = [
+                            'file_id' => $file->id,
+                            'file_name' => $file->name,
+                            'media_file_name' => $fileName,
+                            's3_path' => $s3Path,
+                            'disk' => $disk,
+                            'reason' => 'File does not exist on S3'
+                        ];
+                    }
+                } else {
+                    // File is stored locally
+                    $filePath = $mediaPath;
+                    
+                    if (file_exists($filePath)) {
+                        if ($zip->addFile($filePath, $fileName)) {
+                            $addedFilesCount++;
+                        } else {
+                            $skippedFiles[] = [
+                                'file_id' => $file->id,
+                                'file_name' => $file->name,
+                                'media_file_name' => $fileName,
+                                'reason' => 'Failed to add local file to ZIP'
+                            ];
+                        }
+                    } else {
+                        $skippedFiles[] = [
+                            'file_id' => $file->id,
+                            'file_name' => $file->name,
+                            'media_file_name' => $fileName,
+                            'local_path' => $filePath,
+                            'reason' => 'File does not exist locally'
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                $skippedFiles[] = [
+                    'file_id' => $file->id,
+                    'file_name' => $file->name,
+                    'media_file_name' => $fileName,
+                    'reason' => 'Exception: ' . $e->getMessage()
+                ];
             }
         }
 
-        $collection = $request->getCollection();
-
-        // Try to get media from the default media collection first
-        $mediaItem = $file->getFirstMedia($collection);
-
-        // If no media in the specified collection and collection is 'default',
-        // try to get media from the 'upload' collection via mediaFile relation
-        if (!$mediaItem && $collection === 'default') {
-            $mediaItem = $file->mediaFile;
-        }
-
-        // If still no media found, return error
-        if (!$mediaItem) {
+        // Check if any files were added
+        if ($addedFilesCount === 0) {
+            $zip->close();
+            @unlink($zipPath); // Clean up empty ZIP
+            
+            // Clean up temp files
+            foreach ($tempFiles as $tempFile) {
+                if (file_exists($tempFile)) {
+                    @unlink($tempFile);
+                }
+            }
+            
             return response()->json([
                 'status' => false,
-                'message' => 'No media found for this file',
-            ], 404);
+                'message' => 'No files could be added to ZIP',
+                'debug' => $debugInfo,
+                'successful_files_data' => $successfulFiles,
+                'skipped_files' => $skippedFiles,
+                'successful_files_count' => count($successfulFiles),
+            ], 500);
         }
 
-        // Return the media file as downloadable response
-        return $mediaItem->toResponse(request());
+        $zip->close();
+
+        // Verify ZIP file was created successfully
+        if (!file_exists($zipPath)) {
+            // Clean up temp files
+            foreach ($tempFiles as $tempFile) {
+                if (file_exists($tempFile)) {
+                    @unlink($tempFile);
+                }
+            }
+            
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to create ZIP file. File does not exist at: ' . $zipPath,
+                'debug' => $debugInfo,
+                'added_files_count' => $addedFilesCount,
+                'successful_files_count' => count($successfulFiles),
+                'skipped_files' => $skippedFiles,
+            ], 500);
+        }
+
+        // Return ZIP file for download and delete after sending
+        $response = response()->download($zipPath, $zipFileName, [
+            'Content-Type' => 'application/zip',
+        ])->deleteFileAfterSend(true);
+
+        // Clean up temporary files downloaded from S3
+        register_shutdown_function(function () use ($tempFiles) {
+            foreach ($tempFiles as $tempFile) {
+                if (file_exists($tempFile)) {
+                    @unlink($tempFile);
+                }
+            }
+        });
+
+        return $response;
     }
 }
