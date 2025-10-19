@@ -39,11 +39,9 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/download', [FileController::class, 'downloadMedia'])
         ->permission(Permission::FOLDER_LIST());
 
-    Route::post('/{id}', [FileController::class, 'update'])
-        ->permission(Permission::FILE_UPDATE());
 
-    Route::delete('/{id}', [FileController::class, 'delete'])
-        ->permission(Permission::FILE_DELETE());
+
+
 
     // File Favourites Routes
     Route::post('/favourites', [FileController::class, 'addToFavourites'])
@@ -54,4 +52,12 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::get('/favourites', [FileController::class, 'getFavourites'])
         ->permission(Permission::FOLDER_LIST());
+
+
+
+    Route::delete('/{id}', [FileController::class, 'delete'])
+        ->permission(Permission::FILE_DELETE());
+
+    Route::post('/{id}', [FileController::class, 'update'])
+        ->permission(Permission::FILE_UPDATE());
 });

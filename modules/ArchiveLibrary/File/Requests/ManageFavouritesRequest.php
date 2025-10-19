@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\File\Requests;
 
-use BasePackage\Shared\Http\Requests\FormRequest;
+use Illuminate\Foundation\Http\FormRequest;
 
 class ManageFavouritesRequest extends FormRequest
 {
