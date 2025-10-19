@@ -42,11 +42,10 @@ class CompanyWidgetPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            ['title'=>'اجمالي الشركات','code'=> 'total_companies' , 'total'=> $this->total,'percentage' => $this->totalCalculate],
-            ['title'=>'الشركات الفعالة','code'=> 'active_companies' , 'total'=> $this->active,'percentage' => $this->activeCalculate],
-            ['title'=>'شركات غير مكتملة البيانات','code'=> 'complete_data' , 'total'=> $this->completeData,'percentage' => $this->completeDataCalculate],
-            //['title'=>'','data_activate' => $this->dataActivate,'percentage' => $this->dataActivateCalculate],
-            ['title'=>'شركات قاربت على الانتهاء','code'=> 'nearly_end' , 'total'=> $this->dataActivate,'percentage' => $this->dataActivateCalculate],
+            ['title' => __('lookups.total_companies'), 'code' => 'total_companies', 'total' => $this->total, 'percentage' => $this->totalCalculate],
+            ['title' => __('lookups.active_companies'), 'code' => 'active_companies', 'total' => $this->active, 'percentage' => $this->activeCalculate],
+            ['title' => __('lookups.incomplete_data_companies'), 'code' => 'incomplete_data_companies', 'total' => $this->completeData, 'percentage' => $this->completeDataCalculate],
+            ['title' => __('lookups.nearly_expiring_companies'), 'code' => 'nearly_expiring_companies', 'total' => $this->dataActivate, 'percentage' => $this->dataActivateCalculate],
         ];
     }
 }
