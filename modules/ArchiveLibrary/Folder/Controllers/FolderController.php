@@ -139,6 +139,7 @@ class FolderController extends Controller
         $page = (int)$request->get('page', 1);
         $perPage = (int)$request->get('per_page', 10);
         $documentType = $request->getDocumentType();
+        $isFavourite = $request->getIsFavourite();
         $endDate = $request->getEndDate();
         $endDateFrom = $request->getEndDateFrom();
         $endDateTo = $request->getEndDateTo();
@@ -153,6 +154,7 @@ class FolderController extends Controller
             $page,
             $perPage,
             $documentType,
+            $isFavourite,
             $endDate,
             $endDateFrom,
             $endDateTo,
