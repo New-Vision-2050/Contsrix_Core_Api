@@ -8,6 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Support\Facades\DB;
 use Modules\ActivityLog\Repositories\ActivityLogRepository;
 use Modules\ArchiveLibrary\File\Models\File;
+use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\Company\CompanyCore\Models\CompanyOfficialDocument;
 use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
@@ -34,7 +35,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
             foreach ($files as $file) {
                 $fileModel = File::create([
                     'name' => $data["name"],
-                    'folder_id' => config('folder.official_documents_uuid'),
+                    'folder_id' => Folder::query()->where("name","المستندات الرسمية")->where("company_id",$data["company_id"])->first()->id,
                     'access_type' => 'public',
                     'company_id' => $data["company_id"],
                     'management_hierarchy_id' => $data["management_hierarchy_id"],
@@ -64,7 +65,7 @@ class CompanyOfficialDocumentRepository extends BaseRepository
                 foreach ($files as $file) {
                     $fileModel = File::create([
                         'name' => $data["name"],
-                        'folder_id' => config('folder.official_documents_uuid'),
+                        'folder_id' => Folder::query()->withoutTenancy()->where("name","المستندات الرسمية")->where("company_id",$companyOfficialDocument->company_id)->first()->id,
                         'access_type' => 'public',
                         'company_id' => $companyOfficialDocument->company_id,
                         'management_hierarchy_id' => $companyOfficialDocument->management_hierarchy_id,

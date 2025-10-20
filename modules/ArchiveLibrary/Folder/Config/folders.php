@@ -23,5 +23,5 @@ return [
     |
     */
 
-    'official_documents_name' => 'المستندات الرسمية',
+    'official_documents_name' => 'official document',
 ];
