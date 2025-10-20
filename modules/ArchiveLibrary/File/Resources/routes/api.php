@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\ArchiveLibrary\File\Controllers\FileController;
 use Modules\RoleAndPermission\Enums\Permission;
+use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [FileController::class, 'index'])
@@ -18,20 +19,15 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         ->name('file.export')
         ->permission(Permission::FILE_EXPORT());
 
-    Route::post('/copy', [FileController::class, 'copyFile'])
-      ;
+    Route::post('/copy', [FileController::class, 'copyFile']);
 
-    Route::post('/cut', [FileController::class, 'cutFile'])
-        ;
+    Route::post('/cut', [FileController::class, 'cutFile']);
 
-    Route::post('/share', [FileController::class, 'shareFile'])
-        ;
+    Route::post('/share', [FileController::class, 'shareFile']);
 
     Route::put('/{id}/change-status', [FileController::class, 'changeStatus'])
         ->permission(Permission::FILE_UPDATE());
 
-    Route::get('/{id}', [FileController::class, 'show'])
-      ;
 
     Route::get('/{id}/download', [FileController::class, 'downloadSingleFile'])
         ->permission(Permission::FOLDER_LIST());
@@ -61,3 +57,4 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/{id}', [FileController::class, 'update'])
         ->permission(Permission::FILE_UPDATE());
 });
+Route::get('/{id}', [FileController::class, 'show'])->middleware(InitializeTenancyByRequestData::class);
