@@ -14,7 +14,7 @@ class GetFolderListRequest extends FormRequest
         return [
             'per_page' => 'integer',
             'page' => 'integer',
-            'document_type' => 'nullable|string|in:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,txt,zip,rar,csv',
+            'document_type' => 'nullable|string|in:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,txt,zip,rar,csv,fav',
             'end_date' => 'nullable|date',
             'end_date_from' => 'nullable|date',
             'end_date_to' => 'nullable|date|after_or_equal:end_date_from',

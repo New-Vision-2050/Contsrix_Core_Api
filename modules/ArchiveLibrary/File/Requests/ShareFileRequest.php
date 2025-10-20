@@ -12,7 +12,8 @@ class ShareFileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file_id' => 'required|string|uuid|exists:files,id',
+            'file_ids' => 'required|array|min:1',
+            'file_ids.*' => 'required|string|uuid|exists:files,id',
             'user_ids' => 'required|array|min:1',
             'user_ids.*' => 'required|string|uuid|exists:users,id',
         ];
@@ -21,9 +22,11 @@ class ShareFileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file_id.required' => 'File ID is required',
-            'file_id.uuid' => 'File ID must be a valid UUID',
-            'file_id.exists' => 'The selected file does not exist',
+            'file_ids.required' => 'At least one file is required',
+            'file_ids.array' => 'File IDs must be an array',
+            'file_ids.min' => 'At least one file must be selected',
+            'file_ids.*.uuid' => 'Each file ID must be a valid UUID',
+            'file_ids.*.exists' => 'One or more selected files do not exist',
             'user_ids.required' => 'At least one user is required',
             'user_ids.array' => 'User IDs must be an array',
             'user_ids.min' => 'At least one user must be selected',
@@ -32,9 +35,9 @@ class ShareFileRequest extends FormRequest
         ];
     }
 
-    public function getFileId(): string
+    public function getFileIds(): array
     {
-        return $this->get('file_id');
+        return $this->get('file_ids', []);
     }
 
     public function getUserIds(): array
