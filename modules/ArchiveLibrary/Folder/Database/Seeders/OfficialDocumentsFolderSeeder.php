@@ -18,15 +18,15 @@ class OfficialDocumentsFolderSeeder extends Seeder
     {
         try {
             DB::beginTransaction();
+            $companyId=tenant('id')??"560005d6-04b8-53b3-9889-d312648288e3";
 
-            $officialDocumentsUuid = config('folder.official_documents_uuid');
             $officialDocumentsName = config('folder.official_documents_name');
 
             // Check if folder already exists
-            $existingFolder = Folder::find($officialDocumentsUuid);
+            $existingFolder = Folder::where("name","المستندات الرسمية")->where("company_id",$companyId)->first();
 
             if ($existingFolder) {
-                Log::info("Official Documents folder already exists with ID: {$officialDocumentsUuid}");
+                Log::info("Official Documents folder already exists with ID:");
                 $this->command->info("✓ Official Documents folder already exists");
                 DB::commit();
                 return;
@@ -34,16 +34,15 @@ class OfficialDocumentsFolderSeeder extends Seeder
 
             // Create the official documents folder
             $folder = new Folder();
-            $folder->id = $officialDocumentsUuid;
             $folder->name = $officialDocumentsName;
             $folder->parent_id = null; // Root level folder
             $folder->access_type = 'public'; // Default to public access
             $folder->company_id = tenant('id')??"560005d6-04b8-53b3-9889-d312648288e3"; // Set company_id for tenant
             $folder->save();
 
-            Log::info("Official Documents folder created successfully with ID: {$officialDocumentsUuid}");
+            Log::info("Official Documents folder created successfully with ID:");
             $this->command->info("✓ Official Documents folder created successfully");
-            $this->command->info("  ID: {$officialDocumentsUuid}");
+            $this->command->info("  ID: ");
             $this->command->info("  Name: {$officialDocumentsName}");
 
             DB::commit();
