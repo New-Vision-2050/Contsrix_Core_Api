@@ -55,7 +55,7 @@ class CompanyLegalDataRepository extends BaseRepository
             if (!is_null($file)) {
                 $fileModel = File::create([
                     'name' => CompanyRegistrationType::query()->where("id", $data["registration_type_id"])->first()->name,
-                    'folder_id' => Folder::query()->withoutTenancy()->where("name","المستندات الرسمية")->where("company_id",$data["company_id"])->first(),
+                    'folder_id' => Folder::query()->withoutTenancy()->where("name","المستندات الرسمية")->where("company_id",$data["company_id"])->first()->id,
                     'access_type' => 'public',
                     'company_id' => $data["company_id"],
                     'management_hierarchy_id' => $data["management_hierarchy_id"],
@@ -139,7 +139,7 @@ class CompanyLegalDataRepository extends BaseRepository
                     $legalData->clearMediaCollection('upload');
                     $fileModel = File::create([
                         'name' => CompanyRegistrationType::query()->where("id", $legalData->registration_type_id)->first()->name,
-                        'folder_id' => Folder::query()->withoutTenancy()->where("name","المستندات الرسمية")->where("company_id",$legalData->company_id)->first(),
+                        'folder_id' => Folder::query()->withoutTenancy()->where("name","المستندات الرسمية")->where("company_id",$legalData->company_id)->first()->id,
                         'access_type' => 'public',
                         'company_id' => $legalData->company_id,
                         'management_hierarchy_id' => $legalData->management_hierarchy_id,
