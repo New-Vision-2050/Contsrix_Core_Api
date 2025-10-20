@@ -14,7 +14,7 @@ class FavouriteFilePresenter extends AbstractPresenter
     ) {
     }
 
-    public function getData(): array
+    public function present(bool $isListing = false):array
     {
         return [
             'id' => $this->file->id,
@@ -24,6 +24,7 @@ class FavouriteFilePresenter extends AbstractPresenter
             'status' => $this->file->status,
             'start_date' => $this->file->start_date?->format('Y-m-d'),
             'end_date' => $this->file->end_date?->format('Y-m-d'),
+            'is_favourite' => true, // Always true in favourites list
             'folder' => $this->file->folder ? [
                 'id' => $this->file->folder->id,
                 'name' => $this->file->folder->name

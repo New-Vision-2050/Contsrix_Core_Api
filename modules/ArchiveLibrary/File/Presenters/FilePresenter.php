@@ -14,6 +14,7 @@ class FilePresenter extends AbstractPresenter
 {
     private File $file;
     private static ?array $auditsCache = null;
+    private static ?array $favouritesCache = null;
 
     public function __construct(File $file)
     {
@@ -27,12 +28,14 @@ class FilePresenter extends AbstractPresenter
     {
         // Prime cache before processing collection
         self::primeAuditsCache(collect($collection));
+        self::primeFavouritesCache(collect($collection));
 
         // Process collection normally
         $result = parent::collection($collection, ...$additionalParams);
 
         // Clear cache after processing
         self::clearAuditsCache();
+        self::clearFavouritesCache();
 
         return $result;
     }
@@ -69,6 +72,38 @@ class FilePresenter extends AbstractPresenter
         self::$auditsCache = null;
     }
 
+    /**
+     * Prime the favourites cache with a single query
+     */
+    private static function primeFavouritesCache(Collection $files): void
+    {
+        if ($files->isEmpty() || !auth()->check()) {
+            self::$favouritesCache = [];
+            return;
+        }
+
+        $fileIds = $files->pluck('id')->toArray();
+        $userId = auth()->id();
+
+        // Get all favourited file IDs for current user in a single query
+        $favouritedFileIds = \DB::table('users_file_favourites')
+            ->whereIn('file_id', $fileIds)
+            ->where('user_id', $userId)
+            ->pluck('file_id')
+            ->toArray();
+
+        // Create a map of file_id => is_favourite
+        self::$favouritesCache = array_fill_keys($favouritedFileIds, true);
+    }
+
+    /**
+     * Clear the favourites cache
+     */
+    public static function clearFavouritesCache(): void
+    {
+        self::$favouritesCache = null;
+    }
+
     protected function present(bool $isListing = false): array
     {
         $file =$this->file->getFirstMedia('upload');
@@ -94,6 +129,7 @@ class FilePresenter extends AbstractPresenter
             'file' => $file,
             "can_delete"=>$this->file->management_hierarchy_id ==null ? 1 :0 ,
             "can_update"=>$this->file->management_hierarchy_id ==null ? 1 :0 ,
+            'is_favourite' => $this->isFavourite(),
             'users' => $this->file->users ? $this->file->users->map(fn($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -119,5 +155,24 @@ class FilePresenter extends AbstractPresenter
             ->first();
 
         return $lastAudit ? (new AuditPresenter($lastAudit))->getData() : null;
+    }
+
+    private function isFavourite(): bool
+    {
+        // Return false if user is not authenticated
+        if (!auth()->check()) {
+            return false;
+        }
+
+        // Use cache if available
+        if (self::$favouritesCache !== null) {
+            return isset(self::$favouritesCache[$this->file->id]);
+        }
+
+        // Fallback to direct query if cache not primed (single item presentation)
+        return \DB::table('users_file_favourites')
+            ->where('file_id', $this->file->id)
+            ->where('user_id', auth()->id())
+            ->exists();
     }
 }
