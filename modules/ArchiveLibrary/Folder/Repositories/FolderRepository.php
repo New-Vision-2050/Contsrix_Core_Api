@@ -189,6 +189,9 @@ class FolderRepository extends BaseRepository
             if ($parentId != null) {
                 $foldersQuery->where('parent_id', $parentId);
             }
+            else{
+                $foldersQuery->whereNull('parent_id');
+            }
 
             // Get all folders with files count
             $allFolders = $foldersQuery->get();
@@ -220,6 +223,10 @@ class FolderRepository extends BaseRepository
 
         if ($parentId != null) {
             $filesQuery->where('folder_id', $parentId);
+        }else
+        {
+            $filesQuery->whereNull('folder_id');
+
         }
 
         // Filter by document type (MIME type) if provided
