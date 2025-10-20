@@ -65,11 +65,14 @@ class FileRepository extends BaseRepository
             if ($file ) {
                 if ($fileModel->management_hierarchy_id !=null)
                 {
-                    $fileModel->clearMediaCollection('upload');
-                    $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
+                    throw new CustomException("validation.update-not-successful");
+
                 }
                 else{
-                    throw new CustomException("validation.update-not-successful");
+
+
+                    $fileModel->clearMediaCollection('upload');
+                    $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
                 }
 
             }
