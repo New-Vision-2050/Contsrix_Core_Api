@@ -223,7 +223,7 @@ class FolderRepository extends BaseRepository
 
         if ($parentId != null) {
             $filesQuery->where('folder_id', $parentId);
-        }else
+        }elseif ($parentId==null &&!$hasFileFilters )
         {
             $filesQuery->whereNull('folder_id');
 
