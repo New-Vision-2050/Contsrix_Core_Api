@@ -34,7 +34,7 @@ class FileRepository extends BaseRepository
 
     public function getFile(UuidInterface $id): File
     {
-        return $this->model->withoutTenancy->where([
+        return $this->model->withoutTenancy()->where([
             'id' => $id->toString(),
         ])->first();
     }
