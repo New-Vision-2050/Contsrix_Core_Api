@@ -57,4 +57,4 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/{id}', [FileController::class, 'update'])
         ->permission(Permission::FILE_UPDATE());
 });
-Route::get('/{id}', [FileController::class, 'show'])->middleware(InitializeTenancyByRequestData::class);
+Route::get('/{id}', [FileController::class, 'show']);
