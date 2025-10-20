@@ -19,7 +19,7 @@ class CreateFolderRequest extends FormRequest
             "access_type"=>"required|in:public,private",
             "user_ids"=>"required_if:access_type,private|array",
             "user_ids.*"=>"sometimes|exists:users,id",
-            "file"=>"nullable|mimes:pdf,jpeg,jpg,png,doc,docx",
+            "file"=>"nullable|mimes:jpeg,jpg,png",
             "status"=>"sometimes|integer|in:0,1"
         ];
     }
