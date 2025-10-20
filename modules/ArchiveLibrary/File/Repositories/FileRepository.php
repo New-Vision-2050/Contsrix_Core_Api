@@ -88,7 +88,18 @@ class FileRepository extends BaseRepository
 
     public function deleteFile(UuidInterface $id): bool
     {
-        return $this->delete($id);
+        $fileModel = $this->getFile($id);
+        if ($fileModel->management_hierarchy_id !=null)
+        {
+            throw new CustomException("validation.delete-not-successful");
+
+        }
+        else{
+
+            return $this->delete($id);
+
+        }
+
     }
 
     public function attachUsers(File $file, array $userIds): void
