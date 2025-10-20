@@ -97,17 +97,21 @@ class FileCRUDService
         return $this->repository->cutFile($fileId, $targetFolderId);
     }
 
-    public function shareFile(string $fileId, array $userIds): array
+    public function shareFile(array $fileIds, array $userIds): array
     {
-        $result = $this->repository->shareFile($fileId, $userIds);
+        $result = $this->repository->shareFile($fileIds, $userIds);
 
-        // Generate dummy share URL
-        $shareUrl = config('app.url') . '/api/shared-files/' . $fileId;
+        // Generate share URLs for each file
+        $shareUrls = [];
+        foreach ($result['files'] as $file) {
+            $shareUrls[] = config('app.url') . '/api/shared-files/' . $file->id;
+        }
 
         return [
-            'file' => $result['file'],
-            'share_url' => $shareUrl,
+            'files' => $result['files'],
+            'share_urls' => $shareUrls,
             'shared_with_count' => count($userIds),
+            'files_count' => count($result['files']),
             'new_user_ids' => $result['new_user_ids'],
             'existing_user_ids' => $result['existing_user_ids'],
         ];

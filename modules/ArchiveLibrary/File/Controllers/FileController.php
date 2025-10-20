@@ -171,7 +171,7 @@ class FileController extends Controller
     public function shareFile(ShareFileRequest $request): JsonResponse
     {
         $result = $this->fileService->shareFile(
-            $request->getFileId(),
+            $request->getFileIds(),
             $request->getUserIds()
         );
 
@@ -186,27 +186,32 @@ class FileController extends Controller
             $sharedBy = auth()->user();
             $sharedByName = $sharedBy->name ?? 'A user';
 
-            // Send email notifications only to new users
-            Notification::send(
-                $newUsers,
-                new FileSharedNotification(
-                    $result['share_url'],
-                    $result['file'],
-                    $sharedByName
-                )
-            );
+            // Send notifications for each file to new users
+            foreach ($result['files'] as $index => $file) {
+                $shareUrl = $result['share_urls'][$index] ?? '';
+                
+                Notification::send(
+                    $newUsers,
+                    new FileSharedNotification(
+                        $shareUrl,
+                        $file,
+                        $sharedByName
+                    )
+                );
+            }
 
-            $notificationsSent = $newUsers->count();
+            $notificationsSent = $newUsers->count() * count($result['files']);
         }
 
         return response()->json([
             'status' => true,
             'message' => $notificationsSent > 0
-                ? 'File shared successfully and notifications sent to new users'
-                : 'File shared successfully (no new users to notify)',
+                ? 'Files shared successfully and notifications sent to new users'
+                : 'Files shared successfully (no new users to notify)',
             'data' => [
-                'file' => (new FilePresenter($result['file']))->getData(),
-                'share_url' => $result['share_url'],
+                'files' => FilePresenter::collection($result['files']),
+                'share_urls' => $result['share_urls'],
+                'files_count' => $result['files_count'],
                 'shared_with_count' => $result['shared_with_count'],
                 'new_users_count' => count($result['new_user_ids']),
                 'existing_users_count' => count($result['existing_user_ids']),

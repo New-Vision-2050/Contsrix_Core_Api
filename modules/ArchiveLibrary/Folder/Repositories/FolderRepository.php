@@ -223,7 +223,7 @@ class FolderRepository extends BaseRepository
         }
 
         // Filter by document type (MIME type) if provided
-        if ($documentType !== null) {
+        if ($documentType !== null && $documentType !== 'fav') {
             $mimeTypeMap = [
                 'pdf' => 'application/pdf',
                 'png' => 'image/png',
