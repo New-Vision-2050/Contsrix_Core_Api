@@ -106,7 +106,7 @@ class FileCRUDService
         // Generate share URLs for each file
         $shareUrls = [];
         foreach ($result['files'] as $file) {
-            $shareUrls[] = $url. '/en/shared-files/' . $file->id;
+            $shareUrls[] = $url. '/en/shared-file/' . $file->id;
         }
 
         return [
