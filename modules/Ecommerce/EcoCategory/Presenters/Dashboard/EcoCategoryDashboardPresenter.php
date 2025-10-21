@@ -26,7 +26,7 @@ class EcoCategoryDashboardPresenter extends AbstractPresenter
             'name_ar' => $this->ecoCategory->getTranslation('name', 'ar'),
             'name_en' => $this->ecoCategory->getTranslation('name', 'en'),
             'priority' => $this->ecoCategory->priority ?? 0,
-            'is_active'=>$this->ecoCategory->is_active,
+            'is_active'=>(int) $this->ecoCategory->is_active,
             "file"=>$media != null ? (new MediaPresenter($media))->getData():null,     
             'parent' => $this->ecoCategory->parent
                 ? [
