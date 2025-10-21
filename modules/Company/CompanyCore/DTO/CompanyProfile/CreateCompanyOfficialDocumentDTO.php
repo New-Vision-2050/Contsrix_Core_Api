@@ -12,7 +12,7 @@ class CreateCompanyOfficialDocumentDTO
     public function __construct(
         private ManagementHierarchy $managementHierarchy,
         private ?string        $name,
-        private string        $description,
+        private ?string        $description,
         private string        $documentNumber,
         private string        $startDate,
         private string        $endDate,

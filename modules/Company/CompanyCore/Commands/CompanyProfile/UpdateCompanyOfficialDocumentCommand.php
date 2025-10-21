@@ -11,7 +11,7 @@ class UpdateCompanyOfficialDocumentCommand
     public function __construct(
         private UuidInterface $id,
         private ?string        $name,
-        private string        $description,
+        private ?string        $description,
         private string        $documentNumber,
         private string        $startDate,
         private string        $endDate,
