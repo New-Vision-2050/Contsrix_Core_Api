@@ -12,7 +12,7 @@ use Modules\Setting\Models\Setting;
 use Ramsey\Uuid\Uuid;
 use Ranium\SeedOnce\Traits\SeedOnce;
 
-class DefaultIdentifierSeederTableSeeder extends Seeder
+class UnitSeederTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
