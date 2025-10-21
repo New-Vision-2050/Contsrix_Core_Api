@@ -13,7 +13,6 @@ use Modules\Ecommerce\EcoProduct\Requests\Dashboard\CreateEcoProductDashboardReq
 use Modules\Ecommerce\EcoProduct\Requests\Dashboard\DeleteEcoProductDashboardRequest;
 use Modules\Ecommerce\EcoProduct\Requests\Dashboard\GetEcoProductListDashboardRequest;
 use Modules\Ecommerce\EcoProduct\Requests\Dashboard\GetEcoProductDashboardRequest;
-use Modules\Ecommerce\EcoProduct\Requests\Dashboard\UpdateEcoProductDashboardRequest;
 use Modules\Ecommerce\EcoProduct\Services\Dashboard\EcoProductDashboardCRUDService;
 use Modules\Ecommerce\EcoProduct\Requests\Dashboard\ExportEcoProductDashboardRequest;
 use Modules\Ecommerce\EcoProduct\Handlers\Dashboard\UpdateEcoProductDashboardHandler;
@@ -52,23 +51,36 @@ class EcoProductDashboardController extends Controller
 
     public function store(CreateEcoProductDashboardRequest $request): JsonResponse
     {
-        $createdItem = $this->ecoProductService->create($request->createCreateEcoProductDTO());
-
+        
+        $createdItem = $this->ecoProductService->create($request->createNewEcoProductDTO());
+       
         $presenter = new EcoProductDashboardDetailsPresenter($createdItem);
 
         return Json::item($presenter->getData());
     }
 
-    public function update(UpdateEcoProductDashboardRequest $request): JsonResponse
+    public function update(CreateEcoProductDashboardRequest $request, string $id): JsonResponse
     {
-        $command = $request->createUpdateEcoProductCommand();
-        $this->updateEcoProductHandler->handle($command);
+        try {
+            // Find the product
+            $product = $this->ecoProductService->get(Uuid::fromString($id));
+            
+            if (!$product) {
+                return Json::error('المنتج غير موجود', 404);
+            }
 
-        $item = $this->ecoProductService->get($command->getId());
+            // Create DTO from request
+            $dto = $request->createNewEcoProductDTO();
+            
+            // Update the product
+            $updatedProduct = $this->ecoProductService->update($product, $dto);
 
-        $presenter = new EcoProductDashboardDetailsPresenter($item);
+            $presenter = new EcoProductDashboardDetailsPresenter($updatedProduct);
 
-        return Json::item($presenter->getData());
+            return Json::item($presenter->getData());
+        } catch (\Exception $e) {
+            return Json::error('فشل في تحديث المنتج: ' . $e->getMessage(), 500);
+        }
     }
 
     public function delete(DeleteEcoProductDashboardRequest $request): JsonResponse
@@ -76,6 +88,24 @@ class EcoProductDashboardController extends Controller
         $this->deleteEcoProductHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::success();
+    }
+
+    /**
+     * Toggle product visibility (active/inactive)
+     */
+    public function toggleVisibility(string $id): JsonResponse
+    {
+        try {
+            $result = $this->ecoProductService->toggleVisibility(Uuid::fromString($id));
+            
+            return Json::item([
+                'message' => $result['message'],
+                'is_visible' => $result['is_visible'],
+                'status_text' => $result['status_text']
+            ]);
+        } catch (\Exception $e) {
+            return Json::error('فشل في تغيير حالة المنتج: ' . $e->getMessage(), 500);
+        }
     }
 
     public function export(ExportEcoProductDashboardRequest $request)
@@ -90,6 +120,16 @@ class EcoProductDashboardController extends Controller
     public function getStatistics(): JsonResponse
     {
         $statistics = $this->ecoProductService->getProductStatistics();
+
+        return Json::item($statistics);
+    }
+
+    /**
+     * Get enhanced product statistics with new fields
+     */
+    public function getEnhancedStatistics(): JsonResponse
+    {
+        $statistics = $this->ecoProductService->getEnhancedProductStatistics();
 
         return Json::item($statistics);
     }

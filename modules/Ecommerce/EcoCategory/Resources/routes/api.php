@@ -12,5 +12,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     
     Route::get('/{id}', [EcoCategoryDashboardController::class, 'show']);
     Route::post('/{id}', [EcoCategoryDashboardController::class, 'update']);
+    Route::patch('/{id}/toggle-active', [EcoCategoryDashboardController::class, 'toggleActive']);
     Route::delete('/{id}', [EcoCategoryDashboardController::class, 'delete']);
 });

@@ -35,4 +35,25 @@ class EcoBrandCRUDDashboardService
             id: $id,
         );
     }
+
+    /**
+     * Toggle brand active status
+     */
+    public function toggleActive(UuidInterface $id): array
+    {
+        $brand = $this->get($id);
+        
+        // Toggle the is_active status
+        $newStatus = !$brand->is_active;
+        $brand->update(['is_active' => $newStatus]);
+
+        $statusText = $newStatus ? 'نشط' : 'غير مفعل';
+        
+        return [
+            'message' => "تم تغيير حالة العلامة التجارية إلى: {$statusText}",
+            'is_active' => $newStatus,
+            'status_text' => $statusText,
+            'brand' => $brand
+        ];
+    }
 }
