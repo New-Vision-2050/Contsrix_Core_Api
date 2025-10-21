@@ -24,7 +24,7 @@ class EcoCategory extends Model implements HasMedia
     use InteractsWithMedia;
     //use SoftDeletes;
 
-    public array $translatable = ['name', 'description'];
+    public array $translatable = ['name'];
 
     public $incrementing = false;
 
@@ -33,7 +33,6 @@ class EcoCategory extends Model implements HasMedia
     protected $fillable = [
         'company_id',
         'name',
-        'description',
         'parent_id',
         'priority',
         'is_active'
