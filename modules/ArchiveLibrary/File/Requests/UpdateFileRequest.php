@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ArchiveLibrary\File\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Ramsey\Uuid\Uuid;
 use Modules\ArchiveLibrary\File\Commands\UpdateFileCommand;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
@@ -15,7 +16,14 @@ class UpdateFileRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'reference_number' => 'required|unique:files,reference_number,' . $this->route('id'),
+            'reference_number' => [
+                'required',
+                Rule::unique('files', 'reference_number')
+                    ->ignore($this->route('id'))
+                    ->where(function ($query) {
+                        return $query->where('company_id', tenant('id'));
+                    })
+            ],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             "access_type" => "required|in:private,public",
