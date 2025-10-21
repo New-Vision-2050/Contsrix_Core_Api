@@ -57,7 +57,7 @@ class UpdateEcoCategoryDashboardRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
             perentId: $this->get('parent_id'),
-            priority: $this->get('priority'),
+            priority: $this->get('priority') ? (int)$this->get('priority') : null,
         );
     }
 }

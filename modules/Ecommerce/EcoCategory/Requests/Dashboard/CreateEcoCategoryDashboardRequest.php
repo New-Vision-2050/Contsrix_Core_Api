@@ -72,7 +72,7 @@ class CreateEcoCategoryDashboardRequest extends FormRequest
             companyId: Uuid::fromString(tenant("id")),
             name: $validatedData['name'],
             parentId: isset($validatedData['parent_id']) ? Uuid::fromString($validatedData['parent_id']) : null,
-            priority: $validatedData['priority'] ?? 0
+            priority: (int)($validatedData['priority'] ?? 0)
         );
     }
 }
