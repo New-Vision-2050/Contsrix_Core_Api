@@ -29,7 +29,7 @@ class EcoBrandDashboardPresenter extends AbstractPresenter
             'description' => $this->ecoBrand->description,
             'description_ar' => $this->ecoBrand->getTranslation('description', 'ar'),
             'description_en' => $this->ecoBrand->getTranslation('description', 'en'),
-            
+            'is_active'=>$this->ecoBrand->is_active,
             // Brand images
             "file" => $media != null ? (new MediaPresenter($media))->getData() : null,
         ];
