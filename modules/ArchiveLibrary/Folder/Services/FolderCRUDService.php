@@ -19,7 +19,7 @@ class FolderCRUDService
 
     public function create(CreateFolderDTO $createFolderDTO): Folder
     {
-         return $this->repository->createFolder($createFolderDTO->toArray());
+         return $this->repository->createFolder($createFolderDTO->toArray(),$createFolderDTO->getUserIds(),$createFolderDTO->getFile());
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -120,6 +120,84 @@ class FolderCRUDService
             // If no parentId, list top-level folders
             return $this->showFolders($userId, $page, $perPage);
         }
+    }
+
+    public function getFoldersAndFiles(
+        $userId,
+        ?string $parentId,
+        int $page = 1,
+        int $perPage = 10,
+        ?string $documentType = null,
+        ?bool $isFavourite = null,
+        ?string $endDate = null,
+        ?string $endDateFrom = null,
+        ?string $endDateTo = null,
+        ?string $search = null,
+        string $searchType = 'all',
+        ?int $branchId = null,
+        ?string $sort = null
+    )
+    {
+        return $this->repository->getFoldersAndFilesByParent(
+            $parentId,
+            $userId,
+            $page,
+            $perPage,
+            $documentType,
+            $isFavourite,
+            $endDate,
+            $endDateFrom,
+            $endDateTo,
+            $search,
+            $searchType,
+            $branchId,
+            $sort
+        );
+    }
+
+    public function getUsersAllowedByFolderId($folderId)
+    {
+
+        return $this->repository->getUsersAllowedByFolderId($folderId);
+    }
+
+    /**
+     * Get audit logs based on type
+     * @param UuidInterface $id - Folder or File ID
+     * @param string $type - 'folder' or 'file'
+     */
+    public function getFolderAudits(UuidInterface $id, string $type = 'folder')
+    {
+        if ($type === 'file') {
+            // Get audits for a specific file only
+            return \Modules\Audit\Models\Audit::where('auditable_id', $id)
+                ->where('auditable_type', \Modules\ArchiveLibrary\File\Models\File::class)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        // Type is 'folder' - get folder and all its files audits
+        $folder = $this->repository->getFolder($id);
+
+        // Get folder audits
+        $folderAudits = \Modules\Audit\Models\Audit::where('auditable_id', $folder->id)
+            ->where('auditable_type', \Modules\ArchiveLibrary\Folder\Models\Folder::class)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get all file IDs for this folder
+        $fileIds = $folder->files()->pluck('id')->toArray();
+
+        // Get audits for all files in this folder
+        $fileAudits = collect();
+        if (!empty($fileIds)) {
+            $fileAudits = \Modules\Audit\Models\Audit::whereIn('auditable_id', $fileIds)
+                ->where('auditable_type', \Modules\ArchiveLibrary\File\Models\File::class)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        return $folderAudits->merge($fileAudits)->sortByDesc('created_at')->values();
     }
 
 }

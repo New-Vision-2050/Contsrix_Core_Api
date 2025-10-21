@@ -4,6 +4,11 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Database\Seeders\CompanyPackageAssignmentSeeder;
+use Database\Seeders\ArchiveLibraryStorageLimitSeeder;
+use Database\Seeders\ArchiveLibraryFolderLimitSeeder;
+use Modules\ArchiveLibrary\Folder\Database\Seeders\OfficialDocumentsFolderSeeder;
+use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
+use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
@@ -31,6 +36,11 @@ class TenantDatabaseSeeder extends Seeder
 
         $this->call(CompanyPackageAssignmentSeeder::class);
 
+        // Set default storage limit for archive library (1000 MB for files, 1000 folders)
+        $this->call(ArchiveLibraryStorageLimitSeeder::class);
+        $this->call(ArchiveLibraryFolderLimitSeeder::class);
+        $this->call(OfficialDocumentsFolderSeeder::class);
+
         $this->call(JobTitleModulesSeederTableSeeder::class);
         $this->call(SettingSeeder::class);
         $this->call(DriverTableSeeder::class);
@@ -41,6 +51,10 @@ class TenantDatabaseSeeder extends Seeder
 
         // Create default Annual Year leave policy for new companies
         $this->call(LeavePolicySeeder::class);
+        $this->call(DocumentTypeSeederTableSeeder::class);
+
+        $this->call(DefaultNotificationSettingsSeeder::class);
+
 
 //        $this->call(MainPackageSeeder::class);
     }

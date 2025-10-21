@@ -25,6 +25,7 @@ class ProgramDatabaseSeeder extends Seeder
             ['en' => 'settings', 'ar' => 'الإعدادت'],
             ['en' => 'users', 'ar' => 'المستخدمين'],
             ['en' => 'client relations', 'ar' => 'علاقات العملاء'],
+            ['en' => 'library docs', 'ar' => 'مكتبة البيانات'],
         ];
 
         foreach ($programs as $programName) {

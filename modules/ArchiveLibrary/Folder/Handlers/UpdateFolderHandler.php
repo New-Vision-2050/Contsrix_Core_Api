@@ -16,6 +16,11 @@ class UpdateFolderHandler
 
     public function handle(UpdateFolderCommand $updateFolderCommand)
     {
-        $this->repository->updateFolder($updateFolderCommand->getId(), $updateFolderCommand->toArray());
+        $this->repository->updateFolder(
+            $updateFolderCommand->getId(),
+            $updateFolderCommand->toArray(),
+            $updateFolderCommand->getUserIds(),
+            $updateFolderCommand->getFile()
+        );
     }
 }

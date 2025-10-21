@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\EcoLanguage\Controllers\EcoLanguageController;
 
-Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(callback: function () {
+Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [EcoLanguageController::class, 'index']);
     Route::post('/', [EcoLanguageController::class, 'upsert']);
     Route::post('/export', [EcoLanguageController::class, 'export']);

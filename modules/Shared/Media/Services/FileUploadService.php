@@ -13,7 +13,9 @@ class FileUploadService
         string $filePath = 'default',
         string $collectionName = 'upload',
         string $visibility = 'public',
-        ?string $folderId = null
+        ?string $folderId = null,
+        ?string $fileId = null,
+
     ) {
         $disk = $visibility === 'public' ? 's3_public' : 's3_private';
 
@@ -43,11 +45,14 @@ class FileUploadService
                 ->storingConversionsOnDisk($disk)
                 ->withCustomProperties([
                     'folder_id' => $folderId,
+                    'file_id'=>$fileId,
                     'file_path' => $filePath,
                     'disk' => $disk,
                 ])
                 ->preservingOriginal()
                 ->toMediaCollection($collectionName, $disk);
+            $media->file_id = $fileId;
+            $media->save();
 
             $allMedia->push($media);
         }

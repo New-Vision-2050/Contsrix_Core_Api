@@ -16,6 +16,12 @@ class UpdateFileHandler
 
     public function handle(UpdateFileCommand $updateFileCommand)
     {
-        $this->repository->updateFile($updateFileCommand->getId(), $updateFileCommand->toArray());
+        $this->repository->updateFile($updateFileCommand->getId(), $updateFileCommand->toArray(), $updateFileCommand->getFile());
+
+        // Sync users if provided
+        if (!empty($updateFileCommand->getUserIds())) {
+            $file = $this->repository->getFile($updateFileCommand->getId());
+            $this->repository->syncUsers($file, $updateFileCommand->getUserIds());
+        }
     }
 }

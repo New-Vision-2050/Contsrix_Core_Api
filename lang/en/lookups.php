@@ -27,4 +27,9 @@ return [
     "whatsapp" => "whatsapp",
     "social" => "social",
 
+    // Company Widget Titles
+    "total_companies" => "Total Companies",
+    "active_companies" => "Active Companies",
+    "incomplete_data_companies" => "Incomplete Data Companies",
+    "nearly_expiring_companies" => "Nearly Expiring Companies",
 ];

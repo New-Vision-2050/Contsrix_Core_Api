@@ -11,18 +11,21 @@ use Modules\ActivityLog\Models\ActivityLog;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyRegistrationType\Models\CompanyRegistrationType;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\DocumentType\Models\DocumentType;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 // use BasePackage\Shared\Traits\HasTranslations;
 
-class CompanyOfficialDocument extends Model implements HasMedia
+class CompanyOfficialDocument extends Model implements HasMedia, Auditable
 {
     use UuidTrait;
     use BaseFilterable;
     use BelongsToPrimaryModel;
     use InteractsWithMedia;
+    use \OwenIt\Auditing\Auditable;
 
     // use HasTranslations;
     // use SoftDeletes;
@@ -60,13 +63,14 @@ class CompanyOfficialDocument extends Model implements HasMedia
 
     public function branch()
     {
-        return $this->belongsTo(ManagementHierarchy::class,"management_hierarchy_id","id");
+        return $this->belongsTo(ManagementHierarchy::class, "management_hierarchy_id", "id");
     }
 
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";
     }
+
     public function getMediaUrlsAttribute()
     {
         return $this->media->map(fn($media) => $media->getFullUrl());
@@ -74,14 +78,15 @@ class CompanyOfficialDocument extends Model implements HasMedia
 
     public function documentType()
     {
-        return $this->belongsTo(CompanyRegistrationType::class, 'document_type_id', 'id');
+        return $this->belongsTo(DocumentType::class, 'document_type_id', 'id');
     }
 
     public function activityLogs()
     {
         return $this->morphMany(ActivityLog::class, "requestable");
     }
-    public function  companyLegalData()
+
+    public function companyLegalData()
     {
         return $this->belongsTo(CompanyLegalData::class);
     }

@@ -29,6 +29,7 @@ class UserCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
+            conditions: ["company_id"=>tenant("id")],
             page: $page,
             perPage: $perPage,
         );

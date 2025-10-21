@@ -8,6 +8,7 @@ return [
 
         // System Configuration
         'IDENTIFIER_LIST' => 'settings.program-settings*identifier.list',
+        'LOG_LIST' => 'settings.log*log.list',
 
         // Login Way Management
         'LOGIN_WAY_CREATE' => 'settings.program-settings*login-way.create',

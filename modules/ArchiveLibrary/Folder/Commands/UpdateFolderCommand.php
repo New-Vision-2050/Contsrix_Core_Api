@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\Folder\Commands;
 
+use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 
 class UpdateFolderCommand
@@ -11,7 +12,12 @@ class UpdateFolderCommand
     public function __construct(
         private UuidInterface $id,
         private string $name,
-        private ?string $parentId
+        private ?string $parentId,
+        private ?string $password,
+        private string $accessType,
+        private array $userIds = [],
+        private ?UploadedFile $file,
+        private ?int $status = null
     ) {
     }
 
@@ -20,19 +26,52 @@ class UpdateFolderCommand
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }
-    public function getparentId(): ?string
+
+    public function getParentId(): ?string
     {
-        return $this->parentId ;
+        return $this->parentId;
     }
+
+    public function getPassword(): ?string
+    {
+        return $this->password;
+    }
+
+    public function getAccessType(): string
+    {
+        return $this->accessType;
+    }
+
+    public function getUserIds(): array
+    {
+        return $this->userIds;
+    }
+
     public function toArray(): array
     {
-        return array_filter([
+        $data = [
             'name' => $this->name,
-            'parent_id' => $this->parentId
-        ]);
+            'parent_id' => $this->parentId,
+            'access_type' => $this->accessType,
+        ];
+
+        if($this->password !== null) {
+            $data['password'] = $this->password;
+        }
+
+        if($this->status !== null) {
+            $data['status'] = $this->status;
+        }
+
+        return $data;
+    }
+
+    public function getFile()
+    {
+        return $this->file;
     }
 }

@@ -13,8 +13,8 @@ class SubEntityDatabaseSeeder extends Seeder
     use SeedOnce;
     public function run(): void
     {
-        SubEntity::factory()
-            ->count(50)
-            ->create();
+//        SubEntity::factory()
+//            ->count(50)
+//            ->create();
     }
 }

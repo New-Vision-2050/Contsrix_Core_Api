@@ -26,6 +26,29 @@ class AuditRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
+    public function groupedBy()
+    {
+        $limit = request()->has('limit') ? request()->limit : 10;
+        return Audit::query()->orderByDesc('id')
+            ->when(request()->has('user_id'), function ($q) {
+                $q->where('user_id', request()->user_id);
+            })
+            ->when(request()->has('type') && request()->type !=null, function ($q) {
+                $q->where('event', request()->type);
+            })
+
+            ->when((!auth()->user()->hasRole("super-admin"))&&(!auth()->user()->hasRole("admin"))&&(!auth()->user()->is_owner), function ($q) {
+                $q->where('user_id', request()->user_id);
+            })
+            ->when(request()->has('time_from') && request()->time_from !=null , function ($q) {
+                $q->whereDate('created_at', '>=', request()->time_from);
+            })
+            ->when(request()->has('time_to')&& request()->time_to !=null, function ($q) {
+                $q->whereDate('created_at', '<=', request()->time_to);
+            })
+            ->paginate($limit)->getCollection()->groupBy(fn($pv) => $pv->created_at->format('Y-m-d'));
+    }
+
     public function getAudit(UuidInterface $id): Audit
     {
         return $this->findOneByOrFail([

@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
+
+use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
+use Modules\Shared\Media\Presenters\MediaPresenter;
+
+class EcoProductDashboardPresenter extends AbstractPresenter
+{
+    private EcoProduct $ecoProduct;
+
+    public function __construct(EcoProduct $ecoProduct)
+    {
+        $this->ecoProduct = $ecoProduct;
+    }
+
+    protected function present(bool $isListing = false): array
+    {
+    
+        return [
+            'id' => $this->ecoProduct->id,
+            'name' => $this->ecoProduct->name,
+            'price' => $this->ecoProduct->price,
+            'stock' => $this->ecoProduct->stock,
+            'sku' => $this->ecoProduct->sku,
+            'is_visible' => (int)$this->ecoProduct->is_visible,
+        ];
+    }
+}

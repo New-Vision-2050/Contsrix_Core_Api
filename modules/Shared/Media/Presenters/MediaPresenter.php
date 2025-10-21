@@ -21,6 +21,7 @@ class MediaPresenter
             'name' => $this->media->name,
             'mime_type' => $this->media->mime_type,
             'type' => $this->media->type,
+            "size"=>$this->media->size,
         ];
     }
 

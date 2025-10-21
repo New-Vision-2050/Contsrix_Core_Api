@@ -14,7 +14,13 @@ class CreateFolderRequest extends FormRequest
     {
         return [
             'name' => 'required|string',
-            'parent_id'=>'nullable'
+            'parent_id'=>'nullable',
+            'password'=>'nullable',
+            "access_type"=>"required|in:public,private",
+            "user_ids"=>"required_if:access_type,private|array",
+            "user_ids.*"=>"sometimes|exists:users,id",
+            "file"=>"nullable|mimes:jpeg,jpg,png",
+            "status"=>"sometimes|integer|in:0,1"
         ];
     }
 
@@ -23,6 +29,11 @@ class CreateFolderRequest extends FormRequest
         return new CreateFolderDTO(
             name: $this->get('name'),
             parentId: $this->get('parent_id'),
+            password: $this->get('password'),
+            accessType: $this->get('access_type'),
+            userIds: $this->get('user_ids',[]),
+            file: $this->file('file'),
+            status: (int) $this->get('status', 1)
         );
     }
 }
