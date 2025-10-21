@@ -18,7 +18,8 @@ class CopyFileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file_id' => 'required|uuid|exists:files,id',
+            'file_ids' => 'required|array|min:1',
+            'file_ids.*' => 'required|uuid|exists:files,id',
             'folder_id' => 'nullable|uuid|exists:folders,id',
         ];
     }
@@ -26,17 +27,20 @@ class CopyFileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'file_id.required' => 'File ID is required',
-            'file_id.uuid' => 'File ID must be a valid UUID',
-            'file_id.exists' => 'File does not exist',
+            'file_ids.required' => 'File IDs are required',
+            'file_ids.array' => 'File IDs must be an array',
+            'file_ids.min' => 'At least one file ID is required',
+            'file_ids.*.required' => 'Each file ID is required',
+            'file_ids.*.uuid' => 'Each file ID must be a valid UUID',
+            'file_ids.*.exists' => 'One or more files do not exist',
             'folder_id.uuid' => 'Folder ID must be a valid UUID',
             'folder_id.exists' => 'Folder does not exist',
         ];
     }
 
-    public function getFileId(): UuidInterface
+    public function getFileIds(): array
     {
-        return Uuid::fromString($this->input('file_id'));
+        return $this->input('file_ids', []);
     }
 
     public function getFolderId(): ?UuidInterface

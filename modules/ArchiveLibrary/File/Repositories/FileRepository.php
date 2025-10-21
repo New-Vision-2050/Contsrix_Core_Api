@@ -188,63 +188,76 @@ class FileRepository extends BaseRepository
             ->count();
     }
 
-    public function copyFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    public function copyFile(array $fileIds, ?UuidInterface $targetFolderId): array
     {
         try {
             DB::beginTransaction();
 
-            $originalFile = $this->getFile($fileId);
+            $copiedFiles = [];
 
-            // Create a copy of the file
-            $copiedFile = $this->create([
-                'name' => $originalFile->name . ' (Copy)',
-                'reference_number' => $originalFile->reference_number,
-                'start_date' => $originalFile->start_date,
-                'end_date' => $originalFile->end_date,
-                'folder_id' => $targetFolderId?->toString(),
-                'access_type' => $originalFile->access_type,
-            ]);
+            foreach ($fileIds as $fileId) {
+                $originalFile = $this->getFile(\Ramsey\Uuid\Uuid::fromString($fileId));
 
-            // Copy media files
-            foreach ($originalFile->getMedia('upload') as $media) {
-                $copiedFile->addMediaFromUrl($media->getFullUrl())
-                    ->toMediaCollection('upload');
-            }
+                // Create a copy of the file
+                $copiedFile = $this->create([
+                    'name' => $originalFile->name . ' (Copy)',
+                    'reference_number' => $originalFile->reference_number,
+                    'start_date' => $originalFile->start_date,
+                    'end_date' => $originalFile->end_date,
+                    'folder_id' => $targetFolderId?->toString(),
+                    'access_type' => $originalFile->access_type,
+                ]);
 
-            // Copy user permissions
-            $userIds = $originalFile->users->pluck('id')->toArray();
-            if (!empty($userIds)) {
-                $this->attachUsers($copiedFile, $userIds);
+                // Copy media files
+                foreach ($originalFile->getMedia('upload') as $media) {
+                    $copiedFile->addMediaFromUrl($media->getFullUrl())
+                        ->toMediaCollection('upload');
+                }
+
+                // Copy user permissions
+                $userIds = $originalFile->users->pluck('id')->toArray();
+                if (!empty($userIds)) {
+                    $this->attachUsers($copiedFile, $userIds);
+                }
+
+                $copiedFiles[] = $copiedFile->fresh();
             }
 
             DB::commit();
 
-            return $copiedFile;
+            return $copiedFiles;
         } catch (\Exception $exception) {
             DB::rollBack();
             throw new CustomException($exception->getMessage());
         }
     }
 
-    public function cutFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    public function cutFile(array $fileIds, ?UuidInterface $targetFolderId): array
     {
         try {
             DB::beginTransaction();
 
-            $file = $this->getFile($fileId);
+            $movedFiles = [];
 
-            // Update folder_id to move the file
-            $this->update($fileId, [
-                'folder_id' => $targetFolderId?->toString(),
-            ]);
+            foreach ($fileIds as $fileId) {
+                $fileUuid = \Ramsey\Uuid\Uuid::fromString($fileId);
+                $file = $this->getFile($fileUuid);
 
-            // Update user permissions with new folder_id
-            UserFilePermission::where('file_id', $fileId->toString())
-                ->update(['folder_id' => $targetFolderId?->toString()]);
+                // Update folder_id to move the file
+                $this->update($fileUuid, [
+                    'folder_id' => $targetFolderId?->toString(),
+                ]);
+
+                // Update user permissions with new folder_id
+                UserFilePermission::where('file_id', $fileId)
+                    ->update(['folder_id' => $targetFolderId?->toString()]);
+
+                $movedFiles[] = $this->getFile($fileUuid);
+            }
 
             DB::commit();
 
-            return $this->getFile($fileId);
+            return $movedFiles;
         } catch (\Exception $exception) {
             DB::rollBack();
             throw new CustomException($exception->getMessage());
