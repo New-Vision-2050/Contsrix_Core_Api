@@ -57,7 +57,7 @@ use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder
 use Modules\Shared\Payment\Database\Seeders\PaymentModulesSeederTableSeeder;
 use Modules\Shared\Payment\Models\Payment;
 use Modules\UserInfo\UserProfessionalData\Database\seeders\SyncUserIdsInUserProfessionalDataSeeder;
-
+use Modules\Unit\Database\Seeders\UnitSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -135,5 +135,6 @@ class DatabaseSeeder extends Seeder
         $this->call(DocumentTypeSeederTableSeeder::class);
 
         $this->call(DefaultNotificationSettingsSeeder::class);
+        $this->call(UnitSeederTableSeeder::class);
     }
 }
