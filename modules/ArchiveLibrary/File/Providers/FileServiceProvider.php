@@ -6,6 +6,8 @@ namespace Modules\ArchiveLibrary\File\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\ArchiveLibrary\File\Models\File;
+use Modules\ArchiveLibrary\File\Observers\FileObserver;
 
 class FileServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +21,9 @@ class FileServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        
+        // Register File observer for automatic storage limit tracking
+        File::observe(FileObserver::class);
     }
 
     public function register(): void
