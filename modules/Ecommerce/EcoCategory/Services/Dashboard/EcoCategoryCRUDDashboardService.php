@@ -38,6 +38,27 @@ class EcoCategoryCRUDDashboardService
     }
 
     /**
+     * Toggle category active status
+     */
+    public function toggleActive(UuidInterface $id): array
+    {
+        $category = $this->get($id);
+        
+        // Toggle the is_active status
+        $newStatus = !$category->is_active;
+        $category->update(['is_active' => $newStatus]);
+
+        $statusText = $newStatus ? 'نشط' : 'غير مفعل';
+        
+        return [
+            'message' => "تم تغيير حالة التصنيف إلى: {$statusText}",
+            'is_active' => $newStatus,
+            'status_text' => $statusText,
+            'category' => $category
+        ];
+    }
+
+    /**
      * Get category statistics for dashboard cards
      */
     public function getCategoryStatistics(): array

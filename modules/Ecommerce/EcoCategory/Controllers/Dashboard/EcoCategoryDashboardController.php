@@ -78,6 +78,24 @@ class EcoCategoryDashboardController extends Controller
     }
 
     /**
+     * Toggle category active status
+     */
+    public function toggleActive(string $id): JsonResponse
+    {
+        try {
+            $result = $this->ecoCategoryService->toggleActive(Uuid::fromString($id));
+            
+            return Json::item([
+                'message' => $result['message'],
+                'is_active' => $result['is_active'],
+                'status_text' => $result['status_text']
+            ]);
+        } catch (\Exception $e) {
+            return Json::error('فشل في تغيير حالة التصنيف: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get category statistics cards for dashboard
      */
     public function getStatistics(): JsonResponse

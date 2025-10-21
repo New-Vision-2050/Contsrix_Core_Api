@@ -33,10 +33,12 @@ class EcoBrand extends Model implements HasMedia
         'name',
         'description',
         'company_id',
+        'is_active',
     ];
 
     protected $casts = [
         'id' => 'string',
+        'is_active' => 'boolean',
     ];
 
     protected static function newFactory(): EcoBrandFactory

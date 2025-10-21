@@ -75,4 +75,22 @@ class EcoBrandDashboardController extends Controller
 
         return Json::deleted();
     }
+
+    /**
+     * Toggle brand active status
+     */
+    public function toggleActive(string $id): JsonResponse
+    {
+        try {
+            $result = $this->ecoBrandService->toggleActive(Uuid::fromString($id));
+            
+            return Json::item([
+                'message' => $result['message'],
+                'is_active' => $result['is_active'],
+                'status_text' => $result['status_text']
+            ]);
+        } catch (\Exception $e) {
+            return Json::error('فشل في تغيير حالة العلامة التجارية: ' . $e->getMessage(), 500);
+        }
+    }
 }
