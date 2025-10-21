@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ArchiveLibrary\File\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Ramsey\Uuid\Uuid;
 use Modules\ArchiveLibrary\File\DTO\CreateFileDTO;
 
@@ -14,7 +15,12 @@ class CreateFileRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'reference_number' => 'required|unique:files,reference_number',
+            'reference_number' => [
+                'required',
+                Rule::unique('files', 'reference_number')->where(function ($query) {
+                    return $query->where('company_id', tenant('id'));
+                })
+            ],
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'user_ids' => 'required_if:access_type,private|array',
