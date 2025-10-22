@@ -175,6 +175,6 @@ class FolderPresenter extends AbstractPresenter
 
 
 
-        return (int) $totalSize+$totalSizeDirect;
+        return  $totalSize+$totalSizeDirect;
     }
 }
