@@ -52,6 +52,9 @@ class CreateEcoProductNewDTO
         public readonly ?array $mainPhoto,              // Photo data
         public readonly ?array $otherPhotos,            // Array of photo data
         
+        // Video
+        public readonly ?string $videoUrl,              // Video URL
+        
         // SEO
         public readonly ?string $metaTitle,
         public readonly ?string $metaDescription,
@@ -86,6 +89,7 @@ class CreateEcoProductNewDTO
             'is_visible' => $this->isVisible,
             'main_photo' => $this->mainPhoto,
             'other_photos' => $this->otherPhotos,
+            'video_url' => $this->videoUrl,
             'meta_title' => $this->metaTitle,
             'meta_description' => $this->metaDescription,
             'meta_keywords' => $this->metaKeywords,

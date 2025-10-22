@@ -76,6 +76,9 @@ class EcoProductDashboardDetailsPresenter extends AbstractPresenter
             'main_photo' => $this->ecoProduct->main_photo,
             'other_photos' => $this->ecoProduct->other_photos,
             
+            // Video
+            'video_url' => $this->ecoProduct->video_url,
+            
             // SEO (stored in main table)
             'meta_title' => $this->ecoProduct->meta_title,
             'meta_description' => $this->ecoProduct->meta_description,

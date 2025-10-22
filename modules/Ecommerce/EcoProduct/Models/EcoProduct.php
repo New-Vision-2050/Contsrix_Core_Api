@@ -68,6 +68,7 @@ class EcoProduct extends Model implements HasMedia
         'is_visible',
         'main_photo', // JSON field
         'other_photos', // JSON array
+        'video_url', // Video URL field
         'meta_title',
         'meta_description',
         'meta_keywords',
