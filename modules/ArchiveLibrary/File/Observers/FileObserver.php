@@ -105,7 +105,7 @@ class FileObserver
             if ($permissionLimit->actual_limit < $fileSize) {
                 // Delete the file record since we can't store it
                 $file->delete();
-                
+
                 throw new UnauthorizedException(
                     403,
                     "File size ({$fileSize} MB) exceeds remaining storage limit ({$permissionLimit->actual_limit} MB). File was not saved."
@@ -184,7 +184,7 @@ class FileObserver
                     );
                 }
                 $permissionLimit->decreaseLimit($sizeDifference);
-                
+
                 Log::info('File storage limit decreased on update', [
                     'file_id' => $file->id,
                     'size_difference_mb' => $sizeDifference,
@@ -193,7 +193,7 @@ class FileObserver
             } elseif ($sizeDifference < 0) {
                 // New file is smaller - free up storage
                 $permissionLimit->increaseLimit(abs($sizeDifference));
-                
+
                 Log::info('File storage limit increased on update', [
                     'file_id' => $file->id,
                     'size_difference_mb' => abs($sizeDifference),
@@ -267,17 +267,17 @@ class FileObserver
     /**
      * Get file size in MB from media or mediaFile
      */
-    private function getFileSizeInMB(File $file): int
+    private function getFileSizeInMB(File $file)
     {
         // Try to get from Spatie media first (direct uploads)
         $media = $file->getFirstMedia();
         if ($media && $media->size) {
-            return (int) ceil($media->size / (1024 * 1024));
+            return round($media->size / (1024 * 1024),2);
         }
 
         // Fallback to mediaFile relation (integrated files)
         if ($file->mediaFile && $file->mediaFile->size) {
-            return (int) ceil($file->mediaFile->size / (1024 * 1024));
+            return  round($file->mediaFile->size / (1024 * 1024),2);
         }
 
         return 0;
