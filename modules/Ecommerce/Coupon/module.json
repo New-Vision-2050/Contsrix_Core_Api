@@ -1,0 +1,14 @@
+{
+    "name": "Coupon",
+    "alias": "coupon",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\Coupon\\Providers\\CouponServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

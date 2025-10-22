@@ -1,0 +1,14 @@
+{
+    "name": "FlashDeal",
+    "alias": "flashdeal",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\FlashDeal\\Providers\\FlashDealServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
