@@ -56,4 +56,34 @@ class EcoBrandCRUDDashboardService
             'brand' => $brand
         ];
     }
+
+    /**
+     * Get brand statistics for dashboard cards
+     */
+    public function getBrandStatistics(): array
+    {
+        // Get total brands count
+        $totalBrands = EcoBrand::count();
+
+        // Get active brands count
+        $activeBrands = EcoBrand::where('is_active', 1)->count();
+
+        // Get inactive brands count
+        $inactiveBrands = EcoBrand::where('is_active', 0)->count();
+
+        return [
+            [
+                'number' => $totalBrands,
+                'title' => 'اجمالي عدد البرندات',
+            ],
+            [
+                'number' => $activeBrands,
+                'title' => 'البرندات الفعالة',
+            ],
+            [
+                'number' => $inactiveBrands,
+                'title' => 'البرندات الغير فعالة',
+            ]
+        ];
+    }
 }
