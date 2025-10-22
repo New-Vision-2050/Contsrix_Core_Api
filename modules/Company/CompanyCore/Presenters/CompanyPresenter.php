@@ -62,7 +62,7 @@ class CompanyPresenter extends AbstractPresenter
             'country_iso2' => $this->company?->companyAddress?->country?->iso2,
             'company_type_id' => $this->company->company_type_id,
             'registration_type_id' => $this->company->registration_type_id,
-            'company_field_id' => $this->company->company_field_id,
+            'company_field_id' => $this->company->companyFields()->first()?->id,
             'general_manager_id' => $this->company->general_manager_id,
             'registration_no' => $this->company?->registration_no,
             'general_manager' => [
