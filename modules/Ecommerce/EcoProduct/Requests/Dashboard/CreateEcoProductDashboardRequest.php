@@ -70,6 +70,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             
             // Media
             'main_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'meta_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'other_photos' => 'nullable|array|max:5',
             'other_photos.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             
