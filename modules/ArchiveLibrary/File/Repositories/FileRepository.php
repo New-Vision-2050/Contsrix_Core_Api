@@ -14,6 +14,9 @@ use Modules\Shared\Media\Services\FileUploadService;
 use Modules\Subscription\Package\Models\CompanyPermissionLimit;
 use Ramsey\Uuid\UuidInterface;
 use Modules\ArchiveLibrary\File\Models\File;
+use Modules\RoleAndPermission\Repositories\PermissionRepository;
+use Modules\Subscription\Package\Repositories\CompanyPermissionLimitRepository;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 
 /**
  * @property File $model
@@ -22,8 +25,12 @@ use Modules\ArchiveLibrary\File\Models\File;
  */
 class FileRepository extends BaseRepository
 {
-    public function __construct(File $model, private FileUploadService $fileUploadService)
-    {
+    public function __construct(
+        File $model,
+        private FileUploadService $fileUploadService,
+        private PermissionRepository $permissionRepository,
+        private CompanyPermissionLimitRepository $companyPermissionLimitRepository
+    ) {
         parent::__construct($model);
     }
 
@@ -68,12 +75,11 @@ class FileRepository extends BaseRepository
             }
             $updated = $this->update($id, $data);
             if ($file) {
-
+                // Check storage limit BEFORE uploading new file
+                $this->checkStorageLimitForUpdate($fileModel, $file);
 
                 $fileModel->clearMediaCollection('upload');
                 $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
-
-
             }
 
             DB::commit();
@@ -328,5 +334,78 @@ class FileRepository extends BaseRepository
         ])->whereHas("permission", function ($q) {
             $q->where("name", "archive-library.archive-library*file.create");
         })->first();
+    }
+
+    /**
+     * Check storage limit before updating file with new upload
+     */
+    private function checkStorageLimitForUpdate(File $fileModel, $uploadedFile): void
+    {
+        // Calculate new file size
+        $newFileSize = 0;
+        if (is_array($uploadedFile)) {
+            foreach ($uploadedFile as $file) {
+                if ($file && $file->isValid()) {
+                    $newFileSize += round($file->getSize() / (1024 * 1024), 2);
+                }
+            }
+        } else {
+            if ($uploadedFile && $uploadedFile->isValid()) {
+                $newFileSize = round($uploadedFile->getSize() / (1024 * 1024), 2);
+            }
+        }
+
+        // Get old file size
+        $oldFileSize = 0;
+        $media = $fileModel->getFirstMedia("upload");
+        if ($media && $media->size) {
+            $oldFileSize = round($media->size / (1024 * 1024), 2);
+        }
+
+        // Calculate difference
+        $sizeDifference = $newFileSize - $oldFileSize;
+
+        // Only check limit if file is getting larger
+        if ($sizeDifference > 0) {
+            // Find permission
+            $permission = $this->permissionRepository->findByName('archive-library.archive-library*file.create');
+            if (!$permission) {
+                return;
+            }
+
+            // Get permission limit
+            $permissionLimit = $this->companyPermissionLimitRepository->findByCompanyAndPermission(
+                $fileModel->company_id,
+                $permission->id
+            );
+
+            if (!$permissionLimit) {
+                return;
+            }
+
+            // Check if sufficient storage available
+            if ($permissionLimit->actual_limit < $sizeDifference) {
+                throw new UnauthorizedException(
+                    403,
+                    "Insufficient storage. Need {$sizeDifference} MB more (new: {$newFileSize} MB, old: {$oldFileSize} MB)."
+                );
+            }
+
+            // Decrease limit
+            $permissionLimit->decreaseLimit($sizeDifference);
+        } elseif ($sizeDifference < 0) {
+            // File is smaller - increase limit
+            $permission = $this->permissionRepository->findByName('archive-library.archive-library*file.create');
+            if ($permission) {
+                $permissionLimit = $this->companyPermissionLimitRepository->findByCompanyAndPermission(
+                    $fileModel->company_id,
+                    $permission->id
+                );
+
+                if ($permissionLimit) {
+                    $permissionLimit->increaseLimit(abs($sizeDifference));
+                }
+            }
+        }
     }
 }
