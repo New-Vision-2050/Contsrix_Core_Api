@@ -134,80 +134,15 @@ class FileObserver
 
     /**
      * Handle the File "updating" event.
-     * Check and adjust storage limit BEFORE file is updated
+     * Note: File update storage limits are handled in FileRepository
+     * because media upload happens after model update in the workflow.
+     * This observer only handles file creation and deletion.
      */
     public function updating(File $file): void
     {
-        try {
-            // Only process if media changed
-            if (!$this->wasMediaChanged($file)) {
-                return;
-            }
-
-            $newFileSize = $this->getNewFileSizeInMB($file);
-            $oldFileSize = $this->getFileSizeInMB($file);
-
-            if ($newFileSize <= 0 && $oldFileSize <= 0) {
-                return;
-            }
-
-            if (!$file->company_id) {
-                return;
-            }
-
-            // Find permission
-            $permission = $this->permissionRepository->findByName('archive-library.archive-library*file.create');
-            if (!$permission) {
-                return;
-            }
-
-            // Get permission limit
-            $permissionLimit = $this->companyPermissionLimitRepository->findByCompanyAndPermission(
-                $file->company_id,
-                $permission->id
-            );
-
-            if (!$permissionLimit) {
-                return;
-            }
-
-            // Calculate size difference
-            $sizeDifference = $newFileSize - $oldFileSize;
-
-            if ($sizeDifference > 0) {
-                // New file is larger - consume more storage
-                if ($permissionLimit->actual_limit < $sizeDifference) {
-                    throw new UnauthorizedException(
-                        403,
-                        "Insufficient storage. Need {$sizeDifference} MB more (new: {$newFileSize} MB, old: {$oldFileSize} MB)."
-                    );
-                }
-                $permissionLimit->decreaseLimit($sizeDifference);
-
-                Log::info('File storage limit decreased on update', [
-                    'file_id' => $file->id,
-                    'size_difference_mb' => $sizeDifference,
-                    'remaining_limit_mb' => $permissionLimit->actual_limit
-                ]);
-            } elseif ($sizeDifference < 0) {
-                // New file is smaller - free up storage
-                $permissionLimit->increaseLimit(abs($sizeDifference));
-
-                Log::info('File storage limit increased on update', [
-                    'file_id' => $file->id,
-                    'size_difference_mb' => abs($sizeDifference),
-                    'remaining_limit_mb' => $permissionLimit->actual_limit
-                ]);
-            }
-
-        } catch (UnauthorizedException $e) {
-            throw $e;
-        } catch (\Exception $e) {
-            Log::error('Failed to process file storage limit on update', [
-                'file_id' => $file->id,
-                'error' => $e->getMessage()
-            ]);
-        }
+        // File update limits are handled in FileRepository::checkStorageLimitForUpdate()
+        // because the workflow is: update model -> upload media
+        // Observer fires during update, but media isn't available yet
     }
 
     /**
