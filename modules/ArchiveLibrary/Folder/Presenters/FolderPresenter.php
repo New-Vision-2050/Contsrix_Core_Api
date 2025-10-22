@@ -114,7 +114,17 @@ class FolderPresenter extends AbstractPresenter
             ->toArray();
 
         foreach ($fileSizesDirect as $id => $fileSize) {
-            self::$fileSizesCache[$id]+=$fileSize;
+
+            if(isset(self::$fileSizesCache[$id]))
+            {
+                self::$fileSizesCache[$id]+=$fileSize;
+
+            }
+            else
+            {
+                self::$fileSizesCache[$id]=$fileSize;
+
+            }
         }
 
     }
