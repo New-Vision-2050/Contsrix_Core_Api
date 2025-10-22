@@ -65,7 +65,7 @@ class EcoProductDashboardDetailsPresenter extends AbstractPresenter
             
             // Tax and shipping
             'vat_percentage' => $this->ecoProduct->vat_percentage ? (float) $this->ecoProduct->vat_percentage : null,
-            'price_includes_vat' => (bool) $this->ecoProduct->price_includes_vat,
+            'price_includes_vat' => (int) $this->ecoProduct->price_includes_vat,
             'shipping_amount' => $this->ecoProduct->shipping_amount ? (float) $this->ecoProduct->shipping_amount : null,
             'shipping_included_in_price' => (int) $this->ecoProduct->shipping_included_in_price,
             
