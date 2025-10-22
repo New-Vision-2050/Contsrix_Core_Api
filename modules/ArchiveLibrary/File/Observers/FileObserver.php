@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\File\Observers;
 
+use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\Log;
 use Modules\ArchiveLibrary\File\Models\File;
 use Modules\RoleAndPermission\Repositories\PermissionRepository;
 use Modules\Subscription\Package\Repositories\CompanyPermissionLimitRepository;
 use Spatie\Permission\Exceptions\UnauthorizedException;
+use function PHPUnit\Framework\throwException;
 
 class FileObserver
 {
@@ -69,6 +71,7 @@ class FileObserver
      */
     public function created(File $file): void
     {
+
         try {
             // Get file size from media or mediaFile (should be attached by now)
             $fileSize = $this->getFileSizeInMB($file);
@@ -124,13 +127,9 @@ class FileObserver
 
         } catch (UnauthorizedException $e) {
             throw $e;
-        } catch (\Exception $e) {
-            Log::error('Failed to process file storage limit after creation', [
-                'file_id' => $file->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
         }
+
+
     }
 
     /**
@@ -278,6 +277,15 @@ class FileObserver
         // Fallback to mediaFile relation (integrated files)
         if ($file->mediaFile && $file->mediaFile->size) {
             return  round($file->mediaFile->size / (1024 * 1024),2);
+        }
+
+
+        if (function_exists('request') && request()->hasFile('file')) {
+            $uploadedFile = request()->file('file');
+            if ($uploadedFile && $uploadedFile->isValid()) {
+                $sizeInBytes = $uploadedFile->getSize();
+                return round($sizeInBytes / (1024 * 1024),2);
+            }
         }
 
         return 0;
