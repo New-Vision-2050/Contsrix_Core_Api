@@ -29,7 +29,7 @@ class EcoProductDashboardPresenter extends AbstractPresenter
             'sku' => $this->ecoProduct->sku,
             'is_visible' => (int)$this->ecoProduct->is_visible,
             'type' => $this->ecoProduct->type,
-            'main_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+            'main_photo' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
         ];
     }
 }
