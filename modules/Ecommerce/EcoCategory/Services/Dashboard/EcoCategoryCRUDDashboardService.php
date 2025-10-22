@@ -63,73 +63,32 @@ class EcoCategoryCRUDDashboardService
      */
     public function getCategoryStatistics(): array
     {
-        try {
-            // Get total categories count
-            $totalCategories = EcoCategory::count();
+            // Get main categories (level 1 - no parent)
+            $mainCategories = EcoCategory::whereNull('parent_id')->count();
 
-            // Get active categories count
-            $activeCategories = EcoCategory::where('is_active', 1)->count();
-            // Get categories with products
-            $categoriesWithProducts = EcoCategory::whereHas('products')->count();
+            // Get subcategories (level 2 - have parent but parent has no parent)
+            $subcategories = EcoCategory::whereHas('parent', function($query) {
+                $query->whereNull('parent_id');
+            })->count();
 
-            // Get parent categories (main categories)
-            $parentCategories = EcoCategory::whereNull('parent_id')->count();
+            // Get sub-subcategories (level 3 - have parent whose parent also has parent)
+            $subSubcategories = EcoCategory::whereHas('parent.parent')->count();
 
             return [
                 [
-                    'value' => $totalCategories,
-                    'label' => 'إجمالي عدد التصنيفات',
-                    'icon' => 'category',
-                    'color' => 'primary'
+                    'number' => $mainCategories,
+                    'title' => 'اجمالي عدد الاقسام',
                 ],
                 [
-                    'value' => $activeCategories,
-                    'label' => 'عدد التصنيفات الفعالة',
-                    'icon' => 'visibility',
-                    'color' => 'success'
+                    'number' => $subcategories,
+                    'title' =>'اجمالي عدد الاقسام  الفرعية',
                 ],
                 [
-                    'value' => $categoriesWithProducts,
-                    'label' => 'التصنيفات المتوفرة في المتجر',
-                    'icon' => 'store',
-                    'color' => 'info'
-                ],
-                [
-                    'value' => $parentCategories,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'folder',
-                    'color' => 'warning'
+                    'number' => $subSubcategories,
+                    'title' => 'اجمالي عدد الاقسام الفرعية الفرعية',
                 ]
             ];
 
-        } catch (\Exception $e) {
-            // Fallback data matching the image
-            return [
-                [
-                    'value' => 125,
-                    'label' => 'إجمالي عدد التصنيفات',
-                    'icon' => 'category',
-                    'color' => 'primary'
-                ],
-                [
-                    'value' => 102,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'visibility',
-                    'color' => 'success'
-                ],
-                [
-                    'value' => 6,
-                    'label' => 'التصنيفات المتوفرة في المتجر',
-                    'icon' => 'store',
-                    'color' => 'info'
-                ],
-                [
-                    'value' => 16,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'folder',
-                    'color' => 'warning'
-                ]
-            ];
-        }
+     
     }
 }
