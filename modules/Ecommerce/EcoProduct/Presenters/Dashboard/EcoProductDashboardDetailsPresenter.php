@@ -22,6 +22,7 @@ class EcoProductDashboardDetailsPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         $firstMedia = $this->ecoProduct->getFirstMedia('eco_product_main_image');
+        $metaMedia = $this->ecoProduct->getFirstMedia('eco_product_meta_image');
         return [
             'id' => $this->ecoProduct->id,
             'company_id' => $this->ecoProduct->company_id,
@@ -93,6 +94,7 @@ class EcoProductDashboardDetailsPresenter extends AbstractPresenter
             
             // Media (using Spatie Media Library)
             'main_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+            'meta_image' => $metaMedia ? (new MediaPresenter($metaMedia))->getData() : null,
             'other_images' => MediaPresenter::collection($this->ecoProduct->getMedia('eco_product_other_image')),
             
     

@@ -37,6 +37,7 @@ class EcoProductDashboardCRUDService
         }
         // Handle file uploads
         $mainImageFile = request()->file('main_photo');
+        $metaImageFile = request()->file('meta_photo');
         $otherImageFiles = request()->file('other_photos');
 
 
@@ -50,6 +51,20 @@ class EcoProductDashboardCRUDService
                 $mainImageFile,
                 $path,
                 'eco_product_main_image',
+                "public"
+            );
+        }
+
+        if ($metaImageFile) {
+            $companyName = $createEcoProduct->company->name ?? 'UnknownCompany';
+            $productName = is_array($createEcoProduct->name) ? ($createEcoProduct->name['ar'] ?? $createEcoProduct->name['en'] ?? 'Product') : $createEcoProduct->name;
+            $path = $companyName . '/ecommerce/' . $productName;
+
+            $this->fileUploadService->uploadFile(
+                $createEcoProduct,
+                $metaImageFile,
+                $path,
+                'eco_product_meta_image',
                 "public"
             );
         }
@@ -128,6 +143,7 @@ class EcoProductDashboardCRUDService
 
         // Handle file uploads
         $mainImageFile = request()->file('main_photo');
+        $metaImageFile = request()->file('meta_photo');
         $otherImageFiles = request()->file('other_photos');
 
         if ($mainImageFile) {
@@ -143,6 +159,23 @@ class EcoProductDashboardCRUDService
                 $mainImageFile,
                 $path,
                 'eco_product_main_image',
+                "public"
+            );
+        }
+
+        if ($metaImageFile) {
+            // Delete existing meta photo only when uploading new one
+            $product->clearMediaCollection('eco_product_meta_image');
+            
+            $companyName = $product->company->name ?? 'UnknownCompany';
+            $productName = is_array($product->name) ? ($product->name['ar'] ?? $product->name['en'] ?? 'Product') : $product->name;
+            $path = $companyName . '/ecommerce/' . $productName;
+
+            $this->fileUploadService->uploadFile(
+                $product,
+                $metaImageFile,
+                $path,
+                'eco_product_meta_image',
                 "public"
             );
         }
