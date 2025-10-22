@@ -157,17 +157,24 @@ class FolderPresenter extends AbstractPresenter
 
         // Fallback to direct query if cache not primed (single item presentation)
         $totalSize = \DB::table('files')
-            ->join('media', function ($join) {
+            ->join('media', function($join) {
                 $join->on('files.id', '=', 'media.model_id')
-                    ->where('media.model_type', '=', 'Modules\\ArchiveLibrary\\File\\Models\\File')
-                    ->where('media.collection_name', '=', 'upload');
-            })
-            ->orWhere(function ($query) {
-                $query->join('media', 'files.id', '=', 'media.file_id');
+                     ->where('media.model_type', '=', 'Modules\\ArchiveLibrary\\File\\Models\\File')
+                     ->where('media.collection_name', '=', 'upload');
             })
             ->where('files.folder_id', $this->folder->id)
             ->sum('media.size');
 
-        return (int) $totalSize;
+
+        $totalSizeDirect = \DB::table('files')
+            ->join('media', function($join) {
+                $join->on('files.id', '=', 'file_id');
+            })
+            ->where('files.folder_id', $this->folder->id)
+            ->sum('media.size');
+
+
+
+        return (int) $totalSize+$totalSizeDirect;
     }
 }
