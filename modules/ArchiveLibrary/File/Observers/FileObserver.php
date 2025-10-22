@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\ArchiveLibrary\File\Observers;
 
+use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\Log;
 use Modules\ArchiveLibrary\File\Models\File;
 use Modules\RoleAndPermission\Repositories\PermissionRepository;
 use Modules\Subscription\Package\Repositories\CompanyPermissionLimitRepository;
 use Spatie\Permission\Exceptions\UnauthorizedException;
+use function PHPUnit\Framework\throwException;
 
 class FileObserver
 {
@@ -69,6 +71,7 @@ class FileObserver
      */
     public function created(File $file): void
     {
+
         try {
             // Get file size from media or mediaFile (should be attached by now)
             $fileSize = $this->getFileSizeInMB($file);
@@ -105,7 +108,7 @@ class FileObserver
             if ($permissionLimit->actual_limit < $fileSize) {
                 // Delete the file record since we can't store it
                 $file->delete();
-                
+
                 throw new UnauthorizedException(
                     403,
                     "File size ({$fileSize} MB) exceeds remaining storage limit ({$permissionLimit->actual_limit} MB). File was not saved."
@@ -124,13 +127,9 @@ class FileObserver
 
         } catch (UnauthorizedException $e) {
             throw $e;
-        } catch (\Exception $e) {
-            Log::error('Failed to process file storage limit after creation', [
-                'file_id' => $file->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
         }
+
+
     }
 
     /**
@@ -145,8 +144,8 @@ class FileObserver
                 return;
             }
 
-            $newFileSize = $this->getFileSizeInMB($file);
-            $oldFileSize = $this->getOldFileSizeInMB($file);
+            $newFileSize = $this->getNewFileSizeInMB($file);
+            $oldFileSize = $this->getFileSizeInMB($file);
 
             if ($newFileSize <= 0 && $oldFileSize <= 0) {
                 return;
@@ -184,7 +183,7 @@ class FileObserver
                     );
                 }
                 $permissionLimit->decreaseLimit($sizeDifference);
-                
+
                 Log::info('File storage limit decreased on update', [
                     'file_id' => $file->id,
                     'size_difference_mb' => $sizeDifference,
@@ -193,7 +192,7 @@ class FileObserver
             } elseif ($sizeDifference < 0) {
                 // New file is smaller - free up storage
                 $permissionLimit->increaseLimit(abs($sizeDifference));
-                
+
                 Log::info('File storage limit increased on update', [
                     'file_id' => $file->id,
                     'size_difference_mb' => abs($sizeDifference),
@@ -267,17 +266,45 @@ class FileObserver
     /**
      * Get file size in MB from media or mediaFile
      */
-    private function getFileSizeInMB(File $file): int
+    private function getFileSizeInMB(File $file)
     {
         // Try to get from Spatie media first (direct uploads)
-        $media = $file->getFirstMedia();
+        $media = $file->getFirstMedia("upload");
         if ($media && $media->size) {
-            return (int) ceil($media->size / (1024 * 1024));
+            return round($media->size / (1024 * 1024),2);
         }
 
         // Fallback to mediaFile relation (integrated files)
         if ($file->mediaFile && $file->mediaFile->size) {
-            return (int) ceil($file->mediaFile->size / (1024 * 1024));
+            return  round($file->mediaFile->size / (1024 * 1024),2);
+        }
+
+
+        // Fallback to request for single file upload
+        if (function_exists('request') && request()->hasFile('file')) {
+            $uploadedFile = request()->file('file');
+            if ($uploadedFile && $uploadedFile->isValid()) {
+                $sizeInBytes = $uploadedFile->getSize();
+                return round($sizeInBytes / (1024 * 1024), 2);
+            }
+        }
+
+        // Fallback to request for multiple files upload
+        if (function_exists('request') && request()->hasFile('files')) {
+            $uploadedFiles = request()->file('files');
+            $totalSize = 0;
+
+            if (is_array($uploadedFiles)) {
+                foreach ($uploadedFiles as $uploadedFile) {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $totalSize += $uploadedFile->getSize();
+                    }
+                }
+            }
+
+            if ($totalSize > 0) {
+                return round($totalSize / (1024 * 1024), 2);
+            }
         }
 
         return 0;
@@ -286,15 +313,36 @@ class FileObserver
     /**
      * Get old file size from original model state
      */
-    private function getOldFileSizeInMB(File $file): int
+    private function getNewFileSizeInMB(File $file)
     {
-        // Get original file from database
-        $originalFile = File::find($file->id);
-        if (!$originalFile) {
-            return 0;
+        // Check for single file upload
+        if (function_exists('request') && request()->hasFile('file')) {
+            $uploadedFile = request()->file('file');
+            if ($uploadedFile && $uploadedFile->isValid()) {
+                $sizeInBytes = $uploadedFile->getSize();
+                return round($sizeInBytes / (1024 * 1024), 2);
+            }
         }
 
-        return $this->getFileSizeInMB($originalFile);
+        // Check for multiple files upload
+        if (function_exists('request') && request()->hasFile('files')) {
+            $uploadedFiles = request()->file('files');
+            $totalSize = 0;
+
+            if (is_array($uploadedFiles)) {
+                foreach ($uploadedFiles as $uploadedFile) {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $totalSize += $uploadedFile->getSize();
+                    }
+                }
+            }
+
+            if ($totalSize > 0) {
+                return round($totalSize / (1024 * 1024), 2);
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -302,14 +350,24 @@ class FileObserver
      */
     private function wasMediaChanged(File $file): bool
     {
-        // Check if media relationship was loaded and modified
-        if ($file->relationLoaded('media')) {
-            return true;
+        // Check for single file upload
+        if (function_exists('request') && request()->hasFile('file')) {
+            $uploadedFile = request()->file('file');
+            if ($uploadedFile && $uploadedFile->isValid()) {
+                return true;
+            }
         }
 
-        // Check if mediaFile relationship was loaded and modified
-        if ($file->relationLoaded('mediaFile')) {
-            return true;
+        // Check for multiple files upload
+        if (function_exists('request') && request()->hasFile('files')) {
+            $uploadedFiles = request()->file('files');
+            if (is_array($uploadedFiles)) {
+                foreach ($uploadedFiles as $uploadedFile) {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        return true;
+                    }
+                }
+            }
         }
 
         return false;

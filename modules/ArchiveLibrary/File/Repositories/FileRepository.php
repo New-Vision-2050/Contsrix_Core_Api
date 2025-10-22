@@ -60,20 +60,19 @@ class FileRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
-            $updated = $this->update($id, $data);
             $fileModel = $this->getFile($id);
-            if ($file ) {
-                if ($fileModel->management_hierarchy_id !=null)
-                {
-                    throw new CustomException("validation.update-not-successful");
 
-                }
-                else{
+            if ($fileModel->management_hierarchy_id != null) {
+                throw new CustomException("validation.update-not-successful");
+
+            }
+            $updated = $this->update($id, $data);
+            if ($file) {
 
 
-                    $fileModel->clearMediaCollection('upload');
-                    $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
-                }
+                $fileModel->clearMediaCollection('upload');
+                $this->fileUploadService->uploadFile($fileModel, $file, "files", "upload", "public");
+
 
             }
 
@@ -89,12 +88,10 @@ class FileRepository extends BaseRepository
     public function deleteFile(UuidInterface $id): bool
     {
         $fileModel = $this->getFile($id);
-        if ($fileModel->management_hierarchy_id !=null)
-        {
+        if ($fileModel->management_hierarchy_id != null) {
             throw new CustomException("validation.delete-not-successful");
 
-        }
-        else{
+        } else {
 
             return $this->delete($id);
 
@@ -137,10 +134,9 @@ class FileRepository extends BaseRepository
         }
 
 
-
         return [
             'data' => $query->get(),
-            "count"=>$query->count()
+            "count" => $query->count()
         ];
     }
 
@@ -164,7 +160,6 @@ class FileRepository extends BaseRepository
             ->whereNotNull('end_date')
             ->where('end_date', '>=', now())
             ->where('folder_id', $folderId)
-
             ->count();
     }
 
@@ -177,14 +172,12 @@ class FileRepository extends BaseRepository
             ->where('end_date', '>=', now())
             ->where('end_date', '<=', $threeDaysFromNow)
             ->where('folder_id', $folderId)
-
             ->get();
     }
 
     public function getAlmostExpiredFilesCount($folderId): int
     {
         return $this->getAlmostExpiredFiles($folderId)
-
             ->count();
     }
 
@@ -330,7 +323,7 @@ class FileRepository extends BaseRepository
 
     public function getLimitSize()
     {
-        return     CompanyPermissionLimit::where([
+        return CompanyPermissionLimit::where([
             'company_id' => tenant("id"),
         ])->whereHas("permission", function ($q) {
             $q->where("name", "archive-library.archive-library*file.create");
