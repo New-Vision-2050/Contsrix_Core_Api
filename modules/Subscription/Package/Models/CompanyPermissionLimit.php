@@ -47,7 +47,7 @@ class CompanyPermissionLimit extends Model
     /**
      * Decrease the actual limit by the specified amount.
      */
-    public function decreaseLimit(int $amount = 1): bool
+    public function decreaseLimit( $amount = 1): bool
     {
         if ($this->actual_limit >= $amount) {
             $this->actual_limit -= $amount;
