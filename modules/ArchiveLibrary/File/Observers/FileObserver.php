@@ -144,8 +144,8 @@ class FileObserver
                 return;
             }
 
-            $newFileSize = $this->getFileSizeInMB($file);
-            $oldFileSize = $this->getOldFileSizeInMB($file);
+            $newFileSize = $this->getNewFileSizeInMB($file);
+            $oldFileSize = $this->getFileSizeInMB($file);
 
             if ($newFileSize <= 0 && $oldFileSize <= 0) {
                 return;
@@ -280,11 +280,30 @@ class FileObserver
         }
 
 
+        // Fallback to request for single file upload
         if (function_exists('request') && request()->hasFile('file')) {
             $uploadedFile = request()->file('file');
             if ($uploadedFile && $uploadedFile->isValid()) {
                 $sizeInBytes = $uploadedFile->getSize();
-                return round($sizeInBytes / (1024 * 1024),2);
+                return round($sizeInBytes / (1024 * 1024), 2);
+            }
+        }
+
+        // Fallback to request for multiple files upload
+        if (function_exists('request') && request()->hasFile('files')) {
+            $uploadedFiles = request()->file('files');
+            $totalSize = 0;
+
+            if (is_array($uploadedFiles)) {
+                foreach ($uploadedFiles as $uploadedFile) {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $totalSize += $uploadedFile->getSize();
+                    }
+                }
+            }
+
+            if ($totalSize > 0) {
+                return round($totalSize / (1024 * 1024), 2);
             }
         }
 
@@ -294,15 +313,36 @@ class FileObserver
     /**
      * Get old file size from original model state
      */
-    private function getOldFileSizeInMB(File $file): int
+    private function getNewFileSizeInMB(File $file)
     {
-        // Get original file from database
-        $originalFile = File::find($file->id);
-        if (!$originalFile) {
-            return 0;
+        // Check for single file upload
+        if (function_exists('request') && request()->hasFile('file')) {
+            $uploadedFile = request()->file('file');
+            if ($uploadedFile && $uploadedFile->isValid()) {
+                $sizeInBytes = $uploadedFile->getSize();
+                return round($sizeInBytes / (1024 * 1024), 2);
+            }
         }
 
-        return $this->getFileSizeInMB($originalFile);
+        // Check for multiple files upload
+        if (function_exists('request') && request()->hasFile('files')) {
+            $uploadedFiles = request()->file('files');
+            $totalSize = 0;
+
+            if (is_array($uploadedFiles)) {
+                foreach ($uploadedFiles as $uploadedFile) {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        $totalSize += $uploadedFile->getSize();
+                    }
+                }
+            }
+
+            if ($totalSize > 0) {
+                return round($totalSize / (1024 * 1024), 2);
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -310,14 +350,24 @@ class FileObserver
      */
     private function wasMediaChanged(File $file): bool
     {
-        // Check if media relationship was loaded and modified
-        if ($file->relationLoaded('media')) {
-            return true;
+        // Check for single file upload
+        if (function_exists('request') && request()->hasFile('file')) {
+            $uploadedFile = request()->file('file');
+            if ($uploadedFile && $uploadedFile->isValid()) {
+                return true;
+            }
         }
 
-        // Check if mediaFile relationship was loaded and modified
-        if ($file->relationLoaded('mediaFile')) {
-            return true;
+        // Check for multiple files upload
+        if (function_exists('request') && request()->hasFile('files')) {
+            $uploadedFiles = request()->file('files');
+            if (is_array($uploadedFiles)) {
+                foreach ($uploadedFiles as $uploadedFile) {
+                    if ($uploadedFile && $uploadedFile->isValid()) {
+                        return true;
+                    }
+                }
+            }
         }
 
         return false;
