@@ -72,10 +72,7 @@ class EcoProductDashboardDetailsPresenter extends AbstractPresenter
             // Visibility
             'is_visible' => (int) $this->ecoProduct->is_visible,
             
-            // Media
-            'main_photo' => $this->ecoProduct->main_photo,
-            'other_photos' => $this->ecoProduct->other_photos,
-            
+
             // Video
             'video_url' => $this->ecoProduct->video_url,
             
@@ -96,9 +93,9 @@ class EcoProductDashboardDetailsPresenter extends AbstractPresenter
 
             
             // Media (using Spatie Media Library)
-            'main_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
-            'meta_image' => $metaMedia ? (new MediaPresenter($metaMedia))->getData() : null,
-            'other_images' => MediaPresenter::collection($this->ecoProduct->getMedia('eco_product_other_image')),
+            'main_photo' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
+            'meta_photo' => $metaMedia ? (new MediaPresenter($metaMedia))->getData() : null,
+            'other_photos' => MediaPresenter::collection($this->ecoProduct->getMedia('eco_product_other_image')),
             
     
             
