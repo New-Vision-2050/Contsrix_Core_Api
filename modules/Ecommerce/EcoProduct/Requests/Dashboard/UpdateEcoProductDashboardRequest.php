@@ -77,6 +77,9 @@ class UpdateEcoProductDashboardRequest extends FormRequest
             'associated_product_ids' => ['nullable', 'array'],
             'associated_product_ids.*' => ['uuid', 'exists:eco_products,id'],
 
+            // Video
+            'video_url' => ['nullable', 'url', 'max:500'],
+
             // Images (nullable for updates)
             'main_image' => [
                 'nullable', // Main image is optional for update
