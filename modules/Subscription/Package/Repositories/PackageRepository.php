@@ -187,10 +187,10 @@ class PackageRepository extends BaseRepository
 
     public function syncPermissions(Package $package, array $permissionIds, array $limits = []): void
     {
-        // Prevent syncing permissions for Main Package
-        if ($package->name === 'Main Package' || $package->name === 'Client Package') {
-            throw new CustomException("Main Package '{$package->name}' cannot have its permissions synced. Main packages are system-managed and protected from permission modifications.");
-        }
+//        // Prevent syncing permissions for Main Package
+//        if ($package->name === 'Main Package' || $package->name === 'Client Package') {
+//            throw new CustomException("Main Package '{$package->name}' cannot have its permissions synced. Main packages are system-managed and protected from permission modifications.");
+//        }
 
         // Prepare sync data with limits
         $syncData = [];
