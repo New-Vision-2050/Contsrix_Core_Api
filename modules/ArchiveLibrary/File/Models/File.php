@@ -52,7 +52,8 @@ class File extends Model implements HasMedia , Auditable
         'folder_id',
         'access_type',
         'status',
-        "management_hierarchy_id"
+        'management_hierarchy_id',
+        'company_id'
     ];
 
     protected $casts = [
