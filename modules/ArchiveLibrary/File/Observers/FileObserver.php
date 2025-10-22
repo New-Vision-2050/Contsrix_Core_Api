@@ -269,7 +269,7 @@ class FileObserver
     private function getFileSizeInMB(File $file)
     {
         // Try to get from Spatie media first (direct uploads)
-        $media = $file->getFirstMedia();
+        $media = $file->getFirstMedia("upload");
         if ($media && $media->size) {
             return round($media->size / (1024 * 1024),2);
         }
