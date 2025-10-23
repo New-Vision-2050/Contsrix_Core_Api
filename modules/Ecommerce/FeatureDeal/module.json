@@ -1,0 +1,14 @@
+{
+    "name": "FeatureDeal",
+    "alias": "featuredeal",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\FeatureDeal\\Providers\\FeatureDealServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

@@ -46,7 +46,7 @@ class FlashDealController extends Controller
 
         $presenter = new FlashDealPresenter($item);
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData(false)); // false = details view, not listing
     }
 
     public function store(CreateFlashDealRequest $request): JsonResponse

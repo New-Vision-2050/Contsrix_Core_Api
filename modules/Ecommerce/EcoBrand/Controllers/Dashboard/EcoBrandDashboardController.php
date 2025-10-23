@@ -93,4 +93,14 @@ class EcoBrandDashboardController extends Controller
             return Json::error('فشل في تغيير حالة العلامة التجارية: ' . $e->getMessage(), 500);
         }
     }
+
+    /**
+     * Get brand statistics cards for dashboard
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $stats = $this->ecoBrandService->getBrandStatistics();
+
+        return Json::item($stats);
+    }
 }

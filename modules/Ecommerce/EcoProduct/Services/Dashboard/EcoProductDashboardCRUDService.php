@@ -263,64 +263,38 @@ class EcoProductDashboardCRUDService
 
     public function getProductStatistics(): array
     {
-        try {
-            // Get total products count
-            $totalProducts = EcoProduct::count();
+        // Get total products count
+        $totalProducts = EcoProduct::count();
 
-            // Get categories count
-            $categoriesCount = EcoProduct::distinct('category_id')
-                ->whereNotNull('category_id')
-                ->count();
-                // Get products in stock (available products)
-            $productsInStock = EcoProduct::where('is_visible', 1)
-                ->where('stock', '>', 0)
-                ->count();
+        // Get visible products (displayed in store when is_visible = 1)
+        $visibleProducts = EcoProduct::where('is_visible', 1)->count();
 
-            // Get low stock products
-            $lowStockProducts = EcoProduct::where('stock', '<=', 10)
-                ->where('stock', '>', 0)
-                ->count();
+        // Get required products (low stock products)
+        $requiredProducts = EcoProduct::where('stock', '<=', 10)
+            ->where('stock', '>', 0)
+            ->count();
 
-            return [
-                [
-                    'number' => $totalProducts,
-                    'title' => 'إجمالي عدد المنتجات',
-                ],
-                [
-                    'number' => $categoriesCount,
-                    'title' => 'عدد التصنيفات',
-                ],
-                [
-                    'number' => $productsInStock,
-                    'title' => 'المنتجات المتوفرة في المخزن',
-                ],
-                [
-                    'number' => $lowStockProducts,
-                    'title' => 'عدد المنتجات',
-                ]
-            ];
+        // Get inactive products (not visible)
+        $inactiveProducts = EcoProduct::where('is_visible', 0)->count();
 
-        } catch (\Exception $e) {
-            // Fallback data matching the image
-            return [
-                [
-                    'number' => 125,
-                    'title' => 'إجمالي عدد المنتجات',
-                ],
-                [
-                    'number' => 6,
-                    'title' => 'عدد التصنيفات',
-                ],
-                [
-                    'number' => 102,
-                    'title' => 'المنتجات المتوفرة في المخزن',
-                ],
-                [
-                    'number' => 16,
-                    'title' => 'عدد المنتجات',
-                ]
-            ];
-        }
+        return [
+            [
+                'number' => $totalProducts,
+                'title' => 'اجمالي عدد المنتجات',
+            ],
+            [
+                'number' => $visibleProducts,
+                'title' => 'المنتجات المعروضة في المتجر',
+            ],
+            [
+                'number' => $requiredProducts,
+                'title' => 'عدد المنتجات المطلوبة',
+            ],
+            [
+                'number' => $inactiveProducts,
+                'title' => 'المنتجات الغير فعالة',
+            ]
+        ];
     }
 
     /**

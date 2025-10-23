@@ -55,7 +55,6 @@ class UpdateFlashDealRequest extends FormRequest
             name: $this->input('name'),
             startDate: $this->input('start_date'),
             endDate: $this->input('end_date'),
-            isActive: $this->has('is_active') ? (bool) $this->input('is_active') : null
         );
     }
 }
