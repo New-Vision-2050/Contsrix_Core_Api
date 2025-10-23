@@ -63,9 +63,15 @@ class FileCRUDService
         $almostExpiredFilesCount= $this->repository->getAlmostExpiredFilesCount($folderId);
 
         $limitSize = $this->repository->getLimitSize();
-        $allFileSpace= $limitSize->limit;
-        $allRemainFileSpace= abs( $limitSize->actual_limit);
-        $allConsumedFileSpace= abs($limitSize->limit - $limitSize->actual_limit);
+        $allFileSpace= $limitSize?->limit;
+        $allRemainFileSpace = null;
+        $allConsumedFileSpace = null;
+        if($allFileSpace != null)
+        {
+            $allRemainFileSpace= abs( $limitSize->actual_limit);
+            $allConsumedFileSpace= abs($limitSize->limit - $limitSize->actual_limit);
+        }
+
 
         $widgets = [
             'total_files_count' => $this->repository->getTotalFilesCount(),

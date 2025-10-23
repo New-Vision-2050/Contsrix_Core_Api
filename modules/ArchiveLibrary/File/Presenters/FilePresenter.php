@@ -127,6 +127,7 @@ class FilePresenter extends AbstractPresenter
             'access_type' => $this->file->access_type,
             'status' => $this->file->status ?? 1,
             'file' => $file,
+            "is_file"=>1,
             "can_delete"=>$this->file->management_hierarchy_id ==null ? 1 :0 ,
             "can_update"=>$this->file->management_hierarchy_id ==null ? 1 :0 ,
             'is_favourite' => $this->isFavourite()==true ? 1:0,
