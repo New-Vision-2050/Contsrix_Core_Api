@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\SubEntity\Services;
 
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -42,8 +43,17 @@ class SubEntityRecordsService
         $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
         //get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
+        $query = $model::query();
+        if($model instanceof User::class)
+        {
+             $query->whereHas('companyUserCompanies', function ($q) use($registrationForm)
+            {
+                $q->where('role', $registrationForm->company_user_role_map);
+            });
 
-        return $model::where('registration_form_id', $registrationFormId)->paginate($perPage);
+        }
+        return $query->paginate($perPage);
+
     }
 
     protected function getSuperEntityModel(string $superEntityId): string
