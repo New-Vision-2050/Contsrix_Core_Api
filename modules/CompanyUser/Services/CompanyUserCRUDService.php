@@ -59,6 +59,7 @@ class CompanyUserCRUDService
     public function sendEmailAssignToCompanyToUser($user , $companyId)
     {
         $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id])->first();
+        $companyId = (string)$companyId;
         $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
         $data = [
             "name" => $userInCompany->name,
