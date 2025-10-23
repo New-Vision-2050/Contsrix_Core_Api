@@ -23,7 +23,12 @@ class FlashDealPresenter extends AbstractPresenter
         return [
             'id' => $this->flashDeal->id,
             'company_id' => $this->flashDeal->company_id,
-            'name' => $this->flashDeal->name,
+            'name' => $isListing 
+                ? $this->flashDeal->name 
+                : [
+                    'ar' => $this->flashDeal->getTranslation('name', 'ar'),
+                    'en' => $this->flashDeal->getTranslation('name', 'en'),
+                ],
             'start_date' => $this->flashDeal->start_date?->format('Y-m-d H:i:s'),
             'end_date' => $this->flashDeal->end_date?->format('Y-m-d H:i:s'),
             'is_active' => (int) $this->flashDeal->is_active,

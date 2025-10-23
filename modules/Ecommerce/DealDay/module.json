@@ -1,0 +1,14 @@
+{
+    "name": "DealDay",
+    "alias": "dealday",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\DealDay\\Providers\\DealDayServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}
