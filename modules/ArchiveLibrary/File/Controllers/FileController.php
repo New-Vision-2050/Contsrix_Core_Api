@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Modules\ArchiveLibrary\File\Handlers\DeleteFileHandler;
 use Modules\ArchiveLibrary\File\Handlers\UpdateFileHandler;
 use Modules\ArchiveLibrary\File\Notifications\FileSharedNotification;
+use Modules\ArchiveLibrary\File\Notifications\MultipleFilesSharedNotification;
 use Modules\ArchiveLibrary\File\Presenters\FilePresenter;
 use Modules\ArchiveLibrary\File\Presenters\FavouriteFilePresenter;
 use Modules\ArchiveLibrary\File\Requests\ChangeArchiveStatusRequest;
@@ -196,27 +197,23 @@ class FileController extends Controller
             $sharedBy = auth()->user();
             $sharedByName = $sharedBy->name ?? 'A user';
 
-            // Send notifications for each file to new users
-            foreach ($result['files'] as $index => $file) {
-                $shareUrl = $result['share_urls'][$index] ?? '';
-                
-                Notification::send(
-                    $newUsers,
-                    new FileSharedNotification(
-                        $shareUrl,
-                        $file,
-                        $sharedByName
-                    )
-                );
-            }
+            // Send one notification with all files to new users
+            Notification::send(
+                $newUsers,
+                new MultipleFilesSharedNotification(
+                    $result['share_urls'],
+                    collect($result['files']),
+                    $sharedByName
+                )
+            );
 
-            $notificationsSent = $newUsers->count() * count($result['files']);
+            $notificationsSent = $newUsers->count();
         }
 
         return response()->json([
             'status' => true,
             'message' => $notificationsSent > 0
-                ? 'Files shared successfully and notifications sent to new users'
+                ? 'Files shared successfully and notification sent to new users'
                 : 'Files shared successfully (no new users to notify)',
             'data' => [
                 'files' => FilePresenter::collection($result['files']),

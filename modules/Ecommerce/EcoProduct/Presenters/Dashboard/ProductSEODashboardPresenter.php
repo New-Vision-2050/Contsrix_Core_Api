@@ -7,7 +7,7 @@ namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
 use Modules\Ecommerce\EcoCategory\Presenters\EcoCategoryPresenter;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use BasePackage\Shared\Presenters\AbstractPresenter;
-use Modules\Ecommerce\EcoBrand\Presenters\EcoBrandPresenter;
+use Modules\Ecommerce\EcoBrand\Presenters\Dashboard\EcoBrandDashboardPresenter;
 use Modules\Ecommerce\EcoProduct\Models\ProductSEO;
 
 class ProductSEODashboardPresenter extends AbstractPresenter

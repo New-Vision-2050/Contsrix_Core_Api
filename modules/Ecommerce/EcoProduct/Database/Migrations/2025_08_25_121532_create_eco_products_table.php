@@ -19,7 +19,7 @@ return new class extends Migration
             $table->uuid('warehouse_id')->index(); // Assuming 'warehouses' table exists and has uuid 'id'
 
             $table->tinyInteger('requires_shipping')->default(0); // requires shipping
-            $table->tinyInteger('unlimited_quantity')->default(0); // unlimited stock
+            $table->tinyInteger('unlimited_quantity')->default(0); // unlimited stockcompany_id
 
             $table->tinyInteger('is_taxable')->default(1); // is product taxable?
             $table->tinyInteger('price_includes_vat')->default(0); // price includes VAT?

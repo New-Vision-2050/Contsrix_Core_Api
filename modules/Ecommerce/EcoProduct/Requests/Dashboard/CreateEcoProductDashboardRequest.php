@@ -6,79 +6,88 @@ namespace Modules\Ecommerce\EcoProduct\Requests\Dashboard;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Ecommerce\EcoProduct\DTO\Dashboard\CreateEcoProductDashboardDTO;
+use Modules\Ecommerce\EcoProduct\DTO\Dashboard\CreateEcoProductNewDTO;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Validation\Rule;
+use Illuminate\Http\UploadedFile;
 
 class CreateEcoProductDashboardRequest extends FormRequest
 {
 
     public function rules(): array
     {
-        return [
-            'price' => ['required', 'numeric', 'min:0'],
-            'sku' => ['required', 'string', 'max:255', 'unique:eco_products,sku'],
-            'stock' => ['nullable', 'integer', 'min:0'],
-            'warehouse_id' => ['required', 'uuid', 'exists:warehouses,id'],
-
-            'requires_shipping' => ['boolean'],
-            'unlimited_quantity' => ['boolean'],
-            'is_taxable' => ['boolean'],
-            'price_includes_vat' => ['boolean'],
-            'vat_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'is_visible' => ['boolean'],
-            'category_id' => ['required', 'uuid', 'exists:eco_categories,id'],
-            'brand_id' => ['nullable', 'uuid', 'exists:eco_brands,id'],
-            'sub_category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
-            'main_image' => [
-                'nullable', // Main image is mandatory
-                // File::image()
-                //     ->min(10) // Minimum 10 KB
-                //     ->max(2 * 1024) // Maximum 2 MB (2 * 1024 KB)
-                //     ->dimensions(Rule::dimensions()->maxWidth(2000)->maxHeight(2000)), // Max dimensions
+        // Get product ID if this is an update request
+        $productId = request()->route('id');
+        
+        $rules = [
+            // Multilingual name and description
+            'name' => 'required|array',
+            'name.ar' => 'required|string|max:255',
+            'name.en' => 'required|string|max:255',
+            'description' => 'required|array',
+            'description.ar' => 'required|string',
+            'description.en' => 'required|string',
+            
+            // Categories and Brand
+            'category_id' => 'required|uuid|exists:eco_categories,id',
+            'sub_category_id' => 'nullable|uuid|exists:eco_categories,id',
+            'sub_sub_category_id' => 'nullable|uuid|exists:eco_categories,id',
+            'brand_id' => 'nullable|uuid|exists:eco_brands,id',
+            
+            // Countries
+            'country_ids' => 'nullable|array',
+            'country_ids.*' => 'exists:countries,id',
+            
+            // Product specifications
+            'type' => 'required|in:digital,normal',
+            'unit' => 'required|string|max:50',
+            'sku' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('eco_products', 'sku')->ignore($productId)
             ],
-            'other_images' => ['nullable', 'array', 'max:5'], // Allow up to 5 additional images
-            'other_images.*' => [ // Rules for each item in the 'other_images' array
-                // File::image()
-                //     ->min(10)
-                //     ->max(2 * 1024)
-                //     ->dimensions(Rule::dimensions()->maxWidth(2000)->maxHeight(2000)),
-            ],
-            "type" => ['required', 'string', 'max:255'],
-            // Multilingual Name
-            'name' => ['required', 'string'],
-            // 'name.ar' => ['required', 'string', 'max:255'],
-            // 'name.en' => ['nullable', 'string', 'max:255'],
-
-            // Multilingual Description
-            'description' => ['nullable', 'string'],
-            // 'description.ar' => ['required_with:description', 'string', 'max:1000'],
-            // 'description.en' => ['nullable', 'string', 'max:1000'],
-
-            // Product Taxes (array of tax objects)
-            'taxes' => ['nullable', 'array'],
-            'taxes.*.country_id' => ['nullable',  'exists:countries,id'],
-            'taxes.*.tax_number' => ['nullable', 'string', 'max:255'],
-            'taxes.*.tax_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'taxes.*.is_active' => ['boolean'],
-
-            // Product Details (array of label-value pairs)
-            'details' => ['nullable', 'array'],
-            'details.*.label' => ['required_with:details', 'string', 'max:255'],
-            'details.*.value' => ['required_with:details', 'string', 'max:255'],
-
-            // Product Custom Fields (array of field_name-field_value pairs)
-            'custom_fields' => ['nullable', 'array'],
-            'custom_fields.*.field_name' => ['required_with:custom_fields', 'string', 'max:255'],
-            'custom_fields.*.field_value' => ['required_with:custom_fields', 'string', 'max:2000'],
-
-            // Product SEO (single object)
-            'seo' => ['nullable', 'array'],
-            'seo.meta_title' => ['nullable', 'string', 'max:255'],
-            'seo.meta_description' => ['nullable', 'string', 'max:2000'],
-            'seo.meta_keywords' => ['nullable', 'string', 'max:255'],
-            'associated_product_ids' => ['nullable', 'array'],
-            'associated_product_ids.*' => ['uuid', 'exists:eco_products,id'],
+            'warehouse_id' => 'required|uuid|exists:warehouses,id',
+            'gender' => 'required|in:male,female,all',
+            
+            // Pricing and quantities
+            'price' => 'required|numeric|min:0',
+            'min_order_quantity' => 'required|integer|min:1',
+            'stock' => 'nullable|integer|min:0',
+            
+            // Discount system
+            'discount_type' => 'nullable|in:amount,percentage',
+            'discount_value' => 'nullable|numeric|min:0',
+            
+            // Tax and shipping
+            'vat_percentage' => 'nullable|numeric|min:0|max:100',
+            'price_includes_vat' => 'boolean',
+            'shipping_amount' => 'nullable|numeric|min:0',
+            'shipping_included_in_price' => 'boolean',
+            
+            // Visibility
+            'is_visible' => 'boolean',
+            
+            // Media
+            'main_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'meta_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'other_photos' => 'nullable|array|max:5',
+            'other_photos.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            
+            // Photo deletion (for updates - other photos only)
+            'delete_photo_ids' => 'nullable|array',
+            'delete_photo_ids.*' => 'integer|exists:media,id',
+            
+            // Video
+            'video_url' => 'nullable|url|max:500',
+            
+            // SEO
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
+            'meta_keywords' => 'nullable|string|max:255',
         ];
+
+        return $rules;
     }
 
     /**
@@ -94,14 +103,44 @@ class CreateEcoProductDashboardRequest extends FormRequest
             'company_id.uuid' => __('ecoproduct::validation.company_id_uuid'),
             'company_id.exists' => __('ecoproduct::validation.company_id_exists'),
 
-            'price.required' => __('ecoproduct::validation.price_required'),
-            'price.numeric' => __('ecoproduct::validation.price_numeric'),
-            'price.min' => __('ecoproduct::validation.price_min'),
+            'price.required' => 'حقل السعر مطلوب',
+            'price.numeric' => 'يجب أن يكون السعر رقم',
+            'price.min' => 'يجب أن يكون السعر أكبر من أو يساوي صفر',
 
-            'sku.required' => __('ecoproduct::validation.sku_required'),
-            'sku.string' => __('ecoproduct::validation.sku_string'),
-            'sku.max' => __('ecoproduct::validation.sku_max'),
-            'sku.unique' => __('ecoproduct::validation.sku_unique'),
+            'sku.required' => 'رمز المنتج مطلوب',
+            'sku.string' => 'يجب أن يكون رمز المنتج نص',
+            'sku.max' => 'يجب ألا يتجاوز رمز المنتج 255 حرف',
+            'sku.unique' => 'رمز المنتج موجود مسبقاً، يرجى اختيار رمز آخر',
+
+            // Categories validation
+            'category_id.required' => 'حقل الفئة الرئيسية مطلوب',
+            'category_id.uuid' => 'معرف الفئة الرئيسية غير صحيح',
+            'category_id.exists' => 'الفئة الرئيسية المحددة غير موجودة',
+            'sub_category_id.uuid' => 'معرف الفئة الفرعية غير صحيح',
+            'sub_category_id.exists' => 'الفئة الفرعية المحددة غير موجودة',
+            'sub_sub_category_id.uuid' => 'معرف الفئة الفرعية الثانية غير صحيح',
+            'sub_sub_category_id.exists' => 'الفئة الفرعية الثانية المحددة غير موجودة',
+
+            // Product specifications
+            'type.required' => 'نوع المنتج مطلوب',
+            'type.in' => 'نوع المنتج يجب أن يكون رقمي أو عادي',
+            'unit.required' => 'وحدة القياس مطلوبة',
+            'unit.string' => 'يجب أن تكون وحدة القياس نص',
+            'gender.required' => 'الجنس المستهدف مطلوب',
+            'gender.in' => 'الجنس المستهدف يجب أن يكون ذكر أو أنثى أو الكل',
+            'min_order_quantity.required' => 'الحد الأدنى لكمية الطلب مطلوب',
+            'min_order_quantity.integer' => 'يجب أن يكون الحد الأدنى لكمية الطلب رقم صحيح',
+            'min_order_quantity.min' => 'يجب أن يكون الحد الأدنى لكمية الطلب 1 على الأقل',
+
+            // Countries validation
+            'country_ids.array' => 'يجب أن تكون معرفات الدول مصفوفة',
+            'country_ids.*.uuid' => 'معرف الدولة يجب أن يكون UUID صحيح',
+            'country_ids.*.exists' => 'الدولة المحددة غير موجودة',
+
+            // Photo deletion validation messages (other photos only)
+            'delete_photo_ids.array' => 'يجب أن تكون معرفات الصور المراد حذفها مصفوفة',
+            'delete_photo_ids.*.integer' => 'معرف الصورة يجب أن يكون رقم صحيح',
+            'delete_photo_ids.*.exists' => 'الصورة المحددة غير موجودة',
 
             'stock.integer' => __('ecoproduct::validation.stock_integer'),
             'stock.min' => __('ecoproduct::validation.stock_min'),
@@ -114,27 +153,27 @@ class CreateEcoProductDashboardRequest extends FormRequest
             'unlimited_quantity.boolean' => __('ecoproduct::validation.unlimited_quantity_boolean'),
             'is_taxable.boolean' => __('ecoproduct::validation.is_taxable_boolean'),
             'price_includes_vat.boolean' => __('ecoproduct::validation.price_includes_vat_boolean'),
+            'shipping_included_in_price.boolean' => 'يجب أن يكون حقل السعر داخل الشحن صحيح أو خطأ',
+            'product_included.boolean' => 'يجب أن يكون حقل داخل المنتج صحيح أو خطأ',
             'vat_percentage.numeric' => __('ecoproduct::validation.vat_percentage_numeric'),
             'vat_percentage.min' => __('ecoproduct::validation.vat_percentage_min'),
             'vat_percentage.max' => __('ecoproduct::validation.vat_percentage_max'),
             'is_visible.boolean' => __('ecoproduct::validation.is_visible_boolean'),
 
             // Multilingual Name
-            'name.required' => __('ecoproduct::validation.name_required'),
-            'name.array' => __('ecoproduct::validation.name_array'),
-            'name.ar.required' => __('ecoproduct::validation.name_ar_required'),
-            'name.ar.string' => __('ecoproduct::validation.name_ar_string'),
-            'name.ar.max' => __('ecoproduct::validation.name_ar_max'),
-            'name.en.string' => __('ecoproduct::validation.name_en_string'),
-            'name.en.max' => __('ecoproduct::validation.name_en_max'),
+            'name.required' => 'حقل الاسم مطلوب',
+            'name.array' => 'يجب أن يكون حقل الاسم مصفوفة تحتوي على اللغات',
+            'name.ar.required' => 'الاسم باللغة العربية مطلوب',
+            'name.ar.string' => 'يجب أن يكون الاسم العربي نص',
+            'name.ar.max' => 'يجب ألا يتجاوز الاسم العربي 255 حرف',
+            'name.en.required' => 'الاسم باللغة الإنجليزية مطلوب',
+            'name.en.string' => 'يجب أن يكون الاسم الإنجليزي نص',
+            'name.en.max' => 'يجب ألا يتجاوز الاسم الإنجليزي 255 حرف',
 
             // Multilingual Description
-            'description.array' => __('ecoproduct::validation.description_array'),
-            'description.ar.required_with' => __('ecoproduct::validation.description_ar_required_with'),
-            'description.ar.string' => __('ecoproduct::validation.description_ar_string'),
-            'description.ar.max' => __('ecoproduct::validation.description_ar_max'),
-            'description.en.string' => __('ecoproduct::validation.description_en_string'),
-            'description.en.max' => __('ecoproduct::validation.description_en_max'),
+            'description.array' => 'يجب أن يكون حقل الوصف مصفوفة تحتوي على اللغات',
+            'description.ar.string' => 'يجب أن يكون الوصف العربي نص',
+            'description.en.string' => 'يجب أن يكون الوصف الإنجليزي نص',
 
             // Product Taxes
             'taxes.array' => __('ecoproduct::validation.taxes_array'),
@@ -195,47 +234,102 @@ class CreateEcoProductDashboardRequest extends FormRequest
     }
 
     /**
-     * Create a DTO from the validated request data.
+     * Create a new DTO from the validated request data.
      */
-    public function createCreateEcoProductDTO(): CreateEcoProductDashboardDTO
+    public function createNewEcoProductDTO(): CreateEcoProductNewDTO
     {
         $validatedData = $this->validated();
 
-        $description = $validatedData['description'] ?? null;
-        if (is_array($description) && empty(array_filter($description))) {
-            $description = null;
-        }
-
-        $seoData = $validatedData['seo'] ?? null;
-        if (is_array($seoData) && empty(array_filter($seoData))) {
-            $seoData = null;
-        }
-
-        return new CreateEcoProductDashboardDTO(
+        return new CreateEcoProductNewDTO(
             companyId: Uuid::fromString(tenant("id")),
             name: $validatedData['name'],
-            description: $description,
-            price: (float) $validatedData['price'],
-            sku: $validatedData['sku'],
-            stock: (int)$validatedData['stock'] ?? null,
-            warehouseId: Uuid::fromString($validatedData['warehouse_id']),
-            requiresShipping: (bool)$validatedData['requires_shipping'] ?? 1,
-            unlimitedQuantity: (bool)$validatedData['unlimited_quantity'] ?? 0,
-            isTaxable: (bool)$validatedData['is_taxable'] ?? true,
-            priceIncludesVat: (bool)$validatedData['price_includes_vat'] ?? 0,
-            vatPercentage: (float)$validatedData['vat_percentage'] ?? null,
-            isVisible: (bool)$validatedData['is_visible'] ?? true,
-            brandId: !empty($validatedData['brand_id']) ? Uuid::fromString($validatedData['brand_id']) : null,
-            categoryId: !empty($validatedData['category_id']) ? Uuid::fromString($validatedData['category_id']) : null,
+            description: $validatedData['description'] ?? null,
+            categoryId: Uuid::fromString($validatedData['category_id']),
             subCategoryId: !empty($validatedData['sub_category_id']) ? Uuid::fromString($validatedData['sub_category_id']) : null,
-            type: $validatedData['type'] ?? null,
-            taxes: $validatedData['taxes'] ?? null,
-            details: $validatedData['details'] ?? null,
-            customFields: $validatedData['custom_fields'] ?? null,
-            seo: $seoData,
-            associatedProductIds: $validatedData['associated_product_ids'] ?? [],
-            mainImage: $this->file('main_image'), // NEW: Pass UploadedFile object
-            otherImages: $this->file('other_images') ?? [], // NEW: Pass array of UploadedFile objects
+            subSubCategoryId: !empty($validatedData['sub_sub_category_id']) ? Uuid::fromString($validatedData['sub_sub_category_id']) : null,
+            brandId: !empty($validatedData['brand_id']) ? Uuid::fromString($validatedData['brand_id']) : null,
+            countryIds: $validatedData['country_ids'] ?? null,
+            type: $validatedData['type'],
+            unit: $validatedData['unit'],
+            sku: $validatedData['sku'],
+            warehouseId: Uuid::fromString($validatedData['warehouse_id']),
+            gender: $validatedData['gender'],
+            price: (float) $validatedData['price'],
+            minOrderQuantity: (int) $validatedData['min_order_quantity'],
+            stock: isset($validatedData['stock']) ? (int) $validatedData['stock'] : null,
+            discountType: $validatedData['discount_type'] ?? null,
+            discountValue: isset($validatedData['discount_value']) ? (float) $validatedData['discount_value'] : null,
+            vatPercentage: isset($validatedData['vat_percentage']) ? (float) $validatedData['vat_percentage'] : null,
+            priceIncludesVat: (bool) ($validatedData['price_includes_vat'] ?? false),
+            shippingAmount: isset($validatedData['shipping_amount']) ? (float) $validatedData['shipping_amount'] : null,
+            shippingIncludedInPrice: (bool) ($validatedData['shipping_included_in_price'] ?? false),
+            isVisible: (bool) ($validatedData['is_visible'] ?? true),
+            mainPhoto: null, // Will be handled by FileUploadService in the service
+            otherPhotos: null, // Will be handled by FileUploadService in the service
+            videoUrl: $validatedData['video_url'] ?? null,
+            metaTitle: $validatedData['meta_title'] ?? null,
+            metaDescription: $validatedData['meta_description'] ?? null,
+            metaKeywords: $validatedData['meta_keywords'] ?? null,
         );
+    }
+
+    /**
+     * Handle main photo upload
+     */
+    private function handleMainPhoto(): ?array
+    {
+        if ($this->hasFile('main_photo') && $this->file('main_photo')->isValid()) {
+            $file = $this->file('main_photo');
+            
+            // Generate unique filename to avoid conflicts
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('products/main', $filename, 'public');
+            
+            return [
+                'original_name' => $file->getClientOriginalName(),
+                'filename' => $filename,
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'path' => $path,
+                'url' => asset('storage/' . $path),
+            ];
+        }
+        return null;
+    }
+
+    /**
+     * Handle other photos upload
+     */
+    private function handleOtherPhotos(): ?array
+    {
+        if ($this->hasFile('other_photos')) {
+            $photos = [];
+            $files = $this->file('other_photos');
+            
+            // Handle both single file and array of files
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+            
+            foreach ($files as $index => $file) {
+                if ($file && $file->isValid()) {
+                    // Generate unique filename
+                    $filename = time() . '_' . $index . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('products/gallery', $filename, 'public');
+                    
+                    $photos[] = [
+                        'original_name' => $file->getClientOriginalName(),
+                        'filename' => $filename,
+                        'size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                        'path' => $path,
+                        'url' => asset('storage/' . $path),
+                    ];
+                }
+            }
+            
+            return !empty($photos) ? $photos : null;
+        }
+        return null;
     }
 }

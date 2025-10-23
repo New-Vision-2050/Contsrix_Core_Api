@@ -24,7 +24,7 @@ class UpdateCompanyOfficialDocumentRequest extends FormRequest
             "files_deleted"=>"nullable|array",
             "files_deleted.*"=>"required|exists:media,id",
             "document_type_id"=>"required|exists:document_types,id",
-            "description"=>"required",
+            "description"=>"nullable",
             "document_number"=>"required|numeric",
             "start_date"=>"required|date|before_or_equal:end_date|date_format:Y-m-d",
             "end_date"=>"required|date|after_or_equal:start_date|date_format:Y-m-d",

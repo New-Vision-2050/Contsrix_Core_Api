@@ -6,8 +6,6 @@ namespace Modules\Ecommerce\EcoProduct\Presenters\Dashboard;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
-use Modules\Ecommerce\EcoBrand\Presenters\EcoBrandPresenter;
-use Modules\Ecommerce\EcoCategory\Presenters\EcoCategoryPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class EcoProductDashboardPresenter extends AbstractPresenter
@@ -22,6 +20,7 @@ class EcoProductDashboardPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         $firstMedia = $this->ecoProduct->getFirstMedia('eco_product_main_image');
+    
         return [
             'id' => $this->ecoProduct->id,
             'name' => $this->ecoProduct->name,
@@ -29,8 +28,8 @@ class EcoProductDashboardPresenter extends AbstractPresenter
             'stock' => $this->ecoProduct->stock,
             'sku' => $this->ecoProduct->sku,
             'is_visible' => (int)$this->ecoProduct->is_visible,
-            'main_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
-
+            'type' => $this->ecoProduct->type,
+            'main_photo' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
         ];
     }
 }

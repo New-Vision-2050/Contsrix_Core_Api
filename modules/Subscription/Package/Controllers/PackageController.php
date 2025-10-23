@@ -178,12 +178,12 @@ class PackageController extends Controller
         return Json::success('Features attached successfully');
     }
 
-    public function syncPermissions(SyncPackagePermissionsRequest $request, Package $package): JsonResponse
+    public function syncPermissions(SyncPackagePermissionsRequest $request, Package $package)
     {
         $permissions = $request->validated('permissions');
         $limits = $request->getPermissionLimits();
-
         $this->packageService->syncPermissions($package, $permissions, $limits);
+
 
         return Json::success('Permissions synced successfully with limits.');
     }

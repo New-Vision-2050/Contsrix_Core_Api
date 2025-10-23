@@ -153,9 +153,9 @@ class CompanyLegalDataRepository extends BaseRepository
             }
             DB::commit();
 
-            if ($lastLegalData) {
-                event(new CompanyLegalDataUpdated($lastLegalData->fresh()));
-            }
+//            if ($lastLegalData) {
+//                event(new CompanyLegalDataUpdated($lastLegalData->fresh()));
+//            }
 
             return true;
 

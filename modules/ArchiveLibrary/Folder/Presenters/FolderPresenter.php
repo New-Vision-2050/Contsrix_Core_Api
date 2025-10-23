@@ -101,6 +101,32 @@ class FolderPresenter extends AbstractPresenter
             ->toArray();
 
         self::$fileSizesCache = $fileSizes;
+        $fileSizesDirect = \DB::table('files')
+            ->join('media', function($join) {
+                $join->on('files.id', '=', 'media.file_id');
+
+            })
+            ->whereIn('files.folder_id', $folderIds)
+            ->select('files.folder_id', \DB::raw('SUM(media.size) as total_size'))
+            ->groupBy('files.folder_id')
+            ->get()
+            ->pluck('total_size', 'folder_id')
+            ->toArray();
+
+        foreach ($fileSizesDirect as $id => $fileSize) {
+
+            if(isset(self::$fileSizesCache[$id]))
+            {
+                self::$fileSizesCache[$id]+=$fileSize;
+
+            }
+            else
+            {
+                self::$fileSizesCache[$id]=$fileSize;
+
+            }
+        }
+
     }
 
     /**
@@ -148,7 +174,7 @@ class FolderPresenter extends AbstractPresenter
         return $lastAudit ? (new AuditPresenter($lastAudit))->getData() : null;
     }
 
-    private function getFolderSize(): int
+    private function getFolderSize()
     {
         // Use cache if available
         if (self::$fileSizesCache !== null) {
@@ -165,6 +191,16 @@ class FolderPresenter extends AbstractPresenter
             ->where('files.folder_id', $this->folder->id)
             ->sum('media.size');
 
-        return (int) $totalSize;
+
+        $totalSizeDirect = \DB::table('files')
+            ->join('media', function($join) {
+                $join->on('files.id', '=', 'file_id');
+            })
+            ->where('files.folder_id', $this->folder->id)
+            ->sum('media.size');
+
+
+
+        return  $totalSizeDirect+$totalSize;
     }
 }

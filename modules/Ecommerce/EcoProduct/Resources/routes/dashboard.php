@@ -13,5 +13,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::get('/{id}', [EcoProductDashboardController::class, 'show']);
     Route::post('/{id}', [EcoProductDashboardController::class, 'update']);
+    Route::patch('/{id}/toggle-visibility', [EcoProductDashboardController::class, 'toggleVisibility']);
     Route::delete('/{id}', [EcoProductDashboardController::class, 'delete']);
 });
+
