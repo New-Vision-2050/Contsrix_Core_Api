@@ -81,6 +81,7 @@ class CreateEmployeeRequest extends FormRequest
         return new CreateCompanyUserCompanyRoleDTO(
             company_id: Uuid::fromString(tenant("id")),//will create for current company
             role: (string)CompanyUserRole::EMPLOYEE->value,
+            subEntityId: $this->get("sub_entity_id")
 
         );
     }
