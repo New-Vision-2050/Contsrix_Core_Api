@@ -87,15 +87,17 @@ class FileCRUDService
         ];
     }
 
-    public function copyFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    public function copyFile(array $fileIds, ?UuidInterface $targetFolderId): array
     {
-        return $this->repository->copyFile($fileId, $targetFolderId);
+        return $this->repository->copyFile($fileIds, $targetFolderId);
     }
 
-    public function cutFile(UuidInterface $fileId, ?UuidInterface $targetFolderId): File
+    public function cutFile(array $fileIds, ?UuidInterface $targetFolderId): array
     {
-        return $this->repository->cutFile($fileId, $targetFolderId);
+        return $this->repository->cutFile($fileIds, $targetFolderId);
     }
+
+
 
     public function shareFile(array $fileIds, array $userIds): array
     {
@@ -106,7 +108,7 @@ class FileCRUDService
         // Generate share URLs for each file
         $shareUrls = [];
         foreach ($result['files'] as $file) {
-            $shareUrls[] = $url. '/en/shared-file/' . $file->id;
+            $shareUrls[] = $url.'/en/shared-file/' . $file->id;
         }
 
         return [
