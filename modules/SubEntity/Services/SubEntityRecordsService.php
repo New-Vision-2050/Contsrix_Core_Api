@@ -46,9 +46,10 @@ class SubEntityRecordsService
         $query = $model::query();
         if($model === User::class)
         {
-             $query->whereHas('companyUserCompanies', function ($q) use($registrationForm)
+             $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
             {
                 $q->where('role', $registrationForm->company_user_role_map);
+//                    ->where('sub_entity_id', $subEntityId);
             });
 
         }

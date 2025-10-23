@@ -12,6 +12,7 @@ class CreateCompanyUserCompanyRoleDTO
 
         public UuidInterface $company_id,
         public string        $role,
+        public ?string       $subEntityId = null
     )
     {
     }
@@ -32,6 +33,7 @@ class CreateCompanyUserCompanyRoleDTO
         return [
             'role' => $this->role,
             "company_id" => $this->company_id,
+            "sub_entity_id"=>$this->subEntityId
         ];
     }
 }
