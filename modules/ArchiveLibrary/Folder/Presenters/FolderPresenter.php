@@ -145,6 +145,7 @@ class FolderPresenter extends AbstractPresenter
             'parent_id' => $this->folder?->parent_id,
             'access_type' => $this->folder->access_type,
             'status' => $this->folder->status ?? 1,
+            "is_file"=>0,
             'file' => $this->folder->getFirstMedia("upload") ? (new MediaPresenter($this->folder->getFirstMedia('upload')))->getData(): null,
             'files_count' => $this->folder->files_count ?? $this->folder->files()->count(),
             "can_delete"=>$this->folder->name  == "المستندات الرسمية"?0:1,
