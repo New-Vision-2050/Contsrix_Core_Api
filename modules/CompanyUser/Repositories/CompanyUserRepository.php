@@ -21,6 +21,7 @@ use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyReposito
 use Modules\Company\ManagementHierarchy\Repositories\UserCanAccessManagementHierarchyRepository;
 use Modules\CompanyUser\Enum\CompanyUserRole;
 use Modules\CompanyUser\Enum\CompanyUserStatus;
+use Modules\CompanyUser\Events\CompanyUserCreated;
 use Modules\CompanyUser\Models\ClientDetail;
 use Modules\CompanyUser\Models\CompanyUserAddress;
 use Modules\CompanyUser\Repositories\BrokerDetailRepository;
@@ -370,7 +371,7 @@ class CompanyUserRepository extends BaseRepository
                     $brokerDetail->update(["company_id" => $newCompanyClientId, "original_branch_id" => $userBranchId, "is_created_by_owner" => auth()->user()->is_owner || auth()->user()->email == "admin@constrix-nv.com"]);
                 }
             }
-//
+        event(new CompanyUserCreated($companyUser));
             DB::commit();
             return $companyUser;
         } catch (\Exception $exception) {

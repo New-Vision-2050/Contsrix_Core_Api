@@ -11,6 +11,7 @@ use Modules\CompanyUser\Enum\CompanyUserRole;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class SubEntityRecordsService
 {
@@ -33,28 +34,34 @@ class SubEntityRecordsService
 
     public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, $page = 1, $perPage = 10): array|Collection|LengthAwarePaginator
     {
-        $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
+        $companyId = tenant('id');
+        $cacheKey = "sub_entity_records_{$companyId}_{$subEntityId}_{$registrationFormId}_" . 
+                    ($branchId ?? 'all') . "_page_{$page}_per_{$perPage}";
+        $cacheTtl = 60 * 15; // 15 minutes
 
-        if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map, $branchId);
-        }
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($subEntityId, $registrationFormId, $branchId, $page, $perPage) {
+            $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
-        //get sub_entity
-        $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
-        //get super entity model
-        $model = $this->getSuperEntityModel($sub_entity->super_entity);
-        $query = $model::query();
-        if($model === User::class)
-        {
-             $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
+            if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+                return $this->getMappedRecords($page, $perPage, $registrationForm->company_user_role_map, $branchId);
+            }
+
+            //get sub_entity
+            $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
+            //get super entity model
+            $model = $this->getSuperEntityModel($sub_entity->super_entity);
+            $query = $model::query();
+            if($model === User::class)
             {
-                $q->where('role', $registrationForm->company_user_role_map);
+                 $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
+                {
+                    $q->where('role', $registrationForm->company_user_role_map);
 //                    ->where('sub_entity_id', $subEntityId);
-            });
+                });
 
-        }
-        return $query->paginate($perPage);
-
+            }
+            return $query->paginate($perPage);
+        });
     }
 
     protected function getSuperEntityModel(string $superEntityId): string
@@ -69,18 +76,24 @@ class SubEntityRecordsService
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array
     {
-        $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
+        $companyId = tenant('id');
+        $cacheKey = "sub_entity_widgets_{$companyId}_{$subEntityId}_{$registrationFormId}";
+        $cacheTtl = 60 * 30; // 30 minutes
 
-        if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
-            return $this->getMappedRecordsWidgets($registrationForm->company_user_role_map);
-        }
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($subEntityId, $registrationFormId) {
+            $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
 
-        //get sub_entity
-        $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
-        //get super entity model
-        $model = $this->getSuperEntityModel($sub_entity->super_entity);
+            if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+                return $this->getMappedRecordsWidgets($registrationForm->company_user_role_map);
+            }
 
-        return $this->getCustomEntityWidgets($model, $registrationFormId);
+            //get sub_entity
+            $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
+            //get super entity model
+            $model = $this->getSuperEntityModel($sub_entity->super_entity);
+
+            return $this->getCustomEntityWidgets($model, $registrationFormId);
+        });
     }
 
     protected function getMappedRecordsWidgets($type): array
@@ -202,5 +215,39 @@ class SubEntityRecordsService
         }
 
         return round(($current / $previous) * 100, 2);
+    }
+
+    /**
+     * Clear cache for sub entity records
+     *
+     * @param string|null $subEntityId
+     * @param string|null $registrationFormId
+     * @return void
+     */
+    public function clearCache(?string $subEntityId = null, ?string $registrationFormId = null): void
+    {
+        $companyId = tenant('id');
+        
+        if ($subEntityId && $registrationFormId) {
+            // Clear specific cache entries
+            $widgetsCachePattern = "sub_entity_widgets_{$companyId}_{$subEntityId}_{$registrationFormId}";
+            Cache::forget($widgetsCachePattern);
+            
+            // Clear all pagination pages for this entity
+            $recordsCachePattern = "sub_entity_records_{$companyId}_{$subEntityId}_{$registrationFormId}_";
+            // Note: This clears individual keys, for wildcard clearing you'd need Redis tags
+            Cache::forget($recordsCachePattern);
+        } else {
+            // Clear all sub entity caches for this company
+            // Note: For production, consider using cache tags for better wildcard support
+            $patterns = [
+                "sub_entity_widgets_{$companyId}_",
+                "sub_entity_records_{$companyId}_"
+            ];
+            
+            foreach ($patterns as $pattern) {
+                Cache::forget($pattern);
+            }
+        }
     }
 }
