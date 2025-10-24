@@ -11,12 +11,10 @@ use Modules\CompanyUser\Events\UserCreated;
 use Modules\CompanyUser\Events\UserDeleted;
 use Modules\CompanyUser\Events\UserRoleDeleted;
 use Modules\CompanyUser\Events\UserUpdated;
-use Modules\CompanyUser\Events\CompanyUserCreated;
 use Modules\CompanyUser\Listeners\CreateUserInAuth;
 use Modules\CompanyUser\Listeners\DeleteUserInAuth;
 use Modules\CompanyUser\Listeners\DeleteUserRoleInAuth;
 use Modules\CompanyUser\Listeners\UpdateUserInAuth;
-use Modules\SubEntity\Listeners\ClearSubEntityCacheListener;
 
 class CompanyUserServiceProvider extends ModuleServiceProvider
 {
@@ -29,7 +27,6 @@ class CompanyUserServiceProvider extends ModuleServiceProvider
 
     public function boot(): void
     {
-        parent::boot();
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
@@ -38,7 +35,7 @@ class CompanyUserServiceProvider extends ModuleServiceProvider
         Event::listen(UserUpdated::class,UpdateUserInAuth::class );
         Event::listen(UserRoleDeleted::class,DeleteUserRoleInAuth::class );
         Event::listen(UserDeleted::class,DeleteUserInAuth::class );
-        Event::listen(CompanyUserCreated::class, ClearSubEntityCacheListener::class);
+
     }
 
     public function register(): void
