@@ -18,20 +18,20 @@ Route::middleware(['auth:api', 'tenant'])->prefix('attendance/hierarchy')->group
     
     // Branch listing and details
     Route::get('/branches', [ManagementHierarchyController::class, 'getBranches'])
-        ->middleware('permission:view_attendance_constraints')
+        ->middleware(['permission:view_attendance_constraints', 'deduplicate:2'])
         ->name('attendance.hierarchy.branches');
     
     Route::get('/branches/{branchId}', [ManagementHierarchyController::class, 'getBranchDetails'])
-        ->middleware('permission:view_attendance_constraints')
+        ->middleware(['permission:view_attendance_constraints', 'deduplicate:2'])
         ->name('attendance.hierarchy.branch-details');
     
     // Branch hierarchy and relationships
     Route::get('/branches/{branchId}/children', [ManagementHierarchyController::class, 'getBranchChildren'])
-        ->middleware('permission:view_attendance_constraints')
+        ->middleware(['permission:view_attendance_constraints', 'deduplicate:2'])
         ->name('attendance.hierarchy.branch-children');
     
     Route::get('/branches/{branchId}/parents', [ManagementHierarchyController::class, 'getBranchParents'])
-        ->middleware('permission:view_attendance_constraints')
+        ->middleware(['permission:view_attendance_constraints', 'deduplicate:2'])
         ->name('attendance.hierarchy.branch-parents');
     
     // User-branch relationships
