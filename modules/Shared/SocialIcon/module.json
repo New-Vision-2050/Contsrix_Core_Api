@@ -1,0 +1,14 @@
+{
+    "name": "SocialIcon",
+    "alias": "socialicon",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\SocialIcon\\Providers\\SocialIconServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}
