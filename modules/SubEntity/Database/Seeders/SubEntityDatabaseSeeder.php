@@ -21,6 +21,8 @@ class SubEntityDatabaseSeeder extends Seeder
         SubEntity::factory([
                 'super_entity' => $superEntityType,
                 'origin_super_entity' => $superEntityType,
+                "name"=>"الموظفين",
+                "slug" => "employees",
 
                 'main_program_id' => Program::where("slug","human-resources")->first(),
                 'is_active' => 1,

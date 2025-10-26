@@ -804,7 +804,7 @@ class CompanyUserRepository extends BaseRepository
 
         // Check if trying to delete company owner
         $isOwner = \Modules\User\Models\User::where('global_company_user_id', $companyUser->global_id)
-            ->where('is_owner', true)
+            ->where('is_owner', true)->where("company_id",tenant("id"))
             ->exists();
 
         if ($isOwner) {
