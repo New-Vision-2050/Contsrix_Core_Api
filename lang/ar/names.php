@@ -74,10 +74,9 @@ return [
 
     "human-resources"=>"الموارد البشرية",
 
-    'attendance-list' => 'قائمة الحضور',
-    'attendance-list*attendance-list' => 'قائمة الحضور',
-    'attendance-constraints' => 'قيود الحضور',
-    'attendance-constraints*attendance-constraints' => 'محددات الحضور',
+    'attendance' => 'الحضور والانصراف',
+    'attendance*attendance-list' => 'قائمة الحضور',
+    'attendance*attendance-constraints' => 'محددات الحضور',
     'attendance-map' => 'خريطة الحضور',
     'attendance-list*attendance-map' => 'خريطة الحضور',
 
