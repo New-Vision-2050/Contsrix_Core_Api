@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\DTO;
 
+use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\SubEntity\Models\SubEntity;
 use Ramsey\Uuid\UuidInterface;
 
 class CreateCompanyUserCompanyRoleDTO
@@ -30,6 +32,11 @@ class CreateCompanyUserCompanyRoleDTO
 
     public function toArray(): array
     {
+        if($this->role == CompanyUserRole::EMPLOYEE->value && $this->subEntityId==null)
+        {
+            $this->subEntityId =  SubEntity::where("slug","employees")->first()?->id;
+
+        }
         return [
             'role' => $this->role,
             "company_id" => $this->company_id,
