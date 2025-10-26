@@ -16,28 +16,26 @@ class SubEntityDatabaseSeeder extends Seeder
 
     public function run(): void
     {
-//        SubEntity::factory([
-//                'super_entity' => $superEntityType,
-//                'origin_super_entity' => $superEntityType,
-//
-//                'main_program_id' => Program::where("slug","human-resources")->first(),
-//                'is_active' => 1,// 80% chance of being active
-//                'is_registrable' => 1, // 30% chance of being registrable
-//                'default_attributes' => json_encode([
-//                    'name',
-//                    'email',
-//                    'phone',
-//                ]),
-//                'optional_attributes' => $this->faker->optional()->passthrough(json_encode([
-//                    "company_id",
-//                    "is_owner",
-//                    "management_hierarchy_id"
-//                ])),
-//                'registration_form_id' => RegistrationForm::first()
-//            ]
-//        )
-//            ->count(1)
-//            ->create();
+        $superEntityType = fake()->randomElement(['users']);
+
+        SubEntity::factory([
+                'super_entity' => $superEntityType,
+                'origin_super_entity' => $superEntityType,
+
+                'main_program_id' => Program::where("slug","human-resources")->first(),
+                'is_active' => 1,
+                'is_registrable' => 1,
+                'default_attributes' => json_encode([
+                    'name',
+                    'email',
+                    'phone',
+                ]),
+
+                'registration_form_id' => RegistrationForm::where("slug","employee")->first()
+            ]
+        )
+            ->count(1)
+            ->create();
 
 
     }

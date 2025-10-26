@@ -111,7 +111,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(ProgramDatabaseSeeder::class);
         $this->call(RegistrationFormsSeeder::class);
-//        $this->call(SubEntityDatabaseSeeder::class);
         $this->call(BankTypeAccountSeederTableSeeder::class);
         $this->call(SeedersMaritalStatusSeederTableSeeder::class);
         $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
@@ -120,6 +119,9 @@ class DatabaseSeeder extends Seeder
         $this->call(BanksOtherModulesSeederTableSeeder::class);
         $this->call(UniversitiesOtherSeederTableSeeder::class);
         $this->call(MainPackageSeeder::class);
+
+        $this->call(SubEntityDatabaseSeeder::class);
+
 
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
