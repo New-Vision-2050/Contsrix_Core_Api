@@ -48,8 +48,8 @@ class SubEntityRecordsService
         {
              $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
             {
-                $q->where('role', $registrationForm->company_user_role_map);
-//                    ->where('sub_entity_id', $subEntityId);
+                $q->where('role', $registrationForm->company_user_role_map)
+                    ->where('sub_entity_id', $subEntityId);
             });
 
         }
