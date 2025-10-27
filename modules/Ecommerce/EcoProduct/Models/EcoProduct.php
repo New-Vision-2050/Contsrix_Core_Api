@@ -25,7 +25,7 @@ use Modules\Ecommerce\EcoProduct\Models\ProductCustomField;
 use Modules\Ecommerce\EcoProduct\Models\ProductSEO;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-
+use App\Traits\ForcedBelongsToTenant;
 class EcoProduct extends Model implements HasMedia
 {
     use HasFactory;
@@ -34,6 +34,7 @@ class EcoProduct extends Model implements HasMedia
     use HasTranslations;
     //use SoftDeletes; // Uncomment if you intend to use soft deletes
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
     protected $table = 'eco_products'; // Explicitly define table name for clarity
 
     public array $translatable = ['name', 'description'];

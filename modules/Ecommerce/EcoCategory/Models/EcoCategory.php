@@ -14,6 +14,7 @@ use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoCategory extends Model implements HasMedia
 {
@@ -22,6 +23,7 @@ class EcoCategory extends Model implements HasMedia
     use BaseFilterable;
     use HasTranslations;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
     //use SoftDeletes;
 
     public array $translatable = ['name'];
@@ -40,6 +42,15 @@ class EcoCategory extends Model implements HasMedia
 
     protected $casts = [
         'id' => 'string',
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'is_active' => true,
+        'priority' => 0,
     ];
 
     protected static function newFactory(): EcoCategoryFactory

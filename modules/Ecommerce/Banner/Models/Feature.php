@@ -2,22 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Modules\Ecommerce\EcoProduct\Models;
+namespace Modules\Ecommerce\Banner\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Modules\Country\Models\Country;
-
-class ProductTax extends Model
+use App\Traits\ForcedBelongsToTenant;
+class Feature extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-
-    protected $table = 'product_taxes';
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 
@@ -25,26 +23,32 @@ class ProductTax extends Model
 
     protected $fillable = [
         'company_id',
-        'product_id',
-        'country_id',
-        'tax_number',
-        'tax_percentage',
+        'setting_page_id',
+        'title',
+        'description',
         'is_active',
     ];
 
     protected $casts = [
         'id' => 'string',
-        'tax_percentage' => 'float',
         'is_active' => 'boolean',
     ];
 
-    public function product(): BelongsTo
+
+    // Relationships
+    public function settingPage(): BelongsTo
     {
-        return $this->belongsTo(EcoProduct::class, 'product_id', 'id');
+        return $this->belongsTo(SettingPage::class);
     }
 
-    public function country(): BelongsTo
+    // Scopes
+    public function scopeActive($query)
     {
-        return $this->belongsTo(Country::class, 'country_id', 'id');
+        return $query->where('is_active', true);
+    }
+
+    public function scopeByCompany($query, string $companyId)
+    {
+        return $query->where('company_id', $companyId);
     }
 }

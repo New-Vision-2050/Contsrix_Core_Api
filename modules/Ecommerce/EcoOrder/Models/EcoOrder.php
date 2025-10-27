@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Ecommerce\EcoClient\Models\EcoClient;
 use Modules\Ecommerce\EcoOrderDetail\Models\EcoOrderDetail;
-
+use App\Traits\ForcedBelongsToTenant;
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class EcoOrder extends Model
@@ -21,6 +21,7 @@ class EcoOrder extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
     //use HasTranslations;
     //use SoftDeletes;
 

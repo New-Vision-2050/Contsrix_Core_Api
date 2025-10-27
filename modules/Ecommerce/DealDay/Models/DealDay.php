@@ -13,12 +13,14 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
+use App\Traits\ForcedBelongsToTenant;
 
 class DealDay extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
     use HasTranslations;
 
     public array $translatable = ['name'];

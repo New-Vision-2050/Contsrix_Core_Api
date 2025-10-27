@@ -12,12 +12,14 @@ use Modules\Ecommerce\EcoInstallment\Database\factories\EcoInstallmentFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Shared\Installment\Models\Installment;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoInstallment extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Ecommerce\Page\Database\factories\PageFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
+use App\Traits\ForcedBelongsToTenant;
 
 class Page extends Model
 {
@@ -17,6 +18,7 @@ class Page extends Model
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
+    use ForcedBelongsToTenant;
     //use SoftDeletes;
 
     public array $translatable = ['description'];

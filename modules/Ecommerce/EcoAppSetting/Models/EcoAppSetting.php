@@ -13,12 +13,16 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Traits\ForcedBelongsToTenant;
+
 class EcoAppSetting extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
+    
     public $incrementing = false;
 
     protected $keyType = 'string';
