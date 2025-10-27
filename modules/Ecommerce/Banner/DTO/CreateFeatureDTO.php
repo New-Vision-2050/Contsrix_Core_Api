@@ -6,12 +6,13 @@ namespace Modules\Ecommerce\Banner\DTO;
 
 use Ramsey\Uuid\UuidInterface;
 
-class CreateBannerDTO
+class CreateFeatureDTO
 {
     public function __construct(
         public UuidInterface $companyId,
         public ?UuidInterface $settingPageId,
-        public string $url,
+        public string $title,
+        public string $description,
         public bool $isActive = true,
     ) {
     }
@@ -21,7 +22,8 @@ class CreateBannerDTO
         return [
             'company_id' => $this->companyId->toString(),
             'setting_page_id' => $this->settingPageId?->toString(),
-            'url' => $this->url,
+            'title' => $this->title,
+            'description' => $this->description,
             'is_active' => $this->isActive,
         ];
     }

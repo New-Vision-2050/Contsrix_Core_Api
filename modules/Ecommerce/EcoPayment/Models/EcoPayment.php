@@ -12,12 +12,14 @@ use Modules\Ecommerce\EcoPayment\Database\factories\EcoPaymentFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Shared\Payment\Models\Payment;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoPayment extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 

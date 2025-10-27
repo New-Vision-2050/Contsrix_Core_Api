@@ -12,12 +12,14 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Shared\Language\Models\Language;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoLanguage extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 

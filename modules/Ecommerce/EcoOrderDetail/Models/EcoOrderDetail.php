@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Ecommerce\EcoOrderDetail\Database\factories\EcoOrderDetailFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Ecommerce\EcoOrder\Models\EcoOrder;
-
+use App\Traits\ForcedBelongsToTenant;
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class EcoOrderDetail extends Model
@@ -18,6 +18,7 @@ class EcoOrderDetail extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
     //use HasTranslations;
     //use SoftDeletes;
 

@@ -12,12 +12,14 @@ use Modules\Ecommerce\EcoCurrency\Database\factories\EcoCurrencyFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Shared\Currency\Models\Currency;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoCurrency extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 

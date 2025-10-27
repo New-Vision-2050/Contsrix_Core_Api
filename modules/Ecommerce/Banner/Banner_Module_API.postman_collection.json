@@ -1,0 +1,565 @@
+{
+  "info": {
+    "name": "Banner Module API Collection",
+    "description": "Complete API collection for Banner, SettingPages, and Features management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1/ecommerce/dashboard",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "company_id",
+      "value": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "string"
+    },
+    {
+      "key": "setting_page_id",
+      "value": "123e4567-e89b-12d3-a456-426614174000",
+      "type": "string"
+    },
+    {
+      "key": "banner_id",
+      "value": "987fcdeb-51a2-43d1-9f12-345678901234",
+      "type": "string"
+    },
+    {
+      "key": "feature_id",
+      "value": "456e7890-a12b-34c5-d678-901234567890",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Banner Management",
+      "item": [
+        {
+          "name": "Get All Banners",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/banners?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["banners"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Banner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "company_id",
+                  "value": "{{company_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "setting_page_id",
+                  "value": "{{setting_page_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "url",
+                  "value": "https://example.com/banner-link",
+                  "type": "text"
+                },
+                {
+                  "key": "is_active",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "banner_image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/banners",
+              "host": ["{{base_url}}"],
+              "path": ["banners"]
+            }
+          }
+        },
+        {
+          "name": "Get Single Banner",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/banners/{{banner_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["banners", "{{banner_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Banner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "setting_page_id",
+                  "value": "{{setting_page_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "url",
+                  "value": "https://example.com/updated-banner-link",
+                  "type": "text"
+                },
+                {
+                  "key": "is_active",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "banner_image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/banners/{{banner_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["banners", "{{banner_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Banner Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/banners/{{banner_id}}/toggle-status",
+              "host": ["{{base_url}}"],
+              "path": ["banners", "{{banner_id}}", "toggle-status"]
+            }
+          }
+        },
+        {
+          "name": "Delete Banner",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/banners/{{banner_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["banners", "{{banner_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Export Banners",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"xlsx\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/banners/export",
+              "host": ["{{base_url}}"],
+              "path": ["banners", "export"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setting Pages Management",
+      "item": [
+        {
+          "name": "Get All Setting Pages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/setting-pages?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["setting-pages"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create or Update Setting Page (Upsert)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"type\": \"home\",\n  \"title_header\": \"مرحباً بكم في متجرنا\",\n  \"description_header\": \"نحن نقدم أفضل المنتجات والخدمات لعملائنا الكرام\",\n  \"title_footer\": \"تواصل معنا\",\n  \"description_footer\": \"للاستفسارات والدعم الفني يرجى التواصل معنا عبر الوسائل المتاحة\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/setting-pages/upsert",
+              "host": ["{{base_url}}"],
+              "path": ["setting-pages", "upsert"]
+            }
+          }
+        },
+        {
+          "name": "Get Setting Page by Type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/setting-pages/by-type?type=home&company_id={{company_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["setting-pages", "by-type"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "home"
+                },
+                {
+                  "key": "company_id",
+                  "value": "{{company_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Setting Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/setting-pages/{{setting_page_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["setting-pages", "{{setting_page_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Setting Page Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/setting-pages/{{setting_page_id}}/toggle-status",
+              "host": ["{{base_url}}"],
+              "path": ["setting-pages", "{{setting_page_id}}", "toggle-status"]
+            }
+          }
+        },
+        {
+          "name": "Delete Setting Page",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/setting-pages/{{setting_page_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["setting-pages", "{{setting_page_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Features Management",
+      "item": [
+        {
+          "name": "Get All Features",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/features?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["features"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Feature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_id\": \"{{company_id}}\",\n  \"setting_page_id\": \"{{setting_page_id}}\",\n  \"title\": \"ميزة رائعة\",\n  \"description\": \"هذه ميزة رائعة تقدم قيمة مضافة لعملائنا الكرام\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/features",
+              "host": ["{{base_url}}"],
+              "path": ["features"]
+            }
+          }
+        },
+        {
+          "name": "Get Features by Company",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/features/company?company_id={{company_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["features", "company"],
+              "query": [
+                {
+                  "key": "company_id",
+                  "value": "{{company_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Active Features",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/features/active",
+              "host": ["{{base_url}}"],
+              "path": ["features", "active"]
+            }
+          }
+        },
+        {
+          "name": "Get Single Feature",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/features/{{feature_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["features", "{{feature_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Feature",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"setting_page_id\": \"{{setting_page_id}}\",\n  \"title\": \"ميزة محدثة\",\n  \"description\": \"تم تحديث وصف هذه الميزة الرائعة\",\n  \"is_active\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/features/{{feature_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["features", "{{feature_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Feature Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/features/{{feature_id}}/toggle-status",
+              "host": ["{{base_url}}"],
+              "path": ["features", "{{feature_id}}", "toggle-status"]
+            }
+          }
+        },
+        {
+          "name": "Delete Feature",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/features/{{feature_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["features", "{{feature_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
