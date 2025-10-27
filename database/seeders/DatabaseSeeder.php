@@ -55,9 +55,10 @@ use Modules\Shared\AcademicSpecialization\Database\Seeders\AcademicSpecializatio
 use Modules\Shared\Installment\Database\Seeders\InstallmentModulesSeederTableSeeder;
 use Modules\Shared\MaritalStatus\Database\Seeders\MaritalStatusSeederTableSeeder as SeedersMaritalStatusSeederTableSeeder;
 use Modules\Shared\Payment\Database\Seeders\PaymentModulesSeederTableSeeder;
+use Modules\Shared\SocialIcon\Database\Seeders\SocialIconsModulesSeederTableSeeder;
 use Modules\Shared\Payment\Models\Payment;
 use Modules\UserInfo\UserProfessionalData\Database\seeders\SyncUserIdsInUserProfessionalDataSeeder;
-
+use Modules\Unit\Database\Seeders\UnitSeederTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -111,7 +112,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(ProgramDatabaseSeeder::class);
         $this->call(RegistrationFormsSeeder::class);
-//        $this->call(SubEntityDatabaseSeeder::class);
         $this->call(BankTypeAccountSeederTableSeeder::class);
         $this->call(SeedersMaritalStatusSeederTableSeeder::class);
         $this->call(UpdatePrivilegeModulesSeederTableSeeder::class);
@@ -120,6 +120,9 @@ class DatabaseSeeder extends Seeder
         $this->call(BanksOtherModulesSeederTableSeeder::class);
         $this->call(UniversitiesOtherSeederTableSeeder::class);
         $this->call(MainPackageSeeder::class);
+
+        $this->call(SubEntityDatabaseSeeder::class);
+
 
         $this->call(MoroccanUniversitiesSeeder::class);
         $this->call(MoroccanBanksSeeder::class);
@@ -135,5 +138,7 @@ class DatabaseSeeder extends Seeder
         $this->call(DocumentTypeSeederTableSeeder::class);
 
         $this->call(DefaultNotificationSettingsSeeder::class);
+        $this->call(UnitSeederTableSeeder::class);
+        $this->call(SocialIconsModulesSeederTableSeeder::class);
     }
 }

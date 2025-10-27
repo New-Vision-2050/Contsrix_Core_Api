@@ -24,9 +24,9 @@ class CreateEcoProductDashboardRequest extends FormRequest
             'name' => 'required|array',
             'name.ar' => 'required|string|max:255',
             'name.en' => 'required|string|max:255',
-            'description' => 'nullable|array',
-            'description.ar' => 'nullable|string',
-            'description.en' => 'nullable|string',
+            'description' => 'required|array',
+            'description.ar' => 'required|string',
+            'description.en' => 'required|string',
             
             // Categories and Brand
             'category_id' => 'required|uuid|exists:eco_categories,id',
@@ -70,12 +70,16 @@ class CreateEcoProductDashboardRequest extends FormRequest
             
             // Media
             'main_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'meta_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'other_photos' => 'nullable|array|max:5',
             'other_photos.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             
             // Photo deletion (for updates - other photos only)
             'delete_photo_ids' => 'nullable|array',
             'delete_photo_ids.*' => 'integer|exists:media,id',
+            
+            // Video
+            'video_url' => 'nullable|url|max:500',
             
             // SEO
             'meta_title' => 'nullable|string|max:255',
@@ -262,6 +266,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             isVisible: (bool) ($validatedData['is_visible'] ?? true),
             mainPhoto: null, // Will be handled by FileUploadService in the service
             otherPhotos: null, // Will be handled by FileUploadService in the service
+            videoUrl: $validatedData['video_url'] ?? null,
             metaTitle: $validatedData['meta_title'] ?? null,
             metaDescription: $validatedData['meta_description'] ?? null,
             metaKeywords: $validatedData['meta_keywords'] ?? null,

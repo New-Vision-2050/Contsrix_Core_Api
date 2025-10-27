@@ -19,6 +19,7 @@ class EcoProductDashboardPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        $firstMedia = $this->ecoProduct->getFirstMedia('eco_product_main_image');
     
         return [
             'id' => $this->ecoProduct->id,
@@ -27,6 +28,8 @@ class EcoProductDashboardPresenter extends AbstractPresenter
             'stock' => $this->ecoProduct->stock,
             'sku' => $this->ecoProduct->sku,
             'is_visible' => (int)$this->ecoProduct->is_visible,
+            'type' => $this->ecoProduct->type,
+            'main_photo' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
         ];
     }
 }

@@ -27,6 +27,7 @@ class JobTypePresenter extends AbstractPresenter
             "job_titles"=>JobTitleInTypePresenter::collection($this->jobType->jobTitles),
 //            'job_titles' => $this->jobType->jobTitles,
             "user_count"=>$this->jobType->userProfissional()->count(),
+            "company_id"=>$this->jobType->company_id
         ];
     }
 }
