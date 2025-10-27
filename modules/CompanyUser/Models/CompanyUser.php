@@ -184,7 +184,7 @@ class CompanyUser extends Model implements HasMedia
 
     public function userProfessionalData()
     {
-        return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_id');
+        return $this->hasOne(UserProfessionalData::class, 'global_id', 'global_id')->where("");
     }
 
     public function nationalAddress()

@@ -36,8 +36,8 @@ class CompanyUserPresenter extends AbstractPresenter
             "identity" => $this->companyUser->identity,
             "border_number" => $this->companyUser->border_number,
             "phone" => $this->companyUser->phone,
-            'job_title_id'=>$this->companyUser->job_title_id,
-            "job_title" => $this->companyUser?->jobTitle?->name,
+            'job_title_id'=>$this->companyUser?->userProfessionalData?->job_title_id,
+            "job_title" => $this->companyUser?->userProfessionalData?->jobTitle?->name,
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
             'data_status' => 0,
             "company" => ($this->companyUser->companies->unique('id')->first())
