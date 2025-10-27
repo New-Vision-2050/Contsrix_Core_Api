@@ -610,12 +610,12 @@ class ManagementHierarchyRepository extends BaseRepository
             ->when(isset($filters["type"]), function ($query) use ($filters) {
                 $query->where("type", $filters["type"]);
             })->when(request()->has("ignore_branch_id"), function ($query) {
-                $query->where(function ($q) {
-                    $q->whereHas("details", function ($query) {
-                        $query->where("branch_id", "!=", request()->ignore_branch_id);//copied put not in branch
-                    })->orDoesntHave("details");//not copies
-                })
-                    ->whereHas("relatedBranches", function ($query) {
+//                $query->where(function ($q) {
+//                    $q->whereHas("details", function ($query) {
+//                        $query->where("branch_id", "!=", request()->ignore_branch_id);//copied put not in branch
+//                    })->orDoesntHave("details");//not copies
+//                })
+                    $query->whereHas("relatedBranches", function ($query) {
                         $query->where("branch_id", request()->ignore_branch_id);
                     });
             })
@@ -689,7 +689,7 @@ class ManagementHierarchyRepository extends BaseRepository
         $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name" => $managementData["name"], "type" => $managementData["type"], "company_id" => $managementData["company_id"] , "parent_id" => $parentId]);
 
 
-        $managementHierarchy = $this->createManagement($managementData, $managementDetail + ["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $deputyManagers);
+//        $managementHierarchy = $this->createManagement($managementData, $managementDetail + ["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $deputyManagers);
 
 
         // Sync job types
