@@ -42,6 +42,15 @@ class EcoCategory extends Model implements HasMedia
 
     protected $casts = [
         'id' => 'string',
+        'is_active' => 'boolean',
+    ];
+
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'is_active' => true,
+        'priority' => 0,
     ];
 
     protected static function newFactory(): EcoCategoryFactory
