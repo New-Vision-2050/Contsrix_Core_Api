@@ -689,7 +689,7 @@ class ManagementHierarchyRepository extends BaseRepository
         $sourceManagementHierarchy = $this->createSourceManagementHierarchy(["name" => $managementData["name"], "type" => $managementData["type"], "company_id" => $managementData["company_id"] , "parent_id" => $parentId]);
 
 
-        $managementHierarchy = $this->createManagement($managementData, $managementDetail + ["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $deputyManagers);
+//        $managementHierarchy = $this->createManagement($managementData, $managementDetail + ["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $deputyManagers);
 
 
         // Sync job types
