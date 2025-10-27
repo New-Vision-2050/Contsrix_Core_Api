@@ -26,23 +26,23 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/create-management', [ManagementHierarchyController::class, 'createManagement']);
     // User Access Management Routes
     Route::group(['prefix' => 'user-access'], function () {
-        Route::get('/', [UserCanAccessManagementHierarchyController::class, 'index'])
-            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+        Route::get('/', [UserCanAccessManagementHierarchyController::class, 'index']);
+//            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
 
         Route::post('/assign-users', [UserCanAccessManagementHierarchyController::class, 'assignUsers'])
             ->permission(Permission::ORGANIZATION_BRANCH_UPDATE(), Permission::ORGANIZATION_MANAGEMENT_UPDATE());
 
-        Route::get('/branch/{managementHierarchyId}/users', [UserCanAccessManagementHierarchyController::class, 'getUsersByBranch'])
-            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+        Route::get('/branch/{managementHierarchyId}/users', [UserCanAccessManagementHierarchyController::class, 'getUsersByBranch']);
+//            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
 
-        Route::get('/user/{userId}/branches', [UserCanAccessManagementHierarchyController::class, 'getBranchesByUser'])
-            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+        Route::get('/user/{userId}/branches', [UserCanAccessManagementHierarchyController::class, 'getBranchesByUser']);
+//            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW())
 
         Route::delete('/user/{userId}/branch/{managementHierarchyId}', [UserCanAccessManagementHierarchyController::class, 'removeUserFromBranch'])
             ->permission(Permission::ORGANIZATION_BRANCH_UPDATE(), Permission::ORGANIZATION_MANAGEMENT_UPDATE());
 
-        Route::get('/check/{userId}/{managementHierarchyId}', [UserCanAccessManagementHierarchyController::class, 'checkUserAccess'])
-            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
+        Route::get('/check/{userId}/{managementHierarchyId}', [UserCanAccessManagementHierarchyController::class, 'checkUserAccess']);
+//            ->permission(Permission::ORGANIZATION_BRANCH_VIEW(), Permission::ORGANIZATION_MANAGEMENT_VIEW());
     });
     Route::group(["prefix" => "management-with-relations"], function () {
         Route::get('/{id}', [ManagementHierarchySettingController::class, 'showNonCopiedHierarchy']);

@@ -29,10 +29,12 @@ COPY devops/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY devops/nginx/sites-enabled/default.conf /etc/nginx/sites-enabled/default.conf
 COPY devops/supervisord.conf /etc/supervisord.conf
 
-RUN echo "upload_max_filesize=500M" > /usr/local/etc/php/conf.d/uploads.ini
-RUN echo "post_max_size=500M" >> /usr/local/etc/php/conf.d/uploads.ini
-RUN echo "memory_limit=512M" >> /usr/local/etc/php/conf.d/uploads.ini
-RUN echo "max_execution_time=300" >> /usr/local/etc/php/conf.d/uploads.ini
+RUN echo "upload_max_filesize=500M" > /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size=500M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "memory_limit=512M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_execution_time=300" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "max_input_time=300" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "output_buffering=Off" >> /usr/local/etc/php/conf.d/uploads.ini
 
 RUN mkdir -p storage/framework/sessions && \
     mkdir -p storage/framework/views && \
