@@ -61,6 +61,25 @@ class FeatureDealRepository extends BaseRepository
         return $this->delete($id);
     }
 
+    /**
+     * Get feature deals for export with filters
+     */
+    public function getForExport(array $filters = [])
+    {
+        $query = $this->model->newQuery();
+        
+        // Load relationships for export
+        $query->with(['company']);
+        
+        // Apply filters using the filterable trait
+        $query->filter($filters);
+        
+        // Order by created_at desc for consistent export
+        $query->orderBy('created_at', 'desc');
+        
+        return $query->get();
+    }
+
     public function paginatedWithRelations(int $page = 1, int $perPage = 10, array $relations = []): array
     {
         $query = $this->model->newQuery();
@@ -68,6 +87,9 @@ class FeatureDealRepository extends BaseRepository
         if (!empty($relations)) {
             $query->with($relations);
         }
+
+        $query->filter(request()->all());
+
 
         $total = $query->count();
         $items = $query->skip(($page - 1) * $perPage)
