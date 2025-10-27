@@ -7,6 +7,8 @@ namespace Modules\Ecommerce\EcoCategory\Services\Dashboard;
 use Modules\Ecommerce\EcoCategory\DTO\Dashboard\CreateEcoCategoryDashboardDTO;
 use Modules\Ecommerce\EcoCategory\Models\EcoCategory;
 use Modules\Ecommerce\EcoCategory\Repositories\EcoCategoryRepository;
+use Modules\Ecommerce\EcoCategory\Exports\EcoCategoryExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\UuidInterface;
 
 class EcoCategoryCRUDDashboardService
@@ -90,5 +92,77 @@ class EcoCategoryCRUDDashboardService
             ];
 
      
+    }
+
+    /**
+     * Export categories to Excel
+     */
+    public function exportToExcel(array $categoryIds = null, array $filters = []): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $query = EcoCategory::with(['parent', 'children'])
+            ->withCount(['products', 'children']);
+
+        // Apply filters
+        if ($categoryIds) {
+            $query->whereIn('id', $categoryIds);
+        }
+
+        if (isset($filters['include_inactive']) && !$filters['include_inactive']) {
+            $query->where('is_active', true);
+        }
+
+        if (isset($filters['parent_id'])) {
+            if ($filters['parent_id'] === 'null') {
+                $query->whereNull('parent_id');
+            } else {
+                $query->where('parent_id', $filters['parent_id']);
+            }
+        }
+
+        $categories = $query->get();
+
+        $filename = 'eco_categories_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+
+        return Excel::download(
+            new EcoCategoryExport($categories),
+            $filename,
+            \Maatwebsite\Excel\Excel::XLSX
+        );
+    }
+
+    /**
+     * Export categories to CSV
+     */
+    public function exportToCsv(array $categoryIds = null, array $filters = []): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $query = EcoCategory::with(['parent', 'children'])
+            ->withCount(['products', 'children']);
+
+        // Apply filters
+        if ($categoryIds) {
+            $query->whereIn('id', $categoryIds);
+        }
+
+        if (isset($filters['include_inactive']) && !$filters['include_inactive']) {
+            $query->where('is_active', true);
+        }
+
+        if (isset($filters['parent_id'])) {
+            if ($filters['parent_id'] === 'null') {
+                $query->whereNull('parent_id');
+            } else {
+                $query->where('parent_id', $filters['parent_id']);
+            }
+        }
+
+        $categories = $query->get();
+
+        $filename = 'eco_categories_' . now()->format('Y_m_d_H_i_s') . '.csv';
+
+        return Excel::download(
+            new EcoCategoryExport($categories),
+            $filename,
+            \Maatwebsite\Excel\Excel::CSV
+        );
     }
 }

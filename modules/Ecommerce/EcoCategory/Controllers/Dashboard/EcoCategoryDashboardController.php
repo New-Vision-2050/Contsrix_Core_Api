@@ -12,6 +12,7 @@ use Modules\Ecommerce\EcoCategory\Handlers\Dashboard\UpdateEcoCategoryDashboardH
 use Modules\Ecommerce\EcoCategory\Presenters\Dashboard\EcoCategoryDashboardPresenter;
 use Modules\Ecommerce\EcoCategory\Requests\Dashboard\CreateEcoCategoryDashboardRequest;
 use Modules\Ecommerce\EcoCategory\Requests\Dashboard\DeleteEcoCategoryDashboardRequest;
+use Modules\Ecommerce\EcoCategory\Requests\Dashboard\ExportEcoCategoryDashboardRequest;
 use Modules\Ecommerce\EcoCategory\Requests\Dashboard\GetEcoCategoryDashboardRequest;
 use Modules\Ecommerce\EcoCategory\Requests\Dashboard\GetEcoCategoryListDashboardRequest;
 use Modules\Ecommerce\EcoCategory\Requests\Dashboard\UpdateEcoCategoryDashboardRequest;
@@ -103,5 +104,25 @@ class EcoCategoryDashboardController extends Controller
         $stats = $this->ecoCategoryService->getCategoryStatistics();
 
         return Json::item($stats);
+    }
+
+    /**
+     * Export categories to Excel or CSV
+     */
+    public function export(ExportEcoCategoryDashboardRequest $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $categoryIds = $request->input('ids');
+        $format = $request->input('format', 'xlsx');
+        
+        $filters = [
+            'include_inactive' => $request->input('include_inactive', false),
+            'parent_id' => $request->input('parent_id'),
+        ];
+
+        if ($format === 'csv') {
+            return $this->ecoCategoryService->exportToCsv($categoryIds, $filters);
+        }
+
+        return $this->ecoCategoryService->exportToExcel($categoryIds, $filters);
     }
 }
