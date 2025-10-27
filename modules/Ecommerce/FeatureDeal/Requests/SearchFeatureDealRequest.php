@@ -6,7 +6,7 @@ namespace Modules\Ecommerce\FeatureDeal\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ExportFeatureDealRequest extends FormRequest
+class SearchFeatureDealRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -14,17 +14,10 @@ class ExportFeatureDealRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ids' => ['nullable', 'array'],
-            'ids.*' => ['uuid', 'exists:feature_deals,id'],
-            'format' => ['nullable', 'string', 'in:xlsx,csv'],
             'search' => ['nullable', 'string', 'max:255'],
             'name' => ['nullable', 'string', 'max:255'],
             'company_id' => ['nullable', 'uuid', 'exists:companies,id'],
-            'company_ids' => ['nullable', 'array'],
-            'company_ids.*' => ['uuid', 'exists:companies,id'],
             'discount_type' => ['nullable', 'string', 'in:percentage,fixed'],
-            'discount_types' => ['nullable', 'array'],
-            'discount_types.*' => ['string', 'in:percentage,fixed'],
             'min_discount_value' => ['nullable', 'numeric', 'min:0'],
             'max_discount_value' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
@@ -39,6 +32,8 @@ class ExportFeatureDealRequest extends FormRequest
             'created_to' => ['nullable', 'date|after_or_equal:created_from'],
             'updated_from' => ['nullable', 'date'],
             'updated_to' => ['nullable', 'date|after_or_equal:updated_from'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 
@@ -48,25 +43,14 @@ class ExportFeatureDealRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'ids.array' => 'معرفات العروض المميزة يجب أن تكون مصفوفة',
-            'ids.*.uuid' => 'معرف العرض المميز يجب أن يكون UUID صحيح',
-            'ids.*.exists' => 'العرض المميز المحدد غير موجود',
-            'format.string' => 'صيغة التصدير يجب أن تكون نص',
-            'format.in' => 'صيغة التصدير يجب أن تكون xlsx أو csv',
             'search.string' => 'البحث يجب أن يكون نص',
             'search.max' => 'البحث يجب ألا يتجاوز 255 حرف',
             'name.string' => 'اسم العرض يجب أن يكون نص',
             'name.max' => 'اسم العرض يجب ألا يتجاوز 255 حرف',
             'company_id.uuid' => 'معرف الشركة يجب أن يكون UUID صحيح',
             'company_id.exists' => 'الشركة المحددة غير موجودة',
-            'company_ids.array' => 'معرفات الشركات يجب أن تكون مصفوفة',
-            'company_ids.*.uuid' => 'معرف الشركة يجب أن يكون UUID صحيح',
-            'company_ids.*.exists' => 'الشركة المحددة غير موجودة',
             'discount_type.string' => 'نوع الخصم يجب أن يكون نص',
             'discount_type.in' => 'نوع الخصم يجب أن يكون نسبة مئوية أو مبلغ ثابت',
-            'discount_types.array' => 'أنواع الخصم يجب أن تكون مصفوفة',
-            'discount_types.*.string' => 'نوع الخصم يجب أن يكون نص',
-            'discount_types.*.in' => 'نوع الخصم يجب أن يكون نسبة مئوية أو مبلغ ثابت',
             'min_discount_value.numeric' => 'الحد الأدنى لقيمة الخصم يجب أن يكون رقم',
             'min_discount_value.min' => 'الحد الأدنى لقيمة الخصم يجب أن يكون 0 أو أكثر',
             'max_discount_value.numeric' => 'الحد الأقصى لقيمة الخصم يجب أن يكون رقم',
@@ -87,6 +71,11 @@ class ExportFeatureDealRequest extends FormRequest
             'updated_from.date' => 'تاريخ التحديث من يجب أن يكون تاريخ صحيح',
             'updated_to.date' => 'تاريخ التحديث إلى يجب أن يكون تاريخ صحيح',
             'updated_to.after_or_equal' => 'تاريخ التحديث إلى يجب أن يكون بعد أو يساوي تاريخ التحديث من',
+            'page.integer' => 'رقم الصفحة يجب أن يكون رقم صحيح',
+            'page.min' => 'رقم الصفحة يجب أن يكون 1 أو أكثر',
+            'per_page.integer' => 'عدد العناصر في الصفحة يجب أن يكون رقم صحيح',
+            'per_page.min' => 'عدد العناصر في الصفحة يجب أن يكون 1 أو أكثر',
+            'per_page.max' => 'عدد العناصر في الصفحة يجب ألا يتجاوز 100',
         ];
     }
 
