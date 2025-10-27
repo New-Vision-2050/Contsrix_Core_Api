@@ -22,10 +22,12 @@ class BannerPresenter extends AbstractPresenter
         
         return [
             'id' => $this->banner->id,
+            'company_id' => $this->banner->company_id,
+            'setting_page_id' => $this->banner->setting_page_id,
             'url' => $this->banner->url,
-            'type' => $this->banner->type,
             'is_active' => (int) $this->banner->is_active,
             'image' => $media ? (new MediaPresenter($media))->getData() : null,
+            'setting_page' => $isListing ? null : $this->banner->settingPage,
             'created_at' => $this->banner->created_at,
             'updated_at' => $this->banner->updated_at,
         ];

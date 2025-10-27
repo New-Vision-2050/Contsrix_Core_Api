@@ -21,6 +21,9 @@ class UpdateEcoBrandDashboardRequest extends FormRequest
             'description.ar' => ['nullable', 'string', 'max:1000'],
             'description.en' => ['nullable', 'string', 'max:1000'],
             
+            // Status validation
+            'is_active' => ['sometimes', 'boolean'],
+            
             // Image validation
             'brand_image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'], // 5MB max
         ];
@@ -43,6 +46,9 @@ class UpdateEcoBrandDashboardRequest extends FormRequest
             'description.ar.max' => __('ecobrand::validation.description_ar_max'),
             'description.en.string' => __('ecobrand::validation.description_en_string'),
             'description.en.max' => __('ecobrand::validation.description_en_max'),
+            
+            // Status validation messages
+            'is_active.boolean' => 'حالة التفعيل يجب أن تكون صحيح أو خطأ',
             
             // Image validation messages
             'brand_image.file' => 'صورة العلامة التجارية يجب أن تكون ملف',

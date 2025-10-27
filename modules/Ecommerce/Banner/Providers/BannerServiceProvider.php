@@ -28,9 +28,8 @@ class BannerServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/ecommerce/dashboard/banners')
+        Route::prefix('api/v1/ecommerce/dashboard')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
-
     }
 }

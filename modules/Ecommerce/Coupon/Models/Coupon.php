@@ -11,12 +11,14 @@ use Illuminate\Database\Eloquent\Model;
 use Modules\Ecommerce\Coupon\Database\Factories\CouponFactory;
 use Modules\Ecommerce\Coupon\Filters\CouponFilter;
 use Carbon\Carbon;
+use App\Traits\ForcedBelongsToTenant;
 
 class Coupon extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
 
     protected $keyType = 'string';
 

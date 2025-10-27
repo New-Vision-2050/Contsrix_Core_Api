@@ -14,6 +14,7 @@ use Modules\Ecommerce\EcoOrder\Models\EcoOrder;
 //use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoClient extends Model implements HasMedia
 {
@@ -23,6 +24,7 @@ class EcoClient extends Model implements HasMedia
     //use HasTranslations;
     //use SoftDeletes;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
     //public array $translatable = [];
 
     public $incrementing = false;
