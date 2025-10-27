@@ -14,6 +14,7 @@ use Modules\Ecommerce\DealDay\Requests\CreateDealDayRequest;
 use Modules\Ecommerce\DealDay\Requests\DeleteDealDayRequest;
 use Modules\Ecommerce\DealDay\Requests\GetDealDayListRequest;
 use Modules\Ecommerce\DealDay\Requests\GetDealDayRequest;
+use Modules\Ecommerce\DealDay\Requests\SearchDealDayRequest;
 use Modules\Ecommerce\DealDay\Requests\UpdateDealDayRequest;
 use Modules\Ecommerce\DealDay\Services\DealDayCRUDService;
 use Modules\Ecommerce\DealDay\Exports\DealDayExport;
@@ -32,9 +33,14 @@ class DealDayController extends Controller
 
     public function index(GetDealDayListRequest $request): JsonResponse
     {
+        // Extract filters from request
+        $filters = $this->extractFilters($request);
+        
         $list = $this->dealDayService->list(
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int) $request->get('per_page', 10),
+            ['company', 'product'], // Load relationships
+            $filters // Apply filters
         );
 
         return Json::items(DealDayPresenter::collection($list['data']), paginationSettings: $list['pagination']);
@@ -42,7 +48,7 @@ class DealDayController extends Controller
 
     public function show(GetDealDayRequest $request): JsonResponse
     {
-        $item = $this->dealDayService->get(Uuid::fromString($request->route('id')));
+        $item = $this->dealDayService->getWithRelations(Uuid::fromString($request->route('id')));
 
         $presenter = new DealDayPresenter($item);
 
@@ -52,8 +58,11 @@ class DealDayController extends Controller
     public function store(CreateDealDayRequest $request): JsonResponse
     {
         $createdItem = $this->dealDayService->create($request->createCreateDealDayDTO());
+        
+        // Load relationships for presenter
+        $itemWithRelations = $this->dealDayService->getWithRelations(Uuid::fromString($createdItem->id));
 
-        $presenter = new DealDayPresenter($createdItem);
+        $presenter = new DealDayPresenter($itemWithRelations);
 
         return Json::item($presenter->getData());
     }
@@ -63,7 +72,7 @@ class DealDayController extends Controller
         $command = $request->createUpdateDealDayCommand();
         $this->updateDealDayHandler->handle($command);
 
-        $item = $this->dealDayService->get($command->getId());
+        $item = $this->dealDayService->getWithRelations($command->getId());
 
         $presenter = new DealDayPresenter($item);
 
@@ -96,6 +105,22 @@ class DealDayController extends Controller
     }
 
     /**
+     * Search deal days with advanced filters
+     */
+    public function search(SearchDealDayRequest $request): JsonResponse
+    {
+        $filters = $request->getFilters();
+        
+        $list = $this->dealDayService->search(
+            $filters,
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10)
+        );
+
+        return Json::items(DealDayPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    /**
      * Get deal day statistics cards for dashboard
      */
     public function getStatistics(): JsonResponse
@@ -103,6 +128,33 @@ class DealDayController extends Controller
         $stats = $this->dealDayService->getDealDayStatistics();
 
         return Json::item($stats);
+    }
+
+    /**
+     * Extract filters from request
+     */
+    private function extractFilters(GetDealDayListRequest $request): array
+    {
+        return array_filter([
+            'search' => $request->get('search'),
+            'name' => $request->get('name'),
+            'company_id' => $request->get('company_id'),
+            'product_id' => $request->get('product_id'),
+            'discount_type' => $request->get('discount_type'),
+            'min_discount_value' => $request->get('min_discount_value'),
+            'max_discount_value' => $request->get('max_discount_value'),
+            'is_active' => $request->get('is_active'),
+            'active_only' => $request->get('active_only'),
+            'inactive_only' => $request->get('inactive_only'),
+            'created_from' => $request->get('created_from'),
+            'created_to' => $request->get('created_to'),
+            'updated_from' => $request->get('updated_from'),
+            'updated_to' => $request->get('updated_to'),
+            'order_by' => $request->get('order_by'),
+            'order_direction' => $request->get('order_direction'),
+        ], function ($value) {
+            return $value !== null && $value !== '';
+        });
     }
 
     /**
