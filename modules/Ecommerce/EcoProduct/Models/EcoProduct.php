@@ -120,27 +120,8 @@ class EcoProduct extends Model implements HasMedia
     {
         return $this->belongsTo(Warehous::class, 'warehouse_id', 'id');
     }
-    // Define relationships
-    public function taxes(): HasMany
-    {
-        return $this->hasMany(ProductTax::class, 'product_id', 'id');
-    }
 
-    public function details(): HasMany
-    {
-        return $this->hasMany(ProductDetail::class, 'product_id', 'id');
-    }
-
-    public function customFields(): HasMany
-    {
-        return $this->hasMany(ProductCustomField::class, 'product_id', 'id');
-    }
-
-    public function seo(): HasOne
-    {
-        return $this->hasOne(ProductSEO::class, 'product_id', 'id');
-    }
-        /**
+    /**
      * Get the products associated with this product.
      */
     public function associatedProducts(): BelongsToMany
