@@ -36,13 +36,22 @@ class DealDayCRUDService
         return $this->repository->deleteDealDay($id);
     }
 
-    public function list(int $page = 1, int $perPage = 10, array $relations = []): array
+    public function list(int $page = 1, int $perPage = 10, array $relations = [], array $filters = []): array
     {
         return $this->repository->paginatedWithRelations(
             page: $page,
             perPage: $perPage,
-            relations: $relations
+            relations: $relations,
+            filters: $filters
         );
+    }
+
+    /**
+     * Search deal days with filters
+     */
+    public function search(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->searchDealDays($filters, $page, $perPage);
     }
 
     public function get(UuidInterface $id): DealDay
@@ -53,6 +62,14 @@ class DealDayCRUDService
     public function getWithRelations(UuidInterface $id): DealDay
     {
         return $this->repository->getDealDayWithRelations($id);
+    }
+
+    /**
+     * Get deal days for export with filters
+     */
+    public function getForExport(array $filters = [])
+    {
+        return $this->repository->getForExport($filters);
     }
 
     /**

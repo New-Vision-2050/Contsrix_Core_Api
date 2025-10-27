@@ -5,6 +5,7 @@ use Modules\Ecommerce\DealDay\Controllers\DealDayController;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [DealDayController::class, 'index']);
+    Route::get('/search', [DealDayController::class, 'search']);
     Route::post('/', [DealDayController::class, 'store']);
     Route::post('/export', [DealDayController::class, 'export']);
     
