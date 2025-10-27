@@ -169,4 +169,20 @@ class FlashDealCRUDService
             throw new \RuntimeException('فشل في استبدال الصورة: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Search flash deals with filters
+     */
+    public function search(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->searchFlashDeals($filters, $page, $perPage);
+    }
+
+    /**
+     * Get flash deals for export with filters
+     */
+    public function getForExport(array $filters = [])
+    {
+        return $this->repository->getForExport($filters);
+    }
 }
