@@ -108,13 +108,37 @@ class EcoProductDashboardController extends Controller
         }
     }
 
-    public function export(ExportEcoProductDashboardRequest $request)
+    /**
+     * Export products to Excel or CSV
+     */
+    public function export(ExportEcoProductDashboardRequest $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
-        $format = $request->get('format', 'xlsx');
-        $fileName = 'eco_products.' . $format;
-        $filters = $request->getFilters();
+        $productIds = $request->input('ids');
+        $format = $request->input('format', 'xlsx');
         
-        return Excel::download(new EcoProductExport($this->ecoProductService, $filters), $fileName);
+        $filters = [
+            'category_id' => $request->input('category_id'),
+            'sub_category_id' => $request->input('sub_category_id'),
+            'brand_id' => $request->input('brand_id'),
+            'warehouse_id' => $request->input('warehouse_id'),
+            'price_from' => $request->input('price_from'),
+            'price_to' => $request->input('price_to'),
+            'stock_status' => $request->input('stock_status'),
+            'is_visible' => $request->input('is_visible'),
+            'has_discount' => $request->input('has_discount'),
+            'requires_shipping' => $request->input('requires_shipping'),
+            'is_taxable' => $request->input('is_taxable'),
+            'gender' => $request->input('gender'),
+            'type' => $request->input('type'),
+            'created_from' => $request->input('created_from'),
+            'created_to' => $request->input('created_to'),
+        ];
+
+        if ($format === 'csv') {
+            return $this->ecoProductService->exportToCsv($productIds, $filters);
+        }
+
+        return $this->ecoProductService->exportToExcel($productIds, $filters);
     }
 
     public function getStatistics(): JsonResponse
