@@ -23,8 +23,7 @@ class SettingPageCRUDService
     public function upsert(UpsertSettingPageDTO $upsertSettingPageDTO): SettingPage
     {
         // Check if setting page exists for this company and type
-        $existingSettingPage = $this->repository->findByCompanyAndType(
-            $upsertSettingPageDTO->companyId,
+        $existingSettingPage = $this->repository->findByType(
             $upsertSettingPageDTO->type
         );
 
