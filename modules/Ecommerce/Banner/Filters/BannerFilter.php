@@ -8,45 +8,14 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class BannerFilter extends SearchModelFilter
 {
-    public $relations = ['settingPage'];
+    public $relations = [];
 
     /**
-     * Filter by setting page ID
-     */
-    public function settingPageId($settingPageId)
-    {
-        return $this->where('setting_page_id', $settingPageId);
-    }
-
-    /**
-     * Filter by banner type (legacy support)
+     * Filter by banner type
      */
     public function type($type)
     {
         return $this->where('type', $type);
-    }
-
-    /**
-     * Filter by setting page type
-     */
-    public function settingPageType($type)
-    {
-        return $this->whereHas('settingPage', function ($query) use ($type) {
-            $query->where('type', $type);
-        });
-    }
-
-    /**
-     * Filter by setting page ID and type combination
-     */
-    public function settingPageIdAndType($settingPageId, $type = null)
-    {
-        return $this->whereHas('settingPage', function ($query) use ($settingPageId, $type) {
-            $query->where('id', $settingPageId);
-            if ($type) {
-                $query->where('type', $type);
-            }
-        });
     }
 
     /**
@@ -58,11 +27,15 @@ class BannerFilter extends SearchModelFilter
     }
 
     /**
-     * General search filter (searches in URL)
+     * General search filter (searches in URL, title, and description)
      */
     public function search($search)
     {
-        return $this->where('url', 'like', '%' . $search . '%');
+        return $this->where(function ($query) use ($search) {
+            $query->where('url', 'like', '%' . $search . '%')
+                  ->orWhere('title', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%');
+        });
     }
 
     /**

@@ -8,24 +8,14 @@ use BasePackage\Shared\Filters\SearchModelFilter;
 
 class FeatureFilter extends SearchModelFilter
 {
-    public $relations = ['settingPage'];
+    public $relations = [];
 
     /**
-     * Filter by setting page ID
+     * Filter by feature type
      */
-    public function settingPageId($settingPageId)
+    public function type($type)
     {
-        return $this->where('setting_page_id', $settingPageId);
-    }
-
-    /**
-     * Filter by setting page type
-     */
-    public function settingPageType($type)
-    {
-        return $this->whereHas('settingPage', function ($query) use ($type) {
-            $query->where('type', $type);
-        });
+        return $this->where('type', $type);
     }
 
     /**
