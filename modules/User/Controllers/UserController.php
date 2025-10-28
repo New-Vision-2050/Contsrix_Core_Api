@@ -8,6 +8,7 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
+use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -278,8 +279,17 @@ class UserController extends Controller
 
         $companyUser = $this->companyUserRepository->getCompanyUserGlobalId(UUid::fromString($user->global_company_user_id));
 
+        $data = [
+            "name" => $user->name,
+            "company_name" => $user->company?->name,
+            "domain_name" => "https://".$user->company?->domains()->first()?->domain,
+            "serial_no" => $user->company?->serial_no
+        ];
+        $user->notify(new SendDomainForUser($data));
+
+
         // Send email using the service method
-        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($companyUser, $companyId);
+//        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($companyUser, $companyId);
 
         return Json::item([
             'message' => 'Email sent successfully',
