@@ -30,6 +30,8 @@ Route::prefix('setting-pages')->middleware(['auth:api', \Stancl\Tenancy\Middlewa
 Route::prefix('features')->middleware(['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class])->group(function (): void {
     Route::get('/', [FeatureController::class, 'index']);
     Route::post('/', [FeatureController::class, 'store']);
+    Route::post('/export', [FeatureController::class, 'export']);
+    Route::get('/active', [FeatureController::class, 'getActiveFeatures']);
     Route::get('/{id}', [FeatureController::class, 'show']);
     Route::put('/{id}', [FeatureController::class, 'update']);
     Route::patch('/{id}/toggle-status', [FeatureController::class, 'toggleStatus']);
