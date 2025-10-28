@@ -51,8 +51,7 @@ class BannerController extends Controller
 
     public function store(CreateBannerRequest $request): JsonResponse
     {
-        $file = $request->file('banner_image');
-        $createdItem = $this->bannerService->create($request->createCreateBannerDTO(), $file);
+        $createdItem = $this->bannerService->create($request->createCreateBannerDTO());
 
         $presenter = new BannerPresenter($createdItem);
 
