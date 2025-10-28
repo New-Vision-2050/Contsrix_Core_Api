@@ -43,8 +43,8 @@ class SubEntityRecordsExport implements FromCollection, WithHeadings, WithMappin
             'Email',
             'Phone',
             'Status',
-            'Role',
-            'Branch',
+//            'Role',
+//            'Branch',
             'Created At',
             'Updated At',
         ];
@@ -72,15 +72,15 @@ class SubEntityRecordsExport implements FromCollection, WithHeadings, WithMappin
         } elseif ($record instanceof User) {
             // Get company user data if available
             $companyUser = $record->companyUserCompanies->first();
-            
+
             return [
                 $record->id,
                 $record->name ?? 'N/A',
                 $record->email ?? 'N/A',
                 $record->phone ?? 'N/A',
                 $companyUser ? $this->getStatusText($companyUser->status ?? 0) : 'N/A',
-                $companyUser ? $this->getRoleText($companyUser->role ?? 0) : 'N/A',
-                $companyUser && $companyUser->branch ? $companyUser->branch->name : 'N/A',
+//                $companyUser ? $this->getRoleText($companyUser->role ?? 0) : 'N/A',
+//                $companyUser && $companyUser->branch ? $companyUser->branch->name : 'N/A',
                 $record->created_at ? $record->created_at->format('Y-m-d H:i:s') : 'N/A',
                 $record->updated_at ? $record->updated_at->format('Y-m-d H:i:s') : 'N/A',
             ];
@@ -126,7 +126,7 @@ class SubEntityRecordsExport implements FromCollection, WithHeadings, WithMappin
     {
         return match($role) {
             1 => 'Client',
-            2 => 'Employee', 
+            2 => 'Employee',
             3 => 'Broker',
             default => 'Unknown'
         };

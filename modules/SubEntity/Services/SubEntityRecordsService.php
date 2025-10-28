@@ -228,15 +228,15 @@ class SubEntityRecordsService
         // Get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
         $query = $model::query();
-        
+
         if ($model === User::class) {
             $query->whereHas('companyUserCompanies', function ($q) use ($registrationForm, $subEntityId) {
                 $q->where('role', $registrationForm->company_user_role_map)
                     ->where('sub_entity_id', $subEntityId);
             });
-            
+
             // Load relationships for export
-            $query->with(['companyUserCompanies.branch']);
+//            $query->with(['companyUserCompanies.branch']);
         }
 
         // Apply ID filter if provided
