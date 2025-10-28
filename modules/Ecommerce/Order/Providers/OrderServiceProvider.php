@@ -28,7 +28,7 @@ class OrderServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/orders')
+        Route::prefix('api/v1/ecommerce/dashboard/orders')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 
