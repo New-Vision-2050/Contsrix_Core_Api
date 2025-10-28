@@ -64,8 +64,8 @@ class SubEntityRecordsExport implements FromCollection, WithHeadings, WithMappin
                 $record->email ?? 'N/A',
                 $record->phone ?? 'N/A',
                 $this->getStatusText($record->status ?? 0),
-                $this->getRoleText($record->role ?? 0),
-                $record->branch->name ?? 'N/A',
+//                $this->getRoleText($record->role ?? 0),
+//                $record->branch->name ?? 'N/A',
                 $record->created_at ? $record->created_at->format('Y-m-d H:i:s') : 'N/A',
                 $record->updated_at ? $record->updated_at->format('Y-m-d H:i:s') : 'N/A',
             ];
@@ -93,8 +93,8 @@ class SubEntityRecordsExport implements FromCollection, WithHeadings, WithMappin
             $record->email ?? 'N/A',
             $record->phone ?? 'N/A',
             isset($record->status) ? $this->getStatusText($record->status) : 'N/A',
-            'N/A',
-            'N/A',
+//            'N/A',
+//            'N/A',
             isset($record->created_at) ? $record->created_at->format('Y-m-d H:i:s') : 'N/A',
             isset($record->updated_at) ? $record->updated_at->format('Y-m-d H:i:s') : 'N/A',
         ];
