@@ -282,7 +282,7 @@ class SubEntityRecordsService
         }
 
         // Load relationships for export
-        $query->with(['companies.branch']);
+        $query->with(['companies']);
 
         return $query->get();
     }

@@ -37,7 +37,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}/api/sub-entities/records/export",
+					"raw": "{{base_url}}/api/sub-entities/records/list/export",
 					"host": [
 						"{{base_url}}"
 					],
@@ -45,6 +45,7 @@
 						"api",
 						"sub-entities",
 						"records",
+						"list",
 						"export"
 					]
 				},
@@ -72,7 +73,7 @@
 							}
 						},
 						"url": {
-							"raw": "{{base_url}}/api/sub-entities/records/export",
+							"raw": "{{base_url}}/api/sub-entities/records/list/export",
 							"host": [
 								"{{base_url}}"
 							],
@@ -133,7 +134,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}/api/sub-entities/records/export",
+					"raw": "{{base_url}}/api/sub-entities/records/list/export",
 					"host": [
 						"{{base_url}}"
 					],
@@ -141,6 +142,7 @@
 						"api",
 						"sub-entities",
 						"records",
+						"list",
 						"export"
 					]
 				},
@@ -179,7 +181,7 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}/api/sub-entities/records/export",
+					"raw": "{{base_url}}/api/sub-entities/records/list/export",
 					"host": [
 						"{{base_url}}"
 					],
@@ -187,6 +189,7 @@
 						"api",
 						"sub-entities",
 						"records",
+						"list",
 						"export"
 					]
 				},
