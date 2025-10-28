@@ -18,7 +18,6 @@ class UpsertSettingPageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'required|uuid|exists:companies,id',
             'type' => 'required|string|max:255',
             'title_header' => 'nullable|string|max:255',
             'description_header' => 'nullable|string|max:1000',

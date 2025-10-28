@@ -7,6 +7,7 @@ namespace Modules\Ecommerce\Banner\Presenters;
 use Modules\Ecommerce\Banner\Models\Banner;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
+use Modules\Ecommerce\Banner\Presenters\SettingPagePresenter;
 class BannerPresenter extends AbstractPresenter
 {
     private Banner $banner;
@@ -27,9 +28,7 @@ class BannerPresenter extends AbstractPresenter
             'url' => $this->banner->url,
             'is_active' => (int) $this->banner->is_active,
             'image' => $media ? (new MediaPresenter($media))->getData() : null,
-            'setting_page' => $isListing ? null : $this->banner->settingPage,
-            'created_at' => $this->banner->created_at,
-            'updated_at' => $this->banner->updated_at,
+            'setting_page' => $this->banner->settingPage ? (new SettingPagePresenter($this->banner->settingPage))->getData() : null,
         ];
     }
 }

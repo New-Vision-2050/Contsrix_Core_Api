@@ -74,9 +74,8 @@ class SettingPageController extends Controller
     public function getByType(GetSettingPageListRequest $request): JsonResponse
     {
         $type = $request->get('type');
-        $companyId = Uuid::fromString($request->get('company_id'));
         
-        $settingPage = $this->settingPageService->getByCompanyAndType($companyId, $type);
+        $settingPage = $this->settingPageService->getByType( $type);
         
         if (!$settingPage) {
             return Json::item(null, message: 'لم يتم العثور على إعدادات الصفحة');

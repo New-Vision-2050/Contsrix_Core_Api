@@ -43,11 +43,6 @@ class SettingPage extends Model
         return $this->hasMany(Banner::class);
     }
 
-    public function ecoBranches(): HasMany
-    {
-        return $this->hasMany(EcoBranch::class);
-    }
-
     public function features(): HasMany
     {
         return $this->hasMany(Feature::class);

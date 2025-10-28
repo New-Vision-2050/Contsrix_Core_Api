@@ -12,7 +12,7 @@ class CreateBannerDTO
         public UuidInterface $companyId,
         public ?UuidInterface $settingPageId,
         public string $url,
-        public bool $isActive = true,
+        public int $isActive = 1,
     ) {
     }
 
