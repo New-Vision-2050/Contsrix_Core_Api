@@ -20,8 +20,6 @@ class StoreBranch extends Model
     use UuidTrait;
     use BaseFilterable;
     use BelongsToTenant;
-    use ForcedBelongsToTenant;
-
     public $incrementing = false;
 
     protected $keyType = 'string';
