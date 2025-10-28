@@ -35,7 +35,7 @@ class CompanyUserPresenter extends AbstractPresenter
             "passport" => $this->companyUser->passport,
             "identity" => $this->companyUser->identity,
             "border_number" => $this->companyUser->border_number,
-            "phone" => $this->companyUser->phone,
+            "phone" => $this->companyUser->users()->first()->phone,
             'job_title_id'=>$this->companyUser?->userProfessionalData?->job_title_id,
             "job_title" => $this->companyUser?->userProfessionalData?->jobTitle?->name,
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
