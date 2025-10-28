@@ -44,40 +44,33 @@ class WarehousCRUDService
      */
     public function getWarehouseStatistics(): array
     {
-            // Get total warehouses count
-            $totalWarehouses = Warehous::count();
-            // Get active warehouses (assuming status field exists)
-            $activeWarehouses = Warehous::where('is_active',1)->count();
-            // Get warehouses with low stock (assuming we have products relationship)
-            $lowStockWarehouses = Warehous::whereHas('products', function($query) {
-                $query->where('stock', '<', 10);
-            })->count();
-            // Get warehouses created this month
-            $newWarehouses = Warehous::whereMonth('created_at', now()->month)->count();
-           
-            return [
-                'total_warehouses' => [
-                    'value' => $totalWarehouses,
-                    'label' => 'إجمالي عدد المخازن',
-
-                ],
-                'active_warehouses' => [
-                    'value' => $activeWarehouses,
-                    'label' => 'المخازن النشطة',
-
-                ],
-                'low_stock_warehouses' => [
-                    'value' => $lowStockWarehouses,
-                    'label' => 'مخازن المخزون المنخفض',
-
-                ],
-                'new_warehouses' => [
-                    'value' => $newWarehouses,
-                    'label' => 'المخازن الجديدة',
-
-                ]
-            ];
-     
+        // Get total warehouses count
+        $totalWarehouses = Warehous::count();
+        // Get active warehouses
+        $activeWarehouses = Warehous::where('is_active', 1)->count();
+        // Get inactive warehouses
+        $inactiveWarehouses = Warehous::where('is_active', 0)->count();
+        // Get warehouses with products
+        $warehousesWithProducts = Warehous::whereHas('products')->count();
+       
+        return [
+            [
+                'number' => $totalWarehouses,
+                'title' => 'إجمالي المخازن'
+            ],
+            [
+                'number' => $activeWarehouses,
+                'title' => 'المخازن النشطة'
+            ],
+            [
+                'number' => $inactiveWarehouses,
+                'title' => 'المخازن الغير نشطة'
+            ],
+            [
+                'number' => $warehousesWithProducts,
+                'title' => 'مخازن بها منتجات'
+            ]
+        ];
     }
 
     /**

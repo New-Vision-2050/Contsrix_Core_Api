@@ -32,9 +32,30 @@ class OrderRepository extends BaseRepository
 
     public function getOrder(UuidInterface $id): Order
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->with(['company', 'customer', 'warehouse'])
+            ->where('id', $id->toString())
+            ->firstOrFail();
+    }
+
+    public function paginated(array $conditions = [], int $page = 1, int $perPage = 15, string $orderBy = 'created_at', string $sortBy = 'desc'): array
+    {
+        $query = $this->model->query()
+            ->with(['company', 'customer', 'warehouse'])
+            ->orderBy($orderBy, $sortBy);
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return [
+            'data' => $paginator->items(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+            ],
+        ];
     }
 
     public function createOrder(array $data): Order
