@@ -18,7 +18,7 @@ class UpdateStoreBranchRequest extends FormRequest
         return [
             'type' => 'sometimes|string|in:home,discount,new_arrival,contact_us,about_us',
             'name' => 'sometimes|string|max:255',
-            'country_id' => 'sometimes|nullable|uuid|exists:countries,id',
+            'country_id' => 'sometimes|nullable|exists:countries,id',
             'address' => 'sometimes|nullable|string',
             'phone' => 'sometimes|nullable|string|max:20',
             'email' => 'sometimes|nullable|email|max:255',

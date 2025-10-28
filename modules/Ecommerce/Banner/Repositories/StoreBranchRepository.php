@@ -48,10 +48,11 @@ class StoreBranchRepository
         return $this->updateStoreBranch($id, ['is_active' => $newStatus]);
     }
 
-    public function paginated(int $page = 1, int $perPage = 10): array
+    public function paginated(int $page = 1, int $perPage = 10, array $filters = []): array
     {
         $query = $this->model->query()
             ->with(['company', 'country'])
+            ->filter($filters)
             ->orderBy('created_at', 'desc');
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);

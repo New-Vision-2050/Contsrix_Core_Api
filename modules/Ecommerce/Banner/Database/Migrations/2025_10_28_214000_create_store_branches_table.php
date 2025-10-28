@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('store_branches', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('company_id')->index();
-            $table->string('type', 50)->default('main'); // main, branch, warehouse, etc.
+            $table->string('type', 50)->default('home');
             $table->string('name');
             $table->uuid('country_id')->nullable()->index();
             $table->text('address')->nullable();

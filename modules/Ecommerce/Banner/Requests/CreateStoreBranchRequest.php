@@ -20,7 +20,7 @@ class CreateStoreBranchRequest extends FormRequest
         return [
             'type' => 'required|string|in:home,discount,new_arrival,contact_us,about_us',
             'name' => 'required|string|max:255',
-            'country_id' => 'nullable|uuid|exists:countries,id',
+            'country_id' => 'nullable|exists:countries,id',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
@@ -59,7 +59,7 @@ class CreateStoreBranchRequest extends FormRequest
             companyId: Uuid::fromString(tenant("id")),
             type: $this->input('type'),
             name: $this->input('name'),
-            countryId: $this->input('country_id') ? Uuid::fromString($this->input('country_id')) : null,
+            countryId: $this->input('country_id'),
             address: $this->input('address'),
             phone: $this->input('phone'),
             email: $this->input('email'),

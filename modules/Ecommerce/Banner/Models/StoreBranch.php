@@ -11,6 +11,8 @@ use BasePackage\Shared\Traits\UuidTrait;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\Ecommerce\Banner\Filters\StoreBranchFilter;
+use App\Traits\ForcedBelongsToTenant;
 
 class StoreBranch extends Model
 {
@@ -18,6 +20,7 @@ class StoreBranch extends Model
     use UuidTrait;
     use BaseFilterable;
     use BelongsToTenant;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 
@@ -42,6 +45,8 @@ class StoreBranch extends Model
         'longitude' => 'decimal:8',
         'is_active' => 'boolean',
     ];
+
+    protected string $filter = StoreBranchFilter::class;
 
     // Relationships
     public function company(): BelongsTo

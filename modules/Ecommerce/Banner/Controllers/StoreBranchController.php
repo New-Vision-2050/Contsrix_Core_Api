@@ -24,9 +24,17 @@ class StoreBranchController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $filters = $request->only([
+            'type', 'country_id', 'is_active', 'company_id', 'search', 
+            'name', 'address', 'phone', 'email', 'latitude', 'longitude',
+            'has_location', 'center_lat', 'center_lng', 'radius_km',
+            'created_after', 'created_before', 'updated_after', 'updated_before'
+        ]);
+
         $list = $this->storeBranchService->list(
             (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int) $request->get('per_page', 10),
+            $filters
         );
 
         return Json::items(StoreBranchPresenter::collection($list['data']), paginationSettings: $list['pagination']);
