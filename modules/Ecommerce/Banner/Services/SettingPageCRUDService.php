@@ -52,7 +52,7 @@ class SettingPageCRUDService
 
     public function getByCompanyAndType(UuidInterface $companyId, string $type): ?SettingPage
     {
-        return $this->repository->findByCompanyAndType($companyId, $type);
+        return $this->repository->findByType($type);
     }
 
     public function getByType(string $type): ?SettingPage
