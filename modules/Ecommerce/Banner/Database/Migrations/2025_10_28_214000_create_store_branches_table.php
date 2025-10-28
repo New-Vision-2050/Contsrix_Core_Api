@@ -23,10 +23,6 @@ return new class extends Migration
             $table->decimal('longitude', 11, 8)->nullable(); // longitude
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            // Foreign key constraints
-            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-            $table->foreign('country_id')->references('id')->on('countries')->onDelete('set null');
         });
     }
 
