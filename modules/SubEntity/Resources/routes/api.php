@@ -38,5 +38,5 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // sub-entity records
     Route::get('/records/list', [SubEntityRecordsController::class, 'index']);
     Route::get('/records/widgets', [SubEntityRecordsController::class, 'widgets']);
-    Route::post('/records/export', [SubEntityRecordsController::class, 'export']);
+    Route::post('/records/list/export', [SubEntityRecordsController::class, 'export']);
 });

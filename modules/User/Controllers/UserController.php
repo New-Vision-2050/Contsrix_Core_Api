@@ -284,7 +284,8 @@ class UserController extends Controller
         return Json::item([
             'message' => 'Email sent successfully',
             'user_id' => $userId,
-            'company_id' => $companyId
+            'company_id' => $companyId,
+            "company_user"=>$companyUser
         ]);
     }
 }
