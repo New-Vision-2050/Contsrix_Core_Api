@@ -15,7 +15,7 @@ class UpdateBannerRequest extends FormRequest
     {
         return [
             'url' => 'sometimes|string|url',
-            'type' => 'sometimes|string|in:home,discounts,new_arrivals,contact,about_Us',
+            'type' => 'sometimes|string|in:home,discount,new_arrival,contact_us,about_us',
             'is_active' => 'sometimes|boolean',
             'banner_image' => 'sometimes|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
         ];
