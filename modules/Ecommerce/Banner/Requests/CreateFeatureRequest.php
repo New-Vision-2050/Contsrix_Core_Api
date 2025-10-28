@@ -18,7 +18,6 @@ class CreateFeatureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'required|uuid|exists:companies,id',
             'setting_page_id' => 'nullable|uuid|exists:setting_pages,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',

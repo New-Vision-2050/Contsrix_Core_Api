@@ -25,7 +25,7 @@ class FeaturePresenter extends AbstractPresenter
             'title' => $this->feature->title,
             'description' => $this->feature->description,
             'is_active' => (int) $this->feature->is_active,
-            'setting_page' => $isListing ? null : $this->feature->settingPage,
+            'setting_page' => $this->feature->settingPage ? (new SettingPagePresenter($this->feature->settingPage))->getData() : null,
         ];
     }
 }

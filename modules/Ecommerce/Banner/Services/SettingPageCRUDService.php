@@ -8,6 +8,7 @@ use Modules\Ecommerce\Banner\DTO\UpsertSettingPageDTO;
 use Modules\Ecommerce\Banner\Models\SettingPage;
 use Modules\Ecommerce\Banner\Repositories\SettingPageRepository;
 use Ramsey\Uuid\UuidInterface;
+use Ramsey\Uuid\Uuid;
 use App\Traits\HasExportService;
 
 class SettingPageCRUDService
@@ -29,7 +30,7 @@ class SettingPageCRUDService
 
         if ($existingSettingPage) {
             // Update existing setting page
-            return $this->repository->updateSettingPage($existingSettingPage->id, $upsertSettingPageDTO->toArray());
+            return $this->repository->updateSettingPage(Uuid::fromString($existingSettingPage->id), $upsertSettingPageDTO->toArray());
         }
 
         // Create new setting page
@@ -52,6 +53,11 @@ class SettingPageCRUDService
     public function getByCompanyAndType(UuidInterface $companyId, string $type): ?SettingPage
     {
         return $this->repository->findByCompanyAndType($companyId, $type);
+    }
+
+    public function getByType(string $type): ?SettingPage
+    {
+        return $this->repository->findByType( $type);
     }
 
     public function delete(UuidInterface $id): bool

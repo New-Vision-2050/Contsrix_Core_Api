@@ -35,11 +35,13 @@ class UpdateBannerRequest extends FormRequest
 
     public function createUpdateBannerCommand(): UpdateBannerCommand
     {
+        $isActive = $this->has('is_active') ? (bool) $this->input('is_active') : null;
+        
         return new UpdateBannerCommand(
             id: Uuid::fromString($this->route('id')),
             url: $this->input('url'),
             type: $this->input('type'),
-            isActive: $this->input('is_active'),
+            isActive: $isActive,
         );
     }
 }

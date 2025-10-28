@@ -6,7 +6,7 @@ namespace Modules\Ecommerce\Banner\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
 
-class BannerFilter extends SearchModelFilter
+class FeatureFilter extends SearchModelFilter
 {
     public $relations = ['settingPage'];
 
@@ -16,14 +16,6 @@ class BannerFilter extends SearchModelFilter
     public function settingPageId($settingPageId)
     {
         return $this->where('setting_page_id', $settingPageId);
-    }
-
-    /**
-     * Filter by banner type (legacy support)
-     */
-    public function type($type)
-    {
-        return $this->where('type', $type);
     }
 
     /**
@@ -37,19 +29,6 @@ class BannerFilter extends SearchModelFilter
     }
 
     /**
-     * Filter by setting page ID and type combination
-     */
-    public function settingPageIdAndType($settingPageId, $type = null)
-    {
-        return $this->whereHas('settingPage', function ($query) use ($settingPageId, $type) {
-            $query->where('id', $settingPageId);
-            if ($type) {
-                $query->where('type', $type);
-            }
-        });
-    }
-
-    /**
      * Filter by active status
      */
     public function isActive($isActive)
@@ -58,23 +37,34 @@ class BannerFilter extends SearchModelFilter
     }
 
     /**
-     * General search filter (searches in URL)
+     * General search filter (searches in title and description)
      */
     public function search($search)
     {
-        return $this->where('url', 'like', '%' . $search . '%');
+        return $this->where(function ($query) use ($search) {
+            $query->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('description', 'like', '%' . $search . '%');
+        });
     }
 
     /**
-     * Filter by URL
+     * Filter by title
      */
-    public function url($url)
+    public function title($title)
     {
-        return $this->where('url', 'like', '%' . $url . '%');
+        return $this->where('title', 'like', '%' . $title . '%');
     }
 
     /**
-     * Filter by active banners only
+     * Filter by description
+     */
+    public function description($description)
+    {
+        return $this->where('description', 'like', '%' . $description . '%');
+    }
+
+    /**
+     * Filter by active features only
      */
     public function activeOnly($activeOnly)
     {
@@ -85,7 +75,7 @@ class BannerFilter extends SearchModelFilter
     }
 
     /**
-     * Filter by inactive banners only
+     * Filter by inactive features only
      */
     public function inactiveOnly($inactiveOnly)
     {

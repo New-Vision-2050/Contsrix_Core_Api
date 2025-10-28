@@ -80,14 +80,6 @@ class FeatureController extends Controller
         return Json::deleted();
     }
 
-    public function getByCompany(Request $request): JsonResponse
-    {
-        $companyId = Uuid::fromString($request->get('company_id'));
-        $features = $this->featureService->getByCompany($companyId);
-
-        return Json::items($features, message: 'تم جلب مميزات الشركة بنجاح');
-    }
-
     public function getActiveFeatures(): JsonResponse
     {
         $features = $this->featureService->getActiveFeatures();
