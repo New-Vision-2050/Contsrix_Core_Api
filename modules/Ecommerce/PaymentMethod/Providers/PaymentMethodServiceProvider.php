@@ -28,7 +28,7 @@ class PaymentMethodServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/payment_methods')
+        Route::prefix('api/v1/ecommerce/dashboard/payment_methods')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

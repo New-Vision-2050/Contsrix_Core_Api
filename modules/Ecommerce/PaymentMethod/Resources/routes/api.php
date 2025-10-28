@@ -11,4 +11,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/{id}', [PaymentMethodController::class, 'show']);
     Route::put('/{id}', [PaymentMethodController::class, 'update']);
     Route::delete('/{id}', [PaymentMethodController::class, 'delete']);
+    
+    // Toggle status route
+    Route::patch('/{type}/toggle-status', [PaymentMethodController::class, 'toggleStatus']);
 });

@@ -32,62 +32,26 @@ class PaymentMethodController extends Controller
 
     public function index(GetPaymentMethodListRequest $request): JsonResponse
     {
-        $list = $this->paymentMethodService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+        $mergedData = $this->paymentMethodService->getMergedPaymentMethods();
+
+        return Json::items(
+            PaymentMethodPresenter::collection($mergedData->toArray()),
+            message: 'تم جلب طرق الدفع بنجاح'
         );
-
-        return Json::items(PaymentMethodPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
-    public function show(GetPaymentMethodRequest $request): JsonResponse
+
+    public function toggleStatus(GetPaymentMethodRequest $request): JsonResponse
     {
-        $item = $this->paymentMethodService->get(Uuid::fromString($request->route('id')));
-
-        $presenter = new PaymentMethodPresenter($item);
-
-        return Json::item($presenter->getData());
-    }
-
-    public function store(CreatePaymentMethodRequest $request): JsonResponse
-    {
-        $createdItem = $this->paymentMethodService->create($request->createCreatePaymentMethodDTO());
-
-        $presenter = new PaymentMethodPresenter($createdItem);
-
-        return Json::item($presenter->getData());
-    }
-
-    public function update(UpdatePaymentMethodRequest $request): JsonResponse
-    {
-        $command = $request->createUpdatePaymentMethodCommand();
-        $this->updatePaymentMethodHandler->handle($command);
-
-        $item = $this->paymentMethodService->get($command->getId());
-
-        $presenter = new PaymentMethodPresenter($item);
-
-        return Json::item( $presenter->getData());
-    }
-
-    public function delete(DeletePaymentMethodRequest $request): JsonResponse
-    {
-        $this->deletePaymentMethodHandler->handle(Uuid::fromString($request->route('id')));
-
-        return Json::deleted();
-    }
-
-    /**
-     * Export paymentmethod to a file
-     *
-     * @param ExportPaymentMethodRequest $request
-     */
-    public function export(ExportPaymentMethodRequest $request)
-    {
-        $format = $request->get('format', 'xlsx');
-        $fileName = 'payment_method.' . $format;
-        $filters = $request->getFilters();
-        
-        return Excel::download(new PaymentMethodExport($this->paymentMethodService, $filters), $fileName);
+        try {
+            $type = $request->route('type');
+            $result = $this->paymentMethodService->togglePaymentMethodStatus($type);
+            
+            $presenter = new PaymentMethodPresenter($result['data']);
+            
+            return Json::item($presenter->getData(), message: $result['message']);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage());
+        }
     }
 }
