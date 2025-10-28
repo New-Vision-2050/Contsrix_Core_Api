@@ -23,9 +23,9 @@ class Feature extends Model
 
     protected $fillable = [
         'company_id',
-        'setting_page_id',
         'title',
         'description',
+        'type',
         'is_active',
     ];
 
@@ -36,10 +36,7 @@ class Feature extends Model
 
 
     // Relationships
-    public function settingPage(): BelongsTo
-    {
-        return $this->belongsTo(SettingPage::class);
-    }
+    // Removed settingPage relationship
 
     // Scopes
     public function scopeActive($query)
