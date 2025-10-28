@@ -269,7 +269,7 @@ class UserRepository extends BaseRepository
         } else {
             $query = $this->model;
         }
-        $query = $query->withoutTenancy()->whereNotNull("management_hierarchy_id")//mean this is employee not any type else
+        $query = $query->distinct("global_company_user_id")->withoutTenancy()->whereNotNull("management_hierarchy_id")//mean this is employee not any type else
         ->whereHas('company', function ($q) {
             $q->withoutTenancy()->where('is_central_company', 1);
         });
