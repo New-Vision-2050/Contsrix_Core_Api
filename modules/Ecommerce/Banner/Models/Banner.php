@@ -44,7 +44,10 @@ class Banner extends Model implements HasMedia
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
     }
-
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
+    }
     // Relationships
     public function settingPage(): BelongsTo
     {

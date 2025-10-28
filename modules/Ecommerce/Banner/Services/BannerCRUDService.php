@@ -11,6 +11,7 @@ use Modules\Ecommerce\Banner\Models\Banner;
 use Modules\Ecommerce\Banner\Repositories\BannerRepository;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
+use Modules\Shared\Media\Services\FileUploadService;
 
 class BannerCRUDService
 {
@@ -18,17 +19,28 @@ class BannerCRUDService
 
     public function __construct(
         private BannerRepository $repository,
+        private FileUploadService $fileUploadService,
     ) {
     }
 
-    public function create(CreateBannerDTO $createBannerDTO, ?UploadedFile $bannerImage = null): Banner
+    public function create(CreateBannerDTO $createBannerDTO): Banner
     {
         $banner = $this->repository->createBanner($createBannerDTO->toArray());
         
-        // Handle image upload if provided
-        if ($bannerImage) {
-            $banner->addMediaFromRequest('banner_image')
-                ->toMediaCollection('banner_image');
+        $bannerImageFile = request()->file('banner_image');
+
+        if ($bannerImageFile) {
+            $companyName = tenant('name') ?? 'UnknownCompany';
+            $bannerType = $createBannerDTO->type ?? 'banner';
+            $path = $companyName . '/ecommerce/banners/' . $bannerType;
+
+            $this->fileUploadService->uploadFile(
+                $banner,
+                $bannerImageFile,
+                $path,
+                'banner_image',
+                "public"
+            );
         }
         
         // Refresh the model to get updated media

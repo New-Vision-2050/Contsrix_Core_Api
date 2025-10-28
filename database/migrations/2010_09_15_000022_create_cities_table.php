@@ -17,8 +17,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $sql = File::get(database_path('sql/cities.sql'));
-        DB::unprepared($sql);
+        // $sql = File::get(database_path('sql/cities.sql'));
+        // DB::unprepared($sql);
     }
 
     /**
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cities');
+        // Schema::dropIfExists('cities');
     }
 };
