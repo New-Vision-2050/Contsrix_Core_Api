@@ -20,7 +20,7 @@ class CreateFeatureRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
-            'type' => 'required|string|in:home,discount,new_arrival,contact_us, about_us',
+            'type' => 'required|string|in:home,discount,new_arrival,contact_us,about_us',
             'is_active' => 'sometimes|boolean',
         ];
     }

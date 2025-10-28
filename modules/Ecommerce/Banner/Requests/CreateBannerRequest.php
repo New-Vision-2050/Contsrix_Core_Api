@@ -14,7 +14,7 @@ class CreateBannerRequest extends FormRequest
     {
         return [
             'url' => 'required|string|url',
-            'type' => 'required|string|in:home,discount,new_arrival,contact_us, about_us',
+            'type' => 'required|string|in:home,discount,new_arrival,contact_us,about_us',
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_active' => 'sometimes|boolean',

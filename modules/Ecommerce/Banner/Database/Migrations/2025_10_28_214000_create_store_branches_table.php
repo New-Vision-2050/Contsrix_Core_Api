@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('store_branches', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('company_id')->index();
+            $table->string('type', 50)->default('main'); // main, branch, warehouse, etc.
+            $table->string('name');
+            $table->uuid('country_id')->nullable()->index();
+            $table->text('address')->nullable();
+            $table->string('phone', 20)->nullable();
+            $table->string('email')->nullable();
+            $table->decimal('latitude', 10, 8)->nullable(); // latitude
+            $table->decimal('longitude', 11, 8)->nullable(); // longitude
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            // Foreign key constraints
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+            $table->foreign('country_id')->references('id')->on('countries')->onDelete('set null');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('store_branches');
+    }
+};
