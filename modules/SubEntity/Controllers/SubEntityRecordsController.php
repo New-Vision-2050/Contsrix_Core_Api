@@ -18,8 +18,9 @@ class SubEntityRecordsController extends Controller
     ) {
     }
 
-    public function index(GetSubEntityRecordsRequest $request): JsonResponse
+    public function index(GetSubEntityRecordsRequest $request)
     {
+        return $request->get('sub_entity_id');
         $list = $this->subEntityRecordsService->getRecords(
             $request->get('sub_entity_id'),
             $request->get('registration_form_id'),
