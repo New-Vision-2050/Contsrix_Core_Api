@@ -44,8 +44,9 @@ class SubEntityRecordsService
         //get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
         $query = $model::query();
+        return $model;
         if($model === User::class)
-        {return $registrationForm->company_user_role_map;
+        {
              $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
             {
                 $q->where('role', $registrationForm->company_user_role_map)
