@@ -44,7 +44,6 @@ class SubEntityRecordsService
         //get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
         $query = $model::query();
-        return $model;
         if($model === User::class)
         {
              $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)

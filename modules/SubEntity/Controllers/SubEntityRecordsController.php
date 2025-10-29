@@ -27,7 +27,6 @@ class SubEntityRecordsController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
-        return $list;
 
         return Json::items(CompanyUserPresenter::collection($list["data"] ?? []),paginationSettings: $list['pagination'] ?? []);
     }
