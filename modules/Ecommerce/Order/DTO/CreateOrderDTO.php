@@ -10,42 +10,30 @@ class CreateOrderDTO
 {
     public function __construct(
         public UuidInterface $companyId,
-        public ?UuidInterface $customerId = null,
-        public ?UuidInterface $warehouseId = null,
+        public ?string $customerId = null,
         public bool $isGuest = false,
-        public ?string $customerType = null,
-        public string $paymentStatus = 'unpaid',
-        public string $orderStatus = 'pending',
-        public ?string $paymentMethod = null,
-        public float $orderAmount = 0.0,
-        public float $paidAmount = 0.0,
-        public float $discountAmount = 0.0,
-        public float $shippingCost = 0.0,
-        public ?string $shippingAddress = null,
+        public string $paymentMethod,
+        public string $shippingAddress,
         public ?string $orderNote = null,
-        public ?string $expectedDeliveryDate = null,
         public array $orderItems = [],
+        public ?string $customerName = null,
+        public ?string $customerPhone = null,
+        public ?string $customerEmail = null,
     ) {
     }
 
     public function toArray(): array
     {
         return [
-            'company_id' => $this->companyId->toString(),
-            'customer_id' => $this->customerId?->toString(),
-            'warehouse_id' => $this->warehouseId?->toString(),
+            'company_id' => $this->companyId,
+            'customer_id' => $this->customerId,
             'is_guest' => $this->isGuest,
-            'customer_type' => $this->customerType,
-            'payment_status' => $this->paymentStatus,
-            'order_status' => $this->orderStatus,
             'payment_method' => $this->paymentMethod,
-            'order_amount' => $this->orderAmount,
-            'paid_amount' => $this->paidAmount,
-            'discount_amount' => $this->discountAmount,
-            'shipping_cost' => $this->shippingCost,
             'shipping_address' => $this->shippingAddress,
             'order_note' => $this->orderNote,
-            'expected_delivery_date' => $this->expectedDeliveryDate,
+            'customer_name' => $this->customerName,
+            'customer_phone' => $this->customerPhone,
+            'customer_email' => $this->customerEmail,
         ];
     }
 

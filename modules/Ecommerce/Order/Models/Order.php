@@ -41,6 +41,9 @@ class Order extends Model
         'customer_id',
         'is_guest',
         'customer_type',
+        'customer_name',
+        'customer_phone',
+        'customer_email',
         'payment_status',
         'order_status',
         'payment_method',
@@ -149,9 +152,11 @@ class Order extends Model
         if ($this->is_guest) {
             return [
                 'type' => 'guest',
-                'name' => 'عميل زائر',
-                'email' => null,
-                'phone' => null,
+                'name' => $this->customer_name ?? 'عميل زائر',
+                'email' => $this->customer_email,
+                'phone' => $this->customer_phone,
+                'customer_id' => null,
+                'is_guest' => true,
             ];
         }
 
@@ -160,6 +165,8 @@ class Order extends Model
             'name' => $this->customer?->name ?? 'غير محدد',
             'email' => $this->customer?->email ?? null,
             'phone' => $this->customer?->phone ?? null,
+            'customer_id' => $this->customer_id,
+            'is_guest' => false,
         ];
     }
 
