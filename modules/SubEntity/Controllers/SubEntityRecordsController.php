@@ -20,7 +20,6 @@ class SubEntityRecordsController extends Controller
 
     public function index(GetSubEntityRecordsRequest $request)
     {
-        return $request->get('sub_entity_id');
         $list = $this->subEntityRecordsService->getRecords(
             $request->get('sub_entity_id'),
             $request->get('registration_form_id'),
@@ -28,6 +27,7 @@ class SubEntityRecordsController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
+        return $list;
 
         return Json::items(CompanyUserPresenter::collection($list["data"] ?? []),paginationSettings: $list['pagination'] ?? []);
     }
