@@ -23,6 +23,7 @@ use Modules\Ecommerce\Order\Exports\OrderExport;
 use Modules\Ecommerce\Order\Requests\ExportOrderRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
+use Modules\Ecommerce\Order\Presenters\OrderDetailsPresenter;
 
 class OrderController extends Controller
 {
@@ -48,7 +49,7 @@ class OrderController extends Controller
     {
         $item = $this->orderService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new OrderPresenter($item);
+        $presenter = new OrderDetailsPresenter($item);
 
         return Json::item($presenter->getData());
     }
