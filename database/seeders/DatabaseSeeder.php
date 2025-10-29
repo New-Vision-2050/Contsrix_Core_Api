@@ -59,6 +59,7 @@ use Modules\Shared\SocialIcon\Database\Seeders\SocialIconsModulesSeederTableSeed
 use Modules\Shared\Payment\Models\Payment;
 use Modules\UserInfo\UserProfessionalData\Database\seeders\SyncUserIdsInUserProfessionalDataSeeder;
 use Modules\Unit\Database\Seeders\UnitSeederTableSeeder;
+use Modules\Shared\PaymentMethodData\Database\Seeders\PaymentMethodDataSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -140,5 +141,6 @@ class DatabaseSeeder extends Seeder
         $this->call(DefaultNotificationSettingsSeeder::class);
         $this->call(UnitSeederTableSeeder::class);
         $this->call(SocialIconsModulesSeederTableSeeder::class);
+        $this->call(PaymentMethodDataSeeder::class);
     }
 }
