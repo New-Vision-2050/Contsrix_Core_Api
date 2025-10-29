@@ -12,6 +12,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Company\CompanyCore\Models\Company;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoBannerSetting extends Model implements HasMedia
 {
@@ -19,6 +20,7 @@ class EcoBannerSetting extends Model implements HasMedia
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 

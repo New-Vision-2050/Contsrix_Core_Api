@@ -7,6 +7,9 @@ namespace Modules\Ecommerce\EcoBrand\Controllers\Dashboard;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Facades\DB;
 use Modules\Ecommerce\EcoBrand\Handlers\Dashboard\DeleteEcoBrandDashboardHandler;
 use Modules\Ecommerce\EcoBrand\Handlers\Dashboard\UpdateEcoBrandDashboardHandler;
 use Modules\Ecommerce\EcoBrand\Presenters\Dashboard\EcoBrandDashboardPresenter;
@@ -92,5 +95,25 @@ class EcoBrandDashboardController extends Controller
         } catch (\Exception $e) {
             return Json::error('فشل في تغيير حالة العلامة التجارية: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Get brand statistics cards for dashboard
+     */
+    public function getStatistics(): JsonResponse
+    {
+        $stats = $this->ecoBrandService->getBrandStatistics();
+
+        return Json::item($stats);
+    }
+
+    /**
+     * Export brands to Excel
+     */
+    public function export(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $brandIds = $request->input('ids', null);
+        
+        return $this->ecoBrandService->exportToExcel($brandIds);
     }
 }

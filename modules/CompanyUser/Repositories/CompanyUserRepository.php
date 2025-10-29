@@ -188,8 +188,21 @@ class CompanyUserRepository extends BaseRepository
 
             // Find the company user by global_company_user_id
             $companyUser = $this->findOneBy(['global_id' => $user->global_company_user_id]);
-            $this->canDelete($companyUser);
+            if ($companyUser->email === 'admin@constrix-nv.com') {
+                throw new CustomException(__("validation.admin_account_cannot_be_deleted"), 400);
+            }
 
+            // Check if trying to delete self
+            $currentUserId = auth()->user()->global_company_user_id ?? null;
+            if ($currentUserId && $currentUserId === $companyUser->global_id) {
+                throw new CustomException(__("validation.cannot_delete_yourself"), 400);
+            }
+
+            // Check if trying to delete company owner
+            $isOwner = $user->is_owner;
+            if ($isOwner) {
+                throw new CustomException(__("validation.cannot_delete_company_owner"), 400);
+            }
 
             $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId, "role" => $role]);
 

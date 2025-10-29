@@ -29,7 +29,11 @@ class EcoBrandDashboardPresenter extends AbstractPresenter
             'description' => $this->ecoBrand->description,
             'description_ar' => $this->ecoBrand->getTranslation('description', 'ar'),
             'description_en' => $this->ecoBrand->getTranslation('description', 'en'),
-            
+            'is_active'=> (int) $this->ecoBrand->is_active,
+            'products_count' => $this->ecoBrand->products_count ?? 0,
+            'company_id' => $this->ecoBrand->company_id,
+            'created_at' => $this->ecoBrand->created_at?->format('Y-m-d H:i:s'),
+            'updated_at' => $this->ecoBrand->updated_at?->format('Y-m-d H:i:s'),
             // Brand images
             "file" => $media != null ? (new MediaPresenter($media))->getData() : null,
         ];

@@ -13,6 +13,7 @@ use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoBrand extends Model implements HasMedia
 {
@@ -21,6 +22,7 @@ class EcoBrand extends Model implements HasMedia
     use BaseFilterable;
     use HasTranslations;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
     //use SoftDeletes;
 
     public array $translatable = ['name', 'description'];
@@ -44,6 +46,22 @@ class EcoBrand extends Model implements HasMedia
     protected static function newFactory(): EcoBrandFactory
     {
         return EcoBrandFactory::new();
+    }
+
+    /**
+     * Get the products for the brand
+     */
+    public function products()
+    {
+        return $this->hasMany(\Modules\Ecommerce\EcoProduct\Models\EcoProduct::class, 'brand_id');
+    }
+
+    /**
+     * Get the company that owns the brand
+     */
+    public function company()
+    {
+        return $this->belongsTo(\Modules\Company\CompanyCore\Models\Company::class);
     }
 
     /**

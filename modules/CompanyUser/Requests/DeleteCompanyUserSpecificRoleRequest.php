@@ -16,7 +16,7 @@ class DeleteCompanyUserSpecificRoleRequest extends FormRequest
     {
         return [
             "role_id" => ["required",Rule::enum(CompanyUserRole::class)],
-            "company_id"=>"required|exists:companies,id"
+//            "company_id"=>"required|exists:companies,id"
         ];
     }
 
@@ -25,7 +25,7 @@ class DeleteCompanyUserSpecificRoleRequest extends FormRequest
     {
         return new DeleteRoleForCompanyUserCommand(
             id: Uuid::fromString($this->route('id')),
-            company_id: Uuid::fromString($this->get('company_id')),
+            company_id: Uuid::fromString($this->get('company_id',tenant("id"))),
             role:(int) $this->get('role_id'),
         );
     }

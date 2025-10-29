@@ -12,7 +12,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Ecommerce\EcoClient\Models\EcoClient;
-
+use App\Traits\ForcedBelongsToTenant;
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class EcoComplaint extends Model
@@ -20,6 +20,7 @@ class EcoComplaint extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
     //use HasTranslations;
     //use SoftDeletes;
 

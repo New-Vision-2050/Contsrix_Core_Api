@@ -147,26 +147,36 @@ class FileController extends Controller
 
     public function copyFile(CopyFileRequest $request): JsonResponse
     {
-        $copiedFile = $this->fileService->copyFile(
-            $request->getFileId(),
+        $copiedFiles = $this->fileService->copyFile(
+            $request->getFileIds(),
             $request->getFolderId()
         );
 
-        $presenter = new FilePresenter($copiedFile);
-
-        return Json::item($presenter->getData());
+        return response()->json([
+            'status' => true,
+            'message' => 'Files copied successfully',
+            'data' => [
+                'files' => FilePresenter::collection($copiedFiles),
+                'files_count' => count($copiedFiles),
+            ]
+        ]);
     }
 
     public function cutFile(CutFileRequest $request): JsonResponse
     {
-        $movedFile = $this->fileService->cutFile(
-            $request->getFileId(),
+        $movedFiles = $this->fileService->cutFile(
+            $request->getFileIds(),
             $request->getFolderId()
         );
 
-        $presenter = new FilePresenter($movedFile);
-
-        return Json::item($presenter->getData());
+        return response()->json([
+            'status' => true,
+            'message' => 'Files moved successfully',
+            'data' => [
+                'files' => FilePresenter::collection($movedFiles),
+                'files_count' => count($movedFiles),
+            ]
+        ]);
     }
 
     public function shareFile(ShareFileRequest $request): JsonResponse

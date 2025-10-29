@@ -25,7 +25,7 @@ class CreateEcoProductNewDTO
         
         // Product specifications
         public readonly string $type,                   // "digital" or "normal"
-        public readonly string $unit,                   // "kg", "m", "liter", "gram", "piece"
+        public readonly ?string $unit,                  // "kg", "m", "liter", "gram", "piece" (nullable for digital products)
         public readonly string $sku,
         public readonly UuidInterface $warehouseId,
         public readonly string $gender,                 // "male", "female", "all"
@@ -51,6 +51,9 @@ class CreateEcoProductNewDTO
         // Media
         public readonly ?array $mainPhoto,              // Photo data
         public readonly ?array $otherPhotos,            // Array of photo data
+        
+        // Video
+        public readonly ?string $videoUrl,              // Video URL
         
         // SEO
         public readonly ?string $metaTitle,
@@ -86,6 +89,7 @@ class CreateEcoProductNewDTO
             'is_visible' => $this->isVisible,
             'main_photo' => $this->mainPhoto,
             'other_photos' => $this->otherPhotos,
+            'video_url' => $this->videoUrl,
             'meta_title' => $this->metaTitle,
             'meta_description' => $this->metaDescription,
             'meta_keywords' => $this->metaKeywords,

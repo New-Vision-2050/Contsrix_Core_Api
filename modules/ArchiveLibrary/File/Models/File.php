@@ -52,8 +52,8 @@ class File extends Model implements HasMedia , Auditable
         'folder_id',
         'access_type',
         'status',
-        'management_hierarchy_id',
-        'company_id'
+        "management_hierarchy_id",
+        "company_id"
     ];
 
     protected $casts = [
@@ -143,7 +143,7 @@ class File extends Model implements HasMedia , Auditable
 
     /**
      * Replace the first media file with a new one without explicit deletion
-     * 
+     *
      * This updates the existing media record's file content and metadata
      *
      * @param \Illuminate\Http\UploadedFile $file
@@ -153,7 +153,7 @@ class File extends Model implements HasMedia , Auditable
     public function replaceMedia($uploadedFile, string $collectionName = 'default')
     {
         $existingMedia = $this->getFirstMedia($collectionName);
-        
+
         if (!$existingMedia) {
             // No existing media, just add new one
             return $this->addMedia($uploadedFile)
@@ -164,7 +164,7 @@ class File extends Model implements HasMedia , Auditable
         $disk = $existingMedia->disk;
         $directory = dirname($existingMedia->getPath());
         $fileName = $existingMedia->file_name;
-        
+
         // Save new file with same filename (overwrites old file)
         \Storage::disk($disk)->put(
             str_replace(storage_path('app/public/'), '', $existingMedia->getPath()),

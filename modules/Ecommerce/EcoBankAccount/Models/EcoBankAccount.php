@@ -14,12 +14,14 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Country\Models\Country;
 use Modules\Shared\Bank\Models\Bank;
 use Modules\Shared\Currency\Models\Currency;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoBankAccount extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 

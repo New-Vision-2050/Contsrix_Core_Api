@@ -25,7 +25,7 @@ use Modules\Ecommerce\EcoProduct\Models\ProductCustomField;
 use Modules\Ecommerce\EcoProduct\Models\ProductSEO;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-
+use App\Traits\ForcedBelongsToTenant;
 class EcoProduct extends Model implements HasMedia
 {
     use HasFactory;
@@ -34,6 +34,7 @@ class EcoProduct extends Model implements HasMedia
     use HasTranslations;
     //use SoftDeletes; // Uncomment if you intend to use soft deletes
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
     protected $table = 'eco_products'; // Explicitly define table name for clarity
 
     public array $translatable = ['name', 'description'];
@@ -68,6 +69,7 @@ class EcoProduct extends Model implements HasMedia
         'is_visible',
         'main_photo', // JSON field
         'other_photos', // JSON array
+        'video_url', // Video URL field
         'meta_title',
         'meta_description',
         'meta_keywords',
@@ -118,27 +120,8 @@ class EcoProduct extends Model implements HasMedia
     {
         return $this->belongsTo(Warehous::class, 'warehouse_id', 'id');
     }
-    // Define relationships
-    public function taxes(): HasMany
-    {
-        return $this->hasMany(ProductTax::class, 'product_id', 'id');
-    }
 
-    public function details(): HasMany
-    {
-        return $this->hasMany(ProductDetail::class, 'product_id', 'id');
-    }
-
-    public function customFields(): HasMany
-    {
-        return $this->hasMany(ProductCustomField::class, 'product_id', 'id');
-    }
-
-    public function seo(): HasOne
-    {
-        return $this->hasOne(ProductSEO::class, 'product_id', 'id');
-    }
-        /**
+    /**
      * Get the products associated with this product.
      */
     public function associatedProducts(): BelongsToMany

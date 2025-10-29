@@ -13,6 +13,7 @@ use Modules\SubEntity\Models\SubEntity;
 class SubEntityDatabaseSeeder extends Seeder
 {
     use SeedOnce;
+
     public function run(): void
     {
         $superEntityType = fake()->randomElement(['users']);

@@ -7,6 +7,8 @@ namespace Modules\Ecommerce\EcoCategory\Services\Dashboard;
 use Modules\Ecommerce\EcoCategory\DTO\Dashboard\CreateEcoCategoryDashboardDTO;
 use Modules\Ecommerce\EcoCategory\Models\EcoCategory;
 use Modules\Ecommerce\EcoCategory\Repositories\EcoCategoryRepository;
+use Modules\Ecommerce\EcoCategory\Exports\EcoCategoryExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\UuidInterface;
 
 class EcoCategoryCRUDDashboardService
@@ -63,73 +65,104 @@ class EcoCategoryCRUDDashboardService
      */
     public function getCategoryStatistics(): array
     {
-        try {
-            // Get total categories count
-            $totalCategories = EcoCategory::count();
+            // Get main categories (level 1 - no parent)
+            $mainCategories = EcoCategory::whereNull('parent_id')->count();
 
-            // Get active categories count
-            $activeCategories = EcoCategory::where('is_active', 1)->count();
-            // Get categories with products
-            $categoriesWithProducts = EcoCategory::whereHas('products')->count();
+            // Get subcategories (level 2 - have parent but parent has no parent)
+            $subcategories = EcoCategory::whereHas('parent', function($query) {
+                $query->whereNull('parent_id');
+            })->count();
 
-            // Get parent categories (main categories)
-            $parentCategories = EcoCategory::whereNull('parent_id')->count();
+            // Get sub-subcategories (level 3 - have parent whose parent also has parent)
+            $subSubcategories = EcoCategory::whereHas('parent.parent')->count();
 
             return [
                 [
-                    'value' => $totalCategories,
-                    'label' => 'إجمالي عدد التصنيفات',
-                    'icon' => 'category',
-                    'color' => 'primary'
+                    'number' => $mainCategories,
+                    'title' => 'اجمالي عدد الاقسام',
                 ],
                 [
-                    'value' => $activeCategories,
-                    'label' => 'عدد التصنيفات الفعالة',
-                    'icon' => 'visibility',
-                    'color' => 'success'
+                    'number' => $subcategories,
+                    'title' =>'اجمالي عدد الاقسام  الفرعية',
                 ],
                 [
-                    'value' => $categoriesWithProducts,
-                    'label' => 'التصنيفات المتوفرة في المتجر',
-                    'icon' => 'store',
-                    'color' => 'info'
-                ],
-                [
-                    'value' => $parentCategories,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'folder',
-                    'color' => 'warning'
+                    'number' => $subSubcategories,
+                    'title' => 'اجمالي عدد الاقسام الفرعية الفرعية',
                 ]
             ];
 
-        } catch (\Exception $e) {
-            // Fallback data matching the image
-            return [
-                [
-                    'value' => 125,
-                    'label' => 'إجمالي عدد التصنيفات',
-                    'icon' => 'category',
-                    'color' => 'primary'
-                ],
-                [
-                    'value' => 102,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'visibility',
-                    'color' => 'success'
-                ],
-                [
-                    'value' => 6,
-                    'label' => 'التصنيفات المتوفرة في المتجر',
-                    'icon' => 'store',
-                    'color' => 'info'
-                ],
-                [
-                    'value' => 16,
-                    'label' => 'عدد التصنيفات',
-                    'icon' => 'folder',
-                    'color' => 'warning'
-                ]
-            ];
+     
+    }
+
+    /**
+     * Export categories to Excel
+     */
+    public function exportToExcel(array $categoryIds = null, array $filters = []): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $query = EcoCategory::with(['parent', 'children'])
+            ->withCount(['products', 'children']);
+
+        // Apply filters
+        if ($categoryIds) {
+            $query->whereIn('id', $categoryIds);
         }
+
+        if (isset($filters['include_inactive']) && !$filters['include_inactive']) {
+            $query->where('is_active', true);
+        }
+
+        if (isset($filters['parent_id'])) {
+            if ($filters['parent_id'] === 'null') {
+                $query->whereNull('parent_id');
+            } else {
+                $query->where('parent_id', $filters['parent_id']);
+            }
+        }
+
+        $categories = $query->get();
+
+        $filename = 'eco_categories_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+
+        return Excel::download(
+            new EcoCategoryExport($categories),
+            $filename,
+            \Maatwebsite\Excel\Excel::XLSX
+        );
+    }
+
+    /**
+     * Export categories to CSV
+     */
+    public function exportToCsv(array $categoryIds = null, array $filters = []): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $query = EcoCategory::with(['parent', 'children'])
+            ->withCount(['products', 'children']);
+
+        // Apply filters
+        if ($categoryIds) {
+            $query->whereIn('id', $categoryIds);
+        }
+
+        if (isset($filters['include_inactive']) && !$filters['include_inactive']) {
+            $query->where('is_active', true);
+        }
+
+        if (isset($filters['parent_id'])) {
+            if ($filters['parent_id'] === 'null') {
+                $query->whereNull('parent_id');
+            } else {
+                $query->where('parent_id', $filters['parent_id']);
+            }
+        }
+
+        $categories = $query->get();
+
+        $filename = 'eco_categories_' . now()->format('Y_m_d_H_i_s') . '.csv';
+
+        return Excel::download(
+            new EcoCategoryExport($categories),
+            $filename,
+            \Maatwebsite\Excel\Excel::CSV
+        );
     }
 }
