@@ -16,15 +16,13 @@ class GetFeatureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => 'required|uuid',
+
         ];
     }
 
     public function messages(): array
     {
         return [
-            'id.required' => 'معرف الميزة مطلوب',
-            'id.uuid' => 'معرف الميزة يجب أن يكون UUID صحيح',
         ];
     }
 }

@@ -7,6 +7,7 @@ namespace Modules\Ecommerce\Banner\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
+use Ramsey\Uuid\Uuid;
 use Modules\Ecommerce\Banner\Models\SettingPage;
 use App\Traits\HasExport;
 
@@ -36,10 +37,9 @@ class SettingPageRepository extends BaseRepository
         ]);
     }
 
-    public function findByCompanyAndType(UuidInterface $companyId, string $type): ?SettingPage
+    public function findByType( string $type): ?SettingPage
     {
-        return $this->model->where('company_id', $companyId->toString())
-            ->where('type', $type)
+        return $this->model->where('type', $type)
             ->first();
     }
 

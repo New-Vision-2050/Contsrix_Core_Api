@@ -125,4 +125,66 @@ class FlashDealRepository extends BaseRepository
             ->orderBy('created_at', 'desc')
             ->get();
     }
+
+    /**
+     * Search flash deals with filters and pagination
+     */
+    public function searchFlashDeals(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
+        return $this->paginatedWithRelations($page, $perPage, ['company'], $filters);
+    }
+
+    /**
+     * Get flash deals for export with filters
+     */
+    public function getForExport(array $filters = [])
+    {
+        $query = $this->model->newQuery();
+        
+        // Load relationships for export
+        $query->with(['company']);
+        
+        // Apply filters using the filterable trait
+        $query->filter($filters);
+        
+        // Order by created_at desc for consistent export
+        $query->orderBy('created_at', 'desc');
+        
+        return $query->get();
+    }
+
+    /**
+     * Paginated list with relations and filters
+     */
+    public function paginatedWithRelations(int $page = 1, int $perPage = 10, array $relations = [], array $filters = []): array
+    {
+        $query = $this->model->newQuery();
+
+        if (!empty($relations)) {
+            $query->with($relations);
+        }
+
+        // Apply filters using the filterable trait
+        $query->filter($filters);
+
+        $total = $query->count();
+        $items = $query->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $lastPage = (int) ceil($total / $perPage);
+        $nextPage = $page < $lastPage ? $page + 1 : $lastPage;
+        $resultCount = $items->count();
+
+        return [
+            'data' => $items,
+            'pagination' => [
+                'page' => $page,
+                'next_page' => $nextPage,
+                'last_page' => $lastPage,
+                'result_count' => $resultCount,
+            ]
+        ];
+    }
 }

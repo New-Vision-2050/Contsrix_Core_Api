@@ -40,7 +40,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             
             // Product specifications
             'type' => 'required|in:digital,normal',
-            'unit' => 'required|string|max:50',
+            'unit' => 'required_if:type,normal|nullable|string|max:50',
             'sku' => [
                 'required',
                 'string',
@@ -124,7 +124,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             // Product specifications
             'type.required' => 'نوع المنتج مطلوب',
             'type.in' => 'نوع المنتج يجب أن يكون رقمي أو عادي',
-            'unit.required' => 'وحدة القياس مطلوبة',
+            'unit.required_if' => 'وحدة القياس مطلوبة للمنتجات العادية',
             'unit.string' => 'يجب أن تكون وحدة القياس نص',
             'gender.required' => 'الجنس المستهدف مطلوب',
             'gender.in' => 'الجنس المستهدف يجب أن يكون ذكر أو أنثى أو الكل',
@@ -250,7 +250,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             brandId: !empty($validatedData['brand_id']) ? Uuid::fromString($validatedData['brand_id']) : null,
             countryIds: $validatedData['country_ids'] ?? null,
             type: $validatedData['type'],
-            unit: $validatedData['unit'],
+            unit: $validatedData['unit'] ?? null,
             sku: $validatedData['sku'],
             warehouseId: Uuid::fromString($validatedData['warehouse_id']),
             gender: $validatedData['gender'],

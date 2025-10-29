@@ -12,6 +12,7 @@ use Modules\Ecommerce\Coupon\Database\Factories\CouponFactory;
 use Modules\Ecommerce\Coupon\Filters\CouponFilter;
 use Carbon\Carbon;
 use App\Traits\ForcedBelongsToTenant;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Coupon extends Model
 {
@@ -63,6 +64,17 @@ class Coupon extends Model
     protected static function newFactory(): CouponFactory
     {
         return CouponFactory::new();
+    }
+
+    // Relationships
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Company\CompanyCore\Models\Company::class, 'company_id', 'id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\User\Models\User::class, 'customer_id', 'id');
     }
 
     // Scopes

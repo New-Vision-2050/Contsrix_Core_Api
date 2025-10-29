@@ -15,6 +15,7 @@ use Modules\Ecommerce\Warehous\Requests\DeleteWarehousRequest;
 use Modules\Ecommerce\Warehous\Requests\GetWarehousListRequest;
 use Modules\Ecommerce\Warehous\Requests\GetWarehousRequest;
 use Modules\Ecommerce\Warehous\Requests\UpdateWarehousRequest;
+use Modules\Ecommerce\Warehous\Requests\Dashboard\ExportWarehousRequest;
 use Modules\Ecommerce\Warehous\Services\WarehousCRUDService;
 use Ramsey\Uuid\Uuid;
 
@@ -82,5 +83,40 @@ class WarehousController extends Controller
         $statistics = $this->warehousService->getWarehouseStatistics();
         
         return Json::item($statistics);
+    }
+
+    /**
+     * Export warehouses to Excel or CSV
+     */
+    public function export(ExportWarehousRequest $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $warehouseIds = $request->input('ids');
+        $format = $request->input('format', 'xlsx');
+        
+        $filters = [
+            'company_id' => $request->input('company_id'),
+            'country_id' => $request->input('country_id'),
+            'city_id' => $request->input('city_id'),
+            'is_active' => $request->input('is_active'),
+            'is_default' => $request->input('is_default'),
+            'has_products' => $request->input('has_products'),
+            'min_products_count' => $request->input('min_products_count'),
+            'max_products_count' => $request->input('max_products_count'),
+            'district' => $request->input('district'),
+            'street' => $request->input('street'),
+            'latitude_from' => $request->input('latitude_from'),
+            'latitude_to' => $request->input('latitude_to'),
+            'longitude_from' => $request->input('longitude_from'),
+            'longitude_to' => $request->input('longitude_to'),
+            'near_location' => $request->input('near_location'),
+            'created_from' => $request->input('created_from'),
+            'created_to' => $request->input('created_to'),
+        ];
+
+        if ($format === 'csv') {
+            return $this->warehousService->exportToCsv($warehouseIds, $filters);
+        }
+
+        return $this->warehousService->exportToExcel($warehouseIds, $filters);
     }
 }

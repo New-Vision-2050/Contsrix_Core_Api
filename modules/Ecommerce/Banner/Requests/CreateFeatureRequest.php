@@ -18,10 +18,9 @@ class CreateFeatureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_id' => 'required|uuid|exists:companies,id',
-            'setting_page_id' => 'nullable|uuid|exists:setting_pages,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'type' => 'required|string|in:home,discount,new_arrival,contact_us,about_us',
             'is_active' => 'sometimes|boolean',
         ];
     }
@@ -29,16 +28,13 @@ class CreateFeatureRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'company_id.required' => 'معرف الشركة مطلوب',
-            'company_id.uuid' => 'معرف الشركة يجب أن يكون UUID صحيح',
-            'company_id.exists' => 'الشركة غير موجودة',
-            'setting_page_id.uuid' => 'معرف صفحة الإعدادات يجب أن يكون UUID صحيح',
-            'setting_page_id.exists' => 'صفحة الإعدادات غير موجودة',
             'title.required' => 'العنوان مطلوب',
             'title.string' => 'العنوان يجب أن يكون نص',
             'title.max' => 'العنوان يجب ألا يتجاوز 255 حرف',
             'description.required' => 'الوصف مطلوب',
             'description.string' => 'الوصف يجب أن يكون نص',
+            'type.required' => 'نوع الميزة مطلوب',
+            'type.in' => 'نوع الميزة يجب أن يكون أحد القيم التالية: home, discount, new_arrival, contact_us, about_us',
             'is_active.boolean' => 'حالة التفعيل يجب أن تكون صحيح أو خطأ',
         ];
     }
@@ -47,9 +43,9 @@ class CreateFeatureRequest extends FormRequest
     {
         return new CreateFeatureDTO(
             companyId: Uuid::fromString(tenant("id")),
-            settingPageId: $this->input('setting_page_id') ? Uuid::fromString($this->input('setting_page_id')) : null,
             title: $this->input('title'),
             description: $this->input('description'),
+            type: $this->input('type'),
             isActive: $this->input('is_active', true),
         );
     }

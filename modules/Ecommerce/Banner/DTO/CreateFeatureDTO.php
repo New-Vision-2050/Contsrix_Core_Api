@@ -10,9 +10,9 @@ class CreateFeatureDTO
 {
     public function __construct(
         public UuidInterface $companyId,
-        public ?UuidInterface $settingPageId,
         public string $title,
         public string $description,
+        public string $type,
         public bool $isActive = true,
     ) {
     }
@@ -21,9 +21,9 @@ class CreateFeatureDTO
     {
         return [
             'company_id' => $this->companyId->toString(),
-            'setting_page_id' => $this->settingPageId?->toString(),
             'title' => $this->title,
             'description' => $this->description,
+            'type' => $this->type,
             'is_active' => $this->isActive,
         ];
     }

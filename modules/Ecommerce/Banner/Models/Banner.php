@@ -28,8 +28,10 @@ class Banner extends Model implements HasMedia
 
     protected $fillable = [
         'company_id',
-        'setting_page_id',
         'url',
+        'type',
+        'title',
+        'description',
         'is_active',
     ];
 
@@ -44,11 +46,9 @@ class Banner extends Model implements HasMedia
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
     }
-
-    // Relationships
-    public function settingPage(): BelongsTo
+    public function getMediaUrlsAttribute()
     {
-        return $this->belongsTo(SettingPage::class);
+        return $this->media->map(fn($media) => $media->getFullUrl());
     }
 
     protected static function newFactory(): BannerFactory

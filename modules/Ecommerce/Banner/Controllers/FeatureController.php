@@ -12,8 +12,10 @@ use Modules\Ecommerce\Banner\Requests\CreateFeatureRequest;
 use Modules\Ecommerce\Banner\Requests\UpdateFeatureRequest;
 use Modules\Ecommerce\Banner\Requests\GetFeatureRequest;
 use Modules\Ecommerce\Banner\Presenters\FeaturePresenter;
+use Modules\Ecommerce\Banner\Exports\FeatureExport;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class FeatureController extends Controller
 {
@@ -80,18 +82,19 @@ class FeatureController extends Controller
         return Json::deleted();
     }
 
-    public function getByCompany(Request $request): JsonResponse
-    {
-        $companyId = Uuid::fromString($request->get('company_id'));
-        $features = $this->featureService->getByCompany($companyId);
-
-        return Json::items($features, message: 'تم جلب مميزات الشركة بنجاح');
-    }
-
     public function getActiveFeatures(): JsonResponse
     {
         $features = $this->featureService->getActiveFeatures();
 
         return Json::items($features, message: 'تم جلب المميزات النشطة بنجاح');
+    }
+
+    public function export(Request $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'features.' . $format;
+        $filters = $request->all();
+        
+        return Excel::download(new FeatureExport($this->featureService, $filters), $fileName);
     }
 }

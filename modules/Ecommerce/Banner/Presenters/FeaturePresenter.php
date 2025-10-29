@@ -21,11 +21,10 @@ class FeaturePresenter extends AbstractPresenter
         return [
             'id' => $this->feature->id,
             'company_id' => $this->feature->company_id,
-            'setting_page_id' => $this->feature->setting_page_id,
             'title' => $this->feature->title,
             'description' => $this->feature->description,
+            'type' => $this->feature->type,
             'is_active' => (int) $this->feature->is_active,
-            'setting_page' => $isListing ? null : $this->feature->settingPage,
         ];
     }
 }

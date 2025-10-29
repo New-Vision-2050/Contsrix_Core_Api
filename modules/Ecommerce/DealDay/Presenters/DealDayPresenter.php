@@ -28,7 +28,9 @@ class DealDayPresenter extends AbstractPresenter
                     'ar' => $this->dealDay->getTranslation('name', 'ar'),
                     'en' => $this->dealDay->getTranslation('name', 'en'),
                 ],
-            'product' =>  (new EcoProductDashboardPresenter($this->dealDay->product))->getData(),
+            'product' => $this->dealDay->product 
+                ? (new EcoProductDashboardPresenter($this->dealDay->product))->getData()
+                : null,
             'discount_type' => $this->dealDay->discount_type,
             'discount_value' => $this->dealDay->discount_value,
             'is_active' => (int) $this->dealDay->is_active,

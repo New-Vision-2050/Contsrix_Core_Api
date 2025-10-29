@@ -13,6 +13,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
+use App\Traits\ForcedBelongsToTenant;
 
 class FeatureDeal extends Model
 {
@@ -20,6 +21,7 @@ class FeatureDeal extends Model
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
+    use ForcedBelongsToTenant;
 
     public array $translatable = ['name'];
 

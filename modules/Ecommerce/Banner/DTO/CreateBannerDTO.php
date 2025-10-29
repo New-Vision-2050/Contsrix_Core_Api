@@ -10,9 +10,11 @@ class CreateBannerDTO
 {
     public function __construct(
         public UuidInterface $companyId,
-        public ?UuidInterface $settingPageId,
         public string $url,
-        public bool $isActive = true,
+        public string $type,
+        public ?string $title = null,
+        public ?string $description = null,
+        public int $isActive = 1,
     ) {
     }
 
@@ -20,8 +22,10 @@ class CreateBannerDTO
     {
         return [
             'company_id' => $this->companyId->toString(),
-            'setting_page_id' => $this->settingPageId?->toString(),
             'url' => $this->url,
+            'type' => $this->type,
+            'title' => $this->title,
+            'description' => $this->description,
             'is_active' => $this->isActive,
         ];
     }

@@ -17,9 +17,9 @@ class UpdateFeatureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'setting_page_id' => 'sometimes|nullable|uuid|exists:setting_pages,id',
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
+            'type' => 'sometimes|string|in:home,discount,new_arrival,contact_us,about_us',
             'is_active' => 'sometimes|boolean',
         ];
     }
@@ -27,11 +27,10 @@ class UpdateFeatureRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'setting_page_id.uuid' => 'معرف صفحة الإعدادات يجب أن يكون UUID صحيح',
-            'setting_page_id.exists' => 'صفحة الإعدادات غير موجودة',
             'title.string' => 'العنوان يجب أن يكون نص',
             'title.max' => 'العنوان يجب ألا يتجاوز 255 حرف',
             'description.string' => 'الوصف يجب أن يكون نص',
+            'type.in' => 'نوع الميزة يجب أن يكون أحد القيم التالية: home, discount, new_arrival, contact_us, about_us',
             'is_active.boolean' => 'حالة التفعيل يجب أن تكون صحيح أو خطأ',
         ];
     }
@@ -40,17 +39,16 @@ class UpdateFeatureRequest extends FormRequest
     {
         $data = [];
         
-        if ($this->has('setting_page_id')) {
-            $data['setting_page_id'] = $this->input('setting_page_id') ? 
-                Uuid::fromString($this->input('setting_page_id'))->toString() : null;
-        }
-        
         if ($this->has('title')) {
             $data['title'] = $this->input('title');
         }
         
         if ($this->has('description')) {
             $data['description'] = $this->input('description');
+        }
+        
+        if ($this->has('type')) {
+            $data['type'] = $this->input('type');
         }
         
         if ($this->has('is_active')) {

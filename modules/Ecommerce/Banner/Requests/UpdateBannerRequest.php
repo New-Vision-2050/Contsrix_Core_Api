@@ -15,7 +15,7 @@ class UpdateBannerRequest extends FormRequest
     {
         return [
             'url' => 'sometimes|string|url',
-            'type' => 'sometimes|string|in:home,discounts,new_arrivals,contact,about_Us',
+            'type' => 'sometimes|string|in:home,discount,new_arrival,contact_us,about_us',
             'is_active' => 'sometimes|boolean',
             'banner_image' => 'sometimes|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
         ];
@@ -35,11 +35,13 @@ class UpdateBannerRequest extends FormRequest
 
     public function createUpdateBannerCommand(): UpdateBannerCommand
     {
+        $isActive = $this->has('is_active') ? (bool) $this->input('is_active') : null;
+        
         return new UpdateBannerCommand(
             id: Uuid::fromString($this->route('id')),
             url: $this->input('url'),
             type: $this->input('type'),
-            isActive: $this->input('is_active'),
+            isActive: $isActive,
         );
     }
 }

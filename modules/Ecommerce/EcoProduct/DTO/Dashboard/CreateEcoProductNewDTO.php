@@ -25,7 +25,7 @@ class CreateEcoProductNewDTO
         
         // Product specifications
         public readonly string $type,                   // "digital" or "normal"
-        public readonly string $unit,                   // "kg", "m", "liter", "gram", "piece"
+        public readonly ?string $unit,                  // "kg", "m", "liter", "gram", "piece" (nullable for digital products)
         public readonly string $sku,
         public readonly UuidInterface $warehouseId,
         public readonly string $gender,                 // "male", "female", "all"
