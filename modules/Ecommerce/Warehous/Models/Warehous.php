@@ -65,7 +65,7 @@ class Warehous extends Model
 
     public function city()
     {
-        return $this->belongsTo(State::class);
+        return $this->belongsTo(State::class,'city_id');
     }
     public function products()
     {
