@@ -17,11 +17,10 @@ class EcoBrandFilter extends SearchModelFilter
 
     public function search($search)
     {
-        return $this->where(function ($q) use ($search) {
-            $q->whereTranslatable('name', 'like', '%' . $search . '%')
-              ->orWhere(function ($subQ) use ($search) {
-                  $subQ->whereTranslatable('description', 'like', '%' . $search . '%');
-              });
+        return $this->where(function ($query) use ($search) {
+            $query->whereHas('translations', function ($q) use ($search) {
+                $q->where('content', 'like', '%' . $search . '%');
+            });   
         });
     }
 }
