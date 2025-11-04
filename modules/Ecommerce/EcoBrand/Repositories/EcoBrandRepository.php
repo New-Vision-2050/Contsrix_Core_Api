@@ -38,6 +38,10 @@ class EcoBrandRepository extends BaseRepository
             }])
             ->orderBy('created_at', 'desc');
 
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+
         $total = $query->count();
         
         if ($page && $perPage) {

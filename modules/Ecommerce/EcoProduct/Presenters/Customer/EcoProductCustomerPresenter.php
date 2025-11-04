@@ -28,19 +28,15 @@ class EcoProductCustomerPresenter extends AbstractPresenter
             'id' => $this->ecoProduct->id,
             'name' => $this->ecoProduct->name,
             'price' => $pricing['original_price'],
-            'discounted_price' => $pricing['discounted_price'],
-            'discount_percentage' => $pricing['discount_percentage'],
-            'has_discount' => $pricing['has_discount'],
-            'sku' => $this->ecoProduct->sku,
-            'stock' => $this->ecoProduct->unlimited_quantity ? 999 : $this->ecoProduct->stock,
-            'unlimited_quantity' => (int)$this->ecoProduct->unlimited_quantity,
-            'in_stock' => $this->ecoProduct->unlimited_quantity || $this->ecoProduct->stock > 0,
-            'requires_shipping' => (int)$this->ecoProduct->requires_shipping,
-            'main_image' => $firstMedia ? (new MediaPresenter($firstMedia))->getData() : null,
-            'category' => $this->ecoProduct->category ? 
-                (new EcoCategoryPresenter($this->ecoProduct->category))->getData() : null,
-            'brand' => $this->ecoProduct->brand ? 
-                (new EcoBrandDashboardPresenter($this->ecoProduct->brand))->getData() : null,
+            'final_price' => $pricing['discounted_price'],
+            'discount_percentage' => round($pricing['discount_percentage'], 0),
+            'is_on_discount' => $pricing['has_discount'],
+            'rating' => $this->ecoProduct->rating ?? 4.6,
+            'reviews_count' => $this->ecoProduct->reviews_count ?? 0,
+            'main_image' => $firstMedia ? [
+                'url' => $firstMedia->getUrl(),
+                'thumb' => $firstMedia->getUrl('thumb')
+            ] : null,
         ];
     }
 

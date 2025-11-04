@@ -11,13 +11,14 @@ use Modules\Ecommerce\SocialMedia\Database\factories\SocialMediaFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Shared\SocialIcon\Models\SocialIcon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\ForcedBelongsToTenant;
 
 class SocialMedia extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-
+    use ForcedBelongsToTenant;
     public $incrementing = false;
 
     protected $keyType = 'string';
