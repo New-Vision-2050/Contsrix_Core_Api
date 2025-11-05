@@ -36,6 +36,12 @@ class Audit extends \OwenIt\Auditing\Models\Audit
         'id' => 'string',
     ];
 
+    public function user()
+
+    {
+        return $this->belongsTo(User::class , "user_id","id")->withoutTenancy();
+    }
+
     protected static function newFactory(): AuditFactory
     {
         return AuditFactory::new();
