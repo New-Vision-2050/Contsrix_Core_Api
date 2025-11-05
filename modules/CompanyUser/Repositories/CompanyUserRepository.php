@@ -87,7 +87,9 @@ class CompanyUserRepository extends BaseRepository
             $query->whereHas("companies", function ($query) use ($type) {
                 $query->where("company_users_companies.sub_entity_id", request()->sub_entity_id);
             });
-        })->when($companyId != null, function ($query) use ($companyId) {
+        })
+
+            ->when($companyId != null, function ($query) use ($companyId) {
             $query->whereHas("companies", function ($query) use ($companyId) {
 
                 $query->where("companies.id", $companyId);

@@ -25,6 +25,7 @@ class OrderDetail extends Model
         'company_id',
         'order_id',
         'product_id',
+        'warehouse_id',
         'digital_file_after_sell',
         'product_details',
         'qty',
@@ -47,6 +48,7 @@ class OrderDetail extends Model
         'company_id' => 'string',
         'order_id' => 'string',
         'product_id' => 'string',
+        'warehouse_id' => 'string',
         'shipping_method_id' => 'string',
         'qty' => 'integer',
         'price' => 'decimal:2',
@@ -68,6 +70,11 @@ class OrderDetail extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(EcoProduct::class, 'product_id');
+    }
+
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Ecommerce\Warehous\Models\Warehous::class, 'warehouse_id');
     }
 
     // Accessors

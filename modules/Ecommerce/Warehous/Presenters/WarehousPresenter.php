@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Ecommerce\Warehous\Presenters;
 
+use Modules\Country\Presenters\CountryStateCityPresenter;
 use Modules\Ecommerce\Warehous\Models\Warehous;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Country\Presenters\CityPresenter;
@@ -22,10 +23,14 @@ class WarehousPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->warehous->id,
+            'company_id' => $this->warehous->company_id,
             'name' => $this->warehous->name,
             'is_default' => (int) $this->warehous->is_default,
             'country' => $this->warehous->country ?( new CountryPresenter($this->warehous->country))->getData() : null,
-            'city' => $this->warehous->city ?( new CityPresenter($this->warehous->city))->getData() : null,
+            'city' => $this->warehous->city ?[
+                'id' => $this->warehous->city?->id,
+                'name' => $this->warehous->city?->name,
+            ]:null,
             'district' => $this->warehous->district,
             'street' => $this->warehous->street,
             'latitude' => $this->warehous->latitude,

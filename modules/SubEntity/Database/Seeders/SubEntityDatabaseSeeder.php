@@ -31,6 +31,10 @@ class SubEntityDatabaseSeeder extends Seeder
                     'name',
                     'email',
                     'phone',
+                ]),'optional_attributes' => json_encode([
+                    'name',
+                    'email',
+                    'phone',
                 ]),
 
                 'registration_form_id' => RegistrationForm::where("slug","employee")->first()

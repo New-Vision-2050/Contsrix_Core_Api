@@ -6,6 +6,7 @@ namespace Modules\Ecommerce\Order\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Ecommerce\Order\DTO\CreateOrderDTO;
 use Modules\Ecommerce\Order\DTO\UpdateOrderStatusDTO;
 use Modules\Ecommerce\Order\Models\Order;
@@ -25,25 +26,136 @@ class OrderCRUDService
 
     public function create(CreateOrderDTO $createOrderDTO): Order
     {
-        // Prepare order data with generated serial
+        // Start with basic data from DTO
         $orderData = $createOrderDTO->toArray();
+        
+        // Complete dynamic data
+        $this->completeDynamicOrderData($orderData, $createOrderDTO);
+        
+        // Generate order serial and number
         $this->generateOrderSerial($orderData);
         
-        // Calculate order totals before creating
+        // Calculate order totals
         $calculatedTotals = $this->calculateOrderTotals($createOrderDTO->getOrderItems(), $orderData);
         $orderData = array_merge($orderData, $calculatedTotals);
         
-        // Create the order first
+        // Create the order
         $order = $this->repository->createOrder($orderData);
         
-        // Create order items
+        // Create order items with complete details
         $this->createOrderItems($order, $createOrderDTO->getOrderItems());
         
         // Create initial status history
         $this->createInitialStatusHistory($order);
         
         // Load relationships and return
-        return $order->load(['orderDetails', 'statusHistories', 'warehouse', 'customer']);
+        return $order->load(['orderDetails.warehouse', 'statusHistories', 'customer']);
+    }
+
+    private function completeDynamicOrderData(array &$orderData, CreateOrderDTO $dto): void
+    {
+        // Complete missing order fields dynamically
+        $orderData['company_id'] = $dto->companyId->toString();
+        $orderData['customer_type'] = $this->determineCustomerType($dto->isGuest, $dto->customerId);
+        $orderData['payment_status'] = 'unpaid';
+        $orderData['order_status'] = 'pending';
+        $orderData['transaction_ref'] = null;
+        $orderData['payment_by'] = null;
+        $orderData['payment_note'] = null;
+        $orderData['bring_change_amount'] = 0.00;
+        $orderData['bring_change_amount_currency'] = 'SAR';
+        $orderData['is_pause'] = '0';
+        $orderData['cause'] = null;
+        $orderData['discount_type'] = 'percentage';
+        $orderData['coupon_code'] = null;
+        $orderData['coupon_discount_bearer'] = 'inhouse';
+        $orderData['shipping_responsibility'] = null;
+        $orderData['shipping_method_id'] = null;
+        $orderData['is_shipping_free'] = false;
+        $orderData['order_group_id'] = $this->generateOrderGroupId();
+        $orderData['verification_code'] = '0';
+        $orderData['verification_status'] = false;
+        $orderData['shipping_address_data'] = json_encode(['address' => $dto->shippingAddress]);
+        $orderData['delivery_man_id'] = null;
+        $orderData['deliveryman_charge'] = 0.00;
+        $orderData['expected_delivery_date'] = $this->calculateExpectedDeliveryDate();
+        $orderData['billing_address'] = null; // Will be set separately if needed
+        $orderData['billing_address_data'] = json_encode(['address' => $dto->shippingAddress]);
+        $orderData['order_type'] = 'default_type';
+        $orderData['extra_discount'] = 0.00;
+        $orderData['extra_discount_type'] = 'percentage';
+        $orderData['refer_and_earn_discount'] = 0.00;
+        $orderData['free_delivery_bearer'] = 'admin';
+        $orderData['checked'] = false;
+        $orderData['shipping_type'] = 'home_delivery';
+        $orderData['delivery_type'] = 'normal';
+        $orderData['delivery_service_name'] = null;
+        $orderData['third_party_delivery_tracking_id'] = null;
+    }
+
+    private function determineWarehouseForProduct(string $productId): ?string
+    {
+        try {
+            // Get warehouse from the specific product
+            $product = EcoProduct::find($productId);
+            if ($product && $product->warehouse_id) {
+                return $product->warehouse_id;
+            }
+            
+            // Fallback to company's default warehouse
+            $defaultWarehouse = \Modules\Ecommerce\Warehous\Models\Warehous::where('company_id', tenant('id'))
+                ->where('is_default', true)
+                ->first();
+            
+            if ($defaultWarehouse) {
+                return $defaultWarehouse->id;
+            }
+            
+            // Last fallback - any warehouse for this company
+            $anyWarehouse = \Modules\Ecommerce\Warehous\Models\Warehous::where('company_id', tenant('id'))
+                ->first();
+            
+            return $anyWarehouse?->id;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function determineCustomerType(bool $isGuest, ?string $customerId): string
+    {
+        if ($isGuest || !$customerId) {
+            return 'guest';
+        }
+        
+        return 'registered';
+    }
+
+    private function calculateExpectedDeliveryDate(): ?string
+    {
+        // Default delivery time: 3-5 business days
+        $deliveryDays = 3;
+        $expectedDate = now()->addDays($deliveryDays);
+        
+        // Skip weekends (Friday-Saturday in Saudi Arabia)
+        while ($expectedDate->isFriday() || $expectedDate->isSaturday()) {
+            $expectedDate->addDay();
+        }
+        
+        return $expectedDate->format('Y-m-d');
+    }
+
+    private function generateOrderGroupId(): string
+    {
+        // Generate order group ID: OG-YYYY-000001
+        $lastOrder = Order::orderBy('created_at', 'desc')->first();
+        $nextNumber = 1;
+        
+        if ($lastOrder && $lastOrder->order_group_id && preg_match('/OG-\d{4}-(\d{6})/', $lastOrder->order_group_id, $matches)) {
+            $nextNumber = intval($matches[1]) + 1;
+        }
+        
+        $year = date('Y');
+        return sprintf('OG-%s-%06d', $year, $nextNumber);
     }
 
     private function createOrderItems(Order $order, array $orderItems): void
@@ -55,34 +167,67 @@ class OrderCRUDService
             // Calculate pricing automatically
             $calculatedPricing = $this->calculateItemPricing($productDetails, $item);
             
-            $order->orderDetails()->create([
-                'company_id' => $order->company_id,
-                'order_id' => $order->id,
-                'product_id' => $item['product_id'],
-                'qty' => $item['quantity'],
-                'price' => $calculatedPricing['unit_price'],
-                'tax' => $calculatedPricing['tax_amount'],
-                'discount' => $calculatedPricing['discount_amount'],
-                'tax_model' => 'include',
-                'delivery_status' => 'pending',
-                'payment_status' => 'unpaid',
-                'product_details' => json_encode([
-                    'product_name' => $productDetails['name'],
-                    'product_sku' => $productDetails['sku'],
-                    'original_price' => $productDetails['price'],
-                    'unit_price' => $calculatedPricing['unit_price'],
-                    'total_price' => $calculatedPricing['total_price'],
-                    'description' => $productDetails['description'],
-                    'category' => $productDetails['category'],
-                    'brand' => $productDetails['brand'],
-                    'warehouse' => $productDetails['warehouse'],
-                    'discount_percentage' => $calculatedPricing['discount_percentage'],
-                    'tax_percentage' => $calculatedPricing['tax_percentage'],
-                ]),
-                'is_stock_decreased' => 1,
-                'refund_request' => 0,
-            ]);
+            // Complete order detail data dynamically
+            $orderDetailData = $this->completeDynamicOrderDetailData($order, $item, $productDetails, $calculatedPricing);
+            
+            $order->orderDetails()->create($orderDetailData);
+            
+            // Decrease stock if needed
+            $this->decreaseProductStock($item['product_id'], $item['quantity']);
         }
+    }
+
+    private function decreaseProductStock(string $productId, int $quantity): void
+    {
+        try {
+            $product = EcoProduct::find($productId);
+            if ($product && $product->quantity !== null && $product->quantity >= $quantity) {
+                $product->decrement('quantity', $quantity);
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the order creation
+            Log::warning("Failed to decrease stock for product {$productId}: " . $e->getMessage());
+        }
+    }
+
+    private function completeDynamicOrderDetailData(Order $order, array $item, array $productDetails, array $calculatedPricing): array
+    {
+        return [
+            // Basic required fields
+            'company_id' => $order->company_id,
+            'order_id' => $order->id,
+            'product_id' => $item['product_id'],
+            'warehouse_id' => $this->determineWarehouseForProduct($item['product_id']),
+            'qty' => $item['quantity'],
+            'price' => $calculatedPricing['unit_price'],
+            'tax' => $calculatedPricing['tax_amount'],
+            'discount' => $calculatedPricing['discount_amount'],
+            
+            // Dynamic fields with defaults
+            'digital_file_after_sell' => null,
+            'product_details' => json_encode([
+                'product_name' => $productDetails['name'],
+                'product_sku' => $productDetails['sku'],
+                'original_price' => $productDetails['price'],
+                'unit_price' => $calculatedPricing['unit_price'],
+                'total_price' => $calculatedPricing['total_price'],
+                'description' => $productDetails['description'],
+                'category' => $productDetails['category'],
+                'brand' => $productDetails['brand'],
+                'warehouse' => $productDetails['warehouse'],
+                'discount_percentage' => $calculatedPricing['discount_percentage'],
+                'tax_percentage' => $calculatedPricing['tax_percentage'],
+            ]),
+            'tax_model' => 'include',
+            'delivery_status' => 'pending',
+            'payment_status' => 'unpaid',
+            'shipping_method_id' => null,
+            'variant' => null,
+            'variation' => null,
+            'discount_type' => 'percentage',
+            'is_stock_decreased' => 1,
+            'refund_request' => 0,
+        ];
     }
 
     private function generateOrderSerial(array &$orderData): void
