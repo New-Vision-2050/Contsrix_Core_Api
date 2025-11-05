@@ -207,4 +207,87 @@ class SubEntityRecordsService
 
         return round(($current / $previous) * 100, 2);
     }
+
+    /**
+     * Get records for export without pagination
+     *
+     * @param array $filters
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getForExport(array $filters): \Illuminate\Database\Eloquent\Collection
+    {
+        $subEntityId = $filters['sub_entity_id'];
+        $registrationFormId = $filters['registration_form_id'];
+        $branchId = $filters['branch_id'] ?? null;
+        $ids = $filters['ids'] ?? null;
+
+        $registrationForm = $this->registrationFormCRUDService->getById($registrationFormId);
+
+        if (in_array($registrationForm->company_user_role_map, $this->mappedRegistrationForms)) {
+            return $this->getMappedRecordsForExport($registrationForm->company_user_role_map, $branchId, $ids);
+        }
+
+        // Get sub_entity
+        $sub_entity = $this->subEntityCRUDService->get(Uuid::fromString($subEntityId));
+        // Get super entity model
+        $model = $this->getSuperEntityModel($sub_entity->super_entity);
+        $query = $model::query();
+
+        if ($model === User::class) {
+            $query->whereHas('companyUserCompanies', function ($q) use ($registrationForm, $subEntityId) {
+                $q->where('role', $registrationForm->company_user_role_map)
+                    ->where('sub_entity_id', $subEntityId);
+            });
+
+            // Load relationships for export
+//            $query->with(['companyUserCompanies.branch']);
+        }
+
+        // Apply ID filter if provided
+        if ($ids && is_array($ids)) {
+            $query->whereIn('id', $ids);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get mapped records for export without pagination
+     *
+     * @param int $type
+     * @param string|null $branchId
+     * @param array|null $ids
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    protected function getMappedRecordsForExport(int $type, ?string $branchId = null, ?array $ids = null): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = $this->companyUserRepository->getModel();
+
+        if (method_exists($query, 'scopeFilter')) {
+            $query = $query->filter(request()->all());
+        }
+
+        $query = $query->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        });
+
+        // Apply branch filter if provided
+        if ($branchId) {
+            $query->whereHas("companies", function ($query) use ($branchId) {
+                $query->where("company_users_companies.branch_id", $branchId);
+            });
+        }
+
+        // Apply ID filter if provided
+        if ($ids && is_array($ids)) {
+            $query->whereIn('id', $ids);
+        }
+
+        // Load relationships for export
+        $query->with(['companies']);
+
+        return $query->get();
+    }
 }
