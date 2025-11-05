@@ -308,7 +308,7 @@ class UserRepository extends BaseRepository
     public function getUserCountStatistics($companyId): array
     {
         // Total users in the company
-        $totalUsers = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
+        $totalUsers = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q)
         {
             $q->where('role', CompanyUserRole::EMPLOYEE->value);
         })->count();
@@ -319,7 +319,7 @@ class UserRepository extends BaseRepository
             ->count();
 
         // Users without hierarchy ID
-        $usersWithoutHierarchy = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
+        $usersWithoutHierarchy = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q)
         {
             $q->where('role', CompanyUserRole::EMPLOYEE->value);
         })
