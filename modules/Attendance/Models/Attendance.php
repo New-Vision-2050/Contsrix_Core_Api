@@ -51,11 +51,12 @@ use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
  * @property-read Collection|AttendanceBreak[] $breaks
  * @property-read AttendanceConstraint|null $attendanceConstraint
  */
-class Attendance extends Model
+class Attendance extends Model implements Auditable
 {
     use UuidTrait;
     use BaseFilterable;
     // use SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
     use CustomBelongsToTenant;
 
     protected $table = 'attendances';
