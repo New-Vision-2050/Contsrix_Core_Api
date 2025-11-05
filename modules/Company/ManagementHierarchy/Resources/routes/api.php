@@ -74,6 +74,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     // Department cloning routes
     Route::post('/clone-department', [ManagementHierarchyCloneController::class, 'cloneManagement']);
+    Route::post('/clone-department/{id}', [ManagementHierarchyCloneController::class, 'updateCloneManagement']);
     Route::get('/linked-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'getLinkedDepartments']);
     Route::post('/sync-departments/{departmentId}', [ManagementHierarchyCloneController::class, 'syncLinkedDepartments']);
 
