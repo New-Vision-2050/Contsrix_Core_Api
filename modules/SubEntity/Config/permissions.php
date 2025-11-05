@@ -15,6 +15,10 @@ return [
         'SUB_ENTITY_ACTIVATE' => 'program-management.users*sub-entity.activate',
         'SUB_ENTITY_EXPORT' => 'program-management.users*sub-entity.export',
 
+        // Sub Entity Records Management
+        'SUB_ENTITY_RECORDS_LIST' => 'program-management.users*sub-entity-records.list',
+        'SUB_ENTITY_RECORDS_EXPORT' => 'program-management.users*sub-entity-records.export',
+
 
 
         // Super Entity Management

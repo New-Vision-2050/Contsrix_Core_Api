@@ -68,7 +68,7 @@ class CreateEmployeeRequest extends FormRequest
             firstName: (string) $this->get("first_name"),
             lastName:(string) $this->get("last_name"),
             email: (string)$this->get('email'),
-            countryId:(string) $this->get('country_id'),
+            countryId: $this->get('country_id')!=null?(string)$this->get('country_id'):null,
             phone: (string)$this->get('phone'),
             jobTitleId: (string)$this->get("job_title_id"),
             status:(int) $this->get("status"),

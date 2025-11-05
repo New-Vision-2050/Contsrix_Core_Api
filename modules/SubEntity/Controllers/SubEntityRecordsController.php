@@ -10,6 +10,9 @@ use BasePackage\Shared\Presenters\Json;
 use Modules\SubEntity\Services\SubEntityRecordsService;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\SubEntity\Requests\GetSubEntityRecordsRequest;
+use Modules\SubEntity\Requests\ExportSubEntityRecordsRequest;
+use Modules\SubEntity\Exports\SubEntityRecordsExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SubEntityRecordsController extends Controller
 {
@@ -39,5 +42,20 @@ class SubEntityRecordsController extends Controller
         );
 
         return Json::item($widgetsData, message: 'Sub entity records widgets retrieved successfully');
+    }
+
+    /**
+     * Export sub entity records to a file
+     *
+     * @param ExportSubEntityRecordsRequest $request
+     */
+    public function export(ExportSubEntityRecordsRequest $request)
+    {
+        $format = $request->get('format', 'xlsx');
+        $fileName = 'sub_entity_records.' . $format;
+
+        $filters = $request->getFilters();
+
+        return Excel::download(new SubEntityRecordsExport($this->subEntityRecordsService, $filters), $fileName);
     }
 }
