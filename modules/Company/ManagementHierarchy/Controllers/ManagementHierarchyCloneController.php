@@ -58,9 +58,7 @@ class ManagementHierarchyCloneController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Department cloned successfully',
-                'data' => [
-                    'department' => $clonedDepartment->load('detail'),
-                ],
+
             ]);
         } catch (\Exception $e) {
             return response()->json([
