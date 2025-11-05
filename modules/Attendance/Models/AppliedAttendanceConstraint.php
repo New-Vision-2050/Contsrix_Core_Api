@@ -11,11 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
-class AppliedAttendanceConstraint extends Model
+class AppliedAttendanceConstraint extends Model implements Auditable
 {
     // Remove UuidTrait since this table uses auto-incrementing IDs
     use BaseFilterable;
     // use SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
     use CustomBelongsToTenant;
 
     protected $table = 'applied_attendance_constraints';
