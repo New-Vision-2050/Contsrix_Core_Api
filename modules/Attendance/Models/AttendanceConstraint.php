@@ -39,7 +39,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read User $creator
  * @property-read User $updater
  */
-class AttendanceConstraint extends Model implements Auditable
+class AttendanceConstraint extends Model
 {
     use UuidTrait;
     use BaseFilterable;
