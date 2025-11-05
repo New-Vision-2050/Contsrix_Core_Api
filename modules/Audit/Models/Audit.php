@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Audit\Database\factories\AuditFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -20,6 +21,7 @@ class Audit extends \OwenIt\Auditing\Models\Audit
     use BaseFilterable;
     //use HasTranslations;
     //use SoftDeletes;
+    use BelongsToPrimaryModel;
 
     //public array $translatable = [];
 //    public $with = ['user'];
@@ -39,5 +41,10 @@ class Audit extends \OwenIt\Auditing\Models\Audit
     protected static function newFactory(): AuditFactory
     {
         return AuditFactory::new();
+    }
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "user";
     }
 }
