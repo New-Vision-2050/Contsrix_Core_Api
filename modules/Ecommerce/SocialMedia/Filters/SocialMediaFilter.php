@@ -10,8 +10,10 @@ class SocialMediaFilter extends SearchModelFilter
 {
        public $relations = [];
 
-        public function name($name)
+        public function search($name)
         {
-            return $this->where('name', $name);
+            return $this->whereHas('socialIcon',function ($q) use ($name) {
+                return $q->whereLike('name', '%' . $name . '%');
+            });
         }
 }

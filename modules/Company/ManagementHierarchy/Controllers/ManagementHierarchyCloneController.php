@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Company\ManagementHierarchy\DTO\CloneDepartmentDTO;
 use Modules\Company\ManagementHierarchy\Requests\CloneManagementRequest;
+use Modules\Company\ManagementHierarchy\Requests\UpdateCloneManagementRequest;
 use Modules\Company\ManagementHierarchy\Services\ManagementHierarchyCloneService;
 
 class ManagementHierarchyCloneController extends Controller
@@ -29,7 +30,7 @@ class ManagementHierarchyCloneController extends Controller
         try {
             $clonedDepartment = $this->cloneService->cloneManagement($request->createCloneManagementDTO());
 
-            
+
 
             return response()->json([
                 'success' => true,
@@ -45,6 +46,30 @@ class ManagementHierarchyCloneController extends Controller
             ], 500);
         }
     }
+
+
+    public function updateCloneManagement(UpdateCloneManagementRequest $request)
+    {
+        try {
+            $clonedDepartment = $this->cloneService->updateCloneManagement($request->createCloneManagementDTO());
+
+
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Department cloned successfully',
+                'data' => [
+                    'department' => $clonedDepartment->load('detail'),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clone department: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     /**
      * Get all departments that have been cloned from a source department

@@ -27,6 +27,8 @@ class UpdateEcoProductDashboardCommand
         private ?UuidInterface $brandId = null,
         private ?UuidInterface $subCategoryId = null,
         private ?string $type = null,
+        private ?string $unit = null,
+        private ?string $gender = null,
         private ?array $taxes = null,
         private ?array $details = null,
         private ?array $customFields = null,
@@ -56,6 +58,8 @@ class UpdateEcoProductDashboardCommand
     public function getBrandId(): ?UuidInterface { return $this->brandId; }
     public function getSubCategoryId(): ?UuidInterface { return $this->subCategoryId; }
     public function getType(): ?string { return $this->type; }
+    public function getUnit(): ?string { return $this->unit; }
+    public function getGender(): ?string { return $this->gender; }
     public function getTaxes(): ?array { return $this->taxes; }
     public function getDetails(): ?array { return $this->details; }
     public function getCustomFields(): ?array { return $this->customFields; }
@@ -83,6 +87,8 @@ class UpdateEcoProductDashboardCommand
             'category_id' => $this->categoryId,
             'sub_category_id' => $this->subCategoryId,
             'type' => $this->type,
+            'unit' => $this->unit,
+            'gender' => $this->gender,
         ]);
     }
 }

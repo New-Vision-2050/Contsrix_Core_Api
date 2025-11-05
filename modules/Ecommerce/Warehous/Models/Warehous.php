@@ -13,6 +13,8 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Country\Models\City;
 use Modules\Country\Models\Country;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
+use App\Traits\ForcedBelongsToTenant;
+use Modules\Country\Models\State;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -21,6 +23,7 @@ class Warehous extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
+    use ForcedBelongsToTenant;
     //use HasTranslations;
     //use SoftDeletes;
 
@@ -62,7 +65,7 @@ class Warehous extends Model
 
     public function city()
     {
-        return $this->belongsTo(City::class);
+        return $this->belongsTo(State::class,'city_id');
     }
     public function products()
     {

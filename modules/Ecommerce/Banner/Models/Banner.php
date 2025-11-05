@@ -12,13 +12,15 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\ForcedBelongsToTenant;
 class Banner extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 
@@ -28,6 +30,8 @@ class Banner extends Model implements HasMedia
         'company_id',
         'url',
         'type',
+        'title',
+        'description',
         'is_active',
     ];
 
@@ -41,6 +45,10 @@ class Banner extends Model implements HasMedia
         $this->addMediaCollection('banner_image')
             ->singleFile()
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+    }
+    public function getMediaUrlsAttribute()
+    {
+        return $this->media->map(fn($media) => $media->getFullUrl());
     }
 
     protected static function newFactory(): BannerFactory

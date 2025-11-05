@@ -10,7 +10,6 @@ use Ramsey\Uuid\UuidInterface;
 use Modules\Ecommerce\EcoBrand\Models\EcoBrand;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\Company\CompanyCore\Models\Company;
-
 /**
  * @property EcoBrand $model
  * @method EcoBrand findOneOrFail($id)
@@ -28,6 +27,40 @@ class EcoBrandRepository extends BaseRepository
     public function getEcoBrandList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
+    }
+
+    public function getBrandListWithCounts(?int $page, ?int $perPage = 10): array
+    {
+        $query = $this->model->query()
+            ->withCount(['products' => function ($query) {
+                // Count active products only
+                $query->where('is_visible', true);
+            }])
+            ->orderBy('created_at', 'desc');
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query->filter(request()->all());
+        }
+
+        $total = $query->count();
+        
+        if ($page && $perPage) {
+            $brands = $query->skip(($page - 1) * $perPage)
+                           ->take($perPage)
+                           ->get();
+        } else {
+            $brands = $query->get();
+        }
+
+        return [
+            'data' => $brands,
+            'pagination' => [
+                'current_page' => $page ?? 1,
+                'per_page' => $perPage ?? $total,
+                'total' => $total,
+                'last_page' => $perPage ? ceil($total / $perPage) : 1,
+            ]
+        ];
     }
 
     public function getEcoBrand(UuidInterface $id): EcoBrand

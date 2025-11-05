@@ -11,7 +11,8 @@ class CreateEcoBrandDashboardDTO
     public function __construct(
         public UuidInterface $companyId,
         public array $name, // Changed to array for multilingual support
-        public ?array $description = null // Changed to array for multilingual support
+        public ?array $description = null, // Changed to array for multilingual support
+        public bool $isActive = true // Default to active
     ) {
     }
 
@@ -20,7 +21,8 @@ class CreateEcoBrandDashboardDTO
         return [
             'company_id' => $this->companyId->toString(),
             'name' => $this->name,
-            'description' => $this->description
+            'description' => $this->description,
+            'is_active' => $this->isActive
         ];
     }
 }

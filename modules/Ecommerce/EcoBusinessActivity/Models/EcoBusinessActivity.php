@@ -14,12 +14,14 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\CompanyField\Models\CompanyField;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Traits\ForcedBelongsToTenant;
 class EcoBusinessActivity extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
 
     public $incrementing = false;
 

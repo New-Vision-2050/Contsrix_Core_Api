@@ -1,0 +1,14 @@
+{
+    "name": "Home",
+    "alias": "home",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\Home\\Providers\\HomeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Ecommerce"
+}

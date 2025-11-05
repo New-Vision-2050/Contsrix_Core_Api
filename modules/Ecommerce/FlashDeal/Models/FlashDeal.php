@@ -14,6 +14,9 @@ use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Modules\Company\CompanyCore\Models\Company;
+use App\Traits\ForcedBelongsToTenant;
+use Carbon\Carbon;
 
 class FlashDeal extends Model  implements HasMedia
 {
@@ -22,6 +25,7 @@ class FlashDeal extends Model  implements HasMedia
     use BaseFilterable;
     use HasTranslations;
     use InteractsWithMedia;
+    use ForcedBelongsToTenant;
     //use SoftDeletes;
 
     public array $translatable = ['name'];
@@ -100,6 +104,33 @@ class FlashDeal extends Model  implements HasMedia
     public function isExpired(): bool
     {
         return $this->end_date < now();
+    }
+
+    /**
+     * Get the status text
+     */
+    public function getStatusTextAttribute(): string
+    {
+        if (!$this->is_active) {
+            return 'غير مفعل';
+        }
+
+        $now = Carbon::now();
+        if ($this->start_date > $now) {
+            return 'لم يبدأ بعد';
+        } elseif ($this->end_date < $now) {
+            return 'منتهي';
+        } else {
+            return 'نشط';
+        }
+    }
+
+    /**
+     * Get the company that owns the flash deal
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     protected static function newFactory(): FlashDealFactory

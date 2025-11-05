@@ -12,10 +12,12 @@ use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use Modules\Ecommerce\EcoOrder\Models\EcoOrder;
 use Ramsey\Uuid\Uuid;
 use BasePackage\Shared\Traits\BaseFilterable;
+use App\Traits\ForcedBelongsToTenant;
 
 class EcoDiscount extends Model
 {
     use SoftDeletes, BaseFilterable;
+    use ForcedBelongsToTenant;
 
     protected $table = 'eco_discounts';
 

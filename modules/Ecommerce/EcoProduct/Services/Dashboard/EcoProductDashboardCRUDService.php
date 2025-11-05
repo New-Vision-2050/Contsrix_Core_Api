@@ -8,7 +8,9 @@ use Illuminate\Support\Collection;
 use Modules\Ecommerce\EcoProduct\DTO\Dashboard\CreateEcoProductNewDTO;
 use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 use Modules\Ecommerce\EcoProduct\Repositories\EcoProductRepository;
+use Modules\Ecommerce\EcoProduct\Exports\EcoProductExport;
 use Modules\Shared\Media\Services\FileUploadService;
+use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 use Illuminate\Support\Facades\DB;
@@ -365,5 +367,219 @@ class EcoProductDashboardCRUDService
             
             DB::table('product_countries')->insert($data);
         }
+    }
+
+    /**
+     * Export products to Excel
+     */
+    public function exportToExcel(array $productIds = null, array $filters = []): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $query = EcoProduct::with([
+            'category', 
+            'subCategory', 
+            'brand', 
+            'warehouse',
+            'translations'
+        ]);
+
+        // Apply filters
+        if ($productIds) {
+            $query->whereIn('id', $productIds);
+        }
+
+        if (isset($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (isset($filters['sub_category_id'])) {
+            $query->where('sub_category_id', $filters['sub_category_id']);
+        }
+
+        if (isset($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
+        }
+
+        if (isset($filters['warehouse_id'])) {
+            $query->where('warehouse_id', $filters['warehouse_id']);
+        }
+
+        if (isset($filters['price_from'])) {
+            $query->where('price', '>=', $filters['price_from']);
+        }
+
+        if (isset($filters['price_to'])) {
+            $query->where('price', '<=', $filters['price_to']);
+        }
+
+        if (isset($filters['stock_status'])) {
+            switch ($filters['stock_status']) {
+                case 'in_stock':
+                    $query->where('stock', '>', 0);
+                    break;
+                case 'out_of_stock':
+                    $query->where('stock', '<=', 0);
+                    break;
+                case 'low_stock':
+                    $query->where('stock', '>', 0)->where('stock', '<=', 10);
+                    break;
+            }
+        }
+
+        if (isset($filters['is_visible'])) {
+            $query->where('is_visible', (bool) $filters['is_visible']);
+        }
+
+        if (isset($filters['has_discount'])) {
+            if ($filters['has_discount']) {
+                $query->where('discount_value', '>', 0)
+                      ->whereNotNull('discount_value');
+            } else {
+                $query->where(function ($q) {
+                    $q->where('discount_value', '<=', 0)
+                      ->orWhereNull('discount_value');
+                });
+            }
+        }
+
+        if (isset($filters['requires_shipping'])) {
+            $query->where('requires_shipping', (bool) $filters['requires_shipping']);
+        }
+
+        if (isset($filters['is_taxable'])) {
+            $query->where('is_taxable', (bool) $filters['is_taxable']);
+        }
+
+        if (isset($filters['gender'])) {
+            $query->where('gender', $filters['gender']);
+        }
+
+        if (isset($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        if (isset($filters['created_from'])) {
+            $query->where('created_at', '>=', $filters['created_from']);
+        }
+
+        if (isset($filters['created_to'])) {
+            $query->where('created_at', '<=', $filters['created_to']);
+        }
+
+        $products = $query->get();
+
+        $filename = 'eco_products_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+
+        return Excel::download(
+            new EcoProductExport($products),
+            $filename,
+            \Maatwebsite\Excel\Excel::XLSX
+        );
+    }
+
+    /**
+     * Export products to CSV
+     */
+    public function exportToCsv(array $productIds = null, array $filters = []): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $query = EcoProduct::with([
+            'category', 
+            'subCategory', 
+            'brand', 
+            'warehouse',
+            'translations'
+        ]);
+
+        // Apply same filters as Excel export
+        if ($productIds) {
+            $query->whereIn('id', $productIds);
+        }
+
+        if (isset($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
+        if (isset($filters['sub_category_id'])) {
+            $query->where('sub_category_id', $filters['sub_category_id']);
+        }
+
+        if (isset($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
+        }
+
+        if (isset($filters['warehouse_id'])) {
+            $query->where('warehouse_id', $filters['warehouse_id']);
+        }
+
+        if (isset($filters['price_from'])) {
+            $query->where('price', '>=', $filters['price_from']);
+        }
+
+        if (isset($filters['price_to'])) {
+            $query->where('price', '<=', $filters['price_to']);
+        }
+
+        if (isset($filters['stock_status'])) {
+            switch ($filters['stock_status']) {
+                case 'in_stock':
+                    $query->where('stock', '>', 0);
+                    break;
+                case 'out_of_stock':
+                    $query->where('stock', '<=', 0);
+                    break;
+                case 'low_stock':
+                    $query->where('stock', '>', 0)->where('stock', '<=', 10);
+                    break;
+            }
+        }
+
+        if (isset($filters['is_visible'])) {
+            $query->where('is_visible', (bool) $filters['is_visible']);
+        }
+
+        if (isset($filters['has_discount'])) {
+            if ($filters['has_discount']) {
+                $query->where('discount_value', '>', 0)
+                      ->whereNotNull('discount_value');
+            } else {
+                $query->where(function ($q) {
+                    $q->where('discount_value', '<=', 0)
+                      ->orWhereNull('discount_value');
+                });
+            }
+        }
+
+        if (isset($filters['requires_shipping'])) {
+            $query->where('requires_shipping', (bool) $filters['requires_shipping']);
+        }
+
+        if (isset($filters['is_taxable'])) {
+            $query->where('is_taxable', (bool) $filters['is_taxable']);
+        }
+
+        if (isset($filters['gender'])) {
+            $query->where('gender', $filters['gender']);
+        }
+
+        if (isset($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        if (isset($filters['created_from'])) {
+            $query->where('created_at', '>=', $filters['created_from']);
+        }
+
+        if (isset($filters['created_to'])) {
+            $query->where('created_at', '<=', $filters['created_to']);
+        }
+
+        $products = $query->get();
+
+        $filename = 'eco_products_' . now()->format('Y_m_d_H_i_s') . '.csv';
+
+        return Excel::download(
+            new EcoProductExport($products),
+            $filename,
+            \Maatwebsite\Excel\Excel::CSV
+        );
     }
 }

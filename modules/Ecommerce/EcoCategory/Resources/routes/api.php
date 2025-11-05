@@ -7,6 +7,7 @@ use Modules\Ecommerce\EcoCategory\Controllers\Dashboard\EcoCategoryDashboardCont
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [EcoCategoryDashboardController::class, 'index']);
     Route::post('/', [EcoCategoryDashboardController::class, 'store']);
+    Route::post('/export', [EcoCategoryDashboardController::class, 'export']);
     
     Route::get('/statistics', [EcoCategoryDashboardController::class, 'getStatistics']);
     

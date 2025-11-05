@@ -37,7 +37,9 @@ class UpdateEcoProductDashboardRequest extends FormRequest
             'category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
             'brand_id' => ['nullable', 'uuid', 'exists:eco_brands,id'],
             'sub_category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
-            "type" => ['nullable', 'string', 'max:255'],
+            'type' => ['nullable', 'in:digital,normal'],
+            'unit' => 'required_if:type,normal|nullable|string|max:50',
+            'gender' => ['nullable', 'in:male,female,all'],
 
             // Multilingual Name
             'name' => ['required', 'string'],
@@ -113,8 +115,11 @@ class UpdateEcoProductDashboardRequest extends FormRequest
             'brand_id.exists' => __('ecoproduct::validation.brand_id_exists'),
             'sub_category_id.uuid' => __('ecoproduct::validation.sub_category_id_uuid'),
             'sub_category_id.exists' => __('ecoproduct::validation.sub_category_id_exists'),
-            'type.string' => __('ecoproduct::validation.type_string'),
-            'type.max' => __('ecoproduct::validation.type_max'),
+            'type.in' => 'نوع المنتج يجب أن يكون رقمي أو عادي',
+            'unit.required_if' => 'وحدة القياس مطلوبة للمنتجات العادية',
+            'unit.string' => 'يجب أن تكون وحدة القياس نص',
+            'unit.max' => 'يجب ألا تتجاوز وحدة القياس 50 حرف',
+            'gender.in' => 'الجنس المستهدف يجب أن يكون ذكر أو أنثى أو الكل',
 
             'taxes.*.country_id.required_with' => __('ecoproduct::validation.taxes_country_id_required_with'),
             'taxes.*.country_id.uuid' => __('ecoproduct::validation.taxes_country_id_uuid'),
@@ -185,6 +190,8 @@ class UpdateEcoProductDashboardRequest extends FormRequest
             categoryId: !empty($validatedData['category_id']) ? Uuid::fromString($validatedData['category_id']) : null,
             subCategoryId: !empty($validatedData['sub_category_id']) ? Uuid::fromString($validatedData['sub_category_id']) : null,
             type: $validatedData['type'] ?? null,
+            unit: $validatedData['unit'] ?? null,
+            gender: $validatedData['gender'] ?? null,
             taxes: $validatedData['taxes'] ?? null,
             details: $validatedData['details'] ?? null,
             customFields: $validatedData['custom_fields'] ?? null,

@@ -196,7 +196,7 @@ class CompanyUserController extends Controller
         return Json::deleted();
     }
 
-    public function deleteUserSpecificRole(DeleteUserSpecificRoleRequest $request): JsonResponse
+    public function deleteUserSpecificRole(DeleteUserSpecificRoleRequest $request)
     {
         $command = $request->createDeleteRoleCommand();
         $this->deleteUserRoleHandler->handle($command);

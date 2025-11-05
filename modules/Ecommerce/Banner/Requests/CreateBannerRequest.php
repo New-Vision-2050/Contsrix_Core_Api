@@ -14,7 +14,9 @@ class CreateBannerRequest extends FormRequest
     {
         return [
             'url' => 'required|string|url',
-            'type' => 'required|string|in:home,discounts,new_arrivals,contact,about_Us',
+            'type' => 'required|string|in:home,discount,new_arrival,contact_us,about_us',
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
             'banner_image' => 'required|file|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ];
@@ -26,7 +28,10 @@ class CreateBannerRequest extends FormRequest
             'url.required' => 'رابط البانر مطلوب',
             'url.url' => 'يجب أن يكون الرابط صحيح',
             'type.required' => 'نوع البانر مطلوب',
-            'type.in' => 'نوع البانر يجب أن يكون أحد القيم المحددة',
+            'type.in' => 'نوع البانر يجب أن يكون أحد القيم التالية: home, discount, new_arrival, contact_us, about_us',
+            'title.string' => 'عنوان البانر يجب أن يكون نص',
+            'title.max' => 'عنوان البانر يجب ألا يتجاوز 255 حرف',
+            'description.string' => 'وصف البانر يجب أن يكون نص',
             'is_active.boolean' => 'حالة البانر يجب أن تكون صحيح أو خطأ',
             'banner_image.required' => 'صورة البانر مطلوبة',
             'banner_image.image' => 'يجب أن تكون صورة صحيحة',
@@ -41,7 +46,9 @@ class CreateBannerRequest extends FormRequest
             companyId: Uuid::fromString(tenant("id")),
             url: $this->input('url'),
             type: $this->input('type'),
-            isActive: $this->input('is_active', true),
+            title: $this->input('title'),
+            description: $this->input('description'),
+            isActive: (int) $this->input('is_active', 1),
         );
     }
 }

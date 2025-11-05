@@ -12,7 +12,9 @@ class CreateBannerDTO
         public UuidInterface $companyId,
         public string $url,
         public string $type,
-        public bool $isActive = true,
+        public ?string $title = null,
+        public ?string $description = null,
+        public int $isActive = 1,
     ) {
     }
 
@@ -22,6 +24,8 @@ class CreateBannerDTO
             'company_id' => $this->companyId->toString(),
             'url' => $this->url,
             'type' => $this->type,
+            'title' => $this->title,
+            'description' => $this->description,
             'is_active' => $this->isActive,
         ];
     }

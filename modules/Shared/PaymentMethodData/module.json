@@ -1,0 +1,14 @@
+{
+    "name": "PaymentMethodData",
+    "alias": "paymentmethoddata",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\PaymentMethodData\\Providers\\PaymentMethodDataServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}
