@@ -139,6 +139,7 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
+            tenancy()->initialize((string)$branchData["company_id"]);
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
             $this->nextId = $this->nextId + 1;
