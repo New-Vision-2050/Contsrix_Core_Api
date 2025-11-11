@@ -31,7 +31,7 @@ class CustomTenantScope implements Scope
 
         if($model instanceof Company) //if model is Company and not central , apply the tenant filtering on id because no have company_id column
         {
-            $builder->where($model->qualifyColumn("id"), $tenant->id);
+//            $builder->where($model->qualifyColumn("id"), $tenant->id);
             return;
         }
 
