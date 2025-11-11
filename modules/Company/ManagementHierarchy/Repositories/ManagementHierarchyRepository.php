@@ -20,6 +20,7 @@ use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 use function PHPUnit\Framework\throwException;
+use function Symfony\Component\String\s;
 
 /**
  * @property ManagementHierarchy $model
@@ -139,6 +140,7 @@ class ManagementHierarchyRepository extends BaseRepository
     {
         try {
             DB::beginTransaction();
+            tenancy()->initialize((string)$branchData["company_id"]);
             $managementHierarchy = $this->create($branchData + ["id" => $this->nextId]);
 
             $this->nextId = $this->nextId + 1;
