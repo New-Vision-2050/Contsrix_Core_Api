@@ -281,7 +281,7 @@ class CompanyUserRepository extends BaseRepository
 
     public function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null, array $brokerDetail = null)
     {
-        try {
+//        try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
 
             DB::beginTransaction();
@@ -392,10 +392,10 @@ class CompanyUserRepository extends BaseRepository
 //
             DB::commit();
             return $companyUser;
-        } catch (\Exception $exception) {
-            DB::rollBack();
-            throw new CustomException($exception->getMessage(), 400);
-        }
+//        } catch (\Exception $exception) {
+//            DB::rollBack();
+//            throw new CustomException($exception->getMessage(), 400);
+//        }
     }
 
     public function assignRoleCompanyUser(UuidInterface $id, array $companyUserRoleData, array $branches = null): void
@@ -535,10 +535,10 @@ class CompanyUserRepository extends BaseRepository
     private function handleOwnerPermissions(User $user, $companyId): void
     {
         if ($user->is_owner) {
-            $branch = $this->managementHierarchyRepository->findOneBy([
+            $branch = $this->managementHierarchyRepository->model->where([
                 "company_id" => $companyId,
                 "parent_id" => null
-            ]);
+            ])->first();
 
             $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id", $companyId)->first();
             setPermissionsTeamId($companyId);
@@ -549,12 +549,12 @@ class CompanyUserRepository extends BaseRepository
 
             $branch->update(["manager_id" => $user->id]);
 
-            $this->managementHierarchyRepository->findOneBy([
+            $this->managementHierarchyRepository->model->where([
                 "company_id" => $companyId,
                 "parent_id" => $branch->id,
                 "type" => "management",
                 "is_main" => 1
-            ])->update(["manager_id" => $user->id]);
+            ])->first()->update(["manager_id" => $user->id]);
         }
     }
 
@@ -636,10 +636,10 @@ class CompanyUserRepository extends BaseRepository
      */
     private function getMainBranchData($companyId, ?array $branches = null): array
     {
-        $mainBranchId = $this->managementHierarchyRepository->findOneBy([
+        $mainBranchId = $this->managementHierarchyRepository->model->withoutTenancy()->where([
             "company_id" => $companyId,
             "parent_id" => null
-        ])->id;
+        ])  ->first()->id;
 
         $branchId = $mainBranchId;
 
@@ -647,12 +647,12 @@ class CompanyUserRepository extends BaseRepository
             $branchId = $branches[0];
         }
 
-        $mainManagement = $this->managementHierarchyRepository->findOneBy([
+        $mainManagement = $this->managementHierarchyRepository->model->withoutTenancy()->where([
             "company_id" => $companyId,
             "parent_id" => $branchId,
             "is_main" => 1,
             "type" => "management"
-        ]);
+        ])->first();
 
         $managementId = $mainManagement ? $mainManagement->id : null;
 
@@ -677,12 +677,12 @@ class CompanyUserRepository extends BaseRepository
 
 
         // Get management hierarchy
-        $mainManagement = $this->managementHierarchyRepository->findOneBy([
+        $mainManagement = $this->managementHierarchyRepository->model->withoutTenancy()->where([
             "company_id" => $companyId,
             "parent_id" => $branchId,
             "type" => "management",
             "is_main" => 1
-        ]);
+        ])->first();
 
         $jobTitleId = $companyUserData["job_title_id"] ?? $generalManagerJobTitle->id;
         $jobTypeId = isset($companyUserData["job_title_id"]) && $companyUserData["job_title_id"] !== null
