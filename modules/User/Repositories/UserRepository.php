@@ -209,6 +209,33 @@ class UserRepository extends BaseRepository
         ];
     }
 
+    public function getEmployeeInCurrentCompany($page = 1, $perPage = 10)
+    {
+        $type = CompanyUserRole::EMPLOYEE->value;
+
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all());
+        } else {
+            $query = $this->model;
+        }
+
+        $query = $query->when($type != null, function ($query) use ($type) {
+            $query->whereHas("companyUserCompanies", function ($query) use ($type) {
+                $query->where("company_users_companies.role", $type);
+            });
+        })->where("company_id", tenant("id"))->whereNot("email","admin@constrix.com")
+            ->select('id', 'name', 'email', 'phone', 'global_company_user_id', 'company_id', 'is_owner', 'management_hierarchy_id', 'status');
+
+        $count = $query->count();
+        $paginatedData = $query->forPage($page, $perPage)->get();
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
+
     public function createUser(array $data): User
     {
         return $this->create($data);
