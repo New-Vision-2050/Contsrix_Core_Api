@@ -280,7 +280,7 @@ class CompanyUserRepository extends BaseRepository
 
     public function createCompanyUser(array $companyUserData, array $companyRole, array $branches = null, array $address = null, array $clientDetail = null, array $brokerDetail = null)
     {
-//        try {
+        try {
             $phone = $this->getPhoneNumberInfo($companyUserData['phone']);
 
             DB::beginTransaction();
@@ -391,10 +391,10 @@ class CompanyUserRepository extends BaseRepository
 //
             DB::commit();
             return $companyUser;
-//        } catch (\Exception $exception) {
-//            DB::rollBack();
-//            throw new CustomException($exception->getMessage(), 400);
-//        }
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            throw new CustomException($exception->getMessage(), 400);
+        }
     }
 
     public function assignRoleCompanyUser(UuidInterface $id, array $companyUserRoleData, array $branches = null): void
