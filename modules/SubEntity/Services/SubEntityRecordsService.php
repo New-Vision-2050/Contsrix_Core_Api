@@ -113,8 +113,8 @@ class SubEntityRecordsService
 
         // Get last month data for comparison
         $lastMonth = Carbon::now();
-        $recordsAddedLastMonth = (clone $query)->where('created_at', '>=', $lastMonth->startOfMonth())
-            ->where('created_at', '<=', $lastMonth->endOfMonth())
+        $recordsAddedLastMonth = (clone $query)->whereDate('created_at', '>=', Carbon::now()->startOfMonth())
+            ->whereDate('created_at', '<=', Carbon::now()->endOfMonth())
             ->count();
 
         // Get previous month data for percentage calculation
@@ -143,8 +143,8 @@ class SubEntityRecordsService
                 "title" => "$type المضافين اخر الشهر ",
                 'total' => $recordsAddedLastMonth,
                 'percentage' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords), // No comparison for this metric
-                "start"=>$lastMonth->startOfMonth(),
-                "end"=>$lastMonth->endOfMonth()
+                "start"=>Carbon::now()->startOfMonth(),
+                "end"=>Carbon::now()->endOfMonth()
             ],
             [
                 "title" => "$type النشيطين ",
