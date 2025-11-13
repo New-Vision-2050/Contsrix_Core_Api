@@ -9,6 +9,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use DB;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Modules\ArchiveLibrary\File\Models\UserFilePermission;
 use Modules\Shared\Media\Services\FileUploadService;
 use Modules\Subscription\Package\Models\CompanyPermissionLimit;
@@ -199,13 +200,19 @@ class FileRepository extends BaseRepository
                 $media = $originalFile->getFirstMedia('upload');
 
                 if ($media) {
-                    $filePath = $media->getPath();
+                    $url = $media->getFullUrl();
+
+                    // نزّل الفايل مؤقتاً
+                    $tempPath = tempnam(sys_get_temp_dir(), 'media_');
+                    file_put_contents($tempPath, Http::get($url)->body());
+
+                    // ابني كائن UploadedFile
                     $uploadedFile = new UploadedFile(
-                        $filePath,
+                        $tempPath,
                         $media->file_name,
                         $media->mime_type,
                         null,
-                        true
+                        true // bypass validation
                     );
                 }
 
