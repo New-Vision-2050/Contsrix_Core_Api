@@ -207,6 +207,7 @@ class FileRepository extends BaseRepository
                         null,
                         true
                     );
+                }
 
                     request()->files->set('file', $uploadedFile);
 
