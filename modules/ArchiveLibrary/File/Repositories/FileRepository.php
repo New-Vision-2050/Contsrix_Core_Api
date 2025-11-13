@@ -201,10 +201,14 @@ class FileRepository extends BaseRepository
 
                 if ($media) {
                     $url = $media->getFullUrl();
+                    if (!str_starts_with($url, 'http')) {
+                        $url = 'https://' . ltrim($url, '/');
+                    }
 
-                    // نزّل الفايل مؤقتاً
+
+
                     $tempPath = tempnam(sys_get_temp_dir(), 'media_');
-                    file_put_contents($tempPath, Http::get('https://'.$url)->body());
+                    file_put_contents($tempPath, Http::get($url)->body());
 
                     // ابني كائن UploadedFile
                     $uploadedFile = new UploadedFile(
