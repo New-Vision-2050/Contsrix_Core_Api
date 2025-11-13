@@ -19,7 +19,7 @@ class UserProfessionalDataCRUDService
 
     public function create(CreateUserProfessionalDataDTO $createUserProfessionalDataDTO): UserProfessionalData
     {
-         return $this->repository->createOrUpdateUserProfessionalData($createUserProfessionalDataDTO->toArray());
+         return $this->repository->createOrUpdateUserProfessionalData($createUserProfessionalDataDTO->toArray(),$createUserProfessionalDataDTO->getRoles());
     }
 
     public function list(UuidInterface $companyId,UuidInterface $globalId,int $page = 1, int $perPage = 10): array

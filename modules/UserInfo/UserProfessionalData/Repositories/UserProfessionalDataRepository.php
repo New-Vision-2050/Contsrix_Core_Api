@@ -45,7 +45,7 @@ class UserProfessionalDataRepository extends BaseRepository
         return $this->create($data);
     }
 
-    public function createOrUpdateUserProfessionalData(array $data): UserProfessionalData
+    public function createOrUpdateUserProfessionalData(array $data,$roles=null): UserProfessionalData
     {
 
         try {
@@ -71,12 +71,16 @@ class UserProfessionalDataRepository extends BaseRepository
 
             if ($userProfessionalData) {
                 $userProfessionalData->update($data);
-                DB::commit();
                 $userProfessionalData->refresh();
             }else{
                 $userProfessionalData =  $this->model->create($data);
-                DB::commit();
             }
+
+            if($roles){
+                $user->syncRoles($roles);
+            }
+
+            DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception(__("validation.create-not-successful"),500);
