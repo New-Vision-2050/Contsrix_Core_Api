@@ -190,7 +190,7 @@ class FileRepository extends BaseRepository
 
     public function copyFile(array $fileIds, ?UuidInterface $targetFolderId): array
     {
-        try {
+//        try {
             DB::beginTransaction();
 
             $copiedFiles = [];
@@ -249,10 +249,10 @@ class FileRepository extends BaseRepository
             DB::commit();
 
             return $copiedFiles;
-        } catch (\Exception $exception) {
-            DB::rollBack();
-            throw new CustomException($exception->getMessage());
-        }
+//        } catch (\Exception $exception) {
+//            DB::rollBack();
+//            throw new CustomException($exception->getMessage());
+//        }
     }
 
     public function cutFile(array $fileIds, ?UuidInterface $targetFolderId): array
