@@ -19,6 +19,8 @@ class CreateUserProfessionalDataRequest extends FormRequest
             'job_title_id' => 'required|exists:job_titles,id',
             'job_code' => 'required|string',
             'attendance_constraint_id'=> 'nullable|exists:attendance_constraints,id',
+            "roles"=> "nullable|array",
+            "roles.*"=> "nullable|exists:roles,name",
         ];
     }
     public function messages(): array
@@ -42,7 +44,8 @@ class CreateUserProfessionalDataRequest extends FormRequest
             job_type_id: $this->get('job_type_id'),
             job_title_id: $this->get('job_title_id'),
             job_code: $this->get('job_code'),
-            attendance_constraint_id: $this->get('attendance_constraint_id')
+            attendance_constraint_id: $this->get('attendance_constraint_id'),
+            roles: $this->get('roles')
         );
     }
 }
