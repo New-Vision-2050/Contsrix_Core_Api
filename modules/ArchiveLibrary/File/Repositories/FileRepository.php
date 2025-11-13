@@ -210,7 +210,6 @@ class FileRepository extends BaseRepository
                     $tempPath = tempnam(sys_get_temp_dir(), 'media_');
                     file_put_contents($tempPath, Http::get($url)->body());
 
-                    // ابني كائن UploadedFile
                     $uploadedFile = new UploadedFile(
                         $tempPath,
                         $media->file_name,
