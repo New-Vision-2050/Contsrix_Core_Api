@@ -233,8 +233,14 @@ class FileRepository extends BaseRepository
 
                 // Copy media files
                 foreach ($originalFile->getMedia('upload') as $media) {
-                    $copiedFile->addMediaFromUrl($media->getFullUrl())
-                        ->toMediaCollection('upload');
+                    $newMedia = $media->replicate();
+
+                    $newMedia->model_id = $copiedFile->id;
+
+
+                    $newMedia->uuid = \Ramsey\Uuid\Uuid::uuid4()->toString();
+
+                    $newMedia->save();
                 }
 
                 // Copy user permissions
