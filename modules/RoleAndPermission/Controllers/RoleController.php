@@ -13,6 +13,7 @@ use Modules\RoleAndPermission\Handlers\DeleteRoleHandler;
 use Modules\RoleAndPermission\Handlers\UpdateRoleHandler;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
+use Modules\RoleAndPermission\Presenters\RoleSimplePresenter;
 use Modules\RoleAndPermission\Presenters\RoleWidgetsPresenter;
 use Modules\RoleAndPermission\Presenters\RoleWithPermissionPresenter;
 use Modules\RoleAndPermission\Requests\AssignPermissionToRoleRequest;
