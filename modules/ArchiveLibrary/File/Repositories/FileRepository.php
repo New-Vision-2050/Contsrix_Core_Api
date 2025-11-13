@@ -196,6 +196,20 @@ class FileRepository extends BaseRepository
 
             foreach ($fileIds as $fileId) {
                 $originalFile = $this->getFile(\Ramsey\Uuid\Uuid::fromString($fileId));
+                $media = $originalFile->getFirstMedia('upload');
+
+                if ($media) {
+                    $filePath = $media->getPath();
+                    $uploadedFile = new UploadedFile(
+                        $filePath,
+                        $media->file_name,
+                        $media->mime_type,
+                        null,
+                        true
+                    );
+                }
+
+                    request()->files->set('file', $uploadedFile);
 
                 // Create a copy of the file
                 $copiedFile = $this->create([
