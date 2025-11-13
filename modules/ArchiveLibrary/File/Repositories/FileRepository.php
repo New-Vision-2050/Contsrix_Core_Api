@@ -190,69 +190,75 @@ class FileRepository extends BaseRepository
 
     public function copyFile(array $fileIds, ?UuidInterface $targetFolderId): array
     {
-        try {
-            DB::beginTransaction();
+//        try {
+        DB::beginTransaction();
 
-            $copiedFiles = [];
+        $copiedFiles = [];
 
-            foreach ($fileIds as $fileId) {
-                $originalFile = $this->getFile(\Ramsey\Uuid\Uuid::fromString($fileId));
-                $media = $originalFile->getFirstMedia('upload');
+        foreach ($fileIds as $fileId) {
+            $originalFile = $this->getFile(\Ramsey\Uuid\Uuid::fromString($fileId));
+            $media = $originalFile->getFirstMedia('upload');
 
-                if ($media) {
-                    $url = $media->getFullUrl();
-                    if (!str_starts_with($url, 'http')) {
-                        $url = 'https://' . ltrim($url, '/');
-                    }
-
-
-
-                    $tempPath = tempnam(sys_get_temp_dir(), 'media_');
-                    file_put_contents($tempPath, Http::get($url)->body());
-
-                    $uploadedFile = new UploadedFile(
-                        $tempPath,
-                        $media->file_name,
-                        $media->mime_type,
-                        null,
-                        true // bypass validation
-                    );
+            if ($media) {
+                $url = $media->getFullUrl();
+                if (!str_starts_with($url, 'http')) {
+                    $url = 'https://' . ltrim($url, '/');
                 }
 
-                    request()->files->set('file', $uploadedFile);
 
-                // Create a copy of the file
-                $copiedFile = $this->create([
-                    'name' => $originalFile->name . ' (Copy)',
-                    'reference_number' => $originalFile->reference_number,
-                    'start_date' => $originalFile->start_date,
-                    'end_date' => $originalFile->end_date,
-                    'folder_id' => $targetFolderId?->toString(),
-                    'access_type' => $originalFile->access_type,
-                ]);
 
-                // Copy media files
-                foreach ($originalFile->getMedia('upload') as $media) {
-                    $copiedFile->addMediaFromUrl($media->getFullUrl())
-                        ->toMediaCollection('upload');
-                }
+                $tempPath = tempnam(sys_get_temp_dir(), 'media_');
+                file_put_contents($tempPath, Http::get($url)->body());
 
-                // Copy user permissions
-                $userIds = $originalFile->users->pluck('id')->toArray();
-                if (!empty($userIds)) {
-                    $this->attachUsers($copiedFile, $userIds);
-                }
-
-                $copiedFiles[] = $copiedFile->fresh();
+                $uploadedFile = new UploadedFile(
+                    $tempPath,
+                    $media->file_name,
+                    $media->mime_type,
+                    null,
+                    true // bypass validation
+                );
             }
 
-            DB::commit();
+            request()->files->set('file', $uploadedFile);
 
-            return $copiedFiles;
-        } catch (\Exception $exception) {
-            DB::rollBack();
-            throw new CustomException($exception->getMessage());
+            // Create a copy of the file
+            $copiedFile = $this->create([
+                'name' => $originalFile->name . ' (Copy)',
+                'reference_number' => $originalFile->reference_number,
+                'start_date' => $originalFile->start_date,
+                'end_date' => $originalFile->end_date,
+                'folder_id' => $targetFolderId?->toString(),
+                'access_type' => $originalFile->access_type,
+            ]);
+
+            // Copy media files
+            foreach ($originalFile->getMedia('upload') as $media) {
+                $newMedia = $media->replicate();
+
+                $newMedia->model_id = $copiedFile->id;
+
+
+                $newMedia->uuid = \Ramsey\Uuid\Uuid::uuid4()->toString();
+
+                $newMedia->save();
+            }
+
+            // Copy user permissions
+            $userIds = $originalFile->users->pluck('id')->toArray();
+            if (!empty($userIds)) {
+                $this->attachUsers($copiedFile, $userIds);
+            }
+
+            $copiedFiles[] = $copiedFile->fresh();
         }
+
+        DB::commit();
+
+        return $copiedFiles;
+//        } catch (\Exception $exception) {
+//            DB::rollBack();
+//            throw new CustomException($exception->getMessage());
+//        }
     }
 
     public function cutFile(array $fileIds, ?UuidInterface $targetFolderId): array
