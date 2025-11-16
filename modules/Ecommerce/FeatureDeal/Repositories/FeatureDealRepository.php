@@ -32,28 +32,37 @@ class FeatureDealRepository extends BaseRepository
 
     public function getFeatureDeal(UuidInterface $id): FeatureDeal
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
-    }
-
-    public function getFeatureDealWithRelations(UuidInterface $id): FeatureDeal
-    {
-        return $this->model->with(['company'])
+        return $this->model->with(['products'])
             ->where('id', $id->toString())
             ->firstOrFail();
     }
 
-    public function createFeatureDeal(array $data): FeatureDeal
+    public function getFeatureDealWithRelations(UuidInterface $id): FeatureDeal
     {
-        return $this->create($data);
+        return $this->model->with(['company', 'products'])
+            ->where('id', $id->toString())
+            ->firstOrFail();
     }
 
-    public function updateFeatureDeal(UuidInterface $id, array $data): FeatureDeal
+    public function createFeatureDeal(array $data, array $productIds = []): FeatureDeal
+    {
+        $featureDeal = $this->create($data);
+        if (!empty($productIds)) {
+            $featureDeal->products()->sync($productIds);
+        }
+        return $featureDeal->load('products');
+    }
+
+    public function updateFeatureDeal(UuidInterface $id, array $data, ?array $productIds = null): FeatureDeal
     {
         $featureDeal = $this->getFeatureDeal($id);
         $featureDeal->update($data);
-        return $featureDeal->fresh();
+
+        if ($productIds !== null) {
+            $featureDeal->products()->sync($productIds);
+        }
+
+        return $featureDeal->fresh(['products']);
     }
 
     public function deleteFeatureDeal(UuidInterface $id): bool

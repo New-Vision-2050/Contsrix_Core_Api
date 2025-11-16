@@ -33,20 +33,30 @@ class FlashDealRepository extends BaseRepository
 
     public function getFlashDeal(UuidInterface $id): FlashDeal
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->with(['products'])
+            ->where('id', $id->toString())
+            ->firstOrFail();
     }
 
-    public function createFlashDeal(array $data): FlashDeal
+    public function createFlashDeal(array $data, array $productIds = []): FlashDeal
     {
-        return $this->create($data);
+        $flashDeal = $this->create($data);
+        if (!empty($productIds)) {
+            $flashDeal->products()->sync($productIds);
+        }
+        return $flashDeal->load('products');
     }
 
-    public function updateFlashDeal(UuidInterface $id, array $data): FlashDeal
+    public function updateFlashDeal(UuidInterface $id, array $data, ?array $productIds = null): FlashDeal
     {
-        $this->update($id, $data);
-        return $this->getFlashDeal($id);
+        $flashDeal = $this->getFlashDeal($id);
+        $flashDeal->update($data);
+
+        if ($productIds !== null) {
+            $flashDeal->products()->sync($productIds);
+        }
+
+        return $flashDeal->fresh(['products']);
     }
 
     public function deleteFlashDeal(UuidInterface $id): bool
@@ -111,7 +121,7 @@ class FlashDealRepository extends BaseRepository
     public function deactivateExpiredDeals(): int
     {
         $now = Carbon::now();
-        return $this->model->where('is_active', true)
+        return (int) $this->model->where('is_active', true)
             ->where('end_date', '<', $now)
             ->update(['is_active' => false]);
     }
@@ -131,7 +141,7 @@ class FlashDealRepository extends BaseRepository
      */
     public function searchFlashDeals(array $filters = [], int $page = 1, int $perPage = 10): array
     {
-        return $this->paginatedWithRelations($page, $perPage, ['company'], $filters);
+        return $this->paginatedWithRelations($page, $perPage, ['company', 'products'], $filters);
     }
 
     /**

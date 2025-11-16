@@ -16,6 +16,10 @@ class UpdateFeatureDealHandler
 
     public function handle(UpdateFeatureDealCommand $updateFeatureDealCommand)
     {
-        $this->repository->updateFeatureDeal($updateFeatureDealCommand->getId(), $updateFeatureDealCommand->toArray());
+        $this->repository->updateFeatureDeal(
+            id: $updateFeatureDealCommand->getId(),
+            data: $updateFeatureDealCommand->toArray(),
+            productIds: $updateFeatureDealCommand->getProductIds(),
+        );
     }
 }

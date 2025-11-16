@@ -23,6 +23,8 @@ class UpdateFeatureDealRequest extends FormRequest
             'discount_type' => 'sometimes|string|in:percentage,amount',
             'discount_value' => 'sometimes|numeric|min:0',
             'is_active' => 'sometimes|boolean',
+            'product_ids' => 'sometimes|array|min:1',
+            'product_ids.*' => 'uuid|exists:eco_products,id',
         ];
     }
 
@@ -42,6 +44,10 @@ class UpdateFeatureDealRequest extends FormRequest
             'discount_value.numeric' => 'قيمة الخصم يجب أن تكون رقم',
             'discount_value.min' => 'قيمة الخصم يجب أن تكون أكبر من أو تساوي صفر',
             'is_active.boolean' => 'حالة التفعيل يجب أن تكون صحيح أو خطأ',
+            'product_ids.array' => 'معرفات المنتجات يجب أن تكون في مصفوفة',
+            'product_ids.min' => 'يجب اختيار منتج واحد على الأقل',
+            'product_ids.*.uuid' => 'معرف المنتج غير صالح',
+            'product_ids.*.exists' => 'المنتج المحدد غير موجود',
         ];
     }
 
@@ -50,11 +56,12 @@ class UpdateFeatureDealRequest extends FormRequest
         return new UpdateFeatureDealCommand(
             id: Uuid::fromString($this->route('id')),
             name: $this->input('name'),
-            startDate: Carbon::parse($this->input('start_date')),
-            endDate: Carbon::parse($this->input('end_date')),
+            startDate: $this->filled('start_date') ? Carbon::parse($this->input('start_date')) : null,
+            endDate: $this->filled('end_date') ? Carbon::parse($this->input('end_date')) : null,
             discountType: $this->input('discount_type'),
-            discountValue: (float) $this->input('discount_value'),
-            isActive: (bool) $this->input('is_active'),
+            discountValue: $this->input('discount_value') !== null ? (float) $this->input('discount_value') : null,
+            productIds: $this->input('product_ids'),
+            isActive: $this->input('is_active') !== null ? (bool) $this->input('is_active') : null,
         );
     }
 }

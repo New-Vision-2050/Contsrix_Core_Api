@@ -22,6 +22,8 @@ class CreateFeatureDealRequest extends FormRequest
             'discount_type' => 'required|string|in:percentage,amount',
             'discount_value' => 'required|numeric|min:0',
             'is_active' => 'nullable|boolean',
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'uuid|exists:eco_products,id',
         ];
     }
 
@@ -48,6 +50,11 @@ class CreateFeatureDealRequest extends FormRequest
             'discount_value.numeric' => 'قيمة الخصم يجب أن تكون رقم',
             'discount_value.min' => 'قيمة الخصم يجب أن تكون أكبر من أو تساوي صفر',
             'is_active.boolean' => 'حالة التفعيل يجب أن تكون صحيح أو خطأ',
+            'product_ids.required' => 'يجب اختيار المنتجات المرتبطة بالعرض',
+            'product_ids.array' => 'معرفات المنتجات يجب أن تكون في مصفوفة',
+            'product_ids.min' => 'يجب اختيار منتج واحد على الأقل',
+            'product_ids.*.uuid' => 'معرف المنتج غير صالح',
+            'product_ids.*.exists' => 'المنتج المحدد غير موجود',
         ];
     }
 
@@ -60,6 +67,7 @@ class CreateFeatureDealRequest extends FormRequest
             endDate: Carbon::parse($this->input('end_date')),
             discountType: $this->input('discount_type'),
             discountValue: (float) $this->input('discount_value'),
+            productIds: $this->input('product_ids', []),
             isActive: (bool) $this->input('is_active', true),
         );
     }
