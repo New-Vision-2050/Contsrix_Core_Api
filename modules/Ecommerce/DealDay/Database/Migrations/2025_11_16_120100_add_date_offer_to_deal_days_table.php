@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::table('deal_days', function (Blueprint $table) {
             if (!Schema::hasColumn('deal_days', 'date_offer')) {
-                $table->date('date_offer')->after('product_id');
+                $table->date('date_offer')->nullable()->after('product_id');
             }
         });
     }
