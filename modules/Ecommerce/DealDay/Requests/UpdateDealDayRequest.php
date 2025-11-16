@@ -13,6 +13,8 @@ class UpdateDealDayRequest extends FormRequest
 {
     public function rules(): array
     {
+        $companyId = tenant('id');
+
         return [
             'name' => 'sometimes|array',
             'name.ar' => 'sometimes|string|max:255',
@@ -21,6 +23,25 @@ class UpdateDealDayRequest extends FormRequest
             'discount_type' => 'sometimes|string|in:percentage,amount',
             'discount_value' => 'sometimes|numeric|min:0',
             'is_active' => 'sometimes|boolean',
+            'date_offer' => [
+                'sometimes',
+                'date_format:Y-m-d',
+                function ($attribute, $value, $fail) use ($companyId) {
+                    if ($value === null) {
+                        return;
+                    }
+
+                    $exists = \Modules\Ecommerce\DealDay\Models\DealDay::query()
+                        ->where('company_id', $companyId)
+                        ->whereDate('date_offer', $value)
+                        ->where('id', '<>', $this->route('id'))
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('يوجد عرض يومي مسجل لهذا التاريخ بالفعل.');
+                    }
+                },
+            ],
         ];
     }
 
@@ -38,6 +59,7 @@ class UpdateDealDayRequest extends FormRequest
             'discount_value.numeric' => 'قيمة الخصم يجب أن تكون رقم',
             'discount_value.min' => 'قيمة الخصم يجب أن تكون أكبر من أو تساوي صفر',
             'is_active.boolean' => 'حالة التفعيل يجب أن تكون صحيح أو خطأ',
+            'date_offer.date_format' => 'صيغة التاريخ يجب أن تكون Y-m-d',
         ];
     }
 
@@ -49,6 +71,7 @@ class UpdateDealDayRequest extends FormRequest
             productId: $this->input('product_id') ? Uuid::fromString($this->input('product_id')) : null,
             discountType: $this->input('discount_type'),
             discountValue: (float) $this->input('discount_value'),
+            dateOffer: $this->input('date_offer'),
         );
     }
 }
