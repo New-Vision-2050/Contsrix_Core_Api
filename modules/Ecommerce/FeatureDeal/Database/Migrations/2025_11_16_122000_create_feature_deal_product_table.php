@@ -10,23 +10,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('feature_deal_product', function (Blueprint $table) {
-            $table->uuid('feature_deal_id');
-            $table->uuid('product_id');
-            $table->timestamps();
-
-            $table->primary(['feature_deal_id', 'product_id'], 'feature_deal_product_primary');
-
-            $table->foreign('feature_deal_id')
-                ->references('id')
-                ->on('feature_deals')
-                ->onDelete('cascade');
-
-            $table->foreign('product_id')
-                ->references('id')
-                ->on('eco_products')
-                ->onDelete('cascade');
-        });
+        if (!Schema::hasTable('feature_deal_product')) {
+            Schema::create('feature_deal_product', function (Blueprint $table) {
+                $table->uuid('feature_deal_id');
+                $table->uuid('product_id');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void

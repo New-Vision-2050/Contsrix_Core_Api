@@ -10,23 +10,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('flash_deal_product', function (Blueprint $table) {
-            $table->uuid('flash_deal_id');
-            $table->uuid('product_id');
-            $table->timestamps();
-
-            $table->primary(['flash_deal_id', 'product_id'], 'flash_deal_product_primary');
-
-            $table->foreign('flash_deal_id')
-                ->references('id')
-                ->on('flash_deals')
-                ->onDelete('cascade');
-
-            $table->foreign('product_id')
-                ->references('id')
-                ->on('eco_products')
-                ->onDelete('cascade');
-        });
+        if (!Schema::hasTable('flash_deal_product')) {
+            Schema::create('flash_deal_product', function (Blueprint $table) {
+                $table->uuid('flash_deal_id');
+                $table->uuid('product_id');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
