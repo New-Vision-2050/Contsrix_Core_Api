@@ -13,7 +13,6 @@ return new class extends Migration
         Schema::table('deal_days', function (Blueprint $table) {
             if (!Schema::hasColumn('deal_days', 'date_offer')) {
                 $table->date('date_offer')->after('product_id');
-                $table->unique(['product_id', 'date_offer'], 'deal_day_product_date_unique');
             }
         });
     }
@@ -22,7 +21,6 @@ return new class extends Migration
     {
         Schema::table('deal_days', function (Blueprint $table) {
             if (Schema::hasColumn('deal_days', 'date_offer')) {
-                $table->dropUnique('deal_day_product_date_unique');
                 $table->dropColumn('date_offer');
             }
         });
