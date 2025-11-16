@@ -47,6 +47,7 @@ class CreateEcoProductNewDTO
         
         // Visibility
         public readonly bool $isVisible,
+        public readonly bool $isFeatured = false,
         
         // Media
         public readonly ?array $mainPhoto,              // Photo data
@@ -87,6 +88,7 @@ class CreateEcoProductNewDTO
             'shipping_amount' => $this->shippingAmount,
             'shipping_included_in_price' => $this->shippingIncludedInPrice,
             'is_visible' => $this->isVisible,
+            'is_featured' => $this->isFeatured,
             'main_photo' => $this->mainPhoto,
             'other_photos' => $this->otherPhotos,
             'video_url' => $this->videoUrl,
