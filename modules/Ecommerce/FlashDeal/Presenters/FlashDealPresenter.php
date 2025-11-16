@@ -6,6 +6,7 @@ namespace Modules\Ecommerce\FlashDeal\Presenters;
 
 use Modules\Ecommerce\FlashDeal\Models\FlashDeal;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Ecommerce\EcoProduct\Presenters\Dashboard\EcoProductDashboardPresenter;
 use Modules\Shared\Media\Presenters\MediaPresenter;
 class FlashDealPresenter extends AbstractPresenter
 {
@@ -20,7 +21,7 @@ class FlashDealPresenter extends AbstractPresenter
     {
         $media = $this->flashDeal->getFirstMedia('upload');
 
-        return [
+        $data = [
             'id' => $this->flashDeal->id,
             'company_id' => $this->flashDeal->company_id,
             'name' => $isListing 
@@ -32,8 +33,14 @@ class FlashDealPresenter extends AbstractPresenter
             'start_date' => $this->flashDeal->start_date?->format('Y-m-d H:i:s'),
             'end_date' => $this->flashDeal->end_date?->format('Y-m-d H:i:s'),
             'is_active' => (int) $this->flashDeal->is_active,
-
             "file" => $media != null ? (new MediaPresenter($media))->getData() : null,
         ];
+
+        // Only include products if the relation is loaded
+        if ($this->flashDeal->relationLoaded('products')) {
+            $data['products'] = EcoProductDashboardPresenter::collection($this->flashDeal->products);
+        }
+
+        return $data;
     }
 }

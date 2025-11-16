@@ -13,6 +13,7 @@ class CreateFlashDealDTO
         public array $name,
         public string $startDate,
         public string $endDate,
+        public array $productIds,
         public bool $isActive = true,
     ) {
     }
@@ -26,5 +27,10 @@ class CreateFlashDealDTO
             'end_date' => $this->endDate,
             'is_active' => $this->isActive,
         ];
+    }
+
+    public function products(): array
+    {
+        return $this->productIds;
     }
 }

@@ -28,7 +28,10 @@ class FlashDealCRUDService
         $this->validateDateRange($createFlashDealDTO->startDate, $createFlashDealDTO->endDate);
 
         // Create the flash deal
-        $flashDeal = $this->repository->createFlashDeal($createFlashDealDTO->toArray());
+        $flashDeal = $this->repository->createFlashDeal(
+            data: $createFlashDealDTO->toArray(),
+            productIds: $createFlashDealDTO->products(),
+        );
 
         // Handle media upload if provided
         if ($image) {
@@ -38,10 +41,9 @@ class FlashDealCRUDService
         return $flashDeal;
     }
 
-    public function update(UuidInterface $id, array $data, ?UploadedFile $image = null): FlashDeal
+    public function update(UuidInterface $id, array $data, ?UploadedFile $image = null, ?array $productIds = null): FlashDeal
     {
-        // Update the flash deal
-        $flashDeal = $this->repository->updateFlashDeal($id, $data);
+        $flashDeal = $this->repository->updateFlashDeal($id, $data, $productIds);
 
         // Handle media upload if provided
         if ($image) {
@@ -63,9 +65,10 @@ class FlashDealCRUDService
 
     public function list(int $page = 1, int $perPage = 10): array
     {
-        return $this->repository->paginated(
+        return $this->repository->paginatedWithRelations(
             page: $page,
             perPage: $perPage,
+            relations: ['company', 'products'],
         );
     }
 

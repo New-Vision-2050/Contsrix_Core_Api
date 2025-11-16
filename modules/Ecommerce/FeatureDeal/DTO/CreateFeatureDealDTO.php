@@ -16,6 +16,7 @@ class CreateFeatureDealDTO
         public readonly Carbon $endDate,
         public readonly string $discountType,
         public readonly float $discountValue,
+        public readonly array $productIds,
         public readonly bool $isActive = true,
     ) {
     }
@@ -31,5 +32,10 @@ class CreateFeatureDealDTO
             'discount_value' => $this->discountValue,
             'is_active' => $this->isActive,
         ];
+    }
+
+    public function products(): array
+    {
+        return $this->productIds;
     }
 }

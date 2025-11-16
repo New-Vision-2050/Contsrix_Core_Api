@@ -14,6 +14,7 @@ class CreateDealDayDTO
         public readonly UuidInterface $productId,
         public readonly string $discountType,
         public readonly float $discountValue,
+        public readonly string $dateOffer,
         public readonly bool $isActive = true,
     ) {
     }
@@ -26,6 +27,7 @@ class CreateDealDayDTO
             'product_id' => $this->productId->toString(),
             'discount_type' => $this->discountType,
             'discount_value' => $this->discountValue,
+            'date_offer' => $this->dateOffer,
             'is_active' => $this->isActive,
         ];
     }

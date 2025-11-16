@@ -23,6 +23,8 @@ use Modules\Ecommerce\EcoProduct\Models\ProductTax;
 use Modules\Ecommerce\EcoProduct\Models\ProductDetail;
 use Modules\Ecommerce\EcoProduct\Models\ProductCustomField;
 use Modules\Ecommerce\EcoProduct\Models\ProductSEO;
+use Modules\Ecommerce\FeatureDeal\Models\FeatureDeal;
+use Modules\Ecommerce\FlashDeal\Models\FlashDeal;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Traits\ForcedBelongsToTenant;
@@ -67,6 +69,7 @@ class EcoProduct extends Model implements HasMedia
         'shipping_amount',
         'shipping_included_in_price',
         'is_visible',
+        'is_featured',
         'main_photo', // JSON field
         'other_photos', // JSON array
         'video_url', // Video URL field
@@ -87,6 +90,7 @@ class EcoProduct extends Model implements HasMedia
         'price_includes_vat' => 'boolean',
         'shipping_included_in_price' => 'boolean',
         'is_visible' => 'boolean',
+        'is_featured' => 'boolean',
         'main_photo' => 'array', // JSON field
         'other_photos' => 'array', // JSON array
     ];
@@ -172,50 +176,29 @@ class EcoProduct extends Model implements HasMedia
     }
 
     /**
-     * Calculate final price after applying discounts
+     * Get the feature deals associated with this product
      */
-    public function getFinalPriceAttribute(): float
+    public function featureDeals(): BelongsToMany
     {
-        if (!$this->has_discount || !$this->getIsOnDiscountAttribute()) {
-            return $this->price;
-        }
-
-        $discountAmount = 0;
-
-        if ($this->discount_percentage) {
-            $discountAmount = $this->price * ($this->discount_percentage / 100);
-        } elseif ($this->discount_amount) {
-            $discountAmount = $this->discount_amount;
-        }
-
-        // Apply max discount limit if set
-        if ($this->max_discount_amount && $discountAmount > $this->max_discount_amount) {
-            $discountAmount = $this->max_discount_amount;
-        }
-
-        return max(0, $this->price - $discountAmount);
+        return $this->belongsToMany(
+            FeatureDeal::class,
+            'feature_deal_product',
+            'product_id',
+            'feature_deal_id'
+        )->withTimestamps();
     }
 
     /**
-     * Check if product is currently on discount
+     * Get the flash deals associated with this product
      */
-    public function getIsOnDiscountAttribute(): bool
+    public function flashDeals(): BelongsToMany
     {
-        if (!$this->has_discount) {
-            return false;
-        }
-
-        $now = now();
-
-        if ($this->discount_start_date && $now < $this->discount_start_date) {
-            return false;
-        }
-
-        if ($this->discount_end_date && $now > $this->discount_end_date) {
-            return false;
-        }
-
-        return true;
+        return $this->belongsToMany(
+            FlashDeal::class,
+            'flash_deal_product',
+            'product_id',
+            'flash_deal_id'
+        )->withTimestamps();
     }
 
     /**
@@ -239,4 +222,37 @@ class EcoProduct extends Model implements HasMedia
         return $mainImage ? $mainImage->getUrl() : null;
     }
 
+    /**
+     * Calculate the discount amount according to the configured type/value.
+     */
+    public function getDiscountAmountValueAttribute(): float
+    {
+        if (!$this->discount_type || $this->discount_value === null || $this->discount_value <= 0) {
+            return 0.0;
+        }
+
+        $price = (float) $this->price;
+
+        $discount = $this->discount_type === 'percentage'
+            ? $price * ((float) $this->discount_value / 100)
+            : (float) $this->discount_value;
+
+        return round(min($discount, $price), 2);
+    }
+
+    /**
+     * Final price after applying discount.
+     */
+    public function getFinalPriceAttribute(): float
+    {
+        return round(max(0, (float) $this->price - $this->discount_amount_value), 2);
+    }
+
+    /**
+     * Whether the product currently has an active discount.
+     */
+    public function getHasActiveDiscountAttribute(): bool
+    {
+        return $this->discount_amount_value > 0;
+    }
 }

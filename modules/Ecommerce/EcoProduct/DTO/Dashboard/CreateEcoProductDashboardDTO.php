@@ -25,6 +25,7 @@ class CreateEcoProductDashboardDTO
         public bool $productIncluded,
         public ?float $vatPercentage,
         public bool $isVisible,
+        public bool $isFeatured = false,
         public ?UuidInterface $brandId,
         public ?UuidInterface $categoryId,
         public ?UuidInterface $subCategoryId,
@@ -57,6 +58,7 @@ class CreateEcoProductDashboardDTO
             'product_included' => $this->productIncluded,
             'vat_percentage' => $this->vatPercentage,
             'is_visible' => $this->isVisible,
+            'is_featured' => $this->isFeatured,
             'category_id' => $this->categoryId,
             'sub_category_id' => $this->subCategoryId,
             'type' => $this->type,
@@ -69,6 +71,8 @@ class CreateEcoProductDashboardDTO
             'main_image' => $this->mainImage,
             'other_images' => $this->otherImages
 
-        ]);
+        ], function ($value) {
+            return $value !== null;
+        });
     }
 }

@@ -14,6 +14,7 @@ class UpdateDealDayCommand
         private ?UuidInterface $productId = null,
         private ?string $discountType = null,
         private ?float $discountValue = null,
+        private ?string $dateOffer = null,
         private ?bool $isActive = null,
     ) {
     }
@@ -43,6 +44,11 @@ class UpdateDealDayCommand
         return $this->discountValue;
     }
 
+    public function getDateOffer(): ?string
+    {
+        return $this->dateOffer;
+    }
+
     public function getIsActive(): ?bool
     {
         return $this->isActive;
@@ -66,6 +72,10 @@ class UpdateDealDayCommand
 
         if ($this->discountValue !== null) {
             $data['discount_value'] = $this->discountValue;
+        }
+
+        if ($this->dateOffer !== null) {
+            $data['date_offer'] = $this->dateOffer;
         }
 
         if ($this->isActive !== null) {
