@@ -17,6 +17,7 @@ use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\User\Database\Seeders\GenaralAdminSeedTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\Leave\LeaveType\Database\Seeders\LeaveTypeBranchSeeder;
+use Modules\WebsiteCMS\WebsiteSetting\Database\Seeders\WebsiteSettingSeeder;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -55,6 +56,8 @@ class TenantDatabaseSeeder extends Seeder
 
         $this->call(DefaultNotificationSettingsSeeder::class);
 
+        // Create default website settings for the company
+        $this->call(WebsiteSettingSeeder::class);
 
 //        $this->call(MainPackageSeeder::class);
     }

@@ -1,0 +1,363 @@
+{
+	"info": {
+		"_postman_id": "c5d8e3a9-4f5c-4a3e-8d5e-7c9e5f3b1f2d",
+		"name": "WebsiteSetting",
+		"description": "API endpoints for managing website settings",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Website Settings",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings?page=1&per_page=10",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Current Company Website Settings",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings/current",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings",
+						"current"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Current Company Website Settings",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "main_color",
+							"value": "#FF5733",
+							"type": "text"
+						},
+						{
+							"key": "second_color",
+							"value": "#33FF57",
+							"type": "text"
+						},
+						{
+							"key": "background_color",
+							"value": "#5733FF",
+							"type": "text"
+						},
+						{
+							"key": "logo",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "website_address",
+							"value": "https://example.com",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings/current",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings",
+						"current"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Website Setting by ID",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings/{{website_setting_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings",
+						"{{website_setting_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Website Setting",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "main_color",
+							"value": "#FF5733",
+							"type": "text"
+						},
+						{
+							"key": "second_color",
+							"value": "#33FF57",
+							"type": "text"
+						},
+						{
+							"key": "background_color",
+							"value": "#5733FF",
+							"type": "text"
+						},
+						{
+							"key": "logo",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "website_address",
+							"value": "https://example.com",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Website Setting",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "main_color",
+							"value": "#FF5733",
+							"type": "text"
+						},
+						{
+							"key": "second_color",
+							"value": "#33FF57",
+							"type": "text"
+						},
+						{
+							"key": "background_color",
+							"value": "#5733FF",
+							"type": "text"
+						},
+						{
+							"key": "logo",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "website_address",
+							"value": "https://example.com",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings/{{website_setting_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings",
+						"{{website_setting_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Website Setting",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings/{{website_setting_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings",
+						"{{website_setting_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Export Website Settings",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "format",
+							"value": "xlsx",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/website_settings/export",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"website_settings",
+						"export"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your_auth_token_here",
+			"type": "string"
+		},
+		{
+			"key": "website_setting_id",
+			"value": "uuid-here",
+			"type": "string"
+		}
+	]
+}
