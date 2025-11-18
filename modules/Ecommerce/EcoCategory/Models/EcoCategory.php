@@ -15,6 +15,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use App\Traits\ForcedBelongsToTenant;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EcoCategory extends Model implements HasMedia
 {
@@ -68,17 +70,18 @@ class EcoCategory extends Model implements HasMedia
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
     }
 
-    public function parent()
+    public function parent(): BelongsTo
     {
-        return $this->belongsTo(EcoCategory::class, 'parent_id');
+        return $this->belongsTo(EcoCategory::class, 'parent_id', 'id');
     }
 
-    public function children()
+    public function children(): HasMany
     {
-        return $this->hasMany(EcoCategory::class, 'parent_id');
+        return $this->hasMany(EcoCategory::class, 'parent_id', 'id');
     }
-    public function products()
+
+    public function products(): HasMany
     {
-        return $this->hasMany(EcoProduct::class, 'category_id');
+        return $this->hasMany(EcoProduct::class, 'category_id', 'id');
     }
 }

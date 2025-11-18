@@ -62,11 +62,17 @@ class EcoCategoryRepository extends BaseRepository
         ];
     }
 
-    public function getEcoCategory(UuidInterface $id): EcoCategory
+    public function getEcoCategory(UuidInterface $id, array $relations = []): EcoCategory
     {
-        return $this->findOneByOrFail([
+        $category = $this->findOneByOrFail([
             'id' => $id->toString(),
         ]);
+
+        if (!empty($relations)) {
+            $category->load($relations);
+        }
+
+        return $category;
     }
 
     public function createEcoCategory(array $data, $file = null): EcoCategory
