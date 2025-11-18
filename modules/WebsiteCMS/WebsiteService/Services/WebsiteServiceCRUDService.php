@@ -38,7 +38,7 @@ class WebsiteServiceCRUDService
 
     public function list(array $filters = [], int $page = 1, int $perPage = 15): array
     {
-        return $this->repository->getWebsiteServiceList($filters, $page, $perPage);
+        return $this->repository->paginated( [],$page, $perPage);
     }
 
     public function get(string $id): ?WebsiteService

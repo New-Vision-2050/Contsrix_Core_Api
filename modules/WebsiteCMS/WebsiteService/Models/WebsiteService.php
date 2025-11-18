@@ -2,6 +2,7 @@
 
 namespace Modules\WebsiteCMS\WebsiteService\Models;
 
+use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class WebsiteService extends Model implements HasMedia
 {
-    use UuidTrait, HasTranslations, BelongsToTenant, InteractsWithMedia;
+    use UuidTrait, HasTranslations, BelongsToTenant, InteractsWithMedia,BaseFilterable;
 
 
     protected $primaryKey = "id";

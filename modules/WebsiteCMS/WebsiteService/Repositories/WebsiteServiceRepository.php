@@ -110,31 +110,6 @@ class WebsiteServiceRepository extends BaseRepository
         return $service->load(['category', 'previousWorks']);
     }
 
-    public function getWebsiteServiceList(array $filters = [],int $page, int $perPage = 15): array
-    {
-        $query = $this->model->with(['category', 'previousWorks']);
-
-        if (isset($filters['name'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('name->ar', 'like', '%' . $filters['name'] . '%')
-                    ->orWhere('name->en', 'like', '%' . $filters['name'] . '%');
-            });
-        }
-
-        if (isset($filters['reference_number'])) {
-            $query->where('reference_number', 'like', '%' . $filters['reference_number'] . '%');
-        }
-
-        if (isset($filters['category_website_cms_id'])) {
-            $query->where('category_website_cms_id', $filters['category_website_cms_id']);
-        }
-
-        $count = $query->count();
-        $paginatedData = $query->forPage($page, $perPage)->get();
-        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
-        return array_merge($paginationArray, [
-            'data' => $paginatedData
-        ]);    }
 
     public function getForExport(array $filters = [])
     {
