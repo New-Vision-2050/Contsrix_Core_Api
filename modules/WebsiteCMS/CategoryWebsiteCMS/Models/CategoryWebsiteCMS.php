@@ -11,6 +11,7 @@ use Modules\WebsiteCMS\CategoryWebsiteCMS\Database\factories\CategoryWebsiteCMSF
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\WebsiteCMS\WebsiteService\Models\WebsiteService;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class CategoryWebsiteCMS extends Model
@@ -45,6 +46,11 @@ class CategoryWebsiteCMS extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function websiteServices()
+    {
+        return $this->hasMany(WebsiteService::class);
     }
 
     protected static function newFactory(): CategoryWebsiteCMSFactory

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\WebsiteCMS\CategoryWebsiteCMS\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
@@ -56,6 +57,12 @@ class CategoryWebsiteCMSRepository extends BaseRepository
 
     public function deleteCategoryWebsiteCMS(UuidInterface $id): bool
     {
+        $category = $this->find($id);
+
+        if ($category->websiteServices()->count() > 0)
+        {
+            throw new CustomException(__("validation.can-not-delete-has-children"));
+        }
         return $this->delete($id);
     }
 }
