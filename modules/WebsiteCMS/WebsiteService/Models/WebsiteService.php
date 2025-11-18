@@ -29,6 +29,7 @@ class WebsiteService extends Model implements HasMedia
         'category_website_cms_id',
         'reference_number',
         'company_id',
+        'status',
         "name",
         "description"
     ];

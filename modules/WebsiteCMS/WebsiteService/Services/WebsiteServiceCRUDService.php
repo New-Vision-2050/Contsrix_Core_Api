@@ -135,6 +135,11 @@ class WebsiteServiceCRUDService
         return $this->repository->getForExport($filters);
     }
 
+    public function updateStatus(string $id, int $status): WebsiteService
+    {
+        return $this->repository->updateStatus($id, $status);
+    }
+
     private function syncPreviousWork(WebsiteService $service, array $previousWorkData): void
     {
         // Delete existing previous works

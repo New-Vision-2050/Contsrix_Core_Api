@@ -72,4 +72,11 @@ class WebsiteServiceRepository extends BaseRepository
 
         return $query->get();
     }
+
+    public function updateStatus(string $id, int $status): WebsiteService
+    {
+        $websiteService = $this->find($id);
+        $websiteService->update(['status' => $status]);
+        return $websiteService->fresh();
+    }
 }

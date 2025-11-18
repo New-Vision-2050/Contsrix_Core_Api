@@ -8,6 +8,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/', [WebsiteServiceController::class, 'store']);
     Route::get('/{id}', [WebsiteServiceController::class, 'show']);
     Route::put('/{id}', [WebsiteServiceController::class, 'update']);
+    Route::put('/{id}/status', [WebsiteServiceController::class, 'updateStatus']);
     Route::delete('/{id}', [WebsiteServiceController::class, 'destroy']);
     Route::post('/export', [WebsiteServiceController::class, 'export']);
 });

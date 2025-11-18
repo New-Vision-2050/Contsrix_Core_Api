@@ -15,6 +15,7 @@ use Modules\WebsiteCMS\WebsiteService\Handlers\UpdateWebsiteServiceHandler;
 use Modules\WebsiteCMS\WebsiteService\Presenters\WebsiteServicePresenter;
 use Modules\WebsiteCMS\WebsiteService\Requests\CreateWebsiteServiceRequest;
 use Modules\WebsiteCMS\WebsiteService\Requests\ExportWebsiteServiceRequest;
+use Modules\WebsiteCMS\WebsiteService\Requests\UpdateStatusRequest;
 use Modules\WebsiteCMS\WebsiteService\Requests\UpdateWebsiteServiceRequest;
 use Modules\WebsiteCMS\WebsiteService\Services\WebsiteServiceCRUDService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -92,5 +93,14 @@ class WebsiteServiceController extends Controller
         $fileName = 'website_services_' . now()->format('Y_m_d_His') . '.' . $format;
 
         return Excel::download($export, $fileName);
+    }
+
+    public function updateStatus(UpdateStatusRequest $request, string $id): JsonResponse
+    {
+        $service = $this->service->updateStatus($id,(int) $request->validated()['status']);
+
+        return Json::item(
+            (new WebsiteServicePresenter($service))->getData()
+        );
     }
 }
