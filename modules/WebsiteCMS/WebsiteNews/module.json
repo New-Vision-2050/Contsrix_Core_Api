@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteNews",
+    "alias": "websitenews",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteNews\\Providers\\WebsiteNewsServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}
