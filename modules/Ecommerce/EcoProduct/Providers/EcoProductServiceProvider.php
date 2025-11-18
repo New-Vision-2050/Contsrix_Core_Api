@@ -31,5 +31,9 @@ class EcoProductServiceProvider extends ModuleServiceProvider
         Route::prefix('api/v1/ecommerce')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/dashboard.php');
+
+        Route::prefix('api/v1/ecommerce/website/products')
+            ->middleware('api')
+            ->group($this->getModulePath() . '/Resources/routes/website.php');
     }
 }
