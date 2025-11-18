@@ -18,8 +18,7 @@ use ZipStream\Exception;
 class WebsiteServiceCRUDService
 {
     public function __construct(
-        private WebsiteServiceRepository $repository,
-        private FileUploadService        $fileUploadService
+        private WebsiteServiceRepository $repository
     )
     {
     }
@@ -27,7 +26,7 @@ class WebsiteServiceCRUDService
     public function create(CreateWebsiteServiceDTO $dto)
     {
 
-       $this->repository->createWebsiteService($dto->toArray(), $dto->getMainImage(), $dto->getIcon(), $dto->getPreviousWork());
+       return $this->repository->createWebsiteService($dto->toArray(), $dto->getMainImage(), $dto->getIcon(), $dto->getPreviousWork());
 
 
     }
