@@ -34,45 +34,7 @@ class WebsiteServiceCRUDService
 
     public function update(UpdateWebsiteServiceCommand $command): WebsiteService
     {
-
-
-
-        $this->repository->update($command->getId(), $command->toArray());
-        $service= $this->repository->find($command->getId());
-
-
-        // Handle main image
-        if ($command->getMainImage()) {
-            $service->clearMediaCollection('main_image');
-
-            $this->fileUploadService->uploadFile(
-                $service,
-                $command->getMainImage(),
-                'website-service/main-image',
-                'main_image',
-                'public'
-            );
-        }
-
-        // Handle icon
-        if ($command->getIcon()) {
-            $service->clearMediaCollection('icon');
-
-            $this->fileUploadService->uploadFile(
-                $service,
-                $command->getIcon(),
-                'website-service/icon',
-                'icon',
-                'public'
-            );
-        }
-
-        // Handle previous work
-        if ($command->getPreviousWork() !== null) {
-            $this->syncPreviousWork($service, $command->getPreviousWork());
-        }
-
-        return $service->load(['category', 'previousWorks']);
+       return $this->repository->updateService($command->getId(), $command->toArray(), $command->getMainImage(), $command->getIcon(), $command->getPreviousWork());
     }
 
     public function list(array $filters = [], int $page = 1, int $perPage = 15): array

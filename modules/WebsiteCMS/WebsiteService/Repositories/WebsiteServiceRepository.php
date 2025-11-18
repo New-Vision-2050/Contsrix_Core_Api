@@ -25,7 +25,7 @@ class WebsiteServiceRepository extends BaseRepository
         return parent::create($attributes);
     }
 
-    public function createWebsiteService($data , $mainImage=null , $icon=null , $previousWorks=[])
+    public function createWebsiteService($data , $mainImage=null , $icon=null , $previousWorks=null)
     {
         try {
             DB::beginTransaction();
@@ -67,6 +67,46 @@ class WebsiteServiceRepository extends BaseRepository
             DB::rollBack();
             throw new CustomException($exception->getMessage());
         }
+        return $service->load(['category', 'previousWorks']);
+    }
+
+    public function updateService($id ,$data , $mainImage=null , $icon=null , $previousWorks=null)
+    {
+        $this->update($id, $data);
+        $service= $this->find($id);
+
+
+        // Handle main image
+        if ($mainImage) {
+            $service->clearMediaCollection('main_image');
+
+            $this->fileUploadService->uploadFile(
+                $service,
+                $mainImage,
+                'website-service/main-image',
+                'main_image',
+                'public'
+            );
+        }
+
+        // Handle icon
+        if ($icon) {
+            $service->clearMediaCollection('icon');
+
+            $this->fileUploadService->uploadFile(
+                $service,
+                $icon,
+                'website-service/icon',
+                'icon',
+                'public'
+            );
+        }
+
+        // Handle previous work
+        if ($previousWorks !== null) {
+            $this->previousWorkServiceRepository->syncPreviousWork($service, $previousWorks);
+        }
+
         return $service->load(['category', 'previousWorks']);
     }
 
