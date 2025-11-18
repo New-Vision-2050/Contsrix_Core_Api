@@ -180,4 +180,58 @@ class EcoProductRepository extends BaseRepository
     {
         return $this->update($id, $data);
     }
+
+    /**
+     * Get paginated products with filter support
+     */
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc',
+        array $relations = [],
+    ): array {
+        // Use filter if model has scopeFilter method
+        if (method_exists($this->model, 'scopeFilter')) {
+            $query = $this->model->filter(request()->all())->where($conditions);
+        } else {
+            $query = $this->model->where($conditions);
+        }
+
+        if (!empty($relations)) {
+            $query->with($relations);
+        }
+
+        $count = $query->count();
+
+        $paginatedData = $query
+            ->orderBy($orderBy, $sortBy)
+            ->forPage($page, $perPage)
+            ->get();
+
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
+
+    /**
+     * Get visible product by ID with optional relations
+     */
+    public function getVisibleEcoProduct(UuidInterface $id, array $relations = []): EcoProduct
+    {
+        $product = $this->findOneByOrFail([
+            'id' => $id->toString(),
+            'is_visible' => true,
+        ]);
+
+        if (!empty($relations)) {
+            $product->load($relations);
+        }
+
+        return $product;
+    }
 }

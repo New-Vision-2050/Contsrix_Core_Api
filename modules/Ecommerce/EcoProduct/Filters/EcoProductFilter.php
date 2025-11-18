@@ -101,6 +101,18 @@ class EcoProductFilter extends SearchModelFilter
         return $this->where('category_id', $categoryId);
     }
 
+
+    public function subCategory($subCategoryId)
+    {
+        return $this->where('sub_category_id', $subCategoryId);
+    }
+
+
+    public function subSubCategory($subSubCategoryId)
+    {
+        return $this->where('sub_sub_category_id', $subSubCategoryId);
+    }
+
     /**
      * Filter by multiple category IDs
      */
@@ -248,7 +260,7 @@ class EcoProductFilter extends SearchModelFilter
      */
     public function brand($brand)
     {
-        return $this->where('brand', 'like', '%' . $brand . '%');
+        return $this->where('brand_id',$brand);
     }
 
     /**
