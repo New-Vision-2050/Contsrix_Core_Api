@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace Modules\WebsiteCMS\WebsiteService\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+use Modules\Shared\Media\Services\FileUploadService;
 use Modules\WebsiteCMS\WebsiteService\Models\WebsiteService;
+use ZipStream\Exception;
 
 class WebsiteServiceRepository extends BaseRepository
 {
-    public function __construct(WebsiteService $model)
+    public function __construct(WebsiteService $model , private FileUploadService $fileUploadService,private PreviousWorkServiceRepository $previousWorkServiceRepository)
     {
         parent::__construct($model);
     }
@@ -19,6 +23,51 @@ class WebsiteServiceRepository extends BaseRepository
     {
         $attributes['company_id'] = tenant('id');
         return parent::create($attributes);
+    }
+
+    public function createWebsiteService($data , $mainImage=null , $icon=null , $previousWorks=[])
+    {
+        try {
+            DB::beginTransaction();
+            $service = $this->create($data);
+            // Handle main image
+            if ($mainImage) {
+
+                $this->fileUploadService->uploadFile(
+                    $service,
+                    $mainImage
+                    ,
+                    'website-service/main-image',
+                    'main_image',
+                    'public'
+                );
+            }
+
+            // Handle icon
+            if ($icon) {
+
+                $this->fileUploadService->uploadFile(
+                    $service,
+                    $icon
+                    ,
+                    'website-service/icon',
+                    'icon',
+                    'public'
+                );
+            }
+
+            // Handle previous work
+            if ($previousWorks) {
+                $this->previousWorkServiceRepository->syncPreviousWork($service->fresh(), $previousWorks);
+            }
+
+            DB::commit();
+
+        } catch (Exception $exception) {
+            DB::rollBack();
+            throw new CustomException($exception->getMessage());
+        }
+        return $service->load(['category', 'previousWorks']);
     }
 
     public function getWebsiteServiceList(array $filters = [],int $page, int $perPage = 15): array

@@ -27,47 +27,7 @@ class WebsiteServiceCRUDService
     public function create(CreateWebsiteServiceDTO $dto)
     {
 
-        try {
-            DB::beginTransaction();
-            $service = $this->repository->create($dto->toArray());
-            // Handle main image
-            if ($dto->getMainImage()) {
-
-                $this->fileUploadService->uploadFile(
-                    $service,
-                    $dto->getMainImage()
-                    ,
-                    'website-service/main-image',
-                    'main_image',
-                    'public'
-                );
-            }
-
-            // Handle icon
-            if ($dto->getIcon()) {
-
-                $this->fileUploadService->uploadFile(
-                    $service,
-                    $dto->getIcon()
-                    ,
-                    'website-service/icon',
-                    'icon',
-                    'public'
-                );
-            }
-
-            // Handle previous work
-            if ($dto->getPreviousWork()) {
-                $this->syncPreviousWork($service->fresh(), $dto->getPreviousWork());
-            }
-
-            DB::commit();
-
-        } catch (Exception $exception) {
-            DB::rollBack();
-            throw new CustomException($exception->getMessage());
-        }
-        return $service->load(['category', 'previousWorks']);
+       $this->repository->createWebsiteService($dto->toArray(), $dto->getMainImage(), $dto->getIcon(), $dto->getPreviousWork());
 
 
     }
@@ -140,30 +100,5 @@ class WebsiteServiceCRUDService
         return $this->repository->updateStatus($id, $status);
     }
 
-    private function syncPreviousWork(WebsiteService $service, array $previousWorkData): void
-    {
-        // Delete existing previous works
-        $service->previousWorks()->delete();
 
-        // Create new previous works
-        foreach ($previousWorkData as $work) {
-            $previousWork = PreviousWork::create([
-                'description' => $work['description'] ?? null,
-                "website_service_id" => $service->id
-            ]);
-
-            // Handle image if provided
-            if (isset($work['image']) && $work['image']) {
-
-
-                $this->fileUploadService->uploadFile(
-                    $previousWork,
-                    $work['image'],
-                    'website-service/previous-work/images',
-                    'image',
-                    'public'
-                );
-            }
-        }
-    }
 }
