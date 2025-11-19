@@ -26,7 +26,7 @@ class WebsiteIconPresenter extends AbstractPresenter
             "name_en"=>$this->websiteIcon->getTranslation('name', 'en'),
             "icon"=>$this->websiteIcon->getFirstMediaUrl('icon'),
             "category_website_cms_id"=>$this->websiteIcon->category_website_cms_id,
-            "category"=>(new CategoryWebsiteCMSPresenter($this->websiteIcon->category))->getData(),
+            "category"=>$this->websiteIcon->category?(new CategoryWebsiteCMSPresenter($this->websiteIcon->category))->getData():null
         ];
     }
 }
