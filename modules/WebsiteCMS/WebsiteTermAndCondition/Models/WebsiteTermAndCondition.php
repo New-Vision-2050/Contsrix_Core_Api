@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Database\factories\WebsiteTermAndConditionFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+
 //use BasePackage\Shared\Traits\HasTranslations;
 
 class WebsiteTermAndCondition extends Model
@@ -18,6 +20,9 @@ class WebsiteTermAndCondition extends Model
     use BaseFilterable;
     //use HasTranslations;
     //use SoftDeletes;
+    use BelongsToTenant;
+
+    protected $table = 'website_terms_and_conditions';
 
     //public array $translatable = [];
 
@@ -26,7 +31,8 @@ class WebsiteTermAndCondition extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'name',
+        'content',
+        "company_id"
     ];
 
     protected $casts = [
