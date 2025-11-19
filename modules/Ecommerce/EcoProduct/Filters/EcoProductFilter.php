@@ -125,6 +125,28 @@ class EcoProductFilter extends SearchModelFilter
     }
 
     /**
+     * Filter by multiple subcategory IDs
+     */
+    public function subCategoryIds($subcategoryIds)
+    {
+        if (is_array($subcategoryIds)) {
+            return $this->whereIn('sub_category_id', $subcategoryIds);
+        }
+        return $this->where('sub_category_id', $subcategoryIds);
+    }
+
+    /**
+     * Filter by multiple sub-subcategory IDs
+     */
+    public function subsubcategoryIds($subsubcategoryIds)
+    {
+        if (is_array($subsubcategoryIds)) {
+            return $this->whereIn('sub_sub_category_id', $subsubcategoryIds);
+        }
+        return $this->where('sub_sub_category_id', $subsubcategoryIds);
+    }
+
+    /**
      * Filter by product status (active/inactive)
      */
     public function status($status)
