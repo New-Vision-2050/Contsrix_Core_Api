@@ -6,7 +6,7 @@ namespace Modules\Ecommerce\FeatureDeal\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Ecommerce\FeatureDeal\Models\FeatureDeal;
-use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
+use Modules\Ecommerce\EcoProduct\Presenters\Dashboard\EcoProductDashboardPresenter;
 
 class FeatureDealPresenter extends AbstractPresenter
 {
@@ -33,6 +33,11 @@ class FeatureDealPresenter extends AbstractPresenter
             'discount_value' => $this->featureDeal->discount_value,
             'is_active' => (int) $this->featureDeal->is_active,
         ];
+
+        // Only include products if the relation is loaded
+        if ($this->featureDeal->relationLoaded('products')) {
+            $data['products'] = EcoProductDashboardPresenter::collection($this->featureDeal->products);
+        }
 
         return $data;
     }

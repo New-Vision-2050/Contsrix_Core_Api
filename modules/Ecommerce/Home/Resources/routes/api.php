@@ -3,8 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\Home\Controllers\HomeController;
 
-// Home page with banners, categories, and products
-Route::get('/home1', [HomeController::class, 'index1']);
-Route::get('/home2', [HomeController::class, 'index2']);
 
-Route::get('/footer', [HomeController::class, 'footer']);
+    Route::get('/banners', [HomeController::class, 'banners']);
+    Route::get('/categories', [HomeController::class, 'categories']);
+    Route::get('/products/latest', [HomeController::class, 'latestProducts']);
+    Route::get('/products/featured', [HomeController::class, 'featuredProducts']);
+    Route::get('/products/discounts', [HomeController::class, 'discountedProducts']);
+    Route::get('/daily-deal', [HomeController::class, 'dailyDeal']);
+    Route::get('/flash-deals', [HomeController::class, 'flashDeals']);
+    Route::get('/feature-deals', [HomeController::class, 'featureDeals']);
+    Route::get('/offers', [HomeController::class, 'offers']);
+    Route::get('/footer', [HomeController::class, 'footer']);
+

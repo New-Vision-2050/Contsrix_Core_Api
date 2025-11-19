@@ -33,6 +33,7 @@ class UpdateEcoProductDashboardRequest extends FormRequest
             'price_includes_vat' => ['nullable', 'boolean'],
             'vat_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'is_visible' => ['nullable', 'boolean'],
+            'is_featured' => ['nullable', 'boolean'],
 
             'category_id' => ['nullable', 'uuid', 'exists:eco_categories,id'],
             'brand_id' => ['nullable', 'uuid', 'exists:eco_brands,id'],
@@ -120,6 +121,7 @@ class UpdateEcoProductDashboardRequest extends FormRequest
             'unit.string' => 'يجب أن تكون وحدة القياس نص',
             'unit.max' => 'يجب ألا تتجاوز وحدة القياس 50 حرف',
             'gender.in' => 'الجنس المستهدف يجب أن يكون ذكر أو أنثى أو الكل',
+            'is_featured.boolean' => 'حقل حالة المنتج المميز يجب أن يكون صحيح أو خطأ',
 
             'taxes.*.country_id.required_with' => __('ecoproduct::validation.taxes_country_id_required_with'),
             'taxes.*.country_id.uuid' => __('ecoproduct::validation.taxes_country_id_uuid'),
@@ -186,6 +188,9 @@ class UpdateEcoProductDashboardRequest extends FormRequest
             priceIncludesVat: (bool)($validatedData['price_includes_vat'] ?? 0),
             vatPercentage: isset($validatedData['vat_percentage']) ? (float)$validatedData['vat_percentage'] : null,
             isVisible: (bool)($validatedData['is_visible'] ?? true),
+            isFeatured: array_key_exists('is_featured', $validatedData)
+                ? (bool)$validatedData['is_featured']
+                : null,
             brandId: !empty($validatedData['brand_id']) ? Uuid::fromString($validatedData['brand_id']) : null,
             categoryId: !empty($validatedData['category_id']) ? Uuid::fromString($validatedData['category_id']) : null,
             subCategoryId: !empty($validatedData['sub_category_id']) ? Uuid::fromString($validatedData['sub_category_id']) : null,

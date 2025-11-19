@@ -16,6 +16,7 @@ class UpdateFeatureDealCommand
         private ?Carbon $endDate = null,
         private ?string $discountType = null,
         private ?float $discountValue = null,
+        private ?array $productIds = null,
         private ?bool $isActive = null,
     ) {
     }
@@ -53,6 +54,11 @@ class UpdateFeatureDealCommand
     public function getIsActive(): ?bool
     {
         return $this->isActive;
+    }
+
+    public function getProductIds(): ?array
+    {
+        return $this->productIds;
     }
 
     public function toArray(): array

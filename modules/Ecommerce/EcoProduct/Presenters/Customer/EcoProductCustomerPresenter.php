@@ -21,65 +21,25 @@ class EcoProductCustomerPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        $firstMedia = $this->ecoProduct->getFirstMedia('eco_product_main_image');
-        $pricing = $this->calculatePricing();
-        
+        $mainImage = $this->ecoProduct->getFirstMedia('eco_product_main_image');
+        $originalPrice = (float) $this->ecoProduct->price;
+        $finalPrice = (float) ($this->ecoProduct->final_price ?? $originalPrice);
+        $hasDiscount = (int) ($this->ecoProduct->has_active_discount ?? false);
+        $discountPercentage = $originalPrice > 0
+            ? round((($originalPrice - $finalPrice) / $originalPrice) * 100, 0)
+            : 0;
+
         return [
             'id' => $this->ecoProduct->id,
             'name' => $this->ecoProduct->name,
-            'price' => $pricing['original_price'],
-            'final_price' => $pricing['discounted_price'],
-            'discount_percentage' => round($pricing['discount_percentage'], 0),
-            'is_on_discount' => $pricing['has_discount'],
+            'price' => $originalPrice,
+            'final_price' => $finalPrice,
+            'discount_percentage' => $discountPercentage,
+            'is_on_discount' => $hasDiscount,
+            'is_featured' => (int) $this->ecoProduct->is_featured,
             'rating' => $this->ecoProduct->rating ?? 4.6,
-            'reviews_count' => $this->ecoProduct->reviews_count ?? 0,
-            'main_image' => $firstMedia ? [
-                'url' => $firstMedia->getUrl(),
-                'thumb' => $firstMedia->getUrl('thumb')
-            ] : null,
+            'reviews_count' => (int) $this->ecoProduct->reviews_count ?? 0,
+            'main_image' => $mainImage ? (new MediaPresenter($mainImage))->getData() : null,
         ];
-    }
-
-    private function calculatePricing(): array
-    {
-        $originalPrice = $this->ecoProduct->price;
-        $discountedPrice = $originalPrice;
-        $hasDiscount = false;
-
-        if ($this->ecoProduct->has_discount && $this->isDiscountActive()) {
-            $hasDiscount = true;
-            
-            if ($this->ecoProduct->discount_percentage) {
-                $discountAmount = ($originalPrice * $this->ecoProduct->discount_percentage) / 100;
-                if ($this->ecoProduct->max_discount_amount) {
-                    $discountAmount = min($discountAmount, $this->ecoProduct->max_discount_amount);
-                }
-                $discountedPrice = $originalPrice - $discountAmount;
-            } elseif ($this->ecoProduct->discount_amount) {
-                $discountedPrice = max(0, $originalPrice - $this->ecoProduct->discount_amount);
-            }
-        }
-
-        return [
-            'original_price' => $originalPrice,
-            'discounted_price' => $discountedPrice,
-            'discount_percentage' => $hasDiscount ? (($originalPrice - $discountedPrice) / $originalPrice) * 100 : 0,
-            'has_discount' => $hasDiscount,
-        ];
-    }
-
-    private function isDiscountActive(): bool
-    {
-        $now = now();
-        
-        if ($this->ecoProduct->discount_start_date && $now->lt($this->ecoProduct->discount_start_date)) {
-            return false;
-        }
-        
-        if ($this->ecoProduct->discount_end_date && $now->gt($this->ecoProduct->discount_end_date)) {
-            return false;
-        }
-        
-        return true;
     }
 }

@@ -14,6 +14,7 @@ class UpdateFeatureDealDTO
         public readonly ?Carbon $endDate = null,
         public readonly ?string $discountType = null,
         public readonly ?float $discountValue = null,
+        public readonly ?array $productIds = null,
         public readonly ?bool $isActive = null,
     ) {
     }
@@ -47,5 +48,10 @@ class UpdateFeatureDealDTO
         }
 
         return $data;
+    }
+
+    public function products(): ?array
+    {
+        return $this->productIds;
     }
 }

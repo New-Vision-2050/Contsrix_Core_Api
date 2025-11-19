@@ -28,7 +28,7 @@ class HomeServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/ecommerce/website')
+        Route::prefix('api/v1/ecommerce/website/home')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

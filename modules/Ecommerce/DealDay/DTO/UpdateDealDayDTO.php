@@ -13,6 +13,7 @@ class UpdateDealDayDTO
         public readonly ?UuidInterface $productId = null,
         public readonly ?string $discountType = null,
         public readonly ?float $discountValue = null,
+        public readonly ?string $dateOffer = null,
         public readonly ?bool $isActive = null,
     ) {
     }
@@ -35,6 +36,10 @@ class UpdateDealDayDTO
 
         if ($this->discountValue !== null) {
             $data['discount_value'] = $this->discountValue;
+        }
+
+        if ($this->dateOffer !== null) {
+            $data['date_offer'] = $this->dateOffer;
         }
 
         if ($this->isActive !== null) {

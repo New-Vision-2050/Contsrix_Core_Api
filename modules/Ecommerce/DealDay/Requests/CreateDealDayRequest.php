@@ -12,6 +12,8 @@ class CreateDealDayRequest extends FormRequest
 {
     public function rules(): array
     {
+        $companyId = Uuid::fromString(tenant('id'));
+
         return [
             'name' => 'required|array',
             'name.ar' => 'required|string|max:255',
@@ -20,6 +22,20 @@ class CreateDealDayRequest extends FormRequest
             'discount_type' => 'required|string|in:percentage,amount',
             'discount_value' => 'required|numeric|min:0',
             'is_active' => 'nullable|boolean',
+            'date_offer' => [
+                'required',
+                'date_format:Y-m-d',
+                function ($attribute, $value, $fail) use ($companyId) {
+                    $exists = \Modules\Ecommerce\DealDay\Models\DealDay::query()
+                        ->where('company_id', $companyId)
+                        ->whereDate('date_offer', $value)
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('يوجد عرض يومي مسجل لهذا التاريخ بالفعل.');
+                    }
+                },
+            ],
         ];
     }
 
@@ -43,6 +59,8 @@ class CreateDealDayRequest extends FormRequest
             'discount_value.numeric' => 'قيمة الخصم يجب أن تكون رقم',
             'discount_value.min' => 'قيمة الخصم يجب أن تكون أكبر من أو تساوي صفر',
             'is_active.boolean' => 'حالة التفعيل يجب أن تكون صحيح أو خطأ',
+            'date_offer.required' => 'تاريخ العرض مطلوب',
+            'date_offer.date_format' => 'صيغة التاريخ يجب أن تكون Y-m-d',
         ];
     }
 
@@ -54,7 +72,8 @@ class CreateDealDayRequest extends FormRequest
             productId: Uuid::fromString($this->input('product_id')),
             discountType: $this->input('discount_type'),
             discountValue: (float) $this->input('discount_value'),
-            isActive: (bool) $this->input('is_active', true),
+            dateOffer: $this->input('date_offer'),
+            isActive: (bool) $this->input('is_active', true),   
         );
     }
 }

@@ -35,6 +35,7 @@ class DealDay extends Model
         'company_id',
         'name',
         'product_id',
+        'date_offer',
         'discount_type',
         'discount_value',
         'is_active',
@@ -44,6 +45,7 @@ class DealDay extends Model
         'id' => 'string',
         'company_id' => 'string',
         'product_id' => 'string',
+        'date_offer' => 'date:Y-m-d',
         'discount_value' => 'decimal:2',
         'is_active' => 'boolean',
     ];
