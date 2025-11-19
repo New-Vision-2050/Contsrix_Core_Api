@@ -14,7 +14,6 @@ use App\Traits\HasExport;
 /**
  * @property WebsiteTermAndCondition $model
  * @method WebsiteTermAndCondition findOneOrFail($id)
- * @method WebsiteTermAndCondition findOneByOrFail(array $data)
  */
 class WebsiteTermAndConditionRepository extends BaseRepository
 {
@@ -45,6 +44,22 @@ class WebsiteTermAndConditionRepository extends BaseRepository
     public function updateWebsiteTermAndCondition(UuidInterface $id, array $data): bool
     {
         return $this->update($id, $data);
+    }
+
+    public function getWebsiteTermAndConditionForCurrentCompany(): WebsiteTermAndCondition
+    {
+        return $this->findOneByOrFail([
+            'company_id' => tenant('id'),
+        ]);
+    }
+
+    public function updateForCurrentCompany($data): WebsiteTermAndCondition
+    {
+        $companyId = tenant("id");
+        $this->updateWhere(['company_id' => $companyId], $data);
+        return $this->findOneByOrFail([
+            'company_id' => $companyId,
+        ]);
     }
 
     public function deleteWebsiteTermAndCondition(UuidInterface $id): bool

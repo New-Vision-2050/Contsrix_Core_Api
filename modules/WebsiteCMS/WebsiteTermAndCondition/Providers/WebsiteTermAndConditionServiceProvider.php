@@ -28,7 +28,7 @@ class WebsiteTermAndConditionServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/website_term_and_conditions')
+        Route::prefix('api/v1/website-term-and-conditions')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

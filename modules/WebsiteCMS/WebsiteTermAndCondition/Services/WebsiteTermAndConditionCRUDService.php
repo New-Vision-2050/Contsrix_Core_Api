@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\WebsiteCMS\WebsiteTermAndCondition\Services;
 
 use Illuminate\Support\Collection;
+use Modules\WebsiteCMS\WebsiteTermAndCondition\Commands\UpdateWebsiteTermAndConditionForCurrentCompanyCommand;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\DTO\CreateWebsiteTermAndConditionDTO;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Models\WebsiteTermAndCondition;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Repositories\WebsiteTermAndConditionRepository;
@@ -31,6 +32,17 @@ class WebsiteTermAndConditionCRUDService
             page: $page,
             perPage: $perPage,
         );
+    }
+
+    public function getForCurrentCompany()
+    {
+        return $this->repository->getWebsiteTermAndConditionForCurrentCompany();
+    }
+
+
+    public function updateForCurrentComapny(UpdateWebsiteTermAndConditionForCurrentCompanyCommand $command)
+    {
+        return $this->repository->updateForCurrentCompany($command->toArray());
     }
 
     public function get(UuidInterface $id): WebsiteTermAndCondition

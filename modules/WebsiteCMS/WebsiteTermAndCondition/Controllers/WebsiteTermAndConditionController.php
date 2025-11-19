@@ -14,6 +14,7 @@ use Modules\WebsiteCMS\WebsiteTermAndCondition\Requests\CreateWebsiteTermAndCond
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Requests\DeleteWebsiteTermAndConditionRequest;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Requests\GetWebsiteTermAndConditionListRequest;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Requests\GetWebsiteTermAndConditionRequest;
+use Modules\WebsiteCMS\WebsiteTermAndCondition\Requests\UpdateWebsiteTermAndConditionForCurrentCompanyRequest;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Requests\UpdateWebsiteTermAndConditionRequest;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Services\WebsiteTermAndConditionCRUDService;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Exports\WebsiteTermAndConditionExport;
@@ -24,17 +25,18 @@ use Ramsey\Uuid\Uuid;
 class WebsiteTermAndConditionController extends Controller
 {
     public function __construct(
-        private WebsiteTermAndConditionCRUDService $websiteTermAndConditionService,
+        private WebsiteTermAndConditionCRUDService   $websiteTermAndConditionService,
         private UpdateWebsiteTermAndConditionHandler $updateWebsiteTermAndConditionHandler,
         private DeleteWebsiteTermAndConditionHandler $deleteWebsiteTermAndConditionHandler,
-    ) {
+    )
+    {
     }
 
     public function index(GetWebsiteTermAndConditionListRequest $request): JsonResponse
     {
         $list = $this->websiteTermAndConditionService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            (int)$request->get('page', 1),
+            (int)$request->get('per_page', 10)
         );
 
         return Json::items(WebsiteTermAndConditionPresenter::collection($list['data']), paginationSettings: $list['pagination']);
@@ -49,14 +51,19 @@ class WebsiteTermAndConditionController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function store(CreateWebsiteTermAndConditionRequest $request): JsonResponse
+    public function getForCurrentCompany()
     {
-        $createdItem = $this->websiteTermAndConditionService->create($request->createCreateWebsiteTermAndConditionDTO());
-
-        $presenter = new WebsiteTermAndConditionPresenter($createdItem);
-
-        return Json::item($presenter->getData());
+        $termsAndCondition = $this->websiteTermAndConditionService->getForCurrentCompany();
+        return Json::item((new WebsiteTermAndConditionPresenter($termsAndCondition))->getData());
     }
+
+    public function updateForCurrentCompany(UpdateWebsiteTermAndConditionForCurrentCompanyRequest $request): JsonResponse
+    {
+        $termsAndCondition = $this->websiteTermAndConditionService->updateForCurrentComapny($request->createUpdateWebsiteTermAndConditionForCurrentCompanyCommand());
+        return Json::item((new WebsiteTermAndConditionPresenter($termsAndCondition))->getData());
+    }
+
+
 
     public function update(UpdateWebsiteTermAndConditionRequest $request): JsonResponse
     {
@@ -67,7 +74,7 @@ class WebsiteTermAndConditionController extends Controller
 
         $presenter = new WebsiteTermAndConditionPresenter($item);
 
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteWebsiteTermAndConditionRequest $request): JsonResponse
@@ -87,7 +94,7 @@ class WebsiteTermAndConditionController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'website_term_and_condition.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new WebsiteTermAndConditionExport($this->websiteTermAndConditionService, $filters), $fileName);
     }
 }

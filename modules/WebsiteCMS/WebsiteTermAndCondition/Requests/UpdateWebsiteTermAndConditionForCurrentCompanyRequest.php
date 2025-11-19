@@ -10,7 +10,7 @@ use Ramsey\Uuid\Uuid;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Commands\UpdateWebsiteTermAndConditionCommand;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Handlers\UpdateWebsiteTermAndConditionHandler;
 
-class UpdateWebsiteTermAndConditionRequest extends FormRequest
+class UpdateWebsiteTermAndConditionForCurrentCompanyRequest extends FormRequest
 {
     public function rules(): array
     {
@@ -19,10 +19,9 @@ class UpdateWebsiteTermAndConditionRequest extends FormRequest
         ];
     }
 
-    public function createUpdateWebsiteTermAndConditionCommand(): UpdateWebsiteTermAndConditionCommand
+    public function createUpdateWebsiteTermAndConditionForCurrentCompanyCommand(): UpdateWebsiteTermAndConditionForCurrentCompanyCommand
     {
-        return new UpdateWebsiteTermAndConditionCommand(
-            id: Uuid::fromString($this->route('id')),
+        return new UpdateWebsiteTermAndConditionForCurrentCompanyCommand(
             content: $this->get('content'),
         );
     }

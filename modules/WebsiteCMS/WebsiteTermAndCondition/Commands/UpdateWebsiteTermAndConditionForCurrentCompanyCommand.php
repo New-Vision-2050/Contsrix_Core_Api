@@ -6,18 +6,14 @@ namespace Modules\WebsiteCMS\WebsiteTermAndCondition\Commands;
 
 use Ramsey\Uuid\UuidInterface;
 
-class UpdateWebsiteTermAndConditionCommand
+class UpdateWebsiteTermAndConditionForCurrentCompanyCommand
 {
     public function __construct(
-        private UuidInterface $id,
         private string $content,
     ) {
     }
 
-    public function getId(): UuidInterface
-    {
-        return $this->id;
-    }
+
 
     public function getContent(): ?string
     {
