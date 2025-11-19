@@ -11,6 +11,7 @@ use Modules\WebsiteCMS\CategoryWebsiteCMS\Database\factories\CategoryWebsiteCMSF
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\Company\CompanyCore\Models\Company;
+use Modules\WebsiteCMS\WebsiteIcon\Models\WebsiteIcon;
 use Modules\WebsiteCMS\WebsiteService\Models\WebsiteService;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
@@ -51,6 +52,11 @@ class CategoryWebsiteCMS extends Model
     public function websiteServices()
     {
         return $this->hasMany(WebsiteService::class);
+    }
+
+    public function websiteIcons()
+    {
+        return $this->hasMany(WebsiteIcon::class);
     }
 
     protected static function newFactory(): CategoryWebsiteCMSFactory

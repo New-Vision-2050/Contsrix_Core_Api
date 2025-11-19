@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteIcon",
+    "alias": "websiteicon",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteIcon\\Providers\\WebsiteIconServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}
