@@ -10,15 +10,13 @@ use Ramsey\Uuid\UuidInterface;
 class UpdateClientDTO
 {
     public function __construct(
-        public string         $name,
-        public string         $email,
-        private ?string       $countryId,
-        public string         $phone,
 
-        public ?string        $residence,
+        private $id,
+
+        private ?string       $countryId,
+
         public ?array         $branchIds,
         public ?UuidInterface $brokerId,
-        public int            $type,
         public ?string        $registrationNumber,
         public ?string        $companyRepresentativeName,
         public ?string        $messageAddress
@@ -32,18 +30,12 @@ class UpdateClientDTO
     {
         return $this->countryId;
     }
-    public function getEmail()
-    {
-        return $this->email;
-    }
+
 
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'residence' => $this->residence,
+
             "message_address" => $this->messageAddress,
         ];
     }
@@ -52,7 +44,6 @@ class UpdateClientDTO
     {
         return [
             'broker_id' => $this->brokerId,
-            'type' => $this->type,
             'registration_number' => $this->registrationNumber,
             'company_representative_name' => $this->companyRepresentativeName,
         ];
@@ -62,6 +53,11 @@ class UpdateClientDTO
     public function getBranchIds()
     {
         return $this->branchIds;
+    }
+
+    public function getId()
+    {
+        return $this->id;
     }
 
 

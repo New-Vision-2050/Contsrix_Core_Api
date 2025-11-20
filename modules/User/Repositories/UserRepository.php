@@ -7,6 +7,7 @@ namespace Modules\User\Repositories;
 use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\DB;
 use Modules\CompanyUser\Repositories\BrokerDetailRepository;
+use Modules\CompanyUser\Repositories\ClientDetailRepository;
 use Modules\CompanyUser\Repositories\CompanyUserAddressRepository;
 use Modules\CompanyUser\Repositories\CompanyUserCompanyRepository;
 use Modules\CompanyUser\Repositories\CompanyUserManagementHierarchyRepository;
@@ -29,13 +30,14 @@ use Modules\Setting\Repositories\IdentifierSettingRepository;
 class UserRepository extends BaseRepository
 {
     public function __construct(
-        User                                $model,
-        private AuditRepository             $auditRepository,
-        private IdentifierSettingRepository $identifierSettingRepository,
-        private CompanyUserCompanyRepository $companyUserCompanyRepository,
+        User                                             $model,
+        private AuditRepository                          $auditRepository,
+        private IdentifierSettingRepository              $identifierSettingRepository,
+        private CompanyUserCompanyRepository             $companyUserCompanyRepository,
         private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository,
-        private CompanyUserAddressRepository $companyUserAddressRepository,
-        private BrokerDetailRepository $brokerDetailRepository
+        private CompanyUserAddressRepository             $companyUserAddressRepository,
+        private BrokerDetailRepository                   $brokerDetailRepository,
+        private ClientDetailRepository                   $clientDetailRepository
     )
     {
         parent::__construct($model);
@@ -235,7 +237,7 @@ class UserRepository extends BaseRepository
             $query->whereHas("companyUserCompanies", function ($query) use ($type) {
                 $query->where("company_users_companies.role", $type);
             });
-        })->where("company_id", tenant("id"))->whereNot("email","admin@constrix.com")
+        })->where("company_id", tenant("id"))->whereNot("email", "admin@constrix.com")
             ->select('id', 'name', 'email', 'phone', 'global_company_user_id', 'company_id', 'is_owner', 'management_hierarchy_id', 'status');
 
         $count = $query->count();
@@ -347,8 +349,7 @@ class UserRepository extends BaseRepository
     public function getUserCountStatistics($companyId): array
     {
         // Total users in the company
-        $totalUsers = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q)
-        {
+        $totalUsers = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q) {
             $q->where('role', CompanyUserRole::EMPLOYEE->value);
         })->count();
 
@@ -358,8 +359,7 @@ class UserRepository extends BaseRepository
             ->count();
 
         // Users without hierarchy ID
-        $usersWithoutHierarchy = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q)
-        {
+        $usersWithoutHierarchy = $this->model->where('company_id', $companyId)->whereHas('companyUserCompanies', function ($q) {
             $q->where('role', CompanyUserRole::EMPLOYEE->value);
         })
             ->whereNull('management_hierarchy_id')
@@ -378,7 +378,7 @@ class UserRepository extends BaseRepository
     }
 
 
-    public function updateEmployee($user , array $data)
+    public function updateEmployee($user, array $data)
     {
         try {
             \DB::beginTransaction();
@@ -386,75 +386,69 @@ class UserRepository extends BaseRepository
             $this->model->update(["management_hierarchy_id" => $data["branch_id"]]);
             $companyUserCompany = $this->companyUserCompanyRepository->model->withoutTenancy()
                 ->where([
-                    "company_id"=>$user->company_id,
+                    "company_id" => $user->company_id,
                     "global_company_user_id" => $user->global_company_user_id,
-                    "role"=>CompanyUserRole::EMPLOYEE->value
+                    "role" => CompanyUserRole::EMPLOYEE->value
                 ])->first();
-            if(!$companyUserCompany)
-            {
+            if (!$companyUserCompany) {
                 throw new CustomException("the use not employee");
             }
 
             $companyUserCompanyManagementHirarchy = $this->companyUserManagementHierarchyRepository->model->withoutTenancy()->where([
 
-                "company_user_company_id"=>$companyUserCompany?->id
+                "company_user_company_id" => $companyUserCompany?->id
             ])->first();
 
-            if($companyUserCompanyManagementHirarchy){
-                $companyUserCompanyManagementHirarchy->update(["management_hierarchy_id"=>$data["branch_id"]]);
+            if ($companyUserCompanyManagementHirarchy) {
+                $companyUserCompanyManagementHirarchy->update(["management_hierarchy_id" => $data["branch_id"]]);
 
             }
-           $userProfessionalData = UserProfessionalData::query()->where(["global_id" => $user->global_company_user_id , "company_id" => $user->company_id])->first();
-            if($userProfessionalData){
-                $userProfessionalData->update(["job_title_id"=>$data["job_title_id"],"job_type_id"=>JobTitle::query()->find($data["job_title_id"])?->job_type_id , "branch_id"=>$data["branch_id"] , "management_id"=>null , "department_id"=>null]);
+            $userProfessionalData = UserProfessionalData::query()->where(["global_id" => $user->global_company_user_id, "company_id" => $user->company_id])->first();
+            if ($userProfessionalData) {
+                $userProfessionalData->update(["job_title_id" => $data["job_title_id"], "job_type_id" => JobTitle::query()->find($data["job_title_id"])?->job_type_id, "branch_id" => $data["branch_id"], "management_id" => null, "department_id" => null]);
             }
 
             DB::commit();
-        }catch (\Exception $e){
+        } catch (\Exception $e) {
             DB::rollBack();
             throw new CustomException($e->getMessage());
         }
     }
 
-    public function updateBroker(User $user ,$userData, array $brokerData = null,  $addressData=null, $branches=null)
+    public function updateBroker(User $user, $userData, array $brokerData = null, $addressData = null, $branches = null)
     {
         try {
             \DB::beginTransaction();
             $user->update($userData);
             $companyUserCompany = $this->companyUserCompanyRepository->model->withoutTenancy()
                 ->where([
-                    "company_id"=>$user->company_id,
+                    "company_id" => $user->company_id,
                     "global_company_user_id" => $user->global_company_user_id,
-                    "role"=>CompanyUserRole::BROKER->value
+                    "role" => CompanyUserRole::BROKER->value
                 ])->first();
-            if(!$companyUserCompany)
-            {
+            if (!$companyUserCompany) {
                 throw new CustomException("the use not employee");
             }
-            if($branches != null)
-            {
-                $branchesdata =[];
-                foreach ($branches  as  $branch)
-                {
+            if ($branches != null) {
+                $branchesdata = [];
+                foreach ($branches as $branch) {
                     $branchesdata[] = [
-                        "company_user_company_id"=>$companyUserCompany->id,
-                        "management_hierarchy_id"=>$branch,
-                        "user_id"=>$user->id
+                        "company_user_company_id" => $companyUserCompany->id,
+                        "management_hierarchy_id" => $branch,
+                        "user_id" => $user->id
                     ];
                 }
-                    $companyUserCompany->managementHierarchy()->delete();
-                    $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
+                $companyUserCompany->managementHierarchy()->delete();
+                $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
             }
-            if($addressData != null)
-            {
-                    $this->companyUserAddressRepository->updateOrCreate(
-                        ["global_company_user_id" => $user->global_company_user_id],
-                        $addressData + ["global_company_user_id" => $user->global_company_user_id->id]
-                    );
+            if ($addressData != null) {
+                $this->companyUserAddressRepository->updateOrCreate(
+                    ["global_company_user_id" => $user->global_company_user_id],
+                    $addressData + ["global_company_user_id" => $user->global_company_user_id->id]
+                );
             }
-            if ($brokerData != null)
-            {
-                $brokerDetail = $this->brokerDetailRepository->updateOrCreate(
+            if ($brokerData != null) {
+                $this->brokerDetailRepository->updateOrCreate(
                     ["user_id" => $user->id],
                     $brokerData + ["user_id" => $user->id, "company_id" => $user->company_id]
                 );
@@ -462,7 +456,57 @@ class UserRepository extends BaseRepository
 
             DB::commit();
             return $user->fresh();
-        }catch (\Exception $e){
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new CustomException($e->getMessage());
+        }
+
+    }
+
+
+
+    public function updateClient(User $user, $userData, array $clientData = null, $addressData = null, $branches = null)
+    {
+        try {
+            \DB::beginTransaction();
+            $user->update($userData);
+            $companyUserCompany = $this->companyUserCompanyRepository->model->withoutTenancy()
+                ->where([
+                    "company_id" => $user->company_id,
+                    "global_company_user_id" => $user->global_company_user_id,
+                    "role" => CompanyUserRole::CLIENT->value
+                ])->first();
+            if (!$companyUserCompany) {
+                throw new CustomException("the use not employee");
+            }
+            if ($branches != null) {
+                $branchesdata = [];
+                foreach ($branches as $branch) {
+                    $branchesdata[] = [
+                        "company_user_company_id" => $companyUserCompany->id,
+                        "management_hierarchy_id" => $branch,
+                        "user_id" => $user->id
+                    ];
+                }
+                $companyUserCompany->managementHierarchy()->delete();
+                $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
+            }
+            if ($addressData != null) {
+                $this->companyUserAddressRepository->updateOrCreate(
+                    ["global_company_user_id" => $user->global_company_user_id],
+                    $addressData + ["global_company_user_id" => $user->global_company_user_id->id]
+                );
+            }
+            if ($clientData != null) {
+                $this->clientDetailRepository->updateOrCreate(
+                    ["user_id" => $user->id],
+                    $clientData + ["user_id" => $user->id, "company_id" => $user->company_id]
+                );
+            }
+
+            DB::commit();
+            return $user->fresh();
+        } catch (\Exception $e) {
             DB::rollBack();
             throw new CustomException($e->getMessage());
         }

@@ -76,7 +76,7 @@ class EmployeeCRUDService
 
         $this->userRepository->updateEmployee($userInCompany , $updateEmployeeDTO->toArray());
 
-        return $userInCompany;
+        return $userInCompany->fresh();
     }
 
 
