@@ -17,6 +17,7 @@ use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Employee\CreateEmployeeRequest;
+use Modules\CompanyUser\Requests\Employee\UpdateEmployeeRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\Employee\EmployeeCRUDService;
@@ -54,6 +55,16 @@ class EmployeeController extends Controller
         $createdItem = $this->employeeCRUDService->create($request->createCreateEmployeeDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
 
         $presenter = new CompanyUserPresenter($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+
+
+    public function update(UpdateEmployeeRequest $request): JsonResponse
+    {
+        $user = $this->employeeCRUDService->update($request->createUpdateEmployeeDTO());
+
+        $presenter = new UserPresenter($user);
 
         return Json::item($presenter->getData());
     }

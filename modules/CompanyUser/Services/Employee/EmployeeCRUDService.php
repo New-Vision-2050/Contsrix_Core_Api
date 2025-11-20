@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Services\Employee;
 
+use Modules\CompanyUser\DTO\Employee\UpdateEmployeeDTO;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Collection;
@@ -65,6 +66,17 @@ class EmployeeCRUDService
         }
 
         return $user;
+    }
+
+
+
+    public function update(UpdateEmployeeDTO $updateEmployeeDTO)
+    {
+        $userInCompany  = $this->userRepository->getUserById($updateEmployeeDTO->getId());
+
+        $this->userRepository->updateEmployee($userInCompany , $updateEmployeeDTO->toArray());
+
+        return $userInCompany;
     }
 
 

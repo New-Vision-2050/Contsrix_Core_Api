@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\User\Repositories;
 
+use App\Exceptions\CustomException;
+use Illuminate\Support\Facades\DB;
+use Modules\CompanyUser\Repositories\CompanyUserCompanyRepository;
+use Modules\CompanyUser\Repositories\CompanyUserManagementHierarchyRepository;
+use Modules\JobTitle\Models\JobTitle;
 use Modules\User\Models\User;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -23,7 +29,9 @@ class UserRepository extends BaseRepository
     public function __construct(
         User                                $model,
         private AuditRepository             $auditRepository,
-        private IdentifierSettingRepository $identifierSettingRepository
+        private IdentifierSettingRepository $identifierSettingRepository,
+        private CompanyUserCompanyRepository $companyUserCompanyRepository,
+        private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository
     )
     {
         parent::__construct($model);
@@ -358,5 +366,49 @@ class UserRepository extends BaseRepository
             'users_with_hierarchy' => $usersWithHierarchy,
             'users_without_hierarchy' => $usersWithoutHierarchy
         ];
+    }
+
+    public function getUserById($id)
+    {
+        return $this->model->withoutTenancy()->where('id', $id)->first();
+    }
+
+
+    public function updateEmployee($user , array $data)
+    {
+        try {
+            \DB::beginTransaction();
+
+            $this->model->update(["management_hierarchy_id" => $data["branch_id"]]);
+            $companyUserCompany = $this->companyUserCompanyRepository->model->withoutTenancy()
+                ->where([
+                    "company_id"=>$user->company_id,
+                    "global_company_user_id" => $user->global_company_user_id,
+                    "role"=>1
+                ])->first();
+            if(!$companyUserCompany)
+            {
+                throw new CustomException("the use not employee");
+            }
+
+            $companyUserCompanyManagementHirarchy = $this->companyUserManagementHierarchyRepository->model->withoutTenancy()->where([
+
+                "company_user_company_id"=>$companyUserCompany?->id
+            ])->first();
+
+            if($companyUserCompanyManagementHirarchy){
+                $companyUserCompanyManagementHirarchy->update(["management_hierarchy_id"=>$data["branch_id"]]);
+
+            }
+           $userProfessionalData = UserProfessionalData::query()->where(["global_id" => $user->global_company_user_id , "company_id" => $user->company_id])->first();
+            if($userProfessionalData){
+                $userProfessionalData->update(["job_title_id"=>$data["job_title_id"],"job_type_id"=>JobTitle::query()->find($data["job_title_id"])?->job_type_id , "branch_id"=>$data["branch_id"] , "management_id"=>null , "department_id"=>null]);
+            }
+
+            DB::commit();
+        }catch (\Exception $e){
+            DB::rollBack();
+            throw new CustomException($e->getMessage());
+        }
     }
 }

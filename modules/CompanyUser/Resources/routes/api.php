@@ -24,6 +24,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::group(["prefix"=>"employees"],function (){
         Route::get('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'index']);
         Route::post('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'store']);
+        Route::post('/{id}', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'update']);
 
     });
 
