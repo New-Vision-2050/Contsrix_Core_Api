@@ -6,6 +6,7 @@ namespace Modules\User\Repositories;
 
 use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
 use Modules\CompanyUser\Repositories\BrokerDetailRepository;
 use Modules\CompanyUser\Repositories\ClientDetailRepository;
 use Modules\CompanyUser\Repositories\CompanyUserAddressRepository;
@@ -37,7 +38,8 @@ class UserRepository extends BaseRepository
         private CompanyUserManagementHierarchyRepository $companyUserManagementHierarchyRepository,
         private CompanyUserAddressRepository             $companyUserAddressRepository,
         private BrokerDetailRepository                   $brokerDetailRepository,
-        private ClientDetailRepository                   $clientDetailRepository
+        private ClientDetailRepository                   $clientDetailRepository,
+        private ManagementHierarchyRepository            $managementHierarchyRepository
     )
     {
         parent::__construct($model);
@@ -394,7 +396,7 @@ class UserRepository extends BaseRepository
                 throw new CustomException("the use not employee");
             }
 
-            $companyUserCompanyManagementHirarchy = $this->companyUserManagementHierarchyRepository->model->withoutTenancy()->where([
+            $companyUserCompanyManagementHirarchy = $this->companyUserManagementHierarchyRepository->model->where([
 
                 "company_user_company_id" => $companyUserCompany?->id
             ])->first();
@@ -405,7 +407,13 @@ class UserRepository extends BaseRepository
             }
             $userProfessionalData = UserProfessionalData::query()->where(["global_id" => $user->global_company_user_id, "company_id" => $user->company_id])->first();
             if ($userProfessionalData) {
-                $userProfessionalData->update(["job_title_id" => $data["job_title_id"], "job_type_id" => JobTitle::query()->find($data["job_title_id"])?->job_type_id, "branch_id" => $data["branch_id"], "management_id" => null, "department_id" => null]);
+                $mainManagement = $this->managementHierarchyRepository->model->withoutTenancy()->where([
+                    "company_id" => $user->company_id,
+                    "parent_id" => $data["branch_id"],
+                    "type" => "management",
+                    "is_main" => 1
+                ])->first();
+                $userProfessionalData->update(["job_title_id" => $data["job_title_id"], "job_type_id" => JobTitle::query()->find($data["job_title_id"])?->job_type_id, "branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
             }
 
             DB::commit();

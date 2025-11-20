@@ -60,7 +60,7 @@ class EmployeeController extends Controller
     }
 
 
-    public function update(UpdateEmployeeRequest $request): JsonResponse
+    public function update(UpdateEmployeeRequest $request)
     {
         $user = $this->employeeCRUDService->update($request->createUpdateEmployeeDTO());
 
