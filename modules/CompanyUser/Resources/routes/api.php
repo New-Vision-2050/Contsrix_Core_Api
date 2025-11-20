@@ -13,6 +13,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
+        Route::post('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'update']);
+
         Route::post('/export', [\Modules\CompanyUser\Controllers\BrokerController::class, 'export']);
 
         // Broker Dashboard Widgets Routes

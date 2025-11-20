@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\Broker\CreateBrokerDTO;
+use Modules\CompanyUser\DTO\Broker\UpdateBrokerDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\DTO\SetUserAddressDTO;
@@ -43,9 +44,8 @@ class BrokerCRUDService
 
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createBrokerDTO->getBranchIds());
 
-        $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray(), null,$createBrokerDTO->brokerDetailToArray());
+        $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray(), null, $createBrokerDTO->brokerDetailToArray());
         $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
-
 
 
         try {
@@ -55,6 +55,14 @@ class BrokerCRUDService
         }
 
         return $user;
+    }
+
+
+    public function update(UpdateBrokerDTO $updateBrokerDTO,SetUserAddressDTO $userAddressDTO)
+    {
+        $user =$this->userRepository->getUserById($updateBrokerDTO->getId());
+
+        return $this->userRepository->updateBroker($user , $updateBrokerDTO->toArray(),$updateBrokerDTO->brokerDetailToArray(), $userAddressDTO->toArray(), $updateBrokerDTO->getBranchIds());
     }
 
 

@@ -20,6 +20,7 @@ use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\ExportBrokerRequest;
+use Modules\CompanyUser\Requests\Broker\UpdateBrokerRequest;
 use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
@@ -73,6 +74,13 @@ class BrokerController extends Controller
     {
         $createdItem = $this->brokerCRUDService->create($request->createCreateBrokerDTO(), $request->createCreateCompanyUserCompanyRoleDTO(), $request->createSetUserAddressDTO());
         $presenter = new CompanyUserPresenter($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+ public function update(UpdateBrokerRequest $request)
+    {
+        $user = $this->brokerCRUDService->update($request->createUpdateBrokerDTO(), $request->createSetUserAddressDTO());
+        $presenter = new UserPresenter($user);
 
         return Json::item($presenter->getData());
     }
