@@ -339,4 +339,26 @@ class EcoProductFilter extends SearchModelFilter
     {
         return $this->orderBy('stock', $direction);
     }
+    public function order($order)
+    {
+        switch ($order) {  
+            case 'highest_price':
+            case 'price_desc':
+                return $this->orderBy('price', 'desc');
+            case 'newest':
+            case 'latest':
+                return $this->orderBy('created_at', 'desc');
+            case 'lowest_price':
+            case 'price_asc':
+                return $this->orderBy('price', 'asc');
+            
+            case 'best_selling':
+            case 'most_sold':
+
+                return $this->orderBy('created_at', 'desc');
+            
+            default:
+                return $this;
+        }
+    }
 }
