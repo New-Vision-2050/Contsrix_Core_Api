@@ -48,8 +48,17 @@ class ClientCRUDService
 
 
         $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(), $createClientDTO->clientDetailToArray());
-        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
+        
+        $emailSent = true;
+        try {
+            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
+        } catch (\Exception $e) {
+            // Log email failure but don't block user creation
+            $emailSent = false;
+        }
 
+        // Store email status for controller to check
+        $user->email_sent = $emailSent;
 
         //here i do not email up till now
 //        $data = [

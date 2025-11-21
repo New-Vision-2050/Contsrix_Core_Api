@@ -74,7 +74,15 @@ class BrokerController extends Controller
         $createdItem = $this->brokerCRUDService->create($request->createCreateBrokerDTO(), $request->createCreateCompanyUserCompanyRoleDTO(), $request->createSetUserAddressDTO());
         $presenter = new CompanyUserPresenter($createdItem);
 
-        return Json::item($presenter->getData());
+        // Check if email was sent successfully
+        $message = __('messages.company_user.created');
+        $emailSent = $createdItem->email_sent ?? true;
+
+        if (!$emailSent) {
+            $message = __('messages.company_user.created_email_failed');
+        }
+
+        return Json::item($presenter->getData(), message: $message);
     }
 
     /**
@@ -98,7 +106,7 @@ class BrokerController extends Controller
 
         $this->deleteUserRoleHandler->handle($command);
 
-        return Json::deleted();
+        return Json::success(__('messages.company_user.deleted'));
     }
 
     /**
