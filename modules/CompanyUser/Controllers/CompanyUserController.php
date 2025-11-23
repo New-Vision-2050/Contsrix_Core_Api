@@ -60,7 +60,7 @@ class CompanyUserController extends Controller
             (int)$request->get('per_page', 10)
         );
 
-        return Json::items(CompanyUserPresenter::collection($list["data"]),paginationSettings: $list['pagination']);
+        return Json::items(CompanyUserPresenter::collection($list["data"]), paginationSettings: $list['pagination']);
     }
 
     public function widgets()
@@ -84,7 +84,7 @@ class CompanyUserController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function showByEmail(GetCompanyUserRequest $request)//: JsonResponse
+    public function showByEmail(GetCompanyUserRequest $request) //: JsonResponse
     {
         $item = $this->companyUserService->getByEmail($request->email);
         if (!$item) {
@@ -92,9 +92,7 @@ class CompanyUserController extends Controller
         }
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData(),extraItems: ["userInCompany"=>$this->userCRUDService->getUserBy(["email"=>$request->email,"company_id"=>tenant("id")])]);
-
-
+        return Json::item($presenter->getData(), extraItems: ["userInCompany" => $this->userCRUDService->getUserBy(["email" => $request->email, "company_id" => tenant("id")])]);
     }
 
     public function store(CreateCompanyUserRequest $request)
@@ -104,7 +102,16 @@ class CompanyUserController extends Controller
             $request->createCreateCompanyUserCompanyRoleDTO()
         );
         $presenter = new CompanyUserPresenter($createdItem);
-        return Json::item($presenter->getData());
+
+        // Check if email was sent successfully
+        $message = __('messages.company_user.created');
+        $emailSent = $createdItem->email_sent ?? true;
+
+        if (!$emailSent) {
+            $message = __('messages.company_user.created_email_failed');
+        }
+
+        return Json::item($presenter->getData(), message: $message);
     }
 
 
@@ -117,10 +124,10 @@ class CompanyUserController extends Controller
 
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData(), message: __('messages.company_user.role_assigned'));
     }
 
- public function assignRoleForCurrentCompany(AssignRoleCompanyUserForCurrentCompanyRequest $request)
+    public function assignRoleForCurrentCompany(AssignRoleCompanyUserForCurrentCompanyRequest $request)
     {
         $command = $request->createAssignCompanyUserForCurrentCompanyCommand();
         $this->assignRoleCompanyUserHandler->handle($command);
@@ -129,7 +136,7 @@ class CompanyUserController extends Controller
 
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData(), message: __('messages.company_user.role_assigned'));
     }
 
 
@@ -141,7 +148,6 @@ class CompanyUserController extends Controller
             ->validatePhone()
             ->get();
         return Json::item($validations);
-
     }
 
     public function checkEmail()
@@ -150,10 +156,9 @@ class CompanyUserController extends Controller
             ->validateEmail()
             ->get();
         return Json::item($validations);
-
     }
 
-    public function update(UpdateCompanyUserRequest $request)//: JsonResponse
+    public function update(UpdateCompanyUserRequest $request) //: JsonResponse
     {
         $command = $request->createUpdateCompanyUserCommand();
 
@@ -163,8 +168,7 @@ class CompanyUserController extends Controller
 
         $presenter = new CompanyUserPresenter($item);
 
-        return Json::item($presenter->getData());
-
+        return Json::item($presenter->getData(), message: __('messages.company_user.updated'));
     }
 
     public function changeTimeZone(UpdateTimeZoneCompanyUserRequest $request): JsonResponse
@@ -176,14 +180,14 @@ class CompanyUserController extends Controller
 
         $presenter = new TimeZoneCompanyUserPresenter($item);
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData(), message: __('messages.company_user.timezone_updated'));
     }
 
     public function delete(DeleteCompanyUserRequest $request): JsonResponse
     {
         $this->deleteCompanyUserHandler->handle(Uuid::fromString($request->route('id')));
 
-        return Json::deleted();
+        return Json::success(__('messages.company_user.deleted'));
     }
 
 
@@ -193,7 +197,7 @@ class CompanyUserController extends Controller
         $command = $request->createDeleteRoleCommand();
         $this->deleteCompanyUserRoleHandler->handle($command);
 
-        return Json::deleted();
+        return Json::success(__('messages.company_user.role_deleted'));
     }
 
     public function deleteUserSpecificRole(DeleteUserSpecificRoleRequest $request)
@@ -201,7 +205,7 @@ class CompanyUserController extends Controller
         $command = $request->createDeleteRoleCommand();
         $this->deleteUserRoleHandler->handle($command);
 
-        return Json::deleted();
+        return Json::success(__('messages.company_user.role_deleted'));
     }
 
 
@@ -224,7 +228,4 @@ class CompanyUserController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
-
-
-
 }

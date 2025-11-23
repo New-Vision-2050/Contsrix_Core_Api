@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Ecommerce\Home\Controllers\HomeController;
 
+Route::group(['middleware' => [\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
 
     Route::get('/banners', [HomeController::class, 'banners']);
     Route::get('/categories', [HomeController::class, 'categories']);
@@ -15,3 +16,4 @@ use Modules\Ecommerce\Home\Controllers\HomeController;
     Route::get('/offers', [HomeController::class, 'offers']);
     Route::get('/footer', [HomeController::class, 'footer']);
 
+});

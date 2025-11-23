@@ -41,7 +41,7 @@ class SubEntityRecordsController extends Controller
             $request->get('registration_form_id')
         );
 
-        return Json::item($widgetsData, message: 'Sub entity records widgets retrieved successfully');
+        return Json::item($widgetsData, message: __('messages.sub_entity_records.widgets_retrieved'));
     }
 
     /**
