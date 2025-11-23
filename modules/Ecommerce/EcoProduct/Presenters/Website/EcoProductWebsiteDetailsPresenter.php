@@ -40,7 +40,7 @@ class EcoProductWebsiteDetailsPresenter extends AbstractPresenter
             'sku' => $this->ecoProduct->sku,
             'stock' => $this->ecoProduct->stock ?? 0,
             'min_order_quantity' => $this->ecoProduct->min_order_quantity ?? 1,
-            'in_stock' => $this->ecoProduct->is_in_stock ?? ($this->ecoProduct->stock > 0),
+            'in_stock' => (int) ($this->ecoProduct->is_in_stock ?? ($this->ecoProduct->stock > 0)),
             'rating' => $this->ecoProduct->rating ?? 4.6,
             'reviews_count' => (int) $this->ecoProduct->reviews_count ?? 0,
             'type' => $this->ecoProduct->type ?? 'normal',

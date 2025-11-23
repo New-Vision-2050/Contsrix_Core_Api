@@ -24,6 +24,7 @@ use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
 use Modules\CompanyUser\Requests\Client\GetClientRequest;
 use Modules\CompanyUser\Requests\Client\ExportClientRequest;
+use Modules\CompanyUser\Requests\Client\UpdateClientRequest;
 use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\Client\ClientCRUDService;
@@ -54,7 +55,7 @@ class ClientController extends Controller
         );
 
 
-        return Json::items(ClientPresenter::collection($list['data'],CompanyUserRole::CLIENT->value),paginationSettings: $list['pagination']);
+        return Json::items(ClientPresenter::collection($list['data'], CompanyUserRole::CLIENT->value), paginationSettings: $list['pagination']);
     }
 
 
@@ -69,10 +70,18 @@ class ClientController extends Controller
 
     public function store(CreateClientRequest $request)
     {
-        $createdItem = $this->clientCRUDService->create($request->createCreateClientDTO(), $request->createCreateCompanyUserCompanyRoleDTO(),$request->createSetUserAddressDTO());
+        $createdItem = $this->clientCRUDService->create($request->createCreateClientDTO(), $request->createCreateCompanyUserCompanyRoleDTO(), $request->createSetUserAddressDTO());
         $presenter = new CompanyUserPresenter($createdItem);
 
-        return Json::item($presenter->getData());
+        // Check if email was sent successfully
+        $message = __('messages.company_user.created');
+        $emailSent = $createdItem->email_sent ?? true;
+
+        if (!$emailSent) {
+            $message = __('messages.company_user.created_email_failed');
+        }
+
+        return Json::item($presenter->getData(), message: $message);
     }
 
     /**
@@ -90,7 +99,7 @@ class ClientController extends Controller
 
         $presentedData = DashboardWidgetsPresenter::presentWidgets($widgetsData);
 
-        return Json::item($presentedData, message: 'Dashboard widgets retrieved successfully');
+        return Json::item($presentedData, message: __('messages.sub_entity_records.widgets_retrieved'));
     }
 
     /**
@@ -101,7 +110,7 @@ class ClientController extends Controller
         $command = $request->createDeleteRoleCommand(CompanyUserRole::CLIENT->value);
         $this->deleteUserRoleHandler->handle($command);
 
-        return Json::deleted();
+        return Json::success(__('messages.company_user.deleted'));
     }
 
     /**
@@ -111,13 +120,21 @@ class ClientController extends Controller
     {
         $filters = $request->getFilters();
         $format = $request->get('format', 'xlsx');
-        
+
         $filename = 'clients_' . date('Y-m-d_H-i-s') . '.' . $format;
-        
+
         return Excel::download(
             new ClientExport($this->clientCRUDService, $filters),
             $filename
         );
+    }
+
+    public function update(UpdateClientRequest $request)
+    {
+        $updatedItem = $this->clientCRUDService->update( $request->createUpdateClientDTO(), $request->createSetUserAddressDTO());
+        $presenter = new UserPresenter($updatedItem);
+
+        return Json::item($presenter->getData());
     }
 
 

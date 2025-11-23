@@ -24,7 +24,10 @@ class CategoryWebsiteCMSPresenter extends AbstractPresenter
             'name' => $this->categoryWebsiteCMS->name,
             'name_ar' => $this->categoryWebsiteCMS->getTranslation('name', 'ar'),
             'name_en' => $this->categoryWebsiteCMS->getTranslation('name', 'en'),
-            'category_type' => CategoryWebsiteCMSType::lang($this->categoryWebsiteCMS->category_type),
+            'category_type' => [
+                "id"=>$this->categoryWebsiteCMS->category_type,
+                "name"=>CategoryWebsiteCMSType::lang($this->categoryWebsiteCMS->category_type)
+            ],
 
             'company_id' => $this->categoryWebsiteCMS->company_id,
             'created_at' => $this->categoryWebsiteCMS->created_at,

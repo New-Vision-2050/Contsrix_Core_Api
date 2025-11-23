@@ -19,6 +19,7 @@ use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\Leave\LeaveType\Database\Seeders\LeaveTypeBranchSeeder;
 use Modules\WebsiteCMS\WebsiteSetting\Database\Seeders\WebsiteSettingSeeder;
 use Modules\WebsiteCMS\WebsiteContactInfo\Database\Seeders\WebsiteContactInfoSeeder;
+use Modules\WebsiteCMS\WebsiteTermAndCondition\Database\Seeders\WebsiteTermsAndConditionSeederTableSeeder;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -59,6 +60,8 @@ class TenantDatabaseSeeder extends Seeder
 
         // Create default website settings for the company
         $this->call(WebsiteSettingSeeder::class);
+        $this->call(WebsiteTermsAndConditionSeederTableSeeder::class);
+
 
         // Create default website contact info for the company
         $this->call(WebsiteContactInfoSeeder::class);

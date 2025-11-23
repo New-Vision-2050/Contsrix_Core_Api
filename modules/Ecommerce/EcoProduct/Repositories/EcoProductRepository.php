@@ -191,10 +191,14 @@ class EcoProductRepository extends BaseRepository
         string $orderBy = 'created_at',
         string $sortBy = 'desc',
         array $relations = [],
+        array $filters = []
     ): array {
+        // Merge request filters with provided filters
+        $allFilters = array_merge(request()->all(), $filters);
+        
         // Use filter if model has scopeFilter method
         if (method_exists($this->model, 'scopeFilter')) {
-            $query = $this->model->filter(request()->all())->where($conditions);
+            $query = $this->model->filter($allFilters)->where($conditions);
         } else {
             $query = $this->model->where($conditions);
         }
@@ -203,10 +207,14 @@ class EcoProductRepository extends BaseRepository
             $query->with($relations);
         }
 
+        // Only apply default ordering if no order filter is provided
+        if (!isset($allFilters['order'])) {
+            $query->orderBy($orderBy, $sortBy);
+        }
+
         $count = $query->count();
 
         $paginatedData = $query
-            ->orderBy($orderBy, $sortBy)
             ->forPage($page, $perPage)
             ->get();
 

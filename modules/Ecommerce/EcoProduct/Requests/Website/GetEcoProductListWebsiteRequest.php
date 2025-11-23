@@ -19,6 +19,7 @@ class GetEcoProductListWebsiteRequest extends FormRequest
             'max_price' => ['nullable', 'numeric', 'min:0'],
             'sort_by' => ['nullable', 'string', 'in:name,price,created_at'],
             'sort_direction' => ['nullable', 'string', 'in:asc,desc'],
+            'order' => ['nullable', 'string', 'in:highest_price,newest,lowest_price,best_selling'],
             'query' => ['nullable', 'string'],
         ];
     }

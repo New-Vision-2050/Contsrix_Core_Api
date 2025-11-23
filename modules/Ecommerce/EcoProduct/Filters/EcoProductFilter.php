@@ -125,6 +125,28 @@ class EcoProductFilter extends SearchModelFilter
     }
 
     /**
+     * Filter by multiple subcategory IDs
+     */
+    public function subCategoryIds($subcategoryIds)
+    {
+        if (is_array($subcategoryIds)) {
+            return $this->whereIn('sub_category_id', $subcategoryIds);
+        }
+        return $this->where('sub_category_id', $subcategoryIds);
+    }
+
+    /**
+     * Filter by multiple sub-subcategory IDs
+     */
+    public function subsubcategoryIds($subsubcategoryIds)
+    {
+        if (is_array($subsubcategoryIds)) {
+            return $this->whereIn('sub_sub_category_id', $subsubcategoryIds);
+        }
+        return $this->where('sub_sub_category_id', $subsubcategoryIds);
+    }
+
+    /**
      * Filter by product status (active/inactive)
      */
     public function status($status)
@@ -316,5 +338,112 @@ class EcoProductFilter extends SearchModelFilter
     public function sortByStock($direction = 'desc')
     {
         return $this->orderBy('stock', $direction);
+    }
+
+    /**
+     * Filter products that have flash deals
+     */
+    public function flashDeals($hasFlashDeals = true)
+    {
+        if ($hasFlashDeals) {
+            return $this->whereHas('flashDeals');
+        }
+        return $this->whereDoesntHave('flashDeals');
+    }
+
+    /**
+     * Filter products that have feature deals
+     */
+    public function featureDeals($hasFeatureDeals = true)
+    {
+        if ($hasFeatureDeals) {
+            return $this->whereHas('featureDeals');
+        }
+        return $this->whereDoesntHave('featureDeals');
+    }
+
+    /**
+     * Filter products by specific flash deal ID
+     */
+    public function flashDeal($flashDealId)
+    {
+        if (is_array($flashDealId)) {
+            return $this->whereHas('flashDeals', function ($query) use ($flashDealId) {
+                $query->whereIn('flash_deals.id', $flashDealId);
+            });
+        }
+        return $this->whereHas('flashDeals', function ($query) use ($flashDealId) {
+            $query->where('flash_deals.id', $flashDealId);
+        });
+    }
+
+    /**
+     * Filter products by specific feature deal ID
+     */
+    public function featureDeal($featureDealId)
+    {
+        if (is_array($featureDealId)) {
+            return $this->whereHas('featureDeals', function ($query) use ($featureDealId) {
+                $query->whereIn('feature_deals.id', $featureDealId);
+            });
+        }
+        return $this->whereHas('featureDeals', function ($query) use ($featureDealId) {
+            $query->where('feature_deals.id', $featureDealId);
+        });
+    }
+
+    /**
+     * Filter products that have active flash deals (currently active)
+     */
+    public function activeFlashDeals($hasActiveFlashDeals = true)
+    {
+        if ($hasActiveFlashDeals) {
+            $now = now();
+            return $this->whereHas('flashDeals', function ($query) use ($now) {
+                $query->where('is_active', true)
+                    ->where('start_date', '<=', $now)
+                    ->where('end_date', '>=', $now);
+            });
+        }
+        return $this;
+    }
+
+    /**
+     * Filter products that have active feature deals (currently active)
+     */
+    public function activeFeatureDeals($hasActiveFeatureDeals = true)
+    {
+        if ($hasActiveFeatureDeals) {
+            $today = now()->toDateString();
+            return $this->whereHas('featureDeals', function ($query) use ($today) {
+                $query->where('is_active', true)
+                    ->where('start_date', '<=', $today)
+                    ->where('end_date', '>=', $today);
+            });
+        }
+        return $this;
+    }
+
+    public function order($order)
+    {
+        switch ($order) {  
+            case 'highest_price':
+            case 'price_desc':
+                return $this->orderBy('price', 'desc');
+            case 'newest':
+            case 'latest':
+                return $this->orderBy('created_at', 'desc');
+            case 'lowest_price':
+            case 'price_asc':
+                return $this->orderBy('price', 'asc');
+            
+            case 'best_selling':
+            case 'most_sold':
+
+                return $this->orderBy('created_at', 'desc');
+            
+            default:
+                return $this;
+        }
     }
 }

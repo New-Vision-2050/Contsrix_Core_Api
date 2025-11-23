@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteTermAndCondition",
+    "alias": "websitetermandcondition",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteTermAndCondition\\Providers\\WebsiteTermAndConditionServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}
