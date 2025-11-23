@@ -12,13 +12,26 @@ class WebsiteAddressFilter extends SearchModelFilter
 
     public function title($title)
     {
-        return $this->where(function ($query) use ($title) {
-            $query->where('title->ar', 'like', '%' . $title . '%')
-                  ->orWhere('title->en', 'like', '%' . $title . '%');
+        return $this->whereHas("translations", function ($query) use ($title) {
+            $query->where(function ($q) use ($title) {
+                $q->where('content', 'like', '%' . $title . '%')
+                    ->orWhere('content', 'like', '%' . $title . '%');
+            })->where("field", "title");
         });
     }
 
-    public function cityId($cityId)
+
+    public function search($title)
+    {
+        return $this->whereHas("translations", function ($query) use ($title) {
+            $query->where(function ($q) use ($title) {
+                $q->where('content', 'like', '%' . $title . '%')
+                    ->orWhere('content', 'like', '%' . $title . '%');
+            })->where("field", "title");
+        });
+    }
+
+    public function city($cityId)
     {
         return $this->where('city_id', $cityId);
     }
