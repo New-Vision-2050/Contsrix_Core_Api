@@ -21,9 +21,17 @@ class EcoProductWebsiteService
         int $perPage = 12,
         string $sortBy = 'created_at',
         string $sortDirection = 'desc',
-        array $relations = []
+        array $relations = [],
+        ?string $order = null
     ): array {
         $conditions = ['is_visible' => true];
+
+        // If Arabic order is provided, it will be handled by the filter
+        // Otherwise, use the standard sort_by and sort_direction
+        $filters = [];
+        if ($order) {
+            $filters['order'] = $order;
+        }
 
         return $this->repository->paginated(
             conditions: $conditions,
@@ -32,6 +40,7 @@ class EcoProductWebsiteService
             orderBy: $sortBy,
             sortBy: $sortDirection,
             relations: $relations,
+            filters: $filters
         );
     }
 

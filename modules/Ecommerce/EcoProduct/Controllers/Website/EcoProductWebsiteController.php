@@ -27,7 +27,9 @@ class EcoProductWebsiteController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 12),
             $request->get('sort_by', 'created_at'),
-            $request->get('sort_direction', 'desc')
+            $request->get('sort_direction', 'desc'),
+            [],
+            $request->get('order')
         );
 
         return Json::items(EcoProductWebsitePresenter::collection($list['data']), paginationSettings: $list['pagination']);
