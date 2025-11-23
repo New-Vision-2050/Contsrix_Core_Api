@@ -495,7 +495,8 @@ class UserRepository extends BaseRepository
                     $branchesdata[] = [
                         "company_user_company_id" => $companyUserCompany->id,
                         "management_hierarchy_id" => $branch,
-                        "user_id" => $user->id
+                        "user_id" => $user->id,
+                        "id"=>Uuid::uuid4()->toString()
                     ];
                 }
                 $companyUserCompany->managementHierarchy()->delete();
@@ -504,7 +505,7 @@ class UserRepository extends BaseRepository
             if ($addressData != null) {
                 $this->companyUserAddressRepository->updateOrCreate(
                     ["global_company_user_id" => $user->global_company_user_id],
-                    $addressData + ["global_company_user_id" => $user->global_company_user_id->id]
+                    $addressData + ["global_company_user_id" => $user->global_company_user_id]
                 );
             }
             if ($clientData != null) {
