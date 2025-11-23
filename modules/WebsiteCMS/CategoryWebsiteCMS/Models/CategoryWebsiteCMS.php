@@ -43,7 +43,6 @@ class CategoryWebsiteCMS extends Model
     ];
 
 
-
     public function company()
     {
         return $this->belongsTo(Company::class);
@@ -51,12 +50,13 @@ class CategoryWebsiteCMS extends Model
 
     public function websiteServices()
     {
-        return $this->hasMany(WebsiteService::class,'category_website_cms_id','id');
+        return $this->hasMany(WebsiteService::class, "category_website_cms_id", "id");
+
     }
 
     public function websiteIcons()
     {
-        return $this->hasMany(WebsiteIcon::class,"category_website_cms_id","id");
+        return $this->hasMany(WebsiteIcon::class, "category_website_cms_id", "id");
     }
 
     protected static function newFactory(): CategoryWebsiteCMSFactory
