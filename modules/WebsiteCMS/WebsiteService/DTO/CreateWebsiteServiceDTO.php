@@ -9,14 +9,16 @@ use Illuminate\Http\UploadedFile;
 class CreateWebsiteServiceDTO
 {
     public function __construct(
-        private array $name,
+        private array         $name,
         private ?UploadedFile $main_image,
         private ?UploadedFile $icon,
-        private string $category_website_cms_id,
-        private string $reference_number,
-        private array $description,
-        private ?array $previous_work = null
-    ) {
+        private string        $category_website_cms_id,
+        private string        $reference_number,
+        private array         $description,
+        private ?array        $previous_work = null,
+        private int           $status = 1
+    )
+    {
     }
 
     public function getName(): array
@@ -62,6 +64,7 @@ class CreateWebsiteServiceDTO
             'reference_number' => $this->reference_number,
             'description' => $this->description,
             'previous_work' => $this->previous_work,
+            "status" => $this->status
         ];
     }
 }
