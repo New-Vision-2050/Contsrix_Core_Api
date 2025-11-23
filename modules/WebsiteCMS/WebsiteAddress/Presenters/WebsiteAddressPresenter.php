@@ -26,6 +26,8 @@ class WebsiteAddressPresenter extends AbstractPresenter
                 'name' => $this->websiteAddress->city->name,
             ] : null,
             'title' => $this->websiteAddress->title,
+            'title_ar' => $this->websiteAddress->getTranslation("title","ar"),
+            'title_en' => $this->websiteAddress->getTranslation("title","ar"),
             'latitude' => $this->websiteAddress->latitude,
             'longitude' => $this->websiteAddress->longitude,
             'status' => $this->websiteAddress->status,
