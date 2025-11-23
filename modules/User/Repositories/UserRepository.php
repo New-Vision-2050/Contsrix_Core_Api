@@ -15,6 +15,7 @@ use Modules\CompanyUser\Repositories\CompanyUserManagementHierarchyRepository;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\User\Models\User;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -443,7 +444,8 @@ class UserRepository extends BaseRepository
                     $branchesdata[] = [
                         "company_user_company_id" => $companyUserCompany->id,
                         "management_hierarchy_id" => $branch,
-                        "user_id" => $user->id
+                        "user_id" => $user->id,
+                        "id"=>Uuid::uuid4()->toString()
                     ];
                 }
                 $companyUserCompany->managementHierarchy()->delete();
@@ -452,7 +454,7 @@ class UserRepository extends BaseRepository
             if ($addressData != null) {
                 $this->companyUserAddressRepository->updateOrCreate(
                     ["global_company_user_id" => $user->global_company_user_id],
-                    $addressData + ["global_company_user_id" => $user->global_company_user_id->id]
+                    $addressData + ["global_company_user_id" => $user->global_company_user_id]
                 );
             }
             if ($brokerData != null) {
