@@ -9,15 +9,17 @@ use Illuminate\Http\UploadedFile;
 class UpdateWebsiteServiceCommand
 {
     public function __construct(
-        private string $id,
-        private array $name,
+        private string        $id,
+        private array         $name,
         private ?UploadedFile $main_image,
         private ?UploadedFile $icon,
-        private string $category_website_cms_id,
-        private string $reference_number,
-        private array $description,
-        private ?array $previous_work = null
-    ) {
+        private string        $category_website_cms_id,
+        private string        $reference_number,
+        private array         $description,
+        private ?array        $previous_work = null,
+        private int           $status = 1
+    )
+    {
     }
 
     public function getId(): string
@@ -69,6 +71,7 @@ class UpdateWebsiteServiceCommand
             'reference_number' => $this->reference_number,
             'description' => $this->description,
             'previous_work' => $this->previous_work,
+            "status" => $this->status
         ];
     }
 }

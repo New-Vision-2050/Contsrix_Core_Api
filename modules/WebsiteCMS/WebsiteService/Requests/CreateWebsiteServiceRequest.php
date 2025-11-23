@@ -28,6 +28,7 @@ class CreateWebsiteServiceRequest extends FormRequest
             'previous_work' => 'nullable|array',
             'previous_work.*.description' => 'required|string',
             'previous_work.*.image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            "status" => "required|numeric|in:1,0"
         ];
     }
 
@@ -66,7 +67,8 @@ class CreateWebsiteServiceRequest extends FormRequest
                 'ar' => $this->get('description_ar'),
                 'en' => $this->get('description_en'),
             ],
-            previous_work: $this->preparePreviousWork()
+            previous_work: $this->preparePreviousWork(),
+            status:(int) $this->get('status')
         );
     }
 }
