@@ -11,6 +11,7 @@ use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\Broker\CreateBrokerDTO;
 use Modules\CompanyUser\DTO\Client\CreateClientDTO;
+use Modules\CompanyUser\DTO\Client\UpdateClientDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\DTO\SetUserAddressDTO;
@@ -121,6 +122,14 @@ class ClientCRUDService
     public function getForExport(array $filters = []): Collection
     {
         return $this->repository->getForExport($filters, CompanyUserRole::CLIENT->value);
+    }
+
+    public function update(UpdateClientDTO $updateClientDTO, SetUserAddressDTO $setUserAddressDTO)
+    {
+        $user = $this->userRepository->getUserById(
+            id: $updateClientDTO->getId(),
+        );
+        return $this->userRepository->updateClient($user, $updateClientDTO->toArray(), $updateClientDTO->clientDetailToArray(),$setUserAddressDTO->toArray(),$updateClientDTO->getBranchIds());
     }
 
 

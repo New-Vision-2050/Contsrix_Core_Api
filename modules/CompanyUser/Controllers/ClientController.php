@@ -24,6 +24,7 @@ use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
 use Modules\CompanyUser\Requests\Client\GetClientRequest;
 use Modules\CompanyUser\Requests\Client\ExportClientRequest;
+use Modules\CompanyUser\Requests\Client\UpdateClientRequest;
 use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\Client\ClientCRUDService;
@@ -119,13 +120,21 @@ class ClientController extends Controller
     {
         $filters = $request->getFilters();
         $format = $request->get('format', 'xlsx');
-        
+
         $filename = 'clients_' . date('Y-m-d_H-i-s') . '.' . $format;
-        
+
         return Excel::download(
             new ClientExport($this->clientCRUDService, $filters),
             $filename
         );
+    }
+
+    public function update(UpdateClientRequest $request)
+    {
+        $updatedItem = $this->clientCRUDService->update( $request->createUpdateClientDTO(), $request->createSetUserAddressDTO());
+        $presenter = new UserPresenter($updatedItem);
+
+        return Json::item($presenter->getData());
     }
 
 

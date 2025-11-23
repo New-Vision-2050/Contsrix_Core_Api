@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Modules\CompanyUser\Requests\Client;
+namespace Modules\CompanyUser\Requests\Broker;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\CompanyUser\DTO\Broker\CreateBrokerDTO;
-use Modules\CompanyUser\DTO\Client\CreateClientDTO;
-use Modules\CompanyUser\DTO\Client\UpdateClientDTO;
+use Modules\CompanyUser\DTO\Broker\UpdateBrokerDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\SetUserAddressDTO;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -21,17 +20,17 @@ use Modules\CompanyUser\Rules\IdentityValidationRule;
 use Ramsey\Uuid\Uuid;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 
-class UpdateClientRequest extends FormRequest
+class UpdateBrokerRequest extends FormRequest
 {
 
 
     public function rules(): array
     {
+        $email = $this->input('email');
 
         return [
 
             //start user national address
-
             'country_id' => 'nullable|exists:countries,id',
             "state_id" => "nullable|exists:states,id",
             "city_id" => "nullable|exists:cities,id",
@@ -43,16 +42,15 @@ class UpdateClientRequest extends FormRequest
 
             //end user national address
 
-            "branch_ids" => "required|array",
+
+            "branch_ids" => "nullable|array",
             "branch_ids.*" => "exists:management_hierarchies,id,type,branch",
             "latitude" => "nullable",
             "longitude" => "nullable",
+            "message_address" => "nullable|email",
             'registration_number' => 'nullable|string',
-            "company_representative_name" => 'nullable|string',
-            "broker_id" => 'nullable|string|exists:users,id',
-            "message_address"=>"nullable|email",
-
-
+            'company_representative_name' => 'nullable|string',
+            'company_name' => 'nullable|string',
 
 
         ];
@@ -60,16 +58,16 @@ class UpdateClientRequest extends FormRequest
 
 
 
-    public function createUpdateClientDTO(): UpdateClientDTO
+    public function createUpdateBrokerDTO(): UpdateBrokerDTO
     {
-        return new UpdateClientDTO(
-            id: $this->route('id'),
-            countryId: $this->get('country_id'),
+        return new UpdateBrokerDTO(
+            id:$this->route("id"),
             branchIds: $this->get('branch_ids'),
-            brokerId:$this->get("broker_id")!=null?Uuid::fromString( $this->get("broker_id")):null,
-            registrationNumber: (string)$this->get("registration_number"),
+            messageAddress: $this->get("message_address"),
+            registrationNumber: $this->get("registration_number"),
             companyRepresentativeName: $this->get("company_representative_name"),
-            messageAddress: $this->get("message_address")
+            companyName: $this->get("company_name")
+
         );
     }
     public function createSetUserAddressDTO(): SetUserAddressDTO
@@ -85,11 +83,8 @@ class UpdateClientRequest extends FormRequest
             additionalPhone: $this->get('additional_phone'),
             postalCode: $this->get('postal_code'),
             latitude: $this->get("latitude"),
-            longitude: $this->get("longitude"),
-
+            longitude: $this->get("longitude")
 
         );
     }
-
-
 }
