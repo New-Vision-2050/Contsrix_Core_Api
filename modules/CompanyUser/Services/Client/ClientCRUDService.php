@@ -11,6 +11,7 @@ use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\Broker\CreateBrokerDTO;
 use Modules\CompanyUser\DTO\Client\CreateClientDTO;
+use Modules\CompanyUser\DTO\Client\UpdateClientDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserDTO;
 use Modules\CompanyUser\DTO\SetUserAddressDTO;
@@ -48,8 +49,17 @@ class ClientCRUDService
 
 
         $user = $this->repository->createCompanyUser($createClientDTO->toArray(), $companyRoleDTO->toArray(), $createClientDTO->getBranchIds(), $userAddressDTO->toArray(), $createClientDTO->clientDetailToArray());
-        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
+        
+        $emailSent = true;
+        try {
+            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
+        } catch (\Exception $e) {
+            // Log email failure but don't block user creation
+            $emailSent = false;
+        }
 
+        // Store email status for controller to check
+        $user->email_sent = $emailSent;
 
         //here i do not email up till now
 //        $data = [
@@ -112,6 +122,14 @@ class ClientCRUDService
     public function getForExport(array $filters = []): Collection
     {
         return $this->repository->getForExport($filters, CompanyUserRole::CLIENT->value);
+    }
+
+    public function update(UpdateClientDTO $updateClientDTO, SetUserAddressDTO $setUserAddressDTO)
+    {
+        $user = $this->userRepository->getUserById(
+            id: $updateClientDTO->getId(),
+        );
+        return $this->userRepository->updateClient($user, $updateClientDTO->toArray(), $updateClientDTO->clientDetailToArray(),$setUserAddressDTO->toArray(),$updateClientDTO->getBranchIds());
     }
 
 

@@ -32,7 +32,7 @@ class WebsiteServiceController extends Controller
     {
         $filters = request()->only(['name', 'reference_number', 'category_website_cms_id']);
         $perPage = (int) request()->get('per_page', 10);
-        $page = (int) request()->get('per_page', 1);
+        $page = (int) request()->get('page', 1);
 
         $list = $this->service->list($filters, $page,$perPage);
 

@@ -26,9 +26,7 @@ class SubEntityRecordsService
         protected SubEntityCRUDService        $subEntityCRUDService,
         protected CompanyUserRepository       $companyUserRepository,
         protected RegistrationFormCRUDService $registrationFormCRUDService
-    )
-    {
-    }
+    ) {}
 
 
     public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, $page = 1, $perPage = 10): array|Collection|LengthAwarePaginator
@@ -44,17 +42,13 @@ class SubEntityRecordsService
         //get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
         $query = $model::query();
-        if($model === User::class)
-        {
-             $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
-            {
+        if ($model === User::class) {
+            $query->whereHas('companyUserCompanies', function ($q) use ($registrationForm, $subEntityId) {
                 $q->where('role', $registrationForm->company_user_role_map)
                     ->where('sub_entity_id', $subEntityId);
             });
-
         }
         return $query->paginate($perPage);
-
     }
 
     protected function getSuperEntityModel(string $superEntityId): string
@@ -100,7 +94,11 @@ class SubEntityRecordsService
             $query->whereHas("companies", function ($query) use ($type) {
                 $query->where("company_users_companies.sub_entity_id", request()->sub_entity_id);
             });
-        });
+        })
+            // Only count users who have roles (user relationship exists)
+            ->whereHas('users', function ($query) {
+                $query->whereNotNull('id');
+            });
 
         // Get current period data
         $totalRecords = $query->count();
@@ -143,8 +141,8 @@ class SubEntityRecordsService
                 "title" => "$type المضافين اخر الشهر ",
                 'total' => $recordsAddedLastMonth,
                 'percentage' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords), // No comparison for this metric
-                "start"=>Carbon::now()->startOfMonth(),
-                "end"=>Carbon::now()->endOfMonth()
+                "start" => Carbon::now()->startOfMonth(),
+                "end" => Carbon::now()->endOfMonth()
             ],
             [
                 "title" => "$type النشيطين ",
@@ -242,7 +240,7 @@ class SubEntityRecordsService
             });
 
             // Load relationships for export
-//            $query->with(['companyUserCompanies.branch']);
+            //            $query->with(['companyUserCompanies.branch']);
         }
 
         // Apply ID filter if provided

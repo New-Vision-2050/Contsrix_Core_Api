@@ -32,5 +32,8 @@ class FeatureDealServiceProvider extends ModuleServiceProvider
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 
+        Route::prefix('api/v1/ecommerce/website/feature_deals')
+            ->middleware('api')
+            ->group($this->getModulePath() . '/Resources/routes/website.php');
     }
 }

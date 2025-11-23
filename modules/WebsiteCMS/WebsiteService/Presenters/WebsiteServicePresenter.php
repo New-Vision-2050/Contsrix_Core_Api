@@ -41,6 +41,7 @@ class WebsiteServicePresenter extends AbstractPresenter
                 ];
             })->toArray(),
             'company_id' => $this->service->company_id,
+            "status" => $this->service->status,
             'created_at' => $this->service->created_at?->toDateTimeString(),
             'updated_at' => $this->service->updated_at?->toDateTimeString(),
         ];
