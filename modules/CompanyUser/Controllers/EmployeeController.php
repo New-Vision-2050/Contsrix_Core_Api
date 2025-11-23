@@ -55,8 +55,16 @@ class EmployeeController extends Controller
         $createdItem = $this->employeeCRUDService->create($request->createCreateEmployeeDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
 
         $presenter = new CompanyUserPresenter($createdItem);
+        
+        // Check if email was sent successfully
+        $message = __('messages.company_user.created');
+        $emailSent = $createdItem->email_sent ?? true;
+        
+        if (!$emailSent) {
+            $message = __('messages.company_user.created_email_failed');
+        }
 
-        return Json::item($presenter->getData());
+        return Json::item($presenter->getData(), message: $message);
     }
 
 

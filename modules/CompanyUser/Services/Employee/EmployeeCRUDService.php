@@ -35,9 +35,7 @@ class EmployeeCRUDService
         private CompanyUserRepository $repository,
         private UserRepository        $userRepository,
         private CompanyUserCRUDService $companyUserCRUDService
-    )
-    {
-    }
+    ) {}
 
     public function create(CreateEmployeeDTO $createEmployeeDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
@@ -47,22 +45,30 @@ class EmployeeCRUDService
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createEmployeeDTO->getBranchId());
 
 
-        $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(),$createEmployeeDTO->getBranchId());
+        $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(), $createEmployeeDTO->getBranchId());
 
-        $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user , $companyRoleDTO->getCompanyId());
+        $emailSent = true;
+        try {
+            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
+        } catch (\Exception $e) {
+            // Log email failure but don't block user creation
+            $emailSent = false;
+        }
+
+        // Store email status for controller to check
+        $user->email_sent = $emailSent;
 
         //here i do not email up till now
-//        $data = [
-//            "name" => $userInCompany->name,
-//            "company_name" => $userInCompany->company?->name,
-//            "domain_name" => $userInCompany->company?->domains()->first()?->domain
-//        ];
-//        $userInCompany->notify(new SendDomainForUser($data));
+        //        $data = [
+        //            "name" => $userInCompany->name,
+        //            "company_name" => $userInCompany->company?->name,
+        //            "domain_name" => $userInCompany->company?->domains()->first()?->domain
+        //        ];
+        //        $userInCompany->notify(new SendDomainForUser($data));
 
         try {
             event(new UserCreated($createEmployeeDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
         } catch (\Exception $e) {
-
         }
 
         return $user;
@@ -119,5 +125,4 @@ class EmployeeCRUDService
 
         return $users;
     }
-
 }

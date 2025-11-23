@@ -32,5 +32,8 @@ class FlashDealServiceProvider extends ModuleServiceProvider
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 
+        Route::prefix('api/v1/ecommerce/website/flash_deals')
+            ->middleware('api')
+            ->group($this->getModulePath() . '/Resources/routes/website.php');
     }
 }

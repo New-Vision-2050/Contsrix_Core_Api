@@ -38,7 +38,7 @@ class UserProfessionalDataPresenter extends AbstractPresenter
 
             // Pass the guaranteed single model or null to the presenter
             'attendance_constraint' =>$this->userProfessionalData->attendanceConstraint ? (new ConstraintListPresenter($this->userProfessionalData->attendanceConstraint))->getData() : null,
-            "roles"=>$this->userProfessionalData->user->roles->pluck('name')->toArray()
+            "roles" => $this->userProfessionalData->user ? $this->userProfessionalData->user->roles->pluck('name')->toArray() : []
         ];
     }
 }
