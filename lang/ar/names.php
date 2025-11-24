@@ -79,6 +79,11 @@ return [
     'attendance*attendance-constraints' => 'محددات الحضور',
     'attendance-map' => 'خريطة الحضور',
     'attendance-list*attendance-map' => 'خريطة الحضور',
+    "attendance-list" => "Attendance List",
+    "attendance-constraints" => "محددات الحضور",
+    "attendance-list*attendance-list" => "قائمة الحضور",
+    "attendance-list*attendance-constraints" => "محددات الحضور",
+    "attendance-constraints*attendance-constraints" => "محددات الحضور",
 
     // Settings module
     // SubEntity Module
