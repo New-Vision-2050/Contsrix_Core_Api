@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteProject",
+    "alias": "websiteproject",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteProject\\Providers\\WebsiteProjectServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}
