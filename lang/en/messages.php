@@ -19,6 +19,19 @@ return [
         'exported' => 'Records exported successfully',
     ],
 
+    // Attendance messages
+    'attendance' => [
+        'user_constraint_retrieved' => 'User constraint retrieved successfully',
+        'user_constraint_today_retrieved' => 'User constraint for today retrieved successfully',
+    ],
+
+    // Validation messages
+    'validation' => [
+        'date_required' => 'The date field is required',
+        'date_invalid' => 'The date must be a valid date',
+        'date_format' => 'The date must be in the format Y-m-d (e.g., 2025-11-24)',
+    ],
+
     // Generic messages
     'success' => 'Operation completed successfully',
     'created' => 'Created successfully',
