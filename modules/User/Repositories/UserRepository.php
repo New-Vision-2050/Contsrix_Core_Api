@@ -500,6 +500,7 @@ class UserRepository extends BaseRepository
                     ];
                 }
                 $companyUserCompany->managementHierarchy()->delete();
+
                 $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
             }
             if ($addressData != null) {
