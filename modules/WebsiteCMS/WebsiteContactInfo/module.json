@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteContactInfo",
+    "alias": "websitecontactinfo",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteContactInfo\\Providers\\WebsiteContactInfoServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}
