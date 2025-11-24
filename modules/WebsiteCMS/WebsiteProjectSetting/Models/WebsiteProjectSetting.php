@@ -23,6 +23,7 @@ class WebsiteProjectSetting extends Model
 
     protected array $translatable = ['name'];
 
+
     public $incrementing = false;
 
     protected $keyType = 'string';
