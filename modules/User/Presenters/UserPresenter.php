@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\User\Presenters;
 
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\RoleAndPermission\Presenters\RoleSimplePresenter;
@@ -32,6 +34,9 @@ class UserPresenter extends AbstractPresenter
             'management_hierarchy_id' => $this->user->management_hierarchy_id ,
             "branch_id"=>$this->user->managementHierarchy?->detail?->branch_id,
             "roles"=>RoleSimplePresenter::collection($this->user->roles),
+            "branches"=>ManagementHierarchySimpleDataPresenter::collection($this->user->managementHierarchies(request()->role)->get()),
+            "status"=>$this->user->status,
+
 //            "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
             "is_central_company"=>tenant("is_central_company"),
             "residence"=>$this->user->companyUser?->residence,
