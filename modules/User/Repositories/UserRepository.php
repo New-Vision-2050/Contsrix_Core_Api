@@ -448,7 +448,10 @@ class UserRepository extends BaseRepository
                         "id"=>Uuid::uuid4()->toString()
                     ];
                 }
-                $companyUserCompany->managementHierarchy()->delete();
+                $this->companyUserManagementHierarchyRepository->model->where([
+                    "company_user_company_id" => $companyUserCompany->id
+                ])->delete();
+
                 $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
             }
             if ($addressData != null) {
@@ -499,7 +502,10 @@ class UserRepository extends BaseRepository
                         "id"=>Uuid::uuid4()->toString()
                     ];
                 }
-                $companyUserCompany->managementHierarchy()->delete();
+                $this->companyUserManagementHierarchyRepository->model->where([
+                    "company_user_company_id" => $companyUserCompany->id
+                ])->delete();
+
                 $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
             }
             if ($addressData != null) {
