@@ -14,7 +14,6 @@ class UpdateWebsiteAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'city_id' => 'required|integer|exists:cities,id',
             'title_ar' => 'required|string|max:255',
             'title_en' => 'required|string|max:255',
             'latitude' => 'nullable|numeric|between:-90,90',
@@ -27,7 +26,6 @@ class UpdateWebsiteAddressRequest extends FormRequest
     {
         return new UpdateWebsiteAddressCommand(
             id: Uuid::fromString($this->route('id')),
-            cityId: (int) $this->get('city_id'),
             title: [
                 'ar' => $this->get('title_ar'),
                 'en' => $this->get('title_en'),
