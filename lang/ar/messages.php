@@ -19,20 +19,6 @@ return [
         'exported' => 'تم تصدير السجلات بنجاح',
     ],
 
-    // Attendance messages
-    'attendance' => [
-        'user_constraint_retrieved' => 'تم استرجاع قواعد العمل للمستخدم بنجاح',
-        'user_constraint_today_retrieved' => 'تم استرجاع قواعد العمل لليوم بنجاح',
-        'clock_in_status_retrieved' => 'تم استرجاع حالة الحضور بنجاح',
-    ],
-
-    // Validation messages
-    'validation' => [
-        'date_required' => 'حقل التاريخ مطلوب',
-        'date_invalid' => 'التاريخ غير صحيح',
-        'date_format' => 'يجب أن يكون التاريخ بصيغة Y-m-d (مثال: 2025-11-24)',
-    ],
-
     // Generic messages
     'success' => 'تمت العملية بنجاح',
     'created' => 'تم الإنشاء بنجاح',

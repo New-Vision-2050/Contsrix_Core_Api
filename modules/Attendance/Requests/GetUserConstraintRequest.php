@@ -22,7 +22,7 @@ class GetUserConstraintRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => ['required', 'date', 'date_format:Y-m-d'],
+            'date' => ['sometimes', 'nullable', 'date', 'date_format:Y-m-d'],
         ];
     }
 
@@ -42,7 +42,6 @@ class GetUserConstraintRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'date.required' => __('messages.validation.date_required'),
             'date.date' => __('messages.validation.date_invalid'),
             'date.date_format' => __('messages.validation.date_format'),
         ];
