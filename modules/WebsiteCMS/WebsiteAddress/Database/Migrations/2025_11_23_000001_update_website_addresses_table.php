@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::table('website_addresses', function (Blueprint $table) {
             $table->dropColumn(['city_id']);
-
         });
     }
 
@@ -23,6 +22,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('website_addresses', function (Blueprint $table) {
-            $table->foreignId('city_id')->constrained();
+            $table->unsignedBigInteger("city_id");
         });    }
 };
