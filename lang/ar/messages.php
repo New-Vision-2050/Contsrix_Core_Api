@@ -23,6 +23,7 @@ return [
     'attendance' => [
         'user_constraint_retrieved' => 'تم استرجاع قواعد العمل للمستخدم بنجاح',
         'user_constraint_today_retrieved' => 'تم استرجاع قواعد العمل لليوم بنجاح',
+        'clock_in_status_retrieved' => 'تم استرجاع حالة الحضور بنجاح',
     ],
 
     // Validation messages

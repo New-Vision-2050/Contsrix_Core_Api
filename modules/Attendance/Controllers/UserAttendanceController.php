@@ -40,5 +40,27 @@ class UserAttendanceController extends Controller
             );
         }
     }
+
+    /**
+     * Check if current user is clocked in
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function checkMyClockInStatus(Request $request): JsonResponse
+    {
+        try {
+            $userId = (string) $request->user()->id;
+
+            $result = $this->userAttendanceService->checkClockInStatus($userId);
+
+            return Json::item($result, message: __('messages.attendance.clock_in_status_retrieved'));
+        } catch (\Exception $e) {
+            return Json::error(
+                $e->getMessage(),
+                500
+            );
+        }
+    }
 }
 

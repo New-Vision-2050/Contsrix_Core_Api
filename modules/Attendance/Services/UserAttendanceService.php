@@ -6,13 +6,15 @@ namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
 use Modules\Attendance\Services\AttendanceConstraintService;
+use Modules\Attendance\Services\AttendanceService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 
 class UserAttendanceService
 {
     public function __construct(
-        private AttendanceConstraintService $constraintService
+        private AttendanceConstraintService $constraintService,
+        private AttendanceService $attendanceService
     ) {}
 
     /**
@@ -38,6 +40,38 @@ class UserAttendanceService
             'user_name' => $user->name,
             'date' => $date ?? Carbon::now()->format('Y-m-d'),
             'work_rules' => $workRules,
+        ];
+    }
+
+    /**
+     * Check if user is clocked in
+     *
+     * @param UuidInterface|string $userId
+     * @return array
+     */
+    public function checkClockInStatus(UuidInterface|string $userId): array
+    {
+        $user = User::find($userId);
+        
+        if (!$user) {
+            throw new \Exception('User not found');
+        }
+
+        $attendance = $this->attendanceService->getCurrentAttendance(
+            \Ramsey\Uuid\Uuid::fromString((string) $userId)
+        );
+
+        $isClockedIn = $attendance !== null && $attendance->isActive();
+        $isOnBreak = $attendance ? $attendance->isOnBreak() : false;
+
+        return [
+            'user_id' => (string) $user->id,
+            'user_name' => $user->name,
+            'is_clocked_in' => $isClockedIn,
+            'is_on_break' => $isOnBreak,
+            'attendance_id' => $attendance ? (string) $attendance->id : null,
+            'clock_in_time' => $attendance?->clock_in_time?->format('Y-m-d H:i:s'),
+            'status' => $attendance?->status ?? 'not_clocked_in',
         ];
     }
 }

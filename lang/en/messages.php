@@ -23,6 +23,7 @@ return [
     'attendance' => [
         'user_constraint_retrieved' => 'User constraint retrieved successfully',
         'user_constraint_today_retrieved' => 'User constraint for today retrieved successfully',
+        'clock_in_status_retrieved' => 'Clock-in status retrieved successfully',
     ],
 
     // Validation messages

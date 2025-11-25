@@ -69,6 +69,13 @@ Route::prefix('attendance')->group(function () {
             ->name('attendance.user-constraint.today');
     });
 
+    // User Attendance Status Routes
+    Route::prefix('user-attendance')->group(function () {
+        // Check if current user is clocked in
+        Route::get('status', [UserAttendanceController::class, 'checkMyClockInStatus'])
+            ->name('attendance.user-attendance.status');
+    });
+
     // Team Attendance (for supervisors)
     Route::get('team', [AttendanceController::class, 'getTeamAttendance'])
        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
