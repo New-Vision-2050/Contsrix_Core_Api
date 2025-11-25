@@ -45,17 +45,17 @@ class BrokerCRUDService
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createBrokerDTO->getBranchIds());
 
         $user = $this->repository->createCompanyUser($createBrokerDTO->toArray(), $companyRoleDTO->toArray(), $createBrokerDTO->getBranchIds(), $userAddressDTO->toArray(), null,$createBrokerDTO->brokerDetailToArray());
-        
-        $emailSent = true;
-        try {
-            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
-        } catch (\Exception $e) {
-            // Log email failure but don't block user creation
-            $emailSent = false;
-        }
 
-        // Store email status for controller to check
-        $user->email_sent = $emailSent;
+//        $emailSent = true;
+//        try {
+//            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
+//        } catch (\Exception $e) {
+//            // Log email failure but don't block user creation
+//            $emailSent = false;
+//        }
+//
+//        // Store email status for controller to check
+//        $user->email_sent = $emailSent;
 
         try {
             event(new UserCreated($createBrokerDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
