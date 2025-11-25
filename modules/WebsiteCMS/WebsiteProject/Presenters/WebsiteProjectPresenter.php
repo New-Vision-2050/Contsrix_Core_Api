@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\WebsiteCMS\WebsiteProject\Presenters;
+
+use Modules\WebsiteCMS\WebsiteProject\Models\WebsiteProject;
+use BasePackage\Shared\Presenters\AbstractPresenter;
+
+class WebsiteProjectPresenter extends AbstractPresenter
+{
+    private WebsiteProject $websiteProject;
+
+    public function __construct(WebsiteProject $websiteProject)
+    {
+        $this->websiteProject = $websiteProject;
+    }
+
+    protected function present(bool $isListing = false): array
+    {
+        return [
+            'id' => $this->websiteProject->id,
+            'name' => $this->websiteProject->name,
+            'name_ar'=>$this->websiteProject->getTranslation('name', 'ar'),
+            'name_en'=>$this->websiteProject->getTranslation('name', 'en'),
+            'description' => $this->websiteProject->description,
+            "description_ar"=>$this->websiteProject->getTranslation('description', 'ar'),
+            "description_en"=>$this->websiteProject->getTranslation('description', 'en'),
+            'status' => $this->websiteProject->status,
+            'created_at' => $this->websiteProject->created_at,
+            'updated_at' => $this->websiteProject->updated_at,
+            'main_image' => $this->websiteProject->getFirstMediaUrl('main_image'),
+            'secondary_image' => $this->websiteProject->getFirstMediaUrl('secondary_image'),
+            'project_details' => $this->websiteProject->projectDetails,
+            'services' => $this->websiteProject->services,
+        ];
+    }
+}
