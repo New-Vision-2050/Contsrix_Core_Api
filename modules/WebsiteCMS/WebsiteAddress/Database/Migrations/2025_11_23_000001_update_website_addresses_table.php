@@ -22,6 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('website_addresses');
-    }
+        Schema::table('website_addresses', function (Blueprint $table) {
+            $table->foreignId('city_id')->constrained();
+        });    }
 };
