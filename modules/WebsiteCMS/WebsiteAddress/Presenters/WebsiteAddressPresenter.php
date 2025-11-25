@@ -20,11 +20,7 @@ class WebsiteAddressPresenter extends AbstractPresenter
     {
         return [
             'id' => $this->websiteAddress->id,
-            'city_id' => $this->websiteAddress->city_id,
-            'city' => $this->websiteAddress->city ? [
-                'id' => $this->websiteAddress->city->id,
-                'name' => $this->websiteAddress->city->name,
-            ] : null,
+
             'title' => $this->websiteAddress->title,
             'title_ar' => $this->websiteAddress->getTranslation("title","ar"),
             'title_en' => $this->websiteAddress->getTranslation("title","en"),

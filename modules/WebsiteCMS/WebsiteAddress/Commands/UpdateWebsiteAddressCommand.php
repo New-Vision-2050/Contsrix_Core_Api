@@ -10,7 +10,6 @@ class UpdateWebsiteAddressCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private int $cityId,
         private array $title,
         private ?float $latitude = null,
         private ?float $longitude = null,
@@ -23,10 +22,7 @@ class UpdateWebsiteAddressCommand
         return $this->id;
     }
 
-    public function getCityId(): int
-    {
-        return $this->cityId;
-    }
+
 
     public function getTitle(): array
     {
@@ -51,7 +47,6 @@ class UpdateWebsiteAddressCommand
     public function toArray(): array
     {
         return [
-            'city_id' => $this->cityId,
             'title' => $this->title,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
