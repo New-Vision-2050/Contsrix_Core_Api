@@ -6,11 +6,12 @@ use App\Casts\UuidCast;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class WebsiteColorPalette extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids ,BelongsToPrimaryModel;
 
     protected $table = 'website_color_palettes';
 
@@ -40,5 +41,10 @@ class WebsiteColorPalette extends Model
     public function websiteTheme()
     {
         return $this->belongsTo(WebsiteTheme::class, 'website_theme_id');
+    }
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return "websiteTheme";
     }
 }
