@@ -1,0 +1,682 @@
+{
+	"info": {
+		"_postman_id": "website-about-us-api-collection",
+		"name": "WebsiteAboutUs API",
+		"description": "API endpoints for managing Website About Us in WebsiteCMS module",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Current Company About Us",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/website-about-us/current-company",
+					"host": ["{{url}}"],
+					"path": ["website-about-us", "current-company"]
+				}
+			}
+		},
+		{
+			"name": "Update Current Company About Us",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "title_ar",
+							"value": "من نحن - الشركة الحالية",
+							"type": "text",
+							"description": "Title in Arabic (required)"
+						},
+						{
+							"key": "title_en",
+							"value": "About Us - Current Company",
+							"type": "text",
+							"description": "Title in English (required)"
+						},
+						{
+							"key": "description_ar",
+							"value": "وصف الشركة الحالية بالعربي",
+							"type": "text",
+							"description": "Description in Arabic (required)"
+						},
+						{
+							"key": "description_en",
+							"value": "Current company description in English",
+							"type": "text",
+							"description": "Description in English (required)"
+						},
+						{
+							"key": "is_certificates",
+							"value": "true",
+							"type": "text",
+							"description": "Show certificates section (required, boolean)"
+						},
+						{
+							"key": "is_approvals",
+							"value": "true",
+							"type": "text",
+							"description": "Show approvals section (required, boolean)"
+						},
+						{
+							"key": "is_companies",
+							"value": "false",
+							"type": "text",
+							"description": "Show companies section (required, boolean)"
+						},
+						{
+							"key": "about_me_ar",
+							"value": "نبذة عن الشركة الحالية بالعربي",
+							"type": "text",
+							"description": "About me text in Arabic (required)"
+						},
+						{
+							"key": "about_me_en",
+							"value": "About current company text in English",
+							"type": "text",
+							"description": "About me text in English (required)"
+						},
+						{
+							"key": "vision_ar",
+							"value": "رؤية الشركة الحالية بالعربي",
+							"type": "text",
+							"description": "Vision in Arabic (required)"
+						},
+						{
+							"key": "vision_en",
+							"value": "Current company vision in English",
+							"type": "text",
+							"description": "Vision in English (required)"
+						},
+						{
+							"key": "target_ar",
+							"value": "هدف الشركة الحالية بالعربي",
+							"type": "text",
+							"description": "Target in Arabic (required)"
+						},
+						{
+							"key": "target_en",
+							"value": "Current company target in English",
+							"type": "text",
+							"description": "Target in English (required)"
+						},
+						{
+							"key": "slogan_ar",
+							"value": "شعار الشركة الحالية بالعربي",
+							"type": "text",
+							"description": "Slogan in Arabic (required, max 500)"
+						},
+						{
+							"key": "slogan_en",
+							"value": "Current company slogan in English",
+							"type": "text",
+							"description": "Slogan in English (required, max 500)"
+						},
+						{
+							"key": "main_image",
+							"type": "file",
+							"description": "Main image (nullable, max 2MB, formats: jpeg,png,jpg,gif,svg,webp)",
+							"src": []
+						},
+						{
+							"key": "project_types[0][title_ar]",
+							"value": "مشاريع سكنية",
+							"type": "text",
+							"description": "Project type title in Arabic"
+						},
+						{
+							"key": "project_types[0][title_en]",
+							"value": "Residential Projects",
+							"type": "text",
+							"description": "Project type title in English"
+						},
+						{
+							"key": "project_types[0][count]",
+							"value": "50",
+							"type": "text",
+							"description": "Project type count"
+						},
+						{
+							"key": "attachments[0][name]",
+							"value": "Company Profile",
+							"type": "text",
+							"description": "Attachment name"
+						},
+						{
+							"key": "attachments[0][attachment]",
+							"type": "file",
+							"description": "Attachment file (pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar, max 10MB)",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/website-about-us/current-company",
+					"host": ["{{url}}"],
+					"path": ["website-about-us", "current-company"]
+				}
+			}
+		},
+		{
+			"name": "List Website About Us",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/website-about-us?page=1&per_page=15",
+					"host": ["{{url}}"],
+					"path": ["website-about-us"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "per_page",
+							"value": "15",
+							"description": "Items per page"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Create Website About Us",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "title_ar",
+							"value": "من نحن",
+							"type": "text",
+							"description": "Title in Arabic (required)"
+						},
+						{
+							"key": "title_en",
+							"value": "About Us",
+							"type": "text",
+							"description": "Title in English (required)"
+						},
+						{
+							"key": "description_ar",
+							"value": "وصف الشركة بالعربي",
+							"type": "text",
+							"description": "Description in Arabic (required)"
+						},
+						{
+							"key": "description_en",
+							"value": "Company description in English",
+							"type": "text",
+							"description": "Description in English (required)"
+						},
+						{
+							"key": "is_certificates",
+							"value": "true",
+							"type": "text",
+							"description": "Show certificates section (required, boolean)"
+						},
+						{
+							"key": "is_approvals",
+							"value": "true",
+							"type": "text",
+							"description": "Show approvals section (required, boolean)"
+						},
+						{
+							"key": "is_companies",
+							"value": "false",
+							"type": "text",
+							"description": "Show companies section (required, boolean)"
+						},
+						{
+							"key": "about_me_ar",
+							"value": "نبذة عنا بالعربي",
+							"type": "text",
+							"description": "About me text in Arabic (required)"
+						},
+						{
+							"key": "about_me_en",
+							"value": "About me text in English",
+							"type": "text",
+							"description": "About me text in English (required)"
+						},
+						{
+							"key": "vision_ar",
+							"value": "رؤيتنا بالعربي",
+							"type": "text",
+							"description": "Vision in Arabic (required)"
+						},
+						{
+							"key": "vision_en",
+							"value": "Our vision in English",
+							"type": "text",
+							"description": "Vision in English (required)"
+						},
+						{
+							"key": "target_ar",
+							"value": "هدفنا بالعربي",
+							"type": "text",
+							"description": "Target in Arabic (required)"
+						},
+						{
+							"key": "target_en",
+							"value": "Our target in English",
+							"type": "text",
+							"description": "Target in English (required)"
+						},
+						{
+							"key": "slogan_ar",
+							"value": "شعارنا بالعربي",
+							"type": "text",
+							"description": "Slogan in Arabic (required, max 500)"
+						},
+						{
+							"key": "slogan_en",
+							"value": "Our slogan in English",
+							"type": "text",
+							"description": "Slogan in English (required, max 500)"
+						},
+						{
+							"key": "main_image",
+							"type": "file",
+							"description": "Main image (nullable, max 2MB, formats: jpeg,png,jpg,gif,svg,webp)",
+							"src": []
+						},
+						{
+							"key": "project_types[0][title_ar]",
+							"value": "مشاريع سكنية",
+							"type": "text",
+							"description": "Project type title in Arabic"
+						},
+						{
+							"key": "project_types[0][title_en]",
+							"value": "Residential Projects",
+							"type": "text",
+							"description": "Project type title in English"
+						},
+						{
+							"key": "project_types[0][count]",
+							"value": "50",
+							"type": "text",
+							"description": "Project type count"
+						},
+						{
+							"key": "project_types[1][title_ar]",
+							"value": "مشاريع تجارية",
+							"type": "text",
+							"description": "Project type title in Arabic"
+						},
+						{
+							"key": "project_types[1][title_en]",
+							"value": "Commercial Projects",
+							"type": "text",
+							"description": "Project type title in English"
+						},
+						{
+							"key": "project_types[1][count]",
+							"value": "30",
+							"type": "text",
+							"description": "Project type count"
+						},
+						{
+							"key": "attachments[0][name]",
+							"value": "Company Profile",
+							"type": "text",
+							"description": "Attachment name"
+						},
+						{
+							"key": "attachments[0][attachment]",
+							"type": "file",
+							"description": "Attachment file (pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar, max 10MB)",
+							"src": []
+						},
+						{
+							"key": "attachments[1][name]",
+							"value": "Company Brochure",
+							"type": "text",
+							"description": "Attachment name"
+						},
+						{
+							"key": "attachments[1][attachment]",
+							"type": "file",
+							"description": "Attachment file (pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar, max 10MB)",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/website-about-us",
+					"host": ["{{url}}"],
+					"path": ["website-about-us"]
+				}
+			}
+		},
+		{
+			"name": "Get Website About Us",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/website-about-us/:id",
+					"host": ["{{url}}"],
+					"path": ["website-about-us", ":id"],
+					"variable": [
+						{
+							"key": "id",
+							"value": "{{website_about_us_id}}",
+							"description": "Website About Us UUID"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Update Website About Us",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "_method",
+							"value": "PUT",
+							"type": "text",
+							"description": "Method spoofing for file upload"
+						},
+						{
+							"key": "title_ar",
+							"value": "من نحن - محدث",
+							"type": "text",
+							"description": "Title in Arabic (required)"
+						},
+						{
+							"key": "title_en",
+							"value": "About Us - Updated",
+							"type": "text",
+							"description": "Title in English (required)"
+						},
+						{
+							"key": "description_ar",
+							"value": "وصف الشركة المحدث بالعربي",
+							"type": "text",
+							"description": "Description in Arabic (required)"
+						},
+						{
+							"key": "description_en",
+							"value": "Updated company description in English",
+							"type": "text",
+							"description": "Description in English (required)"
+						},
+						{
+							"key": "is_certificates",
+							"value": "true",
+							"type": "text",
+							"description": "Show certificates section (required, boolean)"
+						},
+						{
+							"key": "is_approvals",
+							"value": "false",
+							"type": "text",
+							"description": "Show approvals section (required, boolean)"
+						},
+						{
+							"key": "is_companies",
+							"value": "true",
+							"type": "text",
+							"description": "Show companies section (required, boolean)"
+						},
+						{
+							"key": "about_me_ar",
+							"value": "نبذة عنا المحدثة بالعربي",
+							"type": "text",
+							"description": "About me text in Arabic (required)"
+						},
+						{
+							"key": "about_me_en",
+							"value": "Updated about me text in English",
+							"type": "text",
+							"description": "About me text in English (required)"
+						},
+						{
+							"key": "vision_ar",
+							"value": "رؤيتنا المحدثة بالعربي",
+							"type": "text",
+							"description": "Vision in Arabic (required)"
+						},
+						{
+							"key": "vision_en",
+							"value": "Our updated vision in English",
+							"type": "text",
+							"description": "Vision in English (required)"
+						},
+						{
+							"key": "target_ar",
+							"value": "هدفنا المحدث بالعربي",
+							"type": "text",
+							"description": "Target in Arabic (required)"
+						},
+						{
+							"key": "target_en",
+							"value": "Our updated target in English",
+							"type": "text",
+							"description": "Target in English (required)"
+						},
+						{
+							"key": "slogan_ar",
+							"value": "شعارنا المحدث بالعربي",
+							"type": "text",
+							"description": "Slogan in Arabic (required, max 500)"
+						},
+						{
+							"key": "slogan_en",
+							"value": "Our updated slogan in English",
+							"type": "text",
+							"description": "Slogan in English (required, max 500)"
+						},
+						{
+							"key": "main_image",
+							"type": "file",
+							"description": "Main image (nullable, max 2MB, formats: jpeg,png,jpg,gif,svg,webp)",
+							"src": []
+						},
+						{
+							"key": "project_types[0][title_ar]",
+							"value": "مشاريع سكنية محدثة",
+							"type": "text",
+							"description": "Project type title in Arabic"
+						},
+						{
+							"key": "project_types[0][title_en]",
+							"value": "Updated Residential Projects",
+							"type": "text",
+							"description": "Project type title in English"
+						},
+						{
+							"key": "project_types[0][count]",
+							"value": "60",
+							"type": "text",
+							"description": "Project type count"
+						},
+						{
+							"key": "attachments[0][name]",
+							"value": "Updated Company Profile",
+							"type": "text",
+							"description": "Attachment name"
+						},
+						{
+							"key": "attachments[0][attachment]",
+							"type": "file",
+							"description": "Attachment file (pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar, max 10MB)",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/website-about-us/:id",
+					"host": ["{{url}}"],
+					"path": ["website-about-us", ":id"],
+					"variable": [
+						{
+							"key": "id",
+							"value": "{{website_about_us_id}}",
+							"description": "Website About Us UUID"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Delete Website About Us",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/website-about-us/:id",
+					"host": ["{{url}}"],
+					"path": ["website-about-us", ":id"],
+					"variable": [
+						{
+							"key": "id",
+							"value": "{{website_about_us_id}}",
+							"description": "Website About Us UUID"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Export Website About Us",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"format\": \"xlsx\",\n    \"ids\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/website-about-us/export",
+					"host": ["{{url}}"],
+					"path": ["website-about-us", "export"]
+				}
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		},
+		{
+			"key": "website_about_us_id",
+			"value": "uuid-here",
+			"type": "string"
+		}
+	]
+}

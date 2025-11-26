@@ -383,9 +383,8 @@ class UserRepository extends BaseRepository
 
     public function updateEmployee($user, array $data)
     {
-        try {
-            \DB::beginTransaction();
-
+//        try {
+        DB::transaction(function () use ($user, $data) {
             $this->model->update(["management_hierarchy_id" => $data["branch_id"]]);
             $companyUserCompany = $this->companyUserCompanyRepository->model->withoutTenancy()
                 ->where([
@@ -416,12 +415,14 @@ class UserRepository extends BaseRepository
                 ])->first();
                 $userProfessionalData->update(["job_title_id" => $data["job_title_id"], "job_type_id" => JobTitle::query()->find($data["job_title_id"])?->job_type_id, "branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
             }
+        });
 
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw new CustomException($e->getMessage());
-        }
+
+//            DB::commit();
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            throw new CustomException($e->getMessage());
+//        }
     }
 
     public function updateBroker(User $user, $userData, array $brokerData = null, $addressData = null, $branches = null)
@@ -445,10 +446,13 @@ class UserRepository extends BaseRepository
                         "company_user_company_id" => $companyUserCompany->id,
                         "management_hierarchy_id" => $branch,
                         "user_id" => $user->id,
-                        "id"=>Uuid::uuid4()->toString()
+                        "id" => Uuid::uuid4()->toString()
                     ];
                 }
-                $companyUserCompany->managementHierarchy()->delete();
+                $this->companyUserManagementHierarchyRepository->model->where([
+                    "company_user_company_id" => $companyUserCompany->id
+                ])->delete();
+
                 $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
             }
             if ($addressData != null) {
@@ -474,7 +478,6 @@ class UserRepository extends BaseRepository
     }
 
 
-
     public function updateClient(User $user, $userData, array $clientData = null, $addressData = null, $branches = null)
     {
         try {
@@ -496,10 +499,12 @@ class UserRepository extends BaseRepository
                         "company_user_company_id" => $companyUserCompany->id,
                         "management_hierarchy_id" => $branch,
                         "user_id" => $user->id,
-                        "id"=>Uuid::uuid4()->toString()
+                        "id" => Uuid::uuid4()->toString()
                     ];
                 }
-                $companyUserCompany->managementHierarchy()->delete();
+                $this->companyUserManagementHierarchyRepository->model->where([
+                    "company_user_company_id" => $companyUserCompany->id
+                ])->delete();
 
                 $this->companyUserManagementHierarchyRepository->model->insert($branchesdata);
             }
