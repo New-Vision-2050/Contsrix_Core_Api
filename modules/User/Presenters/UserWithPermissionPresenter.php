@@ -33,6 +33,15 @@ class UserWithPermissionPresenter extends AbstractPresenter
             "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
             "is_central_company"=>tenant("is_central_company"),
             "residence"=>$this->user->companyUser?->residence,
+            "user_types"=>$this->user->companyUserCompanies->map(function($companyUserCompany) {
+                return [
+                    'id' => $companyUserCompany->id,
+                    'company_id' => $companyUserCompany->company_id,
+                    'global_company_user_id' => $companyUserCompany->global_company_user_id,
+                    'role' => $companyUserCompany->getRawOriginal('role'),
+                    'status' => $companyUserCompany->status,
+                ];
+            })
         ];
     }
 }
