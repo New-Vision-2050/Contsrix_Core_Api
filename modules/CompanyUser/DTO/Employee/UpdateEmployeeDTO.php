@@ -28,7 +28,6 @@ class UpdateEmployeeDTO
     {
         return [
 
-            'job_title_id'=>$this->jobTitleId,
             "status"=>$this->status,
             "branch_id"=>$this->branchId
 
