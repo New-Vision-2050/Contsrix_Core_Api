@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Modules\WebsiteCMS\WebsiteOurService\Enums\ServiceTypeEnum;
 
 return new class extends Migration
 {
@@ -13,7 +14,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('title');
             $table->text('description');
-            $table->uuid('company_id');
+            $table->uuid('company_id')->index();
             $table->integer('status')->default(1);
             $table->timestamps();
 
@@ -23,7 +24,7 @@ return new class extends Migration
         // Departments table (has many relationship with website_our_services)
         Schema::create('website_our_service_departments', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('website_our_service_id');
+            $table->uuid('website_our_service_id')->index();
 
             $table->string('type'); // cards or hexa
             $table->timestamps();
