@@ -10,7 +10,6 @@ class UpdateEmployeeDTO
     public function __construct(
 
         public ?string $id,
-        public ?string $jobTitleId,
         public int $status,
         public ?int $branchId
 
