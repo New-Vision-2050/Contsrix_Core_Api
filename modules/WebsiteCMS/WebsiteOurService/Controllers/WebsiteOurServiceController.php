@@ -20,6 +20,7 @@ use Modules\WebsiteCMS\WebsiteOurService\Requests\UpdateCurrentCompanyWebsiteOur
 use Modules\WebsiteCMS\WebsiteOurService\Services\WebsiteOurServiceCRUDService;
 use Modules\WebsiteCMS\WebsiteOurService\Exports\WebsiteOurServiceExport;
 use Modules\WebsiteCMS\WebsiteOurService\Requests\ExportWebsiteOurServiceRequest;
+use Modules\WebsiteCMS\WebsiteOurService\Enums\ServiceTypeEnum;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 
@@ -119,5 +120,20 @@ class WebsiteOurServiceController extends Controller
         $presenter = new WebsiteOurServicePresenter($updatedItem);
 
         return Json::item($presenter->getData());
+    }
+
+    /**
+     * Get service type enum values as id-name pairs
+     */
+    public function getServiceTypes(): JsonResponse
+    {
+        $serviceTypes = array_map(function ($case) {
+            return [
+                'id' => $case->value,
+                'name' => $case->label(),
+            ];
+        }, ServiceTypeEnum::cases());
+
+        return Json::items($serviceTypes);
     }
 }
