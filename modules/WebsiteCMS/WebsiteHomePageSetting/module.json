@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteHomePageSetting",
+    "alias": "websitehomepagesetting",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteHomePageSetting\\Providers\\WebsiteHomePageSettingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}
