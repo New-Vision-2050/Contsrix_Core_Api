@@ -74,6 +74,13 @@ return [
     'job_code_required' => 'حقل كود الوظيفة مطلوب.',
     "self_parent"=>"لا يمكن الفرع هو نفس الاب",
 
+    'attendance-list' => 'قائمة الحضور',
+    'attendance-list*attendance-list' => 'قائمة الحضور',
+    'attendance-map' => 'خريطة الحضور',
+    'attendance-list*attendance-map' => 'خريطة الحضور',
+    'attendance-constraints' => 'محددات الحضور',
+    'attendance-constraints*attendance-constraints' => 'محددات الحضور',
+
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
         'file' => 'يجب أن يكون حجم حقل :attribute أقل من :value كيلوبايت.',

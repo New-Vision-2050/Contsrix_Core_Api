@@ -74,6 +74,15 @@ return [
     'user-profile*family-information' => 'Family Information',
 
     "program-settings" => "Program Settings",
+    
+    "attendance" => "Attendance",
+    "attendance-list" => "Attendance List",
+    "attendance-map" => "Attendance Map",
+    "attendance-constraints" => "Attendance Constraints",
+    "attendance-list*attendance-list" => "Attendance List",
+    "attendance-list*attendance-map" => "Attendance Map",
+    "attendance-list*attendance-constraints" => "Attendance Constraints",
+    "attendance-constraints*attendance-constraints" => "Attendance Constraints",
 
     // Geographic Data
     'country' => 'Country',
