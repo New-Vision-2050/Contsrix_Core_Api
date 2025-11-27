@@ -413,7 +413,7 @@ class UserRepository extends BaseRepository
                     "type" => "management",
                     "is_main" => 1
                 ])->first();
-                $userProfessionalData->update(["job_title_id" => $data["job_title_id"], "job_type_id" => JobTitle::query()->find($data["job_title_id"])?->job_type_id, "branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
+                $userProfessionalData->update([ "branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
             }
         });
 

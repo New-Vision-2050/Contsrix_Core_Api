@@ -10,7 +10,6 @@ class UpdateEmployeeDTO
     public function __construct(
 
         public ?string $id,
-        public ?string $jobTitleId,
         public int $status,
         public ?int $branchId
 
@@ -28,7 +27,6 @@ class UpdateEmployeeDTO
     {
         return [
 
-            'job_title_id'=>$this->jobTitleId,
             "status"=>$this->status,
             "branch_id"=>$this->branchId
 

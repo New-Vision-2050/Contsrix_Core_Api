@@ -30,7 +30,6 @@ class UpdateEmployeeRequest extends FormRequest
         return [
 
             "branch_id" => "nullable|exists:management_hierarchies,id,type,branch",
-            'job_title_id' => 'nullable|exists:job_titles,id',
             "status" => 'nullable|in:1,0',
 
 
@@ -45,7 +44,6 @@ class UpdateEmployeeRequest extends FormRequest
         return new UpdateEmployeeDTO(
             id:$this->route("id"),
 
-            jobTitleId: (string)$this->get("job_title_id"),
             status:(int) $this->get("status"),
             branchId:(int) $this->get('branch_id'),
         );
