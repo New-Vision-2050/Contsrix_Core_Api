@@ -74,6 +74,8 @@ Route::prefix('attendance')->group(function () {
         // Get current user's clock-in status
         Route::get('status', [UserAttendanceController::class, 'getMyClockInStatus'])
             ->name('attendance.user-attendance-status');
+        Route::get('history', [UserAttendanceController::class, 'getUserAttendanceHistory'])
+            ->name('attendance.user-attendance.get-history');
     });
 
     // Team Attendance (for supervisors)
