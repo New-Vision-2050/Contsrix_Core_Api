@@ -17,11 +17,11 @@ use Modules\Setting\Database\Seeders\DefaultIdentifierSeederTableSeeder;
 use Modules\User\Database\Seeders\GenaralAdminSeedTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\Leave\LeaveType\Database\Seeders\LeaveTypeBranchSeeder;
-use Modules\WebsiteCMS\WebsiteSetting\Database\Seeders\WebsiteSettingSeeder;
 use Modules\WebsiteCMS\WebsiteContactInfo\Database\Seeders\WebsiteContactInfoSeeder;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Database\Seeders\WebsiteTermsAndConditionSeederTableSeeder;
 use Modules\WebsiteCMS\WebsiteHomePageSetting\Database\Seeders\WebsiteHomePageSettingSeeder;
 use Modules\WebsiteCMS\WebsiteAboutUs\Database\Seeders\WebsiteAboutUsSeeder;
+use Modules\WebsiteCMS\WebsiteTheme\Database\Seeders\WebsiteThemeSeeder;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -60,8 +60,6 @@ class TenantDatabaseSeeder extends Seeder
 
         $this->call(DefaultNotificationSettingsSeeder::class);
 
-        // Create default website settings for the company
-//        $this->call(WebsiteSettingSeeder::class);
         $this->call(WebsiteTermsAndConditionSeederTableSeeder::class);
 
 
@@ -72,6 +70,9 @@ class TenantDatabaseSeeder extends Seeder
         $this->call(WebsiteHomePageSettingSeeder::class);
         // Create default website about us for the company
         $this->call(WebsiteAboutUsSeeder::class);
+
+        // Create default website theme and color palettes for the company
+        $this->call(WebsiteThemeSeeder::class);
 
 //        $this->call(MainPackageSeeder::class);
     }
