@@ -93,7 +93,7 @@ class UserRepository extends BaseRepository
     public function getUserInCurrentCompanyWith(array $relations = [], $type = null, $page = 1, $perPage = 10)
     {
         if (method_exists($this->model, 'scopeFilter')) {
-            $query = $this->model;//->filter(request()->all());
+            $query = $this->model->filter(request()->all());
         } else {
             $query = $this->model;
         }
