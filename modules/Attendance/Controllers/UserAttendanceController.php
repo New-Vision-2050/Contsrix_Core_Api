@@ -12,13 +12,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Modules\Attendance\Exceptions\AttendanceException;
+use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 use Modules\Attendance\Requests\GetUserConstraintRequest;
+use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\UserAttendanceService;
 use Ramsey\Uuid\Uuid;
 
 class UserAttendanceController extends Controller
 {
     public function __construct(
+        private AttendanceService $attendanceService,
         private UserAttendanceService $userAttendanceService
     ) {}
 
@@ -78,6 +81,32 @@ class UserAttendanceController extends Controller
         $result = $this->userAttendanceService->checkClockInStatus($userId);
 
         return Json::item($result, message: __('messages.attendance.clock_in_status_retrieved'));
+    }
+    public function getUserAttendanceHistory(Request $request): JsonResponse
+    {
+        $userId = (string) Auth::id();
+
+        $result = $this->attendanceService->getTeamAttendance(
+            ['user_id' => $userId, 'company_id' => Auth::user()->company_id],
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10)
+        );
+
+        if ($result->isEmpty()) {
+            return Json::items([], message: 'No attendance records found');
+        }
+        return Json::items(
+    AttendanceTeamPresenter::collection($result->items()),
+    [],
+    200,
+    [
+        'total' => $result->total(),
+        'per_page' => $result->perPage(),
+        'current_page' => $result->currentPage(),
+        'last_page' => $result->lastPage(),
+        'result_count' =>$result->total(),
+    ]
+    );
     }
 }
 
