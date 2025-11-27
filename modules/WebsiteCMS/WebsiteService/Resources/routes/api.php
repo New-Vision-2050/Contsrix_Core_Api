@@ -2,13 +2,21 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\WebsiteService\Controllers\WebsiteServiceController;
+use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [WebsiteServiceController::class, 'index']);
-    Route::post('/', [WebsiteServiceController::class, 'store']);
-    Route::get('/{id}', [WebsiteServiceController::class, 'show']);
-    Route::put('/{id}', [WebsiteServiceController::class, 'update']);
-    Route::put('/{id}/status', [WebsiteServiceController::class, 'updateStatus']);
-    Route::delete('/{id}', [WebsiteServiceController::class, 'destroy']);
-    Route::post('/export', [WebsiteServiceController::class, 'export']);
+    Route::get('/', [WebsiteServiceController::class, 'index'])
+        ->permission(Permission::WEBSITE_SERVICE_LIST());
+    Route::post('/', [WebsiteServiceController::class, 'store'])
+        ->permission(Permission::WEBSITE_SERVICE_CREATE());
+    Route::get('/{id}', [WebsiteServiceController::class, 'show'])
+        ->permission(Permission::WEBSITE_SERVICE_UPDATE());
+    Route::put('/{id}', [WebsiteServiceController::class, 'update'])
+        ->permission(Permission::WEBSITE_SERVICE_UPDATE());
+    Route::put('/{id}/status', [WebsiteServiceController::class, 'updateStatus'])
+        ->permission(Permission::WEBSITE_SERVICE_ACTIVATE());
+    Route::delete('/{id}', [WebsiteServiceController::class, 'destroy'])
+        ->permission(Permission::WEBSITE_SERVICE_DELETE());
+//    Route::post('/export', [WebsiteServiceController::class, 'export'])
+//        ->permission(Permission::WEBSITE_SERVICE_EXPORT());
 });

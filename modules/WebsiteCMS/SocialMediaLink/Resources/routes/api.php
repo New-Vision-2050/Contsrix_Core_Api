@@ -2,15 +2,24 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\SocialMediaLink\Controllers\SocialMediaLinkController;
+use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [SocialMediaLinkController::class, 'index']);
-    Route::get('/types', [SocialMediaLinkController::class, 'getTypes']);
-    Route::post('/', [SocialMediaLinkController::class, 'store']);
-    Route::post('/export', [SocialMediaLinkController::class, 'export']);
+    Route::get('/', [SocialMediaLinkController::class, 'index'])
+        ->permission(Permission::SOCIAL_MEDIA_LINK_LIST());
+    Route::get('/types', [SocialMediaLinkController::class, 'getTypes'])
+        ->permission(Permission::SOCIAL_MEDIA_LINK_LIST());
+    Route::post('/', [SocialMediaLinkController::class, 'store'])
+        ->permission(Permission::SOCIAL_MEDIA_LINK_CREATE());
+//    Route::post('/export', [SocialMediaLinkController::class, 'export'])
+//        ->permission(Permission::SOCIAL_MEDIA_LINK_EXPORT());
 
-    Route::get('/{id}', [SocialMediaLinkController::class, 'show']);
-    Route::put('/{id}', [SocialMediaLinkController::class, 'update']);
-    Route::put('/{id}/status', [SocialMediaLinkController::class, 'updateStatus']);
-    Route::delete('/{id}', [SocialMediaLinkController::class, 'delete']);
+    Route::get('/{id}', [SocialMediaLinkController::class, 'show'])
+        ->permission(Permission::SOCIAL_MEDIA_LINK_UPDATE());
+    Route::put('/{id}', [SocialMediaLinkController::class, 'update'])
+        ->permission(Permission::SOCIAL_MEDIA_LINK_UPDATE());
+    Route::put('/{id}/status', [SocialMediaLinkController::class, 'updateStatus'])
+        ->permission(Permission::SOCIAL_MEDIA_LINK_ACTIVATE());
+    Route::delete('/{id}', [SocialMediaLinkController::class, 'delete'])
+        ->permission(Permission::SOCIAL_MEDIA_LINK_DELETE());
 });

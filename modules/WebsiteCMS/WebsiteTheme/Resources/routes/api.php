@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\RoleAndPermission\Enums\Permission;
 use Modules\WebsiteCMS\WebsiteTheme\Controllers\WebsiteThemeController;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -9,8 +10,10 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 //    Route::post('/export', [WebsiteThemeController::class, 'export']);
 
     // Current company theme routes
-    Route::get('/current-company', [WebsiteThemeController::class, 'getCurrentCompanyTheme']);
-    Route::post('/current-company', [WebsiteThemeController::class, 'updateCurrentCompanyTheme']);
+    Route::get('/current-company', [WebsiteThemeController::class, 'getCurrentCompanyTheme'])
+    ->permission(Permission::WEBSITE_THEME_VIEW());
+    Route::post('/current-company', [WebsiteThemeController::class, 'updateCurrentCompanyTheme'])
+    ->permission(Permission::WEBSITE_THEME_UPDATE());
 
 //    Route::get('/{id}', [WebsiteThemeController::class, 'show']);
     Route::put('/{id}', [WebsiteThemeController::class, 'update']);
