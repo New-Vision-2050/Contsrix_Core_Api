@@ -8,7 +8,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [WebsiteThemeSettingController::class, 'index']);
 //    Route::post('/', [WebsiteThemeSettingController::class, 'store']);
 //    Route::post('/export', [WebsiteThemeSettingController::class, 'export']);
-//    Route::get('/{id}', [WebsiteThemeSettingController::class, 'show']);
+    Route::get('/{id}', [WebsiteThemeSettingController::class, 'show']);
 //    Route::put('/{id}', [WebsiteThemeSettingController::class, 'update']);
 //    Route::delete('/{id}', [WebsiteThemeSettingController::class, 'delete']);
 
