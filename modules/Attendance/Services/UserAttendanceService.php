@@ -159,8 +159,16 @@ class UserAttendanceService
     {
         return $attendances
             ->filter(function ($attendance) use ($periodStart, $periodEnd) {
-                $attendanceStart = $this->getAttendanceTime($attendance, 'start');
-                return $attendanceStart && $attendanceStart->between($periodStart, $periodEnd, true);
+                // Use clock_in_time for matching to periods (actual time, not scheduled start_time)
+                if (!$attendance->clock_in_time) {
+                    return false;
+                }
+                
+                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
+                    ? $attendance->clock_in_time 
+                    : Carbon::parse($attendance->clock_in_time);
+                
+                return $clockInCarbon->between($periodStart, $periodEnd, true);
             })
             ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance))
             ->values()
@@ -197,12 +205,32 @@ class UserAttendanceService
     {
         $startTime = $this->getAttendanceTime($attendance, 'start');
         $endTime = $this->getAttendanceTime($attendance, 'end');
+        
+        // Get clock_in_time and clock_out_time
+        $clockInTime = null;
+        $clockOutTime = null;
+        
+        if ($attendance->clock_in_time) {
+            $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
+                ? $attendance->clock_in_time 
+                : Carbon::parse($attendance->clock_in_time);
+            $clockInTime = $clockInCarbon->format('H:i');
+        }
+        
+        if ($attendance->clock_out_time) {
+            $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
+                ? $attendance->clock_out_time 
+                : Carbon::parse($attendance->clock_out_time);
+            $clockOutTime = $clockOutCarbon->format('H:i');
+        }
 
         return [
             'status' => $attendance->status ?? 'scheduled',
-            'date' => $startTime?->format('Y-m-d'),
+            'date' => $startTime?->format('Y-m-d') ?? ($clockInTime ? Carbon::parse($attendance->clock_in_time)->format('Y-m-d') : null),
             'start_time' => $startTime?->format('H:i'),
             'end_time' => $endTime?->format('H:i'),
+            'clock_in_time' => $clockInTime,
+            'clock_out_time' => $clockOutTime,
         ];
     }
 
@@ -283,6 +311,299 @@ class UserAttendanceService
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    /**
+     * Get user attendance history grouped by date with periods
+     *
+     * @param UuidInterface|string $userId
+     * @param int|null $month
+     * @param int|null $year
+     * @param int $page
+     * @param int $perPage
+     * @return array
+     * @throws ModelNotFoundException
+     */
+    public function getUserAttendanceHistory(
+        UuidInterface|string $userId,
+        ?int $month = null,
+        ?int $year = null,
+        int $page = 1,
+        int $perPage = 10
+    ): array {
+        $user = User::findOrFail($userId);
+        $now = Carbon::now();
+        $currentYear = $year ?? $now->year;
+        $currentMonth = $month ?? $now->month;
+
+        // Build query for attendance records
+        $query = Attendance::where('user_id', $user->id)
+            ->where(function ($q) use ($currentYear, $currentMonth) {
+                $q->where(function ($subQ) use ($currentYear, $currentMonth) {
+                    $subQ->whereNotNull('start_time')
+                        ->whereYear('start_time', $currentYear);
+                    if ($currentMonth) {
+                        $subQ->whereMonth('start_time', $currentMonth);
+                    }
+                })->orWhere(function ($subQ) use ($currentYear, $currentMonth) {
+                    $subQ->whereNull('start_time')
+                        ->whereNotNull('clock_in_time')
+                        ->whereYear('clock_in_time', $currentYear);
+                    if ($currentMonth) {
+                        $subQ->whereMonth('clock_in_time', $currentMonth);
+                    }
+                });
+            })
+            ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
+            ->get();
+
+        // Group attendances by date
+        $groupedByDate = $query->groupBy(function ($attendance) {
+            $date = $attendance->start_time ?? $attendance->clock_in_time;
+            return Carbon::parse($date)->format('Y-m-d');
+        });
+
+        $result = [];
+        foreach ($groupedByDate as $dateString => $attendances) {
+            $dateCarbon = Carbon::parse($dateString);
+            
+            // Get work rules for this date
+            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
+            $periods = $workRules['all_work_periods'] ?? [];
+
+            // Match attendances to periods
+            $periodsWithAttendance = $this->matchAttendancesToPeriods($periods, $attendances, $dateCarbon);
+
+            // Determine day status
+            $dayStatus = $this->determineDayStatus($attendances);
+
+            // Get day name in Arabic
+            $dayName = $this->getDayNameArabic($dateCarbon);
+
+            $result[] = [
+                'date' => $dateString,
+                'day_name' => $dayName,
+                'status' => $dayStatus,
+                'periods_count' => count($periodsWithAttendance),
+                'periods' => $periodsWithAttendance,
+            ];
+        }
+
+        // Sort by date descending
+        usort($result, function ($a, $b) {
+            return strcmp($b['date'], $a['date']);
+        });
+
+        // Paginate
+        $total = count($result);
+        $offset = ($page - 1) * $perPage;
+        $paginatedResult = array_slice($result, $offset, $perPage);
+
+        return [
+            'data' => $paginatedResult,
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => (int) ceil($total / $perPage),
+                'next_page' => $page < ceil($total / $perPage) ? $page + 1 : null,
+                'result_count' => count($paginatedResult),
+            ],
+        ];
+    }
+
+    /**
+     * Match attendances to work periods
+     *
+     * @param array $periods
+     * @param Collection $attendances
+     * @param Carbon $date
+     * @return array
+     */
+    private function matchAttendancesToPeriods(array $periods, Collection $attendances, Carbon $date): array
+    {
+        $periodsWithAttendance = [];
+
+        foreach ($periods as $index => $period) {
+            $periodStart = $this->parsePeriodTime($period, 'start', $date);
+            $periodEnd = $this->parsePeriodTime($period, 'end', $date);
+
+            // Find attendances that fall within this period
+            $periodAttendances = $attendances->filter(function ($attendance) use ($periodStart, $periodEnd) {
+                $clockInTime = $attendance->clock_in_time;
+                if (!$clockInTime) {
+                    return false;
+                }
+                $clockInCarbon = $clockInTime instanceof Carbon ? $clockInTime : Carbon::parse($clockInTime);
+                return $clockInCarbon->between($periodStart, $periodEnd, true);
+            });
+
+            if ($periodAttendances->isEmpty()) {
+                continue;
+            }
+
+            // Sort attendances by clock_in_time to get the latest one
+            $sortedAttendances = $periodAttendances->sortByDesc(function ($attendance) {
+                if (!$attendance->clock_in_time) {
+                    return 0;
+                }
+                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
+                    ? $attendance->clock_in_time 
+                    : Carbon::parse($attendance->clock_in_time);
+                return $clockInCarbon->timestamp;
+            })->values();
+
+            // Get the latest attendance record (last clock_in)
+            $latestAttendance = $sortedAttendances->first();
+
+            // Get clock_in_time and clock_out_time from the latest attendance
+            $clockInTime = null;
+            $clockOutTime = null;
+            $clockInLocation = null;
+            $clockOutLocation = null;
+
+            if ($latestAttendance->clock_in_time) {
+                $clockInCarbon = $latestAttendance->clock_in_time instanceof Carbon 
+                    ? $latestAttendance->clock_in_time 
+                    : Carbon::parse($latestAttendance->clock_in_time);
+                $clockInTime = $clockInCarbon->format('H:i');
+                $clockInLocation = $latestAttendance->clock_in_location;
+            }
+
+            // Get clock_out_time from the same attendance record (last clock_in)
+            if ($latestAttendance->clock_out_time) {
+                $clockOutCarbon = $latestAttendance->clock_out_time instanceof Carbon 
+                    ? $latestAttendance->clock_out_time 
+                    : Carbon::parse($latestAttendance->clock_out_time);
+                $clockOutTime = $clockOutCarbon->format('H:i');
+                $clockOutLocation = $latestAttendance->clock_out_location;
+            }
+
+            // Calculate total_work_hours from all attendances in the period
+            $totalWorkHours = 0;
+            foreach ($periodAttendances as $attendance) {
+                // Use total_work_hours from attendance record if available and > 0
+                if (isset($attendance->total_work_hours) && $attendance->total_work_hours > 0) {
+                    $totalWorkHours += (float) $attendance->total_work_hours;
+                } elseif ($attendance->clock_in_time) {
+                    // If total_work_hours is 0 or not set, calculate from clock_in to clock_out
+                    $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
+                        ? $attendance->clock_in_time 
+                        : Carbon::parse($attendance->clock_in_time);
+                    
+                    if ($attendance->clock_out_time) {
+                        $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
+                            ? $attendance->clock_out_time 
+                            : Carbon::parse($attendance->clock_out_time);
+                        $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon);
+                    } else {
+                        // If no clock_out, calculate from clock_in to now
+                        $workMinutes = $clockInCarbon->diffInMinutes(Carbon::now());
+                    }
+                    $totalWorkHours += round($workMinutes / 60, 2);
+                }
+            }
+
+            // Aggregate delay and overtime from all attendances in period
+            $totalDelayMinutes = 0;
+            $totalOvertimeHours = 0;
+            foreach ($periodAttendances as $attendance) {
+                $totalDelayMinutes += (int) ($attendance->late_minutes ?? 0);
+                $totalOvertimeHours += (float) ($attendance->overtime_hours ?? 0);
+            }
+
+            $periodsWithAttendance[] = [
+                'clock_in_time' => $clockInTime,
+                'clock_out_time' => $clockOutTime, // Will be null if no clock_out in last clock_in
+                'work_hours' => $this->formatHoursToTime($totalWorkHours),
+                'delay_hours' => $this->formatMinutesToTime($totalDelayMinutes),
+                'overtime_hours' => $this->formatHoursToTime($totalOvertimeHours),
+                'clock_in_location' => $clockInLocation,
+                'clock_out_location' => $clockOutLocation,
+            ];
+        }
+
+        return $periodsWithAttendance;
+    }
+
+    /**
+     * Determine day status based on attendances
+     *
+     * @param Collection $attendances
+     * @return string
+     */
+    private function determineDayStatus(Collection $attendances): string
+    {
+        if ($attendances->isEmpty()) {
+            return 'غائب';
+        }
+
+        $hasCompleted = $attendances->contains(function ($attendance) {
+            return $attendance->clock_out_time !== null;
+        });
+
+        $hasActive = $attendances->contains(function ($attendance) {
+            return $attendance->clock_out_time === null && $attendance->status === 'active';
+        });
+
+        if ($hasCompleted && !$hasActive) {
+            return 'تم الخروج';
+        }
+
+        if ($hasActive) {
+            return 'نشط';
+        }
+
+        return 'تم الخروج';
+    }
+
+    /**
+     * Get day name in Arabic
+     *
+     * @param Carbon $date
+     * @return string
+     */
+    private function getDayNameArabic(Carbon $date): string
+    {
+        $dayNames = [
+            'Sunday' => 'الأحد',
+            'Monday' => 'الاثنين',
+            'Tuesday' => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday' => 'الخميس',
+            'Friday' => 'الجمعة',
+            'Saturday' => 'السبت',
+        ];
+
+        $englishDayName = $date->format('l');
+        return $dayNames[$englishDayName] ?? $englishDayName;
+    }
+
+    /**
+     * Format hours to H:i format
+     *
+     * @param float $hours
+     * @return string
+     */
+    private function formatHoursToTime(float $hours): string
+    {
+        $totalMinutes = (int) round($hours * 60);
+        $h = intval($totalMinutes / 60);
+        $m = $totalMinutes % 60;
+        return sprintf('%02d:%02d', $h, $m);
+    }
+
+    /**
+     * Format minutes to H:i format
+     *
+     * @param int $minutes
+     * @return string
+     */
+    private function formatMinutesToTime(int $minutes): string
+    {
+        $h = intval($minutes / 60);
+        $m = $minutes % 60;
+        return sprintf('%02d:%02d', $h, $m);
     }
 }
 
