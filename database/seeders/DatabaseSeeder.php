@@ -12,6 +12,8 @@ use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
 use Modules\Shared\University\Database\Seeders\UniversitiesOtherSeederTableSeeder;
 use Modules\SubscriptionSystem\Modules\Database\Seeders\ModuleStructureSeeder;
+use Modules\WebsiteCMS\WebsiteThemeSetting\Database\Seeders\DefaultWebsiteThemeSettingSeeder;
+use Modules\WebsiteCMS\WebsiteThemeSetting\Models\WebsiteThemeSettingDepartment;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\User\Database\Seeders\AdminSeedTableSeeder;
@@ -142,5 +144,6 @@ class DatabaseSeeder extends Seeder
         $this->call(UnitSeederTableSeeder::class);
         $this->call(SocialIconsModulesSeederTableSeeder::class);
         $this->call(PaymentMethodDataSeeder::class);
+        $this->call(DefaultWebsiteThemeSettingSeeder::class);
     }
 }
