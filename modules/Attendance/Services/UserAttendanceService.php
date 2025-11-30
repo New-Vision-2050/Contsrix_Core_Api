@@ -263,12 +263,20 @@ class UserAttendanceService
      */
     private function filterWorkRules(array $workRules): array
     {
+        $locationWork = $workRules['location_work'] ?? null;
+        
         return [
             'day_status' => $workRules['day_status'] ?? null,
             'day_name' => $workRules['day_name'] ?? null,
             'is_holiday' => $workRules['is_holiday'] ?? false,
             'reason' => $workRules['reason'] ?? null,
             'all_work_periods' => $workRules['all_work_periods'] ?? [],
+            'location_work' => $locationWork ? [
+                'name' => $locationWork['name'] ?? null,
+                'latitude' => $locationWork['latitude'] ?? null,
+                'longitude' => $locationWork['longitude'] ?? null,
+                'radius' => $locationWork['radius'] ?? null,
+            ] : null,
         ];
     }
 
