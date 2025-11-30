@@ -30,6 +30,7 @@ echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
 if [ "$APP_ENV" == "production" ]; then
+     REPLICAS=2
      EMAIL_HOST=smtp.stackmail.com
      EMAIL_PORT=465
      EMAIL_HOST_USER=admin@constrix-nv.com
@@ -37,6 +38,7 @@ if [ "$APP_ENV" == "production" ]; then
      EMAIL_ENCRYPTION=tls
      EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
 elif [ "$APP_ENV" == "stage" ]; then
+     REPLICAS=1
      EMAIL_HOST=smtp.stackmail.com
      EMAIL_PORT=465
      EMAIL_HOST_USER=admin@constrix-nv.com
@@ -44,6 +46,7 @@ elif [ "$APP_ENV" == "stage" ]; then
      EMAIL_ENCRYPTION=tls
      EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
 else
+    REPLICAS=1
     EMAIL_HOST=smtp.stackmail.com
     EMAIL_PORT=465
     EMAIL_HOST_USER=admin@constrix-nv.com
@@ -51,6 +54,8 @@ else
     EMAIL_ENCRYPTION=tls
     EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
 fi
+
+export REPLICAS
 
 APP_NAME="Constrix"
 APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
