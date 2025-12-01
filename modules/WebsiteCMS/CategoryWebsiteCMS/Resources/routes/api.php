@@ -2,14 +2,22 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\CategoryWebsiteCMS\Controllers\CategoryWebsiteCMSController;
+use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [CategoryWebsiteCMSController::class, 'index']);
-    Route::get('/categeory-types', [CategoryWebsiteCMSController::class, 'getCetegoryTypes']);
-    Route::post('/', [CategoryWebsiteCMSController::class, 'store']);
-    Route::post('/export', [CategoryWebsiteCMSController::class, 'export']);
+    Route::get('/', [CategoryWebsiteCMSController::class, 'index'])
+        ->permission(Permission::CATEGORY_WEBSITE_CMS_LIST());
+    Route::get('/categeory-types', [CategoryWebsiteCMSController::class, 'getCetegoryTypes'])
+        ->permission(Permission::CATEGORY_WEBSITE_CMS_LIST());
+    Route::post('/', [CategoryWebsiteCMSController::class, 'store'])
+        ->permission(Permission::CATEGORY_WEBSITE_CMS_CREATE());
+//    Route::post('/export', [CategoryWebsiteCMSController::class, 'export'])
+//        ->permission(Permission::CATEGORY_WEBSITE_CMS_EXPORT());
 
-    Route::get('/{id}', [CategoryWebsiteCMSController::class, 'show']);
-    Route::put('/{id}', [CategoryWebsiteCMSController::class, 'update']);
-    Route::delete('/{id}', [CategoryWebsiteCMSController::class, 'delete']);
+    Route::get('/{id}', [CategoryWebsiteCMSController::class, 'show'])
+        ->permission(Permission::CATEGORY_WEBSITE_CMS_UPDATE());
+    Route::put('/{id}', [CategoryWebsiteCMSController::class, 'update'])
+        ->permission(Permission::CATEGORY_WEBSITE_CMS_UPDATE());
+    Route::delete('/{id}', [CategoryWebsiteCMSController::class, 'delete'])
+        ->permission(Permission::CATEGORY_WEBSITE_CMS_DELETE());
 });
