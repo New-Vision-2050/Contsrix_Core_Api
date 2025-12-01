@@ -39,7 +39,7 @@ class AttendanceService
         $constraintService = app(AttendanceConstraintService::class);
         $constraints = $constraintService->getTodaysWorkRulesForUser($user);
         $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'];
-
+        
         $timezone = getTimeZoneByRequest()?? config('app.timezone');
         $date = Carbon::now()->format('Y-m-d');
 
