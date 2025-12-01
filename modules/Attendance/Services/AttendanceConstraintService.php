@@ -556,6 +556,7 @@ class AttendanceConstraintService
             : Carbon::now($timezone);
 
         $constraints = $this->getApplicableConstraintsForDataRetrieval($user);
+        
         if ($constraints->isEmpty()) {
             return [
                 'day_status' => 'Undefined',

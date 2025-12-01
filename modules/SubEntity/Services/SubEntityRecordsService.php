@@ -123,34 +123,34 @@ class SubEntityRecordsService
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
         if (CompanyUserRole::BROKER->value == $type) {
-            $type = "الوسطاء";
+            $typeLabel = __('brokers');
         } elseif (CompanyUserRole::EMPLOYEE->value == $type) {
-            $type = "الموظفين";
+            $typeLabel = __('employees');
         } else {
-            $type = "العملاء";
+            $typeLabel = __('clients');
         }
 
 
         return [
             [
-                "title" => " احمالي عدد$type",
+                "title" => __('total_count', ['type' => $typeLabel]),
                 'total' => $totalRecords,
                 'percentage' => 100,
             ],
             [
-                "title" => "$type المضافين اخر الشهر ",
+                "title" => __('added_last_month', ['type' => $typeLabel]),
                 'total' => $recordsAddedLastMonth,
                 'percentage' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords), // No comparison for this metric
                 "start" => Carbon::now()->startOfMonth(),
                 "end" => Carbon::now()->endOfMonth()
             ],
             [
-                "title" => "$type النشيطين ",
+                "title" => __('active_records', ['type' => $typeLabel]),
                 'total' => $activeRecords,
                 'percentage' => $this->calculatePercentageChange($activeRecords, $totalRecords)
             ],
             [
-                "title" => "$type المعلقين ",
+                "title" => __('suspended_records', ['type' => $typeLabel]),
                 'total' => $suspendedRecords,
                 'percentage' => $this->calculatePercentageChange($suspendedRecords, $totalRecords) // Could add comparison if needed
             ]

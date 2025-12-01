@@ -93,7 +93,7 @@ class UserRepository extends BaseRepository
     public function getUserInCurrentCompanyWith(array $relations = [], $type = null, $page = 1, $perPage = 10)
     {
         if (method_exists($this->model, 'scopeFilter')) {
-            $query = $this->model;//->filter(request()->all());
+            $query = $this->model->filter(request()->all());
         } else {
             $query = $this->model;
         }
@@ -404,6 +404,10 @@ class UserRepository extends BaseRepository
             if ($companyUserCompanyManagementHirarchy) {
                 $companyUserCompanyManagementHirarchy->update(["management_hierarchy_id" => $data["branch_id"]]);
 
+            }
+            // Update status if provided (check isset to handle 0 value)
+            if (isset($data["status"])) {
+                $user->update(["status" => (string)$data["status"]]);
             }
             $userProfessionalData = UserProfessionalData::query()->where(["global_id" => $user->global_company_user_id, "company_id" => $user->company_id])->first();
             if ($userProfessionalData) {

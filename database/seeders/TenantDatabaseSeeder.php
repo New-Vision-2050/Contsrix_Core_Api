@@ -22,6 +22,7 @@ use Modules\WebsiteCMS\WebsiteTermAndCondition\Database\Seeders\WebsiteTermsAndC
 use Modules\WebsiteCMS\WebsiteHomePageSetting\Database\Seeders\WebsiteHomePageSettingSeeder;
 use Modules\WebsiteCMS\WebsiteAboutUs\Database\Seeders\WebsiteAboutUsSeeder;
 use Modules\WebsiteCMS\WebsiteTheme\Database\Seeders\WebsiteThemeSeeder;
+use Modules\WebsiteCMS\WebsiteThemeSetting\Database\Seeders\AssignDefaultThemeToCompaniesSeeder;
 
 class TenantDatabaseSeeder extends Seeder
 {
@@ -73,6 +74,9 @@ class TenantDatabaseSeeder extends Seeder
 
         // Create default website theme and color palettes for the company
         $this->call(WebsiteThemeSeeder::class);
+
+        // Assign default theme setting to the company
+        $this->call(AssignDefaultThemeToCompaniesSeeder::class);
 
 //        $this->call(MainPackageSeeder::class);
     }

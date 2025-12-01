@@ -29,8 +29,8 @@ class UpdateEmployeeRequest extends FormRequest
     {
         return [
 
-            "branch_id" => "nullable|exists:management_hierarchies,id,type,branch",
-            "status" => 'nullable|in:1,0',
+            "branch_id" => "required|exists:management_hierarchies,id,type,branch",
+            "status" => 'required|in:1,0',
 
 
 
