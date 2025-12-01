@@ -304,8 +304,8 @@ return [
     'website-cms*website-home-page-setting' => 'إعدادات الصفحة الرئيسية',
 
     // Website Theme Setting
-    'website-theme-setting' => 'إعدادات الثيم',
-    'website-cms*website-theme-setting' => 'إعدادات الثيم',
+    'website-theme' => 'إعدادات الملف',
+    'website-cms*website-theme' => 'إعدادات الملف',
 
     // Website Icon
     'website-icon' => 'أيقونات الموقع',
@@ -334,5 +334,8 @@ return [
     // Website Term And Condition
     'website-term-and-condition' => 'الشروط والأحكام',
     'website-cms*website-term-and-condition' => 'الشروط والأحكام',
+
+    "website-theme-setting"=>"اعدادات الثيمات",
+    "website-theme-setting*website-theme-setting"=>"اعدادات الثيمات"
 
 ];

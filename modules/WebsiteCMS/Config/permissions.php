@@ -46,8 +46,8 @@ return [
         'WEBSITE_HOME_PAGE_SETTING_UPDATE' => 'website-cms.website-home-page-setting*website-home-page-setting.update',
 
         // Website Theme Setting Management
-        'WEBSITE_THEME_VIEW' => 'website-cms.website-theme-setting*website-theme-setting.view',
-        'WEBSITE_THEME_UPDATE' => 'website-cms.website-theme-setting*website-theme-setting.update',
+        'WEBSITE_THEME_VIEW' => 'website-cms.website-theme*website-theme.view',
+        'WEBSITE_THEME_UPDATE' => 'website-cms.website-theme*website-theme.update',
 
         // Website Icon Management
         'WEBSITE_ICON_LIST' => 'website-cms.website-icon*website-icon.list',
@@ -87,9 +87,9 @@ return [
 
 
         // Website Service Management
-        'WEBSITE_THEME_SETTING_LIST' => 'website-cms.website-service*website-service.list',
-        'WEBSITE_THEME_SETTING_SHOW' => 'website-cms.website-service*website-service.show',
-        'WEBSITE_THEME_SETTING_ACTIVATE' => 'website-cms.website-service*website-service.activate',
+        'WEBSITE_THEME_SETTING_LIST' => 'website-cms.website-theme-setting*website-theme-setting.list',
+        'WEBSITE_THEME_SETTING_SHOW' => 'website-cms.website-theme-setting*website-theme-setting.show',
+        'WEBSITE_THEME_SETTING_ACTIVATE' => 'website-cms.website-theme-setting*website-theme-setting.activate',
 
 
         // Website Term And Condition Management
