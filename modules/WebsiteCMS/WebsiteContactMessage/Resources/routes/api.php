@@ -11,4 +11,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/{id}', [WebsiteContactMessageController::class, 'show']);
     Route::put('/{id}', [WebsiteContactMessageController::class, 'update']);
     Route::delete('/{id}', [WebsiteContactMessageController::class, 'delete']);
+    
+    Route::post('/{id}/reply', [WebsiteContactMessageController::class, 'reply']);
 });

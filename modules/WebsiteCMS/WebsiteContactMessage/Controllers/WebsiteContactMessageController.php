@@ -15,6 +15,7 @@ use Modules\WebsiteCMS\WebsiteContactMessage\Requests\DeleteWebsiteContactMessag
 use Modules\WebsiteCMS\WebsiteContactMessage\Requests\GetWebsiteContactMessageListRequest;
 use Modules\WebsiteCMS\WebsiteContactMessage\Requests\GetWebsiteContactMessageRequest;
 use Modules\WebsiteCMS\WebsiteContactMessage\Requests\UpdateWebsiteContactMessageRequest;
+use Modules\WebsiteCMS\WebsiteContactMessage\Requests\ReplyToContactMessageRequest;
 use Modules\WebsiteCMS\WebsiteContactMessage\Services\WebsiteContactMessageCRUDService;
 use Modules\WebsiteCMS\WebsiteContactMessage\Exports\WebsiteContactMessageExport;
 use Modules\WebsiteCMS\WebsiteContactMessage\Requests\ExportWebsiteContactMessageRequest;
@@ -87,7 +88,24 @@ class WebsiteContactMessageController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'website_contact_message.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new WebsiteContactMessageExport($this->websiteContactMessageService, $filters), $fileName);
+    }
+
+    /**
+     * Reply to a contact message
+     *
+     * @param ReplyToContactMessageRequest $request
+     * @return JsonResponse
+     */
+    public function reply(ReplyToContactMessageRequest $request): JsonResponse
+    {
+        $dto = $request->createReplyToContactMessageDTO();
+
+        $updatedMessage = $this->websiteContactMessageService->replyToContactMessage($dto);
+
+        $presenter = new WebsiteContactMessagePresenter($updatedMessage);
+
+        return Json::success('Reply sent successfully and status updated');
     }
 }
