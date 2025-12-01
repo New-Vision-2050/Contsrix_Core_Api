@@ -105,7 +105,7 @@ class CompanyUserRepository extends BaseRepository
                         });
                 });
             });
-        });
+        })->orderBy("created_at", "desc");
 
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
