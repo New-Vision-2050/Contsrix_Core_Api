@@ -85,6 +85,13 @@ return [
         'WEBSITE_SERVICE_DELETE' => 'website-cms.website-service*website-service.delete',
 
 
+
+        // Website Service Management
+        'WEBSITE_THEME_SETTING_LIST' => 'website-cms.website-service*website-service.list',
+        'WEBSITE_THEME_SETTING_SHOW' => 'website-cms.website-service*website-service.show',
+        'WEBSITE_THEME_SETTING_ACTIVATE' => 'website-cms.website-service*website-service.activate',
+
+
         // Website Term And Condition Management
         'WEBSITE_TERM_AND_CONDITION_VIEW' => 'website-cms.website-term-and-condition*website-term-and-condition.view',
         'WEBSITE_TERM_AND_CONDITION_UPDATE' => 'website-cms.website-term-and-condition*website-term-and-condition.update',
