@@ -33,20 +33,18 @@ class ContactMessageReplyNotification extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Reply to Your Contact Message | رد على رسالتك')
-            ->greeting('Hello ' . $this->contactMessage->name . ' | مرحباً ' . $this->contactMessage->name)
-            ->line('Thank you for contacting us. We have received your message and here is our response:')
-            ->line('شكراً لتواصلك معنا. لقد استلمنا رسالتك وإليك ردنا:')
+            ->subject(__('emails.subject'))
+            ->greeting(__('emails.greeting', ['name' => $this->contactMessage->name]))
+            ->line(__('emails.thank_you'))
             ->line('')
-            ->line('**Your Original Message: | رسالتك الأصلية:**')
+            ->line('**' . __('emails.original_message') . '**')
             ->line($this->contactMessage->message)
             ->line('')
-            ->line('**Our Reply: | ردنا:**')
+            ->line('**' . __('emails.our_reply') . '**')
             ->line($this->replyMessage)
             ->line('')
-            ->line('If you have any further questions, please feel free to contact us again.')
-            ->line('إذا كان لديك أي أسئلة أخرى، لا تتردد في التواصل معنا مرة أخرى.')
-            ->salutation('Best regards | مع أطيب التحيات, ' . config('app.name'));
+            ->line(__('emails.further_questions'))
+            ->salutation(__('emails.salutation') . ' ' . config('app.name'));
     }
 
     /**
