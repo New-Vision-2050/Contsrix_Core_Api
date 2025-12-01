@@ -50,6 +50,7 @@ php artisan migrate --force || handle_error "Database migration failed"
 # Optional: Run seeders (uncomment if needed)
 log "Running database seeders..."
 php artisan db:seed --force || log "Database seeding failed (non-critical)"
+php artisan tenant:seed --force || log "Database Tenant seeding failed (non-critical)"
 
 # Clear and cache configuration
 log "Optimizing Laravel..."
