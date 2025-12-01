@@ -21,6 +21,13 @@ class WebsiteContactMessagePresenter extends AbstractPresenter
         return [
             'id' => $this->websiteContactMessage->id,
             'name' => $this->websiteContactMessage->name,
+            'phone' => $this->websiteContactMessage->phone,
+            'email' => $this->websiteContactMessage->email,
+            'address' => $this->websiteContactMessage->address,
+            'message' => $this->websiteContactMessage->message,
+            "status"=>$this->websiteContactMessage->status,
+            'created_at' => $this->websiteContactMessage->created_at,
+            'updated_at' => $this->websiteContactMessage->updated_at,
         ];
     }
 }
