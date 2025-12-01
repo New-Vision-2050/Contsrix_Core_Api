@@ -28,7 +28,7 @@ class WebsiteContactMessageServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/website_contact_messages')
+        Route::prefix('api/v1/website-contact-messages')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

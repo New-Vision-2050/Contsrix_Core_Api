@@ -17,7 +17,6 @@ class CreateWebsiteContactMessageRequest extends FormRequest
             'phone' => 'required|string|max:20',
             'email' => 'required|email|max:255',
             'address' => 'nullable|string|max:500',
-            'status' => 'nullable|integer|in:0,1',
             'message' => 'required|string',
         ];
     }
@@ -29,7 +28,7 @@ class CreateWebsiteContactMessageRequest extends FormRequest
             phone: $this->get('phone'),
             email: $this->get('email'),
             address: $this->get('address'),
-            status: $this->get('status', 0),
+            status: 0,
             message: $this->get('message'),
         );
     }
