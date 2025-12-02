@@ -23,11 +23,19 @@ class WebsiteColorPalette extends Model
         'light',
         'dark',
         'contrast',
+        'attributes',
+        'divider',
+        'paper',
+        'default',
+        'black',
+        'white',
+        'disabled'
     ];
 
     protected $casts = [
         'id' => UuidCast::class,
         'website_theme_id' => UuidCast::class,
+        'attributes' => 'array',
     ];
 
     public function getTenantIdColumn(): string

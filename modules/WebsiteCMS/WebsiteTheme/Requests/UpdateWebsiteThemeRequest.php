@@ -25,9 +25,18 @@ class UpdateWebsiteThemeRequest extends FormRequest
             'color_palettes.*.slug' => 'required|string|max:255',
             'color_palettes.*.name' => 'required|string|max:255',
             'color_palettes.*.primary' => 'nullable|string|max:50',
-            'color_palettes.*.light' => 'required|string|max:50',
-            'color_palettes.*.dark' => 'required|string|max:50',
+            'color_palettes.*.light' => 'nullable|string|max:50',
+            'color_palettes.*.dark' => 'nullable|string|max:50',
             'color_palettes.*.contrast' => 'nullable|string|max:50',
+            'color_palettes.*.divider' => 'nullable|string|max:50',
+            'color_palettes.*.paper' => 'nullable|string|max:50',
+            'color_palettes.*.default' => 'nullable|string|max:50',
+            'color_palettes.*.black' => 'nullable|string|max:50',
+            'color_palettes.*.white' => 'nullable|string|max:50',
+            'color_palettes.*.disabled' => 'nullable|string|max:50',
+
+
+
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ];
     }

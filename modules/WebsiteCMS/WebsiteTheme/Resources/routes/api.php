@@ -12,6 +12,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // Current company theme routes
     Route::get('/current-company', [WebsiteThemeController::class, 'getCurrentCompanyTheme'])
     ->permission(Permission::WEBSITE_THEME_VIEW());
+    Route::get('/current-company-with-attributes', [WebsiteThemeController::class, 'getCurrentCompanyThemeWithAttributes']);
     Route::post('/current-company', [WebsiteThemeController::class, 'updateCurrentCompanyTheme'])
     ->permission(Permission::WEBSITE_THEME_UPDATE());
 
