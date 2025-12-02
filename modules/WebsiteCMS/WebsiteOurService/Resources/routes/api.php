@@ -6,7 +6,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     // Service types lookup
-//    Route::get('/service-types', [WebsiteOurServiceController::class, 'getServiceTypes'])
+    Route::get('/service-types', [WebsiteOurServiceController::class, 'getServiceTypes']);
 //        ->permission(Permission::WEBSITE_OUR_SERVICE_LIST());
 
     // Current company routes

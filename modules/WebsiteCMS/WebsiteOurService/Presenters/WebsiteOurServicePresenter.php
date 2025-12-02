@@ -33,7 +33,11 @@ class WebsiteOurServicePresenter extends AbstractPresenter
                 return [
                     'id' => $department->id,
                     'title' => $department->title,
+                    "title_ar"=> $department->getTranslation('title',"ar"),
+                    "title_en"=> $department->getTranslation('title',"en"),
                     'description' => $department->description,
+                    "description_ar"=> $department->getTranslation('description',"ar"),
+                    "description_en"=> $department->getTranslation('description',"en"),
                     'type' => $department->type->value,
                     'website_services' => $department->websiteServices->map(function ($service) {
                         return [
