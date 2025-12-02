@@ -26,6 +26,8 @@ class WebsiteTheme extends Model implements HasMedia
 
     protected $keyType = 'string';
 
+    protected $with=["media"];
+
     protected $fillable = [
         'company_id',
         'url',

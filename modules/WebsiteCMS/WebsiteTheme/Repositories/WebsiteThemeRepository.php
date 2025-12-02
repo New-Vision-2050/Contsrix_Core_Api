@@ -104,6 +104,12 @@ class WebsiteThemeRepository extends BaseRepository
                                 'light' => $paletteData['light'] ?? $palette->light,
                                 'dark' => $paletteData['dark'] ?? $palette->dark,
                                 'contrast' => $paletteData['contrast'] ?? $palette->contrast,
+                                'divider' => $paletteData['divider'] ?? $palette->divider,
+                                'paper' => $paletteData['paper'] ?? $palette->paper,
+                                'default' => $paletteData['default'] ?? $palette->default,
+                                'black' => $paletteData['black'] ?? $palette->black,
+                                'white' => $paletteData['white'] ?? $palette->white,
+                                'disabled' => $paletteData['disabled'] ?? $palette->disabled,
                             ]);
                         } else {
                             // Create new palette with slug

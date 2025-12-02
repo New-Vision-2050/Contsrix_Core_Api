@@ -106,7 +106,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Text Color',
                     'slug' => 'text',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["primary","secondary","divider","disabled"],
                     'primary' => '#212121',
                     'light' => '#757575',
                     'dark' => '#000000',
@@ -115,7 +115,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Background',
                     'slug' => 'background',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["paper","default"],
                     'primary' => null,
                     'light' => '#F5F5F5',
                     'dark' => '#EEEEEE',
@@ -125,15 +125,48 @@ class WebsiteThemeSeeder extends Seeder
 
             // Create color palettes
             foreach ($colorPalettes as $palette) {
-                WebsiteColorPalette::create([
+                $paletteData = [
                     'website_theme_id' => $theme->id,
                     'name' => $palette['name'],
                     'slug' => $palette['slug'],
+                    'attributes' => json_encode($palette['attributes']),
                     'primary' => $palette['primary'],
                     'light' => $palette['light'],
                     'dark' => $palette['dark'],
                     'contrast' => $palette['contrast'],
-                ]);
+                ];
+
+                // Add additional fields based on attributes
+                foreach ($palette['attributes'] as $attr) {
+                    if (isset($palette[$attr])) {
+                        $paletteData[$attr] = $palette[$attr];
+                    }
+                }
+
+                // Map specific attributes to columns
+                if (in_array('black', $palette['attributes'])) {
+                    $paletteData['black'] = $palette['dark'] ?? '#000000';
+                }
+                if (in_array('white', $palette['attributes'])) {
+                    $paletteData['white'] = $palette['light'] ?? '#FFFFFF';
+                }
+                if (in_array('secondary', $palette['attributes'])) {
+                    $paletteData['secondary'] = $palette['light'] ?? null;
+                }
+                if (in_array('divider', $palette['attributes'])) {
+                    $paletteData['divider'] = $palette['light'] ?? null;
+                }
+                if (in_array('disabled', $palette['attributes'])) {
+                    $paletteData['disabled'] = $palette['contrast'] ?? null;
+                }
+                if (in_array('paper', $palette['attributes'])) {
+                    $paletteData['paper'] = $palette['light'] ?? null;
+                }
+                if (in_array('default', $palette['attributes'])) {
+                    $paletteData['default'] = $palette['dark'] ?? null;
+                }
+
+                WebsiteColorPalette::create($paletteData);
             }
 
             $this->command->info("Created " . count($colorPalettes) . " color palettes for WebsiteTheme");

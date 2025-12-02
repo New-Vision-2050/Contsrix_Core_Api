@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\WebsiteCMS\WebsiteTheme\Handlers\DeleteWebsiteThemeHandler;
 use Modules\WebsiteCMS\WebsiteTheme\Handlers\UpdateWebsiteThemeHandler;
 use Modules\WebsiteCMS\WebsiteTheme\Presenters\WebsiteThemePresenter;
+use Modules\WebsiteCMS\WebsiteTheme\Presenters\CurrentCompanyThemePresenter;
 use Modules\WebsiteCMS\WebsiteTheme\Requests\CreateWebsiteThemeRequest;
 use Modules\WebsiteCMS\WebsiteTheme\Requests\DeleteWebsiteThemeRequest;
 use Modules\WebsiteCMS\WebsiteTheme\Requests\GetWebsiteThemeListRequest;
@@ -115,6 +116,23 @@ class WebsiteThemeController extends Controller
         $theme = $this->websiteThemeService->updateCurrentCompanyTheme($request->toDTO());
 
         $presenter = new WebsiteThemePresenter($theme);
+
+        return Json::item($presenter->getData());
+    }
+
+    /**
+     * Get the current company theme with custom attribute presentation
+     * Only presents the attributes specified in the seeder for each color palette slug
+     */
+    public function getCurrentCompanyThemeWithAttributes(GetWebsiteThemeRequest $request): JsonResponse
+    {
+        $theme = $this->websiteThemeService->getCurrentCompanyTheme();
+
+        if (!$theme) {
+            return Json::error('No theme found for the current company', 404);
+        }
+
+        $presenter = new CurrentCompanyThemePresenter($theme);
 
         return Json::item($presenter->getData());
     }

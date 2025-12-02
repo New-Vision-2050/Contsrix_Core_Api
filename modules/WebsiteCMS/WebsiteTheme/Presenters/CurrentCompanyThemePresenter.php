@@ -7,7 +7,7 @@ namespace Modules\WebsiteCMS\WebsiteTheme\Presenters;
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class WebsiteThemePresenter extends AbstractPresenter
+class CurrentCompanyThemePresenter extends AbstractPresenter
 {
     private WebsiteTheme $websiteTheme;
 
@@ -35,18 +35,29 @@ class WebsiteThemePresenter extends AbstractPresenter
             'updated_at' => $this->websiteTheme->updated_at?->toDateTimeString(),
         ];
 
-        // Add color palettes if loaded (grouped by slug)
+        // Add color palettes with only the attributes specified for each slug
         if ($this->websiteTheme->relationLoaded('colorPalettes')) {
             $data['color_palettes'] = [];
             foreach ($this->websiteTheme->colorPalettes as $palette) {
-                $data['color_palettes'][$palette->slug] = [
-                    'id' => $palette->id,
-                    'name' => $palette->name,
-                    'primary' => $palette->primary,
-                    'light' => $palette->light,
-                    'dark' => $palette->dark,
-                    'contrast' => $palette->contrast,
-                ];
+                $paletteData = [];
+
+                // Get the attributes array for this palette
+                $attributes = $palette->attributes;
+
+                // Ensure attributes is an array (decode if it's a JSON string)
+                if (is_string($attributes)) {
+                    $attributes = json_decode($attributes, true) ?? [];
+                } elseif (!is_array($attributes)) {
+                    $attributes = [];
+                }
+
+                // Add only the columns specified in attributes
+                foreach ($attributes as $attribute) {
+                    // Map attribute names to actual column values
+                    $paletteData[$attribute] = $this->getAttributeValue($palette, $attribute);
+                }
+
+                $data['color_palettes'][$palette->slug] = $paletteData;
             }
         }
 
@@ -59,5 +70,30 @@ class WebsiteThemePresenter extends AbstractPresenter
         }
 
         return $data;
+    }
+
+    /**
+     * Get the value for a specific attribute from the palette
+     */
+    private function getAttributeValue($palette, string $attribute): ?string
+    {
+        // Direct column mapping
+        $columnMap = [
+            'primary' => 'primary',
+            'light' => 'light',
+            'dark' => 'dark',
+            'contrast' => 'contrast',
+            'secondary' => 'secondary',
+            'divider' => 'divider',
+            'disabled' => 'disabled',
+            'black' => 'black',
+            'white' => 'white',
+            'paper' => 'paper',
+            'default' => 'default',
+        ];
+
+        $column = $columnMap[$attribute] ?? $attribute;
+
+        return $palette->{$column} ?? null;
     }
 }
