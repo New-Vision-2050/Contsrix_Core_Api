@@ -33,4 +33,6 @@ return [
     "incomplete_data_companies" => "Incomplete Data Companies",
     "nearly_expiring_companies" => "Nearly Expiring Companies",
     "services"=>"Services",
+    "hexa"=>"Hexa",
+    "cards"=>"Cards",
 ];

@@ -15,8 +15,8 @@ enum ServiceTypeEnum: string
     public function label(): string
     {
         return match($this) {
-            self::CARDS => 'Cards',
-            self::HEXA => 'Hexa',
+            self::CARDS => __('lookups.cards'),
+            self::HEXA => __('lookups.hexa'),
         };
     }
 }
