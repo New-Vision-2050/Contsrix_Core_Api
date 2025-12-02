@@ -52,6 +52,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Common (black and white)',
                     'slug' => 'common',
+                    'attributes' => ["black", "white"],
                     'primary' => null,
                     'light' => '#FFFFFF',
                     'dark' => '#000000',
@@ -60,6 +61,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Primary Color',
                     'slug' => 'primary',
+                    'attributes' => ["primary","light","dark","contrast"],
                     'primary' => '#1976D2',
                     'light' => '#42A5F5',
                     'dark' => '#1565C0',
@@ -68,6 +70,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Secondary Color',
                     'slug' => 'secondary',
+                    'attributes' => ["primary","light","dark","contrast"],
                     'primary' => '#9C27B0',
                     'light' => '#BA68C8',
                     'dark' => '#7B1FA2',
@@ -76,6 +79,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Info Color',
                     'slug' => 'info',
+                    'attributes' => ["primary","light","dark","contrast"],
                     'primary' => '#0288D1',
                     'light' => '#03A9F4',
                     'dark' => '#01579B',
@@ -84,6 +88,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Warning Color',
                     'slug' => 'warning',
+                    'attributes' => ["primary","light","dark","contrast"],
                     'primary' => '#ED6C02',
                     'light' => '#FF9800',
                     'dark' => '#E65100',
@@ -92,6 +97,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Error Color',
                     'slug' => 'error',
+                    'attributes' => ["primary","light","dark","contrast"],
                     'primary' => '#D32F2F',
                     'light' => '#EF5350',
                     'dark' => '#C62828',
@@ -100,6 +106,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Text Color',
                     'slug' => 'text',
+                    'attributes' => ["primary","light","dark","contrast"],
                     'primary' => '#212121',
                     'light' => '#757575',
                     'dark' => '#000000',
@@ -108,6 +115,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Background',
                     'slug' => 'background',
+                    'attributes' => ["primary","light","dark","contrast"],
                     'primary' => null,
                     'light' => '#F5F5F5',
                     'dark' => '#EEEEEE',
