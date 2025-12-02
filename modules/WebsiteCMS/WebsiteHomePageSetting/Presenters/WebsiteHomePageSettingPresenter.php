@@ -24,6 +24,8 @@ class WebsiteHomePageSettingPresenter extends AbstractPresenter
             'web_video_link' => $this->websiteHomePageSetting->web_video_link,
             'mobile_video_link' => $this->websiteHomePageSetting->mobile_video_link,
             'description' => $this->websiteHomePageSetting->description,
+            "description_ar"=>$this->websiteHomePageSetting->getTranslation('description', 'ar'),
+            "description_en"=>$this->websiteHomePageSetting->getTranslation('description', 'en'),
             'is_companies' => $this->websiteHomePageSetting->is_companies,
             'is_approvals' => $this->websiteHomePageSetting->is_approvals,
             'is_certificates' => $this->websiteHomePageSetting->is_certificates,
