@@ -18,7 +18,7 @@ class CreateDomainsTable extends Migration
         if(!Schema::hasTable('domains')) {
             Schema::create('domains', function (Blueprint $table) {
                 $table->increments('id');
-                $table->string('domain', 255);
+                $table->string('domain', 255)->unique();
                 $table->uuid('company_id');
 
                 $table->timestamps();

@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteOurService",
+    "alias": "websiteourservice",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteOurService\\Providers\\WebsiteOurServiceServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

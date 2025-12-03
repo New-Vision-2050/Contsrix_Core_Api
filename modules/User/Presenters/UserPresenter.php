@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\User\Presenters;
 
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
+use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\RoleAndPermission\Presenters\PermissionPresenter;
 use Modules\RoleAndPermission\Presenters\RolePresenter;
 use Modules\RoleAndPermission\Presenters\RoleSimplePresenter;
@@ -25,14 +27,30 @@ class UserPresenter extends AbstractPresenter
             'id' => $this->user->id,
             'name' => $this->user->name,
             'email' => $this->user->email,
-            'is_super_admin' => $this->user->hasRole("super-admin")||$this->user->is_owner?1:0,
+            'is_super_admin' => $this->user->hasRole("super-admin") || $this->user->is_owner ? 1 : 0,
             'phone' => $this->user->phone,
-            'management_hierarchy_id' => $this->user->management_hierarchy_id ,
-            "branch_id"=>$this->user->managementHierarchy?->detail?->branch_id,
-            "roles"=>RoleSimplePresenter::collection($this->user->roles),
+            'phone_code' => $this->user->phone_code,
+            "job_title_id" => $this->user->userProfessionalData?->job_title_id,
+            'management_hierarchy_id' => $this->user->management_hierarchy_id,
+            "branch_id" => $this->user->managementHierarchy?->detail?->branch_id,
+            "roles" => RoleSimplePresenter::collection($this->user->roles),
+            "branches" => ManagementHierarchySimpleDataPresenter::collection($this->user->managementHierarchies(request()->role)->get()),
+            "user_types" => $this->user->companyUserCompanies->map(function ($companyUserCompany) {
+                return [
+                    'id' => $companyUserCompany->id,
+                    'company_id' => $companyUserCompany->company_id,
+                    'global_company_user_id' => $companyUserCompany->global_company_user_id,
+                    'role' => $companyUserCompany->getRawOriginal('role'),
+                    'status' => $companyUserCompany->status,
+                ];
+            }),
+            "status" => $this->user->status,
+
 //            "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
-            "is_central_company"=>tenant("is_central_company"),
-            "residence"=>$this->user->companyUser?->residence,
+            "is_central_company" => tenant("is_central_company"),
+            "residence" => $this->user->companyUser?->residence,
+            "identity" => $this->user->companyUser?->identity,
+            "country_id" => $this->user->companyUser?->country_id,
         ];
     }
 }

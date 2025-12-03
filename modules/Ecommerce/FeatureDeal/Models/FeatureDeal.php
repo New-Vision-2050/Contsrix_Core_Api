@@ -8,12 +8,14 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Modules\Ecommerce\FeatureDeal\Database\factories\FeatureDealFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\Company\CompanyCore\Models\Company;
 use Carbon\Carbon;
 use App\Traits\ForcedBelongsToTenant;
+use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 
 class FeatureDeal extends Model
 {
@@ -77,6 +79,16 @@ class FeatureDeal extends Model
     public function scopeInactive($query)
     {
         return $query->where('is_active', false);
+    }
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            EcoProduct::class,
+            'feature_deal_product',
+            'feature_deal_id',
+            'product_id'
+        )->withTimestamps();
     }
 
     /**

@@ -67,6 +67,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             
             // Visibility
             'is_visible' => 'boolean',
+            'is_featured' => 'boolean',
             
             // Media
             'main_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -159,6 +160,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             'vat_percentage.min' => __('ecoproduct::validation.vat_percentage_min'),
             'vat_percentage.max' => __('ecoproduct::validation.vat_percentage_max'),
             'is_visible.boolean' => __('ecoproduct::validation.is_visible_boolean'),
+            'is_featured.boolean' => 'حقل حالة المنتج المميز يجب أن يكون صحيح أو خطأ',
 
             // Multilingual Name
             'name.required' => 'حقل الاسم مطلوب',
@@ -264,6 +266,7 @@ class CreateEcoProductDashboardRequest extends FormRequest
             shippingAmount: isset($validatedData['shipping_amount']) ? (float) $validatedData['shipping_amount'] : null,
             shippingIncludedInPrice: (bool) ($validatedData['shipping_included_in_price'] ?? false),
             isVisible: (bool) ($validatedData['is_visible'] ?? true),
+            isFeatured: (bool) ($validatedData['is_featured'] ?? false),
             mainPhoto: null, // Will be handled by FileUploadService in the service
             otherPhotos: null, // Will be handled by FileUploadService in the service
             videoUrl: $validatedData['video_url'] ?? null,

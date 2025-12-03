@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Ecommerce\FlashDeal\Database\factories\FlashDealFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -17,6 +18,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Modules\Company\CompanyCore\Models\Company;
 use App\Traits\ForcedBelongsToTenant;
 use Carbon\Carbon;
+use Modules\Ecommerce\EcoProduct\Models\EcoProduct;
 
 class FlashDeal extends Model  implements HasMedia
 {
@@ -131,6 +133,16 @@ class FlashDeal extends Model  implements HasMedia
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            EcoProduct::class,
+            'flash_deal_product',
+            'flash_deal_id',
+            'product_id'
+        )->withTimestamps();
     }
 
     protected static function newFactory(): FlashDealFactory

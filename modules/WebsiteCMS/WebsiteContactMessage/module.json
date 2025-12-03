@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteContactMessage",
+    "alias": "websitecontactmessage",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteContactMessage\\Providers\\WebsiteContactMessageServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

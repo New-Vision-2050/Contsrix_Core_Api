@@ -19,6 +19,8 @@ class CreateFlashDealRequest extends FormRequest
             'start_date' => ['required', 'date', 'after_or_equal:today'],
             'end_date' => ['required', 'date', 'after:start_date'],
             'is_active' => ['sometimes', 'boolean'],
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['uuid', 'exists:eco_products,id'],
             
             // Image validation
             'flash_deal_image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,webp'], 
@@ -45,6 +47,11 @@ class CreateFlashDealRequest extends FormRequest
             'end_date.after' => 'تاريخ انتهاء العرض يجب أن يكون بعد تاريخ البداية',
             
             'is_active.boolean' => 'حالة العرض يجب أن تكون صحيح أو خطأ',
+            'product_ids.required' => 'يجب اختيار المنتجات المرتبطة بالعرض',
+            'product_ids.array' => 'معرفات المنتجات يجب أن تكون في مصفوفة',
+            'product_ids.min' => 'يجب اختيار منتج واحد على الأقل',
+            'product_ids.*.uuid' => 'معرف المنتج غير صالح',
+            'product_ids.*.exists' => 'المنتج المحدد غير موجود',
             
             'flash_deal_image.file' => 'صورة العرض يجب أن تكون ملف',
             'flash_deal_image.image' => 'صورة العرض يجب أن تكون صورة',
@@ -60,6 +67,7 @@ class CreateFlashDealRequest extends FormRequest
             name: $this->input('name'),
             startDate: $this->input('start_date'),
             endDate: $this->input('end_date'),
+            productIds: $this->input('product_ids', []),
             isActive: (bool) $this->input('is_active', true)
         );
     }

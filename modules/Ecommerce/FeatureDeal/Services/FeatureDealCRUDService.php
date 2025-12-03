@@ -23,12 +23,19 @@ class FeatureDealCRUDService
 
     public function create(CreateFeatureDealDTO $createFeatureDealDTO): FeatureDeal
     {
-         return $this->repository->createFeatureDeal($createFeatureDealDTO->toArray());
+         return $this->repository->createFeatureDeal(
+             data: $createFeatureDealDTO->toArray(),
+             productIds: $createFeatureDealDTO->products(),
+         );
     }
 
     public function update(UuidInterface $id, UpdateFeatureDealDTO $updateFeatureDealDTO): FeatureDeal
     {
-        return $this->repository->updateFeatureDeal($id, $updateFeatureDealDTO->toArray());
+        return $this->repository->updateFeatureDeal(
+            id: $id,
+            data: $updateFeatureDealDTO->toArray(),
+            productIds: $updateFeatureDealDTO->products(),
+        );
     }
 
     public function delete(UuidInterface $id): bool
@@ -36,7 +43,7 @@ class FeatureDealCRUDService
         return $this->repository->deleteFeatureDeal($id);
     }
 
-    public function list(int $page = 1, int $perPage = 10, array $relations = []): array
+    public function list(int $page = 1, int $perPage = 10, array $relations = ['company', 'products']): array
     {
         return $this->repository->paginatedWithRelations(
             page: $page,

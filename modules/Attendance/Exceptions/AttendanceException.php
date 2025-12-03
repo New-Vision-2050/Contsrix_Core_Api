@@ -77,4 +77,12 @@ class AttendanceException extends CustomException
         // 400 (Bad Request) or 409 (Conflict) are good choices.
         return new self('Cannot reject an attendance record that has already been approved.', 409);
     }
+
+    /**
+     * Thrown when a user is not found.
+     */
+    public static function userNotFound(): self
+    {
+        return new self('User not found.', 404);
+    }
 }

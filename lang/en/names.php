@@ -74,6 +74,15 @@ return [
     'user-profile*family-information' => 'Family Information',
 
     "program-settings" => "Program Settings",
+    
+    "attendance" => "Attendance",
+    "attendance-list" => "Attendance List",
+    "attendance-map" => "Attendance Map",
+    "attendance-constraints" => "Attendance Constraints",
+    "attendance-list*attendance-list" => "Attendance List",
+    "attendance-list*attendance-map" => "Attendance Map",
+    "attendance-list*attendance-constraints" => "Attendance Constraints",
+    "attendance-constraints*attendance-constraints" => "Attendance Constraints",
 
     // Geographic Data
     'country' => 'Country',
@@ -197,5 +206,72 @@ return [
     "border-number-information" => "Border Number Information",
     "program-management" => "Program Management",
     "support-data" => "support data",
+
+    // ================================================================================================
+    // WEBSITE CMS MODULE TRANSLATIONS
+    // ================================================================================================
+
+    // Website CMS Main Module
+    'website-cms' => 'Website CMS',
+
+    // Website About Us
+    'website-about-us' => 'Website About Us',
+    'website-cms*website-about-us' => 'Website About Us',
+
+    // Website Address
+    'website-address' => 'Website Address',
+    'website-cms*website-address' => 'Website Address',
+
+    // Website Contact Info
+    'website-contact-info' => 'Website Contact Info',
+    'website-cms*website-contact-info' => 'Website Contact Info',
+
+    // Category Website CMS
+    'category-website-cms' => 'Website Category',
+    'website-cms*category-website-cms' => 'Website Category',
+
+    // Founder
+    'founder' => 'Founder',
+    'website-cms*founder' => 'Founder',
+
+    // Social Media Link
+    'social-media-link' => 'Social Media Link',
+    'website-cms*social-media-link' => 'Social Media Link',
+
+    // Website Home Page Setting
+    'website-home-page-setting' => 'Website Home Page Setting',
+    'website-cms*website-home-page-setting' => 'Website Home Page Setting',
+
+    // Website Theme Setting
+    'website-theme-setting' => 'Website Theme Setting',
+    'website-cms*website-theme-setting' => 'Website Theme Setting',
+
+    // Website Icon
+    'website-icon' => 'Website Icon',
+    'website-cms*website-icon' => 'Website Icon',
+
+    // Website News
+    'website-news' => 'Website News',
+    'website-cms*website-news' => 'Website News',
+
+    // Website Our Service
+    'website-our-service' => 'Website Our Service',
+    'website-cms*website-our-service' => 'Website Our Service',
+
+    // Website Project
+    'website-project' => 'Website Project',
+    'website-cms*website-project' => 'Website Project',
+
+    // Website Project Setting
+    'website-project-setting' => 'Website Project Setting',
+    'website-cms*website-project-setting' => 'Website Project Setting',
+
+    // Website Service
+    'website-service' => 'Website Service',
+    'website-cms*website-service' => 'Website Service',
+
+    // Website Term And Condition
+    'website-term-and-condition' => 'Website Terms & Conditions',
+    'website-cms*website-term-and-condition' => 'Website Terms & Conditions',
 
 ];

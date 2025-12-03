@@ -23,6 +23,7 @@ class UpdateEcoProductDashboardCommand
         private ?bool $priceIncludesVat = null,
         private ?float $vatPercentage = null,
         private ?bool $isVisible = null,
+        private ?bool $isFeatured = null,
         private ?UuidInterface $categoryId = null,
         private ?UuidInterface $brandId = null,
         private ?UuidInterface $subCategoryId = null,
@@ -54,6 +55,7 @@ class UpdateEcoProductDashboardCommand
     public function getPriceIncludesVat(): ?bool { return $this->priceIncludesVat; }
     public function getVatPercentage(): ?float { return $this->vatPercentage; }
     public function getIsVisible(): ?bool { return $this->isVisible; }
+    public function getIsFeatured(): ?bool { return $this->isFeatured; }
     public function getCategoryId(): ?UuidInterface { return $this->categoryId; }
     public function getBrandId(): ?UuidInterface { return $this->brandId; }
     public function getSubCategoryId(): ?UuidInterface { return $this->subCategoryId; }
@@ -84,11 +86,14 @@ class UpdateEcoProductDashboardCommand
             'price_includes_vat' => $this->priceIncludesVat,
             'vat_percentage' => $this->vatPercentage,
             'is_visible' => $this->isVisible,
+            'is_featured' => $this->isFeatured,
             'category_id' => $this->categoryId,
             'sub_category_id' => $this->subCategoryId,
             'type' => $this->type,
             'unit' => $this->unit,
             'gender' => $this->gender,
-        ]);
+        ], function ($value) {
+            return $value !== null;
+        });
     }
 }

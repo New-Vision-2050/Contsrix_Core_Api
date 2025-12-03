@@ -36,5 +36,8 @@ class EcoCategoryServiceProvider extends ModuleServiceProvider
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 
+        Route::prefix('api/v1/ecommerce/website/categories')
+            ->middleware('api')
+            ->group($this->getModulePath() . '/Resources/routes/website.php');
     }
 }

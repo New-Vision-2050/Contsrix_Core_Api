@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteService",
+    "alias": "websiteservice",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteService\\Providers\\WebsiteServiceServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

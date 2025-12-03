@@ -17,6 +17,7 @@ use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Employee\CreateEmployeeRequest;
+use Modules\CompanyUser\Requests\Employee\UpdateEmployeeRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\CompanyUser\Services\Employee\EmployeeCRUDService;
@@ -54,6 +55,24 @@ class EmployeeController extends Controller
         $createdItem = $this->employeeCRUDService->create($request->createCreateEmployeeDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
 
         $presenter = new CompanyUserPresenter($createdItem);
+        
+        // Check if email was sent successfully
+        $message = __('messages.company_user.created');
+        $emailSent = $createdItem->email_sent ?? true;
+        
+        if (!$emailSent) {
+            $message = __('messages.company_user.created_email_failed');
+        }
+
+        return Json::item($presenter->getData(), message: $message);
+    }
+
+
+    public function update(UpdateEmployeeRequest $request)
+    {
+        $user = $this->employeeCRUDService->update($request->createUpdateEmployeeDTO());
+
+        $presenter = new UserPresenter($user);
 
         return Json::item($presenter->getData());
     }

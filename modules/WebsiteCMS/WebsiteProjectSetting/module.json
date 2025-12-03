@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteProjectSetting",
+    "alias": "websiteprojectsetting",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteProjectSetting\\Providers\\WebsiteProjectSettingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

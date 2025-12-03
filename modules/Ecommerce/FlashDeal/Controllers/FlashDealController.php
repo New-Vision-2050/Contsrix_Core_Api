@@ -57,7 +57,7 @@ class FlashDealController extends Controller
 
         $presenter = new FlashDealPresenter($createdItem);
 
-        return Json::item($presenter->getData(), message: 'تم إنشاء العرض بنجاح');
+        return Json::created($presenter->getData(), 'تم إنشاء العرض بنجاح');
     }
 
     public function update(UpdateFlashDealRequest $request): JsonResponse
@@ -67,11 +67,12 @@ class FlashDealController extends Controller
         
         // Use service update method with media handling
         $data = array_filter($command->toArray(), fn($value) => $value !== null);
-        $item = $this->flashDealService->update($command->id, $data, $image);
+        $productIds = $command->getProductIds() ?? $request->input('product_ids');
+        $item = $this->flashDealService->update($command->id, $data, $image, $productIds);
 
         $presenter = new FlashDealPresenter($item);
 
-        return Json::item($presenter->getData(), message: 'تم تحديث العرض بنجاح');
+        return Json::updated($presenter->getData(), 'تم تحديث العرض بنجاح');
     }
 
     public function toggleStatus(GetFlashDealRequest $request): JsonResponse
@@ -83,7 +84,7 @@ class FlashDealController extends Controller
         
         $message = $updatedFlashDeal->is_active ? 'تم تفعيل العرض بنجاح' : 'تم إلغاء تفعيل العرض بنجاح';
         
-        return Json::item($presenter->getData(), message: $message);
+        return Json::updated($presenter->getData(), $message);
     }
 
     public function delete(DeleteFlashDealRequest $request): JsonResponse

@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteAddress",
+    "alias": "websiteaddress",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteAddress\\Providers\\WebsiteAddressServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

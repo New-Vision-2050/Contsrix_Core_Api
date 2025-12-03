@@ -16,6 +16,7 @@ class EcoProductFactory extends Factory
     {
         return [
             'name' => $this->faker->name(),
+            'is_featured' => true,
         ];
     }
 }

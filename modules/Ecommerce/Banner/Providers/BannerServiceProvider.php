@@ -31,5 +31,9 @@ class BannerServiceProvider extends ModuleServiceProvider
         Route::prefix('api/v1/ecommerce/dashboard')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
+
+        Route::prefix('api/v1/ecommerce/website')
+            ->middleware('api')
+            ->group($this->getModulePath() . '/Resources/routes/website.php');
     }
 }
