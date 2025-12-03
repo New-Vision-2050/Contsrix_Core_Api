@@ -195,6 +195,7 @@ class WebsiteAboutUsRepository extends BaseRepository
 
             // Update main image if provided
             if ($mainImage) {
+                $websiteAboutUs->clearMediaCollection('main_image');
                 $this->fileUploadService->uploadFile(
                     $websiteAboutUs,
                     $mainImage,
