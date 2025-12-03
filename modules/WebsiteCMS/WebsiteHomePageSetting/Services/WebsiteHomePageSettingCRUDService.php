@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\WebsiteCMS\WebsiteHomePageSetting\Services;
 
 use Illuminate\Support\Collection;
+use Modules\WebsiteCMS\WebsiteHomePage\Services\WebsiteHomePageService;
 use Modules\WebsiteCMS\WebsiteHomePageSetting\DTO\CreateWebsiteHomePageSettingDTO;
 use Modules\WebsiteCMS\WebsiteHomePageSetting\DTO\UpdateWebsiteHomePageSettingDTO;
 use Modules\WebsiteCMS\WebsiteHomePageSetting\Models\WebsiteHomePageSetting;
@@ -18,6 +19,7 @@ class WebsiteHomePageSettingCRUDService
 
     public function __construct(
         private WebsiteHomePageSettingRepository $repository,
+        private WebsiteHomePageService $websiteHomePageService
     ) {
     }
 
@@ -39,7 +41,7 @@ class WebsiteHomePageSettingCRUDService
     public function updateCurrentCompanySetting(UpdateWebsiteHomePageSettingDTO $updateDTO): WebsiteHomePageSetting
     {
         $setting = $this->repository->getCurrentCompanySetting();
-        
+
         if (!$setting) {
             // Create new setting if doesn't exist
             return $this->repository->createWebsiteHomePageSetting(
@@ -49,6 +51,7 @@ class WebsiteHomePageSettingCRUDService
                 $updateDTO->videoProfileFile
             );
         }
+        $this->websiteHomePageService->clearCache();
 
         return $this->repository->updateWebsiteHomePageSetting(
             \Ramsey\Uuid\Uuid::fromString($setting->id),
