@@ -20,7 +20,7 @@ class UpdateWebsiteProjectHandler
             id: $updateWebsiteProjectCommand->getId(),
             data: $updateWebsiteProjectCommand->toArray(),
             mainImage: $updateWebsiteProjectCommand->getMainImage(),
-            secondaryImage: $updateWebsiteProjectCommand->getSecondaryImage(),
+            secondaryImages: $updateWebsiteProjectCommand->getSecondaryImages(),
             projectDetails: $updateWebsiteProjectCommand->getProjectDetails(),
         );
     }

@@ -15,7 +15,7 @@ class CreateWebsiteProjectDTO
         public readonly array $name,
         public readonly array $description,
         public readonly ?UploadedFile $mainImage = null,
-        public readonly ?UploadedFile $secondaryImage = null,
+        public readonly array $secondaryImages = [],
         public readonly array $projectDetails = [],
     ) {
     }
