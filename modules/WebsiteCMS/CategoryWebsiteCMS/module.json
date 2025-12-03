@@ -1,0 +1,14 @@
+{
+    "name": "CategoryWebsiteCMS",
+    "alias": "categorywebsitecms",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\CategoryWebsiteCMS\\Providers\\CategoryWebsiteCMSServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

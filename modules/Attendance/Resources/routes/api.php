@@ -7,6 +7,7 @@ use Modules\Attendance\Controllers\LeaveTypeController;
 use Modules\Attendance\Controllers\LeaveBalanceController;
 use Modules\Attendance\Controllers\AttendanceReportController;
 use Modules\Attendance\Controllers\LocationTrackingController;
+use Modules\Attendance\Controllers\UserAttendanceController;
 use Modules\RoleAndPermission\Enums\Permission;
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,22 @@ Route::prefix('attendance')->group(function () {
 
     Route::get('status', [AttendanceController::class, 'getStatus'])
         ->name('attendance.get-status');
+
+    // User Constraint Routes mobile user
+    Route::prefix('user-constraint')->group(function () {
+        // Get current user's constraint for today
+        Route::get('today', [UserAttendanceController::class, 'getMyConstraintForToday'])
+            ->name('attendance.user-constraint.today');
+    });
+
+    // User Attendance Status Routes
+    Route::prefix('user-attendance')->group(function () {
+        // Get current user's clock-in status
+        Route::get('status', [UserAttendanceController::class, 'getMyClockInStatus'])
+            ->name('attendance.user-attendance-status');
+        Route::get('history', [UserAttendanceController::class, 'getUserAttendanceHistory'])
+            ->name('attendance.user-attendance.get-history');
+    });
 
     // Team Attendance (for supervisors)
     Route::get('team', [AttendanceController::class, 'getTeamAttendance'])

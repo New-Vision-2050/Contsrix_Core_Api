@@ -285,7 +285,7 @@ class UserController extends Controller
             "domain_name" => "https://".$user->company?->domains()->first()?->domain,
             "serial_no" => $user->company?->serial_no
         ];
-        $user->notify(new SendDomainForUser($data));
+        $user->notify(new SendDomainForUser($data,[$request->get("type","mail")]));
 
 
         // Send email using the service method

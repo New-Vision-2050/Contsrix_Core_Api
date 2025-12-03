@@ -32,4 +32,9 @@ return [
     "active_companies" => "الشركات الفعالة",
     "incomplete_data_companies" => "شركات غير مكتملة البيانات",
     "nearly_expiring_companies" => "شركات قاربت على الانتهاء",
+    "services"=>"خدمات",
+
+
+    "hexa"=>"الشكل السداسي",
+    "cards"=>"الكروت",
 ];

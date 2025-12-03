@@ -36,6 +36,12 @@ class UserFilter extends SearchModelFilter
         });
 
     }
+
+    public function name($search)
+    {
+        return $this->where('name', 'LIKE', "%{$search}%");
+
+    }
     public function management($managementId)
     {
 

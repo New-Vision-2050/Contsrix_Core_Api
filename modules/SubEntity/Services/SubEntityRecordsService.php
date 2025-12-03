@@ -26,9 +26,7 @@ class SubEntityRecordsService
         protected SubEntityCRUDService        $subEntityCRUDService,
         protected CompanyUserRepository       $companyUserRepository,
         protected RegistrationFormCRUDService $registrationFormCRUDService
-    )
-    {
-    }
+    ) {}
 
 
     public function getRecords(string $subEntityId, string $registrationFormId, $branchId = null, $page = 1, $perPage = 10): array|Collection|LengthAwarePaginator
@@ -44,17 +42,13 @@ class SubEntityRecordsService
         //get super entity model
         $model = $this->getSuperEntityModel($sub_entity->super_entity);
         $query = $model::query();
-        if($model === User::class)
-        {
-             $query->whereHas('companyUserCompanies', function ($q) use($registrationForm,$subEntityId)
-            {
+        if ($model === User::class) {
+            $query->whereHas('companyUserCompanies', function ($q) use ($registrationForm, $subEntityId) {
                 $q->where('role', $registrationForm->company_user_role_map)
                     ->where('sub_entity_id', $subEntityId);
             });
-
         }
         return $query->paginate($perPage);
-
     }
 
     protected function getSuperEntityModel(string $superEntityId): string
@@ -100,7 +94,11 @@ class SubEntityRecordsService
             $query->whereHas("companies", function ($query) use ($type) {
                 $query->where("company_users_companies.sub_entity_id", request()->sub_entity_id);
             });
-        });
+        })
+            // Only count users who have roles (user relationship exists)
+            ->whereHas('users', function ($query) {
+                $query->whereNotNull('id');
+            });
 
         // Get current period data
         $totalRecords = $query->count();
@@ -125,34 +123,34 @@ class SubEntityRecordsService
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
         if (CompanyUserRole::BROKER->value == $type) {
-            $type = "الوسطاء";
+            $typeLabel = __('brokers');
         } elseif (CompanyUserRole::EMPLOYEE->value == $type) {
-            $type = "الموظفين";
+            $typeLabel = __('employees');
         } else {
-            $type = "العملاء";
+            $typeLabel = __('clients');
         }
 
 
         return [
             [
-                "title" => " احمالي عدد$type",
+                "title" => __('total_count', ['type' => $typeLabel]),
                 'total' => $totalRecords,
                 'percentage' => 100,
             ],
             [
-                "title" => "$type المضافين اخر الشهر ",
+                "title" => __('added_last_month', ['type' => $typeLabel]),
                 'total' => $recordsAddedLastMonth,
                 'percentage' => $this->calculatePercentageChange($recordsAddedLastMonth, $totalRecords), // No comparison for this metric
-                "start"=>Carbon::now()->startOfMonth(),
-                "end"=>Carbon::now()->endOfMonth()
+                "start" => Carbon::now()->startOfMonth(),
+                "end" => Carbon::now()->endOfMonth()
             ],
             [
-                "title" => "$type النشيطين ",
+                "title" => __('active_records', ['type' => $typeLabel]),
                 'total' => $activeRecords,
                 'percentage' => $this->calculatePercentageChange($activeRecords, $totalRecords)
             ],
             [
-                "title" => "$type المعلقين ",
+                "title" => __('suspended_records', ['type' => $typeLabel]),
                 'total' => $suspendedRecords,
                 'percentage' => $this->calculatePercentageChange($suspendedRecords, $totalRecords) // Could add comparison if needed
             ]
@@ -242,7 +240,7 @@ class SubEntityRecordsService
             });
 
             // Load relationships for export
-//            $query->with(['companyUserCompanies.branch']);
+            //            $query->with(['companyUserCompanies.branch']);
         }
 
         // Apply ID filter if provided

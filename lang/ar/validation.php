@@ -74,6 +74,13 @@ return [
     'job_code_required' => 'حقل كود الوظيفة مطلوب.',
     "self_parent"=>"لا يمكن الفرع هو نفس الاب",
 
+    'attendance-list' => 'قائمة الحضور',
+    'attendance-list*attendance-list' => 'قائمة الحضور',
+    'attendance-map' => 'خريطة الحضور',
+    'attendance-list*attendance-map' => 'خريطة الحضور',
+    'attendance-constraints' => 'محددات الحضور',
+    'attendance-constraints*attendance-constraints' => 'محددات الحضور',
+
     'lt' => [
         'array' => 'يجب أن يحتوي حقل :attribute على أقل من :value عناصر.',
         'file' => 'يجب أن يكون حجم حقل :attribute أقل من :value كيلوبايت.',
@@ -212,7 +219,7 @@ return [
     "user-already-exists"=>"المستخدم موجود بالفعل",
     "phone-exists"=>"رقم الهاتف موجود بالفعل",
     "phone_email_consistency-error"=>"الرقم مسجل لدي مستخدم اخر ",
-    "can-not-delete-has-children"=>"لا يمكن مسح اذا متفرع منه هيكل اداري اخر او مستخدمين ",
+    "can-not-delete-has-children"=>"لا يمكن مسح اذا متفرع منه او مستخدم في جدوال اخري ",
 
 
 

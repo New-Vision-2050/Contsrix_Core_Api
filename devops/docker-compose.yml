@@ -6,7 +6,7 @@ services:
     image: backend-${DEPLOYMENT_ID}
     restart: always
     deploy:
-      replicas: 3
+      replicas: ${REPLICAS:-1}
       restart_policy:
         condition: on-failure
     labels:

@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteTheme",
+    "alias": "websitetheme",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteTheme\\Providers\\WebsiteThemeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

@@ -21,6 +21,13 @@ return [
     "you-are-added-to-company"=>"your company has created :company ",
     "your-domain-is"=>"your domain is",
     'serial_no'=>"serial no",
+    'subject' => 'Reply to Your Contact Message',
+    'greeting' => 'Hello :name,',
+    'thank_you' => 'Thank you for contacting us. We have received your message and here is our response:',
+    'original_message' => 'Your Original Message:',
+    'our_reply' => 'Our Reply:',
+    'further_questions' => 'If you have any further questions, please feel free to contact us again.',
+    'salutation' => 'Best regards,',
 
 
 ];

@@ -13,19 +13,12 @@ abstract class BaseExportRequest extends FormRequest
         return true;
     }
 
-    public function rules(): array
-    {
-        return [
-            'format' => 'sometimes|string|in:xlsx,csv',
-            'ids' => 'sometimes|array',
-            'ids.*' => 'string|uuid',
-        ];
-    }
+
 
     public function getFilters(): array
     {
         $filters = [];
-        
+
         // Get format
         if ($this->has('format')) {
             $filters['format'] = $this->get('format');
@@ -38,7 +31,7 @@ abstract class BaseExportRequest extends FormRequest
 
         // Get model-specific filters
         $modelFilters = $this->getModelSpecificFilters();
-        
+
         return array_merge($filters, $modelFilters);
     }
 

@@ -1,0 +1,14 @@
+{
+    "name": "SocialMediaLink",
+    "alias": "socialmedialink",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\SocialMediaLink\\Providers\\SocialMediaLinkServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

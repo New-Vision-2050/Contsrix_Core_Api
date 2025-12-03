@@ -38,13 +38,22 @@ class CompanyUserCRUDService
 
         $user = $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
         $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id, "company_id" => $companyRoleDTO->getCompanyId()]);
-        $data = [
-            "name" => $userInCompany->name,
-            "company_name" => $userInCompany->company?->name,
-            "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
-            "serial_no" => $userInCompany->company?->serial_no
-        ];
-        $userInCompany->notify(new SendDomainForUser($data));
+        
+        $emailSent = true;
+        try {
+            $data = [
+                "name" => $userInCompany->name,
+                "company_name" => $userInCompany->company?->name,
+                "domain_name" => "https://".$userInCompany->company?->domains()->first()?->domain,
+                "serial_no" => $userInCompany->company?->serial_no
+            ];
+            $userInCompany->notify(new SendDomainForUser($data));
+        } catch (\Exception $e) {
+            $emailSent = false;
+        }
+
+        // Store email status for controller to check
+        $user->email_sent = $emailSent;
 
         try {
             event(new UserCreated($createCompanyUserDTO->toArray() + $companyRoleDTO->toArray() + ["id" => $user->id]));
@@ -58,16 +67,21 @@ class CompanyUserCRUDService
 
     public function sendEmailAssignToCompanyToUser($user , $companyId)
     {
-        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id])->first();
-        $companyId = (string)$companyId;
-        $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
-        $data = [
-            "name" => $userInCompany->name,
-            "company_name" => $company->name,
-            "domain_name" => "https://".$company->domains()->first()?->domain,
-            "serial_no" => $company->serial_no
-        ];
-        $userInCompany->notify(new SendDomainForUser($data));
+        try {
+            $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id])->first();
+            $companyId = (string)$companyId;
+            $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
+            $data = [
+                "name" => $userInCompany->name,
+                "company_name" => $company->name,
+                "domain_name" => "https://".$company->domains()->first()?->domain,
+                "serial_no" => $company->serial_no
+            ];
+            $userInCompany->notify(new SendDomainForUser($data));
+        } catch (\Exception $e) {
+            // Re-throw the exception so callers can handle it if needed
+            throw $e;
+        }
     }
 
 

@@ -79,6 +79,11 @@ return [
     'attendance*attendance-constraints' => 'محددات الحضور',
     'attendance-map' => 'خريطة الحضور',
     'attendance-list*attendance-map' => 'خريطة الحضور',
+    "attendance-list" => "Attendance List",
+    "attendance-constraints" => "محددات الحضور",
+    "attendance-list*attendance-list" => "قائمة الحضور",
+    "attendance-list*attendance-constraints" => "محددات الحضور",
+    "attendance-constraints*attendance-constraints" => "محددات الحضور",
 
     // Settings module
     // SubEntity Module
@@ -261,7 +266,76 @@ return [
     "archive-library"=>"المستندات و البيانات",
     "folder"=>"المجلدات",
     "file"=>"الملفات",
-    "log"=>"سجل الانشطة"
+    "log"=>"سجل الانشطة",
 
+    // ================================================================================================
+    // WEBSITE CMS MODULE TRANSLATIONS - ترجمات نظام إدارة محتوى الموقع
+    // ================================================================================================
+
+    // Website CMS Main Module
+    'website-cms' => 'الملف التعريفي',
+
+    // Website About Us
+    'website-about-us' => 'من نحن',
+    'website-cms*website-about-us' => 'من نحن',
+
+    // Website Address
+    'website-address' => 'عنوان الموقع',
+    'website-cms*website-address' => 'عنوان الموقع',
+
+    // Website Contact Info
+    'website-contact-info' => 'معلومات التواصل',
+    'website-cms*website-contact-info' => 'معلومات التواصل',
+
+    // Category Website CMS
+    'category-website-cms' => 'تصنيفات الموقع',
+    'website-cms*category-website-cms' => 'تصنيفات الموقع',
+
+    // Founder
+    'founder' => 'المؤسسون',
+    'website-cms*founder' => 'المؤسسون',
+
+    // Social Media Link
+    'social-media-link' => 'روابط التواصل الاجتماعي',
+    'website-cms*social-media-link' => 'روابط التواصل الاجتماعي',
+
+    // Website Home Page Setting
+    'website-home-page-setting' => 'إعدادات الصفحة الرئيسية',
+    'website-cms*website-home-page-setting' => 'إعدادات الصفحة الرئيسية',
+
+    // Website Theme Setting
+    'website-theme' => 'إعدادات الملف',
+    'website-cms*website-theme' => 'إعدادات الملف',
+
+    // Website Icon
+    'website-icon' => 'أيقونات الموقع',
+    'website-cms*website-icon' => 'أيقونات الموقع',
+
+    // Website News
+    'website-news' => 'أخبار الموقع',
+    'website-cms*website-news' => 'أخبار الموقع',
+
+    // Website Our Service
+    'website-our-service' => 'خدماتنا',
+    'website-cms*website-our-service' => 'خدماتنا',
+
+    // Website Project
+    'website-project' => 'مشاريع الموقع',
+    'website-cms*website-project' => 'مشاريع الموقع',
+
+    // Website Project Setting
+    'website-project-setting' => 'إعدادات المشاريع',
+    'website-cms*website-project-setting' => 'إعدادات المشاريع',
+
+    // Website Service
+    'website-service' => 'خدمات الموقع',
+    'website-cms*website-service' => 'خدمات الموقع',
+
+    // Website Term And Condition
+    'website-term-and-condition' => 'الشروط والأحكام',
+    'website-cms*website-term-and-condition' => 'الشروط والأحكام',
+
+    "website-theme-setting"=>"اعدادات الثيمات",
+    "website-theme-setting*website-theme-setting"=>"اعدادات الثيمات"
 
 ];

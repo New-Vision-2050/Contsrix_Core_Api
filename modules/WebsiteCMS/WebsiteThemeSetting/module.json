@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteThemeSetting",
+    "alias": "websitethemesetting",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteThemeSetting\\Providers\\WebsiteThemeSettingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}
