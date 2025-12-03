@@ -30,7 +30,7 @@ echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
 if [ "$APP_ENV" == "production" ]; then
-     REPLICAS=2
+     REPLICAS=1
      EMAIL_HOST=smtp.stackmail.com
      EMAIL_PORT=465
      EMAIL_HOST_USER=admin@constrix-nv.com

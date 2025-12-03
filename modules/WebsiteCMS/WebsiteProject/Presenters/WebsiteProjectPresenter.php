@@ -21,6 +21,8 @@ class WebsiteProjectPresenter extends AbstractPresenter
         return [
             'id' => $this->websiteProject->id,
             'name' => $this->websiteProject->name,
+            'website_project_setting_id'=>$this->websiteProject->website_project_setting_id,
+            'website_project_setting'=>$this->websiteProject->websiteProjectSetting,
             'name_ar'=>$this->websiteProject->getTranslation('name', 'ar'),
             'name_en'=>$this->websiteProject->getTranslation('name', 'en'),
             'description' => $this->websiteProject->description,

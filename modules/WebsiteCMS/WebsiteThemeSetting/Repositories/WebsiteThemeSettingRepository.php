@@ -139,6 +139,7 @@ class WebsiteThemeSettingRepository extends BaseRepository
 
             // Upload new main image
             if ($mainImage) {
+                $themeSetting->clearMediaCollection('main_image');
                 $this->fileUploadService->uploadFile(
                     $themeSetting,
                     $mainImage,
