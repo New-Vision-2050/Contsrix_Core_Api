@@ -30,8 +30,19 @@ class WebsiteProjectPresenter extends AbstractPresenter
             'created_at' => $this->websiteProject->created_at,
             'updated_at' => $this->websiteProject->updated_at,
             'main_image' => $this->websiteProject->getFirstMediaUrl('main_image'),
-            'secondary_images' => $this->websiteProject->getMedia('secondary_images')->map(fn($media) => $media->getUrl())->toArray(),
-            'project_details' => $this->websiteProject->projectDetails,
+            'secondary_images' => $this->websiteProject->getMedia('secondary_images')?->map(fn($media) => $media->getUrl())->toArray(),
+            'project_details' => $this->websiteProject->projectDetails?->map(function ($projectDetail) {
+                return [
+                    'id' => $projectDetail->id,
+                    'name' => $projectDetail->name,
+                    'name_ar' => $projectDetail->getTranslation('name', 'ar'),
+                    'name_en' => $projectDetail->getTranslation('name', 'en'),
+                    "website_service_id"=>$projectDetail->website_service_id,
+                    "website_project_id"=>$projectDetail->website_project_id,
+                    'created_at' => $projectDetail->created_at,
+                    'updated_at' => $projectDetail->updated_at,
+                ];
+            }),
             'services' => $this->websiteProject->services,
         ];
     }
