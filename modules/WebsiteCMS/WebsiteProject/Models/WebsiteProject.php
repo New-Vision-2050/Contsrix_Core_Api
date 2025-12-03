@@ -55,7 +55,7 @@ class WebsiteProject extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('main_image')->singleFile();
-        $this->addMediaCollection('secondary_image')->singleFile();
+        $this->addMediaCollection('secondary_images');
     }
 
     // Relationships

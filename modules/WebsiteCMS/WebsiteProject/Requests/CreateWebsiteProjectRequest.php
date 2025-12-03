@@ -21,7 +21,8 @@ class CreateWebsiteProjectRequest extends FormRequest
             'description_ar' => 'nullable|string',
             'description_en' => 'nullable|string',
             'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'secondary_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'secondary_images' => 'nullable|array',
+            'secondary_images.*' => 'image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'project_details' => 'nullable|array',
             'project_details.*.name_ar' => 'required|string|max:255',
             'project_details.*.name_en' => 'required|string|max:255',
@@ -46,7 +47,7 @@ class CreateWebsiteProjectRequest extends FormRequest
                 'en' => $this->get('description_en'),
             ],
             mainImage: $this->file('main_image'),
-            secondaryImage: $this->file('secondary_image'),
+            secondaryImages: $this->file('secondary_images') ?? [],
             projectDetails: $this->get('project_details', []),
         );
     }

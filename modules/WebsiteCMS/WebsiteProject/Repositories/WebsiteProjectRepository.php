@@ -46,10 +46,10 @@ class WebsiteProjectRepository extends BaseRepository
     public function createWebsiteProject(
         array $data,
         ?UploadedFile $mainImage = null,
-        ?UploadedFile $secondaryImage = null,
+        array $secondaryImages = [],
         array $projectDetails = []
     ): WebsiteProject {
-        return DB::transaction(function () use ($data, $mainImage, $secondaryImage, $projectDetails) {
+        return DB::transaction(function () use ($data, $mainImage, $secondaryImages, $projectDetails) {
             // Create the website project
             $websiteProject = $this->create($data);
 
@@ -64,15 +64,19 @@ class WebsiteProjectRepository extends BaseRepository
                 );
             }
 
-            // Upload secondary image if provided
-            if ($secondaryImage) {
-                $this->fileUploadService->uploadFile(
-                    $websiteProject,
-                    $secondaryImage,
-                    'website-project/secondary-image',
-                    'secondary_image',
-                    'public'
-                );
+            // Upload secondary images if provided
+            if (!empty($secondaryImages)) {
+                foreach ($secondaryImages as $secondaryImage) {
+                    if ($secondaryImage) {
+                        $this->fileUploadService->uploadFile(
+                            $websiteProject,
+                            $secondaryImage,
+                            'website-project/secondary-images',
+                            'secondary_images',
+                            'public'
+                        );
+                    }
+                }
             }
 
             // Create project details if provided
@@ -97,10 +101,10 @@ class WebsiteProjectRepository extends BaseRepository
         UuidInterface $id,
         array $data,
         ?UploadedFile $mainImage = null,
-        ?UploadedFile $secondaryImage = null,
+        array $secondaryImages = [],
         array $projectDetails = []
     ): WebsiteProject {
-        return DB::transaction(function () use ($id, $data, $mainImage, $secondaryImage, $projectDetails) {
+        return DB::transaction(function () use ($id, $data, $mainImage, $secondaryImages, $projectDetails) {
             // Get the website project
             $websiteProject = $this->findOneOrFail($id);
 
@@ -118,15 +122,22 @@ class WebsiteProjectRepository extends BaseRepository
                 );
             }
 
-            // Update secondary image if provided
-            if ($secondaryImage) {
-                $this->fileUploadService->uploadFile(
-                    $websiteProject,
-                    $secondaryImage,
-                    'website-project/secondary-image',
-                    'secondary_image',
-                    'public'
-                );
+            // Update secondary images if provided
+            if (!empty($secondaryImages)) {
+                // Clear existing secondary images
+                $websiteProject->clearMediaCollection('secondary_images');
+                
+                foreach ($secondaryImages as $secondaryImage) {
+                    if ($secondaryImage) {
+                        $this->fileUploadService->uploadFile(
+                            $websiteProject,
+                            $secondaryImage,
+                            'website-project/secondary-images',
+                            'secondary_images',
+                            'public'
+                        );
+                    }
+                }
             }
 
             // Update project details if provided
