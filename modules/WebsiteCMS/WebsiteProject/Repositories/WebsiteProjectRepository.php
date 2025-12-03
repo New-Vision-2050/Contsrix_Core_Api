@@ -113,6 +113,8 @@ class WebsiteProjectRepository extends BaseRepository
 
             // Update main image if provided
             if ($mainImage) {
+                $websiteProject->clearMediaCollection('main_image');
+
                 $this->fileUploadService->uploadFile(
                     $websiteProject,
                     $mainImage,
@@ -125,8 +127,7 @@ class WebsiteProjectRepository extends BaseRepository
             // Update secondary images if provided
             if (!empty($secondaryImages)) {
                 // Clear existing secondary images
-                $websiteProject->clearMediaCollection('secondary_images');
-                
+
                 foreach ($secondaryImages as $secondaryImage) {
                     if ($secondaryImage) {
                         $this->fileUploadService->uploadFile(
