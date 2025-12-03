@@ -7,6 +7,7 @@ namespace Modules\UserInfo\EmploymentContract\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Modules\User\Repositories\UserRepository;
 
 use Modules\UserInfo\EmploymentContract\Presenters\EmploymentContractPresenter;
@@ -26,7 +27,8 @@ class EmploymentContractController extends Controller
 
     public function index(GetEmploymentContractListRequest $request): JsonResponse
     {
-        $userId = Uuid::fromString($request->route('id'));
+        $id = $request->route('id');
+        $userId = $id ? Uuid::fromString($id) : Uuid::fromString((string) Auth::id());
 
         $user = $this->userRepository->getUser($userId);
 
