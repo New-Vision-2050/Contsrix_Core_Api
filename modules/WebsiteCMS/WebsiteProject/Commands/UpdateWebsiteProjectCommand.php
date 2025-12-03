@@ -16,7 +16,7 @@ class UpdateWebsiteProjectCommand
         private array $name,
         private array $description,
         private ?UploadedFile $mainImage = null,
-        private ?UploadedFile $secondaryImage = null,
+        private array $secondaryImages = [],
         private array $projectDetails = [],
     ) {
     }
@@ -51,9 +51,9 @@ class UpdateWebsiteProjectCommand
         return $this->mainImage;
     }
 
-    public function getSecondaryImage(): ?UploadedFile
+    public function getSecondaryImages(): array
     {
-        return $this->secondaryImage;
+        return $this->secondaryImages;
     }
 
     public function getProjectDetails(): array

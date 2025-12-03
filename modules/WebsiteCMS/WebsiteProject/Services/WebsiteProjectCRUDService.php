@@ -25,7 +25,7 @@ class WebsiteProjectCRUDService
          return $this->repository->createWebsiteProject(
              data: $createWebsiteProjectDTO->toArray(),
              mainImage: $createWebsiteProjectDTO->mainImage,
-             secondaryImage: $createWebsiteProjectDTO->secondaryImage,
+             secondaryImages: $createWebsiteProjectDTO->secondaryImages,
              projectDetails: $createWebsiteProjectDTO->projectDetails,
          );
     }
