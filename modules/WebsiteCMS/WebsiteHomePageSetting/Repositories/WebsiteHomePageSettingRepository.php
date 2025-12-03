@@ -43,7 +43,7 @@ class WebsiteHomePageSettingRepository extends BaseRepository
 
     public function getCurrentCompanySetting(): ?WebsiteHomePageSetting
     {
-        return $this->model->where('company_id', tenant('id'))->first();
+        return $this->model->where('company_id', tenant('id'))->with("media")->first();
     }
 
     public function createWebsiteHomePageSetting(

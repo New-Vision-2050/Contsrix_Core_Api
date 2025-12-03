@@ -126,7 +126,7 @@ class WebsiteProjectRepository extends BaseRepository
             if (!empty($secondaryImages)) {
                 // Clear existing secondary images
                 $websiteProject->clearMediaCollection('secondary_images');
-                
+
                 foreach ($secondaryImages as $secondaryImage) {
                     if ($secondaryImage) {
                         $this->fileUploadService->uploadFile(
@@ -174,7 +174,7 @@ class WebsiteProjectRepository extends BaseRepository
             ->where('status', 1)
             ->orderBy('created_at', 'desc')
             ->limit($limit)
-            ->with(['projectDetails', 'services', 'websiteProjectSetting'])
+            ->with(['projectDetails', 'services', 'websiteProjectSetting',"media"])
             ->get();
     }
 }

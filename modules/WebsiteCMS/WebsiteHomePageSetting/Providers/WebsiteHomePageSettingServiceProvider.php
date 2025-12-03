@@ -6,6 +6,8 @@ namespace Modules\WebsiteCMS\WebsiteHomePageSetting\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\WebsiteCMS\WebsiteHomePageSetting\Models\WebsiteHomePageSetting;
+use Modules\WebsiteCMS\WebsiteHomePageSetting\Observers\WebsiteHomePageSettingObserver;
 
 class WebsiteHomePageSettingServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +21,12 @@ class WebsiteHomePageSettingServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerObservers();
+    }
+
+    private function registerObservers(): void
+    {
+        WebsiteHomePageSetting::observe(WebsiteHomePageSettingObserver::class);
     }
 
     public function register(): void
