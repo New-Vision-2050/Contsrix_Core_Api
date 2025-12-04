@@ -6,6 +6,7 @@ namespace Modules\WebsiteCMS\WebsiteIcon\Commands;
 
 use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 
 class UpdateWebsiteIconCommand
 {
@@ -13,7 +14,7 @@ class UpdateWebsiteIconCommand
         private UuidInterface $id,
         private array $name,
         private ?UploadedFile $icon,
-        private string $category_website_cms_id,
+        private WebsiteIconCategoryType $website_icon_category_type,
     ) {
     }
 
@@ -32,16 +33,16 @@ class UpdateWebsiteIconCommand
         return $this->icon;
     }
 
-    public function getCategoryWebsiteCmsId(): string
+    public function getWebsiteIconCategoryType(): WebsiteIconCategoryType
     {
-        return $this->category_website_cms_id;
+        return $this->website_icon_category_type;
     }
 
     public function toArray(): array
     {
         return [
             'name' => $this->name,
-            'category_website_cms_id' => $this->category_website_cms_id,
+            'website_icon_category_type' => $this->website_icon_category_type->value,
         ];
     }
 }

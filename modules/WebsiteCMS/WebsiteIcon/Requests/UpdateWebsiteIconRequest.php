@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Modules\WebsiteCMS\WebsiteIcon\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Ramsey\Uuid\Uuid;
 use Modules\WebsiteCMS\WebsiteIcon\Commands\UpdateWebsiteIconCommand;
 use Modules\WebsiteCMS\WebsiteIcon\Handlers\UpdateWebsiteIconHandler;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 
 class UpdateWebsiteIconRequest extends FormRequest
 {
@@ -17,7 +19,7 @@ class UpdateWebsiteIconRequest extends FormRequest
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
             'icon' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'category_website_cms_id' => 'required|uuid|exists:category_website_cms,id',
+            'website_icon_category_type' => ['required', 'string', Rule::in(WebsiteIconCategoryType::values())],
         ];
     }
 
@@ -30,7 +32,7 @@ class UpdateWebsiteIconRequest extends FormRequest
                 'en' => $this->get('name_en'),
             ],
             icon: $this->file('icon'),
-            category_website_cms_id: $this->get('category_website_cms_id'),
+            website_icon_category_type: WebsiteIconCategoryType::from($this->get('website_icon_category_type')),
         );
     }
 }

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Modules\WebsiteCMS\WebsiteIcon\DTO;
 
 use Illuminate\Http\UploadedFile;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 
 class CreateWebsiteIconDTO
 {
     public function __construct(
         public readonly array $name,
         public readonly ?UploadedFile $icon,
-        public readonly string $category_website_cms_id,
+        public readonly WebsiteIconCategoryType $website_icon_category_type,
     ) {
     }
 
@@ -25,16 +26,16 @@ class CreateWebsiteIconDTO
         return $this->icon;
     }
 
-    public function getCategoryWebsiteCmsId(): string
+    public function getWebsiteIconCategoryType(): WebsiteIconCategoryType
     {
-        return $this->category_website_cms_id;
+        return $this->website_icon_category_type;
     }
 
     public function toArray(): array
     {
         return [
             'name' => $this->name,
-            'category_website_cms_id' => $this->category_website_cms_id,
+            'website_icon_category_type' => $this->website_icon_category_type->value,
         ];
     }
 }

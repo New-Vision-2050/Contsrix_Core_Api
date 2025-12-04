@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\WebsiteCMS\WebsiteIcon\Presenters;
 
-use Modules\WebsiteCMS\CategoryWebsiteCMS\Presenters\CategoryWebsiteCMSPresenter;
 use Modules\WebsiteCMS\WebsiteIcon\Models\WebsiteIcon;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
@@ -25,8 +24,8 @@ class WebsiteIconPresenter extends AbstractPresenter
             "name_ar"=>$this->websiteIcon->getTranslation('name', 'ar'),
             "name_en"=>$this->websiteIcon->getTranslation('name', 'en'),
             "icon"=>$this->websiteIcon->getFirstMediaUrl('icon'),
-            "category_website_cms_id"=>$this->websiteIcon->category_website_cms_id,
-            "category"=>$this->websiteIcon->category?(new CategoryWebsiteCMSPresenter($this->websiteIcon->category))->getData():null
+            "website_icon_category_type"=>$this->websiteIcon->website_icon_category_type?->value,
+            "website_icon_category_type_label"=>$this->websiteIcon->website_icon_category_type?->label()
         ];
     }
 }
