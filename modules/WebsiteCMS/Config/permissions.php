@@ -95,5 +95,11 @@ return [
         // Website Term And Condition Management
         'WEBSITE_TERM_AND_CONDITION_VIEW' => 'website-cms.website-term-and-condition*website-term-and-condition.view',
         'WEBSITE_TERM_AND_CONDITION_UPDATE' => 'website-cms.website-term-and-condition*website-term-and-condition.update',
+
+
+        'WEBSITE_CONTACT_MESSAGE_LIST' => 'website-cms.website-contact-message*website-contact-message.list',
+        'WEBSITE_CONTACT_MESSAGE_UPDATE' => 'website-cms.website-contact-message*website-contact-message.update',
+        'WEBSITE_CONTACT_MESSAGE_DELETE' => 'website-cms.website-contact-message*website-contact-message.delete',
+
     ]
 ];
