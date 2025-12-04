@@ -18,8 +18,8 @@ class WebsiteIconFilter extends SearchModelFilter
         });
     }
 
-    public function categoryWebsiteCMS($categoryWebsiteCMSId)
+    public function websiteIconCategoryType($categoryType)
     {
-        return $this->where('category_website_cms_id', $categoryWebsiteCMSId);
+        return $this->where('website_icon_category_type', $categoryType);
     }
 }

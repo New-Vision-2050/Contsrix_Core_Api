@@ -14,4 +14,9 @@ class CategoryWebsiteCMSFilter extends SearchModelFilter
     {
         return $this->where('name', $name);
     }
+
+    public function CategoryType($type)
+    {
+        return $this->where('category_type', $type);
+    }
 }

@@ -5,6 +5,8 @@ use Modules\WebsiteCMS\WebsiteIcon\Controllers\WebsiteIconController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
+    Route::get('/category-types', [WebsiteIconController::class, 'getCategoryTypes'])
+        ->permission(Permission::WEBSITE_ICON_LIST());
     Route::get('/', [WebsiteIconController::class, 'index'])
         ->permission(Permission::WEBSITE_ICON_LIST());
     Route::post('/', [WebsiteIconController::class, 'store'])

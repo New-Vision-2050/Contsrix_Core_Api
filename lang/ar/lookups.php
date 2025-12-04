@@ -33,8 +33,14 @@ return [
     "incomplete_data_companies" => "شركات غير مكتملة البيانات",
     "nearly_expiring_companies" => "شركات قاربت على الانتهاء",
     "services"=>"خدمات",
+    "news"=>"اخبار",
 
 
     "hexa"=>"الشكل السداسي",
     "cards"=>"الكروت",
+    
+    // Website Icon Categories
+    "certificates" => "الشهادات",
+    "approvals" => "الموافقات",
+    "companies" => "الشركات",
 ];

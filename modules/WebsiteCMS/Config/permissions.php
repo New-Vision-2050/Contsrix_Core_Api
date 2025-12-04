@@ -88,7 +88,7 @@ return [
 
         // Website Service Management
         'WEBSITE_THEME_SETTING_LIST' => 'website-cms.website-theme-setting*website-theme-setting.list',
-        'WEBSITE_THEME_SETTING_SHOW' => 'website-cms.website-theme-setting*website-theme-setting.show',
+        'WEBSITE_THEME_SETTING_VIEW' => 'website-cms.website-theme-setting*website-theme-setting.show',
         'WEBSITE_THEME_SETTING_ACTIVATE' => 'website-cms.website-theme-setting*website-theme-setting.activate',
 
 

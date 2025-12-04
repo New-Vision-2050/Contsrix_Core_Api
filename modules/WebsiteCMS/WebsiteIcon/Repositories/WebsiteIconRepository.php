@@ -56,7 +56,7 @@ class WebsiteIconRepository extends BaseRepository
             );
         }
 
-        return $websiteIcon->fresh(['category']);
+        return $websiteIcon->fresh();
     }
 
     public function updateWebsiteIcon(UuidInterface $id, array $data, ?UploadedFile $icon = null): WebsiteIcon
@@ -75,7 +75,7 @@ class WebsiteIconRepository extends BaseRepository
             );
         }
 
-        return $websiteIcon->load(['category']);
+        return $websiteIcon;
     }
 
     public function deleteWebsiteIcon(UuidInterface $id): bool

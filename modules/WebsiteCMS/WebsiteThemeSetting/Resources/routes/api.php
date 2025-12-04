@@ -9,7 +9,7 @@ Route::group(['middleware' => ['auth:api']], function () {
     Route::get('/', [WebsiteThemeSettingController::class, 'index'])->permission(Permission::WEBSITE_THEME_SETTING_LIST());
 //    Route::post('/', [WebsiteThemeSettingController::class, 'store']);
 //    Route::post('/export', [WebsiteThemeSettingController::class, 'export']);
-    Route::get('/{id}', [WebsiteThemeSettingController::class, 'show'])->permission(Permission::WEBSITE_THEME_SETTING_SHOW());
+    Route::get('/{id}', [WebsiteThemeSettingController::class, 'show'])->permission(Permission::WEBSITE_THEME_SETTING_VIEW());
 //    Route::put('/{id}', [WebsiteThemeSettingController::class, 'update']);
 //    Route::delete('/{id}', [WebsiteThemeSettingController::class, 'delete']);
 
