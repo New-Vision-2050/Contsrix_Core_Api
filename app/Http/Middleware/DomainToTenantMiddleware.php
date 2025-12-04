@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Models\Domain;
+use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
 use Symfony\Component\HttpFoundation\Response;
 
 class DomainToTenantMiddleware
@@ -26,7 +27,12 @@ class DomainToTenantMiddleware
         // If X-Domain header is present
         if ($domainName) {
             // Find the domain in the database
-            $domain = Domain::where('domain', $domainName)->firstOrFail();
+            $domain = Domain::where('domain', $domainName)->first();
+            if (!$domain)
+            {
+                $domain = WebsiteTheme::where('url', $domainName)->firstOrFail();
+
+            }
 
             // If domain exists, set the X-Tenant header with the company_id
             if ($domain) {

@@ -1,0 +1,14 @@
+{
+    "name": "WebsiteHomePage",
+    "alias": "websitehomepage",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\WebsiteCMS\\WebsiteHomePage\\Providers\\WebsiteHomePageServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\WebsiteCMS"
+}

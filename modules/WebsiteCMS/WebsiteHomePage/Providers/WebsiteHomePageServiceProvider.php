@@ -2,18 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Modules\WebsiteCMS\WebsiteHomePageSetting\Providers;
+namespace Modules\WebsiteCMS\WebsiteHomePage\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
-use Modules\WebsiteCMS\WebsiteHomePageSetting\Models\WebsiteHomePageSetting;
-use Modules\WebsiteCMS\WebsiteHomePageSetting\Observers\WebsiteHomePageSettingObserver;
 
-class WebsiteHomePageSettingServiceProvider extends ModuleServiceProvider
+class WebsiteHomePageServiceProvider extends ModuleServiceProvider
 {
     public static function getModuleName(): string
     {
-        return 'WebsiteHomePageSetting';
+        return 'WebsiteHomePage';
     }
 
     public function boot(): void
@@ -21,12 +19,6 @@ class WebsiteHomePageSettingServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
-        $this->registerObservers();
-    }
-
-    private function registerObservers(): void
-    {
-        WebsiteHomePageSetting::observe(WebsiteHomePageSettingObserver::class);
     }
 
     public function register(): void
@@ -36,7 +28,7 @@ class WebsiteHomePageSettingServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/website-home-page-settings')
+        Route::prefix('api/v1/website-home-page')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 
