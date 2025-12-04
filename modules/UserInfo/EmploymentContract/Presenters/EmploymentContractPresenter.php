@@ -38,7 +38,7 @@ class EmploymentContractPresenter extends AbstractPresenter
             'working_hours' => $this->employmentContract->working_hours,
             'annual_leave' => $this->employmentContract->annual_leave,
             'country_id' => $this->employmentContract->country_id,
-            'country_name' => $this->employmentContract->country->name,
+            'country_name' => $this->employmentContract?->country?->name??null,
 
             'state_id' => $this->employmentContract->state_id,
             'state_name' => $this->employmentContract->state?->name,

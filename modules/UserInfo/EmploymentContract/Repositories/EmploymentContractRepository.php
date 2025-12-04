@@ -38,18 +38,24 @@ class EmploymentContractRepository extends BaseRepository
 
     public function createEmploymentContract(array $data): EmploymentContract
     {
-       $state = $this->stateRepository->findOneBy(["id" =>$data['state_id']]);
-       $data["country_id"] = $state->country_id;
+       if (isset($data['state_id']) && empty($data['country_id'])) {
+           $state = $this->stateRepository->findOneBy(["id" => $data['state_id']]);
+           if ($state && $state->country_id) {
+               $data["country_id"] = $state->country_id;
+           }
+       }
 
-        $employmentContract = $this->model->where([
-            'global_id' => $data['global_id'],
-            'company_id' => $data['company_id'],
-        ])->first();
+       
+       $employmentContract = $this->model->where([
+           'global_id' => $data['global_id'],
+           'company_id' => $data['company_id'],
+           ])->first();
 
-        if ($employmentContract) {
-            $employmentContract->update($data);
-            return $employmentContract;
-        }
+           if ($employmentContract) {
+               $employmentContract->update($data);
+               return $employmentContract;
+            }
+            
 
         return $this->model->create($data);
     }
