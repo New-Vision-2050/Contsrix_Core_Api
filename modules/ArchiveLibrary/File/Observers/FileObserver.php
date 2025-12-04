@@ -215,11 +215,21 @@ class FileObserver
         }
 
 
-        // Fallback to request for single file upload
+        // Fallback to request for single file upload or array of files named 'file'
         if (function_exists('request') && request()->hasFile('file')) {
-            $uploadedFile = request()->file('file');
-            if ($uploadedFile && $uploadedFile->isValid()) {
-                $sizeInBytes = $uploadedFile->getSize();
+            $uploadedData = request()->file('file');
+            if (is_array($uploadedData)) {
+                $totalSize = 0;
+                foreach ($uploadedData as $fileItem) {
+                    if ($fileItem && $fileItem->isValid()) {
+                        $totalSize += $fileItem->getSize();
+                    }
+                }
+                 if ($totalSize > 0) {
+                    return round($totalSize / (1024 * 1024), 2);
+                }
+            } elseif ($uploadedData && $uploadedData->isValid()) {
+                $sizeInBytes = $uploadedData->getSize();
                 return round($sizeInBytes / (1024 * 1024), 2);
             }
         }
@@ -250,11 +260,21 @@ class FileObserver
      */
     private function getNewFileSizeInMB(File $file)
     {
-        // Check for single file upload
+        // Check for single file upload or array of files named 'file'
         if (function_exists('request') && request()->hasFile('file')) {
-            $uploadedFile = request()->file('file');
-            if ($uploadedFile && $uploadedFile->isValid()) {
-                $sizeInBytes = $uploadedFile->getSize();
+            $uploadedData = request()->file('file');
+            if (is_array($uploadedData)) {
+                $totalSize = 0;
+                foreach ($uploadedData as $fileItem) {
+                    if ($fileItem && $fileItem->isValid()) {
+                        $totalSize += $fileItem->getSize();
+                    }
+                }
+                 if ($totalSize > 0) {
+                    return round($totalSize / (1024 * 1024), 2);
+                }
+            } elseif ($uploadedData && $uploadedData->isValid()) {
+                $sizeInBytes = $uploadedData->getSize();
                 return round($sizeInBytes / (1024 * 1024), 2);
             }
         }
@@ -285,10 +305,17 @@ class FileObserver
      */
     private function wasMediaChanged(File $file): bool
     {
-        // Check for single file upload
+        // Check for single file upload or array of files named 'file'
         if (function_exists('request') && request()->hasFile('file')) {
-            $uploadedFile = request()->file('file');
-            if ($uploadedFile && $uploadedFile->isValid()) {
+            $uploadedData = request()->file('file');
+
+            if (is_array($uploadedData)) {
+                foreach ($uploadedData as $fileItem) {
+                    if ($fileItem && $fileItem->isValid()) {
+                        return true;
+                    }
+                }
+            } elseif ($uploadedData && $uploadedData->isValid()) {
                 return true;
             }
         }
