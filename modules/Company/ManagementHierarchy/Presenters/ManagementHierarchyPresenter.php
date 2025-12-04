@@ -19,8 +19,8 @@ class ManagementHierarchyPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
-        // Get users efficiently without n+1 query
-        $users = $this->managementHierarchy->users?->where("company_id", $this->managementHierarchy->company_id);
+        // Get users (including descendants) and filter by company to avoid cross-company leakage
+        $users = $this->managementHierarchy->usersByBranch?->where("company_id", $this->managementHierarchy->company_id);
 
         // Get cached hierarchy counts or calculate and cache them if not available
         $hierarchyCounts = $this->managementHierarchy->getCachedHierarchyCounts()

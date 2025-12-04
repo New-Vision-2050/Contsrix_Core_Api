@@ -17,6 +17,7 @@ use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\User\Models\User;
 use Modules\Shared\JobType\Models\JobType;
 use Modules\JobTitle\Models\JobTitle;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -100,6 +101,15 @@ class ManagementHierarchy extends Model implements Auditable
     public function users()//get all users under hierarchy not in company
     {
         return HasManyDeep::between($this , User::class,"management_hierarchy_id","id");
+    }
+
+    /**
+     * Users professional data directly assigned to this branch (no recursion).
+     */
+    public function usersByBranch()
+    {
+        return $this->hasMany(UserProfessionalData::class, 'branch_id', 'id')
+            ->where('company_id', $this->company_id);
     }
 
     public function detail()
