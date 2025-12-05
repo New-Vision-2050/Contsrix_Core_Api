@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\JobTitle\Models\JobTitle;
+use Modules\Shared\JobType\Models\JobType;
 use Modules\Shared\JobType\DTO\CreateJobTypeWithCompanyDTO;
 use Modules\Shared\JobType\Services\JobTypeCRUDService;
 use Ranium\SeedOnce\Traits\SeedOnce;
@@ -25,6 +26,8 @@ class JobTitleModulesSeederTableSeeder extends Seeder
         $namespace = Uuid::NAMESPACE_DNS;
         $companyId = Uuid::uuid5($namespace, "new-vision")->toString();
 
+        $targetCompanyId = tenant("id") ?? $companyId;
+
         $data = [
 
             ['en' => 'General Manager', 'ar' => 'مدير عام','type'=>'general_manager']
@@ -32,22 +35,29 @@ class JobTitleModulesSeederTableSeeder extends Seeder
             //['en' => 'hr manager', 'ar' => 'مدير الموارد البشرية','type'=>'hr_manager'],
         ];
 
-        $createJobTypeWithCompanyDTO = new CreateJobTypeWithCompanyDTO(
-            name: 'مجلس ادارة',
-            companyId: Uuid::fromString(tenant("id") ?? $companyId),
-            status: 1
-        );
+        $jobType = JobType::where('company_id', $targetCompanyId)
+            ->whereHas('translations',function($q) use ($data){
+                $q->where('content','like','مجلس ادارة');
+            })
+            ->first();
 
-        $jobType = app(JobTypeCRUDService::class)->createWithCompany($createJobTypeWithCompanyDTO);
 
+        if (!$jobType) {
+            $createJobTypeWithCompanyDTO = new CreateJobTypeWithCompanyDTO(
+                name: 'مجلس ادارة',
+                companyId: Uuid::fromString($targetCompanyId),
+                status: 1
+            );
+            $jobType = app(JobTypeCRUDService::class)->createWithCompany($createJobTypeWithCompanyDTO);
+        }
 
         foreach ($data as $item) {
             JobTitle::firstOrCreate(
-                ['type' => $item['type'], "company_id" => tenant("id") ?? $companyId],
+                ['type' => $item['type'], "company_id" => $targetCompanyId],
                 [
                     'name' => ['en' => $item['en'], 'ar' => $item['ar']],
                     'type' => $item['type'],
-                    "company_id" => tenant("id") ?? $companyId,
+                    "company_id" => $targetCompanyId,
                     'description' => 'مدير عام',
                     'job_type_id' => $jobType->id,
                     'status' => 1
