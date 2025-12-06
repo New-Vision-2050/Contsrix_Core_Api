@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.7
 # Base image فيها nginx + php 8.2
 FROM mabou7agar/custom-nginx-php8-2
 
