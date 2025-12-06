@@ -1,7 +1,10 @@
 #!/bin/bash
 
 set -e
-set -x
+# Enable shell debug only when DEBUG=1 to avoid leaking secrets in CI logs
+if [ "${DEBUG:-0}" = "1" ]; then
+  set -x
+fi
 
 # Enable BuildKit for faster, cached builds
 export DOCKER_BUILDKIT=1
@@ -109,8 +112,7 @@ OPENROUTER_API_KEY=sk-or-v1-785653f048c7a5d8ec2131907eb8742f2477fe9eefe07059f03c
 EOF
 
 echo "APP_ENV: $APP_ENV"
-
-cat .env
+# Do NOT print .env contents to logs (secrets)
 
 # Secure the .env file
 chmod 600 .env

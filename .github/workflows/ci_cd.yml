@@ -112,6 +112,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 60m
           script: |
             #!/bin/bash
             set -e
