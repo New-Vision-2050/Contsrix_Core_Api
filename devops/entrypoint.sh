@@ -38,8 +38,12 @@ log "Testing database connection..."
 php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connection successful';" || handle_error "Database connection failed"
 
 # Run Laravel Artisan commands with error handling
-log "Running composer dump-autoload..."
-composer dump-autoload || handle_error "Composer dump-autoload failed"
+if [ "${RUN_DUMP_AUTOLOAD:-true}" = "true" ]; then
+    log "Running composer dump-autoload..."
+    composer dump-autoload || handle_error "Composer dump-autoload failed"
+else
+    log "Skipping composer dump-autoload (RUN_DUMP_AUTOLOAD=false)"
+fi
 
 log "Creating storage link..."
 php artisan storage:link || log "Storage link already exists or failed (non-critical)"
@@ -48,9 +52,13 @@ log "Running database migrations..."
 php artisan migrate --force || handle_error "Database migration failed"
 
 # Optional: Run seeders (uncomment if needed)
-log "Running database seeders..."
-php artisan db:seed --force || log "Database seeding failed (non-critical)"
-php artisan tenant:seed --force || log "Database Tenant seeding failed (non-critical)"
+if [ "${RUN_SEEDS:-true}" = "true" ]; then
+    log "Running database seeders..."
+    php artisan db:seed --force || log "Database seeding failed (non-critical)"
+    php artisan tenant:seed --force || log "Database Tenant seeding failed (non-critical)"
+else
+    log "Skipping database seeders (RUN_SEEDS=false)"
+fi
 
 # Clear and cache configuration
 log "Optimizing Laravel..."

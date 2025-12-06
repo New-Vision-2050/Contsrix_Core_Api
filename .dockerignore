@@ -1,12 +1,37 @@
 # Node modules & Composer vendor
 /node_modules
 /vendor
+**/node_modules
+**/vendor
 
 # Laravel cache & storage
 /storage
 /bootstrap/cache
 
 # Environment / sensitive files
-/.env
-/.env.*
 /*.log
+
+# VCS & IDE
+/.git
+/.github
+/.gitlab*
+/.idea
+/.vscode
+/*.iml
+
+# Tests, docs, examples, local tooling that aren't needed in the runtime image
+/tests
+/docs
+/coverage
+/tmp
+/*.md
+/test_*.php
+/*_test.php
+/*.postman_collection.json
+/openapi_*.yaml
+/*.yaml
+
+# OS / editor junk
+**/.DS_Store
+**/Thumbs.db
+**/npm-debug.log*

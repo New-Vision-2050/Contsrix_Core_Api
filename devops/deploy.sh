@@ -3,15 +3,16 @@
 set -e
 set -x
 
-# Generate a unique cache bust value using the current timestamp
-CACHEBUST=$(date +%s)
+# Enable BuildKit for faster, cached builds
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
 
 # Generate a random suffix for the docker compose project name
 RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 8)
 DOCKER_NAMESPACE="${DEPLOYMENT_ID}-${RANDOM_SUFFIX}"
 #DOCKER_NAMESPACE="${DEPLOYMENT_ID}"
-# Export variables as environment variables so Docker Compose can use them
-export CACHEBUST
+# Optional: use NO_CACHE=1 to force a clean build (slower)
+NO_CACHE=${NO_CACHE:-0}
 
 DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID/code
 
@@ -116,8 +117,16 @@ chmod 600 .env
 
 cd "$DEPLOY_DIR/devops"
 
-# Build the Docker images without using the cache
-docker compose build --no-cache
+# Build the Docker images (use cache by default). Set NO_CACHE=1 to force clean build.
+if [ "$NO_CACHE" = "1" ]; then
+  # change CACHEBUST to invalidate ARG-based cache keys when desired
+  export CACHEBUST=$(date +%s)
+  docker compose build --no-cache
+else
+  # stable CACHEBUST keeps cache reusable across builds
+  export CACHEBUST=${CACHEBUST:-1}
+  docker compose build
+fi
 
 # Start the containers with the new unique namespace and remove any orphaned containers
 docker compose -p $DOCKER_NAMESPACE up --force-recreate --remove-orphans -d
