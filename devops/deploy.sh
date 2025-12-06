@@ -1,21 +1,17 @@
 #!/bin/bash
 
 set -e
-# Enable shell debug only when DEBUG=1 to avoid leaking secrets in CI logs
-if [ "${DEBUG:-0}" = "1" ]; then
-  set -x
-fi
+set -x
 
-# Enable BuildKit for faster, cached builds
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
+# Generate a unique cache bust value using the current timestamp
+CACHEBUST=$(date +%s)
 
 # Generate a random suffix for the docker compose project name
 RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 8)
 DOCKER_NAMESPACE="${DEPLOYMENT_ID}-${RANDOM_SUFFIX}"
 #DOCKER_NAMESPACE="${DEPLOYMENT_ID}"
-# Optional: use NO_CACHE=1 to force a clean build (slower)
-NO_CACHE=${NO_CACHE:-0}
+# Export variables as environment variables so Docker Compose can use them
+export CACHEBUST
 
 DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID/code
 
@@ -34,7 +30,7 @@ echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
 if [ "$APP_ENV" == "production" ]; then
-     REPLICAS=1
+     REPLICAS=2
      EMAIL_HOST=smtp.stackmail.com
      EMAIL_PORT=465
      EMAIL_HOST_USER=admin@constrix-nv.com
@@ -112,23 +108,16 @@ OPENROUTER_API_KEY=sk-or-v1-785653f048c7a5d8ec2131907eb8742f2477fe9eefe07059f03c
 EOF
 
 echo "APP_ENV: $APP_ENV"
-# Do NOT print .env contents to logs (secrets)
+
+cat .env
 
 # Secure the .env file
 chmod 600 .env
 
 cd "$DEPLOY_DIR/devops"
 
-# Build the Docker images (use cache by default). Set NO_CACHE=1 to force clean build.
-if [ "$NO_CACHE" = "1" ]; then
-  # change CACHEBUST to invalidate ARG-based cache keys when desired
-  export CACHEBUST=$(date +%s)
-  docker compose build --no-cache
-else
-  # stable CACHEBUST keeps cache reusable across builds
-  export CACHEBUST=${CACHEBUST:-1}
-  docker compose build
-fi
+# Build the Docker images without using the cache
+docker compose build --no-cache
 
 # Start the containers with the new unique namespace and remove any orphaned containers
 docker compose -p $DOCKER_NAMESPACE up --force-recreate --remove-orphans -d

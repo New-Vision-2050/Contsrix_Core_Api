@@ -1,37 +1,34 @@
-# Base image فيها nginx + php 8.2
+# Use an official PHP image with necessary extensions
 FROM mabou7agar/custom-nginx-php8-2
 
-# Install zip extension (مرة واحدة ومع caching كويس) with APT cache mounts
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt/lists \
-    apt-get update && apt-get install -y \
-        libzip-dev zip unzip \
+# RUN docker-php-ext-install sockets \
+#     && docker-php-ext-enable sockets
+
+#RUN apt-get update && apt-get install -y \
+#        libmagickwand-dev --no-install-recommends \
+#    && pecl install imagick \
+#    && docker-php-ext-install sockets \
+#    && docker-php-ext-enable imagick sockets
+
+# Install zip extension
+RUN apt-get update && apt-get install -y \
+    libzip-dev zip unzip \
     && docker-php-ext-install zip
 
 ARG CACHEBUST=1
-
-# نشتغل من هنا
+## Set working directory
 WORKDIR /var/www
+#
+## Copy Laravel application
 
-# 1) ننسخ ملفات Composer بس الأول عشان نستفيد من الـ cache
-COPY composer.json composer.lock ./
-
-# 2) نثبت الـ dependencies (using BuildKit cache for composer)
-#   - no-dev: production images don't need dev deps
-#   - prefer-dist: faster installs from dist packages
-#   - no-progress/no-interaction: quieter & faster in CI
-RUN --mount=type=cache,target=/root/.composer/cache \
-    composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
-
-# 3) بعد كده ننسخ باقي المشروع
 COPY . .
+#
 
-# Nginx / Supervisor configs
+
 COPY devops/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY devops/nginx/sites-enabled/default.conf /etc/nginx/sites-enabled/default.conf
 COPY devops/supervisord.conf /etc/supervisord.conf
 
-# PHP ini
 RUN echo "upload_max_filesize=500M" > /usr/local/etc/php/conf.d/uploads.ini && \
     echo "post_max_size=500M" >> /usr/local/etc/php/conf.d/uploads.ini && \
     echo "memory_limit=512M" >> /usr/local/etc/php/conf.d/uploads.ini && \
@@ -39,22 +36,31 @@ RUN echo "upload_max_filesize=500M" > /usr/local/etc/php/conf.d/uploads.ini && \
     echo "max_input_time=300" >> /usr/local/etc/php/conf.d/uploads.ini && \
     echo "output_buffering=Off" >> /usr/local/etc/php/conf.d/uploads.ini
 
-# Laravel folders & permissions
-RUN mkdir -p storage/framework/sessions \
-    storage/framework/views \
-    storage/framework/cache \
-    storage/logs \
-    bootstrap/cache && \
-    chmod -R 775 storage framework storage/logs bootstrap/cache
+RUN mkdir -p storage/framework/sessions && \
+    mkdir -p storage/framework/views && \
+    mkdir -p storage/framework/cache && \
+    mkdir -p storage/logs && \
+    chmod -R 775 storage/framework && \
+    chmod -R 775 storage/logs
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
+RUN mkdir -p bootstrap/cache && \
+   chmod -R 775 bootstrap/cache
 
-RUN chown -R www-data:www-data /var/www \
-    && chmod +x /usr/bin/supervisord \
-    && chmod +x devops/entrypoint.sh
+## Install Laravel dependencies
+RUN composer install --no-scripts
 
 EXPOSE 80
 
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www \
+    && chmod +x /usr/bin/supervisord
+
+RUN chmod +x devops/entrypoint.sh
+
 ENTRYPOINT ["devops/entrypoint.sh"]
+# Start Supervisor to manage NGINX and PHP-FPM
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

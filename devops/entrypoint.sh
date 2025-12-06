@@ -38,12 +38,8 @@ log "Testing database connection..."
 php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connection successful';" || handle_error "Database connection failed"
 
 # Run Laravel Artisan commands with error handling
-if [ "${RUN_DUMP_AUTOLOAD:-true}" = "true" ]; then
-    log "Running composer dump-autoload..."
-    composer dump-autoload || handle_error "Composer dump-autoload failed"
-else
-    log "Skipping composer dump-autoload (RUN_DUMP_AUTOLOAD=false)"
-fi
+log "Running composer dump-autoload..."
+composer dump-autoload || handle_error "Composer dump-autoload failed"
 
 log "Creating storage link..."
 php artisan storage:link || log "Storage link already exists or failed (non-critical)"
@@ -52,13 +48,8 @@ log "Running database migrations..."
 php artisan migrate --force || handle_error "Database migration failed"
 
 # Optional: Run seeders (uncomment if needed)
-if [ "${RUN_SEEDS:-true}" = "true" ]; then
-    log "Running database seeders..."
-    php artisan db:seed --force || log "Database seeding failed (non-critical)"
-    php artisan tenant:seed --force || log "Database Tenant seeding failed (non-critical)"
-else
-    log "Skipping database seeders (RUN_SEEDS=false)"
-fi
+log "Running database seeders..."
+php artisan db:seed --force || log "Database seeding failed (non-critical)"
 
 # Clear and cache configuration
 log "Optimizing Laravel..."
@@ -68,13 +59,6 @@ php artisan route:clear || log "Route clear failed (non-critical)"
 php artisan view:clear || log "View clear failed (non-critical)"
 
 log "Container initialization completed successfully"
-
-# Fix permissions again in case artisan commands created root-owned files
-log "Fixing permissions..."
-chown -R www-data:www-data /var/www/storage
-chown -R www-data:www-data /var/www/bootstrap/cache
-chmod -R 775 /var/www/storage
-chmod -R 775 /var/www/bootstrap/cache
 
 # Start Supervisor
 log "Starting supervisord..."
