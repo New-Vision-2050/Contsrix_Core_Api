@@ -1,0 +1,12 @@
+# Node modules & Composer vendor
+/node_modules
+/vendor
+
+# Laravel cache & storage
+/storage
+/bootstrap/cache
+
+# Environment / sensitive files
+/.env
+/.env.*
+/*.log
