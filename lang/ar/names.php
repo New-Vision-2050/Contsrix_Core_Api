@@ -397,4 +397,14 @@ return [
     'ecommerce.product*product' => 'المنتج',
     'product*product' => 'المنتج',
 
+    // Feature Deal
+    'feature-deal' => 'عرض مميز',
+    'ecommerce.feature-deal*feature-deal' => 'عرض مميز',
+    'feature-deal*feature-deal' => 'عرض مميز',
+
+    // Flash Deal
+    'flash-deal' => 'عرض سريع',
+    'ecommerce.flash-deal*flash-deal' => 'عرض سريع',
+    'flash-deal*flash-deal' => 'عرض سريع',
+
 ];

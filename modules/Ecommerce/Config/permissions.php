@@ -90,6 +90,24 @@ return [
         'ECOMMERCE_PRODUCT_ACTIVATE' => 'ecommerce.product*product.activate',
         'ECOMMERCE_PRODUCT_DELETE' => 'ecommerce.product*product.delete',
         'ECOMMERCE_PRODUCT_EXPORT' => 'ecommerce.product*product.export',
+
+        // Feature Deal Management
+        'ECOMMERCE_FEATURE_DEAL_LIST' => 'ecommerce.feature-deal*feature-deal.list',
+        'ECOMMERCE_FEATURE_DEAL_VIEW' => 'ecommerce.feature-deal*feature-deal.view',
+        'ECOMMERCE_FEATURE_DEAL_CREATE' => 'ecommerce.feature-deal*feature-deal.create',
+        'ECOMMERCE_FEATURE_DEAL_UPDATE' => 'ecommerce.feature-deal*feature-deal.update',
+        'ECOMMERCE_FEATURE_DEAL_ACTIVATE' => 'ecommerce.feature-deal*feature-deal.activate',
+        'ECOMMERCE_FEATURE_DEAL_DELETE' => 'ecommerce.feature-deal*feature-deal.delete',
+        'ECOMMERCE_FEATURE_DEAL_EXPORT' => 'ecommerce.feature-deal*feature-deal.export',
+
+        // Flash Deal Management
+        'ECOMMERCE_FLASH_DEAL_LIST' => 'ecommerce.flash-deal*flash-deal.list',
+        'ECOMMERCE_FLASH_DEAL_VIEW' => 'ecommerce.flash-deal*flash-deal.view',
+        'ECOMMERCE_FLASH_DEAL_CREATE' => 'ecommerce.flash-deal*flash-deal.create',
+        'ECOMMERCE_FLASH_DEAL_UPDATE' => 'ecommerce.flash-deal*flash-deal.update',
+        'ECOMMERCE_FLASH_DEAL_ACTIVATE' => 'ecommerce.flash-deal*flash-deal.activate',
+        'ECOMMERCE_FLASH_DEAL_DELETE' => 'ecommerce.flash-deal*flash-deal.delete',
+        'ECOMMERCE_FLASH_DEAL_EXPORT' => 'ecommerce.flash-deal*flash-deal.export',
     ]
 ];
 

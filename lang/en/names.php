@@ -332,4 +332,14 @@ return [
     'product' => 'Product',
     'ecommerce.product*product' => 'Product',
     'product*product' => 'Product',
+
+    // Feature Deal
+    'feature-deal' => 'Feature Deal',
+    'ecommerce.feature-deal*feature-deal' => 'Feature Deal',
+    'feature-deal*feature-deal' => 'Feature Deal',
+
+    // Flash Deal
+    'flash-deal' => 'Flash Deal',
+    'ecommerce.flash-deal*flash-deal' => 'Flash Deal',
+    'flash-deal*flash-deal' => 'Flash Deal',
 ];
