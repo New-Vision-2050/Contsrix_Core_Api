@@ -72,6 +72,15 @@ return [
         'ECOMMERCE_ECO_BRAND_ACTIVATE' => 'ecommerce.eco-brand*eco-brand.activate',
         'ECOMMERCE_ECO_BRAND_DELETE' => 'ecommerce.eco-brand*eco-brand.delete',
         'ECOMMERCE_ECO_BRAND_EXPORT' => 'ecommerce.eco-brand*eco-brand.export',
+
+        // Eco Category Management
+        'ECOMMERCE_CATEGORY_LIST' => 'ecommerce.category*category.list',
+        'ECOMMERCE_CATEGORY_VIEW' => 'ecommerce.category*category.view',
+        'ECOMMERCE_CATEGORY_CREATE' => 'ecommerce.category*category.create',
+        'ECOMMERCE_CATEGORY_UPDATE' => 'ecommerce.category*category.update',
+        'ECOMMERCE_CATEGORY_ACTIVATE' => 'ecommerce.category*category.activate',
+        'ECOMMERCE_CATEGORY_DELETE' => 'ecommerce.category*category.delete',
+        'ECOMMERCE_CATEGORY_EXPORT' => 'ecommerce.category*category.export',
     ]
 ];
 

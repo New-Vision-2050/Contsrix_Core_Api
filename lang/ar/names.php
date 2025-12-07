@@ -387,4 +387,9 @@ return [
     'ecommerce.eco-brand*eco-brand' => 'العلامة التجارية',
     'eco-brand*eco-brand' => 'العلامة التجارية',
 
+    // Category
+    'category' => 'التصنيف',
+    'ecommerce.category*category' => 'التصنيف',
+    'category*category' => 'التصنيف',
+
 ];

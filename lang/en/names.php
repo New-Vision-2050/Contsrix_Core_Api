@@ -322,4 +322,9 @@ return [
     'eco-brand' => 'Brand',
     'ecommerce.eco-brand*eco-brand' => 'Brand',
     'eco-brand*eco-brand' => 'Brand',
+
+    // Category
+    'category' => 'Category',
+    'ecommerce.category*category' => 'Category',
+    'category*category' => 'Category',
 ];
