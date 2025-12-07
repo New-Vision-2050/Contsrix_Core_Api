@@ -317,4 +317,9 @@ return [
     'deal-day' => 'Deal Day',
     'ecommerce.deal-day*deal-day' => 'Deal Day',
     'deal-day*deal-day' => 'Deal Day',
+
+    // Eco Brand
+    'eco-brand' => 'Brand',
+    'ecommerce.eco-brand*eco-brand' => 'Brand',
+    'eco-brand*eco-brand' => 'Brand',
 ];

@@ -63,6 +63,15 @@ return [
         'ECOMMERCE_DEAL_DAY_ACTIVATE' => 'ecommerce.deal-day*deal-day.activate',
         'ECOMMERCE_DEAL_DAY_DELETE' => 'ecommerce.deal-day*deal-day.delete',
         'ECOMMERCE_DEAL_DAY_EXPORT' => 'ecommerce.deal-day*deal-day.export',
+
+        // Eco Brand Management
+        'ECOMMERCE_ECO_BRAND_LIST' => 'ecommerce.eco-brand*eco-brand.list',
+        'ECOMMERCE_ECO_BRAND_VIEW' => 'ecommerce.eco-brand*eco-brand.view',
+        'ECOMMERCE_ECO_BRAND_CREATE' => 'ecommerce.eco-brand*eco-brand.create',
+        'ECOMMERCE_ECO_BRAND_UPDATE' => 'ecommerce.eco-brand*eco-brand.update',
+        'ECOMMERCE_ECO_BRAND_ACTIVATE' => 'ecommerce.eco-brand*eco-brand.activate',
+        'ECOMMERCE_ECO_BRAND_DELETE' => 'ecommerce.eco-brand*eco-brand.delete',
+        'ECOMMERCE_ECO_BRAND_EXPORT' => 'ecommerce.eco-brand*eco-brand.export',
     ]
 ];
 

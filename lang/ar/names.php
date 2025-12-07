@@ -382,4 +382,9 @@ return [
     'ecommerce.deal-day*deal-day' => 'عرض اليوم',
     'deal-day*deal-day' => 'عرض اليوم',
 
+    // Eco Brand
+    'eco-brand' => 'العلامة التجارية',
+    'ecommerce.eco-brand*eco-brand' => 'العلامة التجارية',
+    'eco-brand*eco-brand' => 'العلامة التجارية',
+
 ];
