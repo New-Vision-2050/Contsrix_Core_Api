@@ -4,9 +4,12 @@ use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\Founder\Controllers\FounderController;
 use Modules\RoleAndPermission\Enums\Permission;
 
+Route::get('/', [FounderController::class, 'index'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
+
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [FounderController::class, 'index'])
-        ->permission(Permission::FOUNDER_LIST());
+
     Route::post('/', [FounderController::class, 'store'])
         ->permission(Permission::FOUNDER_CREATE());
 //    Route::post('/export', [FounderController::class, 'export'])

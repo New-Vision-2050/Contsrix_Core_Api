@@ -4,9 +4,11 @@ use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\SocialMediaLink\Controllers\SocialMediaLinkController;
 use Modules\RoleAndPermission\Enums\Permission;
 
+Route::get('/', [SocialMediaLinkController::class, 'index'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [SocialMediaLinkController::class, 'index'])
-        ->permission(Permission::SOCIAL_MEDIA_LINK_LIST());
+
     Route::get('/types', [SocialMediaLinkController::class, 'getTypes'])
         ->permission(Permission::SOCIAL_MEDIA_LINK_LIST());
     Route::post('/', [SocialMediaLinkController::class, 'store'])

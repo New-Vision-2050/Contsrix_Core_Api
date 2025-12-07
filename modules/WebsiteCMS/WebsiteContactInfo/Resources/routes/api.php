@@ -4,10 +4,13 @@ use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\WebsiteContactInfo\Controllers\WebsiteContactInfoController;
 use Modules\RoleAndPermission\Enums\Permission;
 
+Route::get('/current', [WebsiteContactInfoController::class, 'getCurrentCompanyContactInfo'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
+
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     // Current company contact info endpoints
-    Route::get('/current', [WebsiteContactInfoController::class, 'getCurrentCompanyContactInfo'])
-        ->permission(Permission::WEBSITE_CONTACT_INFO_VIEW());
+
     Route::put('/current', [WebsiteContactInfoController::class, 'updateCurrentCompanyContactInfo'])
         ->permission(Permission::WEBSITE_CONTACT_INFO_UPDATE());
 
