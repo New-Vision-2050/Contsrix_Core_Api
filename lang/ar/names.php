@@ -336,6 +336,35 @@ return [
     'website-cms*website-term-and-condition' => 'الشروط والأحكام',
 
     "website-theme-setting"=>"اعدادات الثيمات",
-    "website-theme-setting*website-theme-setting"=>"اعدادات الثيمات"
+    "website-theme-setting*website-theme-setting"=>"اعدادات الثيمات",
+
+    // ================================================================================================
+    // ECOMMERCE MODULE TRANSLATIONS - ترجمات نظام التجارة الإلكترونية
+    // ================================================================================================
+
+    // E-Commerce Main Module
+    'ecommerce' => 'التجارة الإلكترونية',
+
+    // Banner
+    'banner' => 'البانر',
+    'ecommerce.banner*banner' => 'البانر',
+
+    // Setting Page
+    'setting-page' => 'صفحة الإعدادات',
+    'ecommerce.setting-page*setting-page' => 'صفحة الإعدادات',
+
+    // Feature
+    'feature' => 'الميزة',
+    'ecommerce.feature*feature' => 'الميزة',
+
+    // Store Branch
+    'store-branch' => 'فرع المتجر',
+    'ecommerce.store-branch*store-branch' => 'فرع المتجر',
+
+    // Dashboard
+    'dashboard' => 'لوحة التحكم',
+    'ecommerce.dashboard*dashboard' => 'لوحة التحكم',
+    'orders-chart' => 'رسم بياني للطلبات',
+    'warehouses-table' => 'جدول المستودعات',
 
 ];

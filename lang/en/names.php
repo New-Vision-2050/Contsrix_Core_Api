@@ -274,4 +274,33 @@ return [
     'website-term-and-condition' => 'Website Terms & Conditions',
     'website-cms*website-term-and-condition' => 'Website Terms & Conditions',
 
+    // ================================================================================================
+    // ECOMMERCE MODULE TRANSLATIONS
+    // ================================================================================================
+
+    // E-Commerce Main Module
+    'ecommerce' => 'E-Commerce',
+
+    // Banner
+    'banner' => 'Banner',
+    'ecommerce.banner*banner' => 'Banner',
+
+    // Setting Page
+    'setting-page' => 'Setting Page',
+    'ecommerce.setting-page*setting-page' => 'Setting Page',
+
+    // Feature
+    'feature' => 'Feature',
+    'ecommerce.feature*feature' => 'Feature',
+
+    // Store Branch
+    'store-branch' => 'Store Branch',
+    'ecommerce.store-branch*store-branch' => 'Store Branch',
+
+    // Dashboard
+    'dashboard' => 'Dashboard',
+    'ecommerce.dashboard*dashboard' => 'Dashboard',
+    'orders-chart' => 'Orders Chart',
+    'warehouses-table' => 'Warehouses Table',
+
 ];
