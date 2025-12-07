@@ -413,4 +413,19 @@ return [
     'order*order' => 'الطلب',
     'update-status' => 'تحديث الحالة',
 
+    // Social Media
+    'social-media' => 'وسائل التواصل',
+    'ecommerce.social-media*social-media' => 'وسائل التواصل',
+    'social-media*social-media' => 'وسائل التواصل',
+
+    // Warehouse
+    'warehouse' => 'المستودع',
+    'ecommerce.warehouse*warehouse' => 'المستودع',
+    'warehouse*warehouse' => 'المستودع',
+
+    // Page
+    'page' => 'الصفحة',
+    'ecommerce.page*page' => 'الصفحة',
+    'page*page' => 'الصفحة',
+
 ];

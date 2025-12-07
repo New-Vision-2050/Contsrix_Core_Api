@@ -117,6 +117,31 @@ return [
         'ECOMMERCE_ORDER_DELETE' => 'ecommerce.order*order.delete',
         'ECOMMERCE_ORDER_EXPORT' => 'ecommerce.order*order.export',
         'ECOMMERCE_ORDER_UPDATE_STATUS' => 'ecommerce.order*order.update-status',
+
+        // Social Media Management
+        'ECOMMERCE_SOCIAL_MEDIA_LIST' => 'ecommerce.social-media*social-media.list',
+        'ECOMMERCE_SOCIAL_MEDIA_VIEW' => 'ecommerce.social-media*social-media.view',
+        'ECOMMERCE_SOCIAL_MEDIA_CREATE' => 'ecommerce.social-media*social-media.create',
+        'ECOMMERCE_SOCIAL_MEDIA_UPDATE' => 'ecommerce.social-media*social-media.update',
+        'ECOMMERCE_SOCIAL_MEDIA_ACTIVATE' => 'ecommerce.social-media*social-media.activate',
+        'ECOMMERCE_SOCIAL_MEDIA_DELETE' => 'ecommerce.social-media*social-media.delete',
+        'ECOMMERCE_SOCIAL_MEDIA_EXPORT' => 'ecommerce.social-media*social-media.export',
+
+        // Warehouse Management
+        'ECOMMERCE_WAREHOUSE_LIST' => 'ecommerce.warehouse*warehouse.list',
+        'ECOMMERCE_WAREHOUSE_VIEW' => 'ecommerce.warehouse*warehouse.view',
+        'ECOMMERCE_WAREHOUSE_CREATE' => 'ecommerce.warehouse*warehouse.create',
+        'ECOMMERCE_WAREHOUSE_UPDATE' => 'ecommerce.warehouse*warehouse.update',
+        'ECOMMERCE_WAREHOUSE_DELETE' => 'ecommerce.warehouse*warehouse.delete',
+        'ECOMMERCE_WAREHOUSE_EXPORT' => 'ecommerce.warehouse*warehouse.export',
+
+        // Page Management
+        'ECOMMERCE_PAGE_LIST' => 'ecommerce.page*page.list',
+        'ECOMMERCE_PAGE_VIEW' => 'ecommerce.page*page.view',
+        'ECOMMERCE_PAGE_CREATE' => 'ecommerce.page*page.create',
+        'ECOMMERCE_PAGE_UPDATE' => 'ecommerce.page*page.update',
+        'ECOMMERCE_PAGE_DELETE' => 'ecommerce.page*page.delete',
+        'ECOMMERCE_PAGE_EXPORT' => 'ecommerce.page*page.export',
     ]
 ];
 

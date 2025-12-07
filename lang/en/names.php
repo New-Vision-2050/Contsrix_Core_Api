@@ -348,4 +348,19 @@ return [
     'ecommerce.order*order' => 'Order',
     'order*order' => 'Order',
     'update-status' => 'Update Status',
+
+    // Social Media
+    'social-media' => 'Social Media',
+    'ecommerce.social-media*social-media' => 'Social Media',
+    'social-media*social-media' => 'Social Media',
+
+    // Warehouse
+    'warehouse' => 'Warehouse',
+    'ecommerce.warehouse*warehouse' => 'Warehouse',
+    'warehouse*warehouse' => 'Warehouse',
+
+    // Page
+    'page' => 'Page',
+    'ecommerce.page*page' => 'Page',
+    'page*page' => 'Page',
 ];
