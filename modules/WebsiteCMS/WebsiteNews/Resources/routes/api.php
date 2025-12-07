@@ -10,8 +10,8 @@ Route::get('/', [WebsiteNewsController::class, 'index'])->middleware([\Stancl\Te
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::post('/', [WebsiteNewsController::class, 'store'])
         ->permission(Permission::WEBSITE_NEWS_CREATE());
-//    Route::post('/export', [WebsiteNewsController::class, 'export'])
-//        ->permission(Permission::WEBSITE_NEWS_EXPORT());
+    Route::post('/export', [WebsiteNewsController::class, 'export'])
+        ->permission(Permission::WEBSITE_NEWS_EXPORT());
 
     Route::get('/{id}', [WebsiteNewsController::class, 'show'])
         ->permission(Permission::WEBSITE_NEWS_UPDATE());

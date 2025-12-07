@@ -61,6 +61,7 @@ return [
         'WEBSITE_NEWS_CREATE' => 'website-cms.website-news*website-news.create',
         'WEBSITE_NEWS_UPDATE' => 'website-cms.website-news*website-news.update',
         'WEBSITE_NEWS_DELETE' => 'website-cms.website-news*website-news.delete',
+        'WEBSITE_NEWS_EXPORT' => 'website-cms.website-news*website-news.export',
 
         // Website Our Service Management
         'WEBSITE_OUR_SERVICE_VIEW' => 'website-cms.website-our-service*website-our-service.view',

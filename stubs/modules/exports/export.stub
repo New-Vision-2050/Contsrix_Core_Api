@@ -10,8 +10,8 @@ use $CLEAN_MODULE_NAMESPACE$\$STUDLY_NAME$\Services\$STUDLY_NAME$CRUDService;
 class $STUDLY_NAME$Export extends BaseExport
 {
     public function __construct(
-         $STUDLY_NAME$CRUDService $$LOWER_NAME$Service,
-         array $filters = []
+        private $STUDLY_NAME$CRUDService $$LOWER_NAME$Service,
+        protected array $filters = []
     ) {
     }
 
