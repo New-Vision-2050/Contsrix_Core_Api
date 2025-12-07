@@ -10,8 +10,8 @@ use Modules\WebsiteCMS\WebsiteProjectSetting\Services\WebsiteProjectSettingCRUDS
 class WebsiteProjectSettingExport extends BaseExport
 {
     public function __construct(
-         WebsiteProjectSettingCRUDService $websiteprojectsettingService,
-         array $filters = []
+        private WebsiteProjectSettingCRUDService $websiteprojectsettingService,
+        protected array $filters = []
     ) {
     }
 

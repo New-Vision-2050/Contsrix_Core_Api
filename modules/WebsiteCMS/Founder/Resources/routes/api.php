@@ -12,8 +12,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::post('/', [FounderController::class, 'store'])
         ->permission(Permission::FOUNDER_CREATE());
-//    Route::post('/export', [FounderController::class, 'export'])
-//        ->permission(Permission::FOUNDER_EXPORT());
+    Route::post('/export', [FounderController::class, 'export'])
+        ->permission(Permission::FOUNDER_EXPORT());
 
     Route::get('/{id}', [FounderController::class, 'show'])
         ->permission(Permission::FOUNDER_UPDATE());

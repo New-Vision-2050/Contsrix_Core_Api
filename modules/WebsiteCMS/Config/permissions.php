@@ -33,6 +33,7 @@ return [
         'FOUNDER_CREATE' => 'website-cms.founder*founder.create',
         'FOUNDER_UPDATE' => 'website-cms.founder*founder.update',
         'FOUNDER_DELETE' => 'website-cms.founder*founder.delete',
+        'FOUNDER_EXPORT' => 'website-cms.founder*founder.export',
 
         // Social Media Link Management
         'SOCIAL_MEDIA_LINK_LIST' => 'website-cms.website-contact-info*social-media-link.list',
@@ -70,12 +71,14 @@ return [
         'WEBSITE_PROJECT_CREATE' => 'website-cms.website-project-setting*website-project.create',
         'WEBSITE_PROJECT_UPDATE' => 'website-cms.website-project-setting*website-project.update',
         'WEBSITE_PROJECT_DELETE' => 'website-cms.website-project-setting*website-project.delete',
+        'WEBSITE_PROJECT_EXPORT' => 'website-cms.website-project-setting*website-project.export',
 
         // Website Project Setting Management
         'WEBSITE_PROJECT_SETTING_LIST' => 'website-cms.website-project-setting*website-project-setting.list',
         'WEBSITE_PROJECT_SETTING_CREATE' => 'website-cms.website-project-setting*website-project-setting.create',
         'WEBSITE_PROJECT_SETTING_UPDATE' => 'website-cms.website-project-setting*website-project-setting.update',
         'WEBSITE_PROJECT_SETTING_DELETE' => 'website-cms.website-project-setting*website-project-setting.delete',
+        'WEBSITE_PROJECT_SETTING_EXPORT' => 'website-cms.website-project-setting*website-project-setting.export',
 
         // Website Service Management
         'WEBSITE_SERVICE_LIST' => 'website-cms.website-service*website-service.list',

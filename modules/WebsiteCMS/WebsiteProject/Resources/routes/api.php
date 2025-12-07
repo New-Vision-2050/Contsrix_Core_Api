@@ -11,8 +11,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::post('/', [WebsiteProjectController::class, 'store'])
         ->permission(Permission::WEBSITE_PROJECT_CREATE());
-//    Route::post('/export', [WebsiteProjectController::class, 'export'])
-//        ->permission(Permission::WEBSITE_PROJECT_EXPORT());
+    Route::post('/export', [WebsiteProjectController::class, 'export'])
+        ->permission(Permission::WEBSITE_PROJECT_EXPORT());
 
     Route::get('/{id}', [WebsiteProjectController::class, 'show'])
         ->permission(Permission::WEBSITE_PROJECT_UPDATE());
