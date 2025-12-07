@@ -81,6 +81,15 @@ return [
         'ECOMMERCE_CATEGORY_ACTIVATE' => 'ecommerce.category*category.activate',
         'ECOMMERCE_CATEGORY_DELETE' => 'ecommerce.category*category.delete',
         'ECOMMERCE_CATEGORY_EXPORT' => 'ecommerce.category*category.export',
+
+        // Product Management
+        'ECOMMERCE_PRODUCT_LIST' => 'ecommerce.product*product.list',
+        'ECOMMERCE_PRODUCT_VIEW' => 'ecommerce.product*product.view',
+        'ECOMMERCE_PRODUCT_CREATE' => 'ecommerce.product*product.create',
+        'ECOMMERCE_PRODUCT_UPDATE' => 'ecommerce.product*product.update',
+        'ECOMMERCE_PRODUCT_ACTIVATE' => 'ecommerce.product*product.activate',
+        'ECOMMERCE_PRODUCT_DELETE' => 'ecommerce.product*product.delete',
+        'ECOMMERCE_PRODUCT_EXPORT' => 'ecommerce.product*product.export',
     ]
 ];
 

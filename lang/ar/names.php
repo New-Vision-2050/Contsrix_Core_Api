@@ -392,4 +392,9 @@ return [
     'ecommerce.category*category' => 'التصنيف',
     'category*category' => 'التصنيف',
 
+    // Product
+    'product' => 'المنتج',
+    'ecommerce.product*product' => 'المنتج',
+    'product*product' => 'المنتج',
+
 ];

@@ -327,4 +327,9 @@ return [
     'category' => 'Category',
     'ecommerce.category*category' => 'Category',
     'category*category' => 'Category',
+
+    // Product
+    'product' => 'Product',
+    'ecommerce.product*product' => 'Product',
+    'product*product' => 'Product',
 ];
