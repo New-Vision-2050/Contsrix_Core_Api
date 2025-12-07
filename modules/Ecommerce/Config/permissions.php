@@ -45,6 +45,15 @@ return [
         'ECOMMERCE_DASHBOARD_VIEW' => 'ecommerce.dashboard*dashboard.view',
         'ECOMMERCE_DASHBOARD_ORDERS_CHART' => 'ecommerce.dashboard*dashboard.orders-chart',
         'ECOMMERCE_DASHBOARD_WAREHOUSES_TABLE' => 'ecommerce.dashboard*dashboard.warehouses-table',
+
+        // Coupon Management
+        'ECOMMERCE_COUPON_LIST' => 'ecommerce.coupon*coupon.list',
+        'ECOMMERCE_COUPON_VIEW' => 'ecommerce.coupon*coupon.view',
+        'ECOMMERCE_COUPON_CREATE' => 'ecommerce.coupon*coupon.create',
+        'ECOMMERCE_COUPON_UPDATE' => 'ecommerce.coupon*coupon.update',
+        'ECOMMERCE_COUPON_ACTIVATE' => 'ecommerce.coupon*coupon.activate',
+        'ECOMMERCE_COUPON_DELETE' => 'ecommerce.coupon*coupon.delete',
+        'ECOMMERCE_COUPON_EXPORT' => 'ecommerce.coupon*coupon.export',
     ]
 ];
 

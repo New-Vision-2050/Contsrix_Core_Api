@@ -284,23 +284,32 @@ return [
     // Banner
     'banner' => 'Banner',
     'ecommerce.banner*banner' => 'Banner',
+    'banner*banner' => 'Banner',
 
     // Setting Page
     'setting-page' => 'Setting Page',
     'ecommerce.setting-page*setting-page' => 'Setting Page',
+    'setting-page*setting-page' => 'Setting Page',
 
     // Feature
     'feature' => 'Feature',
     'ecommerce.feature*feature' => 'Feature',
+    'feature*feature' => 'Feature',
 
     // Store Branch
     'store-branch' => 'Store Branch',
     'ecommerce.store-branch*store-branch' => 'Store Branch',
+    'store-branch*store-branch' => 'Store Branch',
 
     // Dashboard
     'dashboard' => 'Dashboard',
     'ecommerce.dashboard*dashboard' => 'Dashboard',
+    'dashboard*dashboard' => 'Dashboard',
     'orders-chart' => 'Orders Chart',
     'warehouses-table' => 'Warehouses Table',
 
+    // Coupon
+    'coupon' => 'Coupon',
+    'ecommerce.coupon*coupon' => 'Coupon',
+    'coupon*coupon' => 'Coupon',
 ];
