@@ -38,7 +38,7 @@ class DomainToTenantMiddleware
             if ($domain) {
                 $request->headers->set('X-Tenant', (string)$domain->company_id);
                 if(empty($request->get('company_id')) && $request->method() !='GET'){
-                    $request->merge(['company_id'=>$domain->company_id]);
+                    $request->merge(['company_id'=>(string)$domain->company_id]);
                 }
             }
         }
