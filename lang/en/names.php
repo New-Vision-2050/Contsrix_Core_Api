@@ -342,4 +342,10 @@ return [
     'flash-deal' => 'Flash Deal',
     'ecommerce.flash-deal*flash-deal' => 'Flash Deal',
     'flash-deal*flash-deal' => 'Flash Deal',
+
+    // Order
+    'order' => 'Order',
+    'ecommerce.order*order' => 'Order',
+    'order*order' => 'Order',
+    'update-status' => 'Update Status',
 ];

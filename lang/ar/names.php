@@ -407,4 +407,10 @@ return [
     'ecommerce.flash-deal*flash-deal' => 'عرض سريع',
     'flash-deal*flash-deal' => 'عرض سريع',
 
+    // Order
+    'order' => 'الطلب',
+    'ecommerce.order*order' => 'الطلب',
+    'order*order' => 'الطلب',
+    'update-status' => 'تحديث الحالة',
+
 ];

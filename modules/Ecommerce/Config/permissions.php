@@ -108,6 +108,15 @@ return [
         'ECOMMERCE_FLASH_DEAL_ACTIVATE' => 'ecommerce.flash-deal*flash-deal.activate',
         'ECOMMERCE_FLASH_DEAL_DELETE' => 'ecommerce.flash-deal*flash-deal.delete',
         'ECOMMERCE_FLASH_DEAL_EXPORT' => 'ecommerce.flash-deal*flash-deal.export',
+
+        // Order Management
+        'ECOMMERCE_ORDER_LIST' => 'ecommerce.order*order.list',
+        'ECOMMERCE_ORDER_VIEW' => 'ecommerce.order*order.view',
+        'ECOMMERCE_ORDER_CREATE' => 'ecommerce.order*order.create',
+        'ECOMMERCE_ORDER_UPDATE' => 'ecommerce.order*order.update',
+        'ECOMMERCE_ORDER_DELETE' => 'ecommerce.order*order.delete',
+        'ECOMMERCE_ORDER_EXPORT' => 'ecommerce.order*order.export',
+        'ECOMMERCE_ORDER_UPDATE_STATUS' => 'ecommerce.order*order.update-status',
     ]
 ];
 
