@@ -4,10 +4,11 @@ use Illuminate\Support\Facades\Route;
 use Modules\RoleAndPermission\Enums\Permission;
 use Modules\WebsiteCMS\WebsiteTheme\Controllers\WebsiteThemeController;
 
+Route::group(['middleware' => [ \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
+    Route::get('/current-company', [WebsiteThemeController::class, 'getCurrentCompanyTheme']);
+    Route::get('/current-company-with-attributes', [WebsiteThemeController::class, 'getCurrentCompanyThemeWithAttributes']);
+});
 
-Route::get('/current-company', [WebsiteThemeController::class, 'getCurrentCompanyTheme'])->middleware([
-    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
-]);
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [WebsiteThemeController::class, 'index']);
 //    Route::post('/', [WebsiteThemeController::class, 'store']);
@@ -15,7 +16,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     // Current company theme routes
 
-    Route::get('/current-company-with-attributes', [WebsiteThemeController::class, 'getCurrentCompanyThemeWithAttributes']);
     Route::post('/current-company', [WebsiteThemeController::class, 'updateCurrentCompanyTheme'])
     ->permission(Permission::WEBSITE_THEME_UPDATE());
 
