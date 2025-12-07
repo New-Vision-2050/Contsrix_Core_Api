@@ -54,6 +54,15 @@ return [
         'ECOMMERCE_COUPON_ACTIVATE' => 'ecommerce.coupon*coupon.activate',
         'ECOMMERCE_COUPON_DELETE' => 'ecommerce.coupon*coupon.delete',
         'ECOMMERCE_COUPON_EXPORT' => 'ecommerce.coupon*coupon.export',
+
+        // Deal Day Management
+        'ECOMMERCE_DEAL_DAY_LIST' => 'ecommerce.deal-day*deal-day.list',
+        'ECOMMERCE_DEAL_DAY_VIEW' => 'ecommerce.deal-day*deal-day.view',
+        'ECOMMERCE_DEAL_DAY_CREATE' => 'ecommerce.deal-day*deal-day.create',
+        'ECOMMERCE_DEAL_DAY_UPDATE' => 'ecommerce.deal-day*deal-day.update',
+        'ECOMMERCE_DEAL_DAY_ACTIVATE' => 'ecommerce.deal-day*deal-day.activate',
+        'ECOMMERCE_DEAL_DAY_DELETE' => 'ecommerce.deal-day*deal-day.delete',
+        'ECOMMERCE_DEAL_DAY_EXPORT' => 'ecommerce.deal-day*deal-day.export',
     ]
 ];
 

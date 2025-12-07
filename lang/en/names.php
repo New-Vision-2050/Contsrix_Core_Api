@@ -312,4 +312,9 @@ return [
     'coupon' => 'Coupon',
     'ecommerce.coupon*coupon' => 'Coupon',
     'coupon*coupon' => 'Coupon',
+
+    // Deal Day
+    'deal-day' => 'Deal Day',
+    'ecommerce.deal-day*deal-day' => 'Deal Day',
+    'deal-day*deal-day' => 'Deal Day',
 ];

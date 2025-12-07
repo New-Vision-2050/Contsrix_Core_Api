@@ -377,4 +377,9 @@ return [
     'ecommerce.coupon*coupon' => 'كوبون',
     'coupon*coupon' => 'كوبون',
 
+    // Deal Day
+    'deal-day' => 'عرض اليوم',
+    'ecommerce.deal-day*deal-day' => 'عرض اليوم',
+    'deal-day*deal-day' => 'عرض اليوم',
+
 ];
