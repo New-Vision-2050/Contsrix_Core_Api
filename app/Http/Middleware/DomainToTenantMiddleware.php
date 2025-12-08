@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Exceptions\CustomException;
 use Closure;
 use Illuminate\Http\Request;
 use Modules\Company\CompanyCore\Models\Domain;
@@ -33,12 +34,11 @@ class DomainToTenantMiddleware
                 $domain = WebsiteTheme::where('url', $domainName)->firstOrFail();
 
             }
-
             // If domain exists, set the X-Tenant header with the company_id
             if ($domain) {
-                $request->headers->set('X-Tenant', $domain->company_id);
+                $request->headers->set('X-Tenant', (string)$domain->company_id);
                 if(empty($request->get('company_id')) && $request->method() !='GET'){
-                    $request->merge(['company_id'=>$domain->company_id]);
+                    $request->merge(['company_id'=>(string)$domain->company_id]);
                 }
             }
         }

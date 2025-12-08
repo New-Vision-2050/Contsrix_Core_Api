@@ -4,6 +4,17 @@ use Illuminate\Support\Facades\Route;
 use Modules\RoleAndPermission\Enums\Permission;
 use Modules\WebsiteCMS\WebsiteThemeSetting\Controllers\WebsiteThemeSettingController;
 
+
+Route::get('/get-default-theme', [WebsiteThemeSettingController::class, 'getCompanyThemeSetting'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
+
+Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
+
+    Route::post('/assign-to-company', [WebsiteThemeSettingController::class, 'assignThemeToCompany'])->permission(Permission::WEBSITE_THEME_SETTING_ACTIVATE());
+    Route::get('/default/theme', [WebsiteThemeSettingController::class, 'getDefaultThemeSetting']);
+
+});
 Route::group(['middleware' => ['auth:api']], function () {
     // CRUD routes
     Route::get('/', [WebsiteThemeSettingController::class, 'index'])->permission(Permission::WEBSITE_THEME_SETTING_LIST());
@@ -16,11 +27,6 @@ Route::group(['middleware' => ['auth:api']], function () {
     // Company assignment routes
 
 });
-Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
 
-    Route::post('/assign-to-company', [WebsiteThemeSettingController::class, 'assignThemeToCompany'])->permission(Permission::WEBSITE_THEME_SETTING_ACTIVATE());
-    Route::get('/get-default-theme', [WebsiteThemeSettingController::class, 'getCompanyThemeSetting']);
-    Route::get('/default/theme', [WebsiteThemeSettingController::class, 'getDefaultThemeSetting']);
 
-});
 

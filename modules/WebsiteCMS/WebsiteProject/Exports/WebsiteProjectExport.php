@@ -10,8 +10,8 @@ use Modules\WebsiteCMS\WebsiteProject\Services\WebsiteProjectCRUDService;
 class WebsiteProjectExport extends BaseExport
 {
     public function __construct(
-         WebsiteProjectCRUDService $websiteprojectService,
-         array $filters = []
+         private WebsiteProjectCRUDService $websiteprojectService,
+         protected array $filters = []
     ) {
     }
 

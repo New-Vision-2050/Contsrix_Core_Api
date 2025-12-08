@@ -4,9 +4,12 @@ use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\WebsiteService\Controllers\WebsiteServiceController;
 use Modules\RoleAndPermission\Enums\Permission;
 
+Route::get('/', [WebsiteServiceController::class, 'index'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
+
+
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [WebsiteServiceController::class, 'index'])
-        ->permission(Permission::WEBSITE_SERVICE_LIST());
     Route::post('/', [WebsiteServiceController::class, 'store'])
         ->permission(Permission::WEBSITE_SERVICE_CREATE());
     Route::get('/{id}', [WebsiteServiceController::class, 'show'])

@@ -10,8 +10,8 @@ use Modules\WebsiteCMS\WebsiteNews\Services\WebsiteNewsCRUDService;
 class WebsiteNewsExport extends BaseExport
 {
     public function __construct(
-         WebsiteNewsCRUDService $websitenewsService,
-         array $filters = []
+         private WebsiteNewsCRUDService $websitenewsService,
+         protected array $filters = []
     ) {
     }
 

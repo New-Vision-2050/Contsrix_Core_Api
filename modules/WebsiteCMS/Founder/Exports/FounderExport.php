@@ -10,8 +10,8 @@ use Modules\WebsiteCMS\Founder\Services\FounderCRUDService;
 class FounderExport extends BaseExport
 {
     public function __construct(
-         FounderCRUDService $founderService,
-         array $filters = []
+         private FounderCRUDService $founderService,
+         protected array $filters = []
     ) {
     }
 
