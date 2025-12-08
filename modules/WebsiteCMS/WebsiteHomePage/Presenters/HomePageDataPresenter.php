@@ -37,6 +37,13 @@ class HomePageDataPresenter extends AbstractPresenter
         }
 
         // Present featured projects
+        if (isset($this->data['founders']) && $this->data['founders']->isNotEmpty()) {
+            $result['founders'] = WebsiteProjectPresenter::collection($this->data['founders']);
+        } else {
+            $result['founders'] = [];
+        }
+
+
         if (isset($this->data['featured_projects']) && $this->data['featured_projects']->isNotEmpty()) {
             $result['featured_projects'] = WebsiteProjectPresenter::collection($this->data['featured_projects']);
         } else {

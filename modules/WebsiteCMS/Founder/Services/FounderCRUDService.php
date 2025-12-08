@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Modules\WebsiteCMS\Founder\DTO\CreateFounderDTO;
 use Modules\WebsiteCMS\Founder\Models\Founder;
 use Modules\WebsiteCMS\Founder\Repositories\FounderRepository;
+use Modules\WebsiteCMS\WebsiteHomePage\Services\WebsiteHomePageService;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 
@@ -17,11 +18,14 @@ class FounderCRUDService
 
     public function __construct(
         private FounderRepository $repository,
+        private WebsiteHomePageService $websiteHomePageService
+
     ) {
     }
 
     public function create(CreateFounderDTO $createFounderDTO): Founder
     {
+        $this->websiteHomePageService->clearCache();
          return $this->repository->createFounder(
              $createFounderDTO->toArray(),
              $createFounderDTO->getPersonalPhoto()

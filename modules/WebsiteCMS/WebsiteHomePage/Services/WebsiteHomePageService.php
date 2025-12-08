@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Modules\WebsiteCMS\WebsiteHomePageSetting\Repositories\WebsiteHomePageSettingRepository;
 use Modules\WebsiteCMS\WebsiteOurService\Repositories\WebsiteOurServiceRepository;
 use Modules\WebsiteCMS\WebsiteProject\Repositories\WebsiteProjectRepository;
+use Modules\WebsiteCMS\Founder\Repositories\FounderRepository;
 
 class WebsiteHomePageService
 {
@@ -18,6 +19,7 @@ class WebsiteHomePageService
         private WebsiteHomePageSettingRepository $homePageSettingRepository,
         private WebsiteOurServiceRepository $ourServiceRepository,
         private WebsiteProjectRepository $projectRepository,
+        private FounderRepository $founderRepository,
     ) {
     }
 
@@ -31,6 +33,7 @@ class WebsiteHomePageService
                 'home_page_setting' => $this->homePageSettingRepository->getCurrentCompanySetting(),
                 'our_services' => $this->ourServiceRepository->getCurrentCompanyWebsiteOurService(),
                 'featured_projects' => $this->projectRepository->getFeaturedProjects($limit),
+                'founders' => $this->founderRepository->getCurrentCompanyFounders($limit),
             ];
         });
     }
