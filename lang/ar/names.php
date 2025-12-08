@@ -336,6 +336,96 @@ return [
     'website-cms*website-term-and-condition' => 'الشروط والأحكام',
 
     "website-theme-setting"=>"اعدادات الثيمات",
-    "website-theme-setting*website-theme-setting"=>"اعدادات الثيمات"
+    "website-theme-setting*website-theme-setting"=>"اعدادات الثيمات",
+
+    // ================================================================================================
+    // ECOMMERCE MODULE TRANSLATIONS - ترجمات نظام التجارة الإلكترونية
+    // ================================================================================================
+
+    // E-Commerce Main Module
+    'ecommerce' => 'التجارة الإلكترونية',
+
+    // Banner
+    'banner' => 'البانر',
+    'ecommerce.banner*banner' => 'البانر',
+    'banner*banner' => 'البانر',
+
+    // Setting Page
+    'setting-page' => 'صفحة الإعدادات',
+    'ecommerce.setting-page*setting-page' => 'صفحة الإعدادات',
+    'setting-page*setting-page' => 'صفحة الإعدادات',
+
+    // Feature
+    'feature' => 'الميزة',
+    'ecommerce.feature*feature' => 'الميزة',
+    'feature*feature' => 'الميزة',
+
+    // Store Branch
+    'store-branch' => 'فرع المتجر',
+    'ecommerce.store-branch*store-branch' => 'فرع المتجر',
+    'store-branch*store-branch' => 'فرع المتجر',
+
+    // Dashboard
+    'dashboard' => 'لوحة التحكم',
+    'ecommerce.dashboard*dashboard' => 'لوحة التحكم',
+    'dashboard*dashboard' => 'لوحة التحكم',
+    'orders-chart' => 'رسم بياني للطلبات',
+    'warehouses-table' => 'جدول المستودعات',
+
+    // Coupon
+    'coupon' => 'كوبون',
+    'ecommerce.coupon*coupon' => 'كوبون',
+    'coupon*coupon' => 'كوبون',
+
+    // Deal Day
+    'deal-day' => 'عرض اليوم',
+    'ecommerce.deal-day*deal-day' => 'عرض اليوم',
+    'deal-day*deal-day' => 'عرض اليوم',
+
+    // Eco Brand
+    'eco-brand' => 'العلامة التجارية',
+    'ecommerce.eco-brand*eco-brand' => 'العلامة التجارية',
+    'eco-brand*eco-brand' => 'العلامة التجارية',
+
+    // Category
+    'category' => 'التصنيف',
+    'ecommerce.category*category' => 'التصنيف',
+    'category*category' => 'التصنيف',
+
+    // Product
+    'product' => 'المنتج',
+    'ecommerce.product*product' => 'المنتج',
+    'product*product' => 'المنتج',
+
+    // Feature Deal
+    'feature-deal' => 'عرض مميز',
+    'ecommerce.feature-deal*feature-deal' => 'عرض مميز',
+    'feature-deal*feature-deal' => 'عرض مميز',
+
+    // Flash Deal
+    'flash-deal' => 'عرض سريع',
+    'ecommerce.flash-deal*flash-deal' => 'عرض سريع',
+    'flash-deal*flash-deal' => 'عرض سريع',
+
+    // Order
+    'order' => 'الطلب',
+    'ecommerce.order*order' => 'الطلب',
+    'order*order' => 'الطلب',
+    'update-status' => 'تحديث الحالة',
+
+    // Social Media
+    'social-media' => 'وسائل التواصل',
+    'ecommerce.social-media*social-media' => 'وسائل التواصل',
+    'social-media*social-media' => 'وسائل التواصل',
+
+    // Warehouse
+    'warehouse' => 'المستودع',
+    'ecommerce.warehouse*warehouse' => 'المستودع',
+    'warehouse*warehouse' => 'المستودع',
+
+    // Page
+    'page' => 'الصفحة',
+    'ecommerce.page*page' => 'الصفحة',
+    'page*page' => 'الصفحة',
 
 ];
