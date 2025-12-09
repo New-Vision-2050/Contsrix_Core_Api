@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace Modules\WebsiteCMS\WebsiteTheme\Presenters;
 
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
+use Modules\WebsiteCMS\WebsiteTheme\Services\WebsiteThemeCRUDService;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
 class CurrentCompanyThemePresenter extends AbstractPresenter
 {
     private WebsiteTheme $websiteTheme;
+    private ?WebsiteThemeCRUDService $service;
 
-    public function __construct(WebsiteTheme $websiteTheme)
+    public function __construct(WebsiteTheme $websiteTheme, ?WebsiteThemeCRUDService $service = null)
     {
         $this->websiteTheme = $websiteTheme;
+        $this->service = $service;
     }
 
     protected function present(bool $isListing = false): array
@@ -66,6 +69,39 @@ class CurrentCompanyThemePresenter extends AbstractPresenter
             $iconMedia = $this->websiteTheme->getFirstMedia('icon');
             if ($iconMedia) {
                 $data['icon_url'] = $iconMedia->getUrl();
+            }
+        }
+
+        // Add contact info if service is available
+        if ($this->service) {
+            $contactInfo = $this->service->getCurrentCompanyContactInfo();
+            if ($contactInfo) {
+                $data['contact_info'] = [
+                    'email' => $contactInfo->email,
+                    'phone' => $contactInfo->phone,
+                ];
+            }
+
+            // Add social media links organized by type
+            $socialMediaLinks = $this->service->getCurrentCompanySocialMediaLinks();
+            if ($socialMediaLinks->isNotEmpty()) {
+                $data['social_media_links'] = [];
+                foreach ($socialMediaLinks as $link) {
+                    $linkData = [
+                        'id' => $link->id,
+                        'link' => $link->link,
+                        'status' => $link->status,
+                    ];
+
+                    // Add icon URL if available
+                    $iconMedia = $link->getFirstMedia('icon');
+                    if ($iconMedia) {
+                        $linkData['icon_url'] = $iconMedia->getUrl();
+                    }
+
+                    // Use the type value as the key
+                    $data['social_media_links'][$link->type->value] = $linkData;
+                }
             }
         }
 
