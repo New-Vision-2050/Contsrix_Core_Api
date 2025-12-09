@@ -50,6 +50,7 @@ php artisan migrate --force || handle_error "Database migration failed"
 # Optional: Run seeders (uncomment if needed)
 log "Running database seeders..."
 php artisan db:seed --force || log "Database seeding failed (non-critical)"
+php artisan tenant:seed --force || log "Database Tenant seeding failed (non-critical)"
 
 # Clear and cache configuration
 log "Optimizing Laravel..."
@@ -59,6 +60,13 @@ php artisan route:clear || log "Route clear failed (non-critical)"
 php artisan view:clear || log "View clear failed (non-critical)"
 
 log "Container initialization completed successfully"
+
+# Fix permissions again in case artisan commands created root-owned files
+log "Fixing permissions..."
+chown -R www-data:www-data /var/www/storage
+chown -R www-data:www-data /var/www/bootstrap/cache
+chmod -R 775 /var/www/storage
+chmod -R 775 /var/www/bootstrap/cache
 
 # Start Supervisor
 log "Starting supervisord..."
