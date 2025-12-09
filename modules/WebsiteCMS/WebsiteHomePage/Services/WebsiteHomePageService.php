@@ -25,6 +25,7 @@ class WebsiteHomePageService
         private FounderRepository $founderRepository,
         private WebsiteIconRepository $websiteIconRepository,
         private WebsiteAboutUsRepository $websiteAboutUsRepository,
+        private WebsiteHomePageSettingRepository $websiteHomePageSettingRepository,
         private WebsiteServiceRepository $websiteServiceRepository,
     ) {
     }
@@ -35,7 +36,7 @@ class WebsiteHomePageService
         $cacheKey = $this->getCacheKey($companyId, $limit);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($limit) {
-            $aboutUs = $this->websiteAboutUsRepository->getCurrentCompanyAboutUs();
+            $websiteHomePageSetting = $this->websiteHomePageSettingRepository->getCurrentCompanySetting();
 
             return [
                 'home_page_setting' => $this->homePageSettingRepository->getCurrentCompanySetting(),
@@ -43,13 +44,13 @@ class WebsiteHomePageService
                 'website_services' => $this->websiteServiceRepository->getCurrentCompanyWebsiteServices($limit),
                 'featured_projects' => $this->projectRepository->getFeaturedProjects($limit),
                 'founders' => $this->founderRepository->getCurrentCompanyFounders($limit),
-                'company_icons' => $aboutUs && $aboutUs->is_companies
+                'company_icons' => $websiteHomePageSetting && $websiteHomePageSetting->is_companies
                     ? $this->websiteIconRepository->getCompanyIcons($limit)
                     : null,
-                'approval_icons' => $aboutUs && $aboutUs->is_approvals
+                'approval_icons' => $websiteHomePageSetting && $websiteHomePageSetting->is_approvals
                     ? $this->websiteIconRepository->getApprovalIcons($limit)
                     : null,
-                'certificate_icons' => $aboutUs && $aboutUs->is_certificates
+                'certificate_icons' => $websiteHomePageSetting && $websiteHomePageSetting->is_certificates
                     ? $this->websiteIconRepository->getCertificatesIcons($limit)
                     : null,
             ];

@@ -69,6 +69,8 @@ class CurrentCompanyThemePresenter extends AbstractPresenter
             }
         }
 
+
+
         return $data;
     }
 
