@@ -105,11 +105,7 @@ class CompanyUserProfileController extends Controller
 
         $userData = $this->userRepository->getUser($userId);
 
-        $user = $this->companyUserService->get(
-            Uuid::fromString($userData->global_company_user_id),
-        );
-
-        $presenter = new CompanyUserDataInfoPresenter($user);
+        $presenter = new CompanyUserDataInfoPresenter($userData);
 
         return Json::item($presenter->getData());
     }
