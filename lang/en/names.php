@@ -363,4 +363,9 @@ return [
     'page' => 'Page',
     'ecommerce.page*page' => 'Page',
     'page*page' => 'Page',
+
+    // Payment Method
+    'payment-method' => 'Payment Method',
+    'ecommerce.payment-method*payment-method' => 'Payment Method',
+    'payment-method*payment-method' => 'Payment Method',
 ];

@@ -428,4 +428,9 @@ return [
     'ecommerce.page*page' => 'الصفحة',
     'page*page' => 'الصفحة',
 
+    // Payment Method
+    'payment-method' => 'طريقة الدفع',
+    'ecommerce.payment-method*payment-method' => 'طريقة الدفع',
+    'payment-method*payment-method' => 'طريقة الدفع',
+
 ];

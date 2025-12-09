@@ -142,6 +142,15 @@ return [
         'ECOMMERCE_PAGE_UPDATE' => 'ecommerce.page*page.update',
         'ECOMMERCE_PAGE_DELETE' => 'ecommerce.page*page.delete',
         'ECOMMERCE_PAGE_EXPORT' => 'ecommerce.page*page.export',
+
+        // Payment Method Management
+        'ECOMMERCE_PAYMENT_METHOD_LIST' => 'ecommerce.payment-method*payment-method.list',
+        // 'ECOMMERCE_PAYMENT_METHOD_VIEW' => 'ecommerce.payment-method*payment-method.view',
+        // 'ECOMMERCE_PAYMENT_METHOD_CREATE' => 'ecommerce.payment-method*payment-method.create',
+        // 'ECOMMERCE_PAYMENT_METHOD_UPDATE' => 'ecommerce.payment-method*payment-method.update',
+        'ECOMMERCE_PAYMENT_METHOD_ACTIVATE' => 'ecommerce.payment-method*payment-method.activate',
+        // 'ECOMMERCE_PAYMENT_METHOD_DELETE' => 'ecommerce.payment-method*payment-method.delete',
+        // 'ECOMMERCE_PAYMENT_METHOD_EXPORT' => 'ecommerce.payment-method*payment-method.export',
     ]
 ];
 
