@@ -68,19 +68,16 @@ class CompanyRepository extends BaseRepository
     public function createCompany(array $data): Company
     {
         $url = $this->parseDomain($data["user_name"]);
-        try {
-            DB::beginTransaction();
-            $company = $this->create(array_merge($data,["is_active"=>1,"date_activate"=>Carbon::now()->addMonths(3)->format("Y-m-d")]));
+        
+        $company = DB::transaction(function () use ($data, $url) {
+            $company = $this->create(array_merge($data, ["is_active" => 1, "date_activate" => Carbon::now()->addMonths(3)->format("Y-m-d")]));
             $company->domains()->create([
                 'domain' => $url,
             ]);
-            DB::commit();
             return $company;
-        } catch (\Exception $e) {
+        });
 
-            DB::rollBack();
-            throw new \Exception($e->getMessage(), 500);
-        }
+        return $company;
     }
 
     public function updateCompany(UuidInterface $id, array $data): bool
