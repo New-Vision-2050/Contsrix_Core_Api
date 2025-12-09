@@ -121,6 +121,15 @@ class WebsiteThemeSeeder extends Seeder
                     'dark' => '#EEEEEE',
                     'contrast' => null,
                 ],
+                [
+                    'name' => 'Success',
+                    'slug' => 'success',
+                    'attributes' => ["primary","light","dark","contrast"],
+                    'primary' => '#212121',
+                    'light' => '#757575',
+                    'dark' => '#000000',
+                    'contrast' => '#FFFFFF',
+                ],
             ];
 
             // Create color palettes

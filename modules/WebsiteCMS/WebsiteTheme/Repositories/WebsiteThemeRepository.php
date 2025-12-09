@@ -121,6 +121,7 @@ class WebsiteThemeRepository extends BaseRepository
                                 'light' => $paletteData['light'] ?? null,
                                 'dark' => $paletteData['dark'] ?? null,
                                 'contrast' => $paletteData['contrast'] ?? null,
+
                             ]);
                         }
                     }
