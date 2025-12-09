@@ -143,4 +143,18 @@ class WebsiteServiceRepository extends BaseRepository
         $websiteService->update(['status' => $status]);
         return $websiteService->fresh();
     }
+
+    public function getCurrentCompanyWebsiteServices(?int $limit = null)
+    {
+        $query = $this->model
+            ->with(['category', 'previousWorks'])
+            ->where('company_id', tenant('id'))
+            ->where('status', 1);
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
 }

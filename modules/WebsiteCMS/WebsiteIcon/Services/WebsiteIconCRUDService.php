@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Modules\WebsiteCMS\WebsiteIcon\DTO\CreateWebsiteIconDTO;
 use Modules\WebsiteCMS\WebsiteIcon\Models\WebsiteIcon;
 use Modules\WebsiteCMS\WebsiteIcon\Repositories\WebsiteIconRepository;
+use Modules\WebsiteCMS\WebsiteHomePage\Services\WebsiteHomePageService;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 
@@ -17,15 +18,20 @@ class WebsiteIconCRUDService
 
     public function __construct(
         private WebsiteIconRepository $repository,
+        private WebsiteHomePageService $homePageService,
     ) {
     }
 
     public function create(CreateWebsiteIconDTO $createWebsiteIconDTO): WebsiteIcon
     {
-         return $this->repository->createWebsiteIcon(
+         $icon = $this->repository->createWebsiteIcon(
              $createWebsiteIconDTO->toArray(),
              $createWebsiteIconDTO->getIcon()
          );
+         
+         $this->homePageService->clearCache();
+         
+         return $icon;
     }
 
     public function list(int $page = 1, int $perPage = 10): array

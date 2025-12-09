@@ -38,9 +38,9 @@ return [
 
     "hexa"=>"الشكل السداسي",
     "cards"=>"الكروت",
-    
+
     // Website Icon Categories
     "certificates" => "الشهادات",
-    "approvals" => "الموافقات",
+    "approvals" => "الاعتمادات",
     "companies" => "الشركات",
 ];

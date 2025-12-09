@@ -9,6 +9,9 @@ use Modules\WebsiteCMS\WebsiteHomePageSetting\Repositories\WebsiteHomePageSettin
 use Modules\WebsiteCMS\WebsiteOurService\Repositories\WebsiteOurServiceRepository;
 use Modules\WebsiteCMS\WebsiteProject\Repositories\WebsiteProjectRepository;
 use Modules\WebsiteCMS\Founder\Repositories\FounderRepository;
+use Modules\WebsiteCMS\WebsiteIcon\Repositories\WebsiteIconRepository;
+use Modules\WebsiteCMS\WebsiteAboutUs\Repositories\WebsiteAboutUsRepository;
+use Modules\WebsiteCMS\WebsiteService\Repositories\WebsiteServiceRepository;
 
 class WebsiteHomePageService
 {
@@ -20,6 +23,9 @@ class WebsiteHomePageService
         private WebsiteOurServiceRepository $ourServiceRepository,
         private WebsiteProjectRepository $projectRepository,
         private FounderRepository $founderRepository,
+        private WebsiteIconRepository $websiteIconRepository,
+        private WebsiteAboutUsRepository $websiteAboutUsRepository,
+        private WebsiteServiceRepository $websiteServiceRepository,
     ) {
     }
 
@@ -29,11 +35,23 @@ class WebsiteHomePageService
         $cacheKey = $this->getCacheKey($companyId, $limit);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($limit) {
+            $aboutUs = $this->websiteAboutUsRepository->getCurrentCompanyAboutUs();
+
             return [
                 'home_page_setting' => $this->homePageSettingRepository->getCurrentCompanySetting(),
                 'our_services' => $this->ourServiceRepository->getCurrentCompanyWebsiteOurService(),
+                'website_services' => $this->websiteServiceRepository->getCurrentCompanyWebsiteServices($limit),
                 'featured_projects' => $this->projectRepository->getFeaturedProjects($limit),
                 'founders' => $this->founderRepository->getCurrentCompanyFounders($limit),
+                'company_icons' => $aboutUs && $aboutUs->is_companies
+                    ? $this->websiteIconRepository->getCompanyIcons($limit)
+                    : null,
+                'approval_icons' => $aboutUs && $aboutUs->is_approvals
+                    ? $this->websiteIconRepository->getApprovalIcons($limit)
+                    : null,
+                'certificate_icons' => $aboutUs && $aboutUs->is_certificates
+                    ? $this->websiteIconRepository->getCertificatesIcons($limit)
+                    : null,
             ];
         });
     }
