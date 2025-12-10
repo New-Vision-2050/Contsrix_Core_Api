@@ -13,7 +13,7 @@ class CreateWebsiteServiceDTO
         private ?UploadedFile $main_image,
         private ?UploadedFile $icon,
         private string        $category_website_cms_id,
-        private string        $reference_number,
+        private ?string        $reference_number,
         private array         $description,
         private ?array        $previous_work = null,
         private int           $status = 1
