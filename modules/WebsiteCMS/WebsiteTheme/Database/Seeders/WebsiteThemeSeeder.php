@@ -4,6 +4,8 @@ namespace Modules\WebsiteCMS\WebsiteTheme\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\Domain;
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteColorPalette;
 
@@ -29,11 +31,21 @@ class WebsiteThemeSeeder extends Seeder
                 $this->command->info("WebsiteTheme already exists for company: {$companyId}");
                 return;
             }
+            $domain = Company::query()->where('id', $companyId)->first()->domains()->first()->domain;
+            if(str_contains($domain, "core")){
+                $domain = str_replace("core", "website", $domain);
+
+            }else
+            {
+                $domain="website-".$domain;
+            }
+
+
 
             // Create WebsiteTheme
             $theme = WebsiteTheme::create([
                 'company_id' => $companyId,
-                'url' => null,
+                'url' =>$domain,
                 'radius' => 8,
                 'html_font_size' => 16,
                 'font_family' => 'Roboto, Arial, sans-serif',
