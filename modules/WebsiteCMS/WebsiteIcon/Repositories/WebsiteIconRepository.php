@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Ramsey\Uuid\UuidInterface;
 use Modules\WebsiteCMS\WebsiteIcon\Models\WebsiteIcon;
 use Modules\Shared\Media\Services\FileUploadService;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 use App\Traits\HasExport;
 
 /**
@@ -56,7 +57,7 @@ class WebsiteIconRepository extends BaseRepository
             );
         }
 
-        return $websiteIcon->fresh(['category']);
+        return $websiteIcon->fresh();
     }
 
     public function updateWebsiteIcon(UuidInterface $id, array $data, ?UploadedFile $icon = null): WebsiteIcon
@@ -75,11 +76,39 @@ class WebsiteIconRepository extends BaseRepository
             );
         }
 
-        return $websiteIcon->load(['category']);
+        return $websiteIcon;
     }
 
     public function deleteWebsiteIcon(UuidInterface $id): bool
     {
         return $this->delete($id);
+    }
+
+    public function getIconsByCategory(WebsiteIconCategoryType $categoryType, ?int $limit = null): Collection
+    {
+        $query = $this->model->where('website_icon_category_type', $categoryType->value)
+            ->where('company_id', tenant('id'))
+            ->where('status', 1);
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
+
+    public function getCompanyIcons(?int $limit = null): Collection
+    {
+        return $this->getIconsByCategory(WebsiteIconCategoryType::COMPANIES, $limit);
+    }
+
+    public function getApprovalIcons(?int $limit = null): Collection
+    {
+        return $this->getIconsByCategory(WebsiteIconCategoryType::APPROVALS, $limit);
+    }
+
+    public function getCertificatesIcons(?int $limit = null): Collection
+    {
+        return $this->getIconsByCategory(WebsiteIconCategoryType::CERTIFICATES, $limit);
     }
 }

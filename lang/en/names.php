@@ -274,4 +274,98 @@ return [
     'website-term-and-condition' => 'Website Terms & Conditions',
     'website-cms*website-term-and-condition' => 'Website Terms & Conditions',
 
+    // ================================================================================================
+    // ECOMMERCE MODULE TRANSLATIONS
+    // ================================================================================================
+
+    // E-Commerce Main Module
+    'ecommerce' => 'E-Commerce',
+
+    // Banner
+    'banner' => 'Banner',
+    'ecommerce.banner*banner' => 'Banner',
+    'banner*banner' => 'Banner',
+
+    // Setting Page
+    'setting-page' => 'Setting Page',
+    'ecommerce.setting-page*setting-page' => 'Setting Page',
+    'setting-page*setting-page' => 'Setting Page',
+
+    // Feature
+    'feature' => 'Feature',
+    'ecommerce.feature*feature' => 'Feature',
+    'feature*feature' => 'Feature',
+
+    // Store Branch
+    'store-branch' => 'Store Branch',
+    'ecommerce.store-branch*store-branch' => 'Store Branch',
+    'store-branch*store-branch' => 'Store Branch',
+
+    // Dashboard
+    'dashboard' => 'Dashboard',
+    'ecommerce.dashboard*dashboard' => 'Dashboard',
+    'dashboard*dashboard' => 'Dashboard',
+    'orders-chart' => 'Orders Chart',
+    'warehouses-table' => 'Warehouses Table',
+
+    // Coupon
+    'coupon' => 'Coupon',
+    'ecommerce.coupon*coupon' => 'Coupon',
+    'coupon*coupon' => 'Coupon',
+
+    // Deal Day
+    'deal-day' => 'Deal Day',
+    'ecommerce.deal-day*deal-day' => 'Deal Day',
+    'deal-day*deal-day' => 'Deal Day',
+
+    // Eco Brand
+    'eco-brand' => 'Brand',
+    'ecommerce.eco-brand*eco-brand' => 'Brand',
+    'eco-brand*eco-brand' => 'Brand',
+
+    // Category
+    'category' => 'Category',
+    'ecommerce.category*category' => 'Category',
+    'category*category' => 'Category',
+
+    // Product
+    'product' => 'Product',
+    'ecommerce.product*product' => 'Product',
+    'product*product' => 'Product',
+
+    // Feature Deal
+    'feature-deal' => 'Feature Deal',
+    'ecommerce.feature-deal*feature-deal' => 'Feature Deal',
+    'feature-deal*feature-deal' => 'Feature Deal',
+
+    // Flash Deal
+    'flash-deal' => 'Flash Deal',
+    'ecommerce.flash-deal*flash-deal' => 'Flash Deal',
+    'flash-deal*flash-deal' => 'Flash Deal',
+
+    // Order
+    'order' => 'Order',
+    'ecommerce.order*order' => 'Order',
+    'order*order' => 'Order',
+    'update-status' => 'Update Status',
+
+    // Social Media
+    'social-media' => 'Social Media',
+    'ecommerce.social-media*social-media' => 'Social Media',
+    'social-media*social-media' => 'Social Media',
+
+    // Warehouse
+    'warehouse' => 'Warehouse',
+    'ecommerce.warehouse*warehouse' => 'Warehouse',
+    'warehouse*warehouse' => 'Warehouse',
+
+    // Page
+    'page' => 'Page',
+    'ecommerce.page*page' => 'Page',
+    'page*page' => 'Page',
+
+    // Payment Method
+    'payment-method' => 'Payment Method',
+    'ecommerce.payment-method*payment-method' => 'Payment Method',
+    'payment-method*payment-method' => 'Payment Method',
 ];

@@ -18,6 +18,7 @@ use Modules\WebsiteCMS\WebsiteIcon\Requests\UpdateWebsiteIconRequest;
 use Modules\WebsiteCMS\WebsiteIcon\Services\WebsiteIconCRUDService;
 use Modules\WebsiteCMS\WebsiteIcon\Exports\WebsiteIconExport;
 use Modules\WebsiteCMS\WebsiteIcon\Requests\ExportWebsiteIconRequest;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 
@@ -89,5 +90,22 @@ class WebsiteIconController extends Controller
         $filters = $request->getFilters();
         
         return Excel::download(new WebsiteIconExport($this->websiteIconService, $filters), $fileName);
+    }
+
+    /**
+     * Get website icon category types enum
+     *
+     * @return JsonResponse
+     */
+    public function getCategoryTypes(): JsonResponse
+    {
+        $categories = collect(WebsiteIconCategoryType::cases())->map(function ($category) {
+            return [
+                'id' => $category->value,
+                'name' => $category->label(),
+            ];
+        });
+
+        return Json::items($categories->toArray());
     }
 }

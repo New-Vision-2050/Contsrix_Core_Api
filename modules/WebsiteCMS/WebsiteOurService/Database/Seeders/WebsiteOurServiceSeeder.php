@@ -22,6 +22,13 @@ class WebsiteOurServiceSeeder extends Seeder
         if ($existingService) {
             return; // Already seeded for this company
         }
+        // Create the main website our service
+        $websiteOurService = WebsiteOurService::create([
+            'title' => 'خدماتنا',
+            'description' => 'نقدم مجموعة متنوعة من الخدمات المتميزة',
+            'company_id' => $companyId,
+            'status' => 1,
+        ]);
 
         // Get some website services for the company to use in departments
         $websiteServices = WebsiteService::where('company_id', $companyId)
@@ -34,13 +41,7 @@ class WebsiteOurServiceSeeder extends Seeder
             return;
         }
 
-        // Create the main website our service
-        $websiteOurService = WebsiteOurService::create([
-            'title' => 'خدماتنا',
-            'description' => 'نقدم مجموعة متنوعة من الخدمات المتميزة',
-            'company_id' => $companyId,
-            'status' => 1,
-        ]);
+
 
         // Create departments with different types
 

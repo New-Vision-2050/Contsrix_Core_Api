@@ -13,27 +13,34 @@ use Modules\WebsiteCMS\WebsiteService\DTO\CreateWebsiteServiceDTO;
 use Modules\WebsiteCMS\WebsiteService\Models\PreviousWork;
 use Modules\WebsiteCMS\WebsiteService\Models\WebsiteService;
 use Modules\WebsiteCMS\WebsiteService\Repositories\WebsiteServiceRepository;
+use Modules\WebsiteCMS\WebsiteHomePage\Services\WebsiteHomePageService;
 use ZipStream\Exception;
 
 class WebsiteServiceCRUDService
 {
     public function __construct(
-        private WebsiteServiceRepository $repository
+        private WebsiteServiceRepository $repository,
+        private WebsiteHomePageService $homePageService,
     )
     {
     }
 
     public function create(CreateWebsiteServiceDTO $dto)
     {
-
-       return $this->repository->createWebsiteService($dto->toArray(), $dto->getMainImage(), $dto->getIcon(), $dto->getPreviousWork());
-
-
+       $service = $this->repository->createWebsiteService($dto->toArray(), $dto->getMainImage(), $dto->getIcon(), $dto->getPreviousWork());
+       
+       $this->homePageService->clearCache();
+       
+       return $service;
     }
 
     public function update(UpdateWebsiteServiceCommand $command): WebsiteService
     {
-       return $this->repository->updateService($command->getId(), $command->toArray(), $command->getMainImage(), $command->getIcon(), $command->getPreviousWork());
+       $service = $this->repository->updateService($command->getId(), $command->toArray(), $command->getMainImage(), $command->getIcon(), $command->getPreviousWork());
+       
+       $this->homePageService->clearCache();
+       
+       return $service;
     }
 
     public function list(array $filters = [], int $page = 1, int $perPage = 15): array
@@ -48,7 +55,11 @@ class WebsiteServiceCRUDService
 
     public function delete(string $id): bool
     {
-        return $this->repository->delete($id);
+        $result = $this->repository->delete($id);
+        
+        $this->homePageService->clearCache();
+        
+        return $result;
     }
 
     public function getForExport(array $filters = [])
@@ -58,7 +69,11 @@ class WebsiteServiceCRUDService
 
     public function updateStatus(string $id, int $status): WebsiteService
     {
-        return $this->repository->updateStatus($id, $status);
+        $service = $this->repository->updateStatus($id, $status);
+        
+        $this->homePageService->clearCache();
+        
+        return $service;
     }
 
 

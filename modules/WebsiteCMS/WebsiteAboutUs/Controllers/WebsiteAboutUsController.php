@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\WebsiteCMS\WebsiteAboutUs\Handlers\DeleteWebsiteAboutUsHandler;
 use Modules\WebsiteCMS\WebsiteAboutUs\Handlers\UpdateWebsiteAboutUsHandler;
 use Modules\WebsiteCMS\WebsiteAboutUs\Presenters\WebsiteAboutUsPresenter;
+use Modules\WebsiteCMS\WebsiteAboutUs\Presenters\WebsiteAboutUsWebsitePresenter;
 use Modules\WebsiteCMS\WebsiteAboutUs\Requests\CreateWebsiteAboutUsRequest;
 use Modules\WebsiteCMS\WebsiteAboutUs\Requests\DeleteWebsiteAboutUsRequest;
 use Modules\WebsiteCMS\WebsiteAboutUs\Requests\GetWebsiteAboutUsListRequest;
@@ -85,7 +86,7 @@ class WebsiteAboutUsController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'website_about_us.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new WebsiteAboutUsExport($this->websiteAboutUsService, $filters), $fileName);
     }
 
@@ -101,6 +102,23 @@ class WebsiteAboutUsController extends Controller
         }
 
         $presenter = new WebsiteAboutUsPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+
+    /**
+     * Get current company's about us
+     */
+    public function getCurrentAboutUsWebsite(): JsonResponse
+    {
+        $item = $this->websiteAboutUsService->getCurrentCompanyAboutUs();
+
+        if (!$item) {
+            return Json::error('About us not found for current company', 404);
+        }
+
+        $presenter = new WebsiteAboutUsWebsitePresenter($item);
 
         return Json::item($presenter->getData());
     }

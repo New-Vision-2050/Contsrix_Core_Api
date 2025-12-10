@@ -132,7 +132,7 @@ class WebsiteThemeController extends Controller
             return Json::error('No theme found for the current company', 404);
         }
 
-        $presenter = new CurrentCompanyThemePresenter($theme);
+        $presenter = new CurrentCompanyThemePresenter($theme, $this->websiteThemeService);
 
         return Json::item($presenter->getData());
     }

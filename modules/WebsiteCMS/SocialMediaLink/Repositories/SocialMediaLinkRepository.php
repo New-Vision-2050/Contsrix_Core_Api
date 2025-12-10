@@ -64,6 +64,7 @@ class SocialMediaLinkRepository extends BaseRepository
         $socialMediaLink = $this->getSocialMediaLink($id);
 
         if ($icon) {
+            $socialMediaLink->clearMediaCollection('icon');
             $this->fileUploadService->uploadFile(
                 $socialMediaLink,
                 $icon,

@@ -9,6 +9,8 @@ use Modules\WebsiteCMS\WebsiteTheme\DTO\CreateWebsiteThemeDTO;
 use Modules\WebsiteCMS\WebsiteTheme\DTO\UpdateWebsiteThemeDTO;
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
 use Modules\WebsiteCMS\WebsiteTheme\Repositories\WebsiteThemeRepository;
+use Modules\WebsiteCMS\WebsiteContactInfo\Repositories\WebsiteContactInfoRepository;
+use Modules\WebsiteCMS\SocialMediaLink\Models\SocialMediaLink;
 use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 
@@ -18,6 +20,7 @@ class WebsiteThemeCRUDService
 
     public function __construct(
         private WebsiteThemeRepository $repository,
+        private WebsiteContactInfoRepository $contactInfoRepository,
     ) {
     }
 
@@ -47,6 +50,24 @@ class WebsiteThemeCRUDService
     public function getCurrentCompanyTheme(): ?WebsiteTheme
     {
         return $this->repository->getCurrentCompanyTheme();
+    }
+
+    /**
+     * Get the current company contact info
+     */
+    public function getCurrentCompanyContactInfo()
+    {
+        return $this->contactInfoRepository->getCurrentCompanyContactInfo();
+    }
+
+    /**
+     * Get the current company social media links
+     */
+    public function getCurrentCompanySocialMediaLinks()
+    {
+        return SocialMediaLink::where('company_id', tenant('id'))
+            ->where('status', 1)
+            ->get();
     }
 
     /**

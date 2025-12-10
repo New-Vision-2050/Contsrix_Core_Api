@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Modules\WebsiteCMS\WebsiteIcon\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Ramsey\Uuid\Uuid;
 use Modules\WebsiteCMS\WebsiteIcon\DTO\CreateWebsiteIconDTO;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 
 class CreateWebsiteIconRequest extends FormRequest
 {
@@ -16,7 +18,7 @@ class CreateWebsiteIconRequest extends FormRequest
             'name_ar' => 'required|string|max:255',
             'name_en' => 'required|string|max:255',
             'icon' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'category_website_cms_id' => 'required|uuid|exists:category_website_cms,id',
+            'website_icon_category_type' => ['required', 'string', Rule::in(WebsiteIconCategoryType::values())],
         ];
     }
 
@@ -28,7 +30,7 @@ class CreateWebsiteIconRequest extends FormRequest
                 'en' => $this->get('name_en'),
             ],
             icon: $this->file('icon'),
-            category_website_cms_id: $this->get('category_website_cms_id'),
+            website_icon_category_type: WebsiteIconCategoryType::from($this->get('website_icon_category_type')),
         );
     }
 }

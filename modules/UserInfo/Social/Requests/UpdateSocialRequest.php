@@ -16,7 +16,7 @@ class UpdateSocialRequest extends FormRequest
         return [
             "whatsapp" => 'nullable',
             "facebook"=> 'nullable|url',
-            "telegram"=> 'nullable|url',
+            "telegram"=> 'nullable',
             "instagram"=> 'nullable|url',
             "snapchat"=> 'nullable|url',
             "linkedin"=> 'nullable|url',

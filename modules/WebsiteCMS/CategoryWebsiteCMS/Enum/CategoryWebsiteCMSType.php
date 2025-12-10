@@ -9,6 +9,7 @@ enum CategoryWebsiteCMSType: int
     use EnumToArray;
 
     case SERVICES = 1;
+    case NEWS = 2;
 
 
 
@@ -16,6 +17,7 @@ enum CategoryWebsiteCMSType: int
     {
         return match ((int)$value) {
             self::SERVICES->value => __('lookups.services'),
+            self::NEWS->value => __('lookups.news'),
 
 
         };

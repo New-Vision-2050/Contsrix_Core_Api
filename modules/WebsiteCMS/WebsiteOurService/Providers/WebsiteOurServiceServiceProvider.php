@@ -6,6 +6,8 @@ namespace Modules\WebsiteCMS\WebsiteOurService\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\WebsiteCMS\WebsiteOurService\Models\WebsiteOurService;
+use Modules\WebsiteCMS\WebsiteOurService\Observers\WebsiteOurServiceObserver;
 
 class WebsiteOurServiceServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +21,12 @@ class WebsiteOurServiceServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerObservers();
+    }
+
+    private function registerObservers(): void
+    {
+        WebsiteOurService::observe(WebsiteOurServiceObserver::class);
     }
 
     public function register(): void

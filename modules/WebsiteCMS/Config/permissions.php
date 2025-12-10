@@ -33,6 +33,7 @@ return [
         'FOUNDER_CREATE' => 'website-cms.founder*founder.create',
         'FOUNDER_UPDATE' => 'website-cms.founder*founder.update',
         'FOUNDER_DELETE' => 'website-cms.founder*founder.delete',
+        'FOUNDER_EXPORT' => 'website-cms.founder*founder.export',
 
         // Social Media Link Management
         'SOCIAL_MEDIA_LINK_LIST' => 'website-cms.website-contact-info*social-media-link.list',
@@ -60,6 +61,7 @@ return [
         'WEBSITE_NEWS_CREATE' => 'website-cms.website-news*website-news.create',
         'WEBSITE_NEWS_UPDATE' => 'website-cms.website-news*website-news.update',
         'WEBSITE_NEWS_DELETE' => 'website-cms.website-news*website-news.delete',
+        'WEBSITE_NEWS_EXPORT' => 'website-cms.website-news*website-news.export',
 
         // Website Our Service Management
         'WEBSITE_OUR_SERVICE_VIEW' => 'website-cms.website-our-service*website-our-service.view',
@@ -70,12 +72,14 @@ return [
         'WEBSITE_PROJECT_CREATE' => 'website-cms.website-project-setting*website-project.create',
         'WEBSITE_PROJECT_UPDATE' => 'website-cms.website-project-setting*website-project.update',
         'WEBSITE_PROJECT_DELETE' => 'website-cms.website-project-setting*website-project.delete',
+        'WEBSITE_PROJECT_EXPORT' => 'website-cms.website-project-setting*website-project.export',
 
         // Website Project Setting Management
         'WEBSITE_PROJECT_SETTING_LIST' => 'website-cms.website-project-setting*website-project-setting.list',
         'WEBSITE_PROJECT_SETTING_CREATE' => 'website-cms.website-project-setting*website-project-setting.create',
         'WEBSITE_PROJECT_SETTING_UPDATE' => 'website-cms.website-project-setting*website-project-setting.update',
         'WEBSITE_PROJECT_SETTING_DELETE' => 'website-cms.website-project-setting*website-project-setting.delete',
+        'WEBSITE_PROJECT_SETTING_EXPORT' => 'website-cms.website-project-setting*website-project-setting.export',
 
         // Website Service Management
         'WEBSITE_SERVICE_LIST' => 'website-cms.website-service*website-service.list',
@@ -88,12 +92,18 @@ return [
 
         // Website Service Management
         'WEBSITE_THEME_SETTING_LIST' => 'website-cms.website-theme-setting*website-theme-setting.list',
-        'WEBSITE_THEME_SETTING_SHOW' => 'website-cms.website-theme-setting*website-theme-setting.show',
+        'WEBSITE_THEME_SETTING_VIEW' => 'website-cms.website-theme-setting*website-theme-setting.show',
         'WEBSITE_THEME_SETTING_ACTIVATE' => 'website-cms.website-theme-setting*website-theme-setting.activate',
 
 
         // Website Term And Condition Management
         'WEBSITE_TERM_AND_CONDITION_VIEW' => 'website-cms.website-term-and-condition*website-term-and-condition.view',
         'WEBSITE_TERM_AND_CONDITION_UPDATE' => 'website-cms.website-term-and-condition*website-term-and-condition.update',
+
+
+        'WEBSITE_CONTACT_MESSAGE_LIST' => 'website-cms.website-contact-message*website-contact-message.list',
+        'WEBSITE_CONTACT_MESSAGE_UPDATE' => 'website-cms.website-contact-message*website-contact-message.update',
+        'WEBSITE_CONTACT_MESSAGE_DELETE' => 'website-cms.website-contact-message*website-contact-message.delete',
+
     ]
 ];

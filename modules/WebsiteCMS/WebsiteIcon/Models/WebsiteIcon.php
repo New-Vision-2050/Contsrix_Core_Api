@@ -10,8 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\WebsiteCMS\WebsiteIcon\Database\factories\WebsiteIconFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Modules\WebsiteCMS\CategoryWebsiteCMS\Models\CategoryWebsiteCMS;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
@@ -33,7 +32,7 @@ class WebsiteIcon extends Model implements HasMedia
 
     protected $fillable = [
         'name',
-        'category_website_cms_id',
+        'website_icon_category_type',
         'company_id',
         'status',
     ];
@@ -41,16 +40,12 @@ class WebsiteIcon extends Model implements HasMedia
     protected $casts = [
         'id' => 'string',
         'name' => 'array',
+        'website_icon_category_type' => WebsiteIconCategoryType::class,
     ];
 
     public function getTenantIdColumn(): string
     {
         return 'company_id';
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(CategoryWebsiteCMS::class, 'category_website_cms_id');
     }
 
     public function registerMediaCollections(): void

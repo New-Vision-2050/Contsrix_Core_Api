@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\WebsiteCMS\WebsiteOurService\Services;
 
 use Illuminate\Support\Collection;
+use Modules\WebsiteCMS\WebsiteHomePage\Services\WebsiteHomePageService;
 use Modules\WebsiteCMS\WebsiteOurService\DTO\CreateWebsiteOurServiceDTO;
 use Modules\WebsiteCMS\WebsiteOurService\Models\WebsiteOurService;
 use Modules\WebsiteCMS\WebsiteOurService\Repositories\WebsiteOurServiceRepository;
@@ -17,6 +18,8 @@ class WebsiteOurServiceCRUDService
 
     public function __construct(
         private WebsiteOurServiceRepository $repository,
+        private WebsiteHomePageService $websiteHomePageService
+
     ) {
     }
 
@@ -50,6 +53,8 @@ class WebsiteOurServiceCRUDService
 
     public function updateCurrentCompany(CreateWebsiteOurServiceDTO $dto): WebsiteOurService
     {
+        $this->websiteHomePageService->clearCache();
+
         return $this->repository->updateCurrentCompanyWebsiteOurService(
             $dto->toArray(),
             $dto->departments

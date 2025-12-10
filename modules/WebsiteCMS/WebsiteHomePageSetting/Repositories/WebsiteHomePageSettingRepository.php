@@ -43,7 +43,7 @@ class WebsiteHomePageSettingRepository extends BaseRepository
 
     public function getCurrentCompanySetting(): ?WebsiteHomePageSetting
     {
-        return $this->model->where('company_id', tenant('id'))->first();
+        return $this->model->where('company_id', tenant('id'))->with("media")->first();
     }
 
     public function createWebsiteHomePageSetting(
@@ -101,6 +101,7 @@ class WebsiteHomePageSettingRepository extends BaseRepository
         $setting->update($data);
 
         if ($webVideoFile) {
+            $setting->clearMediaCollection('web_video_file');
             $this->fileUploadService->uploadFile(
                 $setting,
                 $webVideoFile,
@@ -111,6 +112,7 @@ class WebsiteHomePageSettingRepository extends BaseRepository
         }
 
         if ($mobileVideoFile) {
+            $setting->clearMediaCollection('mobile_video_file');
             $this->fileUploadService->uploadFile(
                 $setting,
                 $mobileVideoFile,
@@ -121,6 +123,7 @@ class WebsiteHomePageSettingRepository extends BaseRepository
         }
 
         if ($videoProfileFile) {
+            $setting->clearMediaCollection('video_profile_file');
             $this->fileUploadService->uploadFile(
                 $setting,
                 $videoProfileFile,

@@ -4,10 +4,13 @@ use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\WebsiteAboutUs\Controllers\WebsiteAboutUsController;
 use Modules\RoleAndPermission\Enums\Permission;
 
+Route::get('/current', [WebsiteAboutUsController::class, 'getCurrentCompanyAboutUs'])->middleware([\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]);
+Route::get('/web', [WebsiteAboutUsController::class, 'getCurrentAboutUsWebsite'])->middleware([\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]);
+
+
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     // Current company routes
-    Route::get('/current', [WebsiteAboutUsController::class, 'getCurrentCompanyAboutUs'])
-        ->permission(Permission::WEBSITE_ABOUT_US_VIEW());
+
     Route::post('/current', [WebsiteAboutUsController::class, 'updateCurrentCompanyAboutUs'])
         ->permission(Permission::WEBSITE_ABOUT_US_UPDATE());
 

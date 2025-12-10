@@ -4,13 +4,14 @@ use Illuminate\Support\Facades\Route;
 use Modules\WebsiteCMS\WebsiteNews\Controllers\WebsiteNewsController;
 use Modules\RoleAndPermission\Enums\Permission;
 
+Route::get('/', [WebsiteNewsController::class, 'index'])->middleware([\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]);
+
+
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
-    Route::get('/', [WebsiteNewsController::class, 'index'])
-        ->permission(Permission::WEBSITE_NEWS_LIST());
     Route::post('/', [WebsiteNewsController::class, 'store'])
         ->permission(Permission::WEBSITE_NEWS_CREATE());
-//    Route::post('/export', [WebsiteNewsController::class, 'export'])
-//        ->permission(Permission::WEBSITE_NEWS_EXPORT());
+    Route::post('/export', [WebsiteNewsController::class, 'export'])
+        ->permission(Permission::WEBSITE_NEWS_EXPORT());
 
     Route::get('/{id}', [WebsiteNewsController::class, 'show'])
         ->permission(Permission::WEBSITE_NEWS_UPDATE());

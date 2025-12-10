@@ -18,6 +18,7 @@ use Modules\User\Database\Seeders\GenaralAdminSeedTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\Leave\LeaveType\Database\Seeders\LeaveTypeBranchSeeder;
 use Modules\WebsiteCMS\WebsiteContactInfo\Database\Seeders\WebsiteContactInfoSeeder;
+use Modules\WebsiteCMS\WebsiteOurService\Database\Seeders\WebsiteOurServiceSeeder;
 use Modules\WebsiteCMS\WebsiteTermAndCondition\Database\Seeders\WebsiteTermsAndConditionSeederTableSeeder;
 use Modules\WebsiteCMS\WebsiteHomePageSetting\Database\Seeders\WebsiteHomePageSettingSeeder;
 use Modules\WebsiteCMS\WebsiteAboutUs\Database\Seeders\WebsiteAboutUsSeeder;
@@ -77,6 +78,7 @@ class TenantDatabaseSeeder extends Seeder
 
         // Assign default theme setting to the company
         $this->call(AssignDefaultThemeToCompaniesSeeder::class);
+        $this->call(WebsiteOurServiceSeeder::class);
 
 //        $this->call(MainPackageSeeder::class);
     }

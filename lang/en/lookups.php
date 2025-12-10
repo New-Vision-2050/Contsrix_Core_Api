@@ -35,4 +35,11 @@ return [
     "services"=>"Services",
     "hexa"=>"Hexa",
     "cards"=>"Cards",
+
+    "news"=>"News",
+    
+    // Website Icon Categories
+    "certificates" => "Certificates",
+    "approvals" => "Approvals",
+    "companies" => "Companies",
 ];
