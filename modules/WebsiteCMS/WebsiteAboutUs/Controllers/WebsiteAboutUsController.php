@@ -126,7 +126,7 @@ class WebsiteAboutUsController extends Controller
     /**
      * Update current company's about us
      */
-    public function updateCurrentCompanyAboutUs(UpdateCurrentCompanyAboutUsRequest $request): JsonResponse
+    public function updateCurrentCompanyAboutUs(UpdateCurrentCompanyAboutUsRequest $request)
     {
         $updatedItem = $this->websiteAboutUsService->updateCurrentCompanyAboutUs($request->createUpdateWebsiteAboutUsDTO());
 
