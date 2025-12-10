@@ -105,7 +105,8 @@ class CompanyUser extends Model implements HasMedia
     public function companies()
     {
         return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
-            ->withPivot('role', 'status');
+            ->withPivot('role', 'status')
+            ->wherePivotNull('deleted_at');
     }
 
     public function users()
