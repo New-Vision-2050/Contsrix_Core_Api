@@ -62,6 +62,20 @@ class WebsiteAboutUsWebsitePresenter extends AbstractPresenter
             })->toArray();
         }
 
+
+
+        // Add company icons if loaded
+        if ($this->websiteAboutUs->relationLoaded('companyIcons')) {
+            $data['company_icons'] = $this->websiteAboutUs->companyIcons->map(function ($icon) {
+                return [
+                    'id' => $icon->id,
+                    'name' => $icon->name,
+                    'category_type' => $icon->website_icon_category_type->value,
+                    'icon_url' => $icon->getFirstMediaUrl('icon') ?: null,
+                ];
+            })->toArray();
+        }
+
         return $data;
     }
 }

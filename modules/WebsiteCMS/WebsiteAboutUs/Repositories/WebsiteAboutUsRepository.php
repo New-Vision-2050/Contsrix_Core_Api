@@ -47,7 +47,7 @@ class WebsiteAboutUsRepository extends BaseRepository
     public function getCurrentCompanyAboutUs(): ?WebsiteAboutUs
     {
         return $this->model
-            ->with(['projectTypes', 'attachments'])
+            ->with(['projectTypes', 'attachments', 'certificateIcons', 'approvalIcons', 'companyIcons'])
             ->where('company_id', tenant('id'))
             ->first();
     }
