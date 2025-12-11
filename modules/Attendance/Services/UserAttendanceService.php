@@ -209,6 +209,8 @@ class UserAttendanceService
         // Get clock_in_time and clock_out_time
         $clockInTime = null;
         $clockOutTime = null;
+        $clockInCarbon = null;
+        $clockOutCarbon = null;
         
         if ($attendance->clock_in_time) {
             $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
@@ -224,13 +226,26 @@ class UserAttendanceService
             $clockOutTime = $clockOutCarbon->format('H:i');
         }
 
+        // Calculate total hours present
+        $totalHoursPresent = 0;
+        if ($clockInCarbon) {
+            if ($clockOutCarbon) {
+                // If clocked out, calculate difference
+                $totalHoursPresent = round($clockInCarbon->diffInMinutes($clockOutCarbon) / 60, 2);
+            } else {
+                // If still active, calculate from clock_in to now
+                $totalHoursPresent = round($clockInCarbon->diffInMinutes(Carbon::now()) / 60, 2);
+            }
+        }
+
         return [
             'status' => $attendance->status ?? 'scheduled',
-            'date' => $startTime?->format('Y-m-d') ?? ($clockInTime ? Carbon::parse($attendance->clock_in_time)->format('Y-m-d') : null),
+            'date' => $startTime?->format('Y-m-d') ?? ($clockInTime ? $clockInCarbon->format('Y-m-d') : null),
             'start_time' => $startTime?->format('H:i'),
             'end_time' => $endTime?->format('H:i'),
             'clock_in_time' => $clockInTime,
             'clock_out_time' => $clockOutTime,
+            'total_hours_present' => $totalHoursPresent,
         ];
     }
 
@@ -247,10 +262,26 @@ class UserAttendanceService
     {
         $cleanedPeriod = $period;
         unset($cleanedPeriod['period_start_time_carbon'], $cleanedPeriod['period_end_time_carbon']);
-
+        
+        // Calculate total hours present from all attendance records in this period
+        $totalHoursPresent = 0;
+        foreach ($attendance as $att) {
+            $totalHoursPresent += $att['total_hours_present'] ?? 0;
+        }
+        
+        // Determine if user can clock in
+        // Can clock in if period is active AND no active attendance exists
+        $hasActiveAttendance = collect($attendance)->contains(function ($att) {
+            return $att['status'] === 'active';
+        });
+        
+        $canClockIn = $isActive && !$hasActiveAttendance;
+        
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,
+            'total_hours_present' => round($totalHoursPresent, 2),
+            'can_clock_in' => $canClockIn,
             'attendance' => $attendance,
         ]);
     }

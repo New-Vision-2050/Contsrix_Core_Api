@@ -629,7 +629,7 @@ class AttendanceConstraintService
             'day_status' => 'Undefined',
             'reason' => 'No time schedule applied.',
             'periods' => [], // All active periods for today, including spillover
-            'is_holiday' => false,
+            'is_holiday' => true,
             'total_work_hours' => 0.0,
             'lateness_rules' => null,
             'early_clock_in_rules' => null,
@@ -676,7 +676,7 @@ class AttendanceConstraintService
              return array_merge($defaultResult, [
                 'day_status' => $workDayStatus,
                 'reason' => $workDayReason,
-                'is_holiday' => ($workDayStatus === 'holiday'),
+                'is_holiday' => true, // Always true when not a work day (holiday or weekend)
             ]);
         }
 
