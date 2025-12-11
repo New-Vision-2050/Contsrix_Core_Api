@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
+use Modules\Company\CompanyCore\Notifications\SendDomainForUserEmailAndSMS;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchyPresenter;
 use Modules\Company\ManagementHierarchy\Presenters\ManagementHierarchySimpleDataPresenter;
 use Modules\CompanyUser\Enum\CompanyUserRole;
@@ -285,7 +286,7 @@ class UserController extends Controller
             "domain_name" => "https://".$user->company?->domains()->first()?->domain,
             "serial_no" => $user->company?->serial_no
         ];
-        $user->notify(new SendDomainForUser($data,[$request->get("type","mail")]));
+        $user->notify(new SendDomainForUserEmailAndSMS($data,[$request->get("type","mail")]));
 
 
         // Send email using the service method
