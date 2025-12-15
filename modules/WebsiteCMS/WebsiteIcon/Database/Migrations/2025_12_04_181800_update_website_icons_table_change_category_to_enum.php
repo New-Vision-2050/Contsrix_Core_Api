@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('website_icons', function (Blueprint $table) {
             // Add new enum column first
-            $table->string('website_icon_category_type')->nullable()->after('id');
+            $table->string('website_icon_category_type')->nullable('false')->after('id');
         });
 
         // Optionally migrate existing data here if needed
@@ -22,15 +22,15 @@ return new class extends Migration
         Schema::table('website_icons', function (Blueprint $table) {
             // Drop foreign key constraint
             $table->dropForeign(['category_website_cms_id']);
-            
+
             // Drop the old column
             $table->dropColumn('category_website_cms_id');
         });
 
-        Schema::table('website_icons', function (Blueprint $table) {
-            // Make the new column not nullable after migration
-            $table->string('website_icon_category_type')->nullable(false)->change();
-        });
+//        Schema::table('website_icons', function (Blueprint $table) {
+//            // Make the new column not nullable after migration
+//            $table->string('website_icon_category_type')->nullable(false)->change();
+//        });
     }
 
     /**
@@ -41,7 +41,7 @@ return new class extends Migration
         Schema::table('website_icons', function (Blueprint $table) {
             // Restore the old column
             $table->uuid('category_website_cms_id')->nullable()->after('id');
-            
+
             // Restore foreign key
             $table->foreign('category_website_cms_id')
                 ->references('id')
