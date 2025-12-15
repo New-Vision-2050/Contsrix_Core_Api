@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('website_icons', function (Blueprint $table) {
-            // Add new enum column first
-            $table->string('website_icon_category_type')->nullable('false')->after('id');
-        });
+//        Schema::table('website_icons', function (Blueprint $table) {
+//            // Add new enum column first
+//            $table->string('website_icon_category_type')->nullable('false')->after('id');
+//        });
 
         // Optionally migrate existing data here if needed
         // DB::table('website_icons')->update(['website_icon_category_type' => 'certificates']);
