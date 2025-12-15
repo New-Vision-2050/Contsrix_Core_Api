@@ -18,19 +18,30 @@ class CategoryWebsiteCMSCRUDService
 
     public function __construct(
         private CategoryWebsiteCMSRepository $repository,
-    ) {
+    )
+    {
     }
 
     public function create(CreateCategoryWebsiteCMSDTO $createCategoryWebsiteCMSDTO): CategoryWebsiteCMS
     {
-         return $this->repository->createCategoryWebsiteCMS($createCategoryWebsiteCMSDTO->toArray());
+        return $this->repository->createCategoryWebsiteCMS($createCategoryWebsiteCMSDTO->toArray());
     }
 
     public function list(int $page = 1, int $perPage = 10): array
     {
+        $orderBy = 'created_at';
+        $sortBy = 'desc';
+
+        if (request()->has("sort")) {
+            $orderBy = 'name';
+            $sortBy = request()->get("sort") === 'desc' ? 'desc' : 'asc';
+        }
+
         return $this->repository->paginated(
             page: $page,
             perPage: $perPage,
+            orderBy: $orderBy,
+            sortBy: $sortBy,
         );
     }
 

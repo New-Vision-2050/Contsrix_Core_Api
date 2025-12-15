@@ -65,4 +65,41 @@ class CategoryWebsiteCMSRepository extends BaseRepository
         }
         return $this->delete($id);
     }
+
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc'
+    ): array
+    {
+        $query = $this->model
+            ->newQuery()
+            ->leftJoin('translations as t', function ($join) {
+                $join->on('category_website_cms.id', '=', 't.translatable_id')
+                    ->where('t.locale', app()->getLocale())
+                    ->where('t.field', 'name')->where('t.translatable_type', CategoryWebsiteCMS::class);
+            });
+
+        if ($orderBy === 'name') {
+            $query->orderBy('t.content', $sortBy);
+        } else {
+            $query->orderBy("category_website_cms.$orderBy", $sortBy);
+        }
+
+        $count = (clone $query)->distinct('category_website_cms.id')->count('category_website_cms.id');
+
+        $paginatedData = $query
+            ->select('category_website_cms.*')
+            ->forPage($page, $perPage)
+            ->get();
+
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
 }
