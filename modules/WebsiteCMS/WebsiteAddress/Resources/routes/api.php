@@ -8,9 +8,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 Route::get('/', [WebsiteAddressController::class, 'index'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
-Route::get('/{id}', [WebsiteAddressController::class, 'show'])->middleware([
-    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
-]);
+
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::post('/', [WebsiteAddressController::class, 'store'])
         ->permission(Permission::WEBSITE_ADDRESS_CREATE());
@@ -23,3 +21,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::delete('/{id}', [WebsiteAddressController::class, 'delete'])
         ->permission(Permission::WEBSITE_ADDRESS_DELETE());
 });
+Route::get('/{id}', [WebsiteAddressController::class, 'show'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
