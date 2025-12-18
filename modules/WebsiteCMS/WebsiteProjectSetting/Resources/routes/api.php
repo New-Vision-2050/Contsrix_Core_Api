@@ -8,6 +8,10 @@ Route::get('/', [WebsiteProjectSettingController::class, 'index'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
 
+Route::get('/all', [WebsiteProjectSettingController::class, 'all'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
+
 Route::get('/{id}', [WebsiteProjectSettingController::class, 'show'])
     ->middleware([
         \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class

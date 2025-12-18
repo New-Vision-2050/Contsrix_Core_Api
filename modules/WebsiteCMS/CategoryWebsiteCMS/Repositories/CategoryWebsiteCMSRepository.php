@@ -66,6 +66,13 @@ class CategoryWebsiteCMSRepository extends BaseRepository
         return $this->delete($id);
     }
 
+    public function getAll(): Collection
+    {
+       return $this->model->query()->filter(request()->all())->get();
+
+
+    }
+
     public function paginated(
         array $conditions = [],
         int $page = 1,
@@ -87,6 +94,7 @@ class CategoryWebsiteCMSRepository extends BaseRepository
         } else {
             $query->orderBy("category_website_cms.$orderBy", $sortBy);
         }
+        $query->filter(request()->all());
 
         $count = (clone $query)->distinct('category_website_cms.id')->count('category_website_cms.id');
 

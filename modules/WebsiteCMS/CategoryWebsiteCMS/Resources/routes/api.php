@@ -9,6 +9,10 @@ Route::get('/', [CategoryWebsiteCMSController::class, 'index'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
 
+Route::get('/all', [CategoryWebsiteCMSController::class, 'all'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
+
 Route::get('/{id}', [CategoryWebsiteCMSController::class, 'show'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);

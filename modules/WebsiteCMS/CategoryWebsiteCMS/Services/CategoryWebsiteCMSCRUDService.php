@@ -61,4 +61,11 @@ class CategoryWebsiteCMSCRUDService
             ];
         })->toArray();
     }
+
+    public function getAll(): Collection
+    {
+
+
+        return $this->repository->getAll();
+    }
 }

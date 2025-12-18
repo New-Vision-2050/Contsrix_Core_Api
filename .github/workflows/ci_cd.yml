@@ -108,6 +108,7 @@ jobs:
           SMS_MORA_SENDER: ${{ secrets.SMS_MORA_SENDER }}
           SMS_MORA_USER: ${{ secrets.SMS_MORA_USER }}
         with:
+          envs: APP_ENV,APP_DEBUG,DB_HOST,DB_PORT,DB_USERNAME,DB_PASSWORD,DB_NAME,APP_KEY,AWS_KEY,AWS_SECRET,JWT_SECRET,DEPLOYMENT_ID,SMS_MORA_KEY,SMS_MORA_SENDER,SMS_MORA_USER
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
