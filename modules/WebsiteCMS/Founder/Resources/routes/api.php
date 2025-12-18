@@ -8,9 +8,7 @@ Route::get('/', [FounderController::class, 'index'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
 
-Route::get('/{id}', [FounderController::class, 'show'])->middleware([
-    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
-]);
+
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
 
     Route::post('/', [FounderController::class, 'store'])
@@ -23,3 +21,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::delete('/{id}', [FounderController::class, 'delete'])
         ->permission(Permission::FOUNDER_DELETE());
 });
+Route::get('/{id}', [FounderController::class, 'show'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
