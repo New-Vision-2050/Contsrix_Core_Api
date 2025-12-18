@@ -6,9 +6,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 Route::get('/', [WebsiteProjectController::class, 'index'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
-Route::get('/{id}', [WebsiteProjectController::class, 'show'])->middleware([
-    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
-]);
+
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
 
     Route::post('/', [WebsiteProjectController::class, 'store'])
@@ -22,3 +20,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::delete('/{id}', [WebsiteProjectController::class, 'delete'])
         ->permission(Permission::WEBSITE_PROJECT_DELETE());
 });
+Route::get('/{id}', [WebsiteProjectController::class, 'show'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);

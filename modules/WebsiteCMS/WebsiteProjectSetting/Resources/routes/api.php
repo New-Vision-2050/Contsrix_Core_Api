@@ -12,10 +12,7 @@ Route::get('/all', [WebsiteProjectSettingController::class, 'all'])->middleware(
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
 
-Route::get('/{id}', [WebsiteProjectSettingController::class, 'show'])
-    ->middleware([
-        \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
-    ]);
+
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
 
     Route::post('/', [WebsiteProjectSettingController::class, 'store'])
@@ -29,3 +26,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::delete('/{id}', [WebsiteProjectSettingController::class, 'delete'])
         ->permission(Permission::WEBSITE_PROJECT_SETTING_DELETE());
 });
+Route::get('/{id}', [WebsiteProjectSettingController::class, 'show'])
+    ->middleware([
+        \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+    ]);

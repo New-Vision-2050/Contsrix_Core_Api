@@ -13,9 +13,7 @@ Route::get('/all', [CategoryWebsiteCMSController::class, 'all'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
 
-Route::get('/{id}', [CategoryWebsiteCMSController::class, 'show'])->middleware([
-    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
-]);
+
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/categeory-types', [CategoryWebsiteCMSController::class, 'getCetegoryTypes'])
         ->permission(Permission::CATEGORY_WEBSITE_CMS_LIST());
@@ -30,3 +28,6 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::delete('/{id}', [CategoryWebsiteCMSController::class, 'delete'])
         ->permission(Permission::CATEGORY_WEBSITE_CMS_DELETE());
 });
+Route::get('/{id}', [CategoryWebsiteCMSController::class, 'show'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
