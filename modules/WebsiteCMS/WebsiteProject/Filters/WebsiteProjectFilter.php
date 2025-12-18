@@ -16,4 +16,14 @@ class WebsiteProjectFilter extends SearchModelFilter
             $q->where("content", "like", "%{$name}%");
         });
     }
+
+    public function status($status)
+    {
+        return $this->where("status", $status);
+    }
+
+    public function websiteProjectSetting($id)
+    {
+        return $this->where("website_project_setting_id", $id);
+    }
 }

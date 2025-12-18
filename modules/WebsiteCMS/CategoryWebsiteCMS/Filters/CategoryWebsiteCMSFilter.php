@@ -13,8 +13,7 @@ class CategoryWebsiteCMSFilter extends SearchModelFilter
     public function name($name)
     {
         return $this->whereHas("translations",function ($query) use ($name) {
-            $query->where('content', 'like', '%' . $name . '%')
-                  ->orWhere('content', 'like', '%' . $name . '%');
+            $query->where('content', 'like', '%' . $name . '%');
         });
     }
 
