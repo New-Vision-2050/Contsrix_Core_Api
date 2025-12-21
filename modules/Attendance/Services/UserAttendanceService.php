@@ -33,8 +33,11 @@ class UserAttendanceService
     public function getUserConstraints(UuidInterface|string $userId, ?string $date = null): array
     {
         $user = User::findOrFail($userId);
-        $targetDate = $date ?? Carbon::now()->format('Y-m-d');
-        $dateCarbon = Carbon::parse($targetDate);
+        
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        
+        $targetDate = $date ?? Carbon::now($timezone)->format('Y-m-d');
+        $dateCarbon = Carbon::parse($targetDate, $timezone);
 
         // Always pass the resolved target date to ensure consistency
         $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate);
@@ -88,10 +91,15 @@ class UserAttendanceService
      */
     private function getAttendancesForDate(User $user, Carbon $date): Collection
     {
+        // Ensure we're using the correct timezone for date comparison
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $dateInTz = $date->copy()->setTimezone($timezone);
+        $dateString = $dateInTz->format('Y-m-d');
+        
         return Attendance::where('user_id', $user->id)
-            ->where(function ($query) use ($date) {
-                $query->whereDate('start_time', $date->format('Y-m-d'))
-                    ->orWhereDate('clock_in_time', $date->format('Y-m-d'));
+            ->where(function ($query) use ($dateString) {
+                $query->whereDate('start_time', $dateString)
+                    ->orWhereDate('clock_in_time', $dateString);
             })
             ->orderBy('start_time')
             ->get();
@@ -113,9 +121,13 @@ class UserAttendanceService
 
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
-            // Evaluate activity using the period's timezone so local day windows are respected
-            $nowInPeriodTz = Carbon::now($periodStart->getTimezone());
-            $isActive = $this->isPeriodActive($periodStart, $periodEnd, $nowInPeriodTz);
+            
+            // Get consistent timezone
+            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $now = Carbon::now($timezone);
+            
+            // Since parsePeriodTime already returns times in correct timezone, use them directly
+            $isActive = $this->isPeriodActive($periodStart, $periodEnd, $now);
 
             return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive);
         }, $periods);
@@ -134,12 +146,17 @@ class UserAttendanceService
         $carbonKey = "period_{$type}_time_carbon";
         $timeKey = "{$type}_time";
 
+        // Get consistent timezone
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+
         if (isset($period[$carbonKey])) {
             $time = $period[$carbonKey];
-            return $time instanceof Carbon ? $time : Carbon::parse($time);
+            $carbonTime = $time instanceof Carbon ? $time : Carbon::parse($time);
+            return $carbonTime->setTimezone($timezone);
         }
 
-        $time = Carbon::parse($date->format('Y-m-d') . ' ' . $period[$timeKey]);
+        // Parse time with consistent timezone
+        $time = Carbon::parse($date->format('Y-m-d') . ' ' . $period[$timeKey], $timezone);
 
         if ($type === 'end' && ($period['extends_to_next_day'] ?? false)) {
             $time->addDay();
@@ -301,7 +318,7 @@ class UserAttendanceService
         });
         
         $canClockIn = $isActive && !$hasActiveAttendance;
-        
+        // dd($canClockIn);
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,
@@ -396,7 +413,8 @@ class UserAttendanceService
         int $perPage = 10
     ): array {
         $user = User::findOrFail($userId);
-        $now = Carbon::now();
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $now = Carbon::now($timezone);
         $currentYear = $year ?? $now->year;
         $currentMonth = $month ?? $now->month;
 
