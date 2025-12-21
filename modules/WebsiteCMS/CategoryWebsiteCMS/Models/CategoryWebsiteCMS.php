@@ -12,6 +12,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\WebsiteCMS\WebsiteIcon\Models\WebsiteIcon;
+use Modules\WebsiteCMS\WebsiteNews\Models\WebsiteNews;
 use Modules\WebsiteCMS\WebsiteService\Models\WebsiteService;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
@@ -54,9 +55,9 @@ class CategoryWebsiteCMS extends Model
 
     }
 
-    public function websiteIcons()
+    public function websiteNews()
     {
-        return $this->hasMany(WebsiteIcon::class, "category_website_cms_id", "id");
+        return $this->hasMany(WebsiteNews::class, "category_website_cms_id", "id");
     }
 
     protected static function newFactory(): CategoryWebsiteCMSFactory
