@@ -48,6 +48,8 @@ class AttendanceController extends Controller
         try {
             $clockInDTO = $request->createClockInDTO();
             $rawRequestData = $request->all();
+            // Ensure all downstream logic uses a unified timezone
+            $rawRequestData['timezone'] = getTimeZoneByRequest() ?? config('app.timezone');
 
             $violations = $this->mockAttendanceService->handleClockInProcess($clockInDTO, $rawRequestData);
 

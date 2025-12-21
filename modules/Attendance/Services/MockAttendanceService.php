@@ -11,6 +11,7 @@ use Modules\Attendance\Events\AttendanceClockedIn;
 use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\User\Models\User;
+use Carbon\Carbon;
 
 /**
  * A service dedicated to creating non-persisted (mock) Attendance models
@@ -36,19 +37,35 @@ class MockAttendanceService
     {
         $user = auth()->user();
 
-        // Check if user can clock in based on work periods
-        $userConstraints = $this->userAttendanceService->getUserConstraints(
-            (string) $user->id,
-            now()->format('Y-m-d')
-        );
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime(), $timezone);
 
-        // Check if any active period allows clock in
+        // Get constraints for the clock-in date in the same timezone
+        $userConstraints = $this->userAttendanceService->getUserConstraints((string) $user->id, $clockInCarbon->format('Y-m-d'));
+
         $canClockIn = false;
         $activePeriod = null;
-        
+
         if (isset($userConstraints['work_rules']['all_work_periods'])) {
             foreach ($userConstraints['work_rules']['all_work_periods'] as $period) {
-                if ($period['can_clock_in'] ?? false) {
+                $hasActiveAttendance = false;
+                if (!empty($period['attendance']) && is_array($period['attendance'])) {
+                    foreach ($period['attendance'] as $att) {
+                        if (($att['status'] ?? null) === 'active') {
+                            $hasActiveAttendance = true;
+                            break;
+                        }
+                    }
+                }
+
+                $periodDate = $period['date'] ?? $clockInCarbon->format('Y-m-d');
+                $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'), $timezone);
+                $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'), $timezone);
+                if (!empty($period['extends_to_next_day'])) {
+                    $end->addDay();
+                }
+
+                if ($clockInCarbon->between($start, $end, true) && !$hasActiveAttendance) {
                     $canClockIn = true;
                     $activePeriod = $period;
                     break;
@@ -82,7 +99,7 @@ class MockAttendanceService
         $mockAttendanceData = [
             'user_id'             => $user->id,
             'clock_in_time'       => $clockInDTO->getClockInTime(),
-            'timezone'            => getTimeZoneByRequest()  ?? config('app.timezone'),
+            'timezone'            => $timezone,
             'clock_in_location'   => $clockInDTO->getLocation(),
             'ip_address'          => $clockInDTO->getIpAddress(),
             'user_agent'          => $clockInDTO->getUserAgent(),
