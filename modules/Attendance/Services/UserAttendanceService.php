@@ -36,7 +36,8 @@ class UserAttendanceService
         $targetDate = $date ?? Carbon::now()->format('Y-m-d');
         $dateCarbon = Carbon::parse($targetDate);
 
-        $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $date);
+        // Always pass the resolved target date to ensure consistency
+        $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate);
         $attendances = $this->getAttendancesForDate($user, $dateCarbon);
 
         if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
@@ -106,15 +107,15 @@ class UserAttendanceService
      */
     private function enhancePeriodsWithAttendance(array $periods, Collection $attendances, Carbon $date): array
     {
-        $now = Carbon::now();
-        
-        return array_map(function ($period) use ($attendances, $date, $now) {
+        return array_map(function ($period) use ($attendances, $date) {
             $periodStart = $this->parsePeriodTime($period, 'start', $date);
             $periodEnd = $this->parsePeriodTime($period, 'end', $date);
 
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
-            $isActive = $this->isPeriodActive($periodStart, $periodEnd, $now);
+            // Evaluate activity using the period's timezone so local day windows are respected
+            $nowInPeriodTz = Carbon::now($periodStart->getTimezone());
+            $isActive = $this->isPeriodActive($periodStart, $periodEnd, $nowInPeriodTz);
 
             return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive);
         }, $periods);
@@ -159,16 +160,40 @@ class UserAttendanceService
     {
         return $attendances
             ->filter(function ($attendance) use ($periodStart, $periodEnd) {
-                // Use clock_in_time for matching to periods (actual time, not scheduled start_time)
-                if (!$attendance->clock_in_time) {
-                    return false;
+                // Normalize attendance times with awareness of timezone column if present
+                $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
+
+                // clock-in based match (actual event)
+                $clockInCarbon = null;
+                if ($attendance->clock_in_time) {
+                    $clockInCarbon = $attendance->clock_in_time instanceof Carbon
+                        ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
+                        : Carbon::parse($attendance->clock_in_time, $attendanceTz);
+                        
+                    $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
+                    if ($clockInInPeriodTz->between($periodStart, $periodEnd, true)) {
+                        return true;
+                    }
                 }
-                
-                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
-                    ? $attendance->clock_in_time 
-                    : Carbon::parse($attendance->clock_in_time);
-                
-                return $clockInCarbon->between($periodStart, $periodEnd, true);
+                $attStart = $this->getAttendanceTime($attendance, 'start');
+                $attEnd = $this->getAttendanceTime($attendance, 'end');
+                if ($attStart) {
+                    $attStart = $attStart instanceof Carbon ? $attStart->copy() : Carbon::parse((string) $attStart, $attendanceTz);
+                    $attStart->setTimezone($periodStart->getTimezone());
+                }
+                if ($attEnd) {
+                    $attEnd = $attEnd instanceof Carbon ? $attEnd->copy() : Carbon::parse((string) $attEnd, $attendanceTz);
+                    $attEnd->setTimezone($periodStart->getTimezone());
+                } else {
+                    $attEnd = Carbon::now($periodStart->getTimezone());
+                }
+
+                if ($attStart) {
+                    // Overlap if attendanceStart <= periodEnd AND attendanceEnd >= periodStart
+                    return $attStart->lessThanOrEqualTo($periodEnd) && $attEnd->greaterThanOrEqualTo($periodStart);
+                }
+
+                return false;
             })
             ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance))
             ->values()
