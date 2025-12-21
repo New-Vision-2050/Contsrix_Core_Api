@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Company\CompanyCore\Models;
 
 use Modules\User\Models\User;
+use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Stancl\Tenancy\DatabaseConfig;
@@ -338,6 +339,13 @@ class Company extends BaseTenant implements TenantWithDatabase, HasMedia, Audita
             ['id', 'id'], // local keys on intermediate tables
             ['id', 'company_access_program_id'] // foreign keys on related tables
         );
+    }
+
+
+    public function websiteTheme()
+    {
+        return $this->hasOne(WebsiteTheme::class,"company_id");
+
     }
 
     /**
