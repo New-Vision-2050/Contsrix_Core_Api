@@ -59,7 +59,7 @@ class CategoryWebsiteCMSRepository extends BaseRepository
     {
         $category = $this->find($id);
 
-        if ($category->websiteServices()->count() > 0||$category->websiteIcons()->count() > 0)
+        if ($category->websiteServices()->count() > 0||$category->websiteNews()->count() > 0)
         {
             throw new CustomException(__("validation.can-not-delete-has-children"));
         }
