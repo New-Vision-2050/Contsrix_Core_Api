@@ -195,6 +195,22 @@ class Attendance extends Model implements Auditable
         }
         return $value;
     }
+
+    public function getStartTimeAttribute($value)
+    {
+        if ($this->timezone && $value) {
+            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
+        }
+        return $value;
+    }
+
+    public function getEndTimeAttribute($value)
+    {
+        if ($this->timezone && $value) {
+            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
+        }
+        return $value;
+    }
     /**
      * Get the user that owns the attendance record.
      */
