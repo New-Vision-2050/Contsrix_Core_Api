@@ -14,7 +14,8 @@ class CreateCompanyUserCompanyRoleDTO
 
         public UuidInterface $company_id,
         public string        $role,
-        public ?string       $subEntityId = null
+        public ?string       $subEntityId = null,
+        public ?int          $status = 1
     )
     {
     }
@@ -32,15 +33,15 @@ class CreateCompanyUserCompanyRoleDTO
 
     public function toArray(): array
     {
-        if($this->role == CompanyUserRole::EMPLOYEE->value && $this->subEntityId==null)
-        {
-            $this->subEntityId =  SubEntity::where("slug","employees")->first()?->id;
+        if ($this->role == CompanyUserRole::EMPLOYEE->value && $this->subEntityId == null) {
+            $this->subEntityId = SubEntity::where("slug", "employees")->first()?->id;
 
         }
         return [
             'role' => $this->role,
             "company_id" => $this->company_id,
-            "sub_entity_id"=>$this->subEntityId
+            "sub_entity_id" => $this->subEntityId,
+            "status" => $this->status
         ];
     }
 }
