@@ -28,13 +28,13 @@ class CreateWebsiteAboutUsRequest extends FormRequest
             'slogan_ar' => 'required|string|max:500',
             'slogan_en' => 'required|string|max:500',
             'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            
+
             // Project types array validation
             'project_types' => 'nullable|array',
             'project_types.*.title_ar' => 'required|string|max:255',
             'project_types.*.title_en' => 'required|string|max:255',
             'project_types.*.count' => 'required|integer|min:0',
-            
+
             // Attachments array validation
             'attachments' => 'nullable|array',
             'attachments.*.name' => 'required|string|max:255',

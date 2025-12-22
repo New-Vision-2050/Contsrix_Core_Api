@@ -8,12 +8,13 @@ Route::get('/', [WebsiteServiceController::class, 'index'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
 
-
+Route::get('/{id}', [WebsiteServiceController::class, 'show'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::post('/', [WebsiteServiceController::class, 'store'])
         ->permission(Permission::WEBSITE_SERVICE_CREATE());
-    Route::get('/{id}', [WebsiteServiceController::class, 'show'])
-        ->permission(Permission::WEBSITE_SERVICE_UPDATE());
+
     Route::put('/{id}', [WebsiteServiceController::class, 'update'])
         ->permission(Permission::WEBSITE_SERVICE_UPDATE());
     Route::put('/{id}/status', [WebsiteServiceController::class, 'updateStatus'])

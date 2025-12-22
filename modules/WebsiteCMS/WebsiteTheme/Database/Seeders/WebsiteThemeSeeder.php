@@ -4,11 +4,26 @@ namespace Modules\WebsiteCMS\WebsiteTheme\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\CompanyCore\Models\Domain;
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteColorPalette;
 
 class WebsiteThemeSeeder extends Seeder
 {
+
+    private function parseDomain($username)
+    {
+        $url = request()->header("X-DOMAIN")??request()->host();
+        if (substr_count($url, '.') > 1) {
+            $urlParts = explode(".", $url);
+            $subDomain = $urlParts[0] . "-" . $username;
+            $url = $subDomain . "." . $urlParts[1] . "." . $urlParts[2];
+        } else {
+            $url = $username . "." . $url;
+        }
+        return $url;
+    }
     /**
      * Run the database seeds.
      */
@@ -29,11 +44,23 @@ class WebsiteThemeSeeder extends Seeder
                 $this->command->info("WebsiteTheme already exists for company: {$companyId}");
                 return;
             }
+            $domain = Company::query()->where('id', $companyId)->first()->domains()->first()?->domain;
+
+            if (!$domain) {
+                $domain = $this->parseDomain(tenant('user_name'));
+            }
+
+            if (str_contains($domain, "core")) {
+                $domain = str_replace("core", "website", $domain);
+
+            } else {
+                $domain = "website-" . $domain;
+            }
 
             // Create WebsiteTheme
             $theme = WebsiteTheme::create([
                 'company_id' => $companyId,
-                'url' => null,
+                'url' => $domain,
                 'radius' => 8,
                 'html_font_size' => 16,
                 'font_family' => 'Roboto, Arial, sans-serif',
@@ -61,7 +88,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Primary Color',
                     'slug' => 'primary',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["primary", "light", "dark", "contrast"],
                     'primary' => '#1976D2',
                     'light' => '#42A5F5',
                     'dark' => '#1565C0',
@@ -70,7 +97,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Secondary Color',
                     'slug' => 'secondary',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["primary", "light", "dark", "contrast"],
                     'primary' => '#9C27B0',
                     'light' => '#BA68C8',
                     'dark' => '#7B1FA2',
@@ -79,7 +106,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Info Color',
                     'slug' => 'info',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["primary", "light", "dark", "contrast"],
                     'primary' => '#0288D1',
                     'light' => '#03A9F4',
                     'dark' => '#01579B',
@@ -88,7 +115,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Warning Color',
                     'slug' => 'warning',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["primary", "light", "dark", "contrast"],
                     'primary' => '#ED6C02',
                     'light' => '#FF9800',
                     'dark' => '#E65100',
@@ -97,7 +124,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Error Color',
                     'slug' => 'error',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["primary", "light", "dark", "contrast"],
                     'primary' => '#D32F2F',
                     'light' => '#EF5350',
                     'dark' => '#C62828',
@@ -106,7 +133,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Text Color',
                     'slug' => 'text',
-                    'attributes' => ["primary","secondary","divider","disabled"],
+                    'attributes' => ["primary", "secondary", "divider", "disabled"],
                     'primary' => '#212121',
                     'light' => '#757575',
                     'dark' => '#000000',
@@ -115,7 +142,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Background',
                     'slug' => 'background',
-                    'attributes' => ["paper","default"],
+                    'attributes' => ["paper", "default"],
                     'primary' => null,
                     'light' => '#F5F5F5',
                     'dark' => '#EEEEEE',
@@ -124,7 +151,7 @@ class WebsiteThemeSeeder extends Seeder
                 [
                     'name' => 'Success',
                     'slug' => 'success',
-                    'attributes' => ["primary","light","dark","contrast"],
+                    'attributes' => ["primary", "light", "dark", "contrast"],
                     'primary' => '#212121',
                     'light' => '#757575',
                     'dark' => '#000000',

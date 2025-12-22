@@ -31,7 +31,7 @@ class CompanyUserDataInfoPresenter extends AbstractPresenter
             "birthdate_hijri"=> $this->user->companyUser->birthdate_hijri,
             "country_id"=> $this->user->companyUser->country_id,
             "country" =>$this->user->companyUser?->country?->name,
-            "user_types" => $this->user->companyUserCompanies->map(function ($companyUserCompany) {
+            "user_types" => $this->user->companyUserCompanies->where("company_id",$this->user->company_id)->map(function ($companyUserCompany) {
                 return [
                     'id' => $companyUserCompany->id,
                     'company_id' => $companyUserCompany->company_id,

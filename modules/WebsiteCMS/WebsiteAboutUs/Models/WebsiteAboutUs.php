@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\WebsiteCMS\WebsiteAboutUs\Database\factories\WebsiteAboutUsFactory;
+use Modules\WebsiteCMS\WebsiteIcon\Models\WebsiteIcon;
+use Modules\WebsiteCMS\WebsiteIcon\Enums\WebsiteIconCategoryType;
 use BasePackage\Shared\Traits\BaseFilterable;
 use BasePackage\Shared\Traits\HasTranslations;
 use Spatie\MediaLibrary\HasMedia;
@@ -79,6 +81,33 @@ class WebsiteAboutUs extends Model implements HasMedia
     public function attachments(): HasMany
     {
         return $this->hasMany(WebsiteAboutUsAttachment::class, 'website_about_us_id');
+    }
+
+    /**
+     * Get certificate icons for the website about us.
+     */
+    public function certificateIcons(): HasMany
+    {
+        return $this->hasMany(WebsiteIcon::class, 'company_id', 'company_id')
+            ->where('website_icon_category_type', WebsiteIconCategoryType::CERTIFICATES->value);
+    }
+
+    /**
+     * Get approval icons for the website about us.
+     */
+    public function approvalIcons(): HasMany
+    {
+        return $this->hasMany(WebsiteIcon::class, 'company_id', 'company_id')
+            ->where('website_icon_category_type', WebsiteIconCategoryType::APPROVALS->value);
+    }
+
+    /**
+     * Get company icons for the website about us.
+     */
+    public function companyIcons(): HasMany
+    {
+        return $this->hasMany(WebsiteIcon::class, 'company_id', 'company_id')
+            ->where('website_icon_category_type', WebsiteIconCategoryType::COMPANIES->value);
     }
 
     /**

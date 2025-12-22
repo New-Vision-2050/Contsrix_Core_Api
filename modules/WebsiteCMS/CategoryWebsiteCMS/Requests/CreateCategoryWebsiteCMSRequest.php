@@ -6,16 +6,28 @@ namespace Modules\WebsiteCMS\CategoryWebsiteCMS\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\WebsiteCMS\CategoryWebsiteCMS\Enum\CategoryWebsiteCMSType;
+use Modules\WebsiteCMS\CategoryWebsiteCMS\Models\CategoryWebsiteCMS;
 use Ramsey\Uuid\Uuid;
 use Modules\WebsiteCMS\CategoryWebsiteCMS\DTO\CreateCategoryWebsiteCMSDTO;
+use Modules\WebsiteCMS\CategoryWebsiteCMS\Rules\UniqueTranslationRule;
 
 class CreateCategoryWebsiteCMSRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'name_ar' => 'required|string|max:255',
-            'name_en' => 'required|string|max:255',
+            'name_ar' => [
+                'required',
+                'string',
+                'max:255',
+                new UniqueTranslationRule(new CategoryWebsiteCMS, 'name', 'ar')
+            ],
+            'name_en' => [
+                'required',
+                'string',
+                'max:255',
+                new UniqueTranslationRule(new CategoryWebsiteCMS, 'name', 'en')
+            ],
             'category_type' => 'required|in:'.implode(',', CategoryWebsiteCMSType::values()),
         ];
     }

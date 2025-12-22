@@ -51,4 +51,9 @@ class WebsiteProjectSettingRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function getAll(): Collection
+    {
+        return $this->model->query()->filter(request()->all())->get();
+    }
 }

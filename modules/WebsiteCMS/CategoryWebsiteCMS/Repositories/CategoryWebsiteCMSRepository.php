@@ -59,10 +59,55 @@ class CategoryWebsiteCMSRepository extends BaseRepository
     {
         $category = $this->find($id);
 
-        if ($category->websiteServices()->count() > 0||$category->websiteIcons()->count() > 0)
+        if ($category->websiteServices()->count() > 0||$category->websiteNews()->count() > 0)
         {
             throw new CustomException(__("validation.can-not-delete-has-children"));
         }
         return $this->delete($id);
+    }
+
+    public function getAll(): Collection
+    {
+       return $this->model->query()->filter(request()->all())->get();
+
+
+    }
+
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc'
+    ): array
+    {
+        $query = $this->model
+            ->newQuery()
+            ->leftJoin('translations as t', function ($join) {
+                $join->on('category_website_cms.id', '=', 't.translatable_id')
+                    ->where('t.locale', app()->getLocale())
+                    ->where('t.field', 'name')->where('t.translatable_type', CategoryWebsiteCMS::class);
+            });
+
+        if ($orderBy === 'name') {
+            $query->orderBy('t.content', $sortBy);
+        } else {
+            $query->orderBy("category_website_cms.$orderBy", $sortBy);
+        }
+        $query->filter(request()->all());
+
+        $count = (clone $query)->distinct('category_website_cms.id')->count('category_website_cms.id');
+
+        $paginatedData = $query
+            ->select('category_website_cms.*')
+            ->forPage($page, $perPage)
+            ->get();
+
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
     }
 }

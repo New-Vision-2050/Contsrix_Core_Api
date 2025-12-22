@@ -7,6 +7,8 @@ use Modules\RoleAndPermission\Enums\Permission;
 Route::get('/', [SocialMediaLinkController::class, 'index'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
 ]);
+
+
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
 
     Route::get('/types', [SocialMediaLinkController::class, 'getTypes'])
@@ -16,8 +18,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 //    Route::post('/export', [SocialMediaLinkController::class, 'export'])
 //        ->permission(Permission::SOCIAL_MEDIA_LINK_EXPORT());
 
-    Route::get('/{id}', [SocialMediaLinkController::class, 'show'])
-        ->permission(Permission::SOCIAL_MEDIA_LINK_UPDATE());
     Route::put('/{id}', [SocialMediaLinkController::class, 'update'])
         ->permission(Permission::SOCIAL_MEDIA_LINK_UPDATE());
     Route::put('/{id}/status', [SocialMediaLinkController::class, 'updateStatus'])
@@ -25,3 +25,6 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::delete('/{id}', [SocialMediaLinkController::class, 'delete'])
         ->permission(Permission::SOCIAL_MEDIA_LINK_DELETE());
 });
+Route::get('/{id}', [SocialMediaLinkController::class, 'show'])->middleware([
+    \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class
+]);
