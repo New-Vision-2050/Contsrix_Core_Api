@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration
+return new class 2025_10_27_025400_drop_type_from_banners_table Migration
 {
     public function up()
     {

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class 2025_10_29_230700_add_guest_customer_fields_to_orders Migration
 {
     /**
      * Run the migrations.

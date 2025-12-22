@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration
+return new class 2025_08_25_121533_update_eco_products_table Migration
 {
     public function up()
     {

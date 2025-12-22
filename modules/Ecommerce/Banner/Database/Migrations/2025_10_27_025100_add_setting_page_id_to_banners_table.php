@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration
+return new class 2025_10_27_025100_add_setting_page_id_to_banners_table Migration
 {
     public function up()
     {

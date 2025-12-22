@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class 2025_11_16_120100_add_date_offer_to_deal_days_table Migration
 {
     public function up(): void
     {

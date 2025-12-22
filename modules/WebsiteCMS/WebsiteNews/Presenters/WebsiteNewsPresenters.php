@@ -7,7 +7,7 @@ namespace Modules\WebsiteCMS\WebsiteNews\Presenters;
 use Modules\WebsiteCMS\WebsiteNews\Models\WebsiteNews;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class WebsiteNewsPresenter extends AbstractPresenter
+class WebsiteNewsPresenters extends AbstractPresenter
 {
     private WebsiteNews $websiteNews;
 

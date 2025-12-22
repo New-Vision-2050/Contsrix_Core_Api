@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration {
+return new class 2025_11_19_143842_craete_website_terms_and_conditions_table Migration {
     public function up()
     {
         Schema::create('website_terms_and_conditions', function (Blueprint $table) {

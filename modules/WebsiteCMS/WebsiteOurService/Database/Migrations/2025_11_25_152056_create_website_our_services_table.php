@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Modules\WebsiteCMS\WebsiteOurService\Enums\ServiceTypeEnum;
 
-return new class extends Migration
+return new class 2025_11_25_152056_create_website_our_services_table Migration
 {
     public function up()
     {

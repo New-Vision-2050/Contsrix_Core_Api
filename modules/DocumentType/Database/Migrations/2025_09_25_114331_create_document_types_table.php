@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration
+return new class 2025_09_25_114331_create_document_types_table Migration
 {
     public function up()
     {

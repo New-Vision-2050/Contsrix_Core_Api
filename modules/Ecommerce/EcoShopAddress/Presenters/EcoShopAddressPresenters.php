@@ -7,7 +7,7 @@ namespace Modules\Ecommerce\EcoShopAddress\Presenters;
 use Modules\Ecommerce\EcoShopAddress\Models\EcoShopAddress;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
-class EcoShopAddressPresenter extends AbstractPresenter
+class EcoShopAddressPresenters extends AbstractPresenter
 {
     private EcoShopAddress $ecoShopAddress;
 

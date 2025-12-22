@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration
+return new class 2025_10_28_214000_create_store_branches_table Migration
 {
     public function up(): void
     {

@@ -123,7 +123,7 @@ class WebsiteOurServiceController extends Controller
     }
 
     /**
-     * Get service type enum values as id-name pairs
+     * Get service type enum WebsiteOurServiceController as id-name pairs
      */
     public function getServiceTypes(): JsonResponse
     {

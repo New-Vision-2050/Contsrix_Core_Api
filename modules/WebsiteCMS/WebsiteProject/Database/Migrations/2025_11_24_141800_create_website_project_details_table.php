@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-return new class extends Migration
+return new class 2025_11_24_141800_create_website_project_details_table Migration
 {
     /**
      * Run the migrations.

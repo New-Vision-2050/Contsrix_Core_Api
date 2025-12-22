@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Modules\WebsiteCMS\CategoryWebsiteCMS\Enum\CategoryWebsiteCMSType;
 
-return new class extends Migration
+return new class 2025_11_16_174100_create_category_website_cms_table Migration
 {
     public function up()
     {

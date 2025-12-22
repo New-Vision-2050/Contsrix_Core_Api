@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration{
+return new class 2025_01_21_082337_create_pages_table Migration{
     /**
      * Run the migrations.
      */

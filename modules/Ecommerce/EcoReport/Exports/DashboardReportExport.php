@@ -40,7 +40,7 @@ class DashboardReportExport implements WithMultipleSheets
     }
 }
 
-class SummaryMetricsSheet implements FromArray, WithHeadings, WithTitle
+class DashboardReportExport implements FromArray, WithHeadings, WithTitle
 {
     public function __construct(
         private EcoReportDashboardService $reportService,
@@ -82,7 +82,7 @@ class SummaryMetricsSheet implements FromArray, WithHeadings, WithTitle
     }
 }
 
-class OrdersDataSheet implements FromArray, WithHeadings, WithTitle
+class DashboardReportExport implements FromArray, WithHeadings, WithTitle
 {
     public function __construct(
         private EcoReportDashboardService $reportService,
@@ -118,7 +118,7 @@ class OrdersDataSheet implements FromArray, WithHeadings, WithTitle
     }
 }
 
-class ProductPerformanceSheet implements FromArray, WithHeadings, WithTitle
+class DashboardReportExport implements FromArray, WithHeadings, WithTitle
 {
     public function __construct(
         private EcoReportDashboardService $reportService,
@@ -156,7 +156,7 @@ class ProductPerformanceSheet implements FromArray, WithHeadings, WithTitle
     }
 }
 
-class CustomerAnalyticsSheet implements FromArray, WithHeadings, WithTitle
+class DashboardReportExport implements FromArray, WithHeadings, WithTitle
 {
     public function __construct(
         private EcoReportDashboardService $reportService,

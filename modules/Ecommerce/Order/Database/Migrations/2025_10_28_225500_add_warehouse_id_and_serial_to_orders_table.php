@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class 2025_10_28_225500_add_warehouse_id_and_serial_to_orders_table Migration
 {
     /**
      * Run the migrations.

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateEcoShopAddressesTable extends Migration
+class 2025_09_15_131000_create_eco_shop_addresses_table extends Migration
 {
     public function up(): void
     {

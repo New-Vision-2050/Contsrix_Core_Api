@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class 2025_12_04_181800_update_website_icons_table_change_category_to_enum Migration
 {
     /**
      * Run the migrations.
@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('website_icons', function (Blueprint $table) {
-            // Add new enum column first
+            // Add new enum 2025_12_04_181800_update_website_icons_table_change_category_to_enum first
             $table->string('website_icon_category_type')->nullable()->after('id');
         });
 
@@ -50,7 +50,7 @@ return new class extends Migration
         });
 
         Schema::table('website_icons', function (Blueprint $table) {
-            // Drop the enum column
+            // Drop the enum 2025_12_04_181800_update_website_icons_table_change_category_to_enum
             $table->dropColumn('website_icon_category_type');
         });
     }

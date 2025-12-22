@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class 2025_08_18_100700_alter_public_holidays_table_date_fields Migration
 {
     /**
      * Run the migrations.

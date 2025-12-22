@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends  Migration
+return new class 2025_10_29_004900_add_missing_columns_to_order_status_histories_table  Migration
 {
     /**
      * Run the migrations.

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class 2025_08_18_100501_add_leave_type_fields_to_leave_types_table Migration
 {
     /**
      * Run the migrations.

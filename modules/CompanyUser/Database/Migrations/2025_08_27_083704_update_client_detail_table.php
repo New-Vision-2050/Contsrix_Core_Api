@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration
+return new class 2025_08_27_083704_update_client_detail_table Migration
 {
     public function up()
     {

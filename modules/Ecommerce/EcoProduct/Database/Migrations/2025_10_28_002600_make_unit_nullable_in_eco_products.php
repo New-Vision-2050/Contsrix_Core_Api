@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class MakeUnitNullableInEcoProducts extends Migration
+class 2025_10_28_002600_make_unit_nullable_in_eco_products extends Migration
 {
     /**
      * Run the migrations.

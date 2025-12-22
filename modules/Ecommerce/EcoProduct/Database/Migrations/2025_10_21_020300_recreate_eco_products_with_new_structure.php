@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration{
+return new class 2025_10_21_020300_recreate_eco_products_with_new_structure Migration{
     public function up(): void
     {
         // Disable foreign key checks temporarily
