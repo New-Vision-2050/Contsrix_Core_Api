@@ -77,6 +77,13 @@ class WebsiteProjectSettingController extends Controller
         return Json::deleted();
     }
 
+    public function all(): JsonResponse
+    {
+        $list = $this->websiteProjectSettingService->getAll();
+
+        return Json::items(WebsiteProjectSettingPresenter::collection($list));
+    }
+
     /**
      * Export websiteprojectsetting to a file
      *

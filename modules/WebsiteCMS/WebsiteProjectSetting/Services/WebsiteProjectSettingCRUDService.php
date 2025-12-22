@@ -39,4 +39,9 @@ class WebsiteProjectSettingCRUDService
             id: $id,
         );
     }
+
+    public function getAll(): Collection
+    {
+        return $this->repository->getAll();
+    }
 }

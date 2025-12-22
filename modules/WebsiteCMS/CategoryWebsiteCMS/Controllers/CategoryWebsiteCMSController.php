@@ -82,6 +82,13 @@ class CategoryWebsiteCMSController extends Controller
         return Json::items($this->categoryWebsiteCMSService->getTypes());
     }
 
+    public function all(): JsonResponse
+    {
+        $list = $this->categoryWebsiteCMSService->getAll();
+
+        return Json::items(CategoryWebsiteCMSPresenter::collection($list));
+    }
+
     /**
      * Export categorywebsitecms to a file
      *

@@ -67,7 +67,7 @@ class UpdateCurrentCompanyAboutUsRequest extends FormRequest
             ],
             main_image: $this->file('main_image'),
             project_types: $this->get('project_types'),
-            attachments: $this->get('attachments'),
+            attachments: $this->attachments,
         );
     }
 }
