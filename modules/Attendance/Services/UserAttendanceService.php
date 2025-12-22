@@ -418,8 +418,8 @@ class UserAttendanceService
         $currentYear = $year ?? $now->year;
         $currentMonth = $month ?? $now->month;
 
-        // Build query for attendance records
-        $query = Attendance::where('user_id', $user->id)
+        // First, get unique dates for pagination
+        $datesQuery = Attendance::where('user_id', $user->id)
             ->where(function ($q) use ($currentYear, $currentMonth) {
                 $q->where(function ($subQ) use ($currentYear, $currentMonth) {
                     $subQ->whereNotNull('start_time')
@@ -436,18 +436,30 @@ class UserAttendanceService
                     }
                 });
             })
-            ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
-            ->get();
+            ->selectRaw('DATE(COALESCE(start_time, clock_in_time)) as attendance_date')
+            ->distinct()
+            ->orderBy('attendance_date', 'DESC');
 
-        // Group attendances by date
-        $groupedByDate = $query->groupBy(function ($attendance) {
-            $date = $attendance->start_time ?? $attendance->clock_in_time;
-            return Carbon::parse($date)->format('Y-m-d');
-        });
+        // Count total unique dates for pagination
+        $totalDates = $datesQuery->count();
+        $lastPage = (int) ceil($totalDates / $perPage);
+        $offset = ($page - 1) * $perPage;
+
+        // Get paginated dates
+        $paginatedDates = $datesQuery->offset($offset)->limit($perPage)->pluck('attendance_date');
 
         $result = [];
-        foreach ($groupedByDate as $dateString => $attendances) {
-            $dateCarbon = Carbon::parse($dateString);
+        foreach ($paginatedDates as $dateString) {
+            $dateCarbon = Carbon::parse($dateString, $timezone);
+            
+            // Get attendances for this specific date
+            $attendances = Attendance::where('user_id', $user->id)
+                ->where(function ($q) use ($dateString) {
+                    $q->whereDate('start_time', $dateString)
+                      ->orWhereDate('clock_in_time', $dateString);
+                })
+                ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
+                ->get();
             
             // Get work rules for this date
             $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
@@ -471,24 +483,16 @@ class UserAttendanceService
             ];
         }
 
-        // Sort by date descending
-        usort($result, function ($a, $b) {
-            return strcmp($b['date'], $a['date']);
-        });
-
-        // Paginate
-        $total = count($result);
-        $offset = ($page - 1) * $perPage;
-        $paginatedResult = array_slice($result, $offset, $perPage);
+        $paginatedResult = $result;
 
         return [
             'data' => $paginatedResult,
             'pagination' => [
                 'page' => $page,
                 'per_page' => $perPage,
-                'total' => $total,
-                'last_page' => (int) ceil($total / $perPage),
-                'next_page' => $page < ceil($total / $perPage) ? $page + 1 : null,
+                'total' => $totalDates,
+                'last_page' => $lastPage,
+                'next_page' => $page < $lastPage ? $page + 1 : null,
                 'result_count' => count($paginatedResult),
             ],
         ];
