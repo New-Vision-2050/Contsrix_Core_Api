@@ -269,10 +269,19 @@ class UserAttendanceService
             $totalHoursPresent += $att['total_hours_present'] ?? 0;
         }
         
+        // Determine if user can clock in
+        // Can clock in if period is active AND no active attendance exists
+        $hasActiveAttendance = collect($attendance)->contains(function ($att) {
+            return $att['status'] === 'active';
+        });
+        
+        $canClockIn = $isActive && !$hasActiveAttendance;
+        
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,
             'total_hours_present' => round($totalHoursPresent, 2),
+            'can_clock_in' => $canClockIn,
             'attendance' => $attendance,
         ]);
     }
