@@ -79,7 +79,14 @@ class LocationTrackingService
             $join->on('attendances.user_id', '=', 'latest_attendance.user_id')
                  ->on('attendances.clock_in_time', '=', 'latest_attendance.latest_clock_in');
         })
-        ->with(['user', 'company'])
+        ->with([
+            'user.company',
+            'user.companyUser.country',
+            'user.professionalData.branch',
+            'user.professionalData.department',
+            'user.professionalData.management',
+            'company'
+        ])
         ->get();
     }
 
