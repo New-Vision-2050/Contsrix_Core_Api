@@ -15,13 +15,10 @@ class LiveTrackingPresenter extends AbstractPresenter
 
     public function present(bool $isListing = false): array
     {
-        // Get all tracking points, or an empty array if none.
         $allTrackingPoints = $this->attendance->location_tracking ?? [];
 
-        // Get last 4 tracking points in descending order
         $trackingPoints = array_slice(array_reverse($allTrackingPoints), 0, 4);
 
-        // Find the most recent tracking point (first in reversed array)
         $latestPoint = !empty($trackingPoints) ? $trackingPoints[0] : null;
 
         return [
@@ -48,7 +45,6 @@ class LiveTrackingPresenter extends AbstractPresenter
             'is_absent' => (int) $this->attendance->is_absent,
             'is_holiday' => (int) $this->attendance->is_holiday,
 
-            // --- Latest Location Info (for the marker) ---
             'latest_location' => $latestPoint ? [
                 'latitude'  => (float) $latestPoint['latitude'],
                 'longitude' => (float) $latestPoint['longitude'],
@@ -57,6 +53,9 @@ class LiveTrackingPresenter extends AbstractPresenter
                 'type' => $latestPoint['type'] ?? 'track',
                 'is_mock' => $latestPoint['is_mock'] ?? false,
                 'device_id' => $latestPoint['device_id'] ?? 'unknown',
+                'uuid' => $latestPoint['uuid'] ?? ($latestPoint['device_id'] ?? 'unknown'),
+                'geofence_action' => $latestPoint['geofence_action'] ?? null,
+                'event' => $latestPoint['event'] ?? 'location',
                 'location_source' => $latestPoint['location_source'] ?? 'GPS',
             ] : [
                 'latitude'  => $this->attendance->clock_in_location['latitude'] ?? 0,
@@ -66,10 +65,12 @@ class LiveTrackingPresenter extends AbstractPresenter
                 'type' => 'clock_in',
                 'is_mock' => false,
                 'device_id' => 'unknown',
+                'uuid' => 'unknown',
+                'geofence_action' => null,
+                'event' => 'location',
                 'location_source' => 'GPS',
             ],
 
-            // --- All tracking points with enhanced data ---
             'tracking_points' => array_map(function ($point) {
                 return [
                     'latitude' => (float) $point['latitude'],
@@ -79,6 +80,9 @@ class LiveTrackingPresenter extends AbstractPresenter
                     'type' => $point['type'] ?? 'track',
                     'is_mock' => $point['is_mock'] ?? false,
                     'device_id' => $point['device_id'] ?? 'unknown',
+                    'uuid' => $point['uuid'] ?? ($point['device_id'] ?? 'unknown'),
+                    'geofence_action' => $point['geofence_action'] ?? null,
+                    'event' => $point['event'] ?? 'location',
                     'location_source' => $point['location_source'] ?? 'GPS',
                     'gps_status' => $point['gps_status'] ?? null,
                     'action' => $point['action'] ?? null,
@@ -87,7 +91,6 @@ class LiveTrackingPresenter extends AbstractPresenter
                 ];
             }, $trackingPoints),
 
-            // --- Simple tracking path for map display ---
             'tracking_path' => array_map(function ($point) {
                 return [
                     'lat' => (float) $point['latitude'],
@@ -97,7 +100,6 @@ class LiveTrackingPresenter extends AbstractPresenter
                 ];
             }, $trackingPoints),
 
-            // --- Statistics ---
             'tracking_stats' => [
                 'total_points' => count($trackingPoints),
                 'track_points' => count(array_filter($trackingPoints, fn($p) => ($p['type'] ?? 'track') === 'track')),
