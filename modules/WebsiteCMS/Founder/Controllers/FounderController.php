@@ -77,6 +77,16 @@ class FounderController extends Controller
         return Json::deleted();
     }
 
+    public function toggleStatus(GetFounderRequest $request): JsonResponse
+    {
+        $founderId = Uuid::fromString($request->route('id'));
+        $updatedFounder = $this->founderService->toggleStatus($founderId);
+        
+        $presenter = new FounderPresenter($updatedFounder);
+        
+        return Json::item($presenter->getData());
+    }
+
     /**
      * Export founder to a file
      *
