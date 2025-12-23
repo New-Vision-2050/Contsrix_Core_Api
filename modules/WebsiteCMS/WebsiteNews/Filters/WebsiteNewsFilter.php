@@ -42,7 +42,7 @@ class WebsiteNewsFilter extends SearchModelFilter
     }
 
 
-    public function category_website_cms_id($categoryId)
+    public function categoryWebsiteCms($categoryId)
     {
         return $this->where('category_website_cms_id', $categoryId);
     }
