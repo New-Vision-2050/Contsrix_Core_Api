@@ -6,6 +6,8 @@ namespace Modules\WebsiteCMS\WebsiteOurService\Presenters;
 
 use Modules\WebsiteCMS\WebsiteOurService\Models\WebsiteOurService;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\WebsiteCMS\WebsiteService\Models\WebsiteService;
+use Modules\WebsiteCMS\WebsiteService\Presenters\WebsiteServicePresenter;
 
 class WebsiteOurServicePresenter extends AbstractPresenter
 {
@@ -39,13 +41,7 @@ class WebsiteOurServicePresenter extends AbstractPresenter
                     "description_ar"=> $department->getTranslation('description',"ar"),
                     "description_en"=> $department->getTranslation('description',"en"),
                     'type' => $department->type->value,
-                    'website_services' => $department->websiteServices->map(function ($service) {
-                        return [
-                            'id' => $service->id,
-                            'name' => $service->name,
-                            'reference_number' => $service->reference_number,
-                        ];
-                    })->toArray(),
+                    'website_services' => WebsiteServicePresenter::collection($department->websiteServices),
                 ];
             })->toArray();
         }

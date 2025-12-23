@@ -318,7 +318,7 @@ class UserAttendanceService
         });
         
         $canClockIn = $isActive && !$hasActiveAttendance;
-        // dd($canClockIn);
+
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,

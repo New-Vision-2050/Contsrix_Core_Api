@@ -18,15 +18,22 @@ class LocationTrackingService
      * Appends new tracking points to an existing attendance record.
      *
      * @param Attendance $attendance The attendance record to update.
-     * @param array $newPoints An array of LocationTrackingPoint data objects.
+     * @param array $newPoints An array of LocationTrackingPoint data objects or enhanced arrays.
      */
     public function addTrackingPoints(Attendance $attendance, array $newPoints): void
     {
         // Get existing tracking data, or an empty array if none exists.
         $existingTracking = $attendance->location_tracking ?? [];
-
+        
         // Convert the new LocationTrackingPoint objects to arrays.
-        $newPointsAsArray = array_map(fn($point) => $point->toArray(), $newPoints);
+
+        $newPointsAsArray = array_map(function($point) {
+            if ($point instanceof \Modules\Attendance\DataClasses\LocationTrackingPoint) {
+                return $point->toArray();
+            }
+            // If it's already an array (enhanced tracking point), return as is
+            return $point;
+        }, $newPoints);
 
         // Merge the old and new tracking points.
         $mergedTracking = array_merge($existingTracking, $newPointsAsArray);
@@ -76,8 +83,42 @@ class LocationTrackingService
         ->get();
     }
 
-    public function getTodayLastAttendancePerUser()
-{
+    /**
+     * Handle geofence events (enter/exit)
+     *
+     * @param Attendance $attendance
+     * @param \Modules\Attendance\DataClasses\LocationTrackingPoint $trackingPoint
+     * @param string $action
+     * @param string $geofenceId
+     */
+    public function handleGeofenceEvent(Attendance $attendance, $trackingPoint, string $action, string $geofenceId): void
+    {
+        // Get existing geofence events, or an empty array if none exists
+        $existingGeofenceEvents = $attendance->geofence_events ?? [];
+        
+        // Create new geofence event
+        $geofenceEvent = [
+            'geofence_id' => $geofenceId,
+            'action' => $action, // enter or exit
+            'latitude' => $trackingPoint->latitude,
+            'longitude' => $trackingPoint->longitude,
+            'timestamp' => $trackingPoint->timestamp,
+            'created_at' => now()->toISOString()
+        ];
+        
+        // Add the new event
+        $existingGeofenceEvents[] = $geofenceEvent;
+        
+        // Update the attendance record
+        $attendance->geofence_events = $existingGeofenceEvents;
+        $attendance->save();
+        
+        // Also add as a regular tracking point
+        $this->addTrackingPoints($attendance, [$trackingPoint]);
+    }
 
-}
+    public function getTodayLastAttendancePerUser()
+    {
+
+    }
 }

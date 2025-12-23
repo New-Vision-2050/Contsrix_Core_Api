@@ -44,14 +44,66 @@ class LocationTrackingController
     {
         $trackingPoints = $request->getTrackingPoints();
 
-
-        $attendance= $this->attendanceService->getCurrentAttendance($request->user()->id);
+        $attendance = $this->attendanceService->getCurrentAttendance($request->user()->id);
         if (!$attendance) {
             return Json::error('No active attendance found for the user.');
         }
-        $this->trackingService->addTrackingPoints($attendance, $trackingPoints);
+
+        $processedData = [];
+        $hasMockLocation = false;
+
+        // Prepare all tracking points for batch save
+        $allTrackingPoints = [];
+        
+        // Process each tracking point
+        foreach ($trackingPoints as $trackingData) {
+            $trackingPoint = $trackingData['point'];
+            $type = $trackingData['type'];
+            $isMock = $trackingData['is_mock'];
+
+            // Check for mock locations
+            if ($isMock) {
+                $hasMockLocation = true;
+            }
+
+            // Create enhanced tracking point with additional metadata
+            $enhancedTrackingPoint = $trackingPoint->toArray();
+            $enhancedTrackingPoint['type'] = $type;
+            $enhancedTrackingPoint['is_mock'] = $isMock;
+            
+            // Add type-specific data
+            if ($type === 'track') {
+                $enhancedTrackingPoint['gps_status'] = $trackingData['gps_status'];
+            } elseif ($type === 'geofence') {
+                $enhancedTrackingPoint['action'] = $trackingData['action'];
+                $enhancedTrackingPoint['geofence_id'] = $trackingData['geofence_id'];
+            }
+            
+            $enhancedTrackingPoint['processed_at'] = now()->toISOString();
+            $allTrackingPoints[] = $enhancedTrackingPoint;
+
+            $processedData[] = [
+                'type' => $type,
+                'is_mock' => $isMock,
+                'processed_at' => now()->toISOString()
+            ];
+        }
+        
+        // Save all tracking points to location_tracking field
+        if (!empty($allTrackingPoints)) {
+            $this->trackingService->addTrackingPoints($attendance, $allTrackingPoints);
+        }
+
+        // Return error if any mock location detected
+        if ($hasMockLocation) {
+            return Json::error('Mock location detected. Please enable real GPS location.', 422);
+        }
+
         $this->constraintService->validateAttendance($attendance, $request->all());
 
-        return Json::success('Location data stored successfully.');
+        return Json::success('Location data stored successfully.', 200, [
+            'processed_count' => count($processedData),
+            'processed_data' => $processedData
+        ]);
     }
 }
