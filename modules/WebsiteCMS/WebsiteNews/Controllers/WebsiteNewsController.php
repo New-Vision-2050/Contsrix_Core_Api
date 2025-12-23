@@ -77,6 +77,15 @@ class WebsiteNewsController extends Controller
         return Json::deleted();
     }
 
+    public function updateStatus(GetWebsiteNewsRequest $request): JsonResponse
+    {
+        $item = $this->websiteNewsService->toggleStatus(Uuid::fromString($request->route('id')));
+
+        $presenter = new WebsiteNewsPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
     /**
      * Export websitenews to a file
      *
