@@ -33,10 +33,14 @@ class UserAttendanceService
     public function getUserConstraints(UuidInterface|string $userId, ?string $date = null): array
     {
         $user = User::findOrFail($userId);
-        $targetDate = $date ?? Carbon::now()->format('Y-m-d');
-        $dateCarbon = Carbon::parse($targetDate);
+        
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        
+        $targetDate = $date ?? Carbon::now($timezone)->format('Y-m-d');
+        $dateCarbon = Carbon::parse($targetDate, $timezone);
 
-        $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $date);
+        // Always pass the resolved target date to ensure consistency
+        $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate);
         $attendances = $this->getAttendancesForDate($user, $dateCarbon);
 
         if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
@@ -87,10 +91,15 @@ class UserAttendanceService
      */
     private function getAttendancesForDate(User $user, Carbon $date): Collection
     {
+        // Ensure we're using the correct timezone for date comparison
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $dateInTz = $date->copy()->setTimezone($timezone);
+        $dateString = $dateInTz->format('Y-m-d');
+        
         return Attendance::where('user_id', $user->id)
-            ->where(function ($query) use ($date) {
-                $query->whereDate('start_time', $date->format('Y-m-d'))
-                    ->orWhereDate('clock_in_time', $date->format('Y-m-d'));
+            ->where(function ($query) use ($dateString) {
+                $query->whereDate('start_time', $dateString)
+                    ->orWhereDate('clock_in_time', $dateString);
             })
             ->orderBy('start_time')
             ->get();
@@ -106,14 +115,18 @@ class UserAttendanceService
      */
     private function enhancePeriodsWithAttendance(array $periods, Collection $attendances, Carbon $date): array
     {
-        $now = Carbon::now();
-        
-        return array_map(function ($period) use ($attendances, $date, $now) {
+        return array_map(function ($period) use ($attendances, $date) {
             $periodStart = $this->parsePeriodTime($period, 'start', $date);
             $periodEnd = $this->parsePeriodTime($period, 'end', $date);
 
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
+            
+            // Get consistent timezone
+            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $now = Carbon::now($timezone);
+            
+            // Since parsePeriodTime already returns times in correct timezone, use them directly
             $isActive = $this->isPeriodActive($periodStart, $periodEnd, $now);
 
             return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive);
@@ -133,12 +146,17 @@ class UserAttendanceService
         $carbonKey = "period_{$type}_time_carbon";
         $timeKey = "{$type}_time";
 
+        // Get consistent timezone
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+
         if (isset($period[$carbonKey])) {
             $time = $period[$carbonKey];
-            return $time instanceof Carbon ? $time : Carbon::parse($time);
+            $carbonTime = $time instanceof Carbon ? $time : Carbon::parse($time);
+            return $carbonTime->setTimezone($timezone);
         }
 
-        $time = Carbon::parse($date->format('Y-m-d') . ' ' . $period[$timeKey]);
+        // Parse time with consistent timezone
+        $time = Carbon::parse($date->format('Y-m-d') . ' ' . $period[$timeKey], $timezone);
 
         if ($type === 'end' && ($period['extends_to_next_day'] ?? false)) {
             $time->addDay();
@@ -159,16 +177,40 @@ class UserAttendanceService
     {
         return $attendances
             ->filter(function ($attendance) use ($periodStart, $periodEnd) {
-                // Use clock_in_time for matching to periods (actual time, not scheduled start_time)
-                if (!$attendance->clock_in_time) {
-                    return false;
+                // Normalize attendance times with awareness of timezone column if present
+                $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
+
+                // clock-in based match (actual event)
+                $clockInCarbon = null;
+                if ($attendance->clock_in_time) {
+                    $clockInCarbon = $attendance->clock_in_time instanceof Carbon
+                        ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
+                        : Carbon::parse($attendance->clock_in_time, $attendanceTz);
+                        
+                    $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
+                    if ($clockInInPeriodTz->between($periodStart, $periodEnd, true)) {
+                        return true;
+                    }
                 }
-                
-                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
-                    ? $attendance->clock_in_time 
-                    : Carbon::parse($attendance->clock_in_time);
-                
-                return $clockInCarbon->between($periodStart, $periodEnd, true);
+                $attStart = $this->getAttendanceTime($attendance, 'start');
+                $attEnd = $this->getAttendanceTime($attendance, 'end');
+                if ($attStart) {
+                    $attStart = $attStart instanceof Carbon ? $attStart->copy() : Carbon::parse((string) $attStart, $attendanceTz);
+                    $attStart->setTimezone($periodStart->getTimezone());
+                }
+                if ($attEnd) {
+                    $attEnd = $attEnd instanceof Carbon ? $attEnd->copy() : Carbon::parse((string) $attEnd, $attendanceTz);
+                    $attEnd->setTimezone($periodStart->getTimezone());
+                } else {
+                    $attEnd = Carbon::now($periodStart->getTimezone());
+                }
+
+                if ($attStart) {
+                    // Overlap if attendanceStart <= periodEnd AND attendanceEnd >= periodStart
+                    return $attStart->lessThanOrEqualTo($periodEnd) && $attEnd->greaterThanOrEqualTo($periodStart);
+                }
+
+                return false;
             })
             ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance))
             ->values()
@@ -276,7 +318,7 @@ class UserAttendanceService
         });
         
         $canClockIn = $isActive && !$hasActiveAttendance;
-        
+
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,
@@ -371,12 +413,13 @@ class UserAttendanceService
         int $perPage = 10
     ): array {
         $user = User::findOrFail($userId);
-        $now = Carbon::now();
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $now = Carbon::now($timezone);
         $currentYear = $year ?? $now->year;
         $currentMonth = $month ?? $now->month;
 
-        // Build query for attendance records
-        $query = Attendance::where('user_id', $user->id)
+        // First, get unique dates for pagination
+        $datesQuery = Attendance::where('user_id', $user->id)
             ->where(function ($q) use ($currentYear, $currentMonth) {
                 $q->where(function ($subQ) use ($currentYear, $currentMonth) {
                     $subQ->whereNotNull('start_time')
@@ -393,18 +436,30 @@ class UserAttendanceService
                     }
                 });
             })
-            ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
-            ->get();
+            ->selectRaw('DATE(COALESCE(start_time, clock_in_time)) as attendance_date')
+            ->distinct()
+            ->orderBy('attendance_date', 'DESC');
 
-        // Group attendances by date
-        $groupedByDate = $query->groupBy(function ($attendance) {
-            $date = $attendance->start_time ?? $attendance->clock_in_time;
-            return Carbon::parse($date)->format('Y-m-d');
-        });
+        // Count total unique dates for pagination
+        $totalDates = $datesQuery->count();
+        $lastPage = (int) ceil($totalDates / $perPage);
+        $offset = ($page - 1) * $perPage;
+
+        // Get paginated dates
+        $paginatedDates = $datesQuery->offset($offset)->limit($perPage)->pluck('attendance_date');
 
         $result = [];
-        foreach ($groupedByDate as $dateString => $attendances) {
-            $dateCarbon = Carbon::parse($dateString);
+        foreach ($paginatedDates as $dateString) {
+            $dateCarbon = Carbon::parse($dateString, $timezone);
+            
+            // Get attendances for this specific date
+            $attendances = Attendance::where('user_id', $user->id)
+                ->where(function ($q) use ($dateString) {
+                    $q->whereDate('start_time', $dateString)
+                      ->orWhereDate('clock_in_time', $dateString);
+                })
+                ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
+                ->get();
             
             // Get work rules for this date
             $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
@@ -428,24 +483,16 @@ class UserAttendanceService
             ];
         }
 
-        // Sort by date descending
-        usort($result, function ($a, $b) {
-            return strcmp($b['date'], $a['date']);
-        });
-
-        // Paginate
-        $total = count($result);
-        $offset = ($page - 1) * $perPage;
-        $paginatedResult = array_slice($result, $offset, $perPage);
+        $paginatedResult = $result;
 
         return [
             'data' => $paginatedResult,
             'pagination' => [
                 'page' => $page,
                 'per_page' => $perPage,
-                'total' => $total,
-                'last_page' => (int) ceil($total / $perPage),
-                'next_page' => $page < ceil($total / $perPage) ? $page + 1 : null,
+                'total' => $totalDates,
+                'last_page' => $lastPage,
+                'next_page' => $page < $lastPage ? $page + 1 : null,
                 'result_count' => count($paginatedResult),
             ],
         ];

@@ -37,11 +37,10 @@ class AttendanceService
 
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
-        $constraints = $constraintService->getTodaysWorkRulesForUser($user);
-        $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'];
-        
-        $timezone = getTimeZoneByRequest()?? config('app.timezone');
-        $date = Carbon::now()->format('Y-m-d');
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $currentDate = Carbon::now($timezone)->format('Y-m-d');
+        $constraints = $constraintService->getTodaysWorkRulesForUser($user, $currentDate);
+        $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'] ?? false;
 
 
         $periodStartTime = data_get($constraints, 'current_work_period.start_time');
@@ -49,11 +48,8 @@ class AttendanceService
         $day_status = 'in_loction';
 
 
-        $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
-        $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
-
-        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodStartTime, $timezone);
-        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodEndTime, timezone: $timezone);
+        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodStartTime, $timezone);
+        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodEndTime, $timezone);
 
         if ($startDateTime->gt($endDateTime)) {
             $endDateTime->addDay();
@@ -90,8 +86,8 @@ class AttendanceService
             'company_id' => $clockInDTO->getCompanyId(),
             'clock_in_time' => $clockInDTO->getClockInTime(),
             'clock_in_location' => $clockInDTO->getLocation(),
-            'start_time' => $startDateTime,
-            'end_time' => $endDateTime,
+            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
+            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
             'notes' => $clockInDTO->getNotes(),
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
@@ -100,7 +96,7 @@ class AttendanceService
             'is_late' => 0,
             'is_holiday' => 0,
             'day_status' => $day_status,
-            'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
+            'timezone' => $timezone,
         ];
         $attendance = Attendance::where('start_time',$startDateTime)
         ->whereNull('clock_in_time')->first();
