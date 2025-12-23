@@ -74,6 +74,8 @@ class WebsiteAboutUsWebsitePresenter extends AbstractPresenter
                     'icon_url' => $icon->getFirstMediaUrl('icon') ?: null,
                 ];
             })->toArray();
+        }else{
+            $data['company_icons'] = [];
         }
 
         return $data;
