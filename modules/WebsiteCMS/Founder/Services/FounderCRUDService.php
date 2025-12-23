@@ -46,4 +46,14 @@ class FounderCRUDService
             id: $id,
         );
     }
+
+    public function toggleStatus(UuidInterface $id): Founder
+    {
+        $founder = $this->repository->getFounder($id);
+        
+        $newStatus = $founder->status === 1 ? 0 : 1;
+        
+        $this->websiteHomePageService->clearCache();
+        return $this->repository->updateFounder($id, ['status' => $newStatus]);
+    }
 }
