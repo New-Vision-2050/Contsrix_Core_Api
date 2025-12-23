@@ -96,7 +96,7 @@ class WebsiteNewsController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'website_news.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new WebsiteNewsExport($this->websiteNewsService, $filters), $fileName);
     }
 }
