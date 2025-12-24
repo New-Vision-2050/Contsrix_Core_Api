@@ -19,7 +19,19 @@ class TrackLocationRequest extends FormRequest
     {
         $input = $this->all();
         
-        // If input is a single object (has 'type' key directly), wrap it in an array
+        if (isset($input['tracking_points'])) {
+            $tp = $input['tracking_points'];
+            if (is_array($tp)) {
+                $isAssoc = array_keys($tp) !== range(0, count($tp) - 1);
+                if ($isAssoc && isset($tp['type'])) {
+                    $this->replace([$tp]);
+                    return;
+                }
+                $this->replace($tp);
+                return;
+            }
+        }
+
         if (isset($input['type']) && is_string($input['type'])) {
             $this->replace([$input]);
         }
