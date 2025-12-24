@@ -12,9 +12,8 @@ class WebsiteIconFilter extends SearchModelFilter
 
     public function name($name)
     {
-        return $this->where(function ($query) use ($name) {
-            $query->where('name->ar', 'like', '%' . $name . '%')
-                  ->orWhere('name->en', 'like', '%' . $name . '%');
+        return $this->whereHas("translations",function ($query) use ($name) {
+            $query->where('content', 'like', '%' . $name . '%');
         });
     }
 
