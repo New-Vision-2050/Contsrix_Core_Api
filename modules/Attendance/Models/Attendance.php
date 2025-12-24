@@ -700,19 +700,32 @@ class Attendance extends Model implements Auditable
 
         // 7. Calculate Late and Early Departure
         // *** IMPROVED: Get scheduled start and end times from user/company settings ***
-        $scheduledStartTimeString = $this->start_time ?? $this->user->start_time ?? '09:00';
-        $scheduledEndTimeString = $this->end_time ?? $this->user->end_time ?? '17:00';
+        $scheduledStartCandidate = $this->start_time ?? $this->user->start_time ?? '09:00';
+        $scheduledEndCandidate = $this->end_time ?? $this->user->end_time ?? '17:00';
+
+        // Normalize possible Carbon or datetime strings to plain time strings (H:i:s)
+        if ($scheduledStartCandidate instanceof \Carbon\Carbon) {
+            $scheduledStartTimeString = $scheduledStartCandidate->format('H:i:s');
+        } else {
+            $scheduledStartTimeString = (string) $scheduledStartCandidate;
+            if (is_string($scheduledStartCandidate) && (str_contains($scheduledStartCandidate, 'T') || str_contains($scheduledStartCandidate, ' '))) {
+                $scheduledStartTimeString = \Carbon\Carbon::parse($scheduledStartCandidate)->format('H:i:s');
+            }
+        }
+
+        if ($scheduledEndCandidate instanceof \Carbon\Carbon) {
+            $scheduledEndTimeString = $scheduledEndCandidate->format('H:i:s');
+        } else {
+            $scheduledEndTimeString = (string) $scheduledEndCandidate;
+            if (is_string($scheduledEndCandidate) && (str_contains($scheduledEndCandidate, 'T') || str_contains($scheduledEndCandidate, ' '))) {
+                $scheduledEndTimeString = \Carbon\Carbon::parse($scheduledEndCandidate)->format('H:i:s');
+            }
+        }
+
         try {
             $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
             $scheduledEndTime = $clockIn->copy()->setTimeFromTimeString($scheduledEndTimeString);
         } catch (\Exception $e) {
-            Log::warning('Invalid scheduled start or end time format.  Using defaults.', [
-                'user_id' => $this->user_id,
-                'company_id' => $this->company_id,
-                'scheduled_start_time' => $scheduledStartTimeString,
-                'scheduled_end_time' => $scheduledEndTimeString,
-                'error' => $e->getMessage(),
-            ]);
             // Fallback to default values if parsing fails
             $scheduledStartTime = $clockIn->copy()->setHour(9)->setMinute(0)->setSecond(0);
             $scheduledEndTime = $clockIn->copy()->setHour(17)->setMinute(0)->setSecond(0);

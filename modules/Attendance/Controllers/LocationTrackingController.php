@@ -70,13 +70,26 @@ class LocationTrackingController
             $enhancedTrackingPoint = $trackingPoint->toArray();
             $enhancedTrackingPoint['type'] = $type;
             $enhancedTrackingPoint['is_mock'] = $isMock;
+            // Map device uuid & accuracy if provided by client
+            if (!empty($trackingData['uuid'])) {
+                $enhancedTrackingPoint['uuid'] = $trackingData['uuid'];
+                // keep device_id in sync for backward compatibility
+                $enhancedTrackingPoint['device_id'] = $trackingData['uuid'];
+            }
+            if (isset($trackingData['accuracy'])) {
+                $enhancedTrackingPoint['accuracy'] = (float) $trackingData['accuracy'];
+            }
             
             // Add type-specific data
             if ($type === 'track') {
                 $enhancedTrackingPoint['gps_status'] = $trackingData['gps_status'];
+                $enhancedTrackingPoint['event'] = 'location';
             } elseif ($type === 'geofence') {
                 $enhancedTrackingPoint['action'] = $trackingData['action'];
                 $enhancedTrackingPoint['geofence_id'] = $trackingData['geofence_id'];
+                // New naming as requested by mobile payload
+                $enhancedTrackingPoint['geofence_action'] = $trackingData['action'];
+                $enhancedTrackingPoint['event'] = 'geofence';
             }
             
             $enhancedTrackingPoint['processed_at'] = now()->toISOString();
