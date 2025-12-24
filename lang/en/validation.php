@@ -278,6 +278,9 @@ return [
     'attributes' => [
         "job_type_id"=>"Job type",
         "manager_id"=>"manager",
+        "name"=>"name",
+        "name_ar"=>"name",
+        "name_en"=>"name",
         "state_id"=>"state",
         "city_id"=>"city",
         "country_id"=>"country",
@@ -551,5 +554,9 @@ return [
         'day_off_or_weekend'=> 'day off or weekend',
         'in_loction'=>'in loction',
         'clocked_out'=> 'clocked out'
-    ]
+    ],
+    
+    'unique_translation' => 'The :locale :attribute has already been taken.',
+    'arabic' => 'Arabic',
+    'english' => 'English',
 ];
