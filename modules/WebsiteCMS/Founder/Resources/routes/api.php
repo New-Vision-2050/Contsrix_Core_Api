@@ -18,8 +18,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::post('/{id}', [FounderController::class, 'update'])
         ->permission(Permission::FOUNDER_UPDATE());
-    Route::patch('/{id}/toggle-status', [FounderController::class, 'toggleStatus'])
-        ->permission(Permission::FOUNDER_UPDATE());
+    Route::patch('/{id}/toggle-status', [FounderController::class, 'toggleStatus']);
     Route::delete('/{id}', [FounderController::class, 'delete'])
         ->permission(Permission::FOUNDER_DELETE());
 });
