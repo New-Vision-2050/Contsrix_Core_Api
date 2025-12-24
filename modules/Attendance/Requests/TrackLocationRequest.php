@@ -12,8 +12,22 @@ use Modules\Attendance\DataClasses\LocationTrackingPoint;
 class TrackLocationRequest extends FormRequest
 {
     /**
+     * Prepare the data for validation.
+     * Normalize single object to array format.
+     */
+    protected function prepareForValidation()
+    {
+        $input = $this->all();
+        
+        // If input is a single object (has 'type' key directly), wrap it in an array
+        if (isset($input['type']) && is_string($input['type'])) {
+            $this->replace([$input]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
-     * Updated to support array of tracking data with both track and geofence types.
+     * Supports both array of tracking data and single object.
      */
     public function rules(): array
     {
@@ -39,18 +53,31 @@ class TrackLocationRequest extends FormRequest
      */
     protected function failedValidation(Validator $validator)
     {
-        $expectedFormat = [[
+        $expectedFormatSingle = [
             'type' => 'track|geofence',
             'lat' => 0.0,
             'lng' => 0.0,
             'is_mock' => false,
             'timestamp' => '2025-12-23T19:08:00Z',
+            'uuid' => 'device-identifier (optional)',
+            'accuracy' => 5.0,
             'gps_status' => 'required when type=track',
             'action' => 'enter|exit (required when type=geofence)',
             'id' => 'geofence_identifier (required when type=geofence)',
-        ]];
+        ];
 
-        $example = [
+        $exampleSingle = [
+            'type' => 'track',
+            'lat' => 29.996442,
+            'lng' => 30.9024529,
+            'is_mock' => false,
+            'gps_status' => 'enabled',
+            'timestamp' => '2025-12-23T19:08:00Z',
+            'uuid' => 'iPhone-14-Pro',
+            'accuracy' => 7.5,
+        ];
+
+        $exampleArray = [
             [
                 'type' => 'track',
                 'lat' => 29.996442,
@@ -58,15 +85,19 @@ class TrackLocationRequest extends FormRequest
                 'is_mock' => false,
                 'gps_status' => 'enabled',
                 'timestamp' => '2025-12-23T19:08:00Z',
+                'uuid' => 'iPhone-14-Pro',
+                'accuracy' => 7.5,
             ],
             [
                 'type' => 'geofence',
                 'lat' => 29.996442,
                 'lng' => 30.9024529,
-                'action' => 'enter',
+                'action' => 'ENTER',
                 'id' => 'office_main_branch',
                 'is_mock' => false,
                 'timestamp' => '2025-12-23T19:08:00Z',
+                'uuid' => 'iPhone-14-Pro',
+                'accuracy' => 6.2,
             ],
         ];
 
@@ -74,8 +105,10 @@ class TrackLocationRequest extends FormRequest
             'success' => false,
             'message' => 'فشل التحقق من الصحة',
             'errors' => $validator->errors(),
-            'expected_format' => $expectedFormat,
-            'example' => $example,
+            'note' => 'يمكنك إرسال كائن واحد أو مصفوفة من الكائنات / You can send a single object or an array of objects',
+            'expected_format' => $expectedFormatSingle,
+            'example_single_object' => $exampleSingle,
+            'example_array' => $exampleArray,
             'received' => $this->all(),
         ], 422));
     }
