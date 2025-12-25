@@ -114,9 +114,10 @@ class LocationTrackingController
 
         $this->constraintService->validateAttendance($attendance, $request->all());
 
-        return Json::success('Location data stored successfully.', 200, [
+        return Json::success('Location data stored successfully.', [
+            'payload' => method_exists($request, 'getOriginalPayload') ? $request->getOriginalPayload() : $request->all(),
             'processed_count' => count($processedData),
-            'processed_data' => $processedData
+            'processed_data' => $processedData,
         ]);
     }
 }
