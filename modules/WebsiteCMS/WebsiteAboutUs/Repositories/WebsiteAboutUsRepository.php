@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\WebsiteCMS\WebsiteAboutUs\Repositories;
 
+use App\Exceptions\CustomException;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -141,7 +142,8 @@ class WebsiteAboutUsRepository extends BaseRepository
             if ($projectTypes !== null) {
                 $websiteAboutUs->projectTypes()->delete();
                 foreach ($projectTypes as $projectType) {
-                    $websiteAboutUs->projectTypes()->create([
+                    WebsiteAboutUsProjectType::create([
+                        "website_about_us_id"=>$websiteAboutUs->id,
                         'title' => [
                             'ar' => $projectType['title_ar'],
                             'en' => $projectType['title_en'],
@@ -151,29 +153,65 @@ class WebsiteAboutUsRepository extends BaseRepository
                 }
             }
 
-            // Update attachments - delete old and create new
+            // Update attachments with smart sync logic
             if ($attachments !== null) {
-                // Delete old attachments and their files
-                foreach ($websiteAboutUs->attachments as $oldAttachment) {
+                // Collect incoming attachment IDs
+                $incomingIds = collect($attachments)
+                    ->pluck('id')
+                    ->filter()
+                    ->toArray();
+
+                // Delete attachments not in incoming data
+                $attachmentsToDelete = $websiteAboutUs->attachments()
+                    ->whereNotIn('id', $incomingIds)
+                    ->get();
+
+                foreach ($attachmentsToDelete as $oldAttachment) {
                     $oldAttachment->clearMediaCollection('attachment');
                     $oldAttachment->delete();
                 }
 
-                // Create new attachments
+                // Process each attachment
                 foreach ($attachments as $attachmentData) {
-                    $attachment = $websiteAboutUs->attachments()->create([
-                        'name' => $attachmentData['name'],
-                    ]);
 
-                    // Upload attachment file
-                    if (isset($attachmentData['attachment'])) {
-                        $this->fileUploadService->uploadFile(
-                            $attachment,
-                            $attachmentData['attachment'],
-                            'website-about-us/attachments',
-                            'attachment',
-                            'public'
-                        );
+                    if ($attachmentData['id'] != null && $attachmentData['id'] != "null") {
+                        // Update existing attachment
+                        $attachment = WebsiteAboutUsAttachment::find($attachmentData['id']);
+
+                        if ($attachment) {
+                            $attachment->update([
+                                'name' => $attachmentData['name'],
+                            ]);
+
+                            // Update attachment file if provided
+                            if (isset($attachmentData['attachment'])) {
+                                $attachment->clearMediaCollection('attachment');
+                                $this->fileUploadService->uploadFile(
+                                    $attachment,
+                                    $attachmentData['attachment'],
+                                    'website-about-us/attachments',
+                                    'attachment',
+                                    'public'
+                                );
+                            }
+                        }
+                    } else {
+
+                        // Create new attachment (id is null)
+                        $attachment = $websiteAboutUs->attachments()->create([
+                            'name' => $attachmentData['name'],
+                        ]);
+
+                        // Upload attachment file
+                        if (isset($attachmentData['attachment'])) {
+                            $this->fileUploadService->uploadFile(
+                                $attachment,
+                                $attachmentData['attachment'],
+                                'website-about-us/attachments',
+                                'attachment',
+                                'public'
+                            );
+                        }
                     }
                 }
             }
