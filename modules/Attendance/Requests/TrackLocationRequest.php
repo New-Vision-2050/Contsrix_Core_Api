@@ -11,6 +11,8 @@ use Modules\Attendance\DataClasses\LocationTrackingPoint;
 
 class TrackLocationRequest extends FormRequest
 {
+    private array $originalPayload = [];
+
     /**
      * Prepare the data for validation.
      * Normalize single object to array format.
@@ -18,6 +20,7 @@ class TrackLocationRequest extends FormRequest
     protected function prepareForValidation()
     {
         $input = $this->all();
+        $this->originalPayload = is_array($input) ? $input : [];
         
         if (isset($input['tracking_points'])) {
             $tp = $input['tracking_points'];
@@ -35,6 +38,11 @@ class TrackLocationRequest extends FormRequest
         if (isset($input['type']) && is_string($input['type'])) {
             $this->replace([$input]);
         }
+    }
+
+    public function getOriginalPayload(): array
+    {
+        return $this->originalPayload;
     }
 
     /**
