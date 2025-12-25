@@ -15,7 +15,12 @@ class WebsiteAboutUsAttachment extends Model implements HasMedia
     use  UuidTrait, InteractsWithMedia;
 
     protected $table = 'website_about_us_attachments';
+    public $incrementing = false;
 
+    protected $keyType = 'string';
+    protected $casts = [
+        'id' => 'string',
+    ];
     protected $fillable = [
         'website_about_us_id',
         'name',
