@@ -15,6 +15,7 @@ use Modules\WebsiteCMS\WebsiteNews\Requests\DeleteWebsiteNewsRequest;
 use Modules\WebsiteCMS\WebsiteNews\Requests\GetWebsiteNewsListRequest;
 use Modules\WebsiteCMS\WebsiteNews\Requests\GetWebsiteNewsRequest;
 use Modules\WebsiteCMS\WebsiteNews\Requests\UpdateWebsiteNewsRequest;
+use Modules\WebsiteCMS\WebsiteNews\Requests\ToggleStatusRequest;
 use Modules\WebsiteCMS\WebsiteNews\Services\WebsiteNewsCRUDService;
 use Modules\WebsiteCMS\WebsiteNews\Exports\WebsiteNewsExport;
 use Modules\WebsiteCMS\WebsiteNews\Requests\ExportWebsiteNewsRequest;
@@ -75,6 +76,16 @@ class WebsiteNewsController extends Controller
         $this->deleteWebsiteNewsHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function toggleStatus(ToggleStatusRequest $request): JsonResponse
+    {
+        $id = Uuid::fromString($request->route('id'));
+        $item = $this->websiteNewsService->toggleStatus($id);
+        
+        $presenter = new WebsiteNewsPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 
     /**
