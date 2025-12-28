@@ -8,7 +8,7 @@ enum SocialMediaType: string
 {
     case FACEBOOK = 'facebook';
     case LINKEDIN = 'linkedin';
-    case X = 'x';
+    case X = 'twitter';
     case YOUTUBE = 'youtube';
     case INSTAGRAM = 'instagram';
     case TIKTOK = 'tiktok';
