@@ -11,7 +11,6 @@ class UpdateStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|integer|in:0,1',
         ];
     }
 }
