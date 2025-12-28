@@ -24,4 +24,10 @@ class SocialMediaLinkFilter extends SearchModelFilter
     {
         return $this->where('link', 'like', '%' . $link . '%');
     }
+    public function search($link)
+    {
+        return $this->where('link', 'like', '%' . $link . '%');
+    }
+
+
 }
