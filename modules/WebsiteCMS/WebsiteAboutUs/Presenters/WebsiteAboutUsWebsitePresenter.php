@@ -78,6 +78,35 @@ class WebsiteAboutUsWebsitePresenter extends AbstractPresenter
             $data['company_icons'] = [];
         }
 
+
+
+        if ($this->websiteAboutUs->relationLoaded('approvalIcons') && $this->websiteAboutUs->is_approvals) {
+            $data['approval_icons'] = $this->websiteAboutUs->approvalIcons->map(function ($icon) {
+                return [
+                    'id' => $icon->id,
+                    'name' => $icon->name,
+                    'category_type' => $icon->website_icon_category_type->value,
+                    'icon_url' => $icon->getFirstMediaUrl('icon') ?: null,
+                ];
+            })->toArray();
+        }else{
+            $data['approval_icons'] = [];
+        }
+
+
+        if ($this->websiteAboutUs->relationLoaded('certificateIcons') && $this->websiteAboutUs->is_certificates) {
+            $data['certificate_icons'] = $this->websiteAboutUs->certificateIcons->map(function ($icon) {
+                return [
+                    'id' => $icon->id,
+                    'name' => $icon->name,
+                    'category_type' => $icon->website_icon_category_type->value,
+                    'icon_url' => $icon->getFirstMediaUrl('icon') ?: null,
+                ];
+            })->toArray();
+        }else{
+            $data['certificate_icons'] = [];
+        }
+
         return $data;
     }
 }
