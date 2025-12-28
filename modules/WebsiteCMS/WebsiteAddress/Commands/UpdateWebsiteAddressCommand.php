@@ -11,6 +11,7 @@ class UpdateWebsiteAddressCommand
     public function __construct(
         private UuidInterface $id,
         private array $title,
+        private ?string $address = null,
         private ?float $latitude = null,
         private ?float $longitude = null,
         private int $status = 1,
@@ -27,6 +28,11 @@ class UpdateWebsiteAddressCommand
     public function getTitle(): array
     {
         return $this->title;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
     }
 
     public function getLatitude(): ?float
@@ -48,6 +54,7 @@ class UpdateWebsiteAddressCommand
     {
         return [
             'title' => $this->title,
+            'address' => $this->address,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'status' => $this->status,
