@@ -78,11 +78,11 @@ class WebsiteNewsController extends Controller
         return Json::deleted();
     }
 
-    public function toggleStatus(ToggleStatusRequest $request): JsonResponse
+    public function toggleStatus(GetWebsiteNewsListRequest $request): JsonResponse
     {
         $id = Uuid::fromString($request->route('id'));
         $item = $this->websiteNewsService->toggleStatus($id);
-        
+
         $presenter = new WebsiteNewsPresenter($item);
 
         return Json::item($presenter->getData());
@@ -98,7 +98,7 @@ class WebsiteNewsController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'website_news.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new WebsiteNewsExport($this->websiteNewsService, $filters), $fileName);
     }
 }
