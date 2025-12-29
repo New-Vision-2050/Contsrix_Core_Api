@@ -34,4 +34,11 @@ class WebsiteContactMessageFilter extends SearchModelFilter
     {
         return $this->where('message', 'like', '%' . $message . '%');
     }
+
+    public function search($message)
+    {
+        return $this->where('message', 'like', '%' . $message . '%')
+           ->orWhere('name', 'like', '%' . $message . '%')
+           ->orWhere('email', 'like', '%' . $message . '%');
+    }
 }
