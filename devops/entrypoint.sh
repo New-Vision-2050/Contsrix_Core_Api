@@ -57,7 +57,14 @@ log "Optimizing Laravel..."
 php artisan config:clear || log "Config clear failed (non-critical)"
 php artisan config:cache || log "Config cache failed (non-critical)"
 php artisan route:clear || log "Route clear failed (non-critical)"
+php artisan route:cache || log "Route cache failed (non-critical)"
 php artisan view:clear || log "View clear failed (non-critical)"
+php artisan view:cache || log "View cache failed (non-critical)"
+php artisan event:cache || log "Event cache failed (non-critical)"
+
+# Install Octane (downloads RoadRunner binary if not present)
+log "Setting up Octane..."
+php artisan octane:install --server=roadrunner --no-interaction || log "Octane already installed (non-critical)"
 
 log "Container initialization completed successfully"
 
