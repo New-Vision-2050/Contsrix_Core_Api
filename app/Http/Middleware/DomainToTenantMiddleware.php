@@ -7,12 +7,18 @@ namespace App\Http\Middleware;
 use App\Exceptions\CustomException;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Modules\Company\CompanyCore\Models\Domain;
 use Modules\WebsiteCMS\WebsiteTheme\Models\WebsiteTheme;
 use Symfony\Component\HttpFoundation\Response;
 
 class DomainToTenantMiddleware
 {
+    /**
+     * Cache TTL in seconds (1 hour)
+     */
+    private const CACHE_TTL = 3600;
+
     /**
      * Handle an incoming request.
      *
@@ -27,18 +33,24 @@ class DomainToTenantMiddleware
 
         // If X-Domain header is present
         if ($domainName) {
-            // Find the domain in the database
-            $domain = Domain::where('domain', $domainName)->first();
-            if (!$domain)
-            {
-                $domain = WebsiteTheme::where('url', $domainName)->firstOrFail();
+            // Use cache to avoid database query on every request
+            $companyId = Cache::remember(
+                "domain_to_tenant:{$domainName}",
+                self::CACHE_TTL,
+                function () use ($domainName) {
+                    $domain = Domain::where('domain', $domainName)->first();
+                    if (!$domain) {
+                        $domain = WebsiteTheme::where('url', $domainName)->first();
+                    }
+                    return $domain?->company_id;
+                }
+            );
 
-            }
             // If domain exists, set the X-Tenant header with the company_id
-            if ($domain) {
-                $request->headers->set('X-Tenant', (string)$domain->company_id);
+            if ($companyId) {
+                $request->headers->set('X-Tenant', (string)$companyId);
                 if(empty($request->get('company_id')) && $request->method() !='GET'){
-                    $request->merge(['company_id'=>(string)$domain->company_id]);
+                    $request->merge(['company_id'=>(string)$companyId]);
                 }
             }
         }
