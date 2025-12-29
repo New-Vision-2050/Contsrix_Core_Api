@@ -1,5 +1,6 @@
 <?php
 
+use App\Listeners\FlushTenancyState;
 use Laravel\Octane\Contracts\OperationTerminated;
 use Laravel\Octane\Events\RequestHandled;
 use Laravel\Octane\Events\RequestReceived;
@@ -75,7 +76,8 @@ return [
         ],
 
         RequestTerminated::class => [
-            //FlushTemporaryContainerInstances::class,
+            FlushTenancyState::class,
+            FlushTemporaryContainerInstances::class,
         ],
 
         TaskReceived::class => [
@@ -124,7 +126,9 @@ return [
     ],
 
     'flush' => [
-        //
+        // Flush tenancy-related bindings between requests
+        \Stancl\Tenancy\Tenancy::class,
+        \Spatie\Permission\PermissionRegistrar::class,
     ],
 
     /*
