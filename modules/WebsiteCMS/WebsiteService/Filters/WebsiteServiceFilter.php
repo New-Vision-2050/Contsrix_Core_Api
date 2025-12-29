@@ -18,6 +18,15 @@ class WebsiteServiceFilter extends SearchModelFilter
         });
     }
 
+
+    public function search($name)
+    {
+        return $this->whereHas("translations",function ($q) use ($name) {
+            $q->where('content', 'like', '%' . $name . '%')
+                ->orWhere('content', 'like', '%' . $name . '%');
+        });
+    }
+
     public function referenceNumber($referenceNumber)
     {
         return $this->where('reference_number', $referenceNumber);

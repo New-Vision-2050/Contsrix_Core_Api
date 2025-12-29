@@ -18,6 +18,15 @@ class WebsiteOurServiceFilter extends SearchModelFilter
         });
     }
 
+
+    public function search($title)
+    {
+        return $this->where(function ($query) use ($title) {
+            $query->where('title->ar', 'like', '%' . $title . '%')
+                  ->orWhere('title->en', 'like', '%' . $title . '%');
+        });
+    }
+
     public function status($status)
     {
         return $this->where('status', $status);

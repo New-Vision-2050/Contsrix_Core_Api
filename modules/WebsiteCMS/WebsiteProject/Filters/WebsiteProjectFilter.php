@@ -17,6 +17,13 @@ class WebsiteProjectFilter extends SearchModelFilter
         });
     }
 
+    public function search($name)
+    {
+        return $this->whereHas("translations",function ($q)use ($name){
+            $q->where("content", "like", "%{$name}%");
+        });
+    }
+
     public function status($status)
     {
         return $this->where("status", $status);
