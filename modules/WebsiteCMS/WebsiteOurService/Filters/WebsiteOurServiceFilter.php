@@ -13,8 +13,8 @@ class WebsiteOurServiceFilter extends SearchModelFilter
     public function title($title)
     {
         return $this->where(function ($query) use ($title) {
-            $query->where('title->ar', 'like', '%' . $title . '%')
-                  ->orWhere('title->en', 'like', '%' . $title . '%');
+            $query->where('content', 'like', '%' . $title . '%')
+                  ->orWhere('content', 'like', '%' . $title . '%');
         });
     }
 
@@ -22,8 +22,8 @@ class WebsiteOurServiceFilter extends SearchModelFilter
     public function search($title)
     {
         return $this->where(function ($query) use ($title) {
-            $query->where('title->ar', 'like', '%' . $title . '%')
-                  ->orWhere('title->en', 'like', '%' . $title . '%');
+            $query->where('content', 'like', '%' . $title . '%')
+                  ->orWhere('content', 'like', '%' . $title . '%');
         });
     }
 
