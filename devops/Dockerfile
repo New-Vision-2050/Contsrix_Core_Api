@@ -10,10 +10,11 @@ FROM mabou7agar/custom-nginx-php8-2
 #    && docker-php-ext-install sockets \
 #    && docker-php-ext-enable imagick sockets
 
-# Install zip extension
+# Install zip extension and curl for RoadRunner download
 RUN apt-get update && apt-get install -y \
-    libzip-dev zip unzip \
-    && docker-php-ext-install zip
+    libzip-dev zip unzip curl \
+    && docker-php-ext-install zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ARG CACHEBUST=1
 ## Set working directory
@@ -48,6 +49,9 @@ RUN mkdir -p bootstrap/cache && \
 
 ## Install Laravel dependencies
 RUN composer install --no-scripts
+
+# Download RoadRunner binary
+RUN ./vendor/bin/rr get-binary --location /usr/local/bin
 
 EXPOSE 80
 

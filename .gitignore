@@ -23,3 +23,5 @@ yarn-error.log
 /.zed
 
 .qodo
+rr
+.rr.yaml
