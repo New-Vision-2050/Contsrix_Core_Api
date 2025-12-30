@@ -42,7 +42,7 @@ class AttendanceController extends Controller
 
     /**
      * Clock in employee
-     */
+     */   
     public function clockIn(ClockInRequest $request): JsonResponse
     {
         try {
@@ -50,7 +50,7 @@ class AttendanceController extends Controller
             $rawRequestData = $request->all();
             // Ensure all downstream logic uses a unified timezone
             $rawRequestData['timezone'] = getTimeZoneByRequest() ?? config('app.timezone');
-
+ 
             $violations = $this->mockAttendanceService->handleClockInProcess($clockInDTO, $rawRequestData);
 
             if (!empty($violations)) {
