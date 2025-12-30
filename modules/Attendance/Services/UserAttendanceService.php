@@ -36,10 +36,10 @@ class UserAttendanceService
     {
         $user = User::findOrFail($userId);
         
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $timezone = $this->getTimezone();
         
-        $targetDate = $date ?? Carbon::now($timezone)->format('Y-m-d');
-        $dateCarbon = Carbon::parse($targetDate, $timezone);
+        $targetDate = $date ?? $this->now()->format('Y-m-d');
+        $dateCarbon = $this->parseDateTime($targetDate, $timezone);
 
         // Always pass the resolved target date to ensure consistency
         $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate);
@@ -256,7 +256,7 @@ class UserAttendanceService
                 $totalHoursPresent = round($clockInCarbon->diffInMinutes($clockOutCarbon) / 60, 2);
             } else {
                 // If still active, calculate from clock_in to now
-                $totalHoursPresent = round($clockInCarbon->diffInMinutes(Carbon::now()) / 60, 2);
+                $totalHoursPresent = round($clockInCarbon->diffInMinutes($this->now()) / 60, 2);
             }
         }
 
@@ -393,23 +393,27 @@ class UserAttendanceService
         int $perPage = 10
     ): array {
         $user = User::findOrFail($userId);
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
-        $now = Carbon::now($timezone);
+        $timezone = $this->getTimezone();
+        $now = $this->now();
         $currentYear = $year ?? $now->year;
         $currentMonth = $month ?? $now->month;
 
-        // Build date range (datetime) for the month, capped at today endOfDay
+        // Build date range in user's timezone, then convert to UTC for database query
         $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
         $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
         $rangeEnd = $monthEnd->gt($now) ? $now->copy()->endOfDay() : $monthEnd;
 
+        // Convert to UTC for database query (database stores times in UTC)
+        $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
+        $rangeEndUtc = $rangeEnd->copy()->setTimezone('UTC');
+
         // Single query to get all attendances for the month window (sargable ranges)
         $allAttendances = Attendance::where('user_id', $user->id)
-            ->where(function ($q) use ($rangeStart, $rangeEnd) {
-                $q->whereBetween('start_time', [$rangeStart, $rangeEnd])
-                  ->orWhere(function ($q2) use ($rangeStart, $rangeEnd) {
+            ->where(function ($q) use ($rangeStartUtc, $rangeEndUtc) {
+                $q->whereBetween('start_time', [$rangeStartUtc, $rangeEndUtc])
+                  ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
                       $q2->whereNull('start_time')
-                         ->whereBetween('clock_in_time', [$rangeStart, $rangeEnd]);
+                         ->whereBetween('clock_in_time', [$rangeStartUtc, $rangeEndUtc]);
                   });
             })
             ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
@@ -421,8 +425,7 @@ class UserAttendanceService
             if (!$dateField) {
                 return null;
             }
-            $dt = $dateField instanceof Carbon ? $dateField->copy() : Carbon::parse($dateField);
-            return $dt->setTimezone($timezone)->toDateString();
+            return $this->parseDateTime($dateField, $timezone)->toDateString();
         })->filter(fn($group, $key) => $key !== null);
 
         // Get unique dates sorted descending
@@ -436,7 +439,7 @@ class UserAttendanceService
 
         $result = [];
         foreach ($paginatedDates as $dateString) {
-            $dateCarbon = Carbon::parse($dateString, $timezone);
+            $dateCarbon = $this->parseDateTime($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
             // Build simple periods directly from attendances without heavy constraint lookups
@@ -505,17 +508,13 @@ class UserAttendanceService
             if (isset($attendance->total_work_hours) && $attendance->total_work_hours > 0) {
                 $totalWorkHours = (float) $attendance->total_work_hours;
             } elseif ($attendance->clock_in_time) {
-                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
-                    ? $attendance->clock_in_time 
-                    : Carbon::parse($attendance->clock_in_time);
+                $clockInCarbon = $this->parseDateTime($attendance->clock_in_time);
                 
                 if ($attendance->clock_out_time) {
-                    $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
-                        ? $attendance->clock_out_time 
-                        : Carbon::parse($attendance->clock_out_time);
+                    $clockOutCarbon = $this->parseDateTime($attendance->clock_out_time);
                     $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon);
                 } else {
-                    $workMinutes = $clockInCarbon->diffInMinutes(Carbon::now());
+                    $workMinutes = $clockInCarbon->diffInMinutes($this->now());
                 }
                 $totalWorkHours = round($workMinutes / 60, 2);
             }
@@ -614,13 +613,11 @@ class UserAttendanceService
                         : Carbon::parse($attendance->clock_in_time);
                     
                     if ($attendance->clock_out_time) {
-                        $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
-                            ? $attendance->clock_out_time 
-                            : Carbon::parse($attendance->clock_out_time);
+                        $clockOutCarbon = $this->parseDateTime($attendance->clock_out_time);
                         $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon);
                     } else {
                         // If no clock_out, calculate from clock_in to now
-                        $workMinutes = $clockInCarbon->diffInMinutes(Carbon::now());
+                        $workMinutes = $clockInCarbon->diffInMinutes($this->now());
                     }
                     $totalWorkHours += round($workMinutes / 60, 2);
                 }
@@ -726,6 +723,46 @@ class UserAttendanceService
         $h = intval($minutes / 60);
         $m = $minutes % 60;
         return sprintf('%02d:%02d', $h, $m);
+    }
+
+    /**
+     * Get the resolved timezone for the current request
+     *
+     * @return string
+     */
+    private function getTimezone(): string
+    {
+        return function_exists('getTimeZoneByRequest') 
+            ? (getTimeZoneByRequest() ?? config('app.timezone')) 
+            : config('app.timezone');
+    }
+
+    /**
+     * Get current time in the resolved timezone
+     *
+     * @return Carbon
+     */
+    private function now(): Carbon
+    {
+        return Carbon::now($this->getTimezone());
+    }
+
+    /**
+     * Parse a datetime value with proper timezone handling
+     *
+     * @param mixed $value The datetime value to parse
+     * @param string|null $timezone Optional timezone override
+     * @return Carbon
+     */
+    private function parseDateTime($value, ?string $timezone = null): Carbon
+    {
+        $tz = $timezone ?? $this->getTimezone();
+        
+        if ($value instanceof Carbon) {
+            return $value->copy()->setTimezone($tz);
+        }
+        
+        return Carbon::parse($value, $tz);
     }
 }
 

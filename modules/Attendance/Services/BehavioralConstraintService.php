@@ -156,8 +156,9 @@ class BehavioralConstraintService extends BaseConstraintService implements Behav
         }
         
         // Add current attendance duration or estimated duration
-        $clockIn = Carbon::parse($attendance->clock_in_time);
-        $clockOut = $attendance->clock_out_time ? Carbon::parse($attendance->clock_out_time) : Carbon::now();
+        $timezone = $attendance->timezone ?? getTimeZoneByRequest() ?? config('app.timezone');
+        $clockIn = Carbon::parse($attendance->clock_in_time, $timezone);
+        $clockOut = $attendance->clock_out_time ? Carbon::parse($attendance->clock_out_time, $timezone) : Carbon::now($timezone);
         $totalMinutes += $clockIn->diffInMinutes($clockOut);
         
         $totalHours = $totalMinutes / 60;

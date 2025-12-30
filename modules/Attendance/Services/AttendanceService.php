@@ -292,7 +292,7 @@ class AttendanceService
                 'is_absent' => true,
                 'id' => Uuid::uuid4(),
                 // Add start_time and end_time for proper grouping
-                'start_time' => Carbon::now()->format('Y-m-d H:i:s'),
+                'start_time' => Carbon::now('UTC')->format('Y-m-d H:i:s'),
                 'end_time' => null
             ]);
 
@@ -612,8 +612,8 @@ class AttendanceService
             return false; // Cannot end an inactive or already completed shift
         }
 
-        // Set clock out time to current time
-        $timestamp = Carbon::now();
+        // Set clock out time to current time in UTC for database storage
+        $timestamp = Carbon::now('UTC');
         $updateData = [
             'clock_out_time' => $timestamp,
             'status' => Attendance::STATUS_COMPLETED,
