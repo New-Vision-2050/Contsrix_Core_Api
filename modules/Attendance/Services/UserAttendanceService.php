@@ -15,6 +15,7 @@ use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class UserAttendanceService
 {
@@ -397,24 +398,31 @@ class UserAttendanceService
         $currentYear = $year ?? $now->year;
         $currentMonth = $month ?? $now->month;
 
-        // Build date range for the month to use simple BETWEEN instead of YEAR/MONTH functions
-        $startDate = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth()->toDateString();
+        // Build date range (datetime) for the month, capped at today endOfDay
+        $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
         $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
-        // Don't get dates after today
-        $endDate = $monthEnd->gt($now) ? $now->toDateString() : $monthEnd->toDateString();
+        $rangeEnd = $monthEnd->gt($now) ? $now->copy()->endOfDay() : $monthEnd;
 
-        // Single query to get all attendances for the month, grouped by date
+        // Single query to get all attendances for the month window (sargable ranges)
         $allAttendances = Attendance::where('user_id', $user->id)
-            ->where(function ($q) use ($startDate, $endDate) {
-                $q->whereBetween(DB::raw('DATE(COALESCE(start_time, clock_in_time))'), [$startDate, $endDate]);
+            ->where(function ($q) use ($rangeStart, $rangeEnd) {
+                $q->whereBetween('start_time', [$rangeStart, $rangeEnd])
+                  ->orWhere(function ($q2) use ($rangeStart, $rangeEnd) {
+                      $q2->whereNull('start_time')
+                         ->whereBetween('clock_in_time', [$rangeStart, $rangeEnd]);
+                  });
             })
             ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
             ->get();
 
-        // Group attendances by date
-        $attendancesByDate = $allAttendances->groupBy(function ($attendance) {
+        // Group attendances by date in the request timezone
+        $attendancesByDate = $allAttendances->groupBy(function ($attendance) use ($timezone) {
             $dateField = $attendance->start_time ?? $attendance->clock_in_time;
-            return $dateField ? Carbon::parse($dateField)->toDateString() : null;
+            if (!$dateField) {
+                return null;
+            }
+            $dt = $dateField instanceof Carbon ? $dateField->copy() : Carbon::parse($dateField);
+            return $dt->setTimezone($timezone)->toDateString();
         })->filter(fn($group, $key) => $key !== null);
 
         // Get unique dates sorted descending
@@ -431,8 +439,14 @@ class UserAttendanceService
             $dateCarbon = Carbon::parse($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
-            // Use the same work rules/periods used by user-constraint/today, then enhance with attendance
-            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
+            // Use the same work rules/periods used by user-constraint/today, with caching per user/date
+            $workRules = Cache::remember(
+                "attendance:work_rules:" . (string) $user->id . ":" . $dateString,
+                300,
+                function () use ($user, $dateString) {
+                    return $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
+                }
+            );
             $periods = $workRules['all_work_periods'] ?? [];
             $periodsWithAttendance = $this->enhancePeriodsWithAttendance($periods, $attendances, $dateCarbon);
 
