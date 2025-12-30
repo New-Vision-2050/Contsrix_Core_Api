@@ -14,6 +14,7 @@ use Modules\Attendance\Services\AttendanceService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
+use Illuminate\Support\Facades\DB;
 
 class UserAttendanceService
 {
@@ -418,55 +419,40 @@ class UserAttendanceService
         $currentYear = $year ?? $now->year;
         $currentMonth = $month ?? $now->month;
 
-        // First, get unique dates for pagination
-        $datesQuery = Attendance::where('user_id', $user->id)
-            ->where(function ($q) use ($currentYear, $currentMonth) {
-                $q->where(function ($subQ) use ($currentYear, $currentMonth) {
-                    $subQ->whereNotNull('start_time')
-                        ->whereYear('start_time', $currentYear);
-                    if ($currentMonth) {
-                        $subQ->whereMonth('start_time', $currentMonth);
-                    }
-                })->orWhere(function ($subQ) use ($currentYear, $currentMonth) {
-                    $subQ->whereNull('start_time')
-                        ->whereNotNull('clock_in_time')
-                        ->whereYear('clock_in_time', $currentYear);
-                    if ($currentMonth) {
-                        $subQ->whereMonth('clock_in_time', $currentMonth);
-                    }
-                });
-            })
-            ->selectRaw('DATE(COALESCE(start_time, clock_in_time)) as attendance_date')
-            ->distinct()
-            ->orderBy('attendance_date', 'DESC');
+        // Build date range for the month to use simple BETWEEN instead of YEAR/MONTH functions
+        $startDate = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth()->toDateString();
+        $endDate = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth()->toDateString();
 
-        // Count total unique dates for pagination
-        $totalDates = $datesQuery->count();
+        // Single query to get all attendances for the month, grouped by date
+        $allAttendances = Attendance::where('user_id', $user->id)
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween(DB::raw('DATE(COALESCE(start_time, clock_in_time))'), [$startDate, $endDate]);
+            })
+            ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
+            ->get();
+
+        // Group attendances by date
+        $attendancesByDate = $allAttendances->groupBy(function ($attendance) {
+            $dateField = $attendance->start_time ?? $attendance->clock_in_time;
+            return $dateField ? Carbon::parse($dateField)->toDateString() : null;
+        })->filter(fn($group, $key) => $key !== null);
+
+        // Get unique dates sorted descending
+        $allDates = $attendancesByDate->keys()->sort()->reverse()->values();
+        $totalDates = $allDates->count();
         $lastPage = (int) ceil($totalDates / $perPage);
         $offset = ($page - 1) * $perPage;
 
-        // Get paginated dates
-        $paginatedDates = $datesQuery->offset($offset)->limit($perPage)->pluck('attendance_date');
+        // Paginate dates
+        $paginatedDates = $allDates->slice($offset, $perPage);
 
         $result = [];
         foreach ($paginatedDates as $dateString) {
             $dateCarbon = Carbon::parse($dateString, $timezone);
-            
-            // Get attendances for this specific date
-            $attendances = Attendance::where('user_id', $user->id)
-                ->where(function ($q) use ($dateString) {
-                    $q->whereDate('start_time', $dateString)
-                      ->orWhereDate('clock_in_time', $dateString);
-                })
-                ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
-                ->get();
-            
-            // Get work rules for this date
-            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
-            $periods = $workRules['all_work_periods'] ?? [];
+            $attendances = $attendancesByDate->get($dateString, collect());
 
-            // Match attendances to periods
-            $periodsWithAttendance = $this->matchAttendancesToPeriods($periods, $attendances, $dateCarbon);
+            // Simplified period calculation - avoid heavy getTodaysWorkRulesForUser call
+            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
 
             // Determine day status
             $dayStatus = $this->determineDayStatus($attendances);
@@ -483,19 +469,83 @@ class UserAttendanceService
             ];
         }
 
-        $paginatedResult = $result;
-
         return [
-            'data' => $paginatedResult,
+            'data' => $result,
             'pagination' => [
                 'page' => $page,
                 'per_page' => $perPage,
                 'total' => $totalDates,
                 'last_page' => $lastPage,
                 'next_page' => $page < $lastPage ? $page + 1 : null,
-                'result_count' => count($paginatedResult),
+                'result_count' => count($result),
             ],
         ];
+    }
+
+    /**
+     * Build periods data directly from attendances without heavy constraint lookups
+     */
+    private function buildPeriodsFromAttendances(Collection $attendances): array
+    {
+        if ($attendances->isEmpty()) {
+            return [];
+        }
+
+        $periods = [];
+        foreach ($attendances as $attendance) {
+            $clockInTime = null;
+            $clockOutTime = null;
+            $clockInLocation = null;
+            $clockOutLocation = null;
+
+            if ($attendance->clock_in_time) {
+                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
+                    ? $attendance->clock_in_time 
+                    : Carbon::parse($attendance->clock_in_time);
+                $clockInTime = $clockInCarbon->format('H:i');
+                $clockInLocation = $attendance->clock_in_location;
+            }
+
+            if ($attendance->clock_out_time) {
+                $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
+                    ? $attendance->clock_out_time 
+                    : Carbon::parse($attendance->clock_out_time);
+                $clockOutTime = $clockOutCarbon->format('H:i');
+                $clockOutLocation = $attendance->clock_out_location;
+            }
+
+            // Calculate work hours
+            $totalWorkHours = 0;
+            if (isset($attendance->total_work_hours) && $attendance->total_work_hours > 0) {
+                $totalWorkHours = (float) $attendance->total_work_hours;
+            } elseif ($attendance->clock_in_time) {
+                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
+                    ? $attendance->clock_in_time 
+                    : Carbon::parse($attendance->clock_in_time);
+                
+                if ($attendance->clock_out_time) {
+                    $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
+                        ? $attendance->clock_out_time 
+                        : Carbon::parse($attendance->clock_out_time);
+                    $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon);
+                } else {
+                    $workMinutes = $clockInCarbon->diffInMinutes(Carbon::now());
+                }
+                $totalWorkHours = round($workMinutes / 60, 2);
+            }
+
+            $periods[] = [
+                'clock_in_time' => $clockInTime,
+                'clock_out_time' => $clockOutTime,
+                'work_hours' => $this->formatHoursToTime($totalWorkHours),
+                'delay_hours' => $this->formatMinutesToTime((int) ($attendance->late_minutes ?? 0)),
+                'overtime_hours' => $this->formatHoursToTime((float) ($attendance->overtime_hours ?? 0)),
+                'clock_in_location' => $clockInLocation,
+                'clock_out_location' => $clockOutLocation,
+            ];
+        }
+
+        return $periods;
     }
 
     /**
