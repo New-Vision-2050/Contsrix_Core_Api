@@ -168,6 +168,7 @@ class UserAttendanceService
 
     /**
      * Find attendances that fall within a period
+     * Only matches attendance if clock_in_time is within the period boundaries
      *
      * @param Collection $attendances
      * @param Carbon $periodStart
@@ -178,42 +179,20 @@ class UserAttendanceService
     {
         return $attendances
             ->filter(function ($attendance) use ($periodStart, $periodEnd) {
-                // Normalize attendance times with awareness of timezone column if present
+                // Only match by clock_in_time - attendance belongs to the period where clock_in happened
+                if (!$attendance->clock_in_time) {
+                    return false;
+                }
+                
                 $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
-
-                // clock-in based match (actual event)
-                $clockInCarbon = null;
-                if ($attendance->clock_in_time) {
-                    $clockInCarbon = $attendance->clock_in_time instanceof Carbon
-                        ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
-                        : Carbon::parse($attendance->clock_in_time, $attendanceTz);
-                        
-                    $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
-                    if ($clockInInPeriodTz->between($periodStart, $periodEnd, true)) {
-                        return true;
-                    }
-                }
-                $attStart = $this->getAttendanceTime($attendance, 'start');
-                $attEnd = $this->getAttendanceTime($attendance, 'end');
-                if ($attStart) {
-                    $attStart = $attStart instanceof Carbon ? $attStart->copy() : Carbon::parse((string) $attStart, $attendanceTz);
-                    $attStart->setTimezone($periodStart->getTimezone());
-                }
-                if ($attEnd) {
-                    $attEnd = $attEnd instanceof Carbon ? $attEnd->copy() : Carbon::parse((string) $attEnd, $attendanceTz);
-                    $attEnd->setTimezone($periodStart->getTimezone());
-                } else {
-                    $attEnd = Carbon::now($periodStart->getTimezone());
-                }
-
-                if ($attStart) {
-                    // Overlap if attendanceStart <= periodEnd AND attendanceEnd >= periodStart
-                    return $attStart->lessThanOrEqualTo($periodEnd) && $attEnd->greaterThanOrEqualTo($periodStart);
-                }
-
-                return false;
+                $clockInCarbon = $attendance->clock_in_time instanceof Carbon
+                    ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
+                    : Carbon::parse($attendance->clock_in_time, $attendanceTz);
+                    
+                $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
+                return $clockInInPeriodTz->between($periodStart, $periodEnd, true);
             })
-            ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance))
+            ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance, $periodStart, $periodEnd))
             ->values()
             ->toArray();
     }
@@ -242,13 +221,12 @@ class UserAttendanceService
      * Format attendance data for period response
      *
      * @param Attendance $attendance
+     * @param Carbon $periodStart Period start time
+     * @param Carbon $periodEnd Period end time
      * @return array
      */
-    private function formatAttendanceForPeriod(Attendance $attendance): array
+    private function formatAttendanceForPeriod(Attendance $attendance, Carbon $periodStart, Carbon $periodEnd): array
     {
-        $startTime = $this->getAttendanceTime($attendance, 'start');
-        $endTime = $this->getAttendanceTime($attendance, 'end');
-        
         // Get clock_in_time and clock_out_time
         $clockInTime = null;
         $clockOutTime = null;
@@ -283,9 +261,9 @@ class UserAttendanceService
 
         return [
             'status' => $attendance->status ?? 'scheduled',
-            'date' => $startTime?->format('Y-m-d') ?? ($clockInTime ? $clockInCarbon->format('Y-m-d') : null),
-            'start_time' => $startTime?->format('H:i'),
-            'end_time' => $endTime?->format('H:i'),
+            'date' => $clockInCarbon?->format('Y-m-d') ?? $periodStart->format('Y-m-d'),
+            'start_time' => $periodStart->format('H:i'),
+            'end_time' => $periodEnd->format('H:i'),
             'clock_in_time' => $clockInTime,
             'clock_out_time' => $clockOutTime,
             'total_hours_present' => $totalHoursPresent,
