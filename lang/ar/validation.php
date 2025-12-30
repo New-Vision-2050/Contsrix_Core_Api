@@ -232,6 +232,8 @@ return [
         "job_type_id"=>"النوع الوظيفي",
         "description"=>"وصف",
         "name"=>"الاسم",
+        "name_ar"=>"الاسم",
+        "name_en"=>"الاسم",
         "state_id"=>"المحافظة",
         "city_id"=>"المدينة",
         "country_id"=>"الدوله",
@@ -516,5 +518,9 @@ return [
         'day_off_or_weekend'=>'اجازه',
         'in_loction'=>'في الموقع',
         'clocked_out'=> 'تم الانصراف'
-    ]
+    ],
+    
+    'unique_translation' => ':attribute بـ :locale مستخدم بالفعل.',
+    'arabic' => 'العربية',
+    'english' => 'الإنجليزية',
 ];

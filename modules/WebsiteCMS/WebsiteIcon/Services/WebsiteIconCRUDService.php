@@ -36,9 +36,19 @@ class WebsiteIconCRUDService
 
     public function list(int $page = 1, int $perPage = 10): array
     {
+        $orderBy = 'created_at';
+        $sortBy = 'desc';
+
+        if (request()->has("sort")) {
+            $orderBy = 'name';
+            $sortBy = request()->get("sort") === 'desc' ? 'desc' : 'asc';
+        }
+
         return $this->repository->paginated(
             page: $page,
             perPage: $perPage,
+            orderBy: $orderBy,
+            sortBy: $sortBy,
         );
     }
 

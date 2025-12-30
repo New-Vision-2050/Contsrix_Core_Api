@@ -14,6 +14,7 @@ class GetWebsiteIconListRequest extends FormRequest
         return [
             'per_page' => 'integer',
             'page' => 'integer',
+            'sort' => 'string|in:asc,desc',
         ];
     }
 }

@@ -43,4 +43,9 @@ class WebsiteNewsCRUDService
             id: $id,
         );
     }
+
+    public function toggleStatus(UuidInterface $id): WebsiteNews
+    {
+        return $this->repository->toggleStatus($id);
+    }
 }

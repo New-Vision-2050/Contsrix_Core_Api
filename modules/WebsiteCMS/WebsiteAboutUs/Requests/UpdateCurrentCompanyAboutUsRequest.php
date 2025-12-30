@@ -35,8 +35,9 @@ class UpdateCurrentCompanyAboutUsRequest extends FormRequest
 
             // Attachments array validation
             'attachments' => 'nullable|array',
+            'attachments.*.id' => 'nullable|string|max:255',
             'attachments.*.name' => 'required|string|max:255',
-            'attachments.*.attachment' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar|max:10240',
+            'attachments.*.attachment' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar|max:10240',
         ];
     }
 

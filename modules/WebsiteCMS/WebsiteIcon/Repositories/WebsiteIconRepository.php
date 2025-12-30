@@ -111,4 +111,42 @@ class WebsiteIconRepository extends BaseRepository
     {
         return $this->getIconsByCategory(WebsiteIconCategoryType::CERTIFICATES, $limit);
     }
+
+    public function paginated(
+        array $conditions = [],
+        int $page = 1,
+        int $perPage = 15,
+        string $orderBy = 'created_at',
+        string $sortBy = 'desc'
+    ): array
+    {
+        $query = $this->model
+            ->newQuery()
+            ->leftJoin('translations as t', function ($join) {
+                $join->on('website_icons.id', '=', 't.translatable_id')
+                    ->where('t.locale', app()->getLocale())
+                    ->where('t.field', 'name')->where('t.translatable_type', WebsiteIcon::class);
+            });
+
+        if ($orderBy === 'name') {
+            $query->orderBy('t.content', $sortBy);
+        } else {
+            $query->orderBy("website_icons.$orderBy", $sortBy);
+        }
+        $query->filter(request()->all());
+
+        $count = (clone $query)->distinct('website_icons.id')->count('website_icons.id');
+
+        $paginatedData = $query
+            ->select('website_icons.*')
+            ->forPage($page, $perPage)
+            ->get();
+
+        $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
+
+        return [
+            'pagination' => $paginationArray['pagination'],
+            'data' => $paginatedData,
+        ];
+    }
 }
