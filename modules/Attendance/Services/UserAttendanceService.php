@@ -439,20 +439,12 @@ class UserAttendanceService
             $dateCarbon = Carbon::parse($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
-            // Use the same work rules/periods used by user-constraint/today, with caching per user/date
-            $workRules = Cache::remember(
-                "attendance:work_rules:" . (string) $user->id . ":" . $dateString,
-                300,
-                function () use ($user, $dateString) {
-                    return $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
-                }
-            );
-            $periods = $workRules['all_work_periods'] ?? [];
-            $periodsWithAttendance = $this->enhancePeriodsWithAttendance($periods, $attendances, $dateCarbon);
+            // Build simple periods directly from attendances without heavy constraint lookups
+            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
 
-            // Determine day status from attendance; day name prefer from work rules for consistency
+            // Determine day status from attendance
             $dayStatus = $this->determineDayStatus($attendances);
-            $dayName = $workRules['day_name'] ?? $this->getDayNameArabic($dateCarbon);
+            $dayName = $this->getDayNameArabic($dateCarbon);
 
             $result[] = [
                 'date' => $dateString,
