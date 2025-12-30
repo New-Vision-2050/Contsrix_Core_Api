@@ -421,7 +421,9 @@ class UserAttendanceService
 
         // Build date range for the month to use simple BETWEEN instead of YEAR/MONTH functions
         $startDate = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth()->toDateString();
-        $endDate = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth()->toDateString();
+        $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
+        // Don't get dates after today
+        $endDate = $monthEnd->gt($now) ? $now->toDateString() : $monthEnd->toDateString();
 
         // Single query to get all attendances for the month, grouped by date
         $allAttendances = Attendance::where('user_id', $user->id)
