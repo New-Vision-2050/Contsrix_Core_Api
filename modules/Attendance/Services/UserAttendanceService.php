@@ -431,14 +431,14 @@ class UserAttendanceService
             $dateCarbon = Carbon::parse($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
-            // Simplified period calculation - avoid heavy getTodaysWorkRulesForUser call
-            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
+            // Use the same work rules/periods used by user-constraint/today, then enhance with attendance
+            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString);
+            $periods = $workRules['all_work_periods'] ?? [];
+            $periodsWithAttendance = $this->enhancePeriodsWithAttendance($periods, $attendances, $dateCarbon);
 
-            // Determine day status
+            // Determine day status from attendance; day name prefer from work rules for consistency
             $dayStatus = $this->determineDayStatus($attendances);
-
-            // Get day name in Arabic
-            $dayName = $this->getDayNameArabic($dateCarbon);
+            $dayName = $workRules['day_name'] ?? $this->getDayNameArabic($dateCarbon);
 
             $result[] = [
                 'date' => $dateString,
