@@ -65,7 +65,7 @@ class WebsiteAboutUsWebsitePresenter extends AbstractPresenter
 
 
         // Add company icons if loaded
-        if ($this->websiteAboutUs->relationLoaded('companyIcons')) {
+        if ($this->websiteAboutUs->relationLoaded('companyIcons') && $this->websiteAboutUs->is_companies) {
             $data['company_icons'] = $this->websiteAboutUs->companyIcons->map(function ($icon) {
                 return [
                     'id' => $icon->id,
