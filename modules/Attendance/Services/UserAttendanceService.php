@@ -96,12 +96,15 @@ class UserAttendanceService
         // Ensure we're using the correct timezone for date comparison
         $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
-        $dateString = $dateInTz->format('Y-m-d');
+        
+        // Convert date range to UTC for database query (database stores times in UTC)
+        $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
+        $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
         
         return Attendance::where('user_id', $user->id)
-            ->where(function ($query) use ($dateString) {
-                $query->whereDate('start_time', $dateString)
-                    ->orWhereDate('clock_in_time', $dateString);
+            ->where(function ($query) use ($dayStartUtc, $dayEndUtc) {
+                $query->whereBetween('start_time', [$dayStartUtc, $dayEndUtc])
+                    ->orWhereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
             })
             ->orderBy('start_time')
             ->get();

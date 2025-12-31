@@ -109,9 +109,14 @@ class AttendanceRepository extends BaseRepository
      */
     public function getCurrentAttendance(UuidInterface $userId): ?Attendance
     {
+        // Use user's timezone for "today" calculation, then convert to UTC for query
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $todayStart = \Carbon\Carbon::now($timezone)->startOfDay()->setTimezone('UTC');
+        $todayEnd = \Carbon\Carbon::now($timezone)->endOfDay()->setTimezone('UTC');
+        
         return Attendance::with('user')
             ->where('user_id', $userId)
-            ->whereDate('clock_in_time', today())
+            ->whereBetween('clock_in_time', [$todayStart, $todayEnd])
             ->whereNull('clock_out_time')
             ->first();
     }
@@ -177,8 +182,14 @@ class AttendanceRepository extends BaseRepository
      */
     public function getAttendanceByDate(string $userId, Carbon $date): ?Attendance
     {
+        // Convert date range to UTC for database query (database stores times in UTC)
+        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $dateInTz = $date->copy()->setTimezone($timezone);
+        $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
+        $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
+        
         return Attendance::where('user_id', $userId)
-            ->whereDate('clock_in_time', $date)
+            ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc])
             ->first();
     }
 
