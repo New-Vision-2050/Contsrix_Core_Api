@@ -141,15 +141,14 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // Work periods are stored in Riyadh timezone
-        $periodTimezone = getTimeZoneByRequest();
-        $requestTimezone = getTimeZoneByRequest() ?? config('app.timezone');
+        // Use user's timezone for time comparisons
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
         
         $violations = [];
 
         // Check clock-in time against shift start time
         if ($attendance->clock_in_time) {
-            $clockInTime = Carbon::parse($attendance->clock_in_time, $requestTimezone)->setTimezone($periodTimezone)->format('H:i');
+            $clockInTime = Carbon::parse($attendance->clock_in_time, $timezone)->format('H:i');
             $gracePeriodMinutes = (int)($config['grace_period_minutes'] ?? 0);
             // Calculate the latest allowed clock-in time with grace period
             $shiftStartWithGrace = Carbon::createFromFormat('H:i', $shiftStartTime)
@@ -164,7 +163,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         }
         // Check clock-out time against shift end time
         if ($attendance->clock_out_time) {
-            $clockOutTime = Carbon::parse($attendance->clock_out_time, $requestTimezone)->setTimezone($periodTimezone)->format('H:i');
+            $clockOutTime = Carbon::parse($attendance->clock_out_time, $timezone)->format('H:i');
             $earlyDepartureGraceMinutes = (int)($config['early_departure_grace_minutes'] ?? 0);
             // Calculate the earliest allowed clock-out time with grace period
             $shiftEndWithGrace = Carbon::createFromFormat('H:i', $shiftEndTime)
@@ -214,10 +213,9 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         }
 
         // 2. Get the user's clock-in time to determine the correct day and shift.
-        // Work periods are stored in Riyadh timezone
-        $periodTimezone = getTimeZoneByRequest();
-        $requestTimezone = getTimeZoneByRequest() ?? config('app.timezone');
-        $clockInTime = Carbon::parse($attendance->clock_in_time, $requestTimezone)->setTimezone($periodTimezone);
+        // Use user's timezone for time comparisons
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $clockInTime = Carbon::parse($attendance->clock_in_time, $timezone);
         $dayOfWeek = strtolower($clockInTime->format('l'));
 
         // 3. Find the correct shift period for that day from the main schedule.
@@ -238,8 +236,8 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         }
 
         // 4. Calculate the earliest allowed departure time.
-        $scheduledEndTime = Carbon::createFromTimeString($activePeriod['end_time'], $periodTimezone)->setDateFrom($clockInTime);
-        $clockOutTime = Carbon::parse($attendance->clock_out_time, $requestTimezone)->setTimezone($periodTimezone);
+        $scheduledEndTime = Carbon::createFromTimeString($activePeriod['end_time'], $timezone)->setDateFrom($clockInTime);
+        $clockOutTime = Carbon::parse($attendance->clock_out_time, $timezone);
 
         // Handle overnight shifts where end time is the next day.
         if ($scheduledEndTime->isBefore($clockInTime)) {
@@ -284,17 +282,16 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         $rules = $config['lateness_rules'] ?? [];
         if (!($rules['prevent_lateness'] ?? false)) return false;
 
-        // Work periods are stored in Riyadh timezone
-        $periodTimezone = getTimeZoneByRequest();
-        $requestTimezone = getTimeZoneByRequest() ?? config('app.timezone');
-        $clockInTime = Carbon::parse($attendance->clock_in_time, $requestTimezone)->setTimezone($periodTimezone);
+        // Use user's timezone for time comparisons
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $clockInTime = Carbon::parse($attendance->clock_in_time, $timezone);
 
         $daySchedule = $config['weekly_schedule'][strtolower($clockInTime->format('l'))] ?? null;
         $firstPeriod = $daySchedule['periods'][0] ?? null;
 
         if (!$firstPeriod || !isset($firstPeriod['start_time'])) return false;
 
-        $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'], $periodTimezone)->setDateFrom($clockInTime);
+        $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'], $timezone)->setDateFrom($clockInTime);
 
         // Calculate grace period based on lateness_period and lateness_unit
         $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
@@ -475,10 +472,9 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // Work periods are stored in Riyadh timezone - convert clock-in time to Riyadh for comparison
-        $periodTimezone = getTimeZoneByRequest();
-        $requestTimezone = getTimeZoneByRequest() ?? config('app.timezone');
-        $clockInTime = Carbon::parse($attendance->clock_in_time, $requestTimezone)->setTimezone($periodTimezone);
+        // Use user's timezone for both clock-in time and period comparison
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $clockInTime = Carbon::parse($attendance->clock_in_time, $timezone);
 
         // --- FIX 1: CHECK FOR HOLIDAYS FIRST ---
         // Holidays override the regular weekly schedule.
@@ -693,10 +689,9 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // Work periods are stored in Riyadh timezone - convert clock-in time to Riyadh
-        $periodTimezone = getTimeZoneByRequest();
-        $requestTimezone = getTimeZoneByRequest() ?? config('app.timezone');
-        $clockInTimeLocal = Carbon::parse($attendance->clock_in_time, $requestTimezone)->setTimezone($periodTimezone);
+        // Use user's timezone for time comparisons
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $clockInTimeLocal = Carbon::parse($attendance->clock_in_time, $timezone);
 
         $dayOfWeek = strtolower($clockInTimeLocal->format('l'));
         $daySchedule = $config['weekly_schedule'][$dayOfWeek] ?? null;
