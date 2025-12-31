@@ -61,10 +61,10 @@ class MockAttendanceService
                     }
                 }
 
-                // Period times are in user's timezone
+                // Period times - parse without timezone since clock_in_time is also without timezone
                 $periodDate = $period['date'] ?? $clockInCarbon->format('Y-m-d');
-                $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'), $timezone);
-                $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'), $timezone);
+                $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'));
+                $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'));
                 if (!empty($period['extends_to_next_day'])) {
                     $end->addDay();
                 }
