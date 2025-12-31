@@ -52,14 +52,22 @@ class CategoryWebsiteCMSCRUDService
         );
     }
 
-    public function getTypes(): array
+    public function getTypes(string $search = ''): array
     {
-        return collect(CategoryWebsiteCMSType::array())->map(function ($item) {
+        $types = collect(CategoryWebsiteCMSType::array())->map(function ($item) {
             return [
                 'id' => $item["value"],
                 'name' => CategoryWebsiteCMSType::lang($item["value"]),
             ];
-        })->toArray();
+        });
+
+        if (!empty($search)) {
+            $types = $types->filter(function ($item) use ($search) {
+                return stripos($item['name'], $search) !== false;
+            });
+        }
+
+        return $types->values()->toArray();
     }
 
     public function getAll(): Collection

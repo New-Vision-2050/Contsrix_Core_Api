@@ -79,7 +79,8 @@ class CategoryWebsiteCMSController extends Controller
 
     public function getCetegoryTypes()
     {
-        return Json::items($this->categoryWebsiteCMSService->getTypes());
+        $search = request()->get('search', '');
+        return Json::items($this->categoryWebsiteCMSService->getTypes($search));
     }
 
     public function all(): JsonResponse
