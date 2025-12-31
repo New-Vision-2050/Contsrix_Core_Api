@@ -696,14 +696,20 @@ class AttendanceService
         $query = $this->attendanceRepository->getQuery()
             ->whereIn('user_id', $userIds);
 
+        // Get timezone and convert to UTC for database query
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $dateInTz = $date->copy()->setTimezone($timezone);
+        
         if ($period && isset($period['start_time']) && isset($period['end_time'])) {
             // Check for records within the specific period on the given date
-            $startTime = Carbon::parse($date->toDateString() . ' ' . $period['start_time']);
-            $endTime = Carbon::parse($date->toDateString() . ' ' . $period['end_time']);
+            $startTime = Carbon::parse($dateInTz->toDateString() . ' ' . $period['start_time'], $timezone)->setTimezone('UTC');
+            $endTime = Carbon::parse($dateInTz->toDateString() . ' ' . $period['end_time'], $timezone)->setTimezone('UTC');
             $query->whereBetween('start_time', [$startTime, $endTime]);
         } else {
             // Fallback to checking the entire day if no period is specified
-            $query->whereDate('start_time', $date);
+            $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
+            $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
+            $query->whereBetween('start_time', [$dayStartUtc, $dayEndUtc]);
         }
 
         return $query->pluck('user_id')->all();
@@ -771,9 +777,15 @@ class AttendanceService
      */
     public function getWaitingUserIdsOnDate(Carbon $date, ?string $companyId = null): array
     {
+        // Convert date range to UTC for database query
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $dateInTz = $date->copy()->setTimezone($timezone);
+        $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
+        $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
+        
         $query = $this->attendanceRepository->getQuery()
             ->where('status', Attendance::STATUS_WAITING)
-            ->whereDate('clock_in_time', $date);
+            ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
 
         if ($companyId) {
             $query->where('company_id', $companyId);

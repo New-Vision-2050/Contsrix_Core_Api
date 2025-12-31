@@ -84,10 +84,11 @@ class ClockInRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Set default clock in time to now if not provided
+        // Set default clock in time to now if not provided (use user's timezone)
         if (!$this->has('clock_in_time')) {
+            $timezone = getTimeZoneByRequest() ?? config('app.timezone');
             $this->merge([
-                'clock_in_time' => now()->toDateTimeString()
+                'clock_in_time' => \Carbon\Carbon::now($timezone)->toDateTimeString()
             ]);
         }
 
