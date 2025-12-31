@@ -83,10 +83,10 @@ class ClockInRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Set default clock in time to now (current server time)
+        // Set default clock in time to now in Riyadh timezone (company timezone)
         if (!$this->has('clock_in_time')) {
             $this->merge([
-                'clock_in_time' => \Carbon\Carbon::now()->toDateTimeString()
+                'clock_in_time' => \Carbon\Carbon::now('Asia/Riyadh')->toDateTimeString()
             ]);
         }
 
