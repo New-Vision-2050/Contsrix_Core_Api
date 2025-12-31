@@ -37,11 +37,16 @@ class MockAttendanceService
     {
         $user = auth()->user();
 
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
-        $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime(), $timezone);
+        // Work periods are stored in Riyadh timezone (Asia/Riyadh)
+        $periodTimezone = getTimeZoneByRequest();
+        $requestTimezone = getTimeZoneByRequest() ?? config('app.timezone');
+        
+        // Parse clock-in time in request timezone, then convert to Riyadh for period comparison
+        $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime(), $requestTimezone);
+        $clockInRiyadh = $clockInCarbon->copy()->setTimezone($periodTimezone);
 
-        // Get constraints for the clock-in date in the same timezone
-        $userConstraints = $this->userAttendanceService->getUserConstraints((string) $user->id, $clockInCarbon->format('Y-m-d'));
+        // Get constraints for the clock-in date in Riyadh timezone
+        $userConstraints = $this->userAttendanceService->getUserConstraints((string) $user->id, $clockInRiyadh->format('Y-m-d'));
 
         $canClockIn = false;
         $activePeriod = null;
@@ -58,14 +63,16 @@ class MockAttendanceService
                     }
                 }
 
-                $periodDate = $period['date'] ?? $clockInCarbon->format('Y-m-d');
-                $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'), $timezone);
-                $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'), $timezone);
+                // Period times are in Riyadh timezone
+                $periodDate = $period['date'] ?? $clockInRiyadh->format('Y-m-d');
+                $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'), $periodTimezone);
+                $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'), $periodTimezone);
                 if (!empty($period['extends_to_next_day'])) {
                     $end->addDay();
                 }
 
-                if ($clockInCarbon->between($start, $end, true) && !$hasActiveAttendance) {
+                // Compare clock-in time (converted to Riyadh) with period times (in Riyadh)
+                if ($clockInRiyadh->between($start, $end, true) && !$hasActiveAttendance) {
                     $canClockIn = true;
                     $activePeriod = $period;
                     break;
@@ -99,7 +106,7 @@ class MockAttendanceService
         $mockAttendanceData = [
             'user_id'             => $user->id,
             'clock_in_time'       => $clockInDTO->getClockInTime(),
-            'timezone'            => $timezone,
+            'timezone'            => $requestTimezone,
             'clock_in_location'   => $clockInDTO->getLocation(),
             'ip_address'          => $clockInDTO->getIpAddress(),
             'user_agent'          => $clockInDTO->getUserAgent(),
