@@ -40,8 +40,8 @@ class MockAttendanceService
         // Get user's timezone from request
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
         
-        // Parse clock-in time in user's timezone (periods are also in user's timezone)
-        $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime(), $timezone);
+        // Parse clock-in time (already in correct timezone from request)
+        $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime());
 
         // Get constraints for the clock-in date in user's timezone
         $userConstraints = $this->userAttendanceService->getUserConstraints((string) $user->id, $clockInCarbon->format('Y-m-d'));
