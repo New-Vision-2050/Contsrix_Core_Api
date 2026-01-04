@@ -123,7 +123,6 @@ class AttendanceService
     {
         // Get current attendance
         $attendance = $this->attendanceRepository->getCurrentAttendance($clockOutDTO->getUserId());
-
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
@@ -132,17 +131,10 @@ class AttendanceService
             throw AttendanceException::alreadyClockedOut();
         }
 
-        // Validate clock out time
-        $clockOutTime = Carbon::parse($clockOutDTO->getClockOutTime());
-        $clockInTime = Carbon::parse($attendance->clock_in_time);
-
-        if ($clockOutTime->lt($clockInTime)) {
-            throw AttendanceException::invalidClockOutTime();
-        }
 
         // Update attendance record
         $updateData = [
-            'clock_out_time' => $clockOutDTO->getClockOutTime(),
+            'clock_out_time' => Carbon::parse($clockOutDTO->getClockOutTime())->setTimezone(getTimeZoneByRequest()),
             'clock_out_location' => $clockOutDTO->getLocation(),
             'notes' => $attendance->notes . ($clockOutDTO->getNotes() ? "\n" . $clockOutDTO->getNotes() : ''),
             'status' => 'completed',

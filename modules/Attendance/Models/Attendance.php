@@ -180,100 +180,37 @@ class Attendance extends Model implements Auditable
         }
     }
 
-    /**
-     * Get the display timezone (stored timezone or request timezone or default)
-     */
-    protected function getDisplayTimezone(): string
-    {
-        return $this->timezone 
-            ?? (function_exists('getTimeZoneByRequest') ? getTimeZoneByRequest() : null) 
-            ?? config('app.timezone');
-    }
-
     public function getClockInTimeAttribute($value)
     {
-        if ($value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->getDisplayTimezone());
-        }
+        // if ($this->timezone && $value) {
+        //     return Carbon::parse($value, timezone: 'UTC')->setTimezone($this->timezone);
+        // }
         return $value;
     }
 
     public function getClockOutTimeAttribute($value)
     {
-        if ($value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->getDisplayTimezone());
-        }
+        // if ($this->timezone && $value) {
+        //     return Carbon::parse($value,'r')->setTimezone($this->timezone);
+        // }
         return $value;
     }
 
     public function getStartTimeAttribute($value)
     {
-        if ($value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->getDisplayTimezone());
+        if ($this->timezone && $value) {
+            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
         }
         return $value;
     }
 
     public function getEndTimeAttribute($value)
     {
-        if ($value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->getDisplayTimezone());
+        if ($this->timezone && $value) {
+            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
         }
         return $value;
     }
-
-    /**
-     * Set clock_in_time - convert to UTC for storage
-     */
-    public function setClockInTimeAttribute($value)
-    {
-        if ($value) {
-            $carbon = $value instanceof Carbon ? $value : Carbon::parse($value);
-            $this->attributes['clock_in_time'] = $carbon->copy()->setTimezone('UTC');
-        } else {
-            $this->attributes['clock_in_time'] = null;
-        }
-    }
-
-    /**
-     * Set clock_out_time - convert to UTC for storage
-     */
-    public function setClockOutTimeAttribute($value)
-    {
-        if ($value) {
-            $carbon = $value instanceof Carbon ? $value : Carbon::parse($value);
-            $this->attributes['clock_out_time'] = $carbon->copy()->setTimezone('UTC');
-        } else {
-            $this->attributes['clock_out_time'] = null;
-        }
-    }
-
-    /**
-     * Set start_time - convert to UTC for storage
-     */
-    public function setStartTimeAttribute($value)
-    {
-        if ($value) {
-            $carbon = $value instanceof Carbon ? $value : Carbon::parse($value);
-            $this->attributes['start_time'] = $carbon->copy()->setTimezone('UTC');
-        } else {
-            $this->attributes['start_time'] = null;
-        }
-    }
-
-    /**
-     * Set end_time - convert to UTC for storage
-     */
-    public function setEndTimeAttribute($value)
-    {
-        if ($value) {
-            $carbon = $value instanceof Carbon ? $value : Carbon::parse($value);
-            $this->attributes['end_time'] = $carbon->copy()->setTimezone('UTC');
-        } else {
-            $this->attributes['end_time'] = null;
-        }
-    }
-
     /**
      * Get the user that owns the attendance record.
      */
@@ -748,7 +685,7 @@ class Attendance extends Model implements Auditable
         $this->total_break_hours = round($breakMinutes / 60, 2);
 
         // 5. Calculate Net Work Duration
-        $totalGrossMinutes = $this->clock_in_time->diffInMinutes($this->clock_out_time, false);
+        $totalGrossMinutes = $clockIn->diffInMinutes($clockOut, false);
         $workMinutes = $totalGrossMinutes - $breakMinutes;
         $workHours = $workMinutes > 0 ? round($workMinutes / 60, 2) : 0.0;
         $this->total_work_hours = $workHours;
