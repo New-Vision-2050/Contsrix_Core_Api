@@ -32,12 +32,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Defer mail config loading to avoid database query during bootstrap
         // This will only run when mail is actually needed
-//        $this->app->resolving('mailer', function () {
-//            try {
-//                (new MailClass())->setConfig();
-//            } catch (\Exception $e) {
-//                //skip if there is an error and we will use config from env file
-//            }
-//        });
+        $this->app->resolving('mailer', function () {
+            try {
+                (new MailClass())->setConfig();
+            } catch (\Exception $e) {
+                //skip if there is an error and we will use config from env file
+            }
+        });
     }
 }
