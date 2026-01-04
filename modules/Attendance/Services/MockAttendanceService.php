@@ -36,18 +36,19 @@ class MockAttendanceService
     public function handleClockInProcess(ClockInDTO $clockInDTO, array $rawRequestData)
     {
         $user = auth()->user();
-
         // Get user's timezone from request
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
         
         // Parse clock-in time (already in correct timezone from request)
         $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime());
-
+        
         // Get constraints for the clock-in date in user's timezone
         $userConstraints = $this->userAttendanceService->getUserConstraints((string) $user->id, $clockInCarbon->format('Y-m-d'));
-
+        
         $canClockIn = false;
         $activePeriod = null;
+        $matchedPeriod = null;
+        $matchedPeriodHasActiveAttendance = false;
 
         if (isset($userConstraints['work_rules']['all_work_periods'])) {
             foreach ($userConstraints['work_rules']['all_work_periods'] as $period) {
@@ -70,9 +71,14 @@ class MockAttendanceService
                 }
 
                 // Compare clock-in time with period times (both in user's timezone)
-                if ($clockInCarbon->between($start, $end, true) && !$hasActiveAttendance) {
-                    $canClockIn = true;
-                    $activePeriod = $period;
+                if ($clockInCarbon->between($start, $end, true)) {
+                    $matchedPeriod = $period;
+                    $matchedPeriodHasActiveAttendance = $hasActiveAttendance;
+
+                    if (!$hasActiveAttendance) {
+                        $canClockIn = true;
+                        $activePeriod = $period;
+                    }
                     break;
                 }
             }
@@ -84,6 +90,8 @@ class MockAttendanceService
             
             if (isset($userConstraints['work_rules']['day_status']) && $userConstraints['work_rules']['day_status'] !== 'work_day') {
                 $reason = 'Cannot clock in on non-working day.';
+            } elseif ($matchedPeriod !== null && $matchedPeriodHasActiveAttendance) {
+                $reason = 'You are already clocked in.';
             } elseif ($activePeriod === null) {
                 $reason = 'No active work period available for clock in.';
             } else {
@@ -116,8 +124,8 @@ class MockAttendanceService
 
         // Check lateness at clock-in time for the mock attendance
         //$mockAttendance->checkLateness();
-        $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData,true);
 
+        $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData,true);
         return $violations;
     }
 }

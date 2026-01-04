@@ -109,14 +109,9 @@ class AttendanceRepository extends BaseRepository
      */
     public function getCurrentAttendance(UuidInterface $userId): ?Attendance
     {
-        // Use user's timezone for "today" calculation, then convert to UTC for query
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
-        $todayStart = \Carbon\Carbon::now($timezone)->startOfDay()->setTimezone('UTC');
-        $todayEnd = \Carbon\Carbon::now($timezone)->endOfDay()->setTimezone('UTC');
-        
         return Attendance::with('user')
             ->where('user_id', $userId)
-            ->whereBetween('clock_in_time', [$todayStart, $todayEnd])
+            // ->whereDate('clock_in_time', today())
             ->whereNull('clock_out_time')
             ->first();
     }

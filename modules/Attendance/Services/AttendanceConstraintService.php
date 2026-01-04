@@ -68,7 +68,6 @@ class AttendanceConstraintService
         $user = $attendance->user;
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
-
         if ($constraints->isEmpty()) {
 
             return [
@@ -78,11 +77,12 @@ class AttendanceConstraintService
                 'details' => ['reason' => 'Missing GPS data from user.']
             ];
         }
+        
         foreach ($constraints as $constraint) {
             try {
-
+                
                 $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData,$isDryRun);
-
+                
                 if ($violation) {
                     $violations[] = $violation;
 
@@ -104,7 +104,6 @@ class AttendanceConstraintService
                 ]);
             }
         }
-
         return $violations;
     }
 
@@ -233,6 +232,10 @@ class AttendanceConstraintService
     {
         $violations = [];
         $constraints = $this->getApplicableConstraints($user);
+
+        if ($constraints->isEmpty()) {
+            return [];
+        }
 
         foreach ($constraints as $constraint) {
             // Only validate constraints that can be checked before attendance record creation
