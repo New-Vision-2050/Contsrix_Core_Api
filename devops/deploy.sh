@@ -31,28 +31,28 @@ echo "Found old images: $OLD_IMAGES"
 
 if [ "$APP_ENV" == "production" ]; then
      REPLICAS=1
-     EMAIL_HOST=smtp.stackmail.com
+     EMAIL_HOST=smtp.hostinger.com
      EMAIL_PORT=465
-     EMAIL_HOST_USER=admin@constrix-nv.com
-     EMAIL_HOST_PASSWORD="Ul6cade0c"
+     EMAIL_HOST_USER=vision@speedpharma.link
+     EMAIL_HOST_PASSWORD="G:1Wc;c;L9b"
      EMAIL_ENCRYPTION=tls
-     EMAIL_FROM_ADDRESS="admin@constrix.com"
+     EMAIL_FROM_ADDRESS="vision@speedpharma.link"
 elif [ "$APP_ENV" == "stage" ]; then
      REPLICAS=1
-     EMAIL_HOST=smtp.stackmail.com
+     EMAIL_HOST=smtp.hostinger.com
      EMAIL_PORT=465
-     EMAIL_HOST_USER=admin@constrix-nv.com
-     EMAIL_HOST_PASSWORD="Ul6cade0c"
+     EMAIL_HOST_USER=vision@speedpharma.link
+     EMAIL_HOST_PASSWORD="G:1Wc;c;L9b"
      EMAIL_ENCRYPTION=tls
-     EMAIL_FROM_ADDRESS="admin@constrix.com"
+     EMAIL_FROM_ADDRESS="vision@speedpharma.link"
 else
     REPLICAS=1
-    EMAIL_HOST=smtp.stackmail.com
+    EMAIL_HOST=smtp.hostinger.com
     EMAIL_PORT=465
-    EMAIL_HOST_USER=admin@constrix-nv.com
-    EMAIL_HOST_PASSWORD="Ul6cade0c"
+    EMAIL_HOST_USER=vision@speedpharma.link
+    EMAIL_HOST_PASSWORD="G:1Wc;c;L9b"
     EMAIL_ENCRYPTION=tls
-    EMAIL_FROM_ADDRESS="admin@constrix.com"
+    EMAIL_FROM_ADDRESS="vision@speedpharma.link"
 fi
 
 export REPLICAS
