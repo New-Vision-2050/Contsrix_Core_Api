@@ -16,7 +16,7 @@ class UpdateWebsiteHomePageSettingRequest extends FormRequest
             'web_video_link' => 'nullable|string|url|max:500',
             'mobile_video_file' => 'nullable|file|mimes:mp4,mov,avi,wmv,flv,mkv|max:102400',
             'mobile_video_link' => 'nullable|string|url|max:500',
-            'video_profile_file' => 'nullable|file|mimes:mp4,mov,avi,wmv,flv,mkv|max:102400',
+            'video_profile_file' => 'nullable|file',
             'description_ar' => 'required|string',
             'description_en' => 'required|string',
             'is_companies' => 'required|in:1,0',
