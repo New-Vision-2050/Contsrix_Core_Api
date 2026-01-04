@@ -36,7 +36,7 @@ if [ "$APP_ENV" == "production" ]; then
      EMAIL_HOST_USER=admin@constrix-nv.com
      EMAIL_HOST_PASSWORD="Ul6cade0c"
      EMAIL_ENCRYPTION=tls
-     EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
+     EMAIL_FROM_ADDRESS="admin@constrix.com"
 elif [ "$APP_ENV" == "stage" ]; then
      REPLICAS=1
      EMAIL_HOST=smtp.stackmail.com
@@ -44,7 +44,7 @@ elif [ "$APP_ENV" == "stage" ]; then
      EMAIL_HOST_USER=admin@constrix-nv.com
      EMAIL_HOST_PASSWORD="Ul6cade0c"
      EMAIL_ENCRYPTION=tls
-     EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
+     EMAIL_FROM_ADDRESS="admin@constrix.com"
 else
     REPLICAS=1
     EMAIL_HOST=smtp.stackmail.com
@@ -52,7 +52,7 @@ else
     EMAIL_HOST_USER=admin@constrix-nv.com
     EMAIL_HOST_PASSWORD="Ul6cade0c"
     EMAIL_ENCRYPTION=tls
-    EMAIL_FROM_ADDRESS="admin@constrix-nv.com"
+    EMAIL_FROM_ADDRESS="admin@constrix.com"
 fi
 
 export REPLICAS
