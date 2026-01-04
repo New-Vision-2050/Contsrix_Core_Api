@@ -34,7 +34,10 @@
         "staudenmeir/eloquent-has-many-deep": "^1.7",
         "stevebauman/location": "^7.5",
         "tymon/jwt-auth": "^2.1",
-        "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1"
+        "vladimir-yuldashev/laravel-queue-rabbitmq": "^14.1",
+        "laravel/octane": "^2.5",
+        "spiral/roadrunner-cli": "^2.6",
+        "spiral/roadrunner-http": "^3.5"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -85,7 +88,8 @@
     "extra": {
         "laravel": {
             "dont-discover": [
-                "laravel/telescope"
+                "laravel/telescope",
+                "laravel/pail"
             ]
         }
     },
