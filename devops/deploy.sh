@@ -3,75 +3,21 @@
 set -e
 set -x
 
-# ============================================
-# VALIDATE REQUIRED ENVIRONMENT VARIABLES
-# ============================================
-echo "Validating required environment variables..."
-
-REQUIRED_VARS=(
-    "DEPLOYMENT_ID"
-    "APP_ENV"
-    "APP_DEBUG"
-    "DB_HOST"
-    "DB_PORT"
-    "DB_USERNAME"
-    "DB_PASSWORD"
-    "DB_NAME"
-    "APP_KEY"
-    "JWT_SECRET"
-    "AWS_KEY"
-    "AWS_SECRET"
-    "MAIL_HOST"
-    "MAIL_PORT"
-    "MAIL_USERNAME"
-    "MAIL_PASSWORD"
-    "MAIL_ENCRYPTION"
-    "MAIL_FROM_ADDRESS"
-    "GOOGLE_MAPS_API_KEY"
-    "SMS_MORA_KEY"
-    "SMS_MORA_USER"
-    "SMS_MORA_SENDER"
-    "OPENROUTER_API_KEY"
-)
-
-MISSING_VARS=()
-for var in "${REQUIRED_VARS[@]}"; do
-    if [ -z "${!var}" ]; then
-        MISSING_VARS+=("$var")
-    fi
-done
-
-if [ ${#MISSING_VARS[@]} -ne 0 ]; then
-    echo "ERROR: Missing required environment variables:"
-    printf '  - %s\n' "${MISSING_VARS[@]}"
-    echo ""
-    echo "Please ensure all required GitHub secrets are configured in your repository."
-    exit 1
-fi
-
-echo "✓ All required environment variables are present"
-
-# ============================================
-# DEPLOYMENT CONFIGURATION
-# ============================================
-
 # Generate a unique cache bust value using the current timestamp
 CACHEBUST=$(date +%s)
 
 # Generate a random suffix for the docker compose project name
 RANDOM_SUFFIX=$(head /dev/urandom | tr -dc 'a-z0-9' | head -c 8)
 DOCKER_NAMESPACE="${DEPLOYMENT_ID}-${RANDOM_SUFFIX}"
-
+#DOCKER_NAMESPACE="${DEPLOYMENT_ID}"
 # Export variables as environment variables so Docker Compose can use them
 export CACHEBUST
 
-# Deployment directory configuration
-DEPLOY_DIR="${DEPLOY_BASE_DIR:-/home/deployer/laravel/deployments}/$DEPLOYMENT_ID/code"
+DEPLOY_DIR=/home/deployer/laravel/deployments/$DEPLOYMENT_ID/code
 
 echo "Deployment ID: $DEPLOYMENT_ID"
 echo "Deployment Directory: $DEPLOY_DIR"
 echo "Docker Namespace: $DOCKER_NAMESPACE"
-echo "Environment: $APP_ENV"
 
 # Navigate to deployment directory
 mkdir -p $DEPLOY_DIR
@@ -83,24 +29,36 @@ OLD_IMAGES=$(docker images --filter "reference=*${DEPLOYMENT_ID}-*" --format "{{
 echo "Found old containers: $OLD_CONTAINERS"
 echo "Found old images: $OLD_IMAGES"
 
-# ============================================
-# ENVIRONMENT-SPECIFIC CONFIGURATION
-# ============================================
-
-# Set replicas based on environment (can be overridden via env var)
-if [ -z "$REPLICAS" ]; then
-    if [ "$APP_ENV" == "production" ]; then
-        REPLICAS=1
-    else
-        REPLICAS=1
-    fi
+if [ "$APP_ENV" == "production" ]; then
+     REPLICAS=1
+     EMAIL_HOST=smtp.hostinger.com
+     EMAIL_PORT=465
+     EMAIL_HOST_USER=vision@speedpharma.link
+     EMAIL_HOST_PASSWORD="G:1Wc;c;L9b"
+     EMAIL_ENCRYPTION=tls
+     EMAIL_FROM_ADDRESS="vision@speedpharma.link"
+elif [ "$APP_ENV" == "stage" ]; then
+     REPLICAS=1
+     EMAIL_HOST=smtp.hostinger.com
+     EMAIL_PORT=465
+     EMAIL_HOST_USER=vision@speedpharma.link
+     EMAIL_HOST_PASSWORD="G:1Wc;c;L9b"
+     EMAIL_ENCRYPTION=tls
+     EMAIL_FROM_ADDRESS="vision@speedpharma.link"
+else
+    REPLICAS=1
+    EMAIL_HOST=smtp.hostinger.com
+    EMAIL_PORT=465
+    EMAIL_HOST_USER=vision@speedpharma.link
+    EMAIL_HOST_PASSWORD="G:1Wc;c;L9b"
+    EMAIL_ENCRYPTION=tls
+    EMAIL_FROM_ADDRESS="vision@speedpharma.link"
 fi
 
 export REPLICAS
 
-# Application configuration
-APP_NAME="${APP_NAME:-Constrix}"
-APP_URL="${APP_URL:-core-be-$DEPLOYMENT_ID.constrix-nv.com}"
+APP_NAME="Constrix"
+APP_URL="core-be-$DEPLOYMENT_ID.constrix-nv.com"
 
 if [[ "$DEPLOYMENT_ID" == *"pr"* && "$APP_ENV" != "production" ]]; then
   DB_NAME="$DB_NAME-pr"
@@ -108,19 +66,7 @@ else
   DB_NAME="$DB_NAME-$DEPLOYMENT_ID"
 fi
 
-# ============================================
-# CREATE .ENV FILE FROM ENVIRONMENT VARIABLES
-# ============================================
-
-# AWS/Storage configuration (with defaults)
-AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
-AWS_ENDPOINT="${AWS_ENDPOINT:-https://constrix.fra1.digitaloceanspaces.com}"
-AWS_USE_PATH_STYLE_ENDPOINT="${AWS_USE_PATH_STYLE_ENDPOINT:-true}"
-MINIO_PUBLIC_BUCKET="${MINIO_PUBLIC_BUCKET:-contrix}"
-MINIO_PRIVATE_BUCKET="${MINIO_PRIVATE_BUCKET:-contrix-archive-private}"
-
-echo "Creating .env file..."
-
+# Create .env file
 cat <<EOF > .env
 APP_NAME=$APP_NAME
 APP_ENV=$APP_ENV
@@ -139,25 +85,25 @@ CACHE_PREFIX=$DEPLOYMENT_ID
 APP_KEY=$APP_KEY
 JWT_SECRET=$JWT_SECRET
 MAIL_MAILER=smtp
-MAIL_HOST=$MAIL_HOST
-MAIL_PORT=$MAIL_PORT
-MAIL_USERNAME=$MAIL_USERNAME
-MAIL_PASSWORD=$MAIL_PASSWORD
-MAIL_ENCRYPTION=$MAIL_ENCRYPTION
-MAIL_FROM_ADDRESS=$MAIL_FROM_ADDRESS
+MAIL_HOST=$EMAIL_HOST
+MAIL_PORT=$EMAIL_PORT
+MAIL_USERNAME=$EMAIL_HOST_USER
+MAIL_PASSWORD=$EMAIL_HOST_PASSWORD
+MAIL_ENCRYPTION=$EMAIL_ENCRYPTION
+MAIL_FROM_ADDRESS=$EMAIL_FROM_ADDRESS
 MAIL_FROM_NAME=$APP_NAME
 AWS_ACCESS_KEY_ID=$AWS_KEY
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET
-AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
-AWS_ENDPOINT=$AWS_ENDPOINT
-AWS_USE_PATH_STYLE_ENDPOINT=$AWS_USE_PATH_STYLE_ENDPOINT
-MINIO_PUBLIC_BUCKET=$MINIO_PUBLIC_BUCKET
-MINIO_PRIVATE_BUCKET=$MINIO_PRIVATE_BUCKET
-GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
-SMS_MORA_KEY=$SMS_MORA_KEY
-SMS_MORA_USER=$SMS_MORA_USER
-SMS_MORA_SENDER=$SMS_MORA_SENDER
-OPENROUTER_API_KEY=$OPENROUTER_API_KEY
+AWS_DEFAULT_REGION=us-east-1
+AWS_ENDPOINT=https://constrix.fra1.digitaloceanspaces.com
+AWS_USE_PATH_STYLE_ENDPOINT=true
+MINIO_PUBLIC_BUCKET=contrix
+MINIO_PRIVATE_BUCKET=contrix-archive-private
+GOOGLE_MAPS_API_KEY=AIzaSyD5izq7FZI-nHdrt6mx5UeKRkUSjvagS5g
+SMS_MORA_KEY=9d036169a982498edbdcd92d99a838112546a986
+SMS_MORA_USER=saadmashal
+SMS_MORA_SENDER="Vision Dim"
+OPENROUTER_API_KEY=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
 
 EOF
 
