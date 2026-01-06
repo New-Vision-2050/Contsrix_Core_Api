@@ -6,6 +6,7 @@ namespace Modules\WebsiteCMS\WebsiteProject\Presenters;
 
 use Modules\WebsiteCMS\WebsiteProject\Models\WebsiteProject;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\WebsiteCMS\WebsiteService\Presenters\WebsiteServicePresenter;
 
 class WebsiteProjectPresenter extends AbstractPresenter
 {
@@ -43,6 +44,7 @@ class WebsiteProjectPresenter extends AbstractPresenter
                     'name_ar' => $projectDetail->getTranslation('name', 'ar'),
                     'name_en' => $projectDetail->getTranslation('name', 'en'),
                     "website_service_id"=>$projectDetail->website_service_id,
+                    "website_service"=>(new WebsiteServicePresenter($projectDetail->websiteService))->getData(),
                     "website_project_id"=>$projectDetail->website_project_id,
                     'created_at' => $projectDetail->created_at,
                     'updated_at' => $projectDetail->updated_at,
