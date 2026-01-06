@@ -47,31 +47,51 @@ class CompanyLegalDataRepository extends BaseRepository
         return $this->model->find($id);
     }
 
-    public function createCompanyLegalData(array $data, $file): CompanyLegalData
+    public function createCompanyLegalData(array $data, ?array $files): CompanyLegalData
     {
         try {
             DB::beginTransaction();
             $companyLegalData = $this->create($data);
-            if (!is_null($file)) {
-                $fileModel = File::create([
-                    'name' => CompanyRegistrationType::query()->where("id", $data["registration_type_id"])->first()->name,
-                    'folder_id' => Folder::query()->withoutTenancy()->where("name","المستندات الرسمية")->where("company_id",$data["company_id"])->first()->id,
-                    'access_type' => 'public',
-                    'company_id' => $data["company_id"],
-                    'management_hierarchy_id' => $data["management_hierarchy_id"],
+            
+            if (!is_null($files) && is_array($files) && count($files) > 0) {
+                $registrationTypeName = CompanyRegistrationType::query()
+                    ->where("id", $data["registration_type_id"])
+                    ->first()
+                    ->name ?? 'Legal Document';
+                    
+                $folder = Folder::query()
+                    ->withoutTenancy()
+                    ->where("name","المستندات الرسمية")
+                    ->where("company_id",$data["company_id"])
+                    ->first();
+                
+                foreach ($files as $index => $file) {
+                    if (!is_null($file)) {
+                        $fileModel = File::create([
+                            'name' => $registrationTypeName . ($index > 0 ? " ({$index})" : ''),
+                            'folder_id' => $folder->id,
+                            'access_type' => 'public',
+                            'company_id' => $data["company_id"],
+                            'management_hierarchy_id' => $data["management_hierarchy_id"],
+                        ]);
 
-
-                ]);
-
-                $this->fileUploadService->uploadFile(model: $companyLegalData, file: $file, filePath: "company", fileId: $fileModel->id);
+                        $this->fileUploadService->uploadFile(
+                            model: $companyLegalData, 
+                            file: $file, 
+                            filePath: "company", 
+                            fileId: $fileModel->id
+                        );
+                    }
+                }
             }
+            
             DB::commit();
 
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);
-
         }
+        
         $companyLegalData->touch();
         return $companyLegalData;
     }

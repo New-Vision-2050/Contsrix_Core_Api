@@ -154,7 +154,8 @@ class CompanyProfileController extends Controller
      */
     public function createLegalData(CreateCompanyLegalDataRequest $request)
     {
-        $this->companyProfileService->createCompanyLegalData($request->createCreateCompanyLegalDataDTO());
+        $legalDataDTOs = $request->createCreateCompanyLegalDataDTOs();
+        $this->companyProfileService->createMultipleCompanyLegalData($legalDataDTOs);
 
         $company = $this->companyService->getCurrentCompanyLoggedIn();
         return Json::item((new CompanyPresenter($company))->getData());
