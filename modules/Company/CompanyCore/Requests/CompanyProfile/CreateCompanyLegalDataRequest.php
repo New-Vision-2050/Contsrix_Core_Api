@@ -6,8 +6,8 @@ namespace Modules\Company\CompanyCore\Requests\CompanyProfile;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\Company\CompanyCore\DTO\CompanyProfile\CreateCompanyLegalDataDTO;
-use Modules\Company\CompanyCore\Rules\StartDateMinimumEightDays;
-use Modules\Company\CompanyCore\Rules\RequiredIfRegistrationTypeNot3;
+use Modules\Company\CompanyCore\Rules\ValidateRegistrationNumber;
+use Modules\Company\CompanyCore\Rules\ValidateStartDateWithMinimumDays;
 use Modules\Company\CompanyCore\Traits\PreDeclareComapnyAndBranchDependOnReqeuest;
 use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
@@ -18,22 +18,24 @@ class CreateCompanyLegalDataRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
-            'registration_type_id' => 'required|exists:company_registration_types,id',
-            'regestration_number' => [
-                'string',
-                new RequiredIfRegistrationTypeNot3(Uuid::fromString($this->input('registration_type_id'))),
-            ],
-            'start_date' => [
-                'nullable',
-                'date',
-                'before_or_equal:end_date',
-                new StartDateMinimumEightDays($this->input('end_date')),
-            ],
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'file' => 'nullable|array',
-            'file.*' => 'mimes:pdf,jpeg,jpg,png,doc,docx',
+        $rules = [
+            'data' => 'required|array',
+            'data.*.registration_type_id' => 'required|exists:company_registration_types,id',
+            'data.*.regestration_number' => 'nullable|string',
+            'data.*.start_date' => 'nullable|date|before_or_equal:data.*.end_date',
+            'data.*.end_date' => 'nullable|date',
+            'data.*.files' => 'nullable|array',
+            'data.*.files.*' => 'nullable|file|mimes:pdf,jpeg,jpg,png,doc,docx',
         ];
+
+        // Add custom validation rules for each data entry
+        $data = $this->input('data', []);
+        foreach ($data as $index => $item) {
+            $rules["data.{$index}.regestration_number"][] = new ValidateRegistrationNumber($index);
+            $rules["data.{$index}.start_date"][] = new ValidateStartDateWithMinimumDays($index);
+        }
+
+        return $rules;
     }
 
     public function messages(): array
@@ -49,17 +51,33 @@ class CreateCompanyLegalDataRequest extends FormRequest
         ];
     }
 
-    public function createCreateCompanyLegalDataDTO(): CreateCompanyLegalDataDTO
+    public function createCreateCompanyLegalDataDTOs(): array
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-
-        return new CreateCompanyLegalDataDTO(
-            managementHierarchy: $branch,
-            registrationTypeId: $this->filled('registration_type_id') ? Uuid::fromString($this->registration_type_id) : null,
-            registrationNumber: $this->regestration_number,
-            startDate: $this->start_date ? Carbon::parse($this->start_date)->format('Y-m-d') : null,
-            endDate: $this->end_date ? Carbon::parse($this->end_date)->format('Y-m-d') : null,
-            file: $this->file('file'),
-        );
+        
+        $dtos = [];
+        $data = $this->input('data', []);
+        
+        foreach ($data as $index => $item) {
+            $files = [];
+            if (isset($item['files']) && is_array($item['files'])) {
+                foreach ($item['files'] as $fileIndex => $file) {
+                    if ($this->hasFile("data.{$index}.files.{$fileIndex}")) {
+                        $files[] = $this->file("data.{$index}.files.{$fileIndex}");
+                    }
+                }
+            }
+            
+            $dtos[] = new CreateCompanyLegalDataDTO(
+                managementHierarchy: $branch,
+                registrationTypeId: isset($item['registration_type_id']) ? Uuid::fromString($item['registration_type_id']) : null,
+                registrationNumber: $item['regestration_number'] ?? null,
+                startDate: isset($item['start_date']) ? Carbon::parse($item['start_date'])->format('Y-m-d') : null,
+                endDate: isset($item['end_date']) ? Carbon::parse($item['end_date'])->format('Y-m-d') : null,
+                files: !empty($files) ? $files : null,
+            );
+        }
+        
+        return $dtos;
     }
 }

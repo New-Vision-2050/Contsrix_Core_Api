@@ -15,7 +15,7 @@ class CreateCompanyLegalDataDTO
         private ?string $registrationNumber = null,
         private ?string $startDate = null,
         private ?string $endDate = null,
-        private mixed $file = null
+        private ?array $files = null
     ) {
     }
 
@@ -24,9 +24,9 @@ class CreateCompanyLegalDataDTO
         return $this->managementHierarchy->company_id;
     }
 
-    public function getFile(): mixed
+    public function getFiles(): ?array
     {
-        return $this->file;
+        return $this->files;
     }
 
     public function toArray(): array
