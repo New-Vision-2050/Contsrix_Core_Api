@@ -52,19 +52,19 @@ class CompanyLegalDataRepository extends BaseRepository
         try {
             DB::beginTransaction();
             $companyLegalData = $this->create($data);
-            
+
             if (!is_null($files) && is_array($files) && count($files) > 0) {
                 $registrationTypeName = CompanyRegistrationType::query()
                     ->where("id", $data["registration_type_id"])
                     ->first()
                     ->name ?? 'Legal Document';
-                    
+
                 $folder = Folder::query()
                     ->withoutTenancy()
                     ->where("name","المستندات الرسمية")
                     ->where("company_id",$data["company_id"])
                     ->first();
-                
+
                 foreach ($files as $index => $file) {
                     if (!is_null($file)) {
                         $fileModel = File::create([
@@ -76,22 +76,22 @@ class CompanyLegalDataRepository extends BaseRepository
                         ]);
 
                         $this->fileUploadService->uploadFile(
-                            model: $companyLegalData, 
-                            file: $file, 
-                            filePath: "company", 
+                            model: $companyLegalData,
+                            file: $file,
+                            filePath: "company",
                             fileId: $fileModel->id
                         );
                     }
                 }
             }
-            
+
             DB::commit();
 
         } catch (\Exception $e) {
             DB::rollBack();
             throw new \Exception($e->getMessage(), 409);
         }
-        
+
         $companyLegalData->touch();
         return $companyLegalData;
     }
@@ -151,23 +151,40 @@ class CompanyLegalDataRepository extends BaseRepository
                         }
                     }
 
-
                     // Only perform file deletion if 'files' array is present
                     // This ensures we keep files based on what's in the request
                     $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
-                } elseif (isset($item["file"]) && !is_string($item["file"])) {
-                    $legalData->clearMediaCollection('upload');
-                    $fileModel = File::create([
-                        'name' => CompanyRegistrationType::query()->where("id", $legalData->registration_type_id)->first()->name,
-                        'folder_id' => Folder::query()->withoutTenancy()->where("name","المستندات الرسمية")->where("company_id",$legalData->company_id)->first()->id,
-                        'access_type' => 'public',
-                        'company_id' => $legalData->company_id,
-                        'management_hierarchy_id' => $legalData->management_hierarchy_id,
+                }
+                
+                // Handle new file uploads (file field can be array or single file)
+                if (isset($item["file"]) && !is_string($item["file"])) {
+                    $registrationTypeName = CompanyRegistrationType::query()
+                        ->where("id", $legalData->registration_type_id)
+                        ->first()
+                        ->name ?? 'Legal Document';
+                    
+                    $folder = Folder::query()
+                        ->withoutTenancy()
+                        ->where("name","المستندات الرسمية")
+                        ->where("company_id",$legalData->company_id)
+                        ->first();
+                    
+                    // Convert to array if single file
+                    $files = is_array($item["file"]) ? $item["file"] : [$item["file"]];
+                    
+                    foreach ($files as $index => $file) {
+                        if (!is_null($file) && $file instanceof \Illuminate\Http\UploadedFile) {
+                            $fileModel = File::create([
+                                'name' => $registrationTypeName . (count($files) > 1 ? " (" . ($index + 1) . ")" : ''),
+                                'folder_id' => $folder->id,
+                                'access_type' => 'public',
+                                'company_id' => $legalData->company_id,
+                                'management_hierarchy_id' => $legalData->management_hierarchy_id,
+                            ]);
 
-
-                    ]);
-
-                    $this->fileUploadService->uploadFile($legalData, $item["file"], 'upload', fileId: $fileModel->id);
+                            $this->fileUploadService->uploadFile($legalData, $file, 'upload', fileId: $fileModel->id);
+                        }
+                    }
                 }
                 event(new CompanyLegalDataUpdated($legalData));
             }
