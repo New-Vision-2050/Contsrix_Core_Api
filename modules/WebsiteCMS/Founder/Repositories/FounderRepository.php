@@ -81,8 +81,16 @@ class FounderRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getCurrentCompanyFounders(int $limit = 3): Collection
+    public function getCurrentCompanyFounders(int $limit = null): Collection
     {
+        if($limit == null)
+        {
+            return $this->model
+                ->where('company_id', tenant('id'))
+                ->where('status', 1)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
         return $this->model
             ->where('company_id', tenant('id'))
             ->where('status', 1)
