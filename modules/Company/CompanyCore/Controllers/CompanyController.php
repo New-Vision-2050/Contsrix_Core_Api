@@ -131,7 +131,7 @@ class CompanyController extends Controller
     public function widget(): JsonResponse
     {
         // Cache key for company widget statistics
-        $cacheKey = 'company_widget_statistics';
+        $cacheKey = 'company_widget_statistics-'.app()->getLocale();
 
         // Get data from cache or compute if not available
         $widgetData = Cache::remember($cacheKey, now()->addHours(1), function () {
