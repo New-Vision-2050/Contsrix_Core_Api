@@ -178,4 +178,11 @@ class WebsiteProjectRepository extends BaseRepository
             ->with(['projectDetails', 'services', 'websiteProjectSetting',"media"])
             ->get();
     }
+
+    public function deleteMedia(UuidInterface $id, int $mediaId)
+    {
+        $websiteProject = $this->findOneOrFail($id);
+
+         $websiteProject->deleteMedia($mediaId);
+    }
 }
