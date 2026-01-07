@@ -168,8 +168,16 @@ class WebsiteProjectRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getFeaturedProjects(int $limit = 3): Collection
+    public function getFeaturedProjects(int $limit = null): Collection
     {
+        if ($limit == null)
+        {
+            return $this->model
+            ->where('company_id', tenant('id'))
+            ->where('status', 1)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        }
         return $this->model
             ->where('company_id', tenant('id'))
             ->where('status', 1)
