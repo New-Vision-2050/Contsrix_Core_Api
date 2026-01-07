@@ -12,6 +12,7 @@ use Modules\WebsiteCMS\WebsiteProject\Handlers\UpdateWebsiteProjectHandler;
 use Modules\WebsiteCMS\WebsiteProject\Presenters\WebsiteProjectPresenter;
 use Modules\WebsiteCMS\WebsiteProject\Requests\CreateWebsiteProjectRequest;
 use Modules\WebsiteCMS\WebsiteProject\Requests\DeleteWebsiteProjectRequest;
+use Modules\WebsiteCMS\WebsiteProject\Requests\DeleteMediaRequest;
 use Modules\WebsiteCMS\WebsiteProject\Requests\GetWebsiteProjectListRequest;
 use Modules\WebsiteCMS\WebsiteProject\Requests\GetWebsiteProjectRequest;
 use Modules\WebsiteCMS\WebsiteProject\Requests\UpdateWebsiteProjectRequest;
@@ -87,7 +88,17 @@ class WebsiteProjectController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'website_project.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new WebsiteProjectExport($this->websiteProjectService, $filters), $fileName);
+    }
+
+    public function deleteMedia(DeleteMediaRequest $request): JsonResponse
+    {
+        $projectId = Uuid::fromString($request->route('id'));
+        $mediaId = (int) $request->route('media_id');
+
+        $this->websiteProjectService->deleteMedia($projectId, $mediaId);
+
+        return Json::success(__('Media deleted successfully'));
     }
 }

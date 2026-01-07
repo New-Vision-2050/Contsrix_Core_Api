@@ -35,7 +35,7 @@ class WebsiteProjectPresenter extends AbstractPresenter
             'created_at' => $this->websiteProject->created_at,
             'updated_at' => $this->websiteProject->updated_at,
             'main_image' => $this->websiteProject->getFirstMediaUrl('main_image'),
-            'secondary_images' => $this->websiteProject->getMedia('secondary_images')?->map(fn($media) => $media->getUrl())->toArray(),
+            'secondary_images' => $this->websiteProject->getMedia('secondary_images')?->map(fn($media) => ["url"=>$media->getUrl(), "id"=>$media->id])->toArray(),
             'project_details' => $this->websiteProject->projectDetails?->map(function ($projectDetail) {
                 return [
                     'id' => $projectDetail->id,
