@@ -66,6 +66,46 @@ This document lists all required GitHub secrets that must be configured in your 
 | `SMS_MORA_SENDER` | SMS sender name | `YourCompany` |
 | `OPENROUTER_API_KEY` | OpenRouter API key | `sk-or-v1-xxxxxxxxxxxxxxxx` |
 
+### Firebase Configuration
+
+| Secret Name | Description | Example Value |
+|------------|-------------|---------------|
+| `FIREBASE_CREDENTIALS` | Complete Firebase service account JSON | See below for format |
+
+**Firebase Credentials Format:**
+```json
+{
+  "type": "service_account",
+  "project_id": "your-project-id",
+  "private_key_id": "key-id",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com",
+  "client_id": "123456789",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/..."
+}
+```
+
+**How to get Firebase credentials:**
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Go to Project Settings → Service Accounts
+4. Click "Generate New Private Key"
+5. Copy the entire JSON content and paste it as the secret value
+
+### Server Deployment Configuration
+
+| Secret Name | Description | Example Value |
+|------------|-------------|---------------|
+| `SERVER_HOST` | Server hostname or IP | `your-server.com` or `192.168.1.100` |
+| `SERVER_USER` | SSH username | `deployer` or `ubuntu` |
+| `SSH_PRIVATE_KEY` | SSH private key for authentication | `-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----` |
+| `SSH_PORT` | SSH port (optional) | `22` (default) |
+| `DEPLOY_PATH` | Application path on server | `/var/www/html/constrix_api` |
+| `WEB_USER` | Web server user | `www-data` (Ubuntu/Debian) or `nginx` (CentOS) |
+
 ### Optional Configuration
 
 | Secret Name | Description | Default Value |
