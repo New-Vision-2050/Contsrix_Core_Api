@@ -155,29 +155,46 @@ jobs:
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
             echo $DEPLOY_DIR
-            
-            # Create Firebase credentials file
-            echo "Creating Firebase credentials..."
-            cat > public/firebase_credentials.json << 'FIREBASE_EOF'
-            $FIREBASE_CREDENTIALS
-            FIREBASE_EOF
-            
-            # Set secure permissions
-            chmod 600 public/firebase_credentials.json
-            
-            # Validate JSON (if jq is available)
-            if command -v jq &> /dev/null; then
-              if jq empty public/firebase_credentials.json 2>/dev/null; then
-                echo "✅ Firebase credentials validated"
-                jq -r '.project_id' public/firebase_credentials.json
-              else
-                echo "❌ Invalid JSON in Firebase credentials"
-                exit 1
-              fi
-            fi
-            
             chmod +x ./devops/deploy.sh
             ./devops/deploy.sh
+            
+            # Create Firebase credentials inside the running container
+            echo "Creating Firebase credentials in container..."
+            
+            # Find the actual container name (deploy.sh uses random namespace)
+            CONTAINER_NAME=$(docker ps --filter "label=traefik.http.routers.backend-${{env.DEPLOYMENT_ID}}.rule" --format "{{.Names}}" | head -n 1)
+            
+            if [ -z "$CONTAINER_NAME" ]; then
+              echo "❌ Could not find container for deployment ${{env.DEPLOYMENT_ID}}"
+              docker ps --filter "name=backend" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
+              exit 1
+            fi
+            
+            echo "Found container: $CONTAINER_NAME"
+            
+            # Create the credentials file in the container
+            docker exec $CONTAINER_NAME bash -c 'cat > /var/www/public/firebase_credentials.json' << 'FIREBASE_EOF'
+            ${{env.FIREBASE_CREDENTIALS}}
+            FIREBASE_EOF
+            
+            # Set secure permissions inside container
+            docker exec $CONTAINER_NAME chmod 600 /var/www/public/firebase_credentials.json
+            docker exec $CONTAINER_NAME chown www-data:www-data /var/www/public/firebase_credentials.json
+            
+            # Validate JSON inside container
+            if docker exec $CONTAINER_NAME bash -c 'command -v jq &> /dev/null'; then
+              docker exec $CONTAINER_NAME bash -c 'jq empty /var/www/public/firebase_credentials.json' && \
+              echo "✅ Firebase credentials validated" && \
+              docker exec $CONTAINER_NAME bash -c 'jq -r .project_id /var/www/public/firebase_credentials.json' || \
+              (echo "❌ Invalid JSON in Firebase credentials" && exit 1)
+            else
+              echo "⚠️  jq not available in container, skipping validation"
+            fi
+            
+            # Verify file exists
+            docker exec $CONTAINER_NAME ls -la /var/www/public/firebase_credentials.json
+            echo "✅ Firebase credentials deployed successfully to $CONTAINER_NAME"
+            
             rm -rf $DEPLOY_DIR
             echo "Deployment of $CONTAINER_NAME completed successfully."
 
