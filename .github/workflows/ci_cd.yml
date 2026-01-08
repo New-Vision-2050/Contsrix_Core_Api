@@ -115,9 +115,8 @@ jobs:
           SMS_MORA_SENDER: ${{ secrets.SMS_MORA_SENDER }}
           SMS_MORA_USER: ${{ secrets.SMS_MORA_USER }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
         with:
-          envs: APP_ENV,APP_DEBUG,DB_HOST,DB_PORT,DB_USERNAME,DB_PASSWORD,DB_NAME,APP_KEY,AWS_KEY,AWS_SECRET,JWT_SECRET,DEPLOYMENT_ID,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,MAIL_ENCRYPTION,MAIL_FROM_ADDRESS,GOOGLE_MAPS_API_KEY,SMS_MORA_KEY,SMS_MORA_SENDER,SMS_MORA_USER,OPENROUTER_API_KEY,FIREBASE_CREDENTIALS
+          envs: APP_ENV,APP_DEBUG,DB_HOST,DB_PORT,DB_USERNAME,DB_PASSWORD,DB_NAME,APP_KEY,AWS_KEY,AWS_SECRET,JWT_SECRET,DEPLOYMENT_ID,MAIL_HOST,MAIL_PORT,MAIL_USERNAME,MAIL_PASSWORD,MAIL_ENCRYPTION,MAIL_FROM_ADDRESS,GOOGLE_MAPS_API_KEY,SMS_MORA_KEY,SMS_MORA_SENDER,SMS_MORA_USER,OPENROUTER_API_KEY
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           port: ${{ secrets.DEPLOY_PORT }}
@@ -150,7 +149,6 @@ jobs:
             export SMS_MORA_SENDER="${{env.SMS_MORA_SENDER}}"
             export SMS_MORA_USER="${{env.SMS_MORA_USER}}"
             export OPENROUTER_API_KEY="${{env.OPENROUTER_API_KEY}}"
-            export FIREBASE_CREDENTIALS="${{env.FIREBASE_CREDENTIALS}}"
             DEPLOY_DIR=/home/deployer/laravel/deployments/${{env.DEPLOYMENT_ID}}/code
             mkdir -p $DEPLOY_DIR
             cd $DEPLOY_DIR
@@ -172,10 +170,11 @@ jobs:
             
             echo "Found container: $CONTAINER_NAME"
             
-            # Create the credentials file in the container
-            docker exec $CONTAINER_NAME bash -c 'cat > /var/www/public/firebase_credentials.json' << 'FIREBASE_EOF'
-            ${{env.FIREBASE_CREDENTIALS}}
-            FIREBASE_EOF
+            # Encode Firebase credentials as base64 for safe transfer
+            FIREBASE_B64=$(echo '${{ secrets.FIREBASE_CREDENTIALS }}' | base64 -w 0)
+            
+            # Decode and write to container
+            echo "$FIREBASE_B64" | base64 -d | docker exec -i $CONTAINER_NAME bash -c 'cat > /var/www/public/firebase_credentials.json'
             
             # Set secure permissions inside container
             docker exec $CONTAINER_NAME chmod 600 /var/www/public/firebase_credentials.json
