@@ -25,6 +25,7 @@ class UserWithPermissionPresenter extends AbstractPresenter
             'id' => $this->user->id,
             'name' => $this->user->name,
             'email' => $this->user->email,
+            'fcm_token'=> $this->user->fcm_token,
             'is_super_admin' => $this->user->hasRole("super-admin")||$this->user->is_owner?1:0,
             'phone' => $this->user->phone,
             'management_hierarchy_id' => $this->user->management_hierarchy_id ,

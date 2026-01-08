@@ -27,4 +27,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser'])->permission(Permission::USER_UPDATE());
     Route::post('/change-role-status', [UserController::class, 'changeUserRoleStatus']);
     Route::delete('/{id}', [UserController::class, 'delete'])->permission(Permission::USER_DELETE());
+    Route::post('/test-notification', [UserController::class, 'testNotification']);
+    Route::post('/test-silent-notification', [UserController::class, 'testSilentNotification']);
+    Route::post('/update-fcm-token', [UserController::class, 'updateFcmToken']);
 });

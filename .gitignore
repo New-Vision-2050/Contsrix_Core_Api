@@ -23,3 +23,7 @@ yarn-error.log
 /.zed
 
 .qodo
+
+# Firebase credentials
+public/firebase_credentials.json
+firebase_credentials.json
