@@ -44,4 +44,9 @@ class WebsiteProjectCRUDService
             id: $id,
         );
     }
+
+    public function deleteMedia(UuidInterface $id, int $mediaId)
+    {
+         $this->repository->deleteMedia($id, $mediaId);
+    }
 }

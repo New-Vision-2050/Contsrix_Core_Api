@@ -22,9 +22,12 @@ class WebsiteAboutUsProjectType extends Model
         'title',
         'count',
     ];
+    public $incrementing = false;
 
+    protected $keyType = 'string';
     protected $casts = [
         'count' => 'integer',
+        'id' => 'string',
     ];
 
     /**

@@ -41,17 +41,17 @@ class WebsiteHomePageService
             return [
                 'home_page_setting' => $this->homePageSettingRepository->getCurrentCompanySetting(),
                 'our_services' => $this->ourServiceRepository->getCurrentCompanyWebsiteOurService(),
-                'website_services' => $this->websiteServiceRepository->getCurrentCompanyWebsiteServices($limit),
-                'featured_projects' => $this->projectRepository->getFeaturedProjects($limit),
-                'founders' => $this->founderRepository->getCurrentCompanyFounders($limit),
+                'website_services' => $this->websiteServiceRepository->getCurrentCompanyWebsiteServices(),
+                'featured_projects' => $this->projectRepository->getFeaturedProjects(),
+                'founders' => $this->founderRepository->getCurrentCompanyFounders(),
                 'company_icons' => $websiteHomePageSetting && $websiteHomePageSetting->is_companies
-                    ? $this->websiteIconRepository->getCompanyIcons($limit)
+                    ? $this->websiteIconRepository->getCompanyIcons()
                     : null,
                 'approval_icons' => $websiteHomePageSetting && $websiteHomePageSetting->is_approvals
-                    ? $this->websiteIconRepository->getApprovalIcons($limit)
+                    ? $this->websiteIconRepository->getApprovalIcons()
                     : null,
                 'certificate_icons' => $websiteHomePageSetting && $websiteHomePageSetting->is_certificates
-                    ? $this->websiteIconRepository->getCertificatesIcons($limit)
+                    ? $this->websiteIconRepository->getCertificatesIcons()
                     : null,
             ];
         });

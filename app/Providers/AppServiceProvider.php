@@ -29,11 +29,15 @@ class AppServiceProvider extends ServiceProvider
         Notification::extend('sms', function ($app) {
             return new SmsChannel();
         });
-        //this is must set config for mail by DB if set in driver table else use the env file
-        try {
-            (new MailClass())->setConfig();
-        } catch (\Exception $e) {
-            //skip if there is an error and we will use config use env file if
-        }
+
+        // Defer mail config loading to avoid database query during bootstrap
+        // This will only run when mail is actually needed
+        $this->app->resolving('mailer', function () {
+            try {
+                (new MailClass())->setConfig();
+            } catch (\Exception $e) {
+                //skip if there is an error and we will use config from env file
+            }
+        });
     }
 }

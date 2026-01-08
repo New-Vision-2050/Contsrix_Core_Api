@@ -30,6 +30,7 @@ class FounderPresenter extends AbstractPresenter
             "job_title_ar"=>$this->founder->getTranslation('job_title', 'ar'),
             "job_title_en"=>$this->founder->getTranslation('job_title', 'en'),
             'personal_photo' => $this->founder->getFirstMediaUrl('personal_photo'),
+            "status"=>$this->founder->status,
         ];
     }
 }

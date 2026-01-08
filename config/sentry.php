@@ -8,13 +8,13 @@
 return [
 
     // @see https://docs.sentry.io/product/sentry-basics/dsn-explainer/
-    'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN','https://e021b2b66ef4908770ff499aba5d98ec@o4509235475316736.ingest.de.sentry.io/4509235476627536')),
+    'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN','https://42d1bcc2cfac977154e68dc5a3120725@o4510619308457985.ingest.de.sentry.io/4510619920760912')),
 
     // @see https://spotlightjs.com/
     // 'spotlight' => env('SENTRY_SPOTLIGHT', false),
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#logger
-    // 'logger' => Sentry\Logger\DebugFileLogger::class, // By default this will log to `storage_path('logs/sentry.log')`
+    // 'logger' => Sentry\Logger\DebugFileLogger::class, // By default this will log to `storage_path('logs/sentry.log')
 
     // The release version of your application
     // Example with dynamic git hash: trim(exec('git --git-dir ' . base_path('.git') . ' log --pretty="%h" -n1 HEAD'))

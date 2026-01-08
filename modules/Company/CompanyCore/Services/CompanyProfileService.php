@@ -434,9 +434,25 @@ class CompanyProfileService
 
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
-        $companyData = $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+        $companyData = $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFiles());
         event(new CompanyLegalDataCreated($companyData));
         return $companyData;
+    }
+
+    public function createMultipleCompanyLegalData(array $companyLegalDataDTOs): array
+    {
+        $createdLegalData = [];
+        
+        foreach ($companyLegalDataDTOs as $companyLegalDataDTO) {
+            $companyData = $this->companyLegalDataRepository->createCompanyLegalData(
+                $companyLegalDataDTO->toArray(), 
+                $companyLegalDataDTO->getFiles()
+            );
+            event(new CompanyLegalDataCreated($companyData));
+            $createdLegalData[] = $companyData;
+        }
+        
+        return $createdLegalData;
     }
 
     public function getCompanyLegalData(UuidInterface $id): CompanyLegalData
