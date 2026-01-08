@@ -194,7 +194,7 @@ class Attendance extends Model implements Auditable
         //     return Carbon::parse($value,'r')->setTimezone($this->timezone);
         // }
         return $value;
-    }
+    } 
 
     public function getStartTimeAttribute($value)
     {

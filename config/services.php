@@ -48,5 +48,8 @@ return [
         'api_key' => env('CALENDARIFIC_API_KEY', 'G2XGP0u6w8FihkwuRxUDzOjjT321JeJ5'),
         'base_url' => env('CALENDARIFIC_BASE_URL', 'https://calendarific.com/api/v2'),
     ],
-
+    
+    'firebase' => [
+        'credentials' => env('FIREBASE_CREDENTIALS', public_path('firebase_credentials.json')),
+    ],
 ];
