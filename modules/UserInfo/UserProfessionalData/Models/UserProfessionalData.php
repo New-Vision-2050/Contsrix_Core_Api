@@ -7,6 +7,7 @@ namespace Modules\UserInfo\UserProfessionalData\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\UserInfo\UserProfessionalData\Database\factories\UserProfessionalDataFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -17,16 +18,13 @@ use Modules\Shared\JobType\Models\JobType;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\User\Models\User;
 
-//use BasePackage\Shared\Traits\HasTranslations;
-
 class UserProfessionalData extends Model
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    //use HasTranslations;
-    //use SoftDeletes;
-    use BelongsToTenant;//we can use belongs to primary model user or belongs to tenant because have company id
+    use SoftDeletes;
+    use BelongsToTenant;
 
     //public array $translatable = [];
     protected $table = 'user_professional_datas';

@@ -212,6 +212,17 @@ class CompanyUserRepository extends BaseRepository
 
             $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId, "role" => $role]);
 
+            // Soft delete user_professional_datas if Employee role is being deleted
+            if ($role === CompanyUserRole::EMPLOYEE->value) {
+                $professionalData = UserProfessionalData::where('global_id', $companyUser->global_id)
+                    ->where('company_id', $companyId)
+                    ->first();
+                
+                if ($professionalData) {
+                    $professionalData->delete(); // Soft delete
+                }
+            }
+
             if ($this->companyUserCompanyRepository->countWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]) == 0) {
                 $this->userRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId]);
 
