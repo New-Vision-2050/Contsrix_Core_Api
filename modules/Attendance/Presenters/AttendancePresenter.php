@@ -26,13 +26,15 @@ class AttendancePresenter extends AbstractPresenter
             'company_id' => $this->attendance->company_id ? (string)$this->attendance->company_id : null,
 
             // Clock times
-            'clock_in_time' => $this->attendance->clock_in_time?->setTimezone(
-                new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
-            )->format('Y-m-d H:i:s'),
+            'clock_in_time' => $this->attendance->clock_in_time ? 
+                (\Carbon\Carbon::parse($this->attendance->clock_in_time)->setTimezone(
+                    new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
+                )->format('Y-m-d H:i:s')) : null,
 
-            'clock_out_time' => $this->attendance->clock_out_time?->setTimezone(
-                new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
-            )->format('Y-m-d H:i:s'),
+            'clock_out_time' => $this->attendance->clock_out_time ? 
+                (\Carbon\Carbon::parse($this->attendance->clock_out_time)->setTimezone(
+                    new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
+                )->format('Y-m-d H:i:s')) : null,
             'start_time' => $this->attendance->start_time,
             'end_time' => $this->attendance->end_time,
 
@@ -94,7 +96,7 @@ class AttendancePresenter extends AbstractPresenter
             'breaks' => $this->formatBreaks(),
 
             // Computed properties
-            'work_date' => $this->attendance->clock_in_time?->format('Y-m-d'),
+            'work_date' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d') : null,
             'is_on_break' => $this->attendance->isOnBreak(),
             'is_clocked_in' =>  (int) $this->attendance->isActive(),
             'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
@@ -129,8 +131,8 @@ class AttendancePresenter extends AbstractPresenter
         foreach ($this->attendance->breaks as $break) {
             $breaks[] = [
                 'id' => (string)$break->id,
-                'start_time' => $break->start_time?->format('Y-m-d H:i:s'),
-                'end_time' => $break->end_time?->format('Y-m-d H:i:s'),
+                'start_time' => $break->start_time ? \Carbon\Carbon::parse($break->start_time)->format('Y-m-d H:i:s') : null,
+                'end_time' => $break->end_time ? \Carbon\Carbon::parse($break->end_time)->format('Y-m-d H:i:s') : null,
                 'duration_minutes' => $break->duration_minutes,
                 'duration_formatted' => $break->getFormattedDuration(),
                 'notes' => $break->notes,
@@ -163,9 +165,9 @@ class AttendancePresenter extends AbstractPresenter
     {
         return [
             'id' => $this->attendance->id ? (string)$this->attendance->id : null,
-            'work_date' => $this->attendance->clock_in_time?->format('Y-m-d'),
-            'clock_in_time' => $this->attendance->clock_in_time?->format('H:i'),
-            'clock_out_time' => $this->attendance->clock_out_time?->format('H:i'),
+            'work_date' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d') : null,
+            'clock_in_time' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('H:i') : null,
+            'clock_out_time' => $this->attendance->clock_out_time ? \Carbon\Carbon::parse($this->attendance->clock_out_time)->format('H:i') : null,
             'total_work_hours' => (float) $this->attendance->total_work_hours,
             'overtime_hours' => (float) $this->attendance->overtime_hours,
             'status' => $this->attendance->status,
@@ -182,9 +184,9 @@ class AttendancePresenter extends AbstractPresenter
     {
         return [
             'user_name' => $this->attendance->user?->name,
-            'work_date' => $this->attendance->clock_in_time?->format('Y-m-d'),
-            'clock_in_time' => $this->attendance->clock_in_time?->format('H:i:s'),
-            'clock_out_time' => $this->attendance->clock_out_time?->format('H:i:s'),
+            'work_date' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d') : null,
+            'clock_in_time' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('H:i:s') : null,
+            'clock_out_time' => $this->attendance->clock_out_time ? \Carbon\Carbon::parse($this->attendance->clock_out_time)->format('H:i:s') : null,
             'total_work_hours' => (float) $this->attendance->total_work_hours,
             'overtime_hours' => (float) $this->attendance->overtime_hours,
             'break_hours' => (float) $this->attendance->total_break_hours,

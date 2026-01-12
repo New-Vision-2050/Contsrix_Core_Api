@@ -23,6 +23,7 @@ class WebsiteProjectSettingPresenter extends AbstractPresenter
             'name' => $this->websiteProjectSetting->name,
             "name_ar"=>$this->websiteProjectSetting->getTranslation('name', 'ar'),
             "name_en"=>$this->websiteProjectSetting->getTranslation('name', 'en'),
+            "website_projects_count"=>$this->websiteProjectSetting->website_projects_count
         ];
     }
 }

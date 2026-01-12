@@ -100,9 +100,10 @@ class WebsiteNewsRepository extends BaseRepository
 
     public function toggleStatus(UuidInterface $id): WebsiteNews
     {
-        $news = $this->find($id);
-        $newStatus = $news->status === 1 ? 0 : 1;
+        $news = $this->getWebsiteNews($id);
+        $newStatus = $news->status == 1 ? 0 : 1;
         $this->update($id, ['status' => $newStatus]);
-        return $news->fresh();
+
+        return $news->fresh(['category']);
     }
 }

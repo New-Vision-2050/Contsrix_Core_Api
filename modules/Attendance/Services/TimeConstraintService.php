@@ -141,6 +141,9 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
+        // Use user's timezone for time comparisons
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        
         $violations = [];
 
         // Check clock-in time against shift start time
@@ -210,6 +213,8 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         }
 
         // 2. Get the user's clock-in time to determine the correct day and shift.
+        // clock_in_time is already in correct timezone from request
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
         $clockInTime = Carbon::parse($attendance->clock_in_time);
         $dayOfWeek = strtolower($clockInTime->format('l'));
 
@@ -218,10 +223,9 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
 
         // Find the specific period the user clocked into.
         // This is important for multi-period days.
-        $clockInTimeStr = $clockInTime->format('H:i');
         $activePeriod = null;
         foreach (($daySchedule['periods'] ?? []) as $period) {
-            if ($this->isTimeWithinRangeWithGrace($clockInTimeStr, $period)) {
+            if ($this->isTimeWithinRangeWithGrace($clockInTime, $period)) {
                 $activePeriod = $period;
                 break;
             }
@@ -232,8 +236,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         }
 
         // 4. Calculate the earliest allowed departure time.
-        $timezone = $attendance->timezone ?? config('app.timezone');
-        $scheduledEndTime = Carbon::createFromTimeString($activePeriod['end_time'], $timezone)->setDateFrom($clockInTime);
+        $scheduledEndTime = Carbon::createFromTimeString($activePeriod['end_time'])->setDateFrom($clockInTime);
         $clockOutTime = Carbon::parse($attendance->clock_out_time);
 
         // Handle overnight shifts where end time is the next day.
@@ -279,13 +282,15 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         $rules = $config['lateness_rules'] ?? [];
         if (!($rules['prevent_lateness'] ?? false)) return false;
 
-        $daySchedule = $config['weekly_schedule'][strtolower($attendance->clock_in_time->format('l'))] ?? null;
+        // clock_in_time is already in correct timezone from request
+        $clockInTime = Carbon::parse($attendance->clock_in_time);
+
+        $daySchedule = $config['weekly_schedule'][strtolower($clockInTime->format('l'))] ?? null;
         $firstPeriod = $daySchedule['periods'][0] ?? null;
 
         if (!$firstPeriod || !isset($firstPeriod['start_time'])) return false;
 
-        $clockInTime = Carbon::parse($attendance->clock_in_time);
-        $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'], $clockInTime->timezone)->setDateFrom($clockInTime);
+        $scheduledStartTime = Carbon::createFromTimeString($firstPeriod['start_time'])->setDateFrom($clockInTime);
 
         // Calculate grace period based on lateness_period and lateness_unit
         $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
@@ -466,6 +471,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
+        // clock_in_time is already in correct timezone from request
         $clockInTime = Carbon::parse($attendance->clock_in_time);
 
         // --- FIX 1: CHECK FOR HOLIDAYS FIRST ---
@@ -520,62 +526,66 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         // Check if the clock-in time falls within any of the defined periods for the day.
         $clockInTimeStr = $clockInTime->format('H:i');
         $inAllowedPeriod = false;
-
-
+        // First pass: check if clock-in time is within any period (with grace)
         foreach ($periods as $period) {
-            if (!isset($period['start_time']) || !isset($period['end_time'])) {
-                continue;
+            if ($this->isTimeWithinRangeWithGrace($clockInTime, $period)) {
+                $inAllowedPeriod = true;
+                break;
             }
+        }
 
-            // Ensure period times are properly formatted before creating Carbon objects
-            $startTime = trim($period['start_time']);
-            $endTime = trim($period['end_time']);
+        // If already in an allowed period, no violation
+        if ($inAllowedPeriod) {
+            return false;
+        }
 
-            // Validate time format
-            if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $startTime)) {
-                \Illuminate\Support\Facades\Log::error('Invalid period start time format', [
-                    'start_time' => $startTime,
-                    'period' => $period,
-                    'day_of_week' => $dayOfWeek
-                ]);
-                continue;
+        // Second pass: check early clock-in rules for the NEXT upcoming period only
+        $earlyClockInRules = $daySchedule['early_clock_in_rules'] ?? null;
+        if ($earlyClockInRules && ($earlyClockInRules['prevent_early_clock_in'] ?? false)) {
+            // Find the next upcoming period
+            $nextPeriod = null;
+            $nextPeriodStart = null;
+            
+            foreach ($periods as $period) {
+                if (!isset($period['start_time']) || !isset($period['end_time'])) {
+                    continue;
+                }
+                
+                $startTime = trim($period['start_time']);
+                // Validate time format
+                if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $startTime)) {
+                    continue;
+                }
+                
+                try {
+                    $periodStart = Carbon::createFromFormat('H:i', $startTime)
+                        ->setDateFrom($clockInTime);
+                    
+                    // If period start is after current time, this could be the next period
+                    if ($periodStart->gt($clockInTime)) {
+                        if ($nextPeriodStart === null || $periodStart->lt($nextPeriodStart)) {
+                            $nextPeriod = $period;
+                            $nextPeriodStart = $periodStart;
+                        }
+                    }
+                } catch (\Exception $e) {
+                    continue;
+                }
             }
-
-            if (!preg_match('/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/', $endTime)) {
-                \Illuminate\Support\Facades\Log::error('Invalid period end time format', [
-                    'end_time' => $endTime,
-                    'period' => $period,
-                    'day_of_week' => $dayOfWeek
-                ]);
-                continue;
-            }
-
-            try {
-                $periodStart = Carbon::createFromFormat('H:i', $startTime, $clockInTime->timezone)
-                    ->setDateFrom($clockInTime);
-                $periodEnd = Carbon::createFromFormat('H:i', $endTime, $clockInTime->timezone)
-                    ->setDateFrom($clockInTime);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Failed to create Carbon object from period time', [
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'error' => $e->getMessage()
-                ]);
-                continue;
-            }
-
-
-            if ($periodEnd->lessThan($periodStart)) {
-                $periodEnd->addDay();
-            }
-
-            $earlyClockInRules = $daySchedule['early_clock_in_rules'] ?? null;
-
-            if ($earlyClockInRules && ($earlyClockInRules['prevent_early_clock_in'] ?? false)) {
+            
+            // If there's a next period, check early clock-in rule
+            if ($nextPeriod && $nextPeriodStart) {
                 $earlyPeriod = $earlyClockInRules['early_period'] ?? 0;
                 $earlyUnit = $earlyClockInRules['early_unit'] ?? 'minutes';
-
-                $earliestAllowedTime = $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
+                
+                $earliestAllowedTime = $nextPeriodStart->copy()->sub($earlyPeriod, $earlyUnit);
+                
+                // If clock-in time is within the early window, allow it
+                if ($clockInTime->gte($earliestAllowedTime) && $clockInTime->lt($nextPeriodStart)) {
+                    return false; // Allow early clock-in within grace period
+                }
+                
+                // If clock-in time is before the early window
                 if ($clockInTime->lt($earliestAllowedTime)) {
                     return [
                         'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
@@ -584,42 +594,13 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
                         'details' => [
                             'clock_in_time' => $clockInTime->toTimeString(),
                             'earliest_allowed_time' => $earliestAllowedTime->toTimeString(),
-                            'period_start' => $periodStart->toTimeString(),
+                            'period_start' => $nextPeriodStart->toTimeString(),
                             'early_clock_in_rules' => $earlyClockInRules,
                         ]
                     ];
                 }
             }
-            if ($this->isTimeWithinRangeWithGrace($clockInTime, $period)) {
-                $inAllowedPeriod = true;
-                break;
-            }
         }
-        if($period['end_time'] < $clockInTime->format('H:i')){
-            return [
-                'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
-                'severity' => $this->getSeverityFromConfig($config),
-                'message' => 'Clock-in time is outside of all allowed work periods for this day2.',
-                'details' => [
-                    'day_of_week' => $dayOfWeek,
-                    'clock_in_time' => $clockInTimeStr,
-                    'allowed_periods' => $periods
-                ]
-            ];
-        }
-        // If the clock-in time is outside all allowed periods, it's a violation.
-        // if (!$inAllowedPeriod) {
-        //     return [
-        //         'constraint_type' => AttendanceConstraint::TIME_MULTIPLE_PERIODS,
-        //         'severity' => $this->getSeverityFromConfig($config),
-        //         'message' => 'Clock-in time is outside of all allowed work periods for this day1.',
-        //         'details' => [
-        //             'day_of_week' => $dayOfWeek,
-        //             'clock_in_time' => $clockInTimeStr,
-        //             'allowed_periods' => $periods
-        //         ]
-        //     ];
-        // }
 
         // If all checks pass, the time is valid.
         return false;
@@ -694,7 +675,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
             return false;
         }
 
-        // Parse the user's clock-in time and convert to local timezone for comparisons
+        // clock_in_time is already in correct timezone from request
         $clockInTimeLocal = Carbon::parse($attendance->clock_in_time);
 
         $dayOfWeek = strtolower($clockInTimeLocal->format('l'));

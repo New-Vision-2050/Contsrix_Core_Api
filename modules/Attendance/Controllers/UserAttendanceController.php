@@ -45,8 +45,8 @@ class UserAttendanceController extends Controller
             $userId = (string) Auth::id();
             $date = $request->input('date'); // Optional: Y-m-d format, defaults to today if null
 
-            // If date is provided, validate and use it; otherwise use today's date
-            $targetDate = $date ?? \Carbon\Carbon::now()->format('Y-m-d');
+            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $targetDate = $date ?? \Carbon\Carbon::now($timezone)->format('Y-m-d');
 
             $result = $this->userAttendanceService->getUserConstraints($userId, $targetDate);
             
@@ -108,6 +108,20 @@ class UserAttendanceController extends Controller
             $page = (int) $request->input('page', 1);
             $perPage = (int) $request->input('per_page', 10);
 
+            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $currentDate = \Carbon\Carbon::now($timezone)->format('Y-m-d');
+            $userConstraints = $this->userAttendanceService->getUserConstraints($userId, $currentDate);
+            $canClockIn = false;
+            
+            if (isset($userConstraints['work_rules']['all_work_periods'])) {
+                foreach ($userConstraints['work_rules']['all_work_periods'] as $period) {
+                    if ($period['can_clock_in'] ?? false) {
+                        $canClockIn = true;
+                        break;
+                    }
+                }
+            }
+
             $result = $this->userAttendanceService->getUserAttendanceHistory(
                 $userId,
                 $month,
@@ -126,6 +140,7 @@ class UserAttendanceController extends Controller
                     'next_page' => $result['pagination']['next_page'] ?? $result['pagination']['page'],
                     'last_page' => $result['pagination']['last_page'],
                     'result_count' => $result['pagination']['result_count'],
+                    'can_clock_in' => $canClockIn,
                 ]
             );
         } catch (ModelNotFoundException $e) {

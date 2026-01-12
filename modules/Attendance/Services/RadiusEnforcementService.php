@@ -71,12 +71,13 @@ class RadiusEnforcementService
         $allowExceptions = $enforcement['allow_temporary_exceptions'] ?? false;
 
         // Check for temporary exceptions
+        $timezone = $attendance->timezone ?? getTimeZoneByRequest() ?? config('app.timezone');
         if ($allowExceptions && !empty($attendance->exceptions)) {
             foreach ($attendance->exceptions as $exception) {
                 if ($exception['type'] === 'temporary_location') {
-                    $exceptionStart = Carbon::parse($exception['start_time']);
-                    $exceptionEnd = Carbon::parse($exception['end_time']);
-                    $now = Carbon::now();
+                    $exceptionStart = Carbon::parse($exception['start_time'], $timezone);
+                    $exceptionEnd = Carbon::parse($exception['end_time'], $timezone);
+                    $now = Carbon::now($timezone);
 
                     // If current time is within exception period, use temporary location instead
                     if ($now->between($exceptionStart, $exceptionEnd)) {
@@ -165,7 +166,7 @@ class RadiusEnforcementService
 
         // If still outside, calculate time from first outside to now
         if ($currentlyOutside && $firstOutsideTime) {
-            $timeOutsideRadius += $firstOutsideTime->diffInMinutes(Carbon::now());
+            $timeOutsideRadius += $firstOutsideTime->diffInMinutes(Carbon::now($timezone));
         }
 
         // Check if time outside radius exceeds threshold

@@ -31,6 +31,7 @@ class WebsiteAddress extends Model
         'city_id',
         'company_id',
         'title',
+        'address',
         'latitude',
         'longitude',
         'status',

@@ -37,11 +37,10 @@ class AttendanceService
 
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
-        $constraints = $constraintService->getTodaysWorkRulesForUser($user);
-        $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'];
-        
-        $timezone = getTimeZoneByRequest()?? config('app.timezone');
-        $date = Carbon::now()->format('Y-m-d');
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $currentDate = Carbon::now($timezone)->format('Y-m-d');
+        $constraints = $constraintService->getTodaysWorkRulesForUser($user, $currentDate);
+        $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'] ?? false;
 
 
         $periodStartTime = data_get($constraints, 'current_work_period.start_time');
@@ -49,11 +48,8 @@ class AttendanceService
         $day_status = 'in_loction';
 
 
-        $startDateTime = Carbon::parse($date . ' ' . $periodStartTime);
-        $endDateTime = Carbon::parse($date . ' ' . $periodEndTime);
-
-        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodStartTime, $timezone);
-        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $periodEndTime, timezone: $timezone);
+        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodStartTime, $timezone);
+        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodEndTime, $timezone);
 
         if ($startDateTime->gt($endDateTime)) {
             $endDateTime->addDay();
@@ -90,8 +86,8 @@ class AttendanceService
             'company_id' => $clockInDTO->getCompanyId(),
             'clock_in_time' => $clockInDTO->getClockInTime(),
             'clock_in_location' => $clockInDTO->getLocation(),
-            'start_time' => $startDateTime,
-            'end_time' => $endDateTime,
+            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
+            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
             'notes' => $clockInDTO->getNotes(),
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
@@ -100,7 +96,7 @@ class AttendanceService
             'is_late' => 0,
             'is_holiday' => 0,
             'day_status' => $day_status,
-            'timezone' => getTimeZoneByRequest() ?? config('app.timezone'),
+            'timezone' => $timezone,
         ];
         $attendance = Attendance::where('start_time',$startDateTime)
         ->whereNull('clock_in_time')->first();
@@ -127,7 +123,6 @@ class AttendanceService
     {
         // Get current attendance
         $attendance = $this->attendanceRepository->getCurrentAttendance($clockOutDTO->getUserId());
-
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
@@ -136,17 +131,10 @@ class AttendanceService
             throw AttendanceException::alreadyClockedOut();
         }
 
-        // Validate clock out time
-        $clockOutTime = Carbon::parse($clockOutDTO->getClockOutTime());
-        $clockInTime = Carbon::parse($attendance->clock_in_time);
-
-        if ($clockOutTime->lt($clockInTime)) {
-            throw AttendanceException::invalidClockOutTime();
-        }
 
         // Update attendance record
         $updateData = [
-            'clock_out_time' => $clockOutDTO->getClockOutTime(),
+            'clock_out_time' => Carbon::parse($clockOutDTO->getClockOutTime())->setTimezone(getTimeZoneByRequest()),
             'clock_out_location' => $clockOutDTO->getLocation(),
             'notes' => $attendance->notes . ($clockOutDTO->getNotes() ? "\n" . $clockOutDTO->getNotes() : ''),
             'status' => 'completed',
@@ -296,7 +284,7 @@ class AttendanceService
                 'is_absent' => true,
                 'id' => Uuid::uuid4(),
                 // Add start_time and end_time for proper grouping
-                'start_time' => Carbon::now()->format('Y-m-d H:i:s'),
+                'start_time' => Carbon::now('UTC')->format('Y-m-d H:i:s'),
                 'end_time' => null
             ]);
 
@@ -616,8 +604,8 @@ class AttendanceService
             return false; // Cannot end an inactive or already completed shift
         }
 
-        // Set clock out time to current time
-        $timestamp = Carbon::now();
+        // Set clock out time to current time in UTC for database storage
+        $timestamp = Carbon::now('UTC');
         $updateData = [
             'clock_out_time' => $timestamp,
             'status' => Attendance::STATUS_COMPLETED,
@@ -700,14 +688,20 @@ class AttendanceService
         $query = $this->attendanceRepository->getQuery()
             ->whereIn('user_id', $userIds);
 
+        // Get timezone and convert to UTC for database query
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $dateInTz = $date->copy()->setTimezone($timezone);
+        
         if ($period && isset($period['start_time']) && isset($period['end_time'])) {
             // Check for records within the specific period on the given date
-            $startTime = Carbon::parse($date->toDateString() . ' ' . $period['start_time']);
-            $endTime = Carbon::parse($date->toDateString() . ' ' . $period['end_time']);
+            $startTime = Carbon::parse($dateInTz->toDateString() . ' ' . $period['start_time'], $timezone)->setTimezone('UTC');
+            $endTime = Carbon::parse($dateInTz->toDateString() . ' ' . $period['end_time'], $timezone)->setTimezone('UTC');
             $query->whereBetween('start_time', [$startTime, $endTime]);
         } else {
             // Fallback to checking the entire day if no period is specified
-            $query->whereDate('start_time', $date);
+            $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
+            $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
+            $query->whereBetween('start_time', [$dayStartUtc, $dayEndUtc]);
         }
 
         return $query->pluck('user_id')->all();
@@ -775,9 +769,15 @@ class AttendanceService
      */
     public function getWaitingUserIdsOnDate(Carbon $date, ?string $companyId = null): array
     {
+        // Convert date range to UTC for database query
+        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $dateInTz = $date->copy()->setTimezone($timezone);
+        $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
+        $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
+        
         $query = $this->attendanceRepository->getQuery()
             ->where('status', Attendance::STATUS_WAITING)
-            ->whereDate('clock_in_time', $date);
+            ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
 
         if ($companyId) {
             $query->where('company_id', $companyId);

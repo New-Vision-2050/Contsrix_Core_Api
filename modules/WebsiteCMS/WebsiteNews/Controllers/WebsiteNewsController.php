@@ -7,6 +7,7 @@ namespace Modules\WebsiteCMS\WebsiteNews\Controllers;
 use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Modules\WebsiteCMS\SocialMediaLink\Requests\UpdateStatusRequest;
 use Modules\WebsiteCMS\WebsiteNews\Handlers\DeleteWebsiteNewsHandler;
 use Modules\WebsiteCMS\WebsiteNews\Handlers\UpdateWebsiteNewsHandler;
 use Modules\WebsiteCMS\WebsiteNews\Presenters\WebsiteNewsPresenter;
@@ -15,6 +16,7 @@ use Modules\WebsiteCMS\WebsiteNews\Requests\DeleteWebsiteNewsRequest;
 use Modules\WebsiteCMS\WebsiteNews\Requests\GetWebsiteNewsListRequest;
 use Modules\WebsiteCMS\WebsiteNews\Requests\GetWebsiteNewsRequest;
 use Modules\WebsiteCMS\WebsiteNews\Requests\UpdateWebsiteNewsRequest;
+use Modules\WebsiteCMS\WebsiteNews\Requests\ToggleStatusRequest;
 use Modules\WebsiteCMS\WebsiteNews\Services\WebsiteNewsCRUDService;
 use Modules\WebsiteCMS\WebsiteNews\Exports\WebsiteNewsExport;
 use Modules\WebsiteCMS\WebsiteNews\Requests\ExportWebsiteNewsRequest;
@@ -77,9 +79,10 @@ class WebsiteNewsController extends Controller
         return Json::deleted();
     }
 
-    public function updateStatus(GetWebsiteNewsRequest $request): JsonResponse
+    public function toggleStatus(UpdateStatusRequest $request): JsonResponse
     {
-        $item = $this->websiteNewsService->toggleStatus(Uuid::fromString($request->route('id')));
+        $id = Uuid::fromString($request->route('id'));
+        $item = $this->websiteNewsService->toggleStatus($id);
 
         $presenter = new WebsiteNewsPresenter($item);
 

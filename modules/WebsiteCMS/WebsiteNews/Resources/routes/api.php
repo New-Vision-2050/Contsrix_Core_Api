@@ -15,8 +15,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     Route::post('/{id}', [WebsiteNewsController::class, 'update'])
         ->permission(Permission::WEBSITE_NEWS_UPDATE());
-    Route::patch('/{id}/toggle-active', [WebsiteNewsController::class, 'updateStatus']);
-//        ->permission(Permission::WEBSITE_NEWS_ACTIVATE());
+    Route::patch('/{id}/toggle-active', [WebsiteNewsController::class, 'toggleStatus']);
     Route::delete('/{id}', [WebsiteNewsController::class, 'delete'])
         ->permission(Permission::WEBSITE_NEWS_DELETE());
 });
