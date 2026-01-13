@@ -307,6 +307,7 @@ class UserAttendanceService
             'is_active' => $isActive,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
+            'can_clock_out' => $hasActiveAttendance,
             'attendance' => $attendance,
         ]);
     }
