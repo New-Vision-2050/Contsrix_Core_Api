@@ -140,11 +140,12 @@ class WebsiteProjectRepository extends BaseRepository
                     }
                 }
             }
+            // Delete existing project details
+            $websiteProject->projectDetails()->delete();
 
             // Update project details if provided
             if (!empty($projectDetails)) {
-                // Delete existing project details
-                $websiteProject->projectDetails()->delete();
+
 
                 // Create new project details
                 foreach ($projectDetails as $detail) {
