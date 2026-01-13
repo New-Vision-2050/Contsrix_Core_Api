@@ -52,10 +52,10 @@ class AttendanceController extends Controller
             $rawRequestData['timezone'] = getTimeZoneByRequest() ?? config('app.timezone');
  
             $violations = $this->mockAttendanceService->handleClockInProcess($clockInDTO, $rawRequestData);
-
+       
             if (!empty($violations)) {
                 return Json::error(
-                    description: 'Clock-in blocked due to constraint violations',
+                    description: $violations[0]['message'] ?? 'Clock-in blocked due to constraint violations',
                     data: ['violations' => $violations],
                     httpStatus: 422
                 );
