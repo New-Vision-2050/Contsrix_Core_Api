@@ -79,7 +79,11 @@ class UserAttendanceService
             'is_clocked_in' => $attendance?->isActive() ?? false,
             'is_on_break' => $attendance?->isOnBreak() ?? false,
             'attendance_id' => $attendance ? (string) $attendance->id : null,
-            'clock_in_time' => $attendance?->clock_in_time?->format('Y-m-d H:i:s'),
+            'clock_in_time' => $attendance?->clock_in_time ? 
+                (is_string($attendance->clock_in_time) ? 
+                    Carbon::parse($attendance->clock_in_time)->format('Y-m-d H:i:s') : 
+                    $attendance->clock_in_time->format('Y-m-d H:i:s')
+                ) : null,
             'status' => $attendance?->status ?? 'not_clocked_in',
         ];
     }

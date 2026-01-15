@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Carbon\Carbon;
 use Modules\Attendance\Models\Attendance;
 
 class LiveTrackingPresenter extends AbstractPresenter
@@ -38,7 +39,11 @@ class LiveTrackingPresenter extends AbstractPresenter
                 'management_name' => $this->attendance->user->professionalData->management->name ?? '-',
             ] : null,
 
-            'clock_in_time' => $this->attendance->clock_in_time->format('H:i:s'),
+            'clock_in_time' => $this->attendance->clock_in_time ? 
+                (is_string($this->attendance->clock_in_time) ? 
+                    Carbon::parse($this->attendance->clock_in_time)->format('H:i:s') : 
+                    $this->attendance->clock_in_time->format('H:i:s')
+                ) : null,
 
             'status' => $this->attendance->status,
             'is_late' => (int) $this->attendance->is_late,
@@ -60,7 +65,11 @@ class LiveTrackingPresenter extends AbstractPresenter
             ] : [
                 'latitude'  => $this->attendance->clock_in_location['latitude'] ?? 0,
                 'longitude' => $this->attendance->clock_in_location['longitude'] ?? 0,
-                'timestamp' => $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
+                'timestamp' => $this->attendance->clock_in_time ? 
+                    (is_string($this->attendance->clock_in_time) ? 
+                        Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d H:i:s') : 
+                        $this->attendance->clock_in_time->format('Y-m-d H:i:s')
+                    ) : null,
                 'accuracy'  => 10,
                 'type' => 'clock_in',
                 'is_mock' => false,
@@ -105,7 +114,11 @@ class LiveTrackingPresenter extends AbstractPresenter
                 'track_points' => count(array_filter($trackingPoints, fn($p) => ($p['type'] ?? 'track') === 'track')),
                 'geofence_points' => count(array_filter($trackingPoints, fn($p) => ($p['type'] ?? 'track') === 'geofence')),
                 'mock_locations' => count(array_filter($trackingPoints, fn($p) => ($p['is_mock'] ?? false) === true)),
-                'last_update' => $latestPoint['timestamp'] ?? $this->attendance->clock_in_time->format('Y-m-d H:i:s'),
+                'last_update' => $latestPoint['timestamp'] ?? ($this->attendance->clock_in_time ? 
+                    (is_string($this->attendance->clock_in_time) ? 
+                        Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d H:i:s') : 
+                        $this->attendance->clock_in_time->format('Y-m-d H:i:s')
+                    ) : null),
             ],
         ];
     }
