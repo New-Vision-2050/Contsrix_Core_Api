@@ -43,7 +43,7 @@ class Kernel extends ConsoleKernel
             ->appendOutputTo(storage_path('logs/attendance-status-update.log'));
 
         $schedule->command(SendAttendanceSilentNotificationCommand::class)
-            ->everyFiveMinutes()
+            ->everyMinute()
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-silent-notifications.log'));
