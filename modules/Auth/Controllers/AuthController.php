@@ -129,6 +129,8 @@ class AuthController extends Controller
             [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
 
+            $this->userCRUDService->updateFcmToken($user->id);
+
         $userPresenter = (new UserPresenter($user))->getData();
         if ($nextStep == null) {
             return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep, $user))->getData(), "token" => $token, "user" => $userPresenter]);
