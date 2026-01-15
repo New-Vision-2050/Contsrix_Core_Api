@@ -14,3 +14,10 @@ Schedule::command('notifications:send-document-notifications')
     ->timezone('Asia/Riyadh')
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/document-notifications.log'));
+    
+    Schedule::command('attendance:send-silent-notifications')
+    ->everyFiveMinutes()
+    ->timezone('Asia/Riyadh')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/attendance-silent-notifications.log'));
+
