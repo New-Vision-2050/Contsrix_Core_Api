@@ -83,7 +83,7 @@ class UserRepository extends BaseRepository
     public function updateFcmToken( $id)
     {
         $user = $this->find($id);
-        $user->update(['fcm_token' => request()->header('fcm_token')]); 
+        $user->update(['fcm_token' => request()->fcm_token]); 
     }
 
     public function getUserByGlobalIdWithBranches($global_id, $role = 1)
