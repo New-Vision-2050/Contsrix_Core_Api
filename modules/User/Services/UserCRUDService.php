@@ -59,9 +59,13 @@ class UserCRUDService
         if(!$user) {
             throw new \Exception(__("validation.user-not-found"), 404);
         }
+
         return $user;
     }
-
+    public function updateFcmToken( $id)
+    {
+        return $this->repository->updateFcmToken($id);
+    }
     public function getAvailableTenantForUser(UuidInterface $id)
     {
         $user = $this->repository->find($id);

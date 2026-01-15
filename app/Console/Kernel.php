@@ -4,6 +4,7 @@ namespace App\Console;
 
 use App\Console\Commands\CreateWaitingAttendanceCommand;
 use App\Console\Commands\UpdateAttendanceStatusCommand;
+use App\Console\Commands\SendAttendanceSilentNotificationCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -40,6 +41,12 @@ class Kernel extends ConsoleKernel
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-status-update.log'));
+
+        $schedule->command(SendAttendanceSilentNotificationCommand::class)
+            ->everyFiveMinutes()
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/attendance-silent-notifications.log'));
 
 
     }
