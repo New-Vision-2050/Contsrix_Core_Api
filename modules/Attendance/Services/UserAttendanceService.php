@@ -304,14 +304,18 @@ class UserAttendanceService
             return $att['status'] === 'active';
         });
         
-        $canClockIn = $isActive && !$hasActiveAttendance;
+        
+        $getCurrentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
+        
+        $canClockIn = $isActive && !$hasActiveAttendance && (bool)!$getCurrentAttendance;
+        
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
-            'can_clock_out' => $hasActiveAttendance,
+            'can_clock_out' => (bool) $getCurrentAttendance,
             'attendance' => $attendance,
         ]);
     }
