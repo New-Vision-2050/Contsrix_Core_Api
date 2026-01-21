@@ -41,6 +41,16 @@ class WebsiteNewsController extends Controller
 
         return Json::items(WebsiteNewsPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
+        public function website(GetWebsiteNewsListRequest $request): JsonResponse
+    {
+        $list = $this->websiteNewsService->listConditions(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+
+        );
+
+        return Json::items(WebsiteNewsPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
 
     public function show(GetWebsiteNewsRequest $request): JsonResponse
     {

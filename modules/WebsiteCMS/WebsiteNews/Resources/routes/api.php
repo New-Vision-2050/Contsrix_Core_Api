@@ -5,7 +5,7 @@ use Modules\WebsiteCMS\WebsiteNews\Controllers\WebsiteNewsController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::get('/', [WebsiteNewsController::class, 'index'])->middleware([\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]);
-
+Route::get('/active', [WebsiteNewsController::class, 'website'])->middleware([\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]);
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::post('/', [WebsiteNewsController::class, 'store'])
         ->permission(Permission::WEBSITE_NEWS_CREATE());
