@@ -112,6 +112,7 @@ class AttendanceRepository extends BaseRepository
         return Attendance::with('user')
             ->where('user_id', $userId->toString())
             ->whereNull('clock_out_time')
+            ->whereNotNull('clock_in_time')
             ->first()
             ?->refresh();
     }
