@@ -30,11 +30,11 @@ class AttendanceService
     public function clockIn(ClockInDTO $clockInDTO)
     {
         $existingAttendance = $this->attendanceRepository->getCurrentAttendance($clockInDTO->getUserId());
-
-        if ($existingAttendance && !$existingAttendance->clock_out_time) {
+       
+        if ($existingAttendance && !$existingAttendance->clock_out_time && $existingAttendance->clock_in_time) {
             throw AttendanceException::alreadyClockedIn();
         }
-
+   
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
