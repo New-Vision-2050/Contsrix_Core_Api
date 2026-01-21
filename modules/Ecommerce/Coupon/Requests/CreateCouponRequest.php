@@ -17,7 +17,8 @@ class CreateCouponRequest extends FormRequest
             'coupon_type' => 'required|string|in:discount_on_purchase,free_delivery,first_order',
             'title' => 'required|string|max:100',
             'code' => 'required|string|max:15|unique:coupons,code',
-            'customer_id' => 'nullable|uuid|exists:users,id',
+            'customer_id' => 'nullable|array',
+            'customer_id.*' => 'uuid|exists:users,id',
             'max_usage_per_user' => 'nullable|integer|min:1',
             'discount_type' => 'required|string|in:percentage,fixed',
             'discount_amount' => 'required|numeric|min:0',
@@ -41,6 +42,9 @@ class CreateCouponRequest extends FormRequest
             'code.unique' => 'رمز القسيمة موجود مسبقاً',
             'customer_id.uuid' => 'معرف العميل يجب أن يكون UUID صحيح',
             'customer_id.exists' => 'العميل المحدد غير موجود',
+            'customer_id.array' => 'يجب أن تكون قائمة العملاء مصفوفة',
+            'customer_id.*.uuid' => 'معرف العميل يجب أن يكون UUID صحيح',
+            'customer_id.*.exists' => 'العميل المحدد غير موجود',
             'max_usage_per_user.integer' => 'الحد الأقصى للاستخدام يجب أن يكون رقم صحيح',
             'max_usage_per_user.min' => 'الحد الأقصى للاستخدام يجب أن يكون أكبر من صفر',
             'discount_type.required' => 'نوع الخصم مطلوب',
@@ -65,13 +69,16 @@ class CreateCouponRequest extends FormRequest
     public function createCouponDTO(): CreateCouponDTO
     {
         $tenantId = tenant('id') ?? 'default-company-id';
-        
+
+        $customerInput = $this->input('customer_id');
+        $customerId = is_array($customerInput) ? ($customerInput[0] ?? null) : $customerInput;
+
         return new CreateCouponDTO(
             companyId: $tenantId,
             couponType: $this->input('coupon_type'),
             title: $this->input('title'),
             code: $this->input('code'),
-            customerId: $this->input('customer_id'),
+            customerId: $customerId,
             maxUsagePerUser: $this->input('max_usage_per_user'),
             discountType: $this->input('discount_type'),
             discountAmount: (float) $this->input('discount_amount'),
