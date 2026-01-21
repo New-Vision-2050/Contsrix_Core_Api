@@ -17,7 +17,7 @@ class CreateCouponRequest extends FormRequest
             'coupon_type' => 'required|string|in:discount_on_purchase,free_delivery,first_order',
             'title' => 'required|string|max:100',
             'code' => 'required|string|max:15|unique:coupons,code',
-            'customer_id' => 'nullable|uuid|exists:customers,id',
+            'customer_id' => 'nullable|uuid|exists:users,id',
             'max_usage_per_user' => 'nullable|integer|min:1',
             'discount_type' => 'required|string|in:percentage,fixed',
             'discount_amount' => 'required|numeric|min:0',
