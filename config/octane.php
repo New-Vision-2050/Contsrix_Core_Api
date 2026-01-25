@@ -129,6 +129,16 @@ return [
         // Flush tenancy-related bindings between requests
         \Stancl\Tenancy\Tenancy::class,
         \Spatie\Permission\PermissionRegistrar::class,
+        
+        // Flush Attendance constraint services to prevent state leakage
+        \Modules\Attendance\Services\TimeConstraintService::class,
+        \Modules\Attendance\Services\LocationConstraintService::class,
+        \Modules\Attendance\Services\DeviceConstraintService::class,
+        \Modules\Attendance\Services\RoleConstraintService::class,
+        \Modules\Attendance\Services\BehavioralConstraintService::class,
+        \Modules\Attendance\Services\SecurityConstraintService::class,
+        \Modules\Attendance\Services\ComplianceConstraintService::class,
+        \Modules\Attendance\Services\AttendanceConstraintService::class,
     ],
 
     /*
