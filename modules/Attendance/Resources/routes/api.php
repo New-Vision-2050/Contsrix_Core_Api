@@ -83,6 +83,9 @@ Route::prefix('attendance')->group(function () {
        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team');
 
+    Route::get('team/user', [AttendanceController::class, 'getUserAttendance'])
+        ->name('attendance.team');
+        
     Route::get('{attendance}/team', [AttendanceController::class, 'teamAttendance'])
        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team.show');
