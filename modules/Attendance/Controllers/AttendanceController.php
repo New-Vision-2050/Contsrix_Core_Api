@@ -11,6 +11,7 @@ use Illuminate\Routing\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Support\Facades\Auth;
 use Modules\Attendance\Exceptions\AttendanceException;
+use Modules\Attendance\Presenters\AttendanceUserPresenter;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Requests\ClockInRequest;
@@ -342,33 +343,16 @@ class AttendanceController extends Controller
         if ($result->isEmpty()) {
             return Json::items([], message: 'No attendance records found');
         }
-
-        // Map only the required fields for each item
-        $payload = collect($result->items())->map(function ($item) {
-            return [
-                'id' => $item['id'] ?? ($item->id ?? null),
-                'status' => $item['status'] ?? ($item->status ?? null),
-                'is_late' => $item['is_late'] ?? ($item->is_late ?? null),
-                'is_absent' => $item['is_absent'] ?? ($item->is_absent ?? null),
-                'is_holiday' => $item['is_holiday'] ?? ($item->is_holiday ?? null),
-                'work_date' => $item['work_date'] ?? ($item->work_date ?? null),
-                'day_status' => $item['day_status'] ?? ($item->day_status ?? null),
-            ];
-        })->values();
-
-        // Build pagination info as in your example
-        $pagination = [
-            'page' => $result->currentPage(),
-            'next_page' => $result->currentPage() < $result->lastPage() ? $result->currentPage() + 1 : $result->lastPage(),
+        return Json::items(
+    AttendanceUserPresenter::collection($result->items()),
+    [],
+    200,
+    [
+            'total' => $result->total(),
+            'per_page' => $result->perPage(),
+            'current_page' => $result->currentPage(),
             'last_page' => $result->lastPage(),
-            'result_count' => $result->total(),
-        ];
-
-        return response()->json([
-            'code' => 200,
-            'message' => null,
-            'pagination' => $pagination,
-            'payload' => $payload,
+            'result_count' =>$result->total(),
         ]);
     }
     public function teamAttendance(AttendanceRequest $request)//: JsonResponse
