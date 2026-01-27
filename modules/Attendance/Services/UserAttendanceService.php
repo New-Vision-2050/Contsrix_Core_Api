@@ -306,7 +306,7 @@ class UserAttendanceService
         
         
         $getCurrentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
-       
+                            dump($getCurrentAttendance);
         $canClockIn = $isActive && !$hasActiveAttendance && (bool)!$getCurrentAttendance;
         
 
