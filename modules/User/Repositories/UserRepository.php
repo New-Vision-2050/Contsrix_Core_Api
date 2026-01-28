@@ -80,6 +80,12 @@ class UserRepository extends BaseRepository
         })->where("company_id", tenant("id"))->first();
     }
 
+    public function updateFcmToken( $id)
+    {
+        $user = $this->find($id);
+        $user->update(['fcm_token' => request()->fcm_token]); 
+    }
+
     public function getUserByGlobalIdWithBranches($global_id, $role = 1)
     {
         $user = $this->model->query()->where('global_company_user_id', $global_id)->where("company_id", tenant("id"))->first();

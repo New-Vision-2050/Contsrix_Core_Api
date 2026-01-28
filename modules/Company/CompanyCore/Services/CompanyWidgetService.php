@@ -57,6 +57,6 @@ class CompanyWidgetService
 
     public function clearWidgetCache(): void
     {
-        Cache::forget('company_widget_statistics');
+        Cache::forget('company_widget_statistics-'.app()->getLocale());
     }
 }

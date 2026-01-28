@@ -30,11 +30,11 @@ class AttendanceService
     public function clockIn(ClockInDTO $clockInDTO)
     {
         $existingAttendance = $this->attendanceRepository->getCurrentAttendance($clockInDTO->getUserId());
-
-        if ($existingAttendance && !$existingAttendance->clock_out_time) {
+       
+        if ($existingAttendance && !$existingAttendance->clock_out_time && $existingAttendance->clock_in_time) {
             throw AttendanceException::alreadyClockedIn();
         }
-
+   
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
@@ -506,10 +506,13 @@ class AttendanceService
         return $this->processAttendancePeriods($realAttendanceRecords);
     }
 
-    public function getTeamAttendance(array $filters, ?int $page = 1, ?int $perPage = 10)//: array // تغيير نوع العودة إلى array
+    public function getTeamAttendance(array $filters, ?int $page = 1, ?int $perPage = 10,$userId = null)//: array // تغيير نوع العودة إلى array
     {
         $realAttendanceRecords = Attendance::query()
             ->filter($filters)
+            ->when($userId, function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
             ->select([
                 'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
                 'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',

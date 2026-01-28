@@ -1,0 +1,118 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Modules\Attendance\Models\Attendance;
+use Modules\NotificationSettings\Services\FirebaseNotificationService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
+class SendAttendanceSilentNotificationCommand extends Command
+{
+    protected $signature = 'attendance:send-silent-notifications {--dry-run : Show users who would receive notifications without sending}';
+    protected $description = 'Send silent notifications to users who are clocked in but not clocked out (runs every 5 minutes)';
+
+    public function handle()
+    {
+        $isDryRun = $this->option('dry-run');
+        
+        if ($isDryRun) {
+            $this->info('DRY RUN MODE - No notifications will be sent');
+        }
+
+        $this->info('Starting attendance silent notification process...');
+        
+        // Get all active attendances (clocked in but not clocked out)
+        $activeAttendances = Attendance::where('status', Attendance::STATUS_ACTIVE)
+            ->whereNotNull('clock_in_time')
+            ->whereNull('clock_out_time')
+            ->with('user')
+            ->get();
+
+        $this->info('Found ' . $activeAttendances->count() . ' active attendances.');
+        
+        $notificationsSent = 0;
+        $notificationsSkipped = 0;
+
+        foreach ($activeAttendances as $attendance) {
+            $user = $attendance->user;
+            
+            if (!$user) {
+                $this->warn("Skipping attendance {$attendance->id} - no user found");
+                $notificationsSkipped++;
+                continue;
+            }
+
+            if (!$user->fcm_token) {
+                $this->warn("Skipping user {$user->name} - no FCM token");
+                $notificationsSkipped++;
+                continue;
+            }
+
+            // Prepare notification data
+            $notificationData = [
+                'type' => 'attendance_tracking',
+                'attendance_id' => (string) $attendance->id,
+                'user_id' => (string) $user->id,
+                'clock_in_time' => $attendance->clock_in_time ? 
+                    (is_string($attendance->clock_in_time) ? 
+                        Carbon::parse($attendance->clock_in_time)->toISOString() : 
+                        $attendance->clock_in_time->toISOString()
+                    ) : null,
+                'status' => $attendance->status,
+                'timestamp' => Carbon::now()->toISOString(),
+                'action' => 'sync_attendance_status'
+            ];
+
+            if ($isDryRun) {
+                $this->info("WOULD SEND to user: {$user->name} ({$user->email})");
+                $this->line("  - Attendance ID: {$attendance->id}");
+                $this->line("  - Clock In: " . ($attendance->clock_in_time ?? 'N/A'));
+                $this->line("  - Data: " . json_encode($notificationData, JSON_PRETTY_PRINT));
+                $this->line("");
+            } else {
+                // Send silent notification
+                $success = FirebaseNotificationService::sendSilent($user->fcm_token, $notificationData);
+                
+                if ($success) {
+                    $this->info("✓ Sent silent notification to: {$user->name}");
+                    $notificationsSent++;
+                    
+                    // Log successful notification
+                    Log::info('Attendance silent notification sent', [
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'attendance_id' => $attendance->id,
+                        'clock_in_time' => $attendance->clock_in_time,
+                        'timestamp' => Carbon::now()->toISOString()
+                    ]);
+                } else {
+                    $this->error("✗ Failed to send notification to: {$user->name}");
+                    $notificationsSkipped++;
+                    
+                    // Log failed notification
+                    Log::error('Attendance silent notification failed', [
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'attendance_id' => $attendance->id,
+                        'fcm_token' => $user->fcm_token,
+                        'timestamp' => Carbon::now()->toISOString()
+                    ]);
+                }
+            }
+        }
+
+        $this->info('');
+        $this->info('Process completed:');
+        $this->line("  - Total active attendances: {$activeAttendances->count()}");
+        $this->line("  - Notifications sent: {$notificationsSent}");
+        $this->line("  - Notifications skipped: {$notificationsSkipped}");
+        
+        if ($isDryRun) {
+            $this->info('DRY RUN COMPLETED - No actual notifications were sent');
+        }
+
+        return Command::SUCCESS;
+    }
+}

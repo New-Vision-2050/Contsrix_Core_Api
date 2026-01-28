@@ -19,6 +19,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         ->permission(Permission::WEBSITE_PROJECT_UPDATE());
     Route::delete('/{id}', [WebsiteProjectController::class, 'delete'])
         ->permission(Permission::WEBSITE_PROJECT_DELETE());
+    Route::delete('/{id}/media/{media_id}', [WebsiteProjectController::class, 'deleteMedia'])
+        ->permission(Permission::WEBSITE_PROJECT_UPDATE());
 });
 Route::get('/{id}', [WebsiteProjectController::class, 'show'])->middleware([
     \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class

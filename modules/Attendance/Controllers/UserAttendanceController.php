@@ -49,7 +49,7 @@ class UserAttendanceController extends Controller
             $targetDate = $date ?? \Carbon\Carbon::now($timezone)->format('Y-m-d');
 
             $result = $this->userAttendanceService->getUserConstraints($userId, $targetDate);
-            
+
             return Json::item($result, message: __('messages.attendance.user_constraint_today_retrieved'));
         } catch (AttendanceException $e) {
             return Json::error(

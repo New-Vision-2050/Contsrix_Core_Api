@@ -21,7 +21,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-
 .qodo
+public/firebase_credentials.json
+firebase_credentials.json
 rr
 .rr.yaml

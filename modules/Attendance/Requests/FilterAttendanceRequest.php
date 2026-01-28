@@ -25,7 +25,7 @@ class FilterAttendanceRequest extends FormRequest
         return [
             'user_id' => ['sometimes', 'string', 'exists:users,id'],
             'status' => ['sometimes', 'string', 'in:active,completed,pending_approval,approved,rejected'],
-            'start_date' => ['sometimes', 'date', 'before_or_equal:end_date'],
+            'start_date' => ['sometimes', 'date'],
             'end_date' => ['sometimes', 'date', 'after_or_equal:start_date'],
             'department_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
             'management_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
@@ -78,6 +78,10 @@ class FilterAttendanceRequest extends FormRequest
     public function createFilterAttendanceDTO(string $companyId): FilterAttendanceDTO
     {
         $validated = $this->validated();
+
+        if (!isset($validated['end_date'])) {
+            $validated['end_date'] = now()->toDateString();
+        }
 
         return new FilterAttendanceDTO(
             company_id: $companyId,

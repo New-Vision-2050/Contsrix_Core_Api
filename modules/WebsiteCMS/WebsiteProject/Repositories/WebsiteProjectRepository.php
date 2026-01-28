@@ -140,11 +140,12 @@ class WebsiteProjectRepository extends BaseRepository
                     }
                 }
             }
+            // Delete existing project details
+            $websiteProject->projectDetails()->delete();
 
             // Update project details if provided
             if (!empty($projectDetails)) {
-                // Delete existing project details
-                $websiteProject->projectDetails()->delete();
+
 
                 // Create new project details
                 foreach ($projectDetails as $detail) {
@@ -168,8 +169,16 @@ class WebsiteProjectRepository extends BaseRepository
         return $this->delete($id);
     }
 
-    public function getFeaturedProjects(int $limit = 3): Collection
+    public function getFeaturedProjects(int $limit = null): Collection
     {
+        if ($limit == null)
+        {
+            return $this->model
+            ->where('company_id', tenant('id'))
+            ->where('status', 1)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        }
         return $this->model
             ->where('company_id', tenant('id'))
             ->where('status', 1)
@@ -177,5 +186,12 @@ class WebsiteProjectRepository extends BaseRepository
             ->limit($limit)
             ->with(['projectDetails', 'services', 'websiteProjectSetting',"media"])
             ->get();
+    }
+
+    public function deleteMedia(UuidInterface $id, int $mediaId)
+    {
+        $websiteProject = $this->findOneOrFail($id);
+
+         $websiteProject->deleteMedia($mediaId);
     }
 }

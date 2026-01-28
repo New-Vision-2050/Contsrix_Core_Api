@@ -110,10 +110,11 @@ class AttendanceRepository extends BaseRepository
     public function getCurrentAttendance(UuidInterface $userId): ?Attendance
     {
         return Attendance::with('user')
-            ->where('user_id', $userId)
-            // ->whereDate('clock_in_time', today())
+            ->where('user_id', $userId->toString())
             ->whereNull('clock_out_time')
-            ->first();
+            ->whereNotNull('clock_in_time')
+            ->first()
+            ?->refresh();
     }
 
     /**
