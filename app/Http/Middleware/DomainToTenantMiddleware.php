@@ -22,8 +22,8 @@ class DomainToTenantMiddleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
+     * @param \Illuminate\Http\Request $request
+     * @param \Closure $next
      * @return mixed
      */
     public function handle(Request $request, Closure $next): mixed
@@ -34,23 +34,16 @@ class DomainToTenantMiddleware
         // If X-Domain header is present
         if ($domainName) {
             // Use cache to avoid database query on every request
-            $companyId = Cache::remember(
-                "domain_to_tenant:{$domainName}",
-                self::CACHE_TTL,
-                function () use ($domainName) {
-                    $domain = Domain::where('domain', $domainName)->first();
-                    if (!$domain) {
-                        $domain = WebsiteTheme::where('url', $domainName)->first();
-                    }
-                    return $domain?->company_id;
-                }
-            );
-
+            $domain = Domain::where('domain', $domainName)->first();
+            if (!$domain) {
+                $domain = WebsiteTheme::where('url', $domainName)->first();
+            }
+            $companyId = $domain?->company_id;
             // If domain exists, set the X-Tenant header with the company_id
             if ($companyId) {
                 $request->headers->set('X-Tenant', (string)$companyId);
-                if(empty($request->get('company_id')) && $request->method() !='GET'){
-                    $request->merge(['company_id'=>(string)$companyId]);
+                if (empty($request->get('company_id')) && $request->method() != 'GET') {
+                    $request->merge(['company_id' => (string)$companyId]);
                 }
             }
         }
