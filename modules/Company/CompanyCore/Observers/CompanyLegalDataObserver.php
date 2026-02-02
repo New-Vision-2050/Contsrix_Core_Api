@@ -83,22 +83,11 @@ class CompanyLegalDataObserver
 
         /** @var Media $mediaItem $mediaItem */
         foreach ($mediaItems as $mediaItem) {
-            $fileModel = File::create([
-                'name' => $officialDocument->name,
-                'folder_id' => Folder::query()->where("name","المستندات الرسمية")->where("company_id",$officialDocument->company_id)->first()->id,
-                'access_type' => 'public',
-                'company_id' => $officialDocument->company_id,
-                'management_hierarchy_id' => $officialDocument->management_hierarchy_id,
-                "start_date" => $officialDocument->start_date,
-                "end_date" => $officialDocument->end_date,
 
-
-            ]);
             // Get the full S3 URL or relative path
             $item = $mediaItem->replicate(['id','uuid']); // local fallback
             $item->model_id = $officialDocument->id;
             $item->model_type= CompanyOfficialDocument::class;
-            $item->file_id= $fileModel->id;
             $item->save();
         }
     }

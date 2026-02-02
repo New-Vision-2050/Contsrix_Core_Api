@@ -72,6 +72,8 @@ class CompanyLegalDataRepository extends BaseRepository
                             'folder_id' => $folder->id,
                             'access_type' => 'public',
                             'company_id' => $data["company_id"],
+                            'start_date' => $data["start_date"],
+                            'end_date' => $data["end_date"],
                             'management_hierarchy_id' => $data["management_hierarchy_id"],
                         ]);
 
@@ -155,23 +157,23 @@ class CompanyLegalDataRepository extends BaseRepository
                     // This ensures we keep files based on what's in the request
                     $this->fileDeletedService->deleteFile($legalData, $fileIdsToKeep, 'upload');
                 }
-                
+
                 // Handle new file uploads (file field can be array or single file)
                 if (isset($item["file"]) && !is_string($item["file"])) {
                     $registrationTypeName = CompanyRegistrationType::query()
                         ->where("id", $legalData->registration_type_id)
                         ->first()
                         ->name ?? 'Legal Document';
-                    
+
                     $folder = Folder::query()
                         ->withoutTenancy()
                         ->where("name","المستندات الرسمية")
                         ->where("company_id",$legalData->company_id)
                         ->first();
-                    
+
                     // Convert to array if single file
                     $files = is_array($item["file"]) ? $item["file"] : [$item["file"]];
-                    
+
                     foreach ($files as $index => $file) {
                         if (!is_null($file) && $file instanceof \Illuminate\Http\UploadedFile) {
                             $fileModel = File::create([
