@@ -54,10 +54,10 @@ class CreateCompanyLegalDataRequest extends FormRequest
     public function createCreateCompanyLegalDataDTOs(): array
     {
         [$company, $branch] = $this->declareCompanyAndBranchUsingRequest();
-        
+
         $dtos = [];
-        $data = $this->input('data', []);
-        
+        $data = $this->data;
+
         foreach ($data as $index => $item) {
             $files = [];
             if (isset($item['files']) && is_array($item['files'])) {
@@ -67,7 +67,7 @@ class CreateCompanyLegalDataRequest extends FormRequest
                     }
                 }
             }
-            
+
             $dtos[] = new CreateCompanyLegalDataDTO(
                 managementHierarchy: $branch,
                 registrationTypeId: isset($item['registration_type_id']) ? Uuid::fromString($item['registration_type_id']) : null,
@@ -77,7 +77,7 @@ class CreateCompanyLegalDataRequest extends FormRequest
                 files: !empty($files) ? $files : null,
             );
         }
-        
+
         return $dtos;
     }
 }
