@@ -182,6 +182,8 @@ class CompanyLegalDataRepository extends BaseRepository
                                 'access_type' => 'public',
                                 'company_id' => $legalData->company_id,
                                 'management_hierarchy_id' => $legalData->management_hierarchy_id,
+                                'start_date' => $legalData->start_date,
+                                'end_date' => $legalData->end_date,
                             ]);
 
                             $this->fileUploadService->uploadFile($legalData, $file, 'upload', fileId: $fileModel->id);
