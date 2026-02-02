@@ -39,6 +39,8 @@ class CompanyOfficialDocumentRepository extends BaseRepository
                     'access_type' => 'public',
                     'company_id' => $data["company_id"],
                     'management_hierarchy_id' => $data["management_hierarchy_id"],
+                    "start_date" => $data["start_date"],
+                    "end_date" => $data["end_date"],
 
 
                 ]);
