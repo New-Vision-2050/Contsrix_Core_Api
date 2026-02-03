@@ -60,7 +60,7 @@ class ConstraintServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-                $this->registerEventListeners();
+        $this->registerEventListeners();
         // Any bootstrapping logic can go here
     }
 
