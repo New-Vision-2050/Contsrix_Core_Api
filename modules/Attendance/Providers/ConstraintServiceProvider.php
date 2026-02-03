@@ -42,15 +42,16 @@ class ConstraintServiceProvider extends ServiceProvider
         $this->app->bind(SecurityConstraintServiceInterface::class, SecurityConstraintService::class);
         $this->app->bind(ComplianceConstraintServiceInterface::class, ComplianceConstraintService::class);
 
-        // Register individual services as singletons for better performance
-        $this->app->singleton(TimeConstraintService::class);
-        $this->app->singleton(LocationConstraintService::class);
-        $this->app->singleton(DeviceConstraintService::class);
-        $this->app->singleton(RoleConstraintService::class);
-        $this->app->singleton(BehavioralConstraintService::class);
-        $this->app->singleton(SecurityConstraintService::class);
-        $this->app->singleton(ComplianceConstraintService::class);
-        $this->app->singleton(AttendanceConstraintService::class);
+        // Register services as scoped (cleared per request - Octane compatible)
+        // This allows instance-level caching within a single request
+        $this->app->scoped(TimeConstraintService::class);
+        $this->app->scoped(LocationConstraintService::class);
+        $this->app->scoped(DeviceConstraintService::class);
+        $this->app->scoped(RoleConstraintService::class);
+        $this->app->scoped(BehavioralConstraintService::class);
+        $this->app->scoped(SecurityConstraintService::class);
+        $this->app->scoped(ComplianceConstraintService::class);
+        $this->app->scoped(AttendanceConstraintService::class);
                 $this->registerEventListeners();
     }
 

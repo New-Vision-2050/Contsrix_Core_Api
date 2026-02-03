@@ -37,6 +37,18 @@ class AttendanceConstraintService
     protected SecurityConstraintServiceInterface $securityConstraintService;
     protected ComplianceConstraintServiceInterface $complianceConstraintService;
 
+    /**
+     * Instance-level cache for work rules (Octane-safe since service is not singleton)
+     * @var array<string, array>
+     */
+    private array $workRulesCache = [];
+
+    /**
+     * Instance-level cache for applicable constraints
+     * @var array<string, Collection>
+     */
+    private array $constraintsCache = [];
+
     public function __construct(
         TimeConstraintServiceInterface $timeConstraintService,
         LocationConstraintServiceInterface $locationConstraintService,
@@ -53,6 +65,27 @@ class AttendanceConstraintService
         $this->behavioralConstraintService = $behavioralConstraintService;
         $this->securityConstraintService = $securityConstraintService;
         $this->complianceConstraintService = $complianceConstraintService;
+    }
+
+    /**
+     * Ensure user has required relationships loaded to prevent N+1 queries.
+     * This is called once per request and the relationships are then cached on the model.
+     */
+    private function ensureUserRelationsLoaded(User $user): void
+    {
+        $relationsToLoad = [];
+        
+        if (!$user->relationLoaded('professionalData')) {
+            $relationsToLoad[] = 'professionalData.attendanceConstraint';
+        }
+        if (!$user->relationLoaded('userProfessionalData')) {
+            $relationsToLoad[] = 'userProfessionalData.branch';
+            $relationsToLoad[] = 'userProfessionalData.department';
+        }
+        
+        if (!empty($relationsToLoad)) {
+            $user->load($relationsToLoad);
+        }
     }
 
     /**
@@ -115,11 +148,22 @@ class AttendanceConstraintService
      */
     public function getEffectiveConstraintForUser(User $user)
     {
+        // Check instance cache first (Octane-safe with scoped binding)
+        $cacheKey = 'constraints_effective_' . $user->id;
+        if (isset($this->constraintsCache[$cacheKey])) {
+            return $this->constraintsCache[$cacheKey];
+        }
+
+        // Ensure user relationships are loaded to prevent N+1 queries
+        $this->ensureUserRelationsLoaded($user);
+
         $constraints = [];
         $constraint = $user->professionalData?->attendanceConstraint;
         if ($constraint) {
             $constraints[] = $constraint;
-            return collect($constraints);
+            $result = collect($constraints);
+            $this->constraintsCache[$cacheKey] = $result;
+            return $result;
         }
         $userBranch = $user->userProfessionalData?->branch;
         $userBranchId = $userBranch ? (string) $userBranch->id : null;
@@ -132,13 +176,14 @@ class AttendanceConstraintService
 
             // If a default is found, return it immediately. This is the highest priority rule.
             if ($defaultConstraint->isNotEmpty()) {
+                $this->constraintsCache[$cacheKey] = $defaultConstraint;
                 return $defaultConstraint;
             }
         }
 
         // --- 2. If No Default, Find All Other Applicable Constraints ---
         // This query runs if no default was found for the branch.
-        return AttendanceConstraint::where('company_id', $user->company_id)
+        $result = AttendanceConstraint::where('company_id', $user->company_id)
             ->where('is_active', true)
             ->where(function ($query) use ($user, $userBranchId) {
                 // Condition A: Constraints assigned directly to this user.
@@ -156,6 +201,9 @@ class AttendanceConstraintService
                 });
             })
             ->get();
+
+        $this->constraintsCache[$cacheKey] = $result;
+        return $result;
     }
   public function getApplicableConstraints(User $user): Collection
     {
@@ -558,6 +606,12 @@ class AttendanceConstraintService
             ? Carbon::parse($date, $timezone)
             : Carbon::now($timezone);
 
+        // Check instance cache first - key by user ID and date (Octane-safe with scoped binding)
+        $cacheKey = $user->id . '_' . $now->format('Y-m-d');
+        if (isset($this->workRulesCache[$cacheKey])) {
+            return $this->workRulesCache[$cacheKey];
+        }
+
         $constraints = $this->getApplicableConstraintsForDataRetrieval($user);
         
         if ($constraints->isEmpty()) {
@@ -597,7 +651,7 @@ class AttendanceConstraintService
         $locationRulesResult = $this->buildLocationRules($locationConstraint, $user);
 
         // Combine the results into a final, clean response.
-        return [
+        $result = [
             'day_status'              => $timeRulesResult['day_status'],
             'day_name'                => $now->isoFormat(format: 'dddd'),
             'is_holiday'              => $timeRulesResult['is_holiday'],
@@ -616,6 +670,11 @@ class AttendanceConstraintService
                 'location' => $locationConstraint?->id,
             ],
         ];
+
+        // Cache the result for this request (Octane-safe with scoped binding)
+        $this->workRulesCache[$cacheKey] = $result;
+
+        return $result;
     }
 
     /**
@@ -901,13 +960,24 @@ class AttendanceConstraintService
      */
     public function getApplicableConstraintsForDataRetrieval(User $user): Collection
     {
+        // Check instance cache first (Octane-safe with scoped binding)
+        $cacheKey = 'constraints_data_' . $user->id;
+        if (isset($this->constraintsCache[$cacheKey])) {
+            return $this->constraintsCache[$cacheKey];
+        }
+
+        // Ensure user relationships are loaded to prevent N+1 queries
+        $this->ensureUserRelationsLoaded($user);
+
         // This logic is copied from your previous getEffectiveConstraintForUser
         // It might need refinement based on your business rules for constraint hierarchy/application.
         $constraints = [];
         $constraint = $user->professionalData?->attendanceConstraint; // Assuming direct user constraint is highest
         if ($constraint) {
             $constraints[] = $constraint;
-            return collect($constraints);
+            $result = collect($constraints);
+            $this->constraintsCache[$cacheKey] = $result;
+            return $result;
         }
 
         $userBranchId = $user->userProfessionalData?->branch?->id;
@@ -923,12 +993,14 @@ class AttendanceConstraintService
             ->first(); // Get the single default constraint for the branch
 
             if ($defaultConstraint) {
-                return collect([$defaultConstraint]); // If default is found, return it immediately
+                $result = collect([$defaultConstraint]);
+                $this->constraintsCache[$cacheKey] = $result;
+                return $result; // If default is found, return it immediately
             }
         }
 
         // 2. If No Default, Find All Other Applicable Constraints by user, department, branch, or global
-        return AttendanceConstraint::where('company_id', $user->company_id)
+        $result = AttendanceConstraint::where('company_id', $user->company_id)
             ->where('is_active', true)
             ->where(function ($query) use ($user, $userBranchId, $userDepartmentId) {
                 // Constraints assigned directly to this user.
@@ -952,15 +1024,11 @@ class AttendanceConstraintService
                       ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
                 });
             })
-            // Filter by active effective dates
-            // ->where(function($query) {
-            //     $query->whereNull('effective_from')
-            //           ->orWhere('effective_from', '<=', Carbon::now());
-            // })
-            // ->where(function($query) {
-            //     $query->whereNull('effective_to')
-            //           ->orWhere('effective_to', '>=', Carbon::now());
-            // })
             ->get();
+
+        // Cache the result (Octane-safe with scoped binding)
+        $this->constraintsCache[$cacheKey] = $result;
+
+        return $result;
     }
 }
