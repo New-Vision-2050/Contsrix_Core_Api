@@ -34,7 +34,7 @@ class AdminRequestPresenter extends AbstractPresenter
             "notes" => $this->adminRequest->notes,
             "company_name"=> $this->adminRequest->company->name,
             "attachments"=>MediaPresenter::collection( $this->adminRequest->getMedia("upload")),
-            "created_at" => Carbon::parse($this->adminRequest->created_at)->setTimezone(getTimeZoneByRequest())->format('Y-m-d H:i:s')
+            "created_at" => Carbon::parse($this->adminRequest->created_at)->setTimezone(getTimeZoneBranchByRequest())->format('Y-m-d H:i:s')
 //            "requestable" => $this->adminRequest->requestable,TODO add requestable with specific information dependant on request type
         ];
     }

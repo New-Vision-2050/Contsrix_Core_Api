@@ -179,7 +179,7 @@ class AttendanceRepository extends BaseRepository
     public function getAttendanceByDate(string $userId, Carbon $date): ?Attendance
     {
         // Convert date range to UTC for database query (database stores times in UTC)
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');

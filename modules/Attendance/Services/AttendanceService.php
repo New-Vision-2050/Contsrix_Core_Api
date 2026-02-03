@@ -37,7 +37,7 @@ class AttendanceService
    
         $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $currentDate = Carbon::now($timezone)->format('Y-m-d');
         $constraints = $constraintService->getTodaysWorkRulesForUser($user, $currentDate);
         $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'] ?? false;
@@ -134,7 +134,7 @@ class AttendanceService
 
         // Update attendance record
         $updateData = [
-            'clock_out_time' => Carbon::parse($clockOutDTO->getClockOutTime())->setTimezone(getTimeZoneByRequest()),
+            'clock_out_time' => Carbon::parse($clockOutDTO->getClockOutTime())->setTimezone(getTimeZoneBranchByRequest()),
             'clock_out_location' => $clockOutDTO->getLocation(),
             'notes' => $attendance->notes . ($clockOutDTO->getNotes() ? "\n" . $clockOutDTO->getNotes() : ''),
             'status' => 'completed',
@@ -692,7 +692,7 @@ class AttendanceService
             ->whereIn('user_id', $userIds);
 
         // Get timezone and convert to UTC for database query
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
         
         if ($period && isset($period['start_time']) && isset($period['end_time'])) {
@@ -773,7 +773,7 @@ class AttendanceService
     public function getWaitingUserIdsOnDate(Carbon $date, ?string $companyId = null): array
     {
         // Convert date range to UTC for database query
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');

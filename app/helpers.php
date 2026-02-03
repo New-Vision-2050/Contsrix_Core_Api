@@ -7,11 +7,16 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Request;
-use Intervention\Image\Image as ResizeImage;;
+use Intervention\Image\Image as ResizeImage;
+use Modules\Company\CompanyCore\Models\Company;
+
+;
 
 use Modules\Country\Models\City;
+use Modules\Country\Models\Country;
 use Modules\Country\Models\State;
 use Modules\RoleAndPermission\Models\Permission;
+use Modules\User\Models\User;
 use Stevebauman\Location\Facades\Location;
 use Vectorface\Whip\Whip;
 
@@ -415,10 +420,18 @@ function branchType($all = "no")
 
 function getTimeZoneByRequest()
 {
-    $position = Location::get(request()->ip());
+     $position = Location::get(request()->ip());
 
-    $timezone = $position ? $position->timezone : "Asia/Riyadh";
-    return $timezone;
+     $timezone = $position ? $position->timezone : "Asia/Riyadh";
+    return $timezone ?? "Asia/Riyadh";
+}
+function getTimeZoneBranchByRequest()
+{
+    $user = User::where('id', auth()->user()->id)
+   ->with(['userProfessionalData','userProfessionalData.branch','userProfessionalData.branch.address','userProfessionalData.branch.address.country','userProfessionalData.branch.address.country.timezones'])->first() ;
+    $timezone = $user?->userProfessionalData?->branch?->address?->country?->timezones ;
+
+    return $timezone[0]['zoneName'] ?? "Asia/Riyadh";
 }
 
 function priorityType($all = "yes")
