@@ -41,7 +41,7 @@ class HandelAttendanceConstraintUpdate implements ShouldQueue
         $attendance = Attendance::whereIn('user_id', $userIds)
          ->whereDate('start_time', '>', now()->format('Y-m-d'))
          ->delete();
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
 
          foreach ($userIds as $userId) {
             $this->autoAttendanceService->generateAttendanceUsers($constraint->company_id,$userId,now($timezone)->addDay()->startOfDay());

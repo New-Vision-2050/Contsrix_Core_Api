@@ -98,7 +98,7 @@ class UserAttendanceService
     private function getAttendancesForDate(User $user, Carbon $date): Collection
     {
         // Ensure we're using the correct timezone for date comparison
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
         
         // Convert date range to UTC for database query (database stores times in UTC)
@@ -132,7 +132,7 @@ class UserAttendanceService
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
             
             // Get consistent timezone
-            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
             $now = Carbon::now($timezone);
             
             // Since parsePeriodTime already returns times in correct timezone, use them directly
@@ -156,7 +156,7 @@ class UserAttendanceService
         $timeKey = "{$type}_time";
 
         // Get consistent timezone
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
 
         if (isset($period[$carbonKey])) {
             $time = $period[$carbonKey];
@@ -743,9 +743,7 @@ class UserAttendanceService
      */
     private function getTimezone(): string
     {
-        return function_exists('getTimeZoneByRequest') 
-            ? (getTimeZoneByRequest() ?? config('app.timezone')) 
-            : config('app.timezone');
+        return getTimeZoneBranchByRequest() ?? config('app.timezone');
     }
 
     /**

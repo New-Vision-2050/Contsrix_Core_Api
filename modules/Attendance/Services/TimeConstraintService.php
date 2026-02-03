@@ -142,7 +142,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
         }
 
         // Use user's timezone for time comparisons
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         
         $violations = [];
 
@@ -214,7 +214,7 @@ class TimeConstraintService extends BaseConstraintService implements TimeConstra
 
         // 2. Get the user's clock-in time to determine the correct day and shift.
         // clock_in_time is already in correct timezone from request
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $clockInTime = Carbon::parse($attendance->clock_in_time);
         $dayOfWeek = strtolower($clockInTime->format('l'));
 
