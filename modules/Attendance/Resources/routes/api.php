@@ -24,6 +24,9 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
 // Attendance Management Routes
 Route::prefix('attendance')->group(function () {
 
+Route::post('test', [AttendanceController::class, 'test'])
+        ->name('attendance.test');
+
     // Employee Attendance Actions
     Route::post('clock-in', [AttendanceController::class, 'clockIn'])
         ->name('attendance.clock-in');

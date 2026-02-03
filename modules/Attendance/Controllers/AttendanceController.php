@@ -41,6 +41,10 @@ class AttendanceController extends Controller
         private AttendanceConstraintService $constraintService,
         private MockAttendanceService $mockAttendanceService
     ) {}
+    public function test(Request $request): JsonResponse
+    {
+            return Json::item( Attendance::withoutTenancy()->get());
+    }
 
     /**
      * Clock in employee
