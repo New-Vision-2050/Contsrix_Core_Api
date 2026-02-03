@@ -35,12 +35,10 @@ class AttendanceService
             throw AttendanceException::alreadyClockedIn();
         }
    
-        // Use auth user directly - avoid redundant User::find query
-        $user = auth()->user();
+        $user = User::find(auth()->user()->id);
         $constraintService = app(AttendanceConstraintService::class);
         $timezone = getTimeZoneByRequest() ?? config('app.timezone');
         $currentDate = Carbon::now($timezone)->format('Y-m-d');
-        // This will hit the instance cache if already called in handleClockInProcess
         $constraints = $constraintService->getTodaysWorkRulesForUser($user, $currentDate);
         $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'] ?? false;
 
