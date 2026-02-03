@@ -27,7 +27,7 @@ class ClockInRequest extends FormRequest
         return [
             'clock_in_time' => [
                 'sometimes',
-                'date',
+                // 'date',
             ],
             'location' => [
                 'sometimes',
