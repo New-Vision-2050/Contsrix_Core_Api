@@ -34,12 +34,7 @@ class UserAttendanceService
      */
     public function getUserConstraints(UuidInterface|string $userId, ?string $date = null): array
     {
-        // Optimize: use auth user if it matches the userId to avoid redundant query
-        $authUser = auth()->user();
-        $userIdStr = is_string($userId) ? $userId : $userId->toString();
-        $user = ($authUser && (string) $authUser->id === $userIdStr) 
-            ? $authUser 
-            : User::findOrFail($userId);
+        $user = User::findOrFail($userId);
         
         $timezone = $this->getTimezone();
         
@@ -47,7 +42,6 @@ class UserAttendanceService
         $dateCarbon = $this->parseDateTime($targetDate, $timezone);
 
         // Always pass the resolved target date to ensure consistency
-        // This will hit the cache if already called in the same request
         $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate);
         $attendances = $this->getAttendancesForDate($user, $dateCarbon);
 
@@ -130,24 +124,21 @@ class UserAttendanceService
      */
     private function enhancePeriodsWithAttendance(array $periods, Collection $attendances, Carbon $date): array
     {
-        // Get consistent timezone once
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
-        $now = Carbon::now($timezone);
-        
-        // Fetch current attendance ONCE before the loop to avoid N queries
-        $currentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
-
-        return array_map(function ($period) use ($attendances, $date, $now, $currentAttendance) {
+        return array_map(function ($period) use ($attendances, $date) {
             $periodStart = $this->parsePeriodTime($period, 'start', $date);
             $periodEnd = $this->parsePeriodTime($period, 'end', $date);
 
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
             
+            // Get consistent timezone
+            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $now = Carbon::now($timezone);
+            
             // Since parsePeriodTime already returns times in correct timezone, use them directly
             $isActive = $this->isPeriodActive($periodStart, $periodEnd, $now);
 
-            return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive, $currentAttendance);
+            return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive);
         }, $periods);
     }
 
@@ -296,7 +287,7 @@ class UserAttendanceService
      * @param bool $isActive
      * @return array
      */
-    private function mergePeriodData(array $period, float $totalWorkHours, array $attendance, bool $isActive, ?Attendance $currentAttendance = null): array
+    private function mergePeriodData(array $period, float $totalWorkHours, array $attendance, bool $isActive): array
     {
         $cleanedPeriod = $period;
         unset($cleanedPeriod['period_start_time_carbon'], $cleanedPeriod['period_end_time_carbon']);
@@ -313,15 +304,17 @@ class UserAttendanceService
             return $att['status'] === 'active';
         });
         
-        // Use pre-fetched currentAttendance to avoid N+1 queries
-        $canClockIn = $isActive && !$hasActiveAttendance && !$currentAttendance;
+        
+        $getCurrentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
+        $canClockIn = $isActive && !$hasActiveAttendance && (bool)!$getCurrentAttendance;
+        
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
-            'can_clock_out' => (bool) $currentAttendance,
+            'can_clock_out' => (bool) $getCurrentAttendance,
             'attendance' => $attendance,
         ]);
     }
