@@ -18,8 +18,8 @@ class CreateBankAccountRequest extends FormRequest
             'bank_id' => 'required|string',
             'currency_id' => 'required|string',
             'user_name' => 'required|string',
-            'iban' => 'required|string',
-            'swift_bic' => 'required',
+            'iban' => 'nullable|string',
+            'swift_bic' => 'nullable',
             'type_id' => 'required|string',
         ];
     }
