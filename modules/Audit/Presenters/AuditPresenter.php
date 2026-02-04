@@ -18,6 +18,7 @@ class AuditPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        if($this->audit->auditable_type == "Modules\\Attendance\\Models\\Attendance"){return ["delete_this_array"=>"delete_this_array"];}
         return [
             'id' => $this->audit->id,
             'user' => [
@@ -50,8 +51,6 @@ class AuditPresenter extends AbstractPresenter
             $event = "خروج من الدوام";
             if($entity->clock_in_time != null && $entity->clock_out_time == null){
                 $event = "دخول الدوام";
-            }elseif ($entity->clock_in_time == null && $entity->clock_out_time == null){
-                $event=" الغياب او الاجازه";
             }
             return "لقد سجل {$event}";
         }elseif ($this->audit->auditable_type == "Modules\\Company\\CompanyCore\\Models\\CompanyAddress"){
@@ -122,7 +121,7 @@ class AuditPresenter extends AbstractPresenter
             'Broker' => 'وسيط بأسم ',
             'Folder' => 'مجلد بأسم ',
             'File' => 'ملف بأسم ',
-            'AttendanceConstraint'=>"محدد جضور بأسم ",
+            'AttendanceConstraint'=>"محدد حضور بأسم ",
             'Attendance'=>"حضور بأسم ",
             "ManagementHierarchy"=>"هيكل تنظيمي(فرع - اداره - قسم) باسم ",
             "CompanyAddress"=>"عنوان شركة بأسم ",
