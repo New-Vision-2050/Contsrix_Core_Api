@@ -14,8 +14,8 @@ class UpdateAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'address' => 'required',
-            'postal_code' => 'required|string',
+            'address' => 'nullable',
+            'postal_code' => 'nullable|string',
         ];
     }
 
