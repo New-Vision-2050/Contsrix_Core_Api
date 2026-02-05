@@ -285,7 +285,13 @@ class FolderRepository extends BaseRepository
                 } elseif ($searchType === 'reference_number') {
                     // Search only in reference_number
                     $query->where('reference_number', 'LIKE', '%' . $search . '%');
-                } else {
+                } elseif ($searchType=="employee")
+                {
+                    $query->where('type', "employee");
+
+
+                }
+                else {
                     // Search in both name and reference_number (type = 'all')
                     $query->where('name', 'LIKE', '%' . $search . '%')
                           ->orWhere('reference_number', 'LIKE', '%' . $search . '%');
