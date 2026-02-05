@@ -50,16 +50,15 @@ class EmployeeController extends Controller
 
 
 
-    public function store(CreateEmployeeRequest $request): JsonResponse
+    public function store(CreateEmployeeRequest $request)
     {
         $createdItem = $this->employeeCRUDService->create($request->createCreateEmployeeDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
-
         $presenter = new CompanyUserPresenter($createdItem);
-        
+
         // Check if email was sent successfully
         $message = __('messages.company_user.created');
         $emailSent = $createdItem->email_sent ?? true;
-        
+
         if (!$emailSent) {
             $message = __('messages.company_user.created_email_failed');
         }
