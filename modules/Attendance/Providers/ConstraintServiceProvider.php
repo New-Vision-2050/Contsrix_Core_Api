@@ -43,6 +43,8 @@ class ConstraintServiceProvider extends ServiceProvider
         $this->app->bind(ComplianceConstraintServiceInterface::class, ComplianceConstraintService::class);
 
         // Register individual services as singletons for better performance
+        // WARNING: Singletons in Octane persist across requests. Ensure these services
+        // do not store request-specific state (user, tenant, etc.) or add to octane.flush
         $this->app->singleton(TimeConstraintService::class);
         $this->app->singleton(LocationConstraintService::class);
         $this->app->singleton(DeviceConstraintService::class);
@@ -51,7 +53,6 @@ class ConstraintServiceProvider extends ServiceProvider
         $this->app->singleton(SecurityConstraintService::class);
         $this->app->singleton(ComplianceConstraintService::class);
         $this->app->singleton(AttendanceConstraintService::class);
-                $this->registerEventListeners();
     }
 
     /**
@@ -59,7 +60,7 @@ class ConstraintServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-                $this->registerEventListeners();
+        $this->registerEventListeners();
         // Any bootstrapping logic can go here
     }
 
