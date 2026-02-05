@@ -49,7 +49,7 @@ class EmployeeCRUDService
 
 
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(), $createEmployeeDTO->getBranchId());
-        $user->fresh();
+        $user=$user->fresh();
         $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id])->first();
         $companyId = (string)$companyRoleDTO->getCompanyId();
         $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
@@ -59,7 +59,7 @@ class EmployeeCRUDService
             "domain_name" => "https://".$company->domains()->first()?->domain,
             "serial_no" => $company->serial_no
         ];
-        return $user->fresh();
+        return $userInCompany ;
         $userInCompany->notify(new SendDomainForUserEmailAndSMS($data,["mail"]));
         $emailSent = true;
 //        try {
