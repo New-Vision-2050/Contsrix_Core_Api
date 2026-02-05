@@ -11,6 +11,7 @@ use Illuminate\Routing\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Support\Facades\Auth;
 use Modules\Attendance\Exceptions\AttendanceException;
+use Modules\Attendance\Presenters\AttendanceUserPresenter;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Requests\ClockInRequest;
@@ -322,13 +323,37 @@ class AttendanceController extends Controller
     [],
     200,
     [
-        'total' => $result->total(),
-        'per_page' => $result->perPage(),
-        'current_page' => $result->currentPage(),
-        'last_page' => $result->lastPage(),
-        'result_count' =>$result->total(),
-    ]
-    );
+            'total' => $result->total(),
+            'per_page' => $result->perPage(),
+            'current_page' => $result->currentPage(),
+            'last_page' => $result->lastPage(),
+            'result_count' =>$result->total(),
+        ]);
+    }
+        public function getUserAttendance(FilterAttendanceRequest $request)//: JsonResponse
+    {
+        $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
+
+        $result = $this->attendanceService->getTeamAttendance(
+            $filterDTO->toArray(),
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10),
+            auth()->user()->id
+        );
+        if ($result->isEmpty()) {
+            return Json::items([], message: 'No attendance records found');
+        }
+        return Json::items(
+    AttendanceUserPresenter::collection($result->items()),
+    [],
+    200,
+    [
+            'total' => $result->total(),
+            'per_page' => $result->perPage(),
+            'current_page' => $result->currentPage(),
+            'last_page' => $result->lastPage(),
+            'result_count' =>$result->total(),
+        ]);
     }
     public function teamAttendance(AttendanceRequest $request)//: JsonResponse
     {

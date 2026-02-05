@@ -851,4 +851,8 @@ class Attendance extends Model implements Auditable
     {
         return $this->hasOne(UserProfessionalData::class, 'user_id', 'user_id');
     }
+    public function attendanceConstraint()
+    {
+        return $this->hasMany(AttendanceConstraint::class, 'id', 'constraint_id');
+    }
 }
