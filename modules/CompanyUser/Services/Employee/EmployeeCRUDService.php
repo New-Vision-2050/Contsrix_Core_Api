@@ -7,6 +7,7 @@ namespace Modules\CompanyUser\Services\Employee;
 use Modules\Company\CompanyCore\Notifications\SendDomainForUserEmailAndSMS;
 use Modules\CompanyUser\DTO\Employee\UpdateEmployeeDTO;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Collection;
@@ -50,7 +51,7 @@ class EmployeeCRUDService
 
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(), $createEmployeeDTO->getBranchId());
         $user=$user->fresh();
-        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->id , "company_id"=>tenant("id")])->first();
+        $userInCompany = User::where(["global_company_user_id" => $user->id , "company_id"=>tenant("id")])->first();
         $companyId = (string)$companyRoleDTO->getCompanyId();
         $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
         $data = [
