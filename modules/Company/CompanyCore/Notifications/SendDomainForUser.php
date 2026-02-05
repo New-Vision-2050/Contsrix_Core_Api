@@ -12,7 +12,6 @@ use Modules\Country\Models\Country;
 
 class SendDomainForUser extends Notification
 {
-    use Queueable;
     protected $data;
     protected $types;
     protected $smsDriver;
