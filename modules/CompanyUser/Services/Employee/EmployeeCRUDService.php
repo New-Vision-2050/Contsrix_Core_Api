@@ -59,7 +59,7 @@ class EmployeeCRUDService
             "domain_name" => "https://".$company->domains()->first()?->domain,
             "serial_no" => $company->serial_no
         ];
-        return $data;
+        return $userInCompany;
         $userInCompany->notify(new SendDomainForUserEmailAndSMS($data,["mail"]));
         $emailSent = true;
 //        try {
