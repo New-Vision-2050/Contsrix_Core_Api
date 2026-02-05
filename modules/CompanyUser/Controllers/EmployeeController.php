@@ -53,7 +53,6 @@ class EmployeeController extends Controller
     public function store(CreateEmployeeRequest $request)
     {
         $createdItem = $this->employeeCRUDService->create($request->createCreateEmployeeDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
-        return $createdItem;
 
         $presenter = new CompanyUserPresenter($createdItem);
 
