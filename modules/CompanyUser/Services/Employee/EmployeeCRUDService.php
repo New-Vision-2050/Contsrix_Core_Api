@@ -6,6 +6,7 @@ namespace Modules\CompanyUser\Services\Employee;
 
 use Modules\CompanyUser\DTO\Employee\UpdateEmployeeDTO;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,8 @@ class EmployeeCRUDService
     public function __construct(
         private CompanyUserRepository $repository,
         private UserRepository        $userRepository,
-        private CompanyUserCRUDService $companyUserCRUDService
+        private CompanyUserCRUDService $companyUserCRUDService,
+        private CompanyRepository $companyRepository,
     ) {}
 
     public function create(CreateEmployeeDTO $createEmployeeDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
@@ -46,10 +48,20 @@ class EmployeeCRUDService
 
 
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(), $createEmployeeDTO->getBranchId());
-return $user;
+        $user->fresh();
+        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id])->first();
+        $companyId = (string)$companyRoleDTO->getCompanyId();
+        $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
+        $data = [
+            "name" => $userInCompany->name,
+            "company_name" => $company->name,
+            "domain_name" => "https://".$company->domains()->first()?->domain,
+            "serial_no" => $company->serial_no
+        ];
+        $userInCompany->notify(new SendDomainForUser($data));
         $emailSent = true;
 //        try {
-            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
+//            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
 //        } catch (\Exception $e) {
 //            // Log email failure but don't block user creation
 //            $emailSent = false;
