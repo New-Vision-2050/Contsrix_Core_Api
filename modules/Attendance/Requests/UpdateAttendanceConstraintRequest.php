@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\DTO\UpdateAttendanceConstraintDTO;
 use Ramsey\Uuid\UuidInterface;
@@ -57,7 +58,16 @@ class UpdateAttendanceConstraintRequest extends FormRequest
                 'string',
                 'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))
             ],
-            'constraint_name' => 'sometimes|required|string|max:255',
+            'constraint_name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('attendance_constraints', 'constraint_name')
+                    ->where('company_id', $this->user()->company_id)
+                    ->whereNull('deleted_at')
+                    ->ignore($this->route('constraint')),
+            ],
             'constraint_config' => 'sometimes|required|array',
             'is_active' => 'sometimes|boolean',
             'inherit_from_parent' => ['sometimes', 'boolean'],
@@ -75,6 +85,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
     {
         return [
             'constraint_type.in' => 'The selected constraint type is invalid.',
+            'constraint_name.unique' => 'A constraint with this name already exists for this company.',
             'constraint_config.required' => 'Constraint configuration is required when provided.', // Updated message
             'end_date.after' => 'End date must be after start date.',
             'priority.min' => 'Priority must be at least 1.',

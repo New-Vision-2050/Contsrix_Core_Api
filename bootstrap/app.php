@@ -36,7 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->append(\App\Http\Middleware\Localization::class);
         $middleware->append(\App\Http\Middleware\TenancePermision::class);
-        $middleware->append(\Sentry\Laravel\Tracing\Middleware::class);
+        // $middleware->append(\Sentry\Laravel\Tracing\Middleware::class);
         $middleware->append(TenantCompatibilityMiddleware::class);
         $middleware->prepend(\App\Http\Middleware\DomainToTenantMiddleware::class);
 
