@@ -50,7 +50,7 @@ class EmployeeController extends Controller
 
 
 
-    public function store(CreateEmployeeRequest $request): JsonResponse
+    public function store(CreateEmployeeRequest $request)
     {
         $createdItem = $this->employeeCRUDService->create($request->createCreateEmployeeDTO(), $request->createCreateCompanyUserCompanyRoleDTO());
         return $createdItem;
