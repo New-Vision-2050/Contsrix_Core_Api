@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\CompanyUser\Services\Employee;
 
+use Modules\Company\CompanyCore\Notifications\SendDomainForUserEmailAndSMS;
 use Modules\CompanyUser\DTO\Employee\UpdateEmployeeDTO;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Ramsey\Uuid\Uuid;
@@ -58,7 +59,7 @@ class EmployeeCRUDService
             "domain_name" => "https://".$company->domains()->first()?->domain,
             "serial_no" => $company->serial_no
         ];
-        $userInCompany->notify(new SendDomainForUser($data));
+        $userInCompany->notify(new SendDomainForUserEmailAndSMS($data,["mail"]));
         $emailSent = true;
 //        try {
 //            $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
