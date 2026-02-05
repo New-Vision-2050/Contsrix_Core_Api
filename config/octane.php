@@ -129,11 +129,10 @@ return [
         // Flush tenancy-related bindings between requests
         \Stancl\Tenancy\Tenancy::class,
         \Spatie\Permission\PermissionRegistrar::class,
-        // Flush repositories to prevent query builder state retention
         \Modules\User\Repositories\UserRepository::class,
         \Modules\CompanyUser\Repositories\CompanyUserRepository::class,
         \Modules\Company\CompanyCore\Repositories\CompanyRepository::class,
-        
+
         // Flush Attendance constraint services to prevent state leakage
         \Modules\Attendance\Services\TimeConstraintService::class,
         \Modules\Attendance\Services\LocationConstraintService::class,
