@@ -48,12 +48,12 @@ class EmployeeCRUDService
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(), $createEmployeeDTO->getBranchId());
 
         $emailSent = true;
-        try {
+//        try {
             $this->companyUserCRUDService->sendEmailAssignToCompanyToUser($user, $companyRoleDTO->getCompanyId());
-        } catch (\Exception $e) {
-            // Log email failure but don't block user creation
-            $emailSent = false;
-        }
+//        } catch (\Exception $e) {
+//            // Log email failure but don't block user creation
+//            $emailSent = false;
+//        }
 
         // Store email status for controller to check
         $user->email_sent = $emailSent;
