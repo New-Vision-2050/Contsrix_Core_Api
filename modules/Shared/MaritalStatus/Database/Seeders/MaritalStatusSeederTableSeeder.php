@@ -20,19 +20,19 @@ class MaritalStatusSeederTableSeeder extends Seeder
         Model::unguard();
 
         $data = [
-            ['ar' => 'متزوج', 'en' => 'Married'],
-            ['ar' => 'غير متزوج', 'en' => 'Single'],
-            ['ar' => 'متزوج ويعول', 'en' => 'Married with children'],
-            ['ar' => 'مطلق', 'en' => 'Divorced'],
-            ['ar' => 'أرمل', 'en' => 'Widowed'],
-            ['ar' => 'مخطوب', 'en' => 'Engaged'],
-            ['ar' => 'منفصل', 'en' => 'Separated'],
-            ['ar' => 'مطلق ويعول', 'en' => 'Divorced with children'],
+            ["name"=>['ar' => 'متزوج', 'en' => 'Married'],"type"=>"married"],
+            ["name"=>['ar' => 'غير متزوج', 'en' => 'Single'],"type"=>"not-married"],
+//            ['ar' => 'متزوج ويعول', 'en' => 'Married with children'],
+//            ['ar' => 'مطلق', 'en' => 'Divorced'],
+//            ['ar' => 'أرمل', 'en' => 'Widowed'],
+//            ['ar' => 'مخطوب', 'en' => 'Engaged'],
+//            ['ar' => 'منفصل', 'en' => 'Separated'],
+//            ['ar' => 'مطلق ويعول', 'en' => 'Divorced with children'],
         ];
 
         foreach ($data as $index => $item) {
             MaritalStatus::create(
-                ['name' => ['en' => $item['en'], 'ar' => $item['ar']]]
+                $item
             );
         }
     }
