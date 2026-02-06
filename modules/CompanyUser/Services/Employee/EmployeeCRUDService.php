@@ -52,7 +52,6 @@ class EmployeeCRUDService
 
         $user=$user->fresh();
         $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id , "company_id"=>tenant("id")]);
-        return $userInCompany;
         $companyId = (string)$companyRoleDTO->getCompanyId();
         $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
         $data = [
