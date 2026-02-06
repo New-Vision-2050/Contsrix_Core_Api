@@ -43,7 +43,7 @@ class EmployeeCRUDService
 
     public function create(CreateEmployeeDTO $createEmployeeDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
-
+return $this->userRepository->model;
         $companyUser = $this->repository->findByEmail($createEmployeeDTO->getEmail());
 
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createEmployeeDTO->getBranchId());
