@@ -46,6 +46,11 @@ class UserRepository extends BaseRepository
         parent::__construct($model);
     }
 
+    public function getModel()
+    {
+        return $this->model;
+    }
+
     public function getUserList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
@@ -83,7 +88,7 @@ class UserRepository extends BaseRepository
     public function updateFcmToken( $id)
     {
         $user = $this->find($id);
-        $user->update(['fcm_token' => request()->fcm_token]); 
+        $user->update(['fcm_token' => request()->fcm_token]);
     }
 
     public function getUserByGlobalIdWithBranches($global_id, $role = 1)

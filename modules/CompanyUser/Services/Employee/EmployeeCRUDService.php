@@ -43,7 +43,6 @@ class EmployeeCRUDService
 
     public function create(CreateEmployeeDTO $createEmployeeDTO, CreateCompanyUserCompanyRoleDTO $companyRoleDTO)
     {
-
         $companyUser = $this->repository->findByEmail($createEmployeeDTO->getEmail());
 
         $this->companyUserCRUDService->validateDataInsertion($companyUser?->global_id, $companyRoleDTO->getRole(), $createEmployeeDTO->getBranchId());
@@ -52,8 +51,7 @@ class EmployeeCRUDService
         $user = $this->repository->createCompanyUser($createEmployeeDTO->toArray(), $companyRoleDTO->toArray(), $createEmployeeDTO->getBranchId());
 
         $user=$user->fresh();
-        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->id , "company_id"=>tenant("id")])->first();
-        return $this->userRepository->model;
+        $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id , "company_id"=>tenant("id")]);
         $companyId = (string)$companyRoleDTO->getCompanyId();
         $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
         $data = [

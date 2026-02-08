@@ -6,6 +6,8 @@ namespace Modules\ArchiveLibrary\Folder\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\ArchiveLibrary\Folder\Observers\UserFolderObserver;
+use Modules\User\Models\User;
 
 class FolderServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +21,8 @@ class FolderServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         $this->registerConfig();
         $this->registerMigrations();
+        
+        User::observe(UserFolderObserver::class);
     }
 
     public function register(): void
