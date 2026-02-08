@@ -24,16 +24,21 @@ class MockAttendanceService
         private AttendanceService $attendanceService,
         private UserAttendanceService $userAttendanceService
     ) {}
-    public function createDTO(ClockInDTO $clockInDTO,array $rawRequestData)
+    /**
+     * Persist clock-in: create attendance record and dispatch event.
+     */
+    public function persistClockIn(ClockInDTO $clockInDTO, array $rawRequestData): Attendance
     {
         $attendance = $this->attendanceService->clockIn($clockInDTO);
-
         AttendanceClockedIn::dispatch($attendance->id);
-
-        return  $attendance;
+        return $attendance;
     }
 
-    public function handleClockInProcess(ClockInDTO $clockInDTO, array $rawRequestData)
+    /**
+     * Validate clock-in against work periods and constraints (pre-persist).
+     * Returns array of violations; empty array means validation passed.
+     */
+    public function validateClockIn(ClockInDTO $clockInDTO, array $rawRequestData): array
     {
         $user = auth()->user();
         // Get user's timezone from request
@@ -49,7 +54,6 @@ class MockAttendanceService
         $activePeriod = null;
         $matchedPeriod = null;
         $matchedPeriodHasActiveAttendance = false;
-
         if (isset($userConstraints['work_rules']['all_work_periods'])) {
             foreach ($userConstraints['work_rules']['all_work_periods'] as $period) {
                 $hasActiveAttendance = false;
@@ -63,12 +67,14 @@ class MockAttendanceService
                 }
 
                 // Period times - parse without timezone since clock_in_time is also without timezone
-                $periodDate = $period['date'] ?? $clockInCarbon->format('Y-m-d');
-                $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'));
-                $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'));
+                $periodDate = $period['date'] ?? Carbon::parse( $clockInCarbon->format('Y-m-d'), $timezone);
+                $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'), $timezone);
+                $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'), $timezone);
                 if (!empty($period['extends_to_next_day'])) {
                     $end->addDay();
                 }
+                
+                $clockInCarbon = Carbon::parse($clockInCarbon->format('Y-m-d H:i:s'), $timezone);
 
                 // Compare clock-in time with period times (both in user's timezone)
                 if ($clockInCarbon->between($start, $end, true)) {
@@ -83,30 +89,14 @@ class MockAttendanceService
                 }
             }
         }
-
-        // If no period allows clock in, return violation
+        
         if (!$canClockIn) {
-            $reason = 'Cannot clock in at this time.';
-            
-            if (isset($userConstraints['work_rules']['day_status']) && $userConstraints['work_rules']['day_status'] !== 'work_day') {
-                $reason = 'Cannot clock in on non-working day.';
-            } elseif ($matchedPeriod !== null && $matchedPeriodHasActiveAttendance) {
-                $reason = 'You are already clocked in.';
-            } elseif ($activePeriod === null) {
-                $reason = 'No active work period available for clock in.';
-            } else {
-                $reason = 'You are already clocked in.';
-            }
-
-            return [[
-                'type' => 'clock_in_not_allowed',
-                'severity' => 'blocking',
-                'message' => $reason,
-                'details' => [
-                    'day_status' => $userConstraints['work_rules']['day_status'] ?? null,
-                    'is_holiday' => $userConstraints['work_rules']['is_holiday'] ?? false,
-                ]
-            ]];
+            return [$this->buildClockInNotAllowedViolation(
+                $userConstraints,
+                $matchedPeriod,
+                $matchedPeriodHasActiveAttendance,
+                $activePeriod
+            )];
         }
 
         $mockAttendanceData = [
@@ -125,7 +115,34 @@ class MockAttendanceService
         // Check lateness at clock-in time for the mock attendance
         //$mockAttendance->checkLateness();
 
-        $violations = $this->constraintService->validateAttendance($mockAttendance, $rawRequestData,true);
-        return $violations;
+        return $this->constraintService->validateAttendance($mockAttendance, $rawRequestData, true);
+    }
+
+    private function buildClockInNotAllowedViolation(
+        array $userConstraints,
+        ?array $matchedPeriod,
+        bool $matchedPeriodHasActiveAttendance,
+        ?array $activePeriod
+    ): array {
+        $reason = 'Cannot clock in at this time.';
+        $dayStatus = $userConstraints['work_rules']['day_status'] ?? null;
+
+        if ($dayStatus !== null && $dayStatus !== 'work_day') {
+            $reason = 'Cannot clock in on non-working day.';
+        } elseif ($matchedPeriod !== null && $matchedPeriodHasActiveAttendance) {
+            $reason = 'You are already clocked in.';
+        } elseif ($activePeriod === null) {
+            $reason = 'No active work period available for clock in.';
+        }
+
+        return [
+            'type' => 'clock_in_not_allowed',
+            'severity' => 'blocking',
+            'message' => $reason,
+            'details' => [
+                'day_status' => $dayStatus,
+                'is_holiday' => $userConstraints['work_rules']['is_holiday'] ?? false,
+            ],
+        ];
     }
 }
