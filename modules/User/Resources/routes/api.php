@@ -16,6 +16,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/my-permissions', [UserController::class, 'getMyPermissions']);
     Route::get('/my-roles', [UserController::class, 'getMyRoles']);
     Route::post('/send-email-company-link', [UserController::class, 'sendEmail']);
+    Route::get('/info-alert', [UserController::class, 'getInfoAlert']);
 
     Route::get('/{id}', [UserController::class, 'show'])->permission(Permission::USER_VIEW());
     Route::get('/{id}/roles', [UserController::class, 'getRoles'])->permission(Permission::USER_VIEW());

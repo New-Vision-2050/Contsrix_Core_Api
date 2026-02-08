@@ -92,4 +92,9 @@ class UserCRUDService
 
         return new \Modules\User\Exports\UsersExport($users);
     }
+
+    public function getInfoAlerts(?string $userId = null, int $daysThreshold = 30): array
+    {
+        return $this->repository->getExpiringInfoAlerts($userId, $daysThreshold);
+    }
 }
