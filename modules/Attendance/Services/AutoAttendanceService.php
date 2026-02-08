@@ -52,7 +52,7 @@ class AutoAttendanceService
 
     public function generateAttendanceUsers($companyId,$userId=null,$startDatePram=null,$endDatePram=null)
     {
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
 
         $startDate = $startDatePram ?? Carbon::now($timezone)->startOfMonth()->startOfDay();
         $endDate =  $endDatePram ?? Carbon::now($timezone)->endOfMonth()->endOfDay();

@@ -133,6 +133,7 @@ return [
         \Modules\CompanyUser\Repositories\CompanyUserRepository::class,
         \Modules\Company\CompanyCore\Repositories\CompanyRepository::class,
 
+        
         // Flush Attendance constraint services to prevent state leakage
         \Modules\Attendance\Services\TimeConstraintService::class,
         \Modules\Attendance\Services\LocationConstraintService::class,

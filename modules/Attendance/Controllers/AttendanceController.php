@@ -26,6 +26,7 @@ use Modules\Attendance\Models\AttendanceConstraint;
 use Modules\Attendance\Requests\AttendanceRequest;
 use Modules\Attendance\Requests\BreakRequest;
 use Modules\Attendance\Services\MockAttendanceService;
+use Modules\Company\CompanyCore\Models\Company;
 use Ramsey\Uuid\Uuid;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Presenters\AppliedAttendanceConstraintPresenter;
@@ -40,6 +41,10 @@ class AttendanceController extends Controller
         private AttendanceConstraintService $constraintService,
         private MockAttendanceService $mockAttendanceService
     ) {}
+    public function test(Request $request): JsonResponse
+    {
+            return Json::item( Attendance::withoutTenancy()->get());
+    }
 
     /**
      * Clock in employee
@@ -50,7 +55,7 @@ class AttendanceController extends Controller
             $clockInDTO = $request->createClockInDTO();
             $rawRequestData = $request->all();
             // Ensure all downstream logic uses a unified timezone
-            $rawRequestData['timezone'] = getTimeZoneByRequest() ?? config('app.timezone');
+            $rawRequestData['timezone'] = getTimeZoneBranchByRequest() ?? config('app.timezone');
  
             $violations = $this->mockAttendanceService->handleClockInProcess($clockInDTO, $rawRequestData);
        

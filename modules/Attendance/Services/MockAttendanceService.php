@@ -37,7 +37,7 @@ class MockAttendanceService
     {
         $user = auth()->user();
         // Get user's timezone from request
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         
         // Parse clock-in time (already in correct timezone from request)
         $clockInCarbon = Carbon::parse($clockInDTO->getClockInTime());

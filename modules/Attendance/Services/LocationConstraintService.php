@@ -667,7 +667,7 @@ class LocationConstraintService extends BaseConstraintService implements Locatio
         $allowExceptions = $enforcement['allow_temporary_exceptions'] ?? false;
 
         // Check for temporary exceptions
-        $timezone = $attendance->timezone ?? getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = $attendance->timezone ?? getTimeZoneBranchByRequest() ?? config('app.timezone');
         if ($allowExceptions && !empty($attendance->exceptions)) {
             foreach ($attendance->exceptions as $exception) {
                 if ($exception['type'] === 'temporary_location') {
