@@ -27,7 +27,7 @@ class ClockInRequest extends FormRequest
         return [
             'clock_in_time' => [
                 'sometimes',
-                'date',
+                // 'date',
             ],
             'location' => [
                 'sometimes',
@@ -86,7 +86,7 @@ class ClockInRequest extends FormRequest
         // Set default clock in time to now in Riyadh timezone (company timezone)
         if (!$this->has('clock_in_time')) {
             $this->merge([
-                'clock_in_time' => \Carbon\Carbon::now('Asia/Riyadh')->toDateTimeString()
+                'clock_in_time' => getTimeZoneBranchByRequest() ?? config('app.timezone')
             ]);
         }
 
