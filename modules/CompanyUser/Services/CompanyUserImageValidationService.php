@@ -47,20 +47,21 @@ class CompanyUserImageValidationService
                 $maxWidth = $allowedWidth + ($allowedWidth * $tolerance);
                 $minHeight = $allowedHeight - ($allowedHeight * $tolerance);
                 $maxHeight = $allowedHeight + ($allowedHeight * $tolerance);
+                array_push($errors, [
+                    "sentence" => "الصورة مناسبة",
+                    "sub_title" => null,
+                    "status" => 1
+                ]);
                 // Validate dimensions
-                if ($width >= $minWidth && $width <= $maxWidth && $height >= $minHeight && $height <= $maxHeight) {
-                    array_push($errors, [
-                        "sentence" => "الصورة مناسبة",
-                        "sub_title" => null,
-                        "status" => 1
-                    ]);
-                } else {
-                    array_push($errors, [
-                        "sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080",
-                        "sub_title" => null,
-                        "status" => -1
-                    ]);
-                }
+//                if ($width >= $minWidth && $width <= $maxWidth && $height >= $minHeight && $height <= $maxHeight) {
+//
+//                } else {
+//                    array_push($errors, [
+//                        "sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080",
+//                        "sub_title" => null,
+//                        "status" => -1
+//                    ]);
+//                }
 
                 $serviceUser =  $this->checkImageTenant($image);
 

@@ -553,7 +553,7 @@ class AttendanceConstraintService
     }
     public function getTodaysWorkRulesForUser(User $user, $date = null): array
     {
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $now = $date
             ? Carbon::parse($date, $timezone)
             : Carbon::now($timezone);
