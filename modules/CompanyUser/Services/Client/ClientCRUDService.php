@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Modules\Company\CompanyCore\Notifications\SendDomainForUser;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\DTO\Broker\CreateBrokerDTO;
-use Modules\CompanyUser\DTO\Client\CreateClientCompanyDTO;
 use Modules\CompanyUser\DTO\Client\CreateClientDTO;
 use Modules\CompanyUser\DTO\Client\UpdateClientDTO;
 use Modules\CompanyUser\DTO\CreateCompanyUserCompanyRoleDTO;
@@ -77,12 +76,6 @@ class ClientCRUDService
         }
 
         return $user;
-    }
-
-
-    public function createClientCompany(CreateClientCompanyDTO $createClientCompanyDTO)
-    {
-        return $this->userRepository->createClientCompany($createClientCompanyDTO->userId, $createClientCompanyDTO->companyId);
     }
 
     public function show($id)
