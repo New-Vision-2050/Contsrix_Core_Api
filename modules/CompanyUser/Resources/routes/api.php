@@ -36,6 +36,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
+        Route::post('/company', [\Modules\CompanyUser\Controllers\ClientController::class, 'createClientCompany']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'update']);
         Route::post('/export', [\Modules\CompanyUser\Controllers\ClientController::class, 'export']);
 
