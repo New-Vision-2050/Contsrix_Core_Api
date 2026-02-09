@@ -45,7 +45,11 @@ use Modules\User\Services\UserRoleAndPermissionService;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\CompanyUser\Requests\SendEmailToUserRequest;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
+use Modules\NotificationSettings\Services\FirebaseNotificationService;
 use Ramsey\Uuid\Uuid;
+use Illuminate\Http\Request;
+use Modules\User\Requests\GetInfoAlertRequest;
+use Modules\User\Presenters\InfoAlertPresenter;
 
 class UserController extends Controller
 {
@@ -298,5 +302,74 @@ class UserController extends Controller
             'company_id' => $companyId,
             "company_user"=>$companyUser
         ]);
+    }
+
+    /**
+     * Test notification to all users with FCM tokens
+     */
+    public function testNotification(): JsonResponse
+    {
+        $users = \Modules\User\Models\User::whereNotNull('fcm_token')->get();
+        $sentCount = 0;
+
+        foreach($users as $user){
+            $title = 'Test Notification';
+            $body = 'This is a test notification from the system';
+
+            if (FirebaseNotificationService::send($user->fcm_token, $title, $body)) {
+                $sentCount++;
+            }
+        }
+
+        return Json::done("Test notification sent to {$sentCount} users");
+    }
+
+    /**
+     * Test silent notification to all users with FCM tokens
+     */
+    public function testSilentNotification(): JsonResponse
+    {
+        $users = \Modules\User\Models\User::whereNotNull('fcm_token')->get();
+        $sentCount = 0;
+
+        foreach($users as $user){
+            $data = [
+                'type' => 'silent_update',
+                'action' => 'refresh_data',
+                'timestamp' => now()->timestamp,
+                'user_id' => $user->id
+            ];
+
+            if (FirebaseNotificationService::sendSilent($user->fcm_token, $data)) {
+                $sentCount++;
+            }
+        }
+
+        return Json::done("Silent notification sent to {$sentCount} users");
+    }
+
+    /**
+     * Update user's FCM token
+     */
+    public function updateFcmToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fcm_token' => 'required|string'
+        ]);
+
+        $user = auth()->user();
+        $user->fcm_token = $request->fcm_token;
+        $user->save();
+
+        return Json::done('FCM token updated successfully');
+    }
+
+
+    public function getInfoAlert(GetInfoAlertRequest $request): JsonResponse
+    {
+        $dto = $request->toDTO();
+        $alerts = $this->userService->getInfoAlerts($dto->userId);
+
+        return Json::items(InfoAlertPresenter::collection($alerts));
     }
 }

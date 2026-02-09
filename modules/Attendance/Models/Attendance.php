@@ -194,7 +194,7 @@ class Attendance extends Model implements Auditable
         //     return Carbon::parse($value,'r')->setTimezone($this->timezone);
         // }
         return $value;
-    }
+    } 
 
     public function getStartTimeAttribute($value)
     {
@@ -518,7 +518,7 @@ class Attendance extends Model implements Auditable
             return $this;
         }
 
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
 
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
@@ -645,7 +645,7 @@ class Attendance extends Model implements Auditable
         }
 
         // 2. Timezone setup
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
             $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
@@ -850,5 +850,9 @@ class Attendance extends Model implements Auditable
     public function professionalData()
     {
         return $this->hasOne(UserProfessionalData::class, 'user_id', 'user_id');
+    }
+    public function attendanceConstraint()
+    {
+        return $this->hasMany(AttendanceConstraint::class, 'id', 'constraint_id');
     }
 }

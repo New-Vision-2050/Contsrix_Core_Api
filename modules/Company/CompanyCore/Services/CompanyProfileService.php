@@ -90,7 +90,7 @@ class CompanyProfileService
 
     public function geoCoding(GeoCodingDTO $geoCodingDTO)
     {
-        $isAiSupported = false  ;
+        $isAiSupported = false;
         $response = Http::get("https://maps.googleapis.com/maps/api/geocode/json?latlng={$geoCodingDTO->getLatitude()},{$geoCodingDTO->getLongitude()}&language=en&key=" . env('GOOGLE_MAPS_API_KEY'));
         $neighborhood = "";
         $cities = [];
@@ -122,7 +122,7 @@ class CompanyProfileService
                 $route = $value["address_components"][0]["long_name"];
             }
         }
-        $cityName = implode(',',$cities);
+        $cityName = implode(',', $cities);
         [$country, $state, $city] = $this->getFromDB($countryShortName, $cityName, $stateName);
         // Use OpenRouter to get location data for additional verification
 
@@ -134,10 +134,10 @@ class CompanyProfileService
         }
         [$neighborhood, $route] = $this->getTranslatedNighborhoodAndRoute($geoCodingDTO->getLatitude(), $geoCodingDTO->getLongitude());
 
-        if(empty($state) && !empty($city) && !empty($country)){
+        if (empty($state) && !empty($city) && !empty($country)) {
             $state = $city->state;
         }
-        if(empty($state) || empty($city) || true){
+        if (empty($state) || empty($city) || true) {
             try {
                 $data = $this->openRouterGeoService->getLocationFromOpenRouter(
                     $geoCodingDTO,
@@ -150,21 +150,20 @@ class CompanyProfileService
 
                 $locationData = (json_decode($data['data']['location_content'], true));
 
-                if($locationData['recommended_city']['add_or_rename']) {
+                if ($locationData['recommended_city']['add_or_rename']) {
                     $state = $this->stateRepository->getState($locationData['state_id']);
                     $locationData['recommended_city']['state_code'] = $state->iso2;
                     $locationData['recommended_city']['state_id'] = $state->id;
                     $locationData['recommended_city']['country_id'] = $country->id;
                     $locationData['recommended_city']['country_code'] = $country->iso2;
                     $city = $this->cityRepository->createCity($locationData['recommended_city']);
-                }
-                else{
+                } else {
                     $city = $this->cityRepository->getCity($locationData['city_id']);
                 }
 
                 $state = $city->state;
                 $isAiSupported = true;
-            }catch (\Exception $e){
+            } catch (\Exception $e) {
             }
         }
         // Return the location data along with comparison results
@@ -434,9 +433,25 @@ class CompanyProfileService
 
     public function createCompanyLegalData(CreateCompanyLegalDataDTO $companyLegalDataDTO)
     {
-        $companyData = $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFile());
+        $companyData = $this->companyLegalDataRepository->createCompanyLegalData($companyLegalDataDTO->toArray(), $companyLegalDataDTO->getFiles());
         event(new CompanyLegalDataCreated($companyData));
         return $companyData;
+    }
+
+    public function createMultipleCompanyLegalData(array $companyLegalDataDTOs)
+    {
+        $createdLegalData = [];
+
+        foreach ($companyLegalDataDTOs as $companyLegalDataDTO) {
+            $companyData = $this->companyLegalDataRepository->createCompanyLegalData(
+                $companyLegalDataDTO->toArray(),
+                $companyLegalDataDTO->getFiles()
+            );
+            event(new CompanyLegalDataCreated($companyData));
+            $createdLegalData[] = $companyData;
+        }
+
+        return $createdLegalData;
     }
 
     public function getCompanyLegalData(UuidInterface $id): CompanyLegalData

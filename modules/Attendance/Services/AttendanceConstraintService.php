@@ -553,7 +553,7 @@ class AttendanceConstraintService
     }
     public function getTodaysWorkRulesForUser(User $user, $date = null): array
     {
-        $timezone = getTimeZoneByRequest() ?? config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $now = $date
             ? Carbon::parse($date, $timezone)
             : Carbon::now($timezone);
@@ -953,14 +953,14 @@ class AttendanceConstraintService
                 });
             })
             // Filter by active effective dates
-            ->where(function($query) {
-                $query->whereNull('effective_from')
-                      ->orWhere('effective_from', '<=', Carbon::now());
-            })
-            ->where(function($query) {
-                $query->whereNull('effective_to')
-                      ->orWhere('effective_to', '>=', Carbon::now());
-            })
+            // ->where(function($query) {
+            //     $query->whereNull('effective_from')
+            //           ->orWhere('effective_from', '<=', Carbon::now());
+            // })
+            // ->where(function($query) {
+            //     $query->whereNull('effective_to')
+            //           ->orWhere('effective_to', '>=', Carbon::now());
+            // })
             ->get();
     }
 }

@@ -45,11 +45,11 @@ class UserAttendanceController extends Controller
             $userId = (string) Auth::id();
             $date = $request->input('date'); // Optional: Y-m-d format, defaults to today if null
 
-            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
             $targetDate = $date ?? \Carbon\Carbon::now($timezone)->format('Y-m-d');
 
             $result = $this->userAttendanceService->getUserConstraints($userId, $targetDate);
-            
+
             return Json::item($result, message: __('messages.attendance.user_constraint_today_retrieved'));
         } catch (AttendanceException $e) {
             return Json::error(
@@ -108,7 +108,7 @@ class UserAttendanceController extends Controller
             $page = (int) $request->input('page', 1);
             $perPage = (int) $request->input('per_page', 10);
 
-            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $timezone = function_exists('getTimeZoneBranchByRequest') ? (getTimeZoneBranchByRequest() ?? config('app.timezone')) : config('app.timezone');
             $currentDate = \Carbon\Carbon::now($timezone)->format('Y-m-d');
             $userConstraints = $this->userAttendanceService->getUserConstraints($userId, $currentDate);
             $canClockIn = false;

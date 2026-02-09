@@ -110,10 +110,11 @@ class AttendanceRepository extends BaseRepository
     public function getCurrentAttendance(UuidInterface $userId): ?Attendance
     {
         return Attendance::with('user')
-            ->where('user_id', $userId)
-            // ->whereDate('clock_in_time', today())
+            ->where('user_id', $userId->toString())
             ->whereNull('clock_out_time')
-            ->first();
+            ->whereNotNull('clock_in_time')
+            ->first()
+            ?->refresh();
     }
 
     /**
@@ -178,7 +179,7 @@ class AttendanceRepository extends BaseRepository
     public function getAttendanceByDate(string $userId, Carbon $date): ?Attendance
     {
         // Convert date range to UTC for database query (database stores times in UTC)
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');

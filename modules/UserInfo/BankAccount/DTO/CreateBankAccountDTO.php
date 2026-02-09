@@ -16,8 +16,8 @@ class CreateBankAccountDTO
         public string $currency_id,
         public string $user_name,
         public string $account_number,
-        public string $iban,
-        public string $swift_bic,
+        public ?string $iban,
+        public ?string $swift_bic,
         public string $type_id,
     ) {
     }

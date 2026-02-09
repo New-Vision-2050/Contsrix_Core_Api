@@ -79,7 +79,11 @@ class UserAttendanceService
             'is_clocked_in' => $attendance?->isActive() ?? false,
             'is_on_break' => $attendance?->isOnBreak() ?? false,
             'attendance_id' => $attendance ? (string) $attendance->id : null,
-            'clock_in_time' => $attendance?->clock_in_time?->format('Y-m-d H:i:s'),
+            'clock_in_time' => $attendance?->clock_in_time ? 
+                (is_string($attendance->clock_in_time) ? 
+                    Carbon::parse($attendance->clock_in_time)->format('Y-m-d H:i:s') : 
+                    $attendance->clock_in_time->format('Y-m-d H:i:s')
+                ) : null,
             'status' => $attendance?->status ?? 'not_clocked_in',
         ];
     }
@@ -94,7 +98,7 @@ class UserAttendanceService
     private function getAttendancesForDate(User $user, Carbon $date): Collection
     {
         // Ensure we're using the correct timezone for date comparison
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
         
         // Convert date range to UTC for database query (database stores times in UTC)
@@ -128,7 +132,7 @@ class UserAttendanceService
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
             
             // Get consistent timezone
-            $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+            $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
             $now = Carbon::now($timezone);
             
             // Since parsePeriodTime already returns times in correct timezone, use them directly
@@ -152,7 +156,7 @@ class UserAttendanceService
         $timeKey = "{$type}_time";
 
         // Get consistent timezone
-        $timezone = function_exists('getTimeZoneByRequest') ? (getTimeZoneByRequest() ?? config('app.timezone')) : config('app.timezone');
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
 
         if (isset($period[$carbonKey])) {
             $time = $period[$carbonKey];
@@ -300,13 +304,17 @@ class UserAttendanceService
             return $att['status'] === 'active';
         });
         
-        $canClockIn = $isActive && !$hasActiveAttendance;
+        
+        $getCurrentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
+        $canClockIn = $isActive && !$hasActiveAttendance && (bool)!$getCurrentAttendance;
+        
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
             'is_active' => $isActive,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
+            'can_clock_out' => (bool) $getCurrentAttendance,
             'attendance' => $attendance,
         ]);
     }
@@ -735,9 +743,7 @@ class UserAttendanceService
      */
     private function getTimezone(): string
     {
-        return function_exists('getTimeZoneByRequest') 
-            ? (getTimeZoneByRequest() ?? config('app.timezone')) 
-            : config('app.timezone');
+        return getTimeZoneBranchByRequest() ?? config('app.timezone');
     }
 
     /**

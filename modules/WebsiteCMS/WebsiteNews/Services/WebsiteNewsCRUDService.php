@@ -36,6 +36,17 @@ class WebsiteNewsCRUDService
             perPage: $perPage,
         );
     }
+    
+    public function listConditions(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->paginated(
+            conditions:[
+                'status' => 1,
+            ],
+            page: $page,
+            perPage: $perPage,
+        );
+    }
 
     public function get(UuidInterface $id): WebsiteNews
     {

@@ -6,6 +6,8 @@ namespace Modules\Company\CompanyCore\Observers;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Modules\ArchiveLibrary\File\Models\File;
+use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Ramsey\Uuid\Uuid;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Modules\Company\CompanyCore\Models\CompanyLegalData;
@@ -81,6 +83,7 @@ class CompanyLegalDataObserver
 
         /** @var Media $mediaItem $mediaItem */
         foreach ($mediaItems as $mediaItem) {
+
             // Get the full S3 URL or relative path
             $item = $mediaItem->replicate(['id','uuid']); // local fallback
             $item->model_id = $officialDocument->id;

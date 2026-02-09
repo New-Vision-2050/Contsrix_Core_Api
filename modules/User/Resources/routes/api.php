@@ -16,6 +16,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/my-permissions', [UserController::class, 'getMyPermissions']);
     Route::get('/my-roles', [UserController::class, 'getMyRoles']);
     Route::post('/send-email-company-link', [UserController::class, 'sendEmail']);
+    Route::get('/info-alert', [UserController::class, 'getInfoAlert']);
 
     Route::get('/{id}', [UserController::class, 'show'])->permission(Permission::USER_VIEW());
     Route::get('/{id}/roles', [UserController::class, 'getRoles'])->permission(Permission::USER_VIEW());
@@ -27,4 +28,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/{id}/assign-roles', [UserController::class, 'assignRolesForUser'])->permission(Permission::USER_UPDATE());
     Route::post('/change-role-status', [UserController::class, 'changeUserRoleStatus']);
     Route::delete('/{id}', [UserController::class, 'delete'])->permission(Permission::USER_DELETE());
+    Route::post('/test-notification', [UserController::class, 'testNotification']);
+    Route::post('/test-silent-notification', [UserController::class, 'testSilentNotification']);
+    Route::post('/update-fcm-token', [UserController::class, 'updateFcmToken']);
 });

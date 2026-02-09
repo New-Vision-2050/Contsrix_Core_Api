@@ -46,6 +46,11 @@ class UserRepository extends BaseRepository
         parent::__construct($model);
     }
 
+    public function getModel()
+    {
+        return $this->model;
+    }
+
     public function getUserList(?int $page, ?int $perPage = 10): Collection
     {
         return $this->paginatedList([], $page, $perPage);
@@ -78,6 +83,12 @@ class UserRepository extends BaseRepository
                 return $query->orWhere('phone', $identifier);
             });
         })->where("company_id", tenant("id"))->first();
+    }
+
+    public function updateFcmToken( $id)
+    {
+        $user = $this->find($id);
+        $user->update(['fcm_token' => request()->fcm_token]);
     }
 
     public function getUserByGlobalIdWithBranches($global_id, $role = 1)
@@ -532,5 +543,67 @@ class UserRepository extends BaseRepository
             throw new CustomException($e->getMessage());
         }
 
+    }
+
+    public function getExpiringInfoAlerts(?string $userId = null, int $daysThreshold = 30): array
+    {
+        $alerts = [];
+        $now = now();
+        $thresholdDate = $now->copy()->addDays($daysThreshold);
+
+        $query = $this->model->with(['companyUser', 'companyUser.bankAccount'])
+            ->where('company_id', tenant('id'))
+            ->whereHas('companyUser');
+
+        if ($userId) {
+            $query->where('id', $userId);
+        }
+
+        $users = $query->get();
+
+        $dateFields = [
+            'work_permit_end_date' => 'work_permit',
+            'passport_end_date' => 'passport',
+            'identity_end_date' => 'identity',
+            'border_number_end_date' => 'border_number',
+            'entry_number_end_date' => 'entry_number',
+        ];
+
+        foreach ($users as $user) {
+            $companyUser = $user->companyUser;
+            if (!$companyUser) {
+                continue;
+            }
+
+            foreach ($dateFields as $field => $type) {
+                $endDate = $companyUser->{$field};
+                if ($endDate) {
+                    $endDateCarbon = \Carbon\Carbon::parse($endDate);
+                    if ($endDateCarbon->isBetween($now, $thresholdDate) || $endDateCarbon->isPast()) {
+                        $daysRemaining = $now->diffInDays($endDateCarbon, false);
+                        $alerts[] = [
+                            'type' => $type,
+                            'end_date' => $endDateCarbon->format('Y-m-d'),
+                            'user_id' => $user->id,
+                            'name' => $user->name,
+                            'days_remaining' => (int) $daysRemaining,
+                        ];
+                    }
+                }
+            }
+
+            // Check if user has no bank account
+            if (!$companyUser->bankAccount) {
+                $alerts[] = [
+                    'type' => 'bank_account',
+                    'end_date' => null,
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'days_remaining' => null,
+                ];
+            }
+        }
+
+        return $alerts;
     }
 }

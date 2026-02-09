@@ -24,6 +24,9 @@ Route::middleware(['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequ
 // Attendance Management Routes
 Route::prefix('attendance')->group(function () {
 
+Route::post('test', [AttendanceController::class, 'test'])
+        ->name('attendance.test');
+
     // Employee Attendance Actions
     Route::post('clock-in', [AttendanceController::class, 'clockIn'])
         ->name('attendance.clock-in');
@@ -83,6 +86,9 @@ Route::prefix('attendance')->group(function () {
        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team');
 
+    Route::get('team/user', [AttendanceController::class, 'getUserAttendance'])
+        ->name('attendance.team');
+        
     Route::get('{attendance}/team', [AttendanceController::class, 'teamAttendance'])
        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team.show');
