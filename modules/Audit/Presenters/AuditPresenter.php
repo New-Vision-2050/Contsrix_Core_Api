@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Audit\Presenters;
 
-use Modules\Attendance\Models\AppliedAttendanceConstraint;
 use Modules\Audit\Models\Audit;
 use BasePackage\Shared\Presenters\AbstractPresenter;
 
@@ -20,7 +19,7 @@ class AuditPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         if($this->audit->auditable_type == "Modules\\Attendance\\Models\\Attendance"){return ["delete_this_array"=>"delete_this_array"];}
-        if($this->audit->auditable_type == "Modules\\Attendance\\Models\\AppliedAttendanceConstraint"){return ["delete_this_array"=>"delete_this_array"];}
+        if($this->audit->auditable_type == "Modules\\Attendance\\Models\\Attendance"){return ["delete_this_array"=>"delete_this_array"];}
         return [
             'id' => $this->audit->id,
             'user' => [

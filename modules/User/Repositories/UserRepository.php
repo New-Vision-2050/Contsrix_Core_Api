@@ -12,7 +12,6 @@ use Modules\CompanyUser\Repositories\ClientDetailRepository;
 use Modules\CompanyUser\Repositories\CompanyUserAddressRepository;
 use Modules\CompanyUser\Repositories\CompanyUserCompanyRepository;
 use Modules\CompanyUser\Repositories\CompanyUserManagementHierarchyRepository;
-use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\User\Models\User;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
@@ -41,9 +40,7 @@ class UserRepository extends BaseRepository
         private CompanyUserAddressRepository             $companyUserAddressRepository,
         private BrokerDetailRepository                   $brokerDetailRepository,
         private ClientDetailRepository                   $clientDetailRepository,
-        private ManagementHierarchyRepository            $managementHierarchyRepository,
-        private CompanyUserRepository                    $companyUserRepository,
-
+        private ManagementHierarchyRepository            $managementHierarchyRepository
     )
     {
         parent::__construct($model);
@@ -88,7 +85,7 @@ class UserRepository extends BaseRepository
         })->where("company_id", tenant("id"))->first();
     }
 
-    public function updateFcmToken($id)
+    public function updateFcmToken( $id)
     {
         $user = $this->find($id);
         $user->update(['fcm_token' => request()->fcm_token]);
@@ -431,7 +428,7 @@ class UserRepository extends BaseRepository
                     "type" => "management",
                     "is_main" => 1
                 ])->first();
-                $userProfessionalData->update(["branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
+                $userProfessionalData->update([ "branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
             }
         });
 
@@ -589,7 +586,7 @@ class UserRepository extends BaseRepository
                             'end_date' => $endDateCarbon->format('Y-m-d'),
                             'user_id' => $user->id,
                             'name' => $user->name,
-                            'days_remaining' => (int)$daysRemaining,
+                            'days_remaining' => (int) $daysRemaining,
                         ];
                     }
                 }
@@ -608,20 +605,5 @@ class UserRepository extends BaseRepository
         }
 
         return $alerts;
-    }
-
-
-    public function createClientCompany($userId, $companyId)
-    {
-        $existingUser = $this->findOneBy(["id" => $userId]);
-        $user = $existingUser->replicate();
-        $user->password = null;
-        $user->company_id = $companyId;
-        $user->is_owner = 1;
-        $user->management_hierarchy_id = null;
-        $user->save();
-        $this->companyUserRepository->handleOwnerPermissions($user, $companyId);
-        return $user;
-
     }
 }
