@@ -30,7 +30,6 @@ class ProfessionalBodieCRUDService
     public function list($code,int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
-            ['code'=>$code],
             page: $page,
             perPage: $perPage,
         );
