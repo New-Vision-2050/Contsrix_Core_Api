@@ -49,15 +49,15 @@ class UpdateWebsiteHomePageSettingRequest extends FormRequest
 
     public function withValidator($validator)
     {
-        $validator->after(function ($validator) {
-            if (!$this->hasFile('web_video_file') && !$this->filled('web_video_link')) {
-                $validator->errors()->add('web_video', 'Either web_video_file or web_video_link is required');
-            }
-
-            if (!$this->hasFile('mobile_video_file') && !$this->filled('mobile_video_link')) {
-                $validator->errors()->add('mobile_video', 'Either mobile_video_file or mobile_video_link is required');
-            }
-        });
+//        $validator->after(function ($validator) {
+//            if (!$this->hasFile('web_video_file') && !$this->filled('web_video_link')) {
+//                $validator->errors()->add('web_video', 'Either web_video_file or web_video_link is required');
+//            }
+//
+//            if (!$this->hasFile('mobile_video_file') && !$this->filled('mobile_video_link')) {
+//                $validator->errors()->add('mobile_video', 'Either mobile_video_file or mobile_video_link is required');
+//            }
+//        });
     }
 
     public function toDTO(): UpdateWebsiteHomePageSettingDTO
