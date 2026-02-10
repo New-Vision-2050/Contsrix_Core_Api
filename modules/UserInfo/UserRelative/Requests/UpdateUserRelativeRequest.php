@@ -14,10 +14,10 @@ class UpdateUserRelativeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => 'nullable|string',
             'marital_status_id'=> 'required|string',
-            'relationship'=> 'required|string',
-            'phone'=> 'required|string',
+            'relationship'=> 'nullable|string',
+            'phone'=> 'nullable|string',
         ];
     }
     public function messages(): array
