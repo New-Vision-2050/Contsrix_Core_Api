@@ -615,7 +615,7 @@ class UserRepository extends BaseRepository
     public function handleOwnerPermissions(User $user, $companyId): void
     {
         if ($user->is_owner) {
-            $branch = $this->managementHierarchyRepository->model->where([
+            $branch = $this->managementHierarchyRepository->model->withoutTenancy()->where([
                 "company_id" => $companyId,
                 "parent_id" => null
             ])->first();
@@ -629,7 +629,7 @@ class UserRepository extends BaseRepository
 
             $branch->update(["manager_id" => $user->id]);
 
-            $this->managementHierarchyRepository->model->where([
+            $this->managementHierarchyRepository->model->withoutTenancy()->where([
                 "company_id" => $companyId,
                 "parent_id" => $branch->id,
                 "type" => "management",
