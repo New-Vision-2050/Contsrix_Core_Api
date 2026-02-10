@@ -21,6 +21,7 @@ use Modules\CompanyUser\Presenters\DashboardWidgetsPresenter;
 
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
+use Modules\CompanyUser\Requests\Client\CreateClientCompanyRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
 use Modules\CompanyUser\Requests\Client\GetClientRequest;
 use Modules\CompanyUser\Requests\Client\ExportClientRequest;
@@ -82,6 +83,15 @@ class ClientController extends Controller
         }
 
         return Json::item($presenter->getData(), message: $message);
+    }
+
+
+    public function createClientCompany(CreateClientCompanyRequest $request)
+    {
+        $createdItem = $this->clientCRUDService->createClientCompany($request->createClientCompanyDTO());
+        $presenter = new UserPresenter($createdItem);
+
+        return Json::item($presenter->getData());
     }
 
     /**

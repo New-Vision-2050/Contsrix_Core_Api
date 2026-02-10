@@ -45,7 +45,6 @@ class ProfessionalBodieController extends Controller
 
 
         $list = $this->professionalBodieService->list(
-            $getCode,
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
