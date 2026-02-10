@@ -89,7 +89,7 @@ class ClientController extends Controller
     public function createClientCompany(CreateClientCompanyRequest $request)
     {
         $createdItem = $this->clientCRUDService->createClientCompany($request->createClientCompanyDTO());
-        $presenter = new CompanyUserPresenter($createdItem);
+        $presenter = new UserPresenter($createdItem);
 
         return Json::item($presenter->getData());
     }
