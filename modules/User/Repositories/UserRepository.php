@@ -6,13 +6,16 @@ namespace Modules\User\Repositories;
 
 use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Company\ManagementHierarchy\Repositories\UserCanAccessManagementHierarchyRepository;
 use Modules\CompanyUser\Repositories\BrokerDetailRepository;
 use Modules\CompanyUser\Repositories\ClientDetailRepository;
 use Modules\CompanyUser\Repositories\CompanyUserAddressRepository;
 use Modules\CompanyUser\Repositories\CompanyUserCompanyRepository;
 use Modules\CompanyUser\Repositories\CompanyUserManagementHierarchyRepository;
 use Modules\JobTitle\Models\JobTitle;
+use Modules\RoleAndPermission\Models\Role;
 use Modules\User\Models\User;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Ramsey\Uuid\Uuid;
@@ -40,7 +43,9 @@ class UserRepository extends BaseRepository
         private CompanyUserAddressRepository             $companyUserAddressRepository,
         private BrokerDetailRepository                   $brokerDetailRepository,
         private ClientDetailRepository                   $clientDetailRepository,
-        private ManagementHierarchyRepository            $managementHierarchyRepository
+        private ManagementHierarchyRepository            $managementHierarchyRepository,
+        private UserCanAccessManagementHierarchyRepository $userCanAccessManagementHierarchyRepository,
+
     )
     {
         parent::__construct($model);
@@ -428,7 +433,7 @@ class UserRepository extends BaseRepository
                     "type" => "management",
                     "is_main" => 1
                 ])->first();
-                $userProfessionalData->update([ "branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
+                $userProfessionalData->update(["branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
             }
         });
 
@@ -605,5 +610,47 @@ class UserRepository extends BaseRepository
         }
 
         return $alerts;
+    }
+
+    public function handleOwnerPermissions(User $user, $companyId): void
+    {
+        if ($user->is_owner) {
+            $branch = $this->managementHierarchyRepository->model->where([
+                "company_id" => $companyId,
+                "parent_id" => null
+            ])->first();
+
+            $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id", $companyId)->first();
+            setPermissionsTeamId($companyId);
+            $user->assignRole($role);//assign super admin role for first user
+
+            $this->userCanAccessManagementHierarchyRepository->assignUsersToManagementHierarchy(new AssignUsersToManagementHierarchyDTO(branchId: $branch->id, userIds: [$user->id]));
+
+
+            $branch->update(["manager_id" => $user->id]);
+
+            $this->managementHierarchyRepository->model->where([
+                "company_id" => $companyId,
+                "parent_id" => $branch->id,
+                "type" => "management",
+                "is_main" => 1
+            ])->first()->update(["manager_id" => $user->id]);
+        }
+    }
+
+
+
+    public function createClientCompany($userId, $companyId)
+    {
+        $existingUser = $this->findOneBy(["id" => $userId]);
+        $user = $existingUser->replicate();
+        $user->password = null;
+        $user->company_id = $companyId;
+        $user->is_owner = 1;
+        $user->management_hierarchy_id = null;
+        $user->save();
+        $this->handleOwnerPermissions($user, $companyId);
+        return $user;
+
     }
 }

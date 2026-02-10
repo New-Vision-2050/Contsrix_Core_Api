@@ -770,8 +770,8 @@ class Attendance extends Model implements Auditable
         $timezone = $this->company?->timezone ?? config('app.timezone');
 
         // Parse times with timezone
-        $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
-        $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
+        $clockIn = Carbon::parse($this->clock_in_time, $timezone);
+        $clockOut = Carbon::parse($this->clock_out_time, $timezone);
 
         // Calculate break minutes
         $breakMinutes = $this->calculateTotalBreakMinutes();
