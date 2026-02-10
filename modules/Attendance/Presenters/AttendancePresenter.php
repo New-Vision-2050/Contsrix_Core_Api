@@ -27,14 +27,10 @@ class AttendancePresenter extends AbstractPresenter
 
             // Clock times
             'clock_in_time' => $this->attendance->clock_in_time ? 
-                (\Carbon\Carbon::parse($this->attendance->clock_in_time)->setTimezone(
-                    new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
-                )->format('Y-m-d H:i:s')) : null,
+                (\Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d H:i:s')) : null,
 
             'clock_out_time' => $this->attendance->clock_out_time ? 
-                (\Carbon\Carbon::parse($this->attendance->clock_out_time)->setTimezone(
-                    new \DateTimeZone($this->attendance->timezone ?? config('app.timezone'))
-                )->format('Y-m-d H:i:s')) : null,
+                (\Carbon\Carbon::parse($this->attendance->clock_out_time)->format('Y-m-d H:i:s')) : null,
             'start_time' => $this->attendance->start_time,
             'end_time' => $this->attendance->end_time,
 

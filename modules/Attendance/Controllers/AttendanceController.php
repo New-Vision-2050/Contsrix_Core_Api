@@ -47,18 +47,16 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Clock in employee
-     */   
+     * Clock in employee.
+     * Validates work period and constraints, then persists attendance.
+     */
     public function clockIn(ClockInRequest $request): JsonResponse
     {
         try {
             $clockInDTO = $request->createClockInDTO();
             $rawRequestData = $request->all();
-            // Ensure all downstream logic uses a unified timezone
-            $rawRequestData['timezone'] = getTimeZoneBranchByRequest() ?? config('app.timezone');
- 
-            $violations = $this->mockAttendanceService->handleClockInProcess($clockInDTO, $rawRequestData);
-       
+
+            $violations = $this->mockAttendanceService->validateClockIn($clockInDTO, $rawRequestData);
             if (!empty($violations)) {
                 return Json::error(
                     description: $violations[0]['message'] ?? 'Clock-in blocked due to constraint violations',
@@ -67,17 +65,14 @@ class AttendanceController extends Controller
                 );
             }
 
-            $attendance = $this->mockAttendanceService->createDTO($clockInDTO, $rawRequestData);
+            $attendance = $this->mockAttendanceService->persistClockIn($clockInDTO, $rawRequestData);
 
             return Json::item(
-                        (new AttendancePresenter($attendance))->present(),
-                        message: 'Successfully clocked in.'
+                (new AttendancePresenter($attendance))->present(),
+                message: 'Successfully clocked in.'
             );
         } catch (AttendanceException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], $e->getStatusCode());
+            return Json::error($e->getMessage(), httpStatus: $e->getStatusCode());
         }
     }
 

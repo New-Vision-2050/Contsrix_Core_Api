@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Requests;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Attendance\DTO\ClockInDTO;
@@ -27,7 +28,6 @@ class ClockInRequest extends FormRequest
         return [
             'clock_in_time' => [
                 'sometimes',
-                // 'date',
             ],
             'location' => [
                 'sometimes',
@@ -83,19 +83,19 @@ class ClockInRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Set default clock in time to now in Riyadh timezone (company timezone)
+        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         if (!$this->has('clock_in_time')) {
             $this->merge([
-                'clock_in_time' => getTimeZoneBranchByRequest() ?? config('app.timezone')
+                'clock_in_time' => Carbon::now($timezone)->toDateTimeString(),
             ]);
         }
 
         // Add request metadata
         $this->merge([
-           // 'ip_address' => $this->ip(),
             'user_agent' => $this->userAgent(),
             'user_id' => auth()->id(),
-            'company_id' => auth()->user()->company_id ?? tenant('id')
+            'company_id' => auth()->user()->company_id ?? tenant('id'),
+            'timezone' => $timezone,
         ]);
     }
 

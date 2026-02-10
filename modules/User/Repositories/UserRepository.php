@@ -14,7 +14,6 @@ use Modules\CompanyUser\Repositories\ClientDetailRepository;
 use Modules\CompanyUser\Repositories\CompanyUserAddressRepository;
 use Modules\CompanyUser\Repositories\CompanyUserCompanyRepository;
 use Modules\CompanyUser\Repositories\CompanyUserManagementHierarchyRepository;
-use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\RoleAndPermission\Models\Role;
 use Modules\User\Models\User;
@@ -91,7 +90,7 @@ class UserRepository extends BaseRepository
         })->where("company_id", tenant("id"))->first();
     }
 
-    public function updateFcmToken($id)
+    public function updateFcmToken( $id)
     {
         $user = $this->find($id);
         $user->update(['fcm_token' => request()->fcm_token]);
@@ -592,7 +591,7 @@ class UserRepository extends BaseRepository
                             'end_date' => $endDateCarbon->format('Y-m-d'),
                             'user_id' => $user->id,
                             'name' => $user->name,
-                            'days_remaining' => (int)$daysRemaining,
+                            'days_remaining' => (int) $daysRemaining,
                         ];
                     }
                 }

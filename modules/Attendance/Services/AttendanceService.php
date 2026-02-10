@@ -45,41 +45,23 @@ class AttendanceService
 
         $periodStartTime = data_get($constraints, 'current_work_period.start_time');
         $periodEndTime = data_get($constraints, 'current_work_period.end_time');
-        $day_status = 'in_loction';
-
 
         $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodStartTime, $timezone);
         $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodEndTime, $timezone);
-
         if ($startDateTime->gt($endDateTime)) {
             $endDateTime->addDay();
         }
 
         $earlyClockInRules = data_get($constraints, 'early_clock_in_rules');
-
         if ($earlyClockInRules && ($earlyClockInRules['prevent_early_clock_in'] ?? false)) {
-            $earlyPeriod = $earlyClockInRules['early_period'] ?? 0;
+            $earlyPeriod = (int) ($earlyClockInRules['early_period'] ?? 0);
             $earlyUnit = $earlyClockInRules['early_unit'] ?? 'minutes';
-
-            $now = Carbon::now($timezone);
-
+            $clockInMoment = Carbon::parse($clockInDTO->getClockInTime(), $timezone);
             $earliestAllowedTime = $startDateTime->copy()->sub($earlyPeriod, $earlyUnit);
-
-            if ($now->lt($earliestAllowedTime)) {
-
+            if ($clockInMoment->lt($earliestAllowedTime)) {
                 throw new \Exception("غير مسموح بتسجيل الحضور قبل {$earlyPeriod} {$earlyUnit} من بداية الفترة.");
             }
         }
-
-
-        if ($startDateTime->gt($endDateTime)) {
-            $endDateTime->addDay();
-        }
-
-
-        // if (!$periodStartTime || !$periodEndTime) {
-        //     throw new \Exception('لا يوجد فترة عمل حالية current_work_period لهذا المستخدم اليوم.');
-        // }
 
         $attendanceData = [
             'user_id' => $clockInDTO->getUserId(),
@@ -92,23 +74,28 @@ class AttendanceService
             'ip_address' => $clockInDTO->getIpAddress(),
             'user_agent' => $clockInDTO->getUserAgent(),
             'status' => 'active',
-            'is_absent' =>  0,
+            'is_absent' => 0,
             'is_late' => 0,
             'is_holiday' => 0,
-            'day_status' => $day_status,
+            'day_status' => 'in_location',
             'timezone' => $timezone,
         ];
-        $attendance = Attendance::where('start_time',$startDateTime)
-        ->whereNull('clock_in_time')->first();
-        if ($attendance) {
 
-              $attendance->update($attendanceData);
-              $attendance = $attendance->refresh();
-        }else {
+        $startTimeStr = $startDateTime->format('Y-m-d H:i:s');
+        $attendance = Attendance::query()
+            ->where('user_id', $clockInDTO->getUserId())
+            ->where('start_time', $startTimeStr)
+            ->whereNull('clock_in_time')
+            ->first();
+
+        if ($attendance) {
+            $attendance->update($attendanceData);
+            $attendance = $attendance->refresh();
+        } else {
             $attendance = $this->attendanceRepository->create($attendanceData);
         }
 
-        if($extendsNextDay){
+        if ($extendsNextDay) {
             ProcessClockInAttendanceData::dispatch($attendance->id)->delay($endDateTime);
         }
 
