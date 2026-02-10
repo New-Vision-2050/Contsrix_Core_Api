@@ -10,10 +10,10 @@ class UpdateUserRelativeCommand
 {
     public function __construct(
         private UuidInterface $id,
-        private string $name,
+        private ?string $name,
         private string $marital_status_id,
-        private string $relationship,
-        private string $phone,
+        private ?string $relationship,
+        private ?string $phone,
     ) {
     }
 
