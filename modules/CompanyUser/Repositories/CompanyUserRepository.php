@@ -217,7 +217,7 @@ class CompanyUserRepository extends BaseRepository
                 $professionalData = UserProfessionalData::where('global_id', $companyUser->global_id)
                     ->where('company_id', $companyId)
                     ->first();
-                
+
                 if ($professionalData) {
                     $professionalData->delete(); // Soft delete
                 }
@@ -546,7 +546,7 @@ class CompanyUserRepository extends BaseRepository
     private function handleOwnerPermissions(User $user, $companyId): void
     {
         if ($user->is_owner) {
-            $branch = $this->managementHierarchyRepository->model->where([
+            $branch = $this->managementHierarchyRepository->model->withoutTenancy()->where([
                 "company_id" => $companyId,
                 "parent_id" => null
             ])->first();
@@ -560,7 +560,7 @@ class CompanyUserRepository extends BaseRepository
 
             $branch->update(["manager_id" => $user->id]);
 
-            $this->managementHierarchyRepository->model->where([
+            $this->managementHierarchyRepository->model->withoutTenancy()->where([
                 "company_id" => $companyId,
                 "parent_id" => $branch->id,
                 "type" => "management",
