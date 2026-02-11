@@ -149,9 +149,10 @@ class UserAttendanceService
             foreach ($enhancedPeriods as &$period) {
                 if ($period['can_clock_out'] ?? false) {
                     $period['is_active'] = true;
-                    break; 
+                    break;
+                }
             }
-            unset($period);
+            unset($period); // Break reference
         }
 
         return $enhancedPeriods;
