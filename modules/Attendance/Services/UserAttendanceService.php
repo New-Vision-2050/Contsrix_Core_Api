@@ -263,6 +263,7 @@ class UserAttendanceService
                 : Carbon::parse($attendance->clock_in_time, getTimeZoneBranchByRequest());
             $clockInTime = $clockInCarbon->format('H:i');
         }
+        
     
         if ($attendance->clock_out_time) {
             $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
