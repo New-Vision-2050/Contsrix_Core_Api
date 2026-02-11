@@ -260,10 +260,10 @@ class UserAttendanceService
         if ($attendance->clock_in_time) {
             $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
                 ? $attendance->clock_in_time 
-                : Carbon::parse($attendance->clock_in_time);
+                : Carbon::parse($attendance->clock_in_time, getTimeZoneBranchByRequest());
             $clockInTime = $clockInCarbon->format('H:i');
         }
-        
+    
         if ($attendance->clock_out_time) {
             $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
                 ? $attendance->clock_out_time 
@@ -275,11 +275,9 @@ class UserAttendanceService
         $totalHoursPresent = 0;
         if ($clockInCarbon) {
             if ($clockOutCarbon) {
-                // If clocked out, calculate difference
-                $totalHoursPresent = round($clockInCarbon->diffInMinutes($clockOutCarbon) / 60, 2);
+                $totalHoursPresent = round(max(0, $clockInCarbon->diffInMinutes($clockOutCarbon, true)) / 60, 2);
             } else {
-                // If still active, calculate from clock_in to now
-                $totalHoursPresent = round($clockInCarbon->diffInMinutes($this->now()) / 60, 2);
+                $totalHoursPresent = round(max(0, $clockInCarbon->diffInMinutes($this->now(), true)) / 60, 2);
             }
         }
 
@@ -568,11 +566,11 @@ class UserAttendanceService
                 
                 if ($attendance->clock_out_time) {
                     $clockOutCarbon = $this->parseDateTime($attendance->clock_out_time);
-                    $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon);
+                    $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon, true);
                 } else {
-                    $workMinutes = $clockInCarbon->diffInMinutes($this->now());
+                    $workMinutes = $clockInCarbon->diffInMinutes($this->now(), true);
                 }
-                $totalWorkHours = round($workMinutes / 60, 2);
+                $totalWorkHours = round(max(0, $workMinutes) / 60, 2);
             }
 
             $periods[] = [
@@ -670,12 +668,11 @@ class UserAttendanceService
                     
                     if ($attendance->clock_out_time) {
                         $clockOutCarbon = $this->parseDateTime($attendance->clock_out_time);
-                        $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon);
+                        $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon, true);
                     } else {
-                        // If no clock_out, calculate from clock_in to now
-                        $workMinutes = $clockInCarbon->diffInMinutes($this->now());
+                        $workMinutes = $clockInCarbon->diffInMinutes($this->now(), true);
                     }
-                    $totalWorkHours += round($workMinutes / 60, 2);
+                    $totalWorkHours += round(max(0, $workMinutes) / 60, 2);
                 }
             }
 
@@ -792,7 +789,7 @@ class UserAttendanceService
     }
 
     /**
-     * Get current time in the resolved timezone
+     * Current time in the request/app timezone (same as getTimezone()).
      *
      * @return Carbon
      */
