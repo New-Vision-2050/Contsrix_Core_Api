@@ -54,7 +54,10 @@ class MockAttendanceService
         $activePeriod = null;
         $matchedPeriod = null;
         $matchedPeriodHasActiveAttendance = false;
+        $clockInCarbon = Carbon::parse($clockInCarbon->format('Y-m-d H:i:s'), $timezone);
+
         if (isset($userConstraints['work_rules']['all_work_periods'])) {
+            $periodDateStr = $clockInCarbon->format('Y-m-d');
             foreach ($userConstraints['work_rules']['all_work_periods'] as $period) {
                 $hasActiveAttendance = false;
                 if (!empty($period['attendance']) && is_array($period['attendance'])) {
@@ -66,17 +69,22 @@ class MockAttendanceService
                     }
                 }
 
-                // Period times - parse without timezone since clock_in_time is also without timezone
-                $periodDate = $period['date'] ?? Carbon::parse( $clockInCarbon->format('Y-m-d'), $timezone);
+                $periodDate = $period['date'] ?? $periodDateStr;
+                if ($periodDate instanceof Carbon) {
+                    $periodDate = $periodDate->format('Y-m-d');
+                }
                 $start = Carbon::parse($periodDate . ' ' . ($period['start_time'] ?? '00:00'), $timezone);
                 $end = Carbon::parse($periodDate . ' ' . ($period['end_time'] ?? '23:59'), $timezone);
                 if (!empty($period['extends_to_next_day'])) {
                     $end->addDay();
                 }
-                
-                $clockInCarbon = Carbon::parse($clockInCarbon->format('Y-m-d H:i:s'), $timezone);
 
-                // Compare clock-in time with period times (both in user's timezone)
+                // Apply early clock-in window: allow clock-in from (start - early_period) to end
+                $effectiveStart = $this->applyEarlyClockInWindow($start, $period);
+                if ($effectiveStart !== null) {
+                    $start = $effectiveStart;
+                }
+
                 if ($clockInCarbon->between($start, $end, true)) {
                     $matchedPeriod = $period;
                     $matchedPeriodHasActiveAttendance = $hasActiveAttendance;
@@ -118,6 +126,29 @@ class MockAttendanceService
         return $this->constraintService->validateAttendance($mockAttendance, $rawRequestData, true);
     }
 
+    /**
+     * If period has early_clock_in_rules, return period start minus early window; otherwise null.
+     */
+    private function applyEarlyClockInWindow(Carbon $periodStart, array $period): ?Carbon
+    {
+        $rules = $period['early_clock_in_rules'] ?? null;
+        if (!is_array($rules)) {
+            return null;
+        }
+        $earlyPeriod = (int) ($rules['early_period'] ?? 0);
+        if ($earlyPeriod <= 0) {
+            return null;
+        }
+        $earlyUnit = (string) ($rules['early_unit'] ?? 'minutes');
+        if ($earlyUnit === '') {
+            return null;
+        }
+        if (strtolower($earlyUnit) === 'minute') {
+            $earlyUnit = 'minutes';
+        }
+        return $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
+    }
+
     private function buildClockInNotAllowedViolation(
         array $userConstraints,
         ?array $matchedPeriod,
@@ -135,14 +166,30 @@ class MockAttendanceService
             $reason = 'No active work period available for clock in.';
         }
 
+        $details = [
+            'day_status' => $dayStatus,
+            'is_holiday' => $userConstraints['work_rules']['is_holiday'] ?? false,
+        ];
+        // Include work periods with early_clock_in_rules so client can show "Clock in from HH:mm (early)"
+        $periods = $userConstraints['work_rules']['all_work_periods'] ?? [];
+        if (!empty($periods)) {
+            $details['work_periods'] = array_map(function (array $p) {
+                $out = [
+                    'start_time' => $p['start_time'] ?? null,
+                    'end_time' => $p['end_time'] ?? null,
+                ];
+                if (!empty($p['early_clock_in_rules'])) {
+                    $out['early_clock_in_rules'] = $p['early_clock_in_rules'];
+                }
+                return $out;
+            }, $periods);
+        }
+
         return [
             'type' => 'clock_in_not_allowed',
             'severity' => 'blocking',
             'message' => $reason,
-            'details' => [
-                'day_status' => $dayStatus,
-                'is_holiday' => $userConstraints['work_rules']['is_holiday'] ?? false,
-            ],
+            'details' => $details,
         ];
     }
 }
