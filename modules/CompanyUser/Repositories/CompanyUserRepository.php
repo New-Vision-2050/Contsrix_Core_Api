@@ -1029,10 +1029,6 @@ class CompanyUserRepository extends BaseRepository
         $result = [
             'total' => $totalUsers,
             'ranges' => [],
-            'unspecified' => [
-                'count' => $unspecifiedCount,
-                'percentage' => $totalUsers > 0 ? round(($unspecifiedCount / $totalUsers) * 100, 2) : 0,
-            ],
         ];
 
         foreach ($distribution as $key => $count) {
@@ -1041,6 +1037,11 @@ class CompanyUserRepository extends BaseRepository
                 'percentage' => $totalUsers > 0 ? round(($count / $totalUsers) * 100, 2) : 0,
             ];
         }
+
+        $result['ranges']['unspecified'] = [
+            'count' => $unspecifiedCount,
+            'percentage' => $totalUsers > 0 ? round(($unspecifiedCount / $totalUsers) * 100, 2) : 0,
+        ];
 
         return $result;
     }
@@ -1055,8 +1056,15 @@ class CompanyUserRepository extends BaseRepository
         if ($total === 0) {
             return [
                 'total' => 0,
-                'data' => [],
-                'unspecified' => ['count' => 0, 'percentage' => 0],
+                'data' => [
+                    [
+                        'job_type_id' => null,
+                        'name' => __('غير محدد'),
+                        'code' => 'unspecified',
+                        'count' => 0,
+                        'percentage' => 0,
+                    ],
+                ],
             ];
         }
 
@@ -1079,13 +1087,17 @@ class CompanyUserRepository extends BaseRepository
 
         usort($data, fn($a, $b) => $b['count'] <=> $a['count']);
 
+        $data[] = [
+            'job_type_id' => null,
+            'name' => __('غير محدد'),
+            'code' => 'unspecified',
+            'count' => $unspecifiedCount,
+            'percentage' => round(($unspecifiedCount / $total) * 100, 2),
+        ];
+
         return [
             'total' => $total,
             'data' => $data,
-            'unspecified' => [
-                'count' => $unspecifiedCount,
-                'percentage' => round(($unspecifiedCount / $total) * 100, 2),
-            ],
         ];
     }
 
@@ -1137,13 +1149,17 @@ class CompanyUserRepository extends BaseRepository
             ];
         }
 
+        $data[] = [
+            'month' => null,
+            'label' => __('بدون تأشيرة'),
+            'code' => 'no_visa',
+            'count' => $noVisaCount,
+            'percentage' => $totalUsers > 0 ? round(($noVisaCount / $totalUsers) * 100, 2) : 0,
+        ];
+
         return [
             'total' => $totalWithVisa,
             'data' => $data,
-            'no_visa' => [
-                'count' => $noVisaCount,
-                'percentage' => $totalUsers > 0 ? round(($noVisaCount / $totalUsers) * 100, 2) : 0,
-            ],
         ];
     }
 
@@ -1258,13 +1274,17 @@ class CompanyUserRepository extends BaseRepository
             ];
         }
 
+        $data[] = [
+            'month' => null,
+            'label' => __('بدون عقد'),
+            'code' => 'no_contract',
+            'count' => $noContractCount,
+            'percentage' => $totalUsers > 0 ? round(($noContractCount / $totalUsers) * 100, 2) : 0,
+        ];
+
         return [
             'total' => $validContracts,
             'data' => $data,
-            'no_contract' => [
-                'count' => $noContractCount,
-                'percentage' => $totalUsers > 0 ? round(($noContractCount / $totalUsers) * 100, 2) : 0,
-            ],
         ];
     }
 
@@ -1325,8 +1345,15 @@ class CompanyUserRepository extends BaseRepository
         if ($total === 0) {
             return [
                 'total' => 0,
-                'data' => [],
-                'unspecified' => ['count' => 0, 'percentage' => 0],
+                'data' => [
+                    [
+                        'country_id' => null,
+                        'name' => __('غير محدد'),
+                        'code' => 'unspecified',
+                        'count' => 0,
+                        'percentage' => 0,
+                    ],
+                ],
             ];
         }
 
@@ -1351,26 +1378,27 @@ class CompanyUserRepository extends BaseRepository
 
         usort($data, fn($a, $b) => $b['count'] <=> $a['count']);
 
+        $data[] = [
+            'country_id' => null,
+            'name' => __('غير محدد'),
+            'code' => 'unspecified',
+            'count' => $unspecifiedCount,
+            'percentage' => round(($unspecifiedCount / $total) * 100, 2),
+        ];
+
         return [
             'total' => $total,
             'data' => $data,
-            'unspecified' => [
-                'count' => $unspecifiedCount,
-                'percentage' => round(($unspecifiedCount / $total) * 100, 2),
-            ],
         ];
     }
 
     public function getMaritalStatusDistribution(): array
     {
         $companyId = tenant('id');
-        $query = $this->companyUsersQuery();
-        $totalUsers = $query->count();
 
-        $globalIds = (clone $query)->pluck('global_id');
+        $allStatuses = \Modules\Shared\MaritalStatus\Models\MaritalStatus::all();
 
         $relatives = \Modules\UserInfo\UserRelative\Models\UserRelative::where('company_id', $companyId)
-            ->whereIn('global_id', $globalIds)
             ->whereNotNull('marital_status_id')
             ->where('marital_status_id', '!=', '')
             ->get(['marital_status_id']);
@@ -1379,18 +1407,15 @@ class CompanyUserRepository extends BaseRepository
         $totalRelatives = $relatives->count();
 
         $data = [];
-        foreach ($grouped as $statusId => $items) {
-            $status = \Modules\Shared\MaritalStatus\Models\MaritalStatus::find($statusId);
-            $count = $items->count();
+        foreach ($allStatuses as $status) {
+            $count = isset($grouped[$status->id]) ? $grouped[$status->id]->count() : 0;
             $data[] = [
-                'marital_status_id' => $statusId,
-                'name' => $status ? $status->name : null,
+                'marital_status_id' => $status->id,
+                'name' => $status->name,
                 'count' => $count,
                 'percentage' => $totalRelatives > 0 ? round(($count / $totalRelatives) * 100, 2) : 0,
             ];
         }
-
-        usort($data, fn($a, $b) => $b['count'] <=> $a['count']);
 
         return [
             'total' => $totalRelatives,

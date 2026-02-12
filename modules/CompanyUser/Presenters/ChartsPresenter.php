@@ -88,7 +88,7 @@ class ChartsPresenter extends AbstractPresenter
         $ageRanges = [];
         foreach ($this->ageData['ranges'] as $range => $data) {
             $ageRanges[] = [
-                'label' => $range,
+                'label' => $range === 'unspecified' ? __('غير محدد') : $range,
                 'code' => $range,
                 'count' => $data['count'],
                 'percentage' => $data['percentage'],
@@ -99,12 +99,6 @@ class ChartsPresenter extends AbstractPresenter
             'chart_type' => 'age',
             'total' => $this->ageData['total'],
             'data' => $ageRanges,
-            'unspecified' => [
-                'label' => __('غير محدد'),
-                'code' => 'unspecified',
-                'count' => $this->ageData['unspecified']['count'],
-                'percentage' => $this->ageData['unspecified']['percentage'],
-            ],
         ];
     }
 
@@ -112,24 +106,22 @@ class ChartsPresenter extends AbstractPresenter
     {
         $jobTypes = [];
         foreach ($this->jobTypeData['data'] as $item) {
-            $jobTypes[] = [
+            $entry = [
                 'job_type_id' => $item['job_type_id'],
                 'label' => $item['name'],
                 'count' => $item['count'],
                 'percentage' => $item['percentage'],
             ];
+            if (isset($item['code'])) {
+                $entry['code'] = $item['code'];
+            }
+            $jobTypes[] = $entry;
         }
 
         return [
             'chart_type' => 'job_type',
             'total' => $this->jobTypeData['total'],
             'data' => $jobTypes,
-            'unspecified' => [
-                'label' => __('غير محدد'),
-                'code' => 'unspecified',
-                'count' => $this->jobTypeData['unspecified']['count'],
-                'percentage' => $this->jobTypeData['unspecified']['percentage'],
-            ],
         ];
     }
 
@@ -139,12 +131,6 @@ class ChartsPresenter extends AbstractPresenter
             'chart_type' => 'visa_expiration_by_month',
             'total' => $this->visaExpirationData['total'],
             'data' => $this->visaExpirationData['data'],
-            'no_visa' => [
-                'label' => __('بدون تأشيرة'),
-                'code' => 'no_visa',
-                'count' => $this->visaExpirationData['no_visa']['count'],
-                'percentage' => $this->visaExpirationData['no_visa']['percentage'],
-            ],
         ];
     }
 
@@ -182,12 +168,6 @@ class ChartsPresenter extends AbstractPresenter
             'chart_type' => 'contract_expiration_by_month',
             'total' => $this->contractExpirationData['total'],
             'data' => $this->contractExpirationData['data'],
-            'no_contract' => [
-                'label' => __('بدون عقد'),
-                'code' => 'no_contract',
-                'count' => $this->contractExpirationData['no_contract']['count'],
-                'percentage' => $this->contractExpirationData['no_contract']['percentage'],
-            ],
         ];
     }
 
@@ -223,24 +203,22 @@ class ChartsPresenter extends AbstractPresenter
     {
         $nationalities = [];
         foreach ($this->nationalityData['data'] as $item) {
-            $nationalities[] = [
+            $entry = [
                 'country_id' => $item['country_id'],
-                'label' => $item['name'],
+                'label' => $item['name'] ?? $item['code'] ?? null,
                 'count' => $item['count'],
                 'percentage' => $item['percentage'],
             ];
+            if (isset($item['code'])) {
+                $entry['code'] = $item['code'];
+            }
+            $nationalities[] = $entry;
         }
 
         return [
             'chart_type' => 'nationality',
             'total' => $this->nationalityData['total'],
             'data' => $nationalities,
-            'unspecified' => [
-                'label' => __('غير محدد'),
-                'code' => 'unspecified',
-                'count' => $this->nationalityData['unspecified']['count'],
-                'percentage' => $this->nationalityData['unspecified']['percentage'],
-            ],
         ];
     }
 
