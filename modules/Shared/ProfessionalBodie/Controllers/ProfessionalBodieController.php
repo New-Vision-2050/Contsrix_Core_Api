@@ -31,9 +31,9 @@ class ProfessionalBodieController extends Controller
 
     public function index(GetProfessionalBodieListRequest $request)//: JsonResponse
     {
-        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
-
-        $user = $this->userRepository->getUser($userId);
+//        $userId = $request->route('id')? Uuid::fromString($request->route('id')) : auth()->user()->id;
+//
+//        $user = $this->userRepository->getUser($userId);
 
 //        $getCode = $this->professionalBodieService->getCodes(
 //        Uuid::fromString($user->company_id),
@@ -45,8 +45,9 @@ class ProfessionalBodieController extends Controller
 
 
         $list = $this->professionalBodieService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
+            code: $request->get('code'),
+            page:(int) $request->get('page', 1),
+            perPage: (int) $request->get('per_page', 10)
         );
 
         return Json::items(ProfessionalBodiePresenter::collection($list['data']), paginationSettings: $list['pagination']);
