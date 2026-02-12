@@ -550,7 +550,7 @@ class UserRepository extends BaseRepository
 
     }
 
-    public function getExpiringInfoAlerts(?string $userId = null, int $daysThreshold = 30): array
+    public function getExpiringInfoAlerts(?string $userId = null, ?string $type = null, ?string $branchId = null, int $daysThreshold = 30): array
     {
         $alerts = [];
         $now = now();
@@ -562,6 +562,12 @@ class UserRepository extends BaseRepository
 
         if ($userId) {
             $query->where('id', $userId);
+        }
+
+        if ($branchId) {
+            $query->whereHas('professionalData', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
         }
 
         $users = $query->get();
@@ -580,14 +586,19 @@ class UserRepository extends BaseRepository
                 continue;
             }
 
-            foreach ($dateFields as $field => $type) {
+            foreach ($dateFields as $field => $alertType) {
+                // Skip if type filter is set and doesn't match current alert type
+                if ($type && $type !== $alertType) {
+                    continue;
+                }
+
                 $endDate = $companyUser->{$field};
                 if ($endDate) {
                     $endDateCarbon = \Carbon\Carbon::parse($endDate);
                     if ($endDateCarbon->isBetween($now, $thresholdDate) || $endDateCarbon->isPast()) {
                         $daysRemaining = $now->diffInDays($endDateCarbon, false);
                         $alerts[] = [
-                            'type' => $type,
+                            'type' => $alertType,
                             'end_date' => $endDateCarbon->format('Y-m-d'),
                             'user_id' => $user->id,
                             'name' => $user->name,
@@ -598,7 +609,8 @@ class UserRepository extends BaseRepository
             }
 
             // Check if user has no bank account
-            if (!$companyUser->bankAccount) {
+            // Only add if type filter is not set or matches 'bank_account'
+            if (!$companyUser->bankAccount && (!$type || $type === 'bank_account')) {
                 $alerts[] = [
                     'type' => 'bank_account',
                     'end_date' => null,
@@ -615,7 +627,7 @@ class UserRepository extends BaseRepository
     public function handleOwnerPermissions(User $user, $companyId): void
     {
         if ($user->is_owner) {
-            $branch = $this->managementHierarchyRepository->model->where([
+            $branch = $this->managementHierarchyRepository->model->withoutTenancy()->where([
                 "company_id" => $companyId,
                 "parent_id" => null
             ])->first();
@@ -629,7 +641,7 @@ class UserRepository extends BaseRepository
 
             $branch->update(["manager_id" => $user->id]);
 
-            $this->managementHierarchyRepository->model->where([
+            $this->managementHierarchyRepository->model->withoutTenancy()->where([
                 "company_id" => $companyId,
                 "parent_id" => $branch->id,
                 "type" => "management",

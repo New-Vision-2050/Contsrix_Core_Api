@@ -13,7 +13,7 @@ use Modules\UserInfo\BankAccount\Presenters\BankAccountPresenter;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Modules\UserInfo\UserProfessionalData\Presenters\UserProfessionalDataPresenter;
 
-class CompanyUserPresenter extends AbstractPresenter
+class CompanyUserClientPresenter extends AbstractPresenter
 {
     private CompanyUser $companyUser;
     private ?string $userId;
@@ -46,8 +46,7 @@ class CompanyUserPresenter extends AbstractPresenter
                     $this->companyUser
                 ))->getData()
                 : null,
-            "client_companies" => CompanyUsersPresenter::collection($this->companyUser->clientCompanies->unique('id'),$this->companyUser),
-            "companies" => CompanyUsersPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
+            "companies" => CompanyUsersPresenter::collection($this->companyUser->clientCompanies->unique('id'),$this->companyUser),
             'Job_role' => '-',
             'date_appointment' => '-',
             'branch'=>$this->companyUser->userProfessionalData?->branch != null ? $this->companyUser->userProfessionalData?->branch?->name :"-" ,
