@@ -12,7 +12,7 @@ class UpdateWebsiteThemeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'url' => 'nullable|string|max:255',
+            'url' => 'nullable|unique:website_themes,url|string|max:255',
             'radius' => 'nullable|integer|min:0',
             'html_font_size' => 'nullable|integer|min:1',
             'font_family' => 'nullable|string',
