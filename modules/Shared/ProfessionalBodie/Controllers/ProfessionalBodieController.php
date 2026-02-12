@@ -35,13 +35,13 @@ class ProfessionalBodieController extends Controller
 
         $user = $this->userRepository->getUser($userId);
 
-        $getCode = $this->professionalBodieService->getCodes(
-        Uuid::fromString($user->company_id),
-        Uuid::fromString($user->global_company_user_id),
-        );
-        if(!$getCode){
-            return Json::items($getCode);
-        }
+//        $getCode = $this->professionalBodieService->getCodes(
+//        Uuid::fromString($user->company_id),
+//        Uuid::fromString($user->global_company_user_id),
+//        );
+//        if(!$getCode){
+//            return Json::items($getCode);
+//        }
 
 
         $list = $this->professionalBodieService->list(
