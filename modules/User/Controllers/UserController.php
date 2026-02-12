@@ -368,7 +368,7 @@ class UserController extends Controller
     public function getInfoAlert(GetInfoAlertRequest $request): JsonResponse
     {
         $dto = $request->toDTO();
-        $alerts = $this->userService->getInfoAlerts($dto->userId);
+        $alerts = $this->userService->getInfoAlerts($dto->userId, $dto->type, $dto->branchId);
 
         return Json::items(InfoAlertPresenter::collection($alerts));
     }

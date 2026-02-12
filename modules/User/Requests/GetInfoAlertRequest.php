@@ -18,6 +18,8 @@ class GetInfoAlertRequest extends FormRequest
     {
         return [
             'user_id' => 'nullable|uuid|exists:users,id',
+            'type' => 'nullable|string|in:work_permit,passport,identity,border_number,entry_number,qualification,bank_account',
+            'branch_id' => 'nullable|exists:management_hierarchies,id',
         ];
     }
 
@@ -25,6 +27,8 @@ class GetInfoAlertRequest extends FormRequest
     {
         return new GetInfoAlertDTO(
             userId: $this->get('user_id'),
+            type: $this->get('type'),
+            branchId: $this->get('branch_id'),
         );
     }
 }
