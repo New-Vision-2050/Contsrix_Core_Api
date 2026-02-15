@@ -935,4 +935,491 @@ class CompanyUserRepository extends BaseRepository
 
         return $query->get();
     }
+
+    private function companyUsersQuery()
+    {
+        return $this->model->whereHas('users', fn($q) => $q->where('company_id', tenant('id')));
+    }
+
+    public function getGenderDistribution(): array
+    {
+        $query = $this->companyUsersQuery();
+        $total = $query->count();
+
+        if ($total === 0) {
+            return [
+                'total' => 0,
+                'male' => ['count' => 0, 'percentage' => 0],
+                'female' => ['count' => 0, 'percentage' => 0],
+                'unspecified' => ['count' => 0, 'percentage' => 0],
+            ];
+        }
+
+        $maleCount = (clone $query)->where('gender', 'male')->count();
+        $femaleCount = (clone $query)->where('gender', 'female')->count();
+        $unspecifiedCount = $total - $maleCount - $femaleCount;
+
+        return [
+            'total' => $total,
+            'male' => [
+                'count' => $maleCount,
+                'percentage' => round(($maleCount / $total) * 100, 2),
+            ],
+            'female' => [
+                'count' => $femaleCount,
+                'percentage' => round(($femaleCount / $total) * 100, 2),
+            ],
+            'unspecified' => [
+                'count' => $unspecifiedCount,
+                'percentage' => round(($unspecifiedCount / $total) * 100, 2),
+            ],
+        ];
+    }
+
+    public function getAgeDistribution(): array
+    {
+        $query = $this->companyUsersQuery();
+        $totalUsers = $query->count();
+
+        $users = (clone $query)->whereNotNull('birthdate_gregorian')
+            ->where('birthdate_gregorian', '!=', '')
+            ->pluck('birthdate_gregorian');
+
+        $totalWithBirthdate = $users->count();
+        $unspecifiedCount = $totalUsers - $totalWithBirthdate;
+
+        $ranges = [
+            '10-19' => [10, 19],
+            '20-29' => [20, 29],
+            '30-39' => [30, 39],
+            '40-49' => [40, 49],
+            '50-59' => [50, 59],
+            '60-69' => [60, 69],
+            '70-79' => [70, 79],
+            '80-89' => [80, 89],
+            '90-99' => [90, 99],
+            '100+' => [100, null],
+        ];
+
+        $distribution = [];
+        foreach ($ranges as $key => $range) {
+            $distribution[$key] = 0;
+        }
+
+        foreach ($users as $birthdate) {
+            try {
+                $age = Carbon::parse($birthdate)->age;
+            } catch (\Exception $e) {
+                $unspecifiedCount++;
+                $totalWithBirthdate--;
+                continue;
+            }
+
+            foreach ($ranges as $key => $range) {
+                if ($range[1] === null && $age >= $range[0]) {
+                    $distribution[$key]++;
+                    break;
+                } elseif ($age >= $range[0] && $age <= $range[1]) {
+                    $distribution[$key]++;
+                    break;
+                }
+            }
+        }
+
+        $result = [
+            'total' => $totalUsers,
+            'ranges' => [],
+        ];
+
+        foreach ($distribution as $key => $count) {
+            $result['ranges'][$key] = [
+                'count' => $count,
+                'percentage' => $totalUsers > 0 ? round(($count / $totalUsers) * 100, 2) : 0,
+            ];
+        }
+
+        $result['ranges']['unspecified'] = [
+            'count' => $unspecifiedCount,
+            'percentage' => $totalUsers > 0 ? round(($unspecifiedCount / $totalUsers) * 100, 2) : 0,
+        ];
+
+        return $result;
+    }
+
+    public function getJobTypeDistribution(): array
+    {
+        $companyId = tenant('id');
+
+        $professionalData = UserProfessionalData::where('company_id', $companyId)->get();
+        $total = $professionalData->count();
+
+        if ($total === 0) {
+            return [
+                'total' => 0,
+                'data' => [
+                    [
+                        'job_type_id' => null,
+                        'name' => __('غير محدد'),
+                        'code' => 'unspecified',
+                        'count' => 0,
+                        'percentage' => 0,
+                    ],
+                ],
+            ];
+        }
+
+        $withJobType = $professionalData->whereNotNull('job_type_id');
+        $unspecifiedCount = $total - $withJobType->count();
+
+        $grouped = $withJobType->groupBy('job_type_id');
+
+        $data = [];
+        foreach ($grouped as $jobTypeId => $items) {
+            $jobType = \Modules\Shared\JobType\Models\JobType::withoutGlobalScope('active')->find($jobTypeId);
+            $count = $items->count();
+            $data[] = [
+                'job_type_id' => $jobTypeId,
+                'name' => $jobType ? $jobType->name : null,
+                'count' => $count,
+                'percentage' => round(($count / $total) * 100, 2),
+            ];
+        }
+
+        usort($data, fn($a, $b) => $b['count'] <=> $a['count']);
+
+        $data[] = [
+            'job_type_id' => null,
+            'name' => __('غير محدد'),
+            'code' => 'unspecified',
+            'count' => $unspecifiedCount,
+            'percentage' => round(($unspecifiedCount / $total) * 100, 2),
+        ];
+
+        return [
+            'total' => $total,
+            'data' => $data,
+        ];
+    }
+
+    public function getVisaExpirationByMonth(): array
+    {
+        $query = $this->companyUsersQuery();
+        $totalUsers = $query->count();
+
+        $usersWithVisa = (clone $query)->whereNotNull('entry_number_end_date')
+            ->where('entry_number_end_date', '!=', '')
+            ->get(['entry_number_end_date']);
+
+        $totalWithVisa = $usersWithVisa->count();
+        $noVisaCount = $totalUsers - $totalWithVisa;
+
+        $currentYear = Carbon::now()->year;
+        $months = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $date = Carbon::createFromDate($currentYear, $m, 1);
+            $key = $date->format('Y-m');
+            $months[$key] = ['label' => $date->translatedFormat('F Y'), 'count' => 0];
+        }
+
+        foreach ($usersWithVisa as $user) {
+            try {
+                $date = Carbon::parse($user->entry_number_end_date);
+                $key = $date->format('Y-m');
+                $label = $date->translatedFormat('F Y');
+            } catch (\Exception $e) {
+                $noVisaCount++;
+                continue;
+            }
+
+            if (!isset($months[$key])) {
+                $months[$key] = ['label' => $label, 'count' => 0];
+            }
+            $months[$key]['count']++;
+        }
+
+        ksort($months);
+
+        $data = [];
+        foreach ($months as $key => $item) {
+            $data[] = [
+                'month' => $key,
+                'label' => $item['label'],
+                'count' => $item['count'],
+                'percentage' => $totalWithVisa > 0 ? round(($item['count'] / $totalWithVisa) * 100, 2) : 0,
+            ];
+        }
+
+        $data[] = [
+            'month' => null,
+            'label' => __('بدون تأشيرة'),
+            'code' => 'no_visa',
+            'count' => $noVisaCount,
+            'percentage' => $totalUsers > 0 ? round(($noVisaCount / $totalUsers) * 100, 2) : 0,
+        ];
+
+        return [
+            'total' => $totalWithVisa,
+            'data' => $data,
+        ];
+    }
+
+    public function getVisaStatusDistribution(): array
+    {
+        $query = $this->companyUsersQuery();
+        $totalUsers = $query->count();
+
+        $withVisa = (clone $query)->whereNotNull('entry_number_end_date')
+            ->where('entry_number_end_date', '!=', '');
+
+        $totalWithVisa = $withVisa->count();
+        $noVisaCount = $totalUsers - $totalWithVisa;
+
+        $today = Carbon::today();
+        $expiredCount = (clone $withVisa)->where('entry_number_end_date', '<', $today)->count();
+        $validCount = $totalWithVisa - $expiredCount;
+
+        return [
+            'total' => $totalUsers,
+            'expired' => [
+                'count' => $expiredCount,
+                'percentage' => $totalUsers > 0 ? round(($expiredCount / $totalUsers) * 100, 2) : 0,
+            ],
+            'valid' => [
+                'count' => $validCount,
+                'percentage' => $totalUsers > 0 ? round(($validCount / $totalUsers) * 100, 2) : 0,
+            ],
+            'no_visa' => [
+                'count' => $noVisaCount,
+                'percentage' => $totalUsers > 0 ? round(($noVisaCount / $totalUsers) * 100, 2) : 0,
+            ],
+        ];
+    }
+
+    private function calculateContractEndDate($contract): ?Carbon
+    {
+        if (!$contract->start_date || !$contract->contract_duration) {
+            return null;
+        }
+
+        try {
+            $startDate = Carbon::parse($contract->start_date);
+            $duration = (int) $contract->contract_duration;
+            $unitCode = $contract->contractDurationUnit?->code ?? 'month';
+
+            return match ($unitCode) {
+                'day' => $startDate->addDays($duration),
+                'month' => $startDate->addMonths($duration),
+                'year' => $startDate->addYears($duration),
+                default => $startDate->addMonths($duration),
+            };
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    public function getContractExpirationByMonth(): array
+    {
+        $companyId = tenant('id');
+        $query = $this->companyUsersQuery();
+        $totalUsers = $query->count();
+
+        $globalIds = (clone $query)->pluck('global_id');
+
+        $contracts = \Modules\UserInfo\EmploymentContract\Models\EmploymentContract::where('company_id', $companyId)
+            ->whereIn('global_id', $globalIds)
+            ->whereNotNull('start_date')
+            ->whereNotNull('contract_duration')
+            ->with('contractDurationUnit')
+            ->get();
+
+        $totalWithContract = $contracts->count();
+        $noContractCount = $totalUsers - $totalWithContract;
+
+        $currentYear = Carbon::now()->year;
+        $months = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $date = Carbon::createFromDate($currentYear, $m, 1);
+            $key = $date->format('Y-m');
+            $months[$key] = ['label' => $date->translatedFormat('F Y'), 'count' => 0];
+        }
+
+        $validContracts = 0;
+
+        foreach ($contracts as $contract) {
+            $endDate = $this->calculateContractEndDate($contract);
+            if (!$endDate) {
+                $noContractCount++;
+                continue;
+            }
+
+            $validContracts++;
+            $key = $endDate->format('Y-m');
+            $label = $endDate->translatedFormat('F Y');
+
+            if (!isset($months[$key])) {
+                $months[$key] = ['label' => $label, 'count' => 0];
+            }
+            $months[$key]['count']++;
+        }
+
+        ksort($months);
+
+        $data = [];
+        foreach ($months as $key => $item) {
+            $data[] = [
+                'month' => $key,
+                'label' => $item['label'],
+                'count' => $item['count'],
+                'percentage' => $validContracts > 0 ? round(($item['count'] / $validContracts) * 100, 2) : 0,
+            ];
+        }
+
+        $data[] = [
+            'month' => null,
+            'label' => __('بدون عقد'),
+            'code' => 'no_contract',
+            'count' => $noContractCount,
+            'percentage' => $totalUsers > 0 ? round(($noContractCount / $totalUsers) * 100, 2) : 0,
+        ];
+
+        return [
+            'total' => $validContracts,
+            'data' => $data,
+        ];
+    }
+
+    public function getContractStatusDistribution(): array
+    {
+        $companyId = tenant('id');
+        $query = $this->companyUsersQuery();
+        $totalUsers = $query->count();
+
+        $globalIds = (clone $query)->pluck('global_id');
+
+        $contracts = \Modules\UserInfo\EmploymentContract\Models\EmploymentContract::where('company_id', $companyId)
+            ->whereIn('global_id', $globalIds)
+            ->with('contractDurationUnit')
+            ->get();
+
+        $noContractCount = $totalUsers - $contracts->count();
+        $today = Carbon::today();
+        $expiredCount = 0;
+        $validCount = 0;
+
+        foreach ($contracts as $contract) {
+            $endDate = $this->calculateContractEndDate($contract);
+            if (!$endDate) {
+                $noContractCount++;
+                continue;
+            }
+
+            if ($endDate->lt($today)) {
+                $expiredCount++;
+            } else {
+                $validCount++;
+            }
+        }
+
+        return [
+            'total' => $totalUsers,
+            'expired' => [
+                'count' => $expiredCount,
+                'percentage' => $totalUsers > 0 ? round(($expiredCount / $totalUsers) * 100, 2) : 0,
+            ],
+            'valid' => [
+                'count' => $validCount,
+                'percentage' => $totalUsers > 0 ? round(($validCount / $totalUsers) * 100, 2) : 0,
+            ],
+            'no_contract' => [
+                'count' => $noContractCount,
+                'percentage' => $totalUsers > 0 ? round(($noContractCount / $totalUsers) * 100, 2) : 0,
+            ],
+        ];
+    }
+
+    public function getNationalityDistribution(): array
+    {
+        $query = $this->companyUsersQuery();
+        $total = $query->count();
+
+        if ($total === 0) {
+            return [
+                'total' => 0,
+                'data' => [
+                    [
+                        'country_id' => null,
+                        'name' => __('غير محدد'),
+                        'code' => 'unspecified',
+                        'count' => 0,
+                        'percentage' => 0,
+                    ],
+                ],
+            ];
+        }
+
+        $withCountry = (clone $query)->whereNotNull('country_id')
+            ->where('country_id', '!=', '')
+            ->get(['country_id']);
+
+        $unspecifiedCount = $total - $withCountry->count();
+        $grouped = $withCountry->groupBy('country_id');
+
+        $data = [];
+        foreach ($grouped as $countryId => $items) {
+            $country = \Modules\Country\Models\Country::find($countryId);
+            $count = $items->count();
+            $data[] = [
+                'country_id' => $countryId,
+                'name' => $country ? $country->name : null,
+                'count' => $count,
+                'percentage' => round(($count / $total) * 100, 2),
+            ];
+        }
+
+        usort($data, fn($a, $b) => $b['count'] <=> $a['count']);
+
+        $data[] = [
+            'country_id' => null,
+            'name' => __('غير محدد'),
+            'code' => 'unspecified',
+            'count' => $unspecifiedCount,
+            'percentage' => round(($unspecifiedCount / $total) * 100, 2),
+        ];
+
+        return [
+            'total' => $total,
+            'data' => $data,
+        ];
+    }
+
+    public function getMaritalStatusDistribution(): array
+    {
+        $companyId = tenant('id');
+
+        $allStatuses = \Modules\Shared\MaritalStatus\Models\MaritalStatus::all();
+
+        $relatives = \Modules\UserInfo\UserRelative\Models\UserRelative::where('company_id', $companyId)
+            ->whereNotNull('marital_status_id')
+            ->where('marital_status_id', '!=', '')
+            ->get(['marital_status_id']);
+
+        $grouped = $relatives->groupBy('marital_status_id');
+        $totalRelatives = $relatives->count();
+
+        $data = [];
+        foreach ($allStatuses as $status) {
+            $count = isset($grouped[$status->id]) ? $grouped[$status->id]->count() : 0;
+            $data[] = [
+                'marital_status_id' => $status->id,
+                'name' => $status->name,
+                'count' => $count,
+                'percentage' => $totalRelatives > 0 ? round(($count / $totalRelatives) * 100, 2) : 0,
+            ];
+        }
+
+        return [
+            'total' => $totalRelatives,
+            'data' => $data,
+        ];
+    }
 }

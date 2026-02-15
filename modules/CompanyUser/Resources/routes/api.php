@@ -47,6 +47,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     });
     Route::get('/', [CompanyUserController::class, 'index'])->permission(Permission::USER_LIST());
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
+    Route::get('/charts', [CompanyUserController::class, 'charts']);
     Route::get('/roles', [CompanyUserController::class, 'roles']);
     //Route::post('/export', [CompanyUserController::class, 'export'])->name('company-users.export');
 
