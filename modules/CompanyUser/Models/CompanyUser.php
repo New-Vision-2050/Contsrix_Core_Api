@@ -104,9 +104,14 @@ class CompanyUser extends Model implements HasMedia
 
     public function companies()
     {
-        return $this->belongsToMany(Company::class, 'company_users_companies', 'global_company_user_id', 'company_id')
-            ->withPivot('role', 'status')
-            ->wherePivotNull('deleted_at');
+        return $this->hasManyThrough(
+            Company::class,
+            User::class,
+            'global_company_user_id', // Foreign key on users table (intermediate)
+            'id',                     // Foreign key on companies table
+            'global_id',              // Local key on CompanyUser (this model)
+            'company_id'              // Local key on intermediate users table
+        )->where('companies.is_client', 0)->where('companies.is_active', 1)->where('companies.is_broker', 0)->where('companies.deleted_at',null)->withoutTenancy()->distinct();
     }
     public function clientCompanies()
     {

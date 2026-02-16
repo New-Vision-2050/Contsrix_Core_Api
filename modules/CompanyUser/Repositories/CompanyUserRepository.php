@@ -273,8 +273,7 @@ class CompanyUserRepository extends BaseRepository
         return $this->model->withoutParentModel()
             ->with(['companies' => function ($query) {
                 $query->withoutTenancy()
-                    ->with('domains')
-                    ->wherePivotNull('deleted_at');
+                    ->with('domains');
             }])
             ->where('email', $email)
             ->first();
