@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Modules\User\Controllers\UserController;
 use Modules\RoleAndPermission\Enums\Permission;
 
+Route::post('/available-tenants-for-user', [UserController::class, 'getAvailableTenantsForUser'])->name('tenants-for-user-by-email');
+
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [UserController::class, 'index'])->name("users.list");
     Route::get('/get-by-role', [UserController::class, 'getByRole'])->name("users.list")->permission(Permission::USER_LIST());

@@ -66,6 +66,11 @@ class UserRepository extends BaseRepository
         ], ["loginWay"]);
     }
 
+    public function findFirstByEmailWithoutTenancy(string $email): ?User
+    {
+        return $this->model->withoutTenancy()->where('email', $email)->first();
+    }
+
     public function getUserByIdentifier($identifier): mixed
     {
         $identifierSettings = $this->identifierSettingRepository->list();
