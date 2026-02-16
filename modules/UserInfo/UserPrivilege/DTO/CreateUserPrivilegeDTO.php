@@ -17,6 +17,7 @@ class CreateUserPrivilegeDTO
         public ?string $description,
         public ?string $privilege_id,
         public ?string $period_id,
+        public ?string $medical_insurance_id = null,
     ) {
     }
 
@@ -31,6 +32,7 @@ class CreateUserPrivilegeDTO
             'description' => $this->description,
             'privilege_id' => $this->privilege_id,
             'period_id' => $this->period_id,
+            'medical_insurance_id' => $this->medical_insurance_id,
         ];
     }
 }

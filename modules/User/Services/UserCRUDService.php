@@ -7,8 +7,10 @@ namespace Modules\User\Services;
 use Illuminate\Support\Collection;
 use Modules\Company\CompanyCore\Repositories\CompanyRepository;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Modules\RoleAndPermission\Models\Permission;
 use Modules\User\DTO\CreateUserDTO;
+use Modules\User\DTO\GetUserCompaniesByEmailDTO;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Ramsey\Uuid\UuidInterface;
@@ -18,6 +20,7 @@ class UserCRUDService
     public function __construct(
         private UserRepository $repository,
         private CompanyRepository $companyRepository,
+        private CompanyUserRepository $companyUserRepository,
     ) {
     }
 
@@ -96,5 +99,16 @@ class UserCRUDService
     public function getInfoAlerts(?string $userId = null, ?string $type = null, ?string $branchId = null, int $daysThreshold = 30): array
     {
         return $this->repository->getExpiringInfoAlerts($userId, $type, $branchId, $daysThreshold);
+    }
+
+    public function getCompaniesByEmail(GetUserCompaniesByEmailDTO $dto)
+    {
+        $companyUser = $this->companyUserRepository->getCompaniesByEmail($dto->email);
+        
+        if (!$companyUser) {
+            throw new \Exception(__("validation.user-not-found"), 404);
+        }
+        
+        return $companyUser;
     }
 }

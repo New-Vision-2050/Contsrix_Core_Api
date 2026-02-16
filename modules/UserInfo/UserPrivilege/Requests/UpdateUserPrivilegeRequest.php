@@ -19,6 +19,7 @@ class UpdateUserPrivilegeRequest extends FormRequest
             'charge_amount'=> 'nullable|string',
             'description'=> 'nullable|string',
             'period_id' => 'nullable|string',
+            'medical_insurance_id' => 'nullable|uuid|exists:medical_insurances,id',
         ];
     }
 
@@ -31,6 +32,7 @@ class UpdateUserPrivilegeRequest extends FormRequest
             charge_amount: $this->get('charge_amount'),
             description: $this->get('description'),
             period_id: $this->get('period_id'),
+            medical_insurance_id: $this->get('medical_insurance_id'),
         );
     }
 }

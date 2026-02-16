@@ -13,6 +13,7 @@ class UpdateMedicalInsuranceCommand
         private string $name,
         private string $policyNumber,
         private string $employeeId,
+        private ?string $endDate = null,
         private ?int $status = null,
     ) {
     }
@@ -37,6 +38,11 @@ class UpdateMedicalInsuranceCommand
         return $this->employeeId;
     }
 
+    public function getEndDate(): ?string
+    {
+        return $this->endDate;
+    }
+
     public function getStatus(): ?int
     {
         return $this->status;
@@ -49,6 +55,10 @@ class UpdateMedicalInsuranceCommand
             'policy_number' => $this->policyNumber,
             'employee_id' => $this->employeeId,
         ];
+
+        if ($this->endDate !== null) {
+            $data['end_date'] = $this->endDate;
+        }
 
         if ($this->status !== null) {
             $data['status'] = $this->status;

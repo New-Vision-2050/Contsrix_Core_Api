@@ -19,6 +19,7 @@ class UpdateMedicalInsuranceRequest extends FormRequest
             'name' => 'required|string|max:255',
             'policy_number' => 'required|string|max:255|unique:medical_insurances,policy_number,' . $id,
             'employee_id' => 'required|uuid|exists:users,id',
+            'end_date' => 'nullable|date|after_or_equal:today',
             'status' => 'nullable|integer|in:-1,0,1',
         ];
     }
@@ -30,7 +31,8 @@ class UpdateMedicalInsuranceRequest extends FormRequest
             name: $this->get('name'),
             policyNumber: $this->get('policy_number'),
             employeeId: $this->get('employee_id'),
-            status:$this->get('status')? (int)$this->get('status'):null,
+            endDate: $this->get('end_date'),
+            status: $this->get('status') ? (int)$this->get('status') : null,
         );
     }
 }

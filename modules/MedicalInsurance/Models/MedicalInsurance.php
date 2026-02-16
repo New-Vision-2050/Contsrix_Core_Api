@@ -30,6 +30,7 @@ class MedicalInsurance extends Model
         'policy_number',
         'employee_id',
         'company_id',
+        'end_date',
         'status',
     ];
 
@@ -37,6 +38,7 @@ class MedicalInsurance extends Model
         'id' => 'string',
         'employee_id' => 'string',
         'company_id' => 'string',
+        'end_date' => 'date',
         'status' => 'integer',
     ];
 

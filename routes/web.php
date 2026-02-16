@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\User\Controllers\UserController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -14,3 +15,6 @@ Route::get('/health', function () {
         'service' => 'constrix-api'
     ]);
 });
+
+// Get user companies by email - No tenant initialization required
+

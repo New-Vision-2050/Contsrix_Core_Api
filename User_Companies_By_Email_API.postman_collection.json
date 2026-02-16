@@ -1,0 +1,206 @@
+{
+	"info": {
+		"_postman_id": "user-companies-by-email-api",
+		"name": "User Companies By Email API",
+		"description": "API endpoint for getting all companies associated with a user by email without tenant initialization",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get User Companies By Email",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"user@example.com\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/users/companies-by-email",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"users",
+						"companies-by-email"
+					]
+				},
+				"description": "Get all companies associated with a user by their email address. This endpoint does not require tenant initialization and returns all companies the user has access to across all tenants."
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/companies-by-email",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"companies-by-email"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": true,\n    \"data\": [\n        {\n            \"id\": \"8a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d\",\n            \"name\": \"Company A\",\n            \"serial_no\": \"COMP-001\",\n            \"domain\": \"companya.constrix.com\",\n            \"role\": 1,\n            \"status\": 1,\n            \"is_active\": 1\n        },\n        {\n            \"id\": \"7b2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e\",\n            \"name\": \"Company B\",\n            \"serial_no\": \"COMP-002\",\n            \"domain\": \"companyb.constrix.com\",\n            \"role\": 2,\n            \"status\": 1,\n            \"is_active\": 1\n        }\n    ]\n}"
+				},
+				{
+					"name": "User Not Found",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"nonexistent@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/companies-by-email",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"companies-by-email"
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"status\": false,\n    \"message\": \"User not found\"\n}"
+				},
+				{
+					"name": "Validation Error",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"invalid-email\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/users/companies-by-email",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"users",
+								"companies-by-email"
+							]
+						}
+					},
+					"status": "Unprocessable Entity",
+					"code": 422,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n    \"message\": \"The email must be a valid email address.\",\n    \"errors\": {\n        \"email\": [\n            \"The email must be a valid email address.\"\n        ]\n    }\n}"
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		}
+	]
+}
