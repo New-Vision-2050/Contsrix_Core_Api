@@ -273,5 +273,9 @@ class User extends Authenticatable implements JWTSubject, Auditable
         )->withTimestamps();
     }
 
+    public function medicalInsurances()
+    {
+        return $this->hasMany(\Modules\MedicalInsurance\Models\MedicalInsurance::class, 'employee_id');
+    }
 
 }

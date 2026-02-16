@@ -1,0 +1,14 @@
+{
+    "name": "MedicalInsurance",
+    "alias": "medicalinsurance",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\MedicalInsurance\\Providers\\MedicalInsuranceServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}
