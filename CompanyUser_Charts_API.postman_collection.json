@@ -1,0 +1,66 @@
+{
+  "info": {
+    "_postman_id": "company-user-charts-api",
+    "name": "CompanyUser Charts API",
+    "description": "API endpoints for company user chart data (gender distribution, age distribution, etc.)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Charts",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{url}}/company-users/charts",
+          "host": [
+            "{{url}}"
+          ],
+          "path": [
+            "company-users",
+            "charts"
+          ]
+        },
+        "description": "Get all chart data for company users (scoped to current company). Returns gender, age, job type, visa expiration by month, visa status, contract expiration by month, contract status, nationality, and marital status charts with counts and percentages."
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"data\": {\n    \"gender\": {\n      \"chart_type\": \"gender\",\n      \"total\": 150,\n      \"data\": [\n        { \"label\": \"ذكر\", \"code\": \"male\", \"count\": 90, \"percentage\": 60.0 },\n        { \"label\": \"انثي\", \"code\": \"female\", \"count\": 50, \"percentage\": 33.33 },\n        { \"label\": \"غير محدد\", \"code\": \"unspecified\", \"count\": 10, \"percentage\": 6.67 }\n      ]\n    },\n    \"age\": {\n      \"chart_type\": \"age\",\n      \"total\": 150,\n      \"data\": [\n        { \"label\": \"10-19\", \"code\": \"10-19\", \"count\": 5, \"percentage\": 3.33 },\n        { \"label\": \"20-29\", \"code\": \"20-29\", \"count\": 35, \"percentage\": 23.33 },\n        { \"label\": \"30-39\", \"code\": \"30-39\", \"count\": 45, \"percentage\": 30.0 },\n        { \"label\": \"40-49\", \"code\": \"40-49\", \"count\": 30, \"percentage\": 20.0 },\n        { \"label\": \"50-59\", \"code\": \"50-59\", \"count\": 15, \"percentage\": 10.0 },\n        { \"label\": \"60-69\", \"code\": \"60-69\", \"count\": 5, \"percentage\": 3.33 },\n        { \"label\": \"70-79\", \"code\": \"70-79\", \"count\": 2, \"percentage\": 1.33 },\n        { \"label\": \"80-89\", \"code\": \"80-89\", \"count\": 0, \"percentage\": 0.0 },\n        { \"label\": \"90-99\", \"code\": \"90-99\", \"count\": 0, \"percentage\": 0.0 },\n        { \"label\": \"100+\", \"code\": \"100+\", \"count\": 0, \"percentage\": 0.0 }\n      ],\n      \"unspecified\": { \"label\": \"غير محدد\", \"code\": \"unspecified\", \"count\": 13, \"percentage\": 8.67 }\n    },\n    \"job_type\": {\n      \"chart_type\": \"job_type\",\n      \"total\": 150,\n      \"data\": [\n        { \"job_type_id\": \"uuid-1\", \"label\": \"دوام كامل\", \"count\": 80, \"percentage\": 53.33 },\n        { \"job_type_id\": \"uuid-2\", \"label\": \"دوام جزئي\", \"count\": 40, \"percentage\": 26.67 },\n        { \"job_type_id\": \"uuid-3\", \"label\": \"عن بعد\", \"count\": 20, \"percentage\": 13.33 }\n      ],\n      \"unspecified\": { \"label\": \"غير محدد\", \"code\": \"unspecified\", \"count\": 10, \"percentage\": 6.67 }\n    }\n  }\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    }
+  ]
+}

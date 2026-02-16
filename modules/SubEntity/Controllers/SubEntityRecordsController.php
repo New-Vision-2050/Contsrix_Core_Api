@@ -7,6 +7,9 @@ namespace Modules\SubEntity\Controllers;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
+use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Presenters\CompanyUserClientPresenter;
+use Modules\SubEntity\Services\RegistrationFormCRUDService;
 use Modules\SubEntity\Services\SubEntityRecordsService;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\SubEntity\Requests\GetSubEntityRecordsRequest;
@@ -18,6 +21,7 @@ class SubEntityRecordsController extends Controller
 {
     public function __construct(
         private SubEntityRecordsService $subEntityRecordsService,
+        private RegistrationFormCRUDService $registrationFormCRUDService,
     ) {
     }
 
@@ -30,7 +34,11 @@ class SubEntityRecordsController extends Controller
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );
-
+        $registrationForm = $this->registrationFormCRUDService->getById( $request->get('registration_form_id'));
+        if($registrationForm->company_user_role_map == CompanyUserRole::CLIENT->value)
+        {
+            return Json::items(CompanyUserClientPresenter::collection($list["data"] ?? []),paginationSettings: $list['pagination'] ?? []);
+        }
         return Json::items(CompanyUserPresenter::collection($list["data"] ?? []),paginationSettings: $list['pagination'] ?? []);
     }
 

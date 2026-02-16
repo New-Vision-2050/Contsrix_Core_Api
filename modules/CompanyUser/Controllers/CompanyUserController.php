@@ -18,6 +18,7 @@ use Modules\CompanyUser\Handlers\UpdateTimeZoneCompanyUserHandler;
 use Modules\CompanyUser\Models\CompanyUser;
 use Modules\CompanyUser\Presenters\CompanyUserPresenter;
 use Modules\CompanyUser\Presenters\TimeZoneCompanyUserPresenter;
+use Modules\CompanyUser\Presenters\ChartsPresenter;
 use Modules\CompanyUser\Presenters\WidgetCompanyUserPresenter;
 use Modules\CompanyUser\Requests\AssignRoleCompanyUserForCurrentCompanyRequest;
 use Modules\CompanyUser\Requests\AssignRoleCompanyUserRequest;
@@ -208,6 +209,31 @@ class CompanyUserController extends Controller
         return Json::success(__('messages.company_user.role_deleted'));
     }
 
+
+    public function charts(): JsonResponse
+    {
+        $genderData = $this->companyUserWidgetService->getGenderChart();
+        $ageData = $this->companyUserWidgetService->getAgeChart();
+        $jobTypeData = $this->companyUserWidgetService->getJobTypeChart();
+        $visaExpirationData = $this->companyUserWidgetService->getVisaExpirationByMonthChart();
+        $visaStatusData = $this->companyUserWidgetService->getVisaStatusChart();
+        $contractExpirationData = $this->companyUserWidgetService->getContractExpirationByMonthChart();
+        $contractStatusData = $this->companyUserWidgetService->getContractStatusChart();
+        $nationalityData = $this->companyUserWidgetService->getNationalityChart();
+        $maritalStatusData = $this->companyUserWidgetService->getMaritalStatusChart();
+        $presenter = new ChartsPresenter(
+            $genderData,
+            $ageData,
+            $jobTypeData,
+            $visaExpirationData,
+            $visaStatusData,
+            $contractExpirationData,
+            $contractStatusData,
+            $nationalityData,
+            $maritalStatusData
+        );
+        return Json::item($presenter->getData());
+    }
 
     public function roles()
     {

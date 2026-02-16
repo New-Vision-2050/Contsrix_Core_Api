@@ -6,13 +6,16 @@ namespace Modules\User\Repositories;
 
 use App\Exceptions\CustomException;
 use Illuminate\Support\Facades\DB;
+use Modules\Company\ManagementHierarchy\DTO\AssignUsersToManagementHierarchyDTO;
 use Modules\Company\ManagementHierarchy\Repositories\ManagementHierarchyRepository;
+use Modules\Company\ManagementHierarchy\Repositories\UserCanAccessManagementHierarchyRepository;
 use Modules\CompanyUser\Repositories\BrokerDetailRepository;
 use Modules\CompanyUser\Repositories\ClientDetailRepository;
 use Modules\CompanyUser\Repositories\CompanyUserAddressRepository;
 use Modules\CompanyUser\Repositories\CompanyUserCompanyRepository;
 use Modules\CompanyUser\Repositories\CompanyUserManagementHierarchyRepository;
 use Modules\JobTitle\Models\JobTitle;
+use Modules\RoleAndPermission\Models\Role;
 use Modules\User\Models\User;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Ramsey\Uuid\Uuid;
@@ -40,10 +43,17 @@ class UserRepository extends BaseRepository
         private CompanyUserAddressRepository             $companyUserAddressRepository,
         private BrokerDetailRepository                   $brokerDetailRepository,
         private ClientDetailRepository                   $clientDetailRepository,
-        private ManagementHierarchyRepository            $managementHierarchyRepository
+        private ManagementHierarchyRepository            $managementHierarchyRepository,
+        private UserCanAccessManagementHierarchyRepository $userCanAccessManagementHierarchyRepository,
+
     )
     {
         parent::__construct($model);
+    }
+
+    public function getModel()
+    {
+        return $this->model;
     }
 
     public function getUserList(?int $page, ?int $perPage = 10): Collection
@@ -88,7 +98,7 @@ class UserRepository extends BaseRepository
     public function updateFcmToken( $id)
     {
         $user = $this->find($id);
-        $user->update(['fcm_token' => request()->fcm_token]); 
+        $user->update(['fcm_token' => request()->fcm_token]);
     }
 
     public function getUserByGlobalIdWithBranches($global_id, $role = 1)
@@ -428,7 +438,7 @@ class UserRepository extends BaseRepository
                     "type" => "management",
                     "is_main" => 1
                 ])->first();
-                $userProfessionalData->update([ "branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
+                $userProfessionalData->update(["branch_id" => $data["branch_id"], "management_id" => $mainManagement->id, "department_id" => null]);
             }
         });
 
@@ -542,6 +552,122 @@ class UserRepository extends BaseRepository
             DB::rollBack();
             throw new CustomException($e->getMessage());
         }
+
+    }
+
+    public function getExpiringInfoAlerts(?string $userId = null, ?string $type = null, ?string $branchId = null, int $daysThreshold = 30): array
+    {
+        $alerts = [];
+        $now = now();
+        $thresholdDate = $now->copy()->addDays($daysThreshold);
+
+        $query = $this->model->with(['companyUser', 'companyUser.bankAccount'])
+            ->where('company_id', tenant('id'))
+            ->whereHas('companyUser');
+
+        if ($userId) {
+            $query->where('id', $userId);
+        }
+
+        if ($branchId) {
+            $query->whereHas('professionalData', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+
+        $users = $query->get();
+
+        $dateFields = [
+            'work_permit_end_date' => 'work_permit',
+            'passport_end_date' => 'passport',
+            'identity_end_date' => 'identity',
+            'border_number_end_date' => 'border_number',
+            'entry_number_end_date' => 'entry_number',
+        ];
+
+        foreach ($users as $user) {
+            $companyUser = $user->companyUser;
+            if (!$companyUser) {
+                continue;
+            }
+
+            foreach ($dateFields as $field => $alertType) {
+                // Skip if type filter is set and doesn't match current alert type
+                if ($type && $type !== $alertType) {
+                    continue;
+                }
+
+                $endDate = $companyUser->{$field};
+                if ($endDate) {
+                    $endDateCarbon = \Carbon\Carbon::parse($endDate);
+                    if ($endDateCarbon->isBetween($now, $thresholdDate) || $endDateCarbon->isPast()) {
+                        $daysRemaining = $now->diffInDays($endDateCarbon, false);
+                        $alerts[] = [
+                            'type' => $alertType,
+                            'end_date' => $endDateCarbon->format('Y-m-d'),
+                            'user_id' => $user->id,
+                            'name' => $user->name,
+                            'days_remaining' => (int) $daysRemaining,
+                        ];
+                    }
+                }
+            }
+
+            // Check if user has no bank account
+            // Only add if type filter is not set or matches 'bank_account'
+            if (!$companyUser->bankAccount && (!$type || $type === 'bank_account')) {
+                $alerts[] = [
+                    'type' => 'bank_account',
+                    'end_date' => null,
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'days_remaining' => null,
+                ];
+            }
+        }
+
+        return $alerts;
+    }
+
+    public function handleOwnerPermissions(User $user, $companyId): void
+    {
+        if ($user->is_owner) {
+            $branch = $this->managementHierarchyRepository->model->withoutTenancy()->where([
+                "company_id" => $companyId,
+                "parent_id" => null
+            ])->first();
+
+            $role = Role::query()->withoutTenancy()->where("name", "super-admin")->where("company_id", $companyId)->first();
+            setPermissionsTeamId($companyId);
+            $user->assignRole($role);//assign super admin role for first user
+
+            $this->userCanAccessManagementHierarchyRepository->assignUsersToManagementHierarchy(new AssignUsersToManagementHierarchyDTO(branchId: $branch->id, userIds: [$user->id]));
+
+
+            $branch->update(["manager_id" => $user->id]);
+
+            $this->managementHierarchyRepository->model->withoutTenancy()->where([
+                "company_id" => $companyId,
+                "parent_id" => $branch->id,
+                "type" => "management",
+                "is_main" => 1
+            ])->first()->update(["manager_id" => $user->id]);
+        }
+    }
+
+
+
+    public function createClientCompany($userId, $companyId)
+    {
+        $existingUser = $this->findOneBy(["id" => $userId]);
+        $user = $existingUser->replicate();
+        $user->password = null;
+        $user->company_id = $companyId;
+        $user->is_owner = 1;
+        $user->management_hierarchy_id = null;
+        $user->save();
+        $this->handleOwnerPermissions($user, $companyId);
+        return $user;
 
     }
 }

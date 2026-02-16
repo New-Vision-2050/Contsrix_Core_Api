@@ -70,6 +70,51 @@ class CompanyUserWidgetsService
         return (($thisMonth - $lastMonth) / $lastMonth) * 100;
     }
 
+    public function getGenderChart(): array
+    {
+        return $this->repository->getGenderDistribution();
+    }
+
+    public function getAgeChart(): array
+    {
+        return $this->repository->getAgeDistribution();
+    }
+
+    public function getJobTypeChart(): array
+    {
+        return $this->repository->getJobTypeDistribution();
+    }
+
+    public function getVisaExpirationByMonthChart(): array
+    {
+        return $this->repository->getVisaExpirationByMonth();
+    }
+
+    public function getVisaStatusChart(): array
+    {
+        return $this->repository->getVisaStatusDistribution();
+    }
+
+    public function getContractExpirationByMonthChart(): array
+    {
+        return $this->repository->getContractExpirationByMonth();
+    }
+
+    public function getContractStatusChart(): array
+    {
+        return $this->repository->getContractStatusDistribution();
+    }
+
+    public function getNationalityChart(): array
+    {
+        return $this->repository->getNationalityDistribution();
+    }
+
+    public function getMaritalStatusChart(): array
+    {
+        return $this->repository->getMaritalStatusDistribution();
+    }
+
     private function calculatePercentage(int $thisMonth, int $total): float
     {
         if ($total == 0) {

@@ -1,0 +1,357 @@
+{
+	"info": {
+		"_postman_id": "medical-insurance-api-collection",
+		"name": "MedicalInsurance API",
+		"description": "API endpoints for managing Medical Insurance records",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Medical Insurances",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/medical-insurances?page=1&per_page=15&name=&policy_number=&employee_id=&end_date=&status=",
+					"host": ["{{url}}"],
+					"path": ["medical-insurances"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "per_page",
+							"value": "15",
+							"description": "Items per page"
+						},
+						{
+							"key": "name",
+							"value": "",
+							"description": "Search by insurance name"
+						},
+						{
+							"key": "policy_number",
+							"value": "",
+							"description": "Search by policy number"
+						},
+						{
+							"key": "employee_id",
+							"value": "",
+							"description": "Filter by employee ID (UUID)"
+						},
+						{
+							"key": "end_date",
+							"value": "",
+							"description": "Filter by end date (YYYY-MM-DD format)"
+						},
+						{
+							"key": "status",
+							"value": "",
+							"description": "Filter by status (-1=suspended, 0=inactive, 1=active)"
+						}
+					]
+				},
+				"description": "Get paginated list of medical insurances with optional filters"
+			},
+			"response": []
+		},
+		{
+			"name": "Create Medical Insurance",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "name",
+							"value": "Premium Health Insurance",
+							"type": "text",
+							"description": "Insurance name (required, max 255 chars)"
+						},
+						{
+							"key": "policy_number",
+							"value": "POL-2025-001",
+							"type": "text",
+							"description": "Policy number (required, unique, max 255 chars)"
+						},
+						{
+							"key": "employee_id",
+							"value": "{{employee_id}}",
+							"type": "text",
+							"description": "Employee UUID (required, must exist in users table)"
+						},
+						{
+							"key": "end_date",
+							"value": "2026-12-31",
+							"type": "text",
+							"description": "Insurance end date (optional, format: YYYY-MM-DD, must be today or future date)"
+						},
+						{
+							"key": "status",
+							"value": "1",
+							"type": "text",
+							"description": "Status (optional: -1=suspended, 0=inactive, 1=active, default=1)"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/medical-insurances",
+					"host": ["{{url}}"],
+					"path": ["medical-insurances"]
+				},
+				"description": "Create a new medical insurance record"
+			},
+			"response": [
+				{
+					"name": "Success Response",
+					"originalRequest": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "Premium Health Insurance",
+									"type": "text"
+								},
+								{
+									"key": "policy_number",
+									"value": "POL-2025-001",
+									"type": "text"
+								},
+								{
+									"key": "employee_id",
+									"value": "123e4567-e89b-12d3-a456-426614174000",
+									"type": "text"
+								},
+								{
+									"key": "end_date",
+									"value": "2026-12-31",
+									"type": "text"
+								},
+								{
+									"key": "status",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{url}}/medical-insurances",
+							"host": ["{{url}}"],
+							"path": ["medical-insurances"]
+						}
+					},
+					"status": "Created",
+					"code": 201,
+					"_postman_previewlanguage": "json",
+					"header": [],
+					"cookie": [],
+					"body": "{\n    \"status\": true,\n    \"message\": \"Medical insurance created successfully\",\n    \"data\": {\n        \"id\": \"987e6543-e21b-12d3-a456-426614174999\",\n        \"name\": \"Premium Health Insurance\",\n        \"policy_number\": \"POL-2025-001\",\n        \"employee_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"employee\": {\n            \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"name\": \"John Doe\",\n            \"email\": \"john.doe@example.com\",\n            \"phone\": \"+1234567890\"\n        },\n        \"end_date\": \"2026-12-31\",\n        \"status\": 1,\n        \"created_at\": \"2025-02-16 12:30:00\",\n        \"updated_at\": \"2025-02-16 12:30:00\"\n    }\n}"
+				}
+			]
+		},
+		{
+			"name": "Get Medical Insurance",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/medical-insurances/{{medical_insurance_id}}",
+					"host": ["{{url}}"],
+					"path": ["medical-insurances", "{{medical_insurance_id}}"]
+				},
+				"description": "Get a single medical insurance record by ID"
+			},
+			"response": []
+		},
+		{
+			"name": "Update Medical Insurance",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "name",
+							"value": "Updated Premium Health Insurance",
+							"type": "text",
+							"description": "Insurance name (required, max 255 chars)"
+						},
+						{
+							"key": "policy_number",
+							"value": "POL-2025-001-UPDATED",
+							"type": "text",
+							"description": "Policy number (required, unique except current record, max 255 chars)"
+						},
+						{
+							"key": "employee_id",
+							"value": "{{employee_id}}",
+							"type": "text",
+							"description": "Employee UUID (required, must exist in users table)"
+						},
+						{
+							"key": "end_date",
+							"value": "2027-12-31",
+							"type": "text",
+							"description": "Insurance end date (optional, format: YYYY-MM-DD, must be today or future date)"
+						},
+						{
+							"key": "status",
+							"value": "1",
+							"type": "text",
+							"description": "Status (optional: -1=suspended, 0=inactive, 1=active)"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/medical-insurances/{{medical_insurance_id}}",
+					"host": ["{{url}}"],
+					"path": ["medical-insurances", "{{medical_insurance_id}}"]
+				},
+				"description": "Update an existing medical insurance record"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Medical Insurance",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/medical-insurances/{{medical_insurance_id}}",
+					"host": ["{{url}}"],
+					"path": ["medical-insurances", "{{medical_insurance_id}}"]
+				},
+				"description": "Delete a medical insurance record"
+			},
+			"response": []
+		},
+		{
+			"name": "Export Medical Insurances",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"format\": \"xlsx\",\n    \"ids\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/medical-insurances/export",
+					"host": ["{{url}}"],
+					"path": ["medical-insurances", "export"]
+				},
+				"description": "Export medical insurances to Excel/CSV. Leave ids empty to export all, or specify array of UUIDs to export specific records."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		},
+		{
+			"key": "medical_insurance_id",
+			"value": "uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "employee_id",
+			"value": "employee-uuid-here",
+			"type": "string"
+		}
+	]
+}

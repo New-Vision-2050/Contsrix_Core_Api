@@ -49,6 +49,10 @@ use Modules\CompanyUser\Services\CompanyUserCRUDService;
 use Modules\NotificationSettings\Services\FirebaseNotificationService;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
+use Modules\User\Requests\GetInfoAlertRequest;
+use Modules\User\Presenters\InfoAlertPresenter;
+use Modules\User\Requests\GetUserCompaniesByEmailRequest;
+use Modules\User\Presenters\UserCompaniesPresenter;
 
 class UserController extends Controller
 {
@@ -321,8 +325,8 @@ class UserController extends Controller
     {
         $users = \Modules\User\Models\User::whereNotNull('fcm_token')->get();
         $sentCount = 0;
-        
-        foreach($users as $user){    
+
+        foreach($users as $user){
             $title = 'Test Notification';
             $body = 'This is a test notification from the system';
 
@@ -341,8 +345,8 @@ class UserController extends Controller
     {
         $users = \Modules\User\Models\User::whereNotNull('fcm_token')->get();
         $sentCount = 0;
-        
-        foreach($users as $user){    
+
+        foreach($users as $user){
             $data = [
                 'type' => 'silent_update',
                 'action' => 'refresh_data',
@@ -373,4 +377,25 @@ class UserController extends Controller
 
         return Json::done('FCM token updated successfully');
     }
+
+
+    public function getInfoAlert(GetInfoAlertRequest $request): JsonResponse
+    {
+        $dto = $request->toDTO();
+        $alerts = $this->userService->getInfoAlerts($dto->userId, $dto->type, $dto->branchId);
+
+        return Json::items(InfoAlertPresenter::collection($alerts));
+    }
+
+    public function getUserCompaniesByEmail(GetUserCompaniesByEmailRequest $request): JsonResponse
+    {
+        $dto = $request->toDTO();
+        $companyUser = $this->userService->getCompaniesByEmail($dto);
+
+        $presenter = new UserCompaniesPresenter($companyUser);
+        $data = $presenter->getData();
+
+        return Json::items($data['companies']);
+    }
+
 }

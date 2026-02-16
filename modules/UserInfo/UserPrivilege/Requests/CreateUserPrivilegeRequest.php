@@ -17,9 +17,10 @@ class CreateUserPrivilegeRequest extends FormRequest
             'type_privilege_id'=> 'required|string',
             'type_allowance_code'=> 'required|string',
             'charge_amount'=> 'nullable|string',
-            'description'=> 'required|string',
+            'description'=> 'nullable|string',
             'privilege_id'=> 'required|string',
             'period_id' => 'nullable|string',
+            'medical_insurance_id' => 'nullable|uuid|exists:medical_insurances,id',
         ];
     }
 
@@ -34,6 +35,7 @@ class CreateUserPrivilegeRequest extends FormRequest
             description: $this->get('description'),
             privilege_id:$this->get('privilege_id'),
             period_id: $this->get('period_id'),
+            medical_insurance_id: $this->get('medical_insurance_id'),
         );
     }
 }

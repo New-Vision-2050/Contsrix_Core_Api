@@ -18,6 +18,8 @@ class AuditPresenter extends AbstractPresenter
 
     protected function present(bool $isListing = false): array
     {
+        if($this->audit->auditable_type == "Modules\\Attendance\\Models\\Attendance"){return ["delete_this_array"=>"delete_this_array"];}
+        if($this->audit->auditable_type == "Modules\\Attendance\\Models\\Attendance"){return ["delete_this_array"=>"delete_this_array"];}
         return [
             'id' => $this->audit->id,
             'user' => [
@@ -43,6 +45,26 @@ class AuditPresenter extends AbstractPresenter
      */
     private function generateTitle(): string
     {
+        if($this->audit->auditable_type == "Modules\\Attendance\\Models\\Attendance"){
+            $auditableClass = $this->audit->auditable_type;
+
+            $entity = $auditableClass::find($this->audit->auditable_id);
+            $event = "خروج من الدوام";
+            if($entity->clock_in_time != null && $entity->clock_out_time == null){
+                $event = "دخول الدوام";
+            }
+            return "لقد سجل {$event}";
+        }elseif ($this->audit->auditable_type == "Modules\\Company\\CompanyCore\\Models\\CompanyAddress"){
+            $event = $this->audit->event;
+            $message = "تم انشاء عنوان جديد للشركة";
+            if($event=="created")
+            {
+                $message = " تم انشاء عنوان جديد للشركة";
+            }elseif($event=="updated"){
+                $message = "تم تعديل عنوان الشركة";
+            }
+            return $message;
+        }
         $modelName = $this->getModelNameFromType($this->audit->auditable_type);
         $event = $this->audit->event;
 
@@ -100,6 +122,12 @@ class AuditPresenter extends AbstractPresenter
             'Broker' => 'وسيط بأسم ',
             'Folder' => 'مجلد بأسم ',
             'File' => 'ملف بأسم ',
+            'AttendanceConstraint'=>"محدد حضور بأسم ",
+            'Attendance'=>"حضور بأسم ",
+            "ManagementHierarchy"=>"هيكل تنظيمي(فرع - اداره - قسم) باسم ",
+            "CompanyAddress"=>"عنوان شركة بأسم ",
+
+
         ];
 
         return $modelNames[$modelName] ?? $modelName . ' بأسم ';
@@ -130,6 +158,8 @@ class AuditPresenter extends AbstractPresenter
                 return $entity->name;
             } elseif (isset($entity->title)) {
                 return $entity->title;
+            } elseif (isset($entity->constraint_name )) {
+                return $entity->constraint_name ;
             } elseif (isset($entity->email)) {
                 return $entity->email;
             } elseif (isset($entity->username)) {

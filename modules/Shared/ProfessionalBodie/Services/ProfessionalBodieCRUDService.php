@@ -27,10 +27,9 @@ class ProfessionalBodieCRUDService
          return $this->repository->createProfessionalBodie($createProfessionalBodieDTO->toArray());
     }
 
-    public function list($code,int $page = 1, int $perPage = 10): array
+    public function list($code,int $page = 1, int $perPage = 10)
     {
         return $this->repository->paginated(
-            ['code'=>$code],
             page: $page,
             perPage: $perPage,
         );

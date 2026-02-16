@@ -9,12 +9,12 @@ use Ramsey\Uuid\UuidInterface;
 class CreateUserRelativeDTO
 {
     public function __construct(
-        public string $name,
+        public ?string $name,
         public string $company_id,
         public string $global_id,
         public string $marital_status_id,
-        public string $relationship,
-        public string $phone,
+        public ?string $relationship,
+        public ?string $phone,
     ) {
     }
 

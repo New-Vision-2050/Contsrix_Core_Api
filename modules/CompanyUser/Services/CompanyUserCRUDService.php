@@ -38,7 +38,7 @@ class CompanyUserCRUDService
 
         $user = $this->repository->createCompanyUser($createCompanyUserDTO->toArray(), $companyRoleDTO->toArray());
         $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id, "company_id" => $companyRoleDTO->getCompanyId()]);
-        
+
         $emailSent = true;
         try {
             $data = [
@@ -67,7 +67,7 @@ class CompanyUserCRUDService
 
     public function sendEmailAssignToCompanyToUser($user , $companyId)
     {
-        try {
+//        try {
             $userInCompany = $this->userRepository->findOneBy(["global_company_user_id" => $user->global_id])->first();
             $companyId = (string)$companyId;
             $company = $this->companyRepository->getCompany(Uuid::fromString($companyId));
@@ -78,10 +78,10 @@ class CompanyUserCRUDService
                 "serial_no" => $company->serial_no
             ];
             $userInCompany->notify(new SendDomainForUser($data));
-        } catch (\Exception $e) {
-            // Re-throw the exception so callers can handle it if needed
-            throw $e;
-        }
+//        } catch (\Exception $e) {
+//            // Re-throw the exception so callers can handle it if needed
+//            throw $e;
+//        }
     }
 
 

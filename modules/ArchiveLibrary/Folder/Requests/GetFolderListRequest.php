@@ -19,7 +19,7 @@ class GetFolderListRequest extends FormRequest
             'end_date_from' => 'nullable|date',
             'end_date_to' => 'nullable|date|after_or_equal:end_date_from',
             'search' => 'nullable|string|max:255',
-            'type' => 'nullable|string|in:all,name,reference_number',
+            'type' => 'nullable|string|in:all,name,reference_number,employee',
             'branch_id' => 'nullable|integer|exists:management_hierarchies,id',
             'sort' => 'nullable|string|in:asc,desc',
         ];

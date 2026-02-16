@@ -80,7 +80,9 @@ class CountryRepository extends BaseRepository
     {
        $countryId = Auth::user()?->userProfessionalData?->branch?->address?->country_id;
 
-       $data = State::query()->where("country_id", $countryId)->get();
+       $data = State::query()->where("country_id", $countryId)->when(request()->has("name"),function ($q){
+           $q->where("name","LIKE","%".request()->name."%");
+       })->get();
        return $data;
 
 }

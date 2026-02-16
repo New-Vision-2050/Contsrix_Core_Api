@@ -1,0 +1,11 @@
+{
+    "name": "ContractualRelationship",
+    "alias": "contractualrelationship",
+    "description": "ContractualRelationship module for managing user contractual relationship information",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\UserInfo\\ContractualRelationship\\Providers\\ContractualRelationshipServiceProvider"
+    ],
+    "files": []
+}

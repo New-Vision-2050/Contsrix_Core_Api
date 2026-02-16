@@ -240,6 +240,18 @@ class User extends Authenticatable implements JWTSubject, Auditable
         )->withoutTenancy()->distinct();
     }
 
+    public function clientCompanies()
+    {
+        return $this->hasManyThrough(
+            Company::class,
+            User::class,
+            'global_company_user_id', // Foreign key on users table (intermediate)
+            'id',                     // Foreign key on companies table
+            'global_company_user_id', // Local key on this user
+            'company_id'              // Local key on intermediate users table
+        )->where('companies.is_client', 1)->withoutTenancy()->distinct();
+    }
+
 
     public function brokerDetail()
     {
@@ -261,5 +273,9 @@ class User extends Authenticatable implements JWTSubject, Auditable
         )->withTimestamps();
     }
 
+    public function medicalInsurances()
+    {
+        return $this->hasMany(\Modules\MedicalInsurance\Models\MedicalInsurance::class, 'employee_id');
+    }
 
 }

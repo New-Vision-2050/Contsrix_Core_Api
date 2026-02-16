@@ -35,6 +35,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/widgets', [\Modules\CompanyUser\Controllers\ClientController::class, 'getWidgets']);
 
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'show']);
+        Route::post('/company', [\Modules\CompanyUser\Controllers\ClientController::class, 'createClientCompany']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'update']);
         Route::post('/export', [\Modules\CompanyUser\Controllers\ClientController::class, 'export']);
@@ -46,6 +47,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     });
     Route::get('/', [CompanyUserController::class, 'index'])->permission(Permission::USER_LIST());
     Route::get('/widgets', [CompanyUserController::class, 'widgets']);
+    Route::get('/charts', [CompanyUserController::class, 'charts']);
     Route::get('/roles', [CompanyUserController::class, 'roles']);
     //Route::post('/export', [CompanyUserController::class, 'export'])->name('company-users.export');
 

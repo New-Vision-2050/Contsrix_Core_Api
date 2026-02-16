@@ -103,7 +103,7 @@ class WebsiteNewsRepository extends BaseRepository
         $news = $this->getWebsiteNews($id);
         $newStatus = $news->status == 1 ? 0 : 1;
         $this->update($id, ['status' => $newStatus]);
-        
+
         return $news->fresh(['category']);
     }
 }

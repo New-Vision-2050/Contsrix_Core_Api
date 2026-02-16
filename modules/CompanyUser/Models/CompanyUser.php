@@ -108,6 +108,17 @@ class CompanyUser extends Model implements HasMedia
             ->withPivot('role', 'status')
             ->wherePivotNull('deleted_at');
     }
+    public function clientCompanies()
+    {
+        return $this->hasManyThrough(
+            Company::class,
+            User::class,
+            'global_company_user_id', // Foreign key on users table (intermediate)
+            'id',                     // Foreign key on companies table
+            'global_id',              // Local key on CompanyUser (this model)
+            'company_id'              // Local key on intermediate users table
+        )->where('companies.is_client', 1)->withoutTenancy()->distinct();
+    }
 
     public function users()
     {

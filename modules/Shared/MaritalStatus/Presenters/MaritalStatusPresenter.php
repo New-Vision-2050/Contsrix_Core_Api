@@ -21,6 +21,7 @@ class MaritalStatusPresenter extends AbstractPresenter
         return [
             'id' => $this->maritalStatus->id,
             'name' => $this->maritalStatus->name,
+            "type" => $this->maritalStatus->type
         ];
     }
 }

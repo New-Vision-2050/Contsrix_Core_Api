@@ -13,6 +13,7 @@ use Modules\Shared\Period\Models\Period;
 use Modules\Shared\Privilege\Models\Privilege;
 use Modules\Shared\TypeAllowance\Models\TypeAllowance;
 use Modules\Shared\TypePrivilege\Models\TypePrivilege;
+use Modules\MedicalInsurance\Models\MedicalInsurance;
 
 //use BasePackage\Shared\Traits\HasTranslations;
 
@@ -39,6 +40,7 @@ class UserPrivilege extends Model
         'description',
         'privilege_id',
         'period_id',
+        'medical_insurance_id',
     ];
 
     protected $casts = [
@@ -70,9 +72,8 @@ class UserPrivilege extends Model
         return $this->belongsTo(Period::class);
     }
 
-
-
-
-
-
+    public function medicalInsurance()
+    {
+        return $this->belongsTo(MedicalInsurance::class, 'medical_insurance_id');
+    }
 }
