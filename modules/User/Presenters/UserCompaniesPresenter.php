@@ -31,7 +31,7 @@ class UserCompaniesPresenter extends AbstractPresenter
                 return [
                     'id' => $company->id,
                     'name' => $company->name,
-                    'serial_no' => $company->serial_no,
+                    'constrix_id' => $company->serial_no,
                     'domain' => $company->domains()->first()?->domain ?? null,
                     'role' => $company->pivot->role ?? null,
                     'status' => $company->pivot->status ?? null,
