@@ -6,8 +6,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 
 Route::post('/available-tenants-for-user', [UserController::class, 'getAvailableTenantsForUser'])->name('tenants-for-user-by-email');
 
-Route::post('companies-by-email', [UserController::class, 'getUserCompaniesByEmail'])
-    ->middleware(['auth:api']);
+Route::post('companies-by-email', [UserController::class, 'getUserCompaniesByEmail']);
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [UserController::class, 'index'])->name("users.list");
