@@ -75,6 +75,23 @@ class UserCRUDService
          $company_ids =  $this->repository->getWithoutTenancy()->getWherePluck(["global_company_user_id"=>$user->global_company_user_id],"company_id");
          return $this->companyRepository->whereIn("id", $company_ids)->get();
     }
+
+
+    public function getAvailableTenantsForUserByEmail(string $email)
+    {
+        $user = $this->repository->findFirstByEmailWithoutTenancy($email);
+        if (!$user || !$user->global_company_user_id) {
+            return collect([]);
+        }
+        $companyIds = $this->repository->getWithoutTenancy()->getWherePluck(
+            ['global_company_user_id' => $user->global_company_user_id],
+            'company_id'
+        );
+        if (empty($companyIds)) {
+            return collect([]);
+        }
+        return $this->companyRepository->whereIn('id', $companyIds)->get();
+    }
     public function getAdminUsersFromCentralCompanies(int $page = 1, int $perPage = 10): array
     {
        return $this->repository->getAdminUsersFromCentralCompanies($page,$perPage);
