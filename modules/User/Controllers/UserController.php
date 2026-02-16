@@ -50,6 +50,8 @@ use Ramsey\Uuid\Uuid;
 use Illuminate\Http\Request;
 use Modules\User\Requests\GetInfoAlertRequest;
 use Modules\User\Presenters\InfoAlertPresenter;
+use Modules\User\Requests\GetUserCompaniesByEmailRequest;
+use Modules\User\Presenters\UserCompaniesPresenter;
 
 class UserController extends Controller
 {
@@ -373,6 +375,15 @@ class UserController extends Controller
         return Json::items(InfoAlertPresenter::collection($alerts));
     }
 
+    public function getUserCompaniesByEmail(GetUserCompaniesByEmailRequest $request): JsonResponse
+    {
+        $dto = $request->toDTO();
+        $companyUser = $this->userService->getCompaniesByEmail($dto);
 
+        $presenter = new UserCompaniesPresenter($companyUser);
+        $data = $presenter->getData();
+
+        return Json::items($data['companies']);
+    }
 
 }
