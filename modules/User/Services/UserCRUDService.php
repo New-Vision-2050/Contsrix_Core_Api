@@ -79,14 +79,11 @@ class UserCRUDService
 
     public function getAvailableTenantsForUserByEmail(string $email)
     {
-        $user = $this->repository->findFirstByEmailWithoutTenancy($email);
-        if (!$user || !$user->global_company_user_id) {
-            return collect([]);
-        }
         $companyIds = $this->repository->getWithoutTenancy()->getWherePluck(
-            ['global_company_user_id' => $user->global_company_user_id],
+            ['email' => $email],
             'company_id'
         );
+        $companyIds = array_unique(array_values($companyIds));
         if (empty($companyIds)) {
             return collect([]);
         }
