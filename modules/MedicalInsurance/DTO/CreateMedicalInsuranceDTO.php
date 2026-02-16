@@ -12,6 +12,7 @@ class CreateMedicalInsuranceDTO
         public string $name,
         public string $policyNumber,
         public string $employeeId,
+        public ?string $endDate = null,
         public int $status = 1,
     ) {
     }
@@ -22,6 +23,7 @@ class CreateMedicalInsuranceDTO
             'name' => $this->name,
             'policy_number' => $this->policyNumber,
             'employee_id' => $this->employeeId,
+            'end_date' => $this->endDate,
             'company_id' => tenant('id'),
             'status' => $this->status,
         ];

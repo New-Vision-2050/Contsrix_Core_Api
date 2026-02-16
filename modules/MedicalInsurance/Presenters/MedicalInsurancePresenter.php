@@ -29,6 +29,7 @@ class MedicalInsurancePresenter extends AbstractPresenter
                 'email' => $this->medicalInsurance->employee->email,
                 'phone' => $this->medicalInsurance->employee->phone,
             ] : null,
+            'end_date' => $this->medicalInsurance->end_date?->format('Y-m-d'),
             'status' => $this->medicalInsurance->status,
             'created_at' => $this->medicalInsurance->created_at?->toDateTimeString(),
             'updated_at' => $this->medicalInsurance->updated_at?->toDateTimeString(),

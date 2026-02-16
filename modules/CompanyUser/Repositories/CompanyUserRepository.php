@@ -268,6 +268,18 @@ class CompanyUserRepository extends BaseRepository
 
     }
 
+    public function getCompaniesByEmail(string $email)
+    {
+        return $this->model->withoutParentModel()
+            ->with(['companies' => function ($query) {
+                $query->withoutTenancy()
+                    ->with('domains')
+                    ->wherePivotNull('deleted_at');
+            }])
+            ->where('email', $email)
+            ->first();
+    }
+
     public function findByPhone(string $phone)
     {
         return $this->findOneBy([

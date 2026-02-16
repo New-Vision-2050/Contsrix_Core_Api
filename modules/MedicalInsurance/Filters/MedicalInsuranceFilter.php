@@ -29,4 +29,9 @@ class MedicalInsuranceFilter extends SearchModelFilter
     {
         return $this->where('status', $status);
     }
+
+    public function endDate($endDate)
+    {
+        return $this->where('end_date', $endDate);
+    }
 }

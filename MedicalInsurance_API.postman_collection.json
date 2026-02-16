@@ -23,7 +23,7 @@
 					}
 				],
 				"url": {
-					"raw": "{{url}}/medical-insurances?page=1&per_page=15&name=&policy_number=&employee_id=&status=",
+					"raw": "{{url}}/medical-insurances?page=1&per_page=15&name=&policy_number=&employee_id=&end_date=&status=",
 					"host": ["{{url}}"],
 					"path": ["medical-insurances"],
 					"query": [
@@ -51,6 +51,11 @@
 							"key": "employee_id",
 							"value": "",
 							"description": "Filter by employee ID (UUID)"
+						},
+						{
+							"key": "end_date",
+							"value": "",
+							"description": "Filter by end date (YYYY-MM-DD format)"
 						},
 						{
 							"key": "status",
@@ -101,6 +106,12 @@
 							"description": "Employee UUID (required, must exist in users table)"
 						},
 						{
+							"key": "end_date",
+							"value": "2026-12-31",
+							"type": "text",
+							"description": "Insurance end date (optional, format: YYYY-MM-DD, must be today or future date)"
+						},
+						{
 							"key": "status",
 							"value": "1",
 							"type": "text",
@@ -140,6 +151,11 @@
 									"type": "text"
 								},
 								{
+									"key": "end_date",
+									"value": "2026-12-31",
+									"type": "text"
+								},
+								{
 									"key": "status",
 									"value": "1",
 									"type": "text"
@@ -157,7 +173,7 @@
 					"_postman_previewlanguage": "json",
 					"header": [],
 					"cookie": [],
-					"body": "{\n    \"status\": true,\n    \"message\": \"Medical insurance created successfully\",\n    \"data\": {\n        \"id\": \"987e6543-e21b-12d3-a456-426614174999\",\n        \"name\": \"Premium Health Insurance\",\n        \"policy_number\": \"POL-2025-001\",\n        \"employee_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"employee\": {\n            \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"name\": \"John Doe\",\n            \"email\": \"john.doe@example.com\",\n            \"phone\": \"+1234567890\"\n        },\n        \"status\": 1,\n        \"created_at\": \"2025-02-16 12:30:00\",\n        \"updated_at\": \"2025-02-16 12:30:00\"\n    }\n}"
+					"body": "{\n    \"status\": true,\n    \"message\": \"Medical insurance created successfully\",\n    \"data\": {\n        \"id\": \"987e6543-e21b-12d3-a456-426614174999\",\n        \"name\": \"Premium Health Insurance\",\n        \"policy_number\": \"POL-2025-001\",\n        \"employee_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"employee\": {\n            \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n            \"name\": \"John Doe\",\n            \"email\": \"john.doe@example.com\",\n            \"phone\": \"+1234567890\"\n        },\n        \"end_date\": \"2026-12-31\",\n        \"status\": 1,\n        \"created_at\": \"2025-02-16 12:30:00\",\n        \"updated_at\": \"2025-02-16 12:30:00\"\n    }\n}"
 				}
 			]
 		},
@@ -227,6 +243,12 @@
 							"value": "{{employee_id}}",
 							"type": "text",
 							"description": "Employee UUID (required, must exist in users table)"
+						},
+						{
+							"key": "end_date",
+							"value": "2027-12-31",
+							"type": "text",
+							"description": "Insurance end date (optional, format: YYYY-MM-DD, must be today or future date)"
 						},
 						{
 							"key": "status",
