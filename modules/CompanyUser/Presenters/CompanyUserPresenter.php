@@ -46,7 +46,7 @@ class CompanyUserPresenter extends AbstractPresenter
                     $this->companyUser
                 ))->getData()
                 : null,
-            "client_companies" => CompanyUsersPresenter::collection($this->companyUser->clientCompanies->unique('id'),$this->companyUser),
+//            "client_companies" => CompanyUsersPresenter::collection($this->companyUser->clientCompanies->unique('id'),$this->companyUser),
             "companies" => CompanyUsersPresenter::collection($this->companyUser->companies->unique('id'),$this->companyUser),
             'Job_role' => '-',
             'date_appointment' => '-',
