@@ -49,6 +49,11 @@ class ProjectType extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function parent()
+    {
+        return $this->belongsTo(static::class, 'parent_id');
+    }
+
     public function referenceProjectType()
     {
         return $this->belongsTo(ProjectType::class, 'reference_project_type_id');
