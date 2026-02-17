@@ -73,7 +73,7 @@ class ProjectTypeCRUDService
         );
     }
 
-    public function getSchemasForProjectType(int $projectTypeId): Collection
+    public function getSchemasForProjectType(int $projectTypeId)
     {
         return $this->repository->getSchemasForProjectType($projectTypeId);
     }
