@@ -1,0 +1,14 @@
+{
+    "name": "ProjectType",
+    "alias": "projecttype",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Project\\ProjectType\\Providers\\ProjectTypeServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Project"
+}
