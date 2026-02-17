@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectType\Repositories;
 
-use App\Scopes\CustomTenantScope;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
@@ -108,21 +107,6 @@ class ProjectTypeRepository extends BaseRepository
 
     public function createSecondLevelProjectType(array $data, array $schemaIds): ProjectType
     {
-        // Load parent if parent_id is provided to prevent AsTree trait errors
-        if (!empty($data['parent_id'])) {
-            $parent = $this->model->withoutGlobalScopes()
-                ->where('id', $data['parent_id'])
-                ->where('company_id', $data['company_id'])
-                ->first();
-                
-            if (!$parent) {
-                throw new \Exception(
-                    "Parent project type with ID {$data['parent_id']} not found for company {$data['company_id']}. " .
-                    "Please ensure the parent project type exists and belongs to the same company."
-                );
-            }
-        }
-        
         $projectType = $this->create($data);
 
         if (!empty($schemaIds)) {
@@ -132,9 +116,9 @@ class ProjectTypeRepository extends BaseRepository
         return $projectType->fresh(['schemas', 'parent', 'referenceProjectType']);
     }
 
-    public function getSchemasForProjectType(int $projectTypeId)
+    public function getSchemasForProjectType(int $projectTypeId): Collection
     {
-        $projectType = $this->findOneBy(["id" => $projectTypeId]);
+        $projectType = $this->findById($projectTypeId);
 
         // If it's a second level project type with schemas, return its schemas
         if ($projectType->is_have_schema && $projectType->schemas()->count() > 0) {
@@ -143,27 +127,23 @@ class ProjectTypeRepository extends BaseRepository
 
         // If it has a reference project type, get schemas from reference
         if ($projectType->reference_project_type_id) {
-            $referenceType = $this->findOneBy(["id" => $projectType->reference_project_type_id]);
+            $referenceType = $this->findById($projectType->reference_project_type_id);
             if ($referenceType && $referenceType->schemas()->count() > 0) {
                 return $referenceType->schemas;
             }
         }
 
-        // Traverse up the tree to find the second-level parent (child of root)
-        $currentNode = $projectType;
-        $previousNode = null;
+        // If it's a child of second level, get parent's schemas
+        if ($projectType->parent_id) {
+            $parent = $this->findById($projectType->parent_id);
 
-        while ($currentNode && $currentNode->parent_id) {
-            $previousNode = $currentNode;
-            $currentNode = $this->findOneBy(["id" => $currentNode->parent_id]);
-
-            // If current node has no parent, it's the root
-            if ($currentNode && is_null($currentNode->parent_id)) {
-                // Previous node is the second-level parent (child of root)
-                if ($previousNode && $previousNode->is_have_schema) {
-                    return $previousNode->schemas;
+            // Check if parent is second level (has parent that is root)
+            if ($parent && $parent->parent_id) {
+                $grandParent = $this->findById($parent->parent_id);
+                if ($grandParent && is_null($grandParent->parent_id)) {
+                    // Parent is second level, return its schemas
+                    return $parent->schemas;
                 }
-                break;
             }
         }
 
