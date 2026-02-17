@@ -28,6 +28,7 @@ use Modules\User\Handlers\UpdateUserLoginWayHandler;
 use Modules\User\Presenters\UserPresenter;
 use Modules\User\Presenters\UserWithLoginWayPresenter;
 use Modules\User\Requests\AssignRolesForUserRequest;
+use Modules\User\Requests\AvailableTenantsForUserRequest;
 use Modules\User\Requests\ChangeUserRoleStatusRequest;
 use Modules\User\Requests\CreateUserRequest;
 use Modules\User\Requests\DeleteUserRequest;
@@ -212,8 +213,19 @@ class UserController extends Controller
 
     public function getAvailableTenantsForAuthUser()
     {
-
         return Json::items(CompanyPresenter::collection($this->userService->getAvailableTenantForUser(auth()->user()->id)));
+    }
+
+    public function getAvailableTenantsForUser(AvailableTenantsForUserRequest $request)
+    {
+        $companies = $this->userService->getAvailableTenantsForUserByEmail($request->validated('email'));
+        $payload = $companies->map(fn ($company) => [
+            'id' => $company->id,
+            'name' => $company->name,
+            'logo' => $company->getFirstMedia('logo')?->getFullUrl(),
+            'constrix_id' => $company->serial_no ?? null,
+        ])->values()->all();
+        return Json::items($payload);
     }
 
     public function getAdminUsers(GetAdminUsersRequest $request): JsonResponse

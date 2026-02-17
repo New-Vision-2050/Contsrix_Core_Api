@@ -9,6 +9,8 @@ use Database\Seeders\ArchiveLibraryFolderLimitSeeder;
 use Modules\ArchiveLibrary\Folder\Database\Seeders\OfficialDocumentsFolderSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
+use Modules\Project\ProjectType\Database\Seeders\ProjectTypeSeeder;
+use Modules\Project\ProjectType\Database\Seeders\SchemaSeeder;
 use Modules\Setting\Database\Seeders\DriverTableSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Setting\Database\Seeders\DefaultLoginWaySeederTableSeeder;
@@ -79,6 +81,8 @@ class TenantDatabaseSeeder extends Seeder
         // Assign default theme setting to the company
         $this->call(AssignDefaultThemeToCompaniesSeeder::class);
         $this->call(WebsiteOurServiceSeeder::class);
+        $this->call(ProjectTypeSeeder::class);
+        $this->call(SchemaSeeder::class);
 
 //        $this->call(MainPackageSeeder::class);
     }
