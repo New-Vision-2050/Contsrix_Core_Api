@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('parent_id')->nullable()->index();
             $table->unsignedBigInteger('reference_project_type_id')->nullable()->index()->comment('Reference to second level project type for schema inheritance');
             $table->uuid('company_id')->nullable()->index();
-            $table->text('path')->nullable()->index();
+            $table->string('path', 500)->nullable()->index();
             $table->boolean('is_created')->default(true)->comment('false for seeded data, true for user-created');
             $table->boolean('is_have_schema')->default(false)->comment('true if this project type has a specific schema');
             $table->boolean('is_active')->default(true);
