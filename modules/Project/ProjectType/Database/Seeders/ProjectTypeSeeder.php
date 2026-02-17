@@ -33,7 +33,7 @@ class ProjectTypeSeeder extends Seeder
                 ]
             );
 
-            //Level 2: Second Level Project Types (is_created = false for seeded data)
+            //Level 2: Second Level Project Types (is_created = true for seeded data)
             $design = ProjectType::firstOrCreate(
                 [
                     'name' => 'التصاميم',
@@ -43,7 +43,7 @@ class ProjectTypeSeeder extends Seeder
                     'icon' => 'construction',
                     'parent_id' => $construction->id,
                     'is_created' => false,
-                    'is_have_schema' => true,
+                    'is_have_schema' => false,
                     'is_active' => true,
                 ]
             );
