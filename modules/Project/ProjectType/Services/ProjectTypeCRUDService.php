@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Project\ProjectType\Services;
 
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Modules\Project\ProjectType\DTO\CreateProjectTypeDTO;
-use Modules\Project\ProjectType\DTO\CreateSecondLevelProjectTypeDTO;
 use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Project\ProjectType\Repositories\ProjectTypeRepository;
+use Ramsey\Uuid\UuidInterface;
 use App\Traits\HasExportService;
 
 class ProjectTypeCRUDService
@@ -33,53 +33,10 @@ class ProjectTypeCRUDService
         );
     }
 
-    public function get(int $id): ProjectType
+    public function get(UuidInterface $id): ProjectType
     {
         return $this->repository->getProjectType(
             id: $id,
         );
-    }
-
-    public function getDirectChildren(int $parentId): Collection
-    {
-        return $this->repository->getDirectChildren($parentId);
-    }
-
-    public function getRootProjectTypes(): Collection
-    {
-        return $this->repository->getRootProjectTypes();
-    }
-
-    public function getProjectTypeWithChildren(int $id): ProjectType
-    {
-        return $this->repository->getProjectTypeWithChildren($id);
-    }
-
-    public function getProjectTypeWithSchemas(int $id): ProjectType
-    {
-        return $this->repository->getProjectTypeWithSchemas($id);
-    }
-
-    public function getSecondLevelProjectTypes(): Collection
-    {
-        return $this->repository->getSecondLevelProjectTypes();
-    }
-
-    public function createSecondLevelProjectType(CreateSecondLevelProjectTypeDTO $dto): ProjectType
-    {
-        return $this->repository->createSecondLevelProjectType(
-            $dto->toArray(),
-            $dto->getSchemaIds()
-        );
-    }
-
-    public function getSchemasForProjectType(int $projectTypeId)
-    {
-        return $this->repository->getSchemasForProjectType($projectTypeId);
-    }
-
-    public function getProjectTypesByFilter(array $filters = []): Collection
-    {
-        return $this->repository->getProjectTypesByFilter($filters);
     }
 }
