@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectType\Controllers;
 
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Requests\UpdateAttachmentTermsContractSettingRequest;
 use Modules\Project\ProjectType\Services\AttachmentTermsContractSettingService;
@@ -43,10 +44,7 @@ class AttachmentTermsContractSettingController extends Controller
         try {
             $setting = $this->service->getByProjectTypeId($projectTypeId);
 
-            return response()->json([
-                'success' => true,
-                'data' => $setting
-            ]);
+            return Json::item($setting);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

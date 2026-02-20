@@ -47,10 +47,7 @@ class ProjectDataSettingController extends Controller
         try {
             $setting = $this->service->getByProjectTypeId($projectTypeId);
 
-            return response()->json([
-                'success' => true,
-                'data' => $setting
-            ]);
+            return Json::item($setting);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
