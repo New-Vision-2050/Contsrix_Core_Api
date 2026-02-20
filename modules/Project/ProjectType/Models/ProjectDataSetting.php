@@ -25,15 +25,15 @@ class ProjectDataSetting extends Model
     ];
 
     protected $casts = [
-        'is_reference_number' => 'boolean',
-        'is_name_project' => 'boolean',
-        'is_client' => 'boolean',
-        'is_responsible_engineer' => 'boolean',
-        'is_number_contract' => 'boolean',
-        'is_central_cost' => 'boolean',
-        'is_project_value' => 'boolean',
-        'is_start_date' => 'boolean',
-        'is_achievement_percentage' => 'boolean',
+        'is_reference_number' => 'int',
+        'is_name_project' => 'int',
+        'is_client' => 'int',
+        'is_responsible_engineer' => 'int',
+        'is_number_contract' => 'int',
+        'is_central_cost' => 'int',
+        'is_project_value' => 'int',
+        'is_start_date' => 'int',
+        'is_achievement_percentage' => 'int',
     ];
 
     public function projectType(): BelongsTo

@@ -30,12 +30,12 @@ class UpdateAttachmentContractSettingRequest extends FormRequest
     public function toCommand(int $projectTypeId): UpdateAttachmentContractSettingCommand
     {
         $dto = new UpdateAttachmentContractSettingDTO(
-            is_name:(int) $this->input('is_name'),
-            is_type:(int) $this->input('is_type'),
-            is_size:(int) $this->input('is_size'),
-            is_creator:(int) $this->input('is_creator'),
-            is_create_date:(int) $this->input('is_create_date'),
-            is_downloadable:(int) $this->input('is_downloadable'),
+            is_name: $this->has('is_name') ? (int) $this->input('is_name') : null,
+            is_type: $this->has('is_type') ? (int) $this->input('is_type') : null,
+            is_size: $this->has('is_size') ? (int) $this->input('is_size') : null,
+            is_creator: $this->has('is_creator') ? (int) $this->input('is_creator') : null,
+            is_create_date: $this->has('is_create_date') ? (int) $this->input('is_create_date') : null,
+            is_downloadable: $this->has('is_downloadable') ? (int) $this->input('is_downloadable') : null,
         );
 
         return new UpdateAttachmentContractSettingCommand($projectTypeId, $dto);

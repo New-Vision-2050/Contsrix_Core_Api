@@ -17,7 +17,7 @@ class DepartmentContractSetting extends Model
     ];
 
     protected $casts = [
-        'is_all_data_visible' => 'boolean',
+        'is_all_data_visible' => 'int',
     ];
 
     public function projectType(): BelongsTo
