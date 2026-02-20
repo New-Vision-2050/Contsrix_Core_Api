@@ -40,15 +40,15 @@ class UpdateProjectDataSettingRequest extends FormRequest
     public function toCommand(int $projectTypeId): UpdateProjectDataSettingCommand
     {
         $dto = new UpdateProjectDataSettingDTO(
-            is_reference_number: $this->input('is_reference_number'),
-            is_name_project: $this->input('is_name_project'),
-            is_client: $this->input('is_client'),
-            is_responsible_engineer: $this->input('is_responsible_engineer'),
-            is_number_contract: $this->input('is_number_contract'),
-            is_central_cost: $this->input('is_central_cost'),
-            is_project_value: $this->input('is_project_value'),
-            is_start_date: $this->input('is_start_date'),
-            is_achievement_percentage: $this->input('is_achievement_percentage'),
+            is_reference_number: (int) $this->input('is_reference_number'),
+            is_name_project: (int) $this->input('is_name_project'),
+            is_client: (int) $this->input('is_client'),
+            is_responsible_engineer: (int) $this->input('is_responsible_engineer'),
+            is_number_contract: (int) $this->input('is_number_contract'),
+            is_central_cost: (int) $this->input('is_central_cost'),
+            is_project_value: (int) $this->input('is_project_value'),
+            is_start_date: (int) $this->input('is_start_date'),
+            is_achievement_percentage: (int) $this->input('is_achievement_percentage'),
         );
 
         return new UpdateProjectDataSettingCommand($projectTypeId, $dto);

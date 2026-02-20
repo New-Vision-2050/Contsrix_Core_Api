@@ -7,15 +7,15 @@ namespace Modules\Project\ProjectType\DTO;
 class UpdateProjectDataSettingDTO
 {
     public function __construct(
-        public readonly ?bool $is_reference_number = null,
-        public readonly ?bool $is_name_project = null,
-        public readonly ?bool $is_client = null,
-        public readonly ?bool $is_responsible_engineer = null,
-        public readonly ?bool $is_number_contract = null,
-        public readonly ?bool $is_central_cost = null,
-        public readonly ?bool $is_project_value = null,
-        public readonly ?bool $is_start_date = null,
-        public readonly ?bool $is_achievement_percentage = null,
+        public readonly ?int $is_reference_number = null,
+        public readonly ?int $is_name_project = null,
+        public readonly ?int $is_client = null,
+        public readonly ?int $is_responsible_engineer = null,
+        public readonly ?int $is_number_contract = null,
+        public readonly ?int $is_central_cost = null,
+        public readonly ?int $is_project_value = null,
+        public readonly ?int $is_start_date = null,
+        public readonly ?int $is_achievement_percentage = null,
     ) {
     }
 

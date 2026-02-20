@@ -7,12 +7,12 @@ namespace Modules\Project\ProjectType\DTO;
 class UpdateAttachmentContractSettingDTO
 {
     public function __construct(
-        public readonly ?bool $is_name = null,
-        public readonly ?bool $is_type = null,
-        public readonly ?bool $is_size = null,
-        public readonly ?bool $is_creator = null,
-        public readonly ?bool $is_create_date = null,
-        public readonly ?bool $is_downloadable = null,
+        public readonly ?int $is_name = null,
+        public readonly ?int $is_type = null,
+        public readonly ?int $is_size = null,
+        public readonly ?int $is_creator = null,
+        public readonly ?int $is_create_date = null,
+        public readonly ?int $is_downloadable = null,
     ) {
     }
 
