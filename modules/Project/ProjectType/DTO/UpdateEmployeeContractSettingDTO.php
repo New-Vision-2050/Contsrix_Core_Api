@@ -7,7 +7,7 @@ namespace Modules\Project\ProjectType\DTO;
 class UpdateEmployeeContractSettingDTO
 {
     public function __construct(
-        public readonly ?bool $is_all_data_visible = null,
+        public readonly ?int $is_all_data_visible = null,
     ) {
     }
 
