@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Requests\UpdateContractorContractSettingRequest;
 use Modules\Project\ProjectType\Services\ContractorContractSettingService;
 use Modules\Project\ProjectType\Handlers\UpdateContractorContractSettingHandler;
+use Modules\Project\ProjectType\Presenters\ContractorContractSettingPresenter;
 
 class ContractorContractSettingController extends Controller
 {
@@ -25,11 +26,7 @@ class ContractorContractSettingController extends Controller
             $command = $request->toCommand($projectTypeId);
             $setting = $this->updateHandler->handle($command);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Contractor contract setting updated successfully',
-                'data' => $setting
-            ]);
+            return Json::item((new ContractorContractSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -44,7 +41,7 @@ class ContractorContractSettingController extends Controller
         try {
             $setting = $this->service->getByProjectTypeId($projectTypeId);
 
-            return Json::item($setting);
+            return Json::item((new ContractorContractSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

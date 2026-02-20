@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Requests\UpdateAttachmentContractSettingRequest;
 use Modules\Project\ProjectType\Services\AttachmentContractSettingService;
 use Modules\Project\ProjectType\Handlers\UpdateAttachmentContractSettingHandler;
+use Modules\Project\ProjectType\Presenters\AttachmentContractSettingPresenter;
 
 class AttachmentContractSettingController extends Controller
 {
@@ -25,7 +26,7 @@ class AttachmentContractSettingController extends Controller
             $command = $request->toCommand($projectTypeId);
             $setting = $this->updateHandler->handle($command);
 
-            return Json::item($setting);
+            return Json::item((new AttachmentContractSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -40,10 +41,7 @@ class AttachmentContractSettingController extends Controller
         try {
             $setting = $this->service->getByProjectTypeId($projectTypeId);
 
-            return response()->json([
-                'success' => true,
-                'data' => $setting
-            ]);
+            return Json::item((new AttachmentContractSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
