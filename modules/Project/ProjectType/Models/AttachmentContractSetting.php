@@ -22,12 +22,12 @@ class AttachmentContractSetting extends Model
     ];
 
     protected $casts = [
-        'is_name' => 'boolean',
-        'is_type' => 'boolean',
-        'is_size' => 'boolean',
-        'is_creator' => 'boolean',
-        'is_create_date' => 'boolean',
-        'is_downloadable' => 'boolean',
+        'is_name' => 'int',
+        'is_type' => 'int',
+        'is_size' => 'int',
+        'is_creator' => 'int',
+        'is_create_date' => 'int',
+        'is_downloadable' => 'int',
     ];
 
     public function projectType(): BelongsTo
