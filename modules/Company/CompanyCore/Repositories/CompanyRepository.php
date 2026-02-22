@@ -240,4 +240,33 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->with('packages')->findOrFail($companyId);
     }
+
+    /**
+     * Get client companies with owner relationship
+     */
+    public function getClientCompanies(?int $page, ?int $perPage = 10): array
+    {
+        $query = $this->model->where('is_client', 1)
+            ->with($this->relations);
+
+        $total = $query->count();
+        
+        if ($page && $perPage) {
+            $data = $query->skip(($page - 1) * $perPage)
+                ->take($perPage)
+                ->get();
+        } else {
+            $data = $query->get();
+        }
+
+        return [
+            'data' => $data,
+            'pagination' => [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'last_page' => $perPage ? (int) ceil($total / $perPage) : 1,
+            ]
+        ];
+    }
 }
