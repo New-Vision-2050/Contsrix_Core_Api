@@ -65,6 +65,16 @@ class CompanyController extends Controller
         return Json::items(CompanyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
+    public function getClientCompanies(GetClientCompaniesRequest $request): JsonResponse
+    {
+        $list = $this->companyService->getClientCompanies(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(CompanyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
     public function show(GetCompanyRequest $request): JsonResponse
     {
         $item = $this->companyService->get(Uuid::fromString($request->route('id')));
