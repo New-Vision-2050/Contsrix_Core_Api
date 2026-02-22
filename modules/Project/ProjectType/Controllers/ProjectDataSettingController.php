@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectType\Controllers;
 
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Requests\UpdateProjectDataSettingRequest;
 use Modules\Project\ProjectType\Services\ProjectDataSettingService;
 use Modules\Project\ProjectType\Handlers\UpdateProjectDataSettingHandler;
+use Modules\Project\ProjectType\Presenters\ProjectDataSettingPresenter;
 
 class ProjectDataSettingController extends Controller
 {
@@ -28,11 +30,7 @@ class ProjectDataSettingController extends Controller
             $command = $request->toCommand($projectTypeId);
             $setting = $this->updateHandler->handle($command);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Project data setting updated successfully',
-                'data' => $setting
-            ]);
+            return Json::item((new ProjectDataSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -50,10 +48,7 @@ class ProjectDataSettingController extends Controller
         try {
             $setting = $this->service->getByProjectTypeId($projectTypeId);
 
-            return response()->json([
-                'success' => true,
-                'data' => $setting
-            ]);
+            return Json::item((new ProjectDataSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

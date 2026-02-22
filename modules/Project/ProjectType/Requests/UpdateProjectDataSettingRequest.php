@@ -40,15 +40,15 @@ class UpdateProjectDataSettingRequest extends FormRequest
     public function toCommand(int $projectTypeId): UpdateProjectDataSettingCommand
     {
         $dto = new UpdateProjectDataSettingDTO(
-            is_reference_number: $this->input('is_reference_number'),
-            is_name_project: $this->input('is_name_project'),
-            is_client: $this->input('is_client'),
-            is_responsible_engineer: $this->input('is_responsible_engineer'),
-            is_number_contract: $this->input('is_number_contract'),
-            is_central_cost: $this->input('is_central_cost'),
-            is_project_value: $this->input('is_project_value'),
-            is_start_date: $this->input('is_start_date'),
-            is_achievement_percentage: $this->input('is_achievement_percentage'),
+            is_reference_number: $this->has('is_reference_number') ? (int) $this->get('is_reference_number') : null,
+            is_name_project: $this->has('is_name_project') ? (int) $this->get('is_name_project') : null,
+            is_client: $this->has('is_client') ? (int) $this->get('is_client') : null,
+            is_responsible_engineer: $this->has('is_responsible_engineer') ? (int) $this->get('is_responsible_engineer') : null,
+            is_number_contract: $this->has('is_number_contract') ? (int) $this->get('is_number_contract') : null,
+            is_central_cost: $this->has('is_central_cost') ? (int) $this->get('is_central_cost') : null,
+            is_project_value: $this->has('is_project_value') ? (int) $this->get('is_project_value') : null,
+            is_start_date: $this->has('is_start_date') ? (int) $this->get('is_start_date') : null,
+            is_achievement_percentage: $this->has('is_achievement_percentage') ? (int) $this->get('is_achievement_percentage') : null,
         );
 
         return new UpdateProjectDataSettingCommand($projectTypeId, $dto);

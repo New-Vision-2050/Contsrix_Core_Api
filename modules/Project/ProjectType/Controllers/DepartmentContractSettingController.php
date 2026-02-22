@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectType\Controllers;
 
 use App\Http\Controllers\Controller;
+use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Requests\UpdateDepartmentContractSettingRequest;
 use Modules\Project\ProjectType\Services\DepartmentContractSettingService;
 use Modules\Project\ProjectType\Handlers\UpdateDepartmentContractSettingHandler;
+use Modules\Project\ProjectType\Presenters\DepartmentContractSettingPresenter;
 
 class DepartmentContractSettingController extends Controller
 {
@@ -24,11 +26,7 @@ class DepartmentContractSettingController extends Controller
             $command = $request->toCommand($projectTypeId);
             $setting = $this->updateHandler->handle($command);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Department contract setting updated successfully',
-                'data' => $setting
-            ]);
+            return Json::item((new DepartmentContractSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -43,10 +41,7 @@ class DepartmentContractSettingController extends Controller
         try {
             $setting = $this->service->getByProjectTypeId($projectTypeId);
 
-            return response()->json([
-                'success' => true,
-                'data' => $setting
-            ]);
+            return Json::item((new DepartmentContractSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

@@ -18,27 +18,28 @@ class SchemaSeeder extends Seeder
     {
         DB::transaction(function () {
             $schemas = [
-                'بيانات المشروع',      // Project Details
-                'المعلومات المالية',   // Financial Information
-                'أطراف العمل',         // Work Parties
-                'الكتاب',              // Books/Documents
-                'المقاولون',           // Contractors
-                'المستشارون',          // Consultants
-                'الموردون',            // Suppliers
-                'المراقبون',           // Supervisors
+                'بيانات المشروع',
+                'بنود المشروع',
+                'المرفقات',
+                'المقاولين',
+                'الكادر',
+                'اوامر العمل',
+                'المالية',
+
+
             ];
 
             $createdCount = 0;
             $schemaIds = [];
-            
+
             foreach ($schemas as $schemaName) {
                 $schema = Schema::firstOrCreate(
                     ['name' => $schemaName],
                     ['name' => $schemaName]
                 );
-                
+
                 $schemaIds[] = $schema->id;
-                
+
                 if ($schema->wasRecentlyCreated) {
                     $createdCount++;
                 }
@@ -54,10 +55,10 @@ class SchemaSeeder extends Seeder
                 if ($designProjectType) {
                     // Sync schemas (will not create duplicates)
                     $designProjectType->schemas()->sync($schemaIds);
-                    
+
                     // Update is_have_schema flag
                     $designProjectType->update(['is_have_schema' => true]);
-                    
+
                     $this->command->info("Attached " . count($schemaIds) . " schemas to 'التصاميم' project type.");
                 }
             }
