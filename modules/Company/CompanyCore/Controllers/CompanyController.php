@@ -16,6 +16,7 @@ use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyUnAuthPresenter;
 use Modules\Company\CompanyCore\Requests\CreateCompanyRequest;
 use Modules\Company\CompanyCore\Requests\DeleteCompanyRequest;
+use Modules\Company\CompanyCore\Requests\GetClientCompaniesRequest;
 use Modules\Company\CompanyCore\Requests\GetCompanyListRequest;
 use Modules\Company\CompanyCore\Requests\GetCompanyRequest;
 use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
