@@ -43,11 +43,25 @@ class ProjectManagementPresenter extends AbstractPresenter
                 'name' => $this->projectManagement->subSubProjectType->name,
             ] : null;
 
-            $data['responsible_employee'] = $this->projectManagement->responsibleEmployee ? [
-                'id' => $this->projectManagement->responsibleEmployee->id,
-                'name' => $this->projectManagement->responsibleEmployee->name,
-                'email' => $this->projectManagement->responsibleEmployee->email,
+            $data['manager'] = $this->projectManagement->manager ? [
+                'id' => $this->projectManagement->manager->id,
+                'name' => $this->projectManagement->manager->name,
+                'email' => $this->projectManagement->manager->email,
             ] : null;
+
+            $data['branch'] = $this->projectManagement->branch ? [
+                'id' => $this->projectManagement->branch->id,
+                'name' => $this->projectManagement->branch->name,
+            ] : null;
+
+            $data['project_owner_type'] = $this->projectManagement->project_owner_type;
+            $data['project_owner_id'] = $this->projectManagement->project_owner_id;
+            $data['project_owner'] = $this->projectManagement->projectOwner ? [
+                'id' => $this->projectManagement->projectOwner->id,
+                'name' => $this->projectManagement->projectOwner->name ?? null,
+            ] : null;
+
+            $data['contract_id'] = $this->projectManagement->contract_id;
 
             $data['client'] = $this->projectManagement->client ? [
                 'id' => $this->projectManagement->client->id,
@@ -71,8 +85,11 @@ class ProjectManagementPresenter extends AbstractPresenter
             ] : null;
         } else {
             $data['project_type_name'] = $this->projectManagement->projectType?->name;
-            $data['responsible_employee_name'] = $this->projectManagement->responsibleEmployee?->name;
+            $data['manager_name'] = $this->projectManagement->manager?->name;
+            $data['branch_name'] = $this->projectManagement->branch?->name;
             $data['client_name'] = $this->projectManagement->client?->name;
+            $data['project_owner_type'] = $this->projectManagement->project_owner_type;
+            $data['contract_id'] = $this->projectManagement->contract_id;
         }
 
         return $data;
