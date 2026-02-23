@@ -31,14 +31,13 @@ class ProjectManagementRepository extends BaseRepository
             'projectType',
             'subProjectType',
             'subSubProjectType',
-            'responsibleEmployee',
             'client',
             'costCenterBranch',
             'management',
             'currency',
             'company'
         ]);
-        
+
         return $this->paginatedList([], $page, $perPage, $query);
     }
 
@@ -48,7 +47,6 @@ class ProjectManagementRepository extends BaseRepository
             'projectType',
             'subProjectType',
             'subSubProjectType',
-            'responsibleEmployee',
             'client',
             'costCenterBranch',
             'management',

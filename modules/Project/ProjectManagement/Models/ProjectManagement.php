@@ -34,7 +34,11 @@ class ProjectManagement extends Model
         'sub_project_type_id',
         'sub_sub_project_type_id',
         'name',
-        'responsible_employee_id',
+        'manager_id',
+        'branch_id',
+        'project_owner_type',
+        'project_owner_id',
+        'contract_id',
         'client_id',
         'project_classification_id',
         'cost_center_branch_id',
@@ -50,7 +54,11 @@ class ProjectManagement extends Model
         'project_type_id' => 'integer',
         'sub_project_type_id' => 'integer',
         'sub_sub_project_type_id' => 'integer',
-        'responsible_employee_id' => 'string',
+        'manager_id' => 'string',
+        'branch_id' => 'integer',
+        'project_owner_type' => 'string',
+        'project_owner_id' => 'string',
+        'contract_id' => 'string',
         'client_id' => 'string',
         'project_classification_id' => 'string',
         'cost_center_branch_id' => 'string',
@@ -82,9 +90,19 @@ class ProjectManagement extends Model
         return $this->belongsTo(ProjectType::class, 'sub_sub_project_type_id');
     }
 
-    public function responsibleEmployee()
+    public function manager()
     {
-        return $this->belongsTo(User::class, 'responsible_employee_id');
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class, 'branch_id');
+    }
+
+    public function projectOwner()
+    {
+        return $this->morphTo('project_owner', 'project_owner_type', 'project_owner_id');
     }
 
     public function client()
