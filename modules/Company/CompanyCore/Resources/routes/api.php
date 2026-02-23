@@ -14,7 +14,8 @@ Route::middleware(['auth:api'])->group(function () {
 
 Route::middleware(['auth:api', InitializeTenancyByRequestData::class])->group(function () {
     Route::get('/', [CompanyController::class, 'index'])->name('companies.index')->permission(Permission::COMPANY_LIST());
-    Route::get('/clients', [CompanyController::class, 'getClientCompanies'])->name('companies.clients');
+    Route::get('/clients', [CompanyController::class, 'getClientCompanies'])->name('companies.clients')->permission(Permission::COMPANY_LIST());
+    Route::get('/brokers', [CompanyController::class, 'getBrokerCompanies'])->name('companies.brokers')->permission(Permission::COMPANY_LIST());
     Route::get('/current-auth-company', [CompanyController::class, 'getCurrentCompanyLoggedIn'])->name('companies.current-auth-company');
     Route::post('/export', [CompanyController::class, 'export'])->name('companies.export')->permission(Permission::COMPANY_EXPORT());
     Route::get('/widget', [CompanyController::class, 'widget']);

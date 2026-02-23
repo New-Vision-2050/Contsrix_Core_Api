@@ -197,4 +197,9 @@ class CompanyCRUDService
     {
         return $this->repository->getClientCompanies($page, $perPage);
     }
+
+    public function getBrokerCompanies(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->getBrokerCompanies($page, $perPage);
+    }
 }
