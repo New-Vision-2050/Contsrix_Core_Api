@@ -125,7 +125,7 @@ class UserAttendanceService
      */
     private function enhancePeriodsWithAttendance(array $periods, Collection $attendances, Carbon $date, array $earlyClockInRules): array
     {
-        return array_map(function ($period) use ($attendances, $date) {
+        return array_map(function ($period) use ($attendances, $date, $earlyClockInRules) {
             $periodStart = $this->parsePeriodTime($period, 'start', $date);
             $periodEnd = $this->parsePeriodTime($period, 'end', $date);
 
