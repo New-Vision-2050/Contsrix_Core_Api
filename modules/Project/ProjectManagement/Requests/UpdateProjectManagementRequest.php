@@ -25,7 +25,7 @@ class UpdateProjectManagementRequest extends FormRequest
             'contract_id' => 'nullable|uuid',
             'client_id' => 'nullable|uuid|exists:users,id',
             'project_classification_id' => 'nullable|uuid',
-            'cost_center_branch_id' => 'nullable|uuid|exists:management_hierarchies,id',
+            'cost_center_branch_id' => 'nullable|exists:management_hierarchies,id',
             'management_id' => 'nullable|exists:management_hierarchies,id',
             'currency_id' => 'nullable|uuid|exists:currencies,id',
             'project_value' => 'nullable|numeric|min:0',
