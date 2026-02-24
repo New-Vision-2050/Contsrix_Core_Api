@@ -1,0 +1,22 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Modules\ClientRequest\Controllers\ClientRequestController;
+use Modules\ClientRequest\Controllers\ClientRequestTypeController;
+use Modules\ClientRequest\Controllers\ClientRequestReceiverFromController;
+use Modules\ClientRequest\Controllers\ClientRequestServiceController;
+
+Route::group(['middleware' => ['auth:api']], function () {
+    Route::prefix('client-requests')->group(function () {
+        Route::get('/', [ClientRequestController::class, 'index']);
+        Route::post('/', [ClientRequestController::class, 'store']);
+        Route::post('/export', [ClientRequestController::class, 'export']);
+        Route::get('/{id}', [ClientRequestController::class, 'show']);
+        Route::put('/{id}', [ClientRequestController::class, 'update']);
+        Route::delete('/{id}', [ClientRequestController::class, 'delete']);
+    });
+
+    Route::get('/client-request-types', [ClientRequestTypeController::class, 'index']);
+    Route::get('/client-request-receiver-from', [ClientRequestReceiverFromController::class, 'index']);
+    Route::get('/client-request-services', [ClientRequestServiceController::class, 'index']);
+});

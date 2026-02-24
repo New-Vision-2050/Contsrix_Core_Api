@@ -1,0 +1,141 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\ClientRequest\Models;
+
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\ClientRequest\Database\factories\ClientRequestFactory;
+use BasePackage\Shared\Traits\BaseFilterable;
+use BasePackage\Shared\Traits\BelongsToTenant;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\Project\TermSetting\Models\TermSetting;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+
+class ClientRequest extends Model implements HasMedia
+{
+    use HasFactory;
+    use UuidTrait;
+    use BaseFilterable;
+    use BelongsToTenant;
+    use InteractsWithMedia;
+
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_REJECTED = 'rejected';
+    public const STATUS_ACCEPTED = 'accepted';
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'company_id',
+        'client_request_type_id',
+        'client_request_receiver_from_id',
+        'client_type',
+        'client_id',
+        'content',
+        'status_client_request',
+        'term_setting_id',
+        'branch_id',
+        'management_id',
+    ];
+
+    protected $casts = [
+        'id' => 'string',
+        'company_id' => 'string',
+        'client_id' => 'string',
+    ];
+
+    public function getTenantIdColumn(): string
+    {
+        return 'company_id';
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function clientRequestType(): BelongsTo
+    {
+        return $this->belongsTo(ClientRequestType::class);
+    }
+
+    public function clientRequestReceiverFrom(): BelongsTo
+    {
+        return $this->belongsTo(ClientRequestReceiverFrom::class);
+    }
+
+    public function termSetting(): BelongsTo
+    {
+        return $this->belongsTo(TermSetting::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(ManagementHierarchy::class, 'branch_id');
+    }
+
+    public function management(): BelongsTo
+    {
+        return $this->belongsTo(ManagementHierarchy::class, 'management_id');
+    }
+
+    public function services(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ClientRequestService::class,
+            'client_request_service_pivot',
+            'client_request_id',
+            'client_request_service_id'
+        );
+    }
+
+    public function isPending(): bool
+    {
+        return $this->status_client_request === self::STATUS_PENDING;
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status_client_request === self::STATUS_ACCEPTED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status_client_request === self::STATUS_REJECTED;
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status_client_request', self::STATUS_PENDING);
+    }
+
+    public function scopeAccepted($query)
+    {
+        return $query->where('status_client_request', self::STATUS_ACCEPTED);
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status_client_request', self::STATUS_REJECTED);
+    }
+
+    protected static function newFactory(): ClientRequestFactory
+    {
+        return ClientRequestFactory::new();
+    }
+}
