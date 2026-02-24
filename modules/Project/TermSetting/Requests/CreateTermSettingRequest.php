@@ -19,7 +19,7 @@ class CreateTermSettingRequest extends FormRequest
             'project_type_id' => 'nullable|integer|exists:project_types,id',
             'term_services_ids' => 'nullable|array',
             'term_services_ids.*' => 'integer|exists:term_services,id',
-            'is_active' => 'nullable|boolean',
+            'is_active' => 'nullable|int',
         ];
     }
 
@@ -31,7 +31,7 @@ class CreateTermSettingRequest extends FormRequest
             parentId: $this->get('parent_id'),
             projectTypeId: $this->get('project_type_id'),
             termServicesIds: $this->get('term_services_ids', []),
-            isActive: $this->get('is_active', true),
+            isActive: $this->get('is_active')!=null?(int)$this->get('is_active'):1,
         );
     }
 }
