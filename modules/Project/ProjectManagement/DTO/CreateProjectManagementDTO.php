@@ -14,7 +14,7 @@ class CreateProjectManagementDTO
         public int $subSubProjectTypeId,
         public ?string $name = null,
         public ?string $managerId = null,
-        public ?int $branchId = null,
+        public ?string $branchId = null,
         public ?string $projectOwnerType = null,
         public ?string $projectOwnerId = null,
         public ?string $contractId = null,

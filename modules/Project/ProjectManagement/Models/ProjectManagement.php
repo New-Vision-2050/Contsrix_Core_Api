@@ -55,7 +55,7 @@ class ProjectManagement extends Model
         'sub_project_type_id' => 'integer',
         'sub_sub_project_type_id' => 'integer',
         'manager_id' => 'string',
-        'branch_id' => 'integer',
+        'branch_id' => 'string',
         'project_owner_type' => 'string',
         'project_owner_id' => 'string',
         'contract_id' => 'string',
