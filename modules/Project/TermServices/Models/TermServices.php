@@ -4,34 +4,55 @@ declare(strict_types=1);
 
 namespace Modules\Project\TermServices\Models;
 
-use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Project\TermServices\Database\factories\TermServicesFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-//use BasePackage\Shared\Traits\HasTranslations;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Modules\Company\CompanyCore\Models\Company;
+use Modules\Project\TermSetting\Models\TermSetting;
 
 class TermServices extends Model
 {
     use HasFactory;
-    use UuidTrait;
     use BaseFilterable;
-    //use HasTranslations;
-    //use SoftDeletes;
+    use BelongsToTenant;
 
-    //public array $translatable = [];
+    protected $table = "term_services";
 
-    public $incrementing = false;
+    public $incrementing = true;
 
-    protected $keyType = 'string';
+    protected $keyType = 'int';
 
     protected $fillable = [
         'name',
+        'company_id',
+        'is_active',
     ];
 
     protected $casts = [
-        'id' => 'string',
+        'is_active' => 'int',
     ];
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function termSettings()
+    {
+        return $this->belongsToMany(
+            TermSetting::class,
+            'term_setting_term_services',
+            'term_services_id',
+            'term_setting_id'
+        )->withTimestamps();
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     protected static function newFactory(): TermServicesFactory
     {

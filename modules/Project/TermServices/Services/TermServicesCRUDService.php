@@ -39,4 +39,9 @@ class TermServicesCRUDService
             id: $id,
         );
     }
+
+    public function getWithRelations(int $id): TermServices
+    {
+        return $this->repository->getTermServicesWithRelations($id);
+    }
 }

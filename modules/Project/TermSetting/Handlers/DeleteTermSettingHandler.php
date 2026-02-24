@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Modules\Project\TermSetting\Handlers;
 
 use Modules\Project\TermSetting\Repositories\TermSettingRepository;
-use Ramsey\Uuid\UuidInterface;
 
 class DeleteTermSettingHandler
 {
@@ -14,7 +13,7 @@ class DeleteTermSettingHandler
     ) {
     }
 
-    public function handle(UuidInterface $id)
+    public function handle(int $id)
     {
         $this->repository->deleteTermSetting($id);
     }

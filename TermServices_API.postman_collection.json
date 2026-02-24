@@ -1,0 +1,228 @@
+{
+	"info": {
+		"_postman_id": "term-services-api-collection",
+		"name": "TermServices API",
+		"description": "API endpoints for managing TermServices in Project module with tree structure support",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List TermServices",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/term-services?page=1&per_page=15",
+					"host": ["{{url}}"],
+					"path": ["term-services"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "per_page",
+							"value": "15",
+							"description": "Items per page"
+						},
+						{
+							"key": "name",
+							"value": "",
+							"description": "Search by name",
+							"disabled": true
+						},
+						{
+							"key": "is_active",
+							"value": "",
+							"description": "Filter by status (0 or 1)",
+							"disabled": true
+						}
+					]
+				},
+				"description": "Get paginated list of all term services with tree structure"
+			},
+			"response": []
+		},
+		{
+			"name": "Create TermServices",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Service Category\",\n    \"parent_id\": null,\n    \"is_active\": 1\n}"
+				},
+				"url": {
+					"raw": "{{url}}/term-services",
+					"host": ["{{url}}"],
+					"path": ["term-services"]
+				},
+				"description": "Create a new term service. Set parent_id to null for root level or provide parent ID for child nodes."
+			},
+			"response": []
+		},
+		{
+			"name": "Get TermServices",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/term-services/{{term_services_id}}",
+					"host": ["{{url}}"],
+					"path": ["term-services", "{{term_services_id}}"]
+				},
+				"description": "Get a single term service by ID"
+			},
+			"response": []
+		},
+		{
+			"name": "Update TermServices",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Updated Service Name\",\n    \"parent_id\": null,\n    \"is_active\": 1\n}"
+				},
+				"url": {
+					"raw": "{{url}}/term-services/{{term_services_id}}",
+					"host": ["{{url}}"],
+					"path": ["term-services", "{{term_services_id}}"]
+				},
+				"description": "Update an existing term service"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete TermServices",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/term-services/{{term_services_id}}",
+					"host": ["{{url}}"],
+					"path": ["term-services", "{{term_services_id}}"]
+				},
+				"description": "Delete a term service (will cascade delete children)"
+			},
+			"response": []
+		},
+		{
+			"name": "Export TermServices",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"format\": \"xlsx\",\n    \"ids\": []\n}"
+				},
+				"url": {
+					"raw": "{{url}}/term-services/export",
+					"host": ["{{url}}"],
+					"path": ["term-services", "export"]
+				},
+				"description": "Export term services to Excel or CSV. Leave ids empty to export all."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		},
+		{
+			"key": "term_services_id",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

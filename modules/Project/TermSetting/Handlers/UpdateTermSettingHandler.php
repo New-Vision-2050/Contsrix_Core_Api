@@ -16,6 +16,10 @@ class UpdateTermSettingHandler
 
     public function handle(UpdateTermSettingCommand $updateTermSettingCommand)
     {
-        $this->repository->updateTermSetting($updateTermSettingCommand->getId(), $updateTermSettingCommand->toArray());
+        $this->repository->updateTermSetting(
+            $updateTermSettingCommand->getId(),
+            $updateTermSettingCommand->toArray(),
+            $updateTermSettingCommand->getTermServicesIds()
+        );
     }
 }

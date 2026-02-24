@@ -28,7 +28,7 @@ class TermServicesServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/term_services')
+        Route::prefix('api/v1/term-services')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

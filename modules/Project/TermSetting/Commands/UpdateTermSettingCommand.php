@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Project\TermSetting\Commands;
 
-use Ramsey\Uuid\UuidInterface;
-
 class UpdateTermSettingCommand
 {
     public function __construct(
-        private UuidInterface $id,
+        private int $id,
         private string $name,
+        private ?string $description = null,
+        private ?int $parentId = null,
+        private ?int $projectTypeId = null,
+        private array $termServicesIds = [],
+        private ?bool $isActive = null,
     ) {
     }
 
-    public function getId(): UuidInterface
+    public function getId(): int
     {
         return $this->id;
     }
@@ -24,10 +27,44 @@ class UpdateTermSettingCommand
         return $this->name;
     }
 
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function getParentId(): ?int
+    {
+        return $this->parentId;
+    }
+
+    public function getProjectTypeId(): ?int
+    {
+        return $this->projectTypeId;
+    }
+
+    public function getTermServicesIds(): array
+    {
+        return $this->termServicesIds;
+    }
+
+    public function getIsActive(): ?bool
+    {
+        return $this->isActive;
+    }
+
     public function toArray(): array
     {
-        return [
+        $data = [
             'name' => $this->name,
+            'description' => $this->description,
+            'parent_id' => $this->parentId,
+            'project_type_id' => $this->projectTypeId,
         ];
+
+        if ($this->isActive !== null) {
+            $data['is_active'] = $this->isActive;
+        }
+
+        return $data;
     }
 }

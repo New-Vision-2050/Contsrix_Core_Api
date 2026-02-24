@@ -19,7 +19,7 @@ use Modules\Project\TermSetting\Services\TermSettingCRUDService;
 use Modules\Project\TermSetting\Exports\TermSettingExport;
 use Modules\Project\TermSetting\Requests\ExportTermSettingRequest;
 use Maatwebsite\Excel\Facades\Excel;
-use Ramsey\Uuid\Uuid;
+use Modules\Project\TermSetting\Requests\GetTermSettingChildrenRequest;
 
 class TermSettingController extends Controller
 {
@@ -42,7 +42,7 @@ class TermSettingController extends Controller
 
     public function show(GetTermSettingRequest $request): JsonResponse
     {
-        $item = $this->termSettingService->get(Uuid::fromString($request->route('id')));
+        $item = $this->termSettingService->get((int) $request->route('id'));
 
         $presenter = new TermSettingPresenter($item);
 
@@ -72,7 +72,7 @@ class TermSettingController extends Controller
 
     public function delete(DeleteTermSettingRequest $request): JsonResponse
     {
-        $this->deleteTermSettingHandler->handle(Uuid::fromString($request->route('id')));
+        $this->deleteTermSettingHandler->handle((int) $request->route('id'));
 
         return Json::deleted();
     }
@@ -89,5 +89,14 @@ class TermSettingController extends Controller
         $filters = $request->getFilters();
         
         return Excel::download(new TermSettingExport($this->termSettingService, $filters), $fileName);
+    }
+
+    public function getChildren(GetTermSettingChildrenRequest $request): JsonResponse
+    {
+        $item = $this->termSettingService->getWithChildren((int) $request->route('id'));
+
+        $presenter = new TermSettingPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 }
