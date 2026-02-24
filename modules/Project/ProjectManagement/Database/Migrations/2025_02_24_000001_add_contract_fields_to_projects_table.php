@@ -15,8 +15,8 @@ return new class extends Migration
             // Rename responsible_employee_id to manager_id
             $table->renameColumn('responsible_employee_id', 'manager_id');
 
-            // Add branch_id (related to management_hierarchies)
-            $table->uuid('branch_id')->nullable()->after('manager_id');
+            // Add branch_id (related to management_hierarchies - uses integer ID)
+            $table->unsignedBigInteger('branch_id')->nullable()->after('manager_id');
 
             // Add project owner polymorphic fields
             $table->string('project_owner_type')->nullable()->after('branch_id');
