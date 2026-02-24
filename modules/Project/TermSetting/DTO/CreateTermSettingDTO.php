@@ -12,7 +12,7 @@ class CreateTermSettingDTO
         public ?int $parentId = null,
         public ?int $projectTypeId = null,
         public array $termServicesIds = [],
-        public bool $isActive = true,
+        public int $isActive = 1,
     ) {
     }
 

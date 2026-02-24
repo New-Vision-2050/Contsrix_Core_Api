@@ -16,7 +16,6 @@ class TermServices extends Model
 {
     use HasFactory;
     use BaseFilterable;
-    use BelongsToTenant;
 
     protected $table = "term_services";
 
@@ -26,18 +25,12 @@ class TermServices extends Model
 
     protected $fillable = [
         'name',
-        'company_id',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'int',
     ];
-
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
 
     public function termSettings()
     {
