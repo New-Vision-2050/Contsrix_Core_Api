@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\ClientRequest\Database\factories\ClientRequestFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
-use BasePackage\Shared\Traits\BelongsToTenant;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

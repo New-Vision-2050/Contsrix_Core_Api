@@ -28,7 +28,7 @@ class ClientRequestServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/client_requests')
+        Route::prefix('api/v1/client-requests')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

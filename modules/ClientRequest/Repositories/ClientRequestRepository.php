@@ -7,10 +7,10 @@ namespace Modules\ClientRequest\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
+use Modules\Shared\Media\Services\FileUploadService;
 use Ramsey\Uuid\UuidInterface;
 use Modules\ClientRequest\Models\ClientRequest;
 use App\Traits\HasExport;
-use BasePackage\Shared\Services\FileUploadService;
 
 /**
  * @property ClientRequest $model
