@@ -22,7 +22,10 @@ class TermSettingCRUDService
 
     public function create(CreateTermSettingDTO $createTermSettingDTO): TermSetting
     {
-         return $this->repository->createTermSetting($createTermSettingDTO->toArray());
+         return $this->repository->createTermSetting(
+             $createTermSettingDTO->toArray(),
+             $createTermSettingDTO->getTermServicesIds()
+         );
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -33,10 +36,18 @@ class TermSettingCRUDService
         );
     }
 
-    public function get(UuidInterface $id): TermSetting
+    public function get(int $id): TermSetting
     {
-        return $this->repository->getTermSetting(
-            id: $id,
-        );
+        return $this->repository->getTermSetting($id);
+    }
+
+    public function getWithRelations(int $id): TermSetting
+    {
+        return $this->repository->getTermSettingWithRelations($id);
+    }
+
+    public function getWithChildren(int $id): TermSetting
+    {
+        return $this->repository->getTermSettingWithChildren($id);
     }
 }

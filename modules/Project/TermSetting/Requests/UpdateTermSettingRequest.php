@@ -14,15 +14,26 @@ class UpdateTermSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'parent_id' => 'nullable|integer|exists:term_settings,id',
+            'project_type_id' => 'nullable|integer|exists:project_types,id',
+            'term_services_ids' => 'nullable|array',
+            'term_services_ids.*' => 'integer|exists:term_services,id',
+            'is_active' => 'nullable|boolean',
         ];
     }
 
     public function createUpdateTermSettingCommand(): UpdateTermSettingCommand
     {
         return new UpdateTermSettingCommand(
-            id: Uuid::fromString($this->route('id')),
+            id: (int) $this->route('id'),
             name: $this->get('name'),
+            description: $this->get('description'),
+            parentId: $this->get('parent_id'),
+            projectTypeId: $this->get('project_type_id'),
+            termServicesIds: $this->get('term_services_ids', []),
+            isActive: $this->get('is_active'),
         );
     }
 }

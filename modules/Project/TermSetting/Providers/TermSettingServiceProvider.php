@@ -28,7 +28,7 @@ class TermSettingServiceProvider extends ModuleServiceProvider
 
     public function mapRoutes(): void
     {
-        Route::prefix('api/v1/term_settings')
+        Route::prefix('api/v1/term-settings')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 

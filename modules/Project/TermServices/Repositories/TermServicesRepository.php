@@ -51,4 +51,11 @@ class TermServicesRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    public function getTermServicesWithRelations(int $id): TermServices
+    {
+        return $this->model
+            ->with(['termSettings'])
+            ->findOrFail($id);
+    }
 }

@@ -30,25 +30,51 @@ class TermSettingRepository extends BaseRepository
         return $this->paginatedList([], $page, $perPage);
     }
 
-    public function getTermSetting(UuidInterface $id): TermSetting
+    public function getTermSetting(int $id): TermSetting
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model->findOrFail($id);
     }
 
-    public function createTermSetting(array $data): TermSetting
+    public function createTermSetting(array $data, array $termServicesIds = []): TermSetting
     {
-        return $this->create($data);
+        $termSetting = $this->create($data);
+        
+        if (!empty($termServicesIds)) {
+            $termSetting->termServices()->sync($termServicesIds);
+        }
+        
+        return $termSetting->fresh(['termServices']);
     }
 
-    public function updateTermSetting(UuidInterface $id, array $data): bool
+    public function updateTermSetting(int $id, array $data, array $termServicesIds = []): bool
     {
-        return $this->update($id, $data);
+        $termSetting = $this->model->findOrFail($id);
+        $updated = $termSetting->update($data);
+        
+        if ($updated) {
+            $termSetting->termServices()->sync($termServicesIds);
+        }
+        
+        return $updated;
     }
 
-    public function deleteTermSetting(UuidInterface $id): bool
+    public function deleteTermSetting(int $id): bool
     {
-        return $this->delete($id);
+        $termSetting = $this->model->findOrFail($id);
+        return $termSetting->delete();
+    }
+
+    public function getTermSettingWithRelations(int $id): TermSetting
+    {
+        return $this->model
+            ->with(['termServices', 'children', 'projectType'])
+            ->findOrFail($id);
+    }
+
+    public function getTermSettingWithChildren(int $id): TermSetting
+    {
+        return $this->model
+            ->with(['children', 'termServices', 'projectType'])
+            ->findOrFail($id);
     }
 }
