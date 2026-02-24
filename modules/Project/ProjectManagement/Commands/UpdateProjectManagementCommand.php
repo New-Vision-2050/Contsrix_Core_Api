@@ -15,7 +15,7 @@ class UpdateProjectManagementCommand
         private int $subSubProjectTypeId,
         private ?string $name = null,
         private ?string $managerId = null,
-        private ?int $branchId = null,
+        private ?string $branchId = null,
         private ?string $projectOwnerType = null,
         private ?string $projectOwnerId = null,
         private ?string $contractId = null,

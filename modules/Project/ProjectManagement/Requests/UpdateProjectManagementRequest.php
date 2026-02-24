@@ -19,7 +19,7 @@ class UpdateProjectManagementRequest extends FormRequest
             'sub_sub_project_type_id' => 'required|integer|exists:project_types,id',
             'name' => 'nullable|string|max:255',
             'manager_id' => 'nullable|uuid|exists:users,id',
-            'branch_id' => 'nullable|integer|exists:management_hierarchies,id',
+            'branch_id' => 'nullable|uuid|exists:management_hierarchies,id',
             'project_owner_type' => 'nullable|string|in:company,individual',
             'project_owner_id' => 'nullable|uuid',
             'contract_id' => 'nullable|uuid',

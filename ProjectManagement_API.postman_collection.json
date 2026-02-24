@@ -355,9 +355,8 @@
 		},
 		{
 			"key": "branch_id",
-			"value": "1",
-			"type": "string",
-			"description": "Branch ID (integer from management_hierarchies)"
+			"value": "uuid-here",
+			"type": "string"
 		},
 		{
 			"key": "management_id",

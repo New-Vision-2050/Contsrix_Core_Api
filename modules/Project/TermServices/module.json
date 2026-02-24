@@ -1,0 +1,14 @@
+{
+    "name": "TermServices",
+    "alias": "termservices",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Project\\TermServices\\Providers\\TermServicesServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Project"
+}

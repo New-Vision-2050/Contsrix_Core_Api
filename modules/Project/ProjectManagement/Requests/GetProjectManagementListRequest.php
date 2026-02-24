@@ -19,7 +19,7 @@ class GetProjectManagementListRequest extends FormRequest
             'sub_project_type_id' => 'nullable|integer',
             'sub_sub_project_type_id' => 'nullable|integer',
             'manager_id' => 'nullable|uuid',
-            'branch_id' => 'nullable|integer',
+            'branch_id' => 'nullable|uuid',
             'project_owner_type' => 'nullable|string|in:company,individual',
             'project_owner_id' => 'nullable|uuid',
             'contract_id' => 'nullable|uuid',
