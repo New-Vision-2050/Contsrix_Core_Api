@@ -93,4 +93,24 @@ class ClientRequestFilter extends SearchModelFilter
     {
         return $this->where('status_client_request', 'rejected');
     }
+
+    public function clientPriceOfferStatus($status)
+    {
+        return $this->where('client_price_offer_status', $status);
+    }
+
+    public function priceOfferPending()
+    {
+        return $this->where('client_price_offer_status', 'pending');
+    }
+
+    public function priceOfferAccepted()
+    {
+        return $this->where('client_price_offer_status', 'accepted');
+    }
+
+    public function priceOfferRejected()
+    {
+        return $this->where('client_price_offer_status', 'rejected');
+    }
 }

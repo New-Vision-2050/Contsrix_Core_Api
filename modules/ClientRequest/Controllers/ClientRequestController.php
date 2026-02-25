@@ -16,10 +16,13 @@ use Modules\ClientRequest\Requests\GetClientRequestListRequest;
 use Modules\ClientRequest\Requests\GetClientRequestRequest;
 use Modules\ClientRequest\Requests\UpdateClientRequestRequest;
 use Modules\ClientRequest\Services\ClientRequestCRUDService;
+use Modules\ClientRequest\Services\ClientRequestWidgetsService;
+use Modules\ClientRequest\Services\ClientRequestStatusWidgetsService;
 use Modules\ClientRequest\Exports\ClientRequestExport;
 use Modules\ClientRequest\Requests\ExportClientRequestRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
+use Illuminate\Support\Facades\Cache;
 
 class ClientRequestController extends Controller
 {
@@ -27,6 +30,8 @@ class ClientRequestController extends Controller
         private ClientRequestCRUDService $clientRequestService,
         private UpdateClientRequestHandler $updateClientRequestHandler,
         private DeleteClientRequestHandler $deleteClientRequestHandler,
+        private ClientRequestWidgetsService $clientRequestWidgetsService,
+        private ClientRequestStatusWidgetsService $clientRequestStatusWidgetsService,
     ) {
     }
 
@@ -53,6 +58,9 @@ class ClientRequestController extends Controller
     {
         $createdItem = $this->clientRequestService->create($request->createCreateClientRequestDTO());
 
+        $this->clientRequestWidgetsService->clearWidgetCache();
+        $this->clientRequestStatusWidgetsService->clearWidgetCache();
+
         $presenter = new ClientRequestPresenter($createdItem);
 
         return Json::item($presenter->getData());
@@ -62,6 +70,9 @@ class ClientRequestController extends Controller
     {
         $command = $request->createUpdateClientRequestCommand();
         $this->updateClientRequestHandler->handle($command);
+
+        $this->clientRequestWidgetsService->clearWidgetCache();
+        $this->clientRequestStatusWidgetsService->clearWidgetCache();
 
         $item = $this->clientRequestService->get($command->getId());
 
@@ -73,6 +84,9 @@ class ClientRequestController extends Controller
     public function delete(DeleteClientRequestRequest $request): JsonResponse
     {
         $this->deleteClientRequestHandler->handle(Uuid::fromString($request->route('id')));
+
+        $this->clientRequestWidgetsService->clearWidgetCache();
+        $this->clientRequestStatusWidgetsService->clearWidgetCache();
 
         return Json::deleted();
     }
@@ -87,7 +101,31 @@ class ClientRequestController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'client_request.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new ClientRequestExport($this->clientRequestService, $filters), $fileName);
+    }
+
+    public function getPriceOfferWidgets(): JsonResponse
+    {
+        $cacheKey = 'client_request_price_offer_widget_statistics-' . app()->getLocale();
+
+        $widgetData = Cache::remember($cacheKey, now()->addHours(1), function () {
+            $presenter = $this->clientRequestWidgetsService->getClientPriceOfferStatistics();
+            return $presenter->getData();
+        });
+
+        return Json::items($widgetData);
+    }
+
+    public function getStatusWidgets(): JsonResponse
+    {
+        $cacheKey = 'client_request_status_widget_statistics-' . app()->getLocale();
+
+        $widgetData = Cache::remember($cacheKey, now()->addHours(1), function () {
+            $presenter = $this->clientRequestStatusWidgetsService->getClientRequestStatusStatistics();
+            return $presenter->getData();
+        });
+
+        return Json::items($widgetData);
     }
 }
