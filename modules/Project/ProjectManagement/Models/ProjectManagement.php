@@ -85,69 +85,14 @@ class ProjectManagement extends Model
                 $model->{$model->getKeyName()} = (string) \Ramsey\Uuid\Uuid::uuid4();
             }
         });
-        
-        // Convert back to alias before saving
-        static::saving(function ($model) {
-            if (isset($model->attributes['project_owner_type'])) {
-                $reverseMap = [
-                    Company::class => 'company',
-                    User::class => 'individual',
-                ];
-                
-                $type = $model->attributes['project_owner_type'];
-                if (isset($reverseMap[$type])) {
-                    $model->attributes['project_owner_type'] = $reverseMap[$type];
-                }
-            }
-        });
     }
     
     /**
-     * Get the project_owner_type attribute and convert alias to full class name
-     */
-    public function getProjectOwnerTypeAttribute($value): ?string
-    {
-        if (!$value) {
-            return null;
-        }
-        
-        // Store the original alias
-        if (!isset($this->originalProjectOwnerType)) {
-            $this->originalProjectOwnerType = $value;
-        }
-        
-        $morphMap = [
-            'company' => Company::class,
-            'individual' => User::class,
-        ];
-        
-        // Return full class name for morphTo relationship
-        return $morphMap[$value] ?? $value;
-    }
-    
-    /**
-     * Set the project_owner_type attribute (store as alias)
-     */
-    public function setProjectOwnerTypeAttribute($value): void
-    {
-        $reverseMap = [
-            Company::class => 'company',
-            User::class => 'individual',
-        ];
-        
-        // Store the alias in the database
-        $this->attributes['project_owner_type'] = $reverseMap[$value] ?? $value;
-        
-        // Store original for later retrieval
-        $this->originalProjectOwnerType = $reverseMap[$value] ?? $value;
-    }
-    
-    /**
-     * Get the original project owner type alias
+     * Get the original project owner type alias for presentation
      */
     public function getProjectOwnerTypeAlias(): ?string
     {
-        return $this->originalProjectOwnerType ?? $this->getOriginal('project_owner_type');
+        return $this->getAttributeFromArray('project_owner_type');
     }
 
     public function getTenantIdColumn(): string
@@ -181,9 +126,42 @@ class ProjectManagement extends Model
         return $this->belongsTo(ManagementHierarchy::class, 'branch_id');
     }
 
-    public function projectOwner(): MorphTo
+    /**
+     * Get the project owner (company or individual)
+     */
+    public function getProjectOwnerAttribute()
     {
-        return $this->morphTo('project_owner', 'project_owner_type', 'project_owner_id');
+        if (!$this->project_owner_type || !$this->project_owner_id) {
+            return null;
+        }
+        
+        if ($this->project_owner_type === 'company') {
+            return $this->ownerCompany;
+        }
+        
+        if ($this->project_owner_type === 'individual') {
+            return $this->ownerIndividual;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Relationship to Company when project_owner_type is 'company'
+     */
+    public function ownerCompany()
+    {
+        return $this->belongsTo(Company::class, 'project_owner_id')
+            ->where('project_owner_type', 'company');
+    }
+    
+    /**
+     * Relationship to User when project_owner_type is 'individual'
+     */
+    public function ownerIndividual()
+    {
+        return $this->belongsTo(User::class, 'project_owner_id')
+            ->where('project_owner_type', 'individual');
     }
 
     public function client()
