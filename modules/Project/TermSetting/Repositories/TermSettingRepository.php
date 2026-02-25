@@ -77,4 +77,11 @@ class TermSettingRepository extends BaseRepository
             ->with(['children', 'termServices', 'projectType'])
             ->findOrFail($id);
     }
+
+    public function getTermSettingChildren(int $id): Collection
+    {
+        $termSetting = $this->model->findOrFail($id);
+        
+        return $termSetting->children()->with(['projectType'])->get();
+    }
 }
