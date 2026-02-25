@@ -31,6 +31,9 @@ class ProjectManagementRepository extends BaseRepository
             'projectType',
             'subProjectType',
             'subSubProjectType',
+            'manager',
+            'branch',
+            'projectOwner',
             'client',
             'costCenterBranch',
             'management',
@@ -47,6 +50,9 @@ class ProjectManagementRepository extends BaseRepository
             'projectType',
             'subProjectType',
             'subSubProjectType',
+            'manager',
+            'branch',
+            'projectOwner',
             'client',
             'costCenterBranch',
             'management',
@@ -57,7 +63,21 @@ class ProjectManagementRepository extends BaseRepository
 
     public function createProjectManagement(array $data): ProjectManagement
     {
-        return $this->create($data);
+        $project = $this->create($data);
+        
+        return $project->load([
+            'projectType',
+            'subProjectType',
+            'subSubProjectType',
+            'manager',
+            'branch',
+            'projectOwner',
+            'client',
+            'costCenterBranch',
+            'management',
+            'currency',
+            'company'
+        ]);
     }
 
     public function updateProjectManagement(UuidInterface $id, array $data): bool
