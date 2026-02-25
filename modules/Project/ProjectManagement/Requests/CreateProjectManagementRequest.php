@@ -22,7 +22,7 @@ class CreateProjectManagementRequest extends FormRequest
             'project_owner_type' => 'nullable|string|in:company,individual',
             'project_owner_id' => 'nullable|uuid',
             'contract_id' => 'nullable|uuid',
-            'client_id' => 'nullable|uuid|exists:users,id',
+            'client_id' => 'nullable',
             'project_classification_id' => 'nullable|uuid',
             'cost_center_branch_id' => 'nullable|exists:management_hierarchies,id',
             'management_id' => 'nullable|exists:management_hierarchies,id',
