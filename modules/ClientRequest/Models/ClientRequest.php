@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Project\TermSetting\Models\TermSetting;
+use Modules\User\Models\User;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class ClientRequest extends Model implements HasMedia
@@ -108,6 +109,11 @@ class ClientRequest extends Model implements HasMedia
             'client_request_id',
             'client_request_service_id'
         );
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'client_id');
     }
 
     public function isPending(): bool

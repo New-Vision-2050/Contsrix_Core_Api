@@ -35,16 +35,6 @@ class ClientRequestPresenter extends AbstractPresenter
             'updated_at' => $this->clientRequest->updated_at?->toDateTimeString(),
         ];
 
-        // Add status helpers
-        $data['is_pending'] = $this->clientRequest->isPending();
-        $data['is_accepted'] = $this->clientRequest->isAccepted();
-        $data['is_rejected'] = $this->clientRequest->isRejected();
-        
-        // Add price offer status helpers
-        $data['is_price_offer_pending'] = $this->clientRequest->isPriceOfferPending();
-        $data['is_price_offer_accepted'] = $this->clientRequest->isPriceOfferAccepted();
-        $data['is_price_offer_rejected'] = $this->clientRequest->isPriceOfferRejected();
-
         // Add company relationship
         if ($this->clientRequest->relationLoaded('company')) {
             $data['company'] = $this->clientRequest->company ? [
@@ -52,6 +42,16 @@ class ClientRequestPresenter extends AbstractPresenter
                 'name' => $this->clientRequest->company->name ?? null,
                 'email' => $this->clientRequest->company->email ?? null,
                 'phone' => $this->clientRequest->company->phone ?? null,
+            ] : null;
+        }
+
+        // Add client relationship
+        if ($this->clientRequest->relationLoaded('client')) {
+            $data['client'] = $this->clientRequest->client ? [
+                'id' => $this->clientRequest->client->id,
+                'name' => $this->clientRequest->client->name ?? null,
+                'email' => $this->clientRequest->client->email ?? null,
+                'phone' => $this->clientRequest->client->phone ?? null,
             ] : null;
         }
 
