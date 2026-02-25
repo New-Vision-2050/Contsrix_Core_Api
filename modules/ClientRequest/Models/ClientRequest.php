@@ -30,6 +30,10 @@ class ClientRequest extends Model implements HasMedia
     public const STATUS_REJECTED = 'rejected';
     public const STATUS_ACCEPTED = 'accepted';
 
+    public const PRICE_OFFER_STATUS_PENDING = 'pending';
+    public const PRICE_OFFER_STATUS_REJECTED = 'rejected';
+    public const PRICE_OFFER_STATUS_ACCEPTED = 'accepted';
+
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -42,6 +46,7 @@ class ClientRequest extends Model implements HasMedia
         'client_id',
         'content',
         'status_client_request',
+        'client_price_offer_status',
         'term_setting_id',
         'branch_id',
         'management_id',
@@ -51,6 +56,8 @@ class ClientRequest extends Model implements HasMedia
         'id' => 'string',
         'company_id' => 'string',
         'client_id' => 'string',
+        'status_client_request' => 'string',
+        'client_price_offer_status' => 'string',
     ];
 
     public function getTenantIdColumn(): string
@@ -131,6 +138,36 @@ class ClientRequest extends Model implements HasMedia
     public function scopeRejected($query)
     {
         return $query->where('status_client_request', self::STATUS_REJECTED);
+    }
+
+    public function isPriceOfferPending(): bool
+    {
+        return $this->client_price_offer_status === self::PRICE_OFFER_STATUS_PENDING;
+    }
+
+    public function isPriceOfferAccepted(): bool
+    {
+        return $this->client_price_offer_status === self::PRICE_OFFER_STATUS_ACCEPTED;
+    }
+
+    public function isPriceOfferRejected(): bool
+    {
+        return $this->client_price_offer_status === self::PRICE_OFFER_STATUS_REJECTED;
+    }
+
+    public function scopePriceOfferPending($query)
+    {
+        return $query->where('client_price_offer_status', self::PRICE_OFFER_STATUS_PENDING);
+    }
+
+    public function scopePriceOfferAccepted($query)
+    {
+        return $query->where('client_price_offer_status', self::PRICE_OFFER_STATUS_ACCEPTED);
+    }
+
+    public function scopePriceOfferRejected($query)
+    {
+        return $query->where('client_price_offer_status', self::PRICE_OFFER_STATUS_REJECTED);
     }
 
     protected static function newFactory(): ClientRequestFactory
