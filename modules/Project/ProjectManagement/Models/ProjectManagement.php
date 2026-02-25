@@ -25,7 +25,7 @@ class ProjectManagement extends Model
     use BelongsToTenant;
 
     protected $table = 'projects';
-    
+
     /**
      * Store the original project_owner_type alias
      */
@@ -75,26 +75,45 @@ class ProjectManagement extends Model
         'status' => 'integer',
     ];
 
-    protected static function booted()
+    protected static function boot()
     {
-        // Convert alias to full class name when retrieving
-        static::retrieved(function ($model) {
-            $model->convertProjectOwnerTypeToClass();
+        parent::boot();
+        
+        // Ensure UUID is generated (in case UuidTrait boot doesn't fire)
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) \Ramsey\Uuid\Uuid::uuid4();
+            }
         });
         
         // Convert back to alias before saving
         static::saving(function ($model) {
-            $model->convertProjectOwnerTypeToAlias();
+            if (isset($model->attributes['project_owner_type'])) {
+                $reverseMap = [
+                    Company::class => 'company',
+                    User::class => 'individual',
+                ];
+                
+                $type = $model->attributes['project_owner_type'];
+                if (isset($reverseMap[$type])) {
+                    $model->attributes['project_owner_type'] = $reverseMap[$type];
+                }
+            }
         });
     }
     
     /**
-     * Convert project_owner_type alias to full class name for morphTo relationship
+     * Get the project_owner_type attribute and convert alias to full class name
      */
-    protected function convertProjectOwnerTypeToClass(): void
+    public function getProjectOwnerTypeAttribute($value): ?string
     {
-        if (!isset($this->attributes['project_owner_type'])) {
-            return;
+        if (!$value) {
+            return null;
+        }
+        
+        // Store the original alias
+        if (!isset($this->originalProjectOwnerType)) {
+            $this->originalProjectOwnerType = $value;
         }
         
         $morphMap = [
@@ -102,14 +121,25 @@ class ProjectManagement extends Model
             'individual' => User::class,
         ];
         
-        $type = $this->attributes['project_owner_type'];
+        // Return full class name for morphTo relationship
+        return $morphMap[$value] ?? $value;
+    }
+    
+    /**
+     * Set the project_owner_type attribute (store as alias)
+     */
+    public function setProjectOwnerTypeAttribute($value): void
+    {
+        $reverseMap = [
+            Company::class => 'company',
+            User::class => 'individual',
+        ];
         
-        // Store the original alias
-        $this->originalProjectOwnerType = $type;
+        // Store the alias in the database
+        $this->attributes['project_owner_type'] = $reverseMap[$value] ?? $value;
         
-        if (isset($morphMap[$type])) {
-            $this->attributes['project_owner_type'] = $morphMap[$type];
-        }
+        // Store original for later retrieval
+        $this->originalProjectOwnerType = $reverseMap[$value] ?? $value;
     }
     
     /**
@@ -118,27 +148,6 @@ class ProjectManagement extends Model
     public function getProjectOwnerTypeAlias(): ?string
     {
         return $this->originalProjectOwnerType ?? $this->getOriginal('project_owner_type');
-    }
-    
-    /**
-     * Convert project_owner_type full class name back to alias for storage
-     */
-    protected function convertProjectOwnerTypeToAlias(): void
-    {
-        if (!isset($this->attributes['project_owner_type'])) {
-            return;
-        }
-        
-        $reverseMap = [
-            Company::class => 'company',
-            User::class => 'individual',
-        ];
-        
-        $type = $this->attributes['project_owner_type'];
-        
-        if (isset($reverseMap[$type])) {
-            $this->attributes['project_owner_type'] = $reverseMap[$type];
-        }
     }
 
     public function getTenantIdColumn(): string
