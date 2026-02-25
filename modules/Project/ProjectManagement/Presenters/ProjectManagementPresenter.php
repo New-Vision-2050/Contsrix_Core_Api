@@ -71,7 +71,7 @@ class ProjectManagementPresenter extends AbstractPresenter
             $data['project_owner'] = $this->projectManagement->projectOwner ? [
                 'id' => $this->projectManagement->projectOwner->id,
                 'name' => $this->projectManagement->projectOwner->name ?? null,
-                'type' => $this->projectManagement->getProjectOwnerTypeAlias(),
+                'type' => $this->projectManagement->project_owner_type,
             ] : null;
 
             $data['project_classification'] = $this->projectManagement->project_classification_id ? [
