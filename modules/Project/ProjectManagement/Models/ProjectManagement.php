@@ -15,6 +15,7 @@ use Modules\Shared\Currency\Models\Currency;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ProjectManagement extends Model
 {
@@ -24,6 +25,11 @@ class ProjectManagement extends Model
     use BelongsToTenant;
 
     protected $table = 'projects';
+    
+    /**
+     * Store the original project_owner_type alias
+     */
+    protected $originalProjectOwnerType;
 
     public $incrementing = false;
 
@@ -69,6 +75,74 @@ class ProjectManagement extends Model
         'status' => 'integer',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+        
+        // Convert alias to full class name when retrieving
+        static::retrieved(function ($model) {
+            $model->convertProjectOwnerTypeToClass();
+        });
+        
+        // Convert back to alias before saving
+        static::saving(function ($model) {
+            $model->convertProjectOwnerTypeToAlias();
+        });
+    }
+    
+    /**
+     * Convert project_owner_type alias to full class name for morphTo relationship
+     */
+    protected function convertProjectOwnerTypeToClass(): void
+    {
+        if (!isset($this->attributes['project_owner_type'])) {
+            return;
+        }
+        
+        $morphMap = [
+            'company' => Company::class,
+            'individual' => User::class,
+        ];
+        
+        $type = $this->attributes['project_owner_type'];
+        
+        // Store the original alias
+        $this->originalProjectOwnerType = $type;
+        
+        if (isset($morphMap[$type])) {
+            $this->attributes['project_owner_type'] = $morphMap[$type];
+        }
+    }
+    
+    /**
+     * Get the original project owner type alias
+     */
+    public function getProjectOwnerTypeAlias(): ?string
+    {
+        return $this->originalProjectOwnerType ?? $this->getOriginal('project_owner_type');
+    }
+    
+    /**
+     * Convert project_owner_type full class name back to alias for storage
+     */
+    protected function convertProjectOwnerTypeToAlias(): void
+    {
+        if (!isset($this->attributes['project_owner_type'])) {
+            return;
+        }
+        
+        $reverseMap = [
+            Company::class => 'company',
+            User::class => 'individual',
+        ];
+        
+        $type = $this->attributes['project_owner_type'];
+        
+        if (isset($reverseMap[$type])) {
+            $this->attributes['project_owner_type'] = $reverseMap[$type];
+        }
+    }
+
     public function getTenantIdColumn(): string
     {
         return 'company_id';
@@ -100,7 +174,7 @@ class ProjectManagement extends Model
         return $this->belongsTo(ManagementHierarchy::class, 'branch_id');
     }
 
-    public function projectOwner()
+    public function projectOwner(): MorphTo
     {
         return $this->morphTo('project_owner', 'project_owner_type', 'project_owner_id');
     }
