@@ -152,7 +152,7 @@ class ProjectManagement extends Model
     public function ownerCompany()
     {
         return $this->belongsTo(Company::class, 'project_owner_id')
-            ->where('project_owner_type', 'company');
+            ->where('projects.project_owner_type', 'company');
     }
     
     /**
@@ -161,7 +161,7 @@ class ProjectManagement extends Model
     public function ownerIndividual()
     {
         return $this->belongsTo(User::class, 'project_owner_id')
-            ->where('project_owner_type', 'individual');
+            ->where('projects.project_owner_type', 'individual');
     }
 
     public function client()
