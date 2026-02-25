@@ -35,50 +35,55 @@ class ClientRequestPresenter extends AbstractPresenter
             'updated_at' => $this->clientRequest->updated_at?->toDateTimeString(),
         ];
 
-        // Add status helpers
-        $data['is_pending'] = $this->clientRequest->isPending();
-        $data['is_accepted'] = $this->clientRequest->isAccepted();
-        $data['is_rejected'] = $this->clientRequest->isRejected();
-        
-        // Add price offer status helpers
-        $data['is_price_offer_pending'] = $this->clientRequest->isPriceOfferPending();
-        $data['is_price_offer_accepted'] = $this->clientRequest->isPriceOfferAccepted();
-        $data['is_price_offer_rejected'] = $this->clientRequest->isPriceOfferRejected();
-
         // Add company relationship
-        if ($this->clientRequest->relationLoaded('company')) {
-            $data['company'] = $this->clientRequest->company ? [
+        $data['company'] = null;
+        if ($this->clientRequest->relationLoaded('company') && $this->clientRequest->company) {
+            $data['company'] = [
                 'id' => $this->clientRequest->company->id,
                 'name' => $this->clientRequest->company->name ?? null,
                 'email' => $this->clientRequest->company->email ?? null,
                 'phone' => $this->clientRequest->company->phone ?? null,
-            ] : null;
+            ];
+        }
+
+        // Add client relationship
+        $data['client'] = null;
+        if ($this->clientRequest->relationLoaded('client') && $this->clientRequest->client) {
+            $data['client'] = [
+                'id' => $this->clientRequest->client->id,
+                'name' => $this->clientRequest->client->name ?? null,
+                'email' => $this->clientRequest->client->email ?? null,
+                'phone' => $this->clientRequest->client->phone ?? null,
+            ];
         }
 
         // Add client request type relationship
-        if ($this->clientRequest->relationLoaded('clientRequestType')) {
-            $data['client_request_type'] = $this->clientRequest->clientRequestType ? [
+        $data['client_request_type'] = null;
+        if ($this->clientRequest->relationLoaded('clientRequestType') && $this->clientRequest->clientRequestType) {
+            $data['client_request_type'] = [
                 'id' => $this->clientRequest->clientRequestType->id,
                 'name' => $this->clientRequest->clientRequestType->name,
                 'type' => $this->clientRequest->clientRequestType->type,
                 'is_active' => $this->clientRequest->clientRequestType->is_active ?? null,
                 'created_at' => $this->clientRequest->clientRequestType->created_at?->toDateTimeString(),
-            ] : null;
+            ];
         }
 
         // Add client request receiver from relationship
-        if ($this->clientRequest->relationLoaded('clientRequestReceiverFrom')) {
-            $data['client_request_receiver_from'] = $this->clientRequest->clientRequestReceiverFrom ? [
+        $data['client_request_receiver_from'] = null;
+        if ($this->clientRequest->relationLoaded('clientRequestReceiverFrom') && $this->clientRequest->clientRequestReceiverFrom) {
+            $data['client_request_receiver_from'] = [
                 'id' => $this->clientRequest->clientRequestReceiverFrom->id,
                 'name' => $this->clientRequest->clientRequestReceiverFrom->name,
                 'type' => $this->clientRequest->clientRequestReceiverFrom->type,
                 'is_active' => $this->clientRequest->clientRequestReceiverFrom->is_active ?? null,
                 'created_at' => $this->clientRequest->clientRequestReceiverFrom->created_at?->toDateTimeString(),
-            ] : null;
+            ];
         }
 
         // Add services relationship
-        if ($this->clientRequest->relationLoaded('services')) {
+        $data['services'] = [];
+        if ($this->clientRequest->relationLoaded('services')&& $this->clientRequest->services) {
             $data['services'] = $this->clientRequest->services->map(function ($service) {
                 return [
                     'id' => $service->id,
@@ -91,41 +96,45 @@ class ClientRequestPresenter extends AbstractPresenter
         }
 
         // Add term setting relationship
-        if ($this->clientRequest->relationLoaded('termSetting')) {
-            $data['term_setting'] = $this->clientRequest->termSetting ? [
+        $data['term_setting'] = null;
+        if ($this->clientRequest->relationLoaded('termSetting') && $this->clientRequest->termSetting) {
+            $data['term_setting'] = [
                 'id' => $this->clientRequest->termSetting->id,
                 'name' => $this->clientRequest->termSetting->name ?? null,
                 'description' => $this->clientRequest->termSetting->description ?? null,
                 'is_active' => $this->clientRequest->termSetting->is_active ?? null,
                 'created_at' => $this->clientRequest->termSetting->created_at?->toDateTimeString(),
-            ] : null;
+            ];
         }
 
-        // Add branch relationship
-        if ($this->clientRequest->relationLoaded('branch')) {
-            $data['branch'] = $this->clientRequest->branch ? [
+        // Add branch relationship - always include even if null
+        $data['branch'] = null;
+        if ($this->clientRequest->relationLoaded('branch') && $this->clientRequest->branch) {
+            $data['branch'] = [
                 'id' => $this->clientRequest->branch->id,
                 'name' => $this->clientRequest->branch->name,
                 'type' => $this->clientRequest->branch->type,
                 'is_active' => $this->clientRequest->branch->is_active ?? null,
                 'users_count' => $this->clientRequest->branch->users_count ?? 0,
                 'created_at' => $this->clientRequest->branch->created_at?->toDateTimeString(),
-            ] : null;
+            ];
         }
 
-        // Add management relationship
-        if ($this->clientRequest->relationLoaded('management')) {
-            $data['management'] = $this->clientRequest->management ? [
+        // Add management relationship - always include even if null
+        $data['management'] = null;
+        if ($this->clientRequest->relationLoaded('management') && $this->clientRequest->management) {
+            $data['management'] = [
                 'id' => $this->clientRequest->management->id,
                 'name' => $this->clientRequest->management->name,
                 'type' => $this->clientRequest->management->type,
                 'is_active' => $this->clientRequest->management->is_active ?? null,
                 'users_count' => $this->clientRequest->management->users_count ?? 0,
                 'created_at' => $this->clientRequest->management->created_at?->toDateTimeString(),
-            ] : null;
+            ];
         }
 
         // Add media attachments
+        $data['attachments'] = [];
         if ($this->clientRequest->relationLoaded('media')) {
             $data['attachments'] = $this->clientRequest->getMedia('attachments')->map(function ($media) {
                 return [
@@ -147,11 +156,11 @@ class ClientRequestPresenter extends AbstractPresenter
     private function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, $precision) . ' ' . $units[$i];
     }
 }
