@@ -75,10 +75,8 @@ class ProjectManagement extends Model
         'status' => 'integer',
     ];
 
-    protected static function boot()
+    protected static function booted()
     {
-        parent::boot();
-        
         // Convert alias to full class name when retrieving
         static::retrieved(function ($model) {
             $model->convertProjectOwnerTypeToClass();
