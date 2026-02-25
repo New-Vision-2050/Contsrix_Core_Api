@@ -39,6 +39,17 @@ class ClientRequest extends Model implements HasMedia
 
     protected $keyType = 'string';
 
+    protected $with = [
+        'company',
+        'client',
+        'clientRequestType',
+        'clientRequestReceiverFrom',
+        'services',
+        'termSetting',
+        'branch',
+        'management',
+    ];
+
     protected $fillable = [
         'company_id',
         'client_request_type_id',

@@ -21,18 +21,6 @@ class ClientRequestRepository extends BaseRepository
 {
     use HasExport;
 
-    protected $with = [
-        'company',
-        'client',
-        'clientRequestType',
-        'clientRequestReceiverFrom',
-        'services',
-        'termSetting',
-        'branch',
-        'management',
-        'media',
-    ];
-
     public function __construct(
         ClientRequest $model,
         private FileUploadService $fileUploadService
