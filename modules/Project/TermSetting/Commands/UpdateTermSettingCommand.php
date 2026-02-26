@@ -13,7 +13,7 @@ class UpdateTermSettingCommand
         private ?int $parentId = null,
         private ?int $projectTypeId = null,
         private array $termServicesIds = [],
-        private ?bool $isActive = null,
+        private ?int $isActive = null,
     ) {
     }
 
