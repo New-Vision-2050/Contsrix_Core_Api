@@ -38,11 +38,11 @@ class TermSettingRepository extends BaseRepository
     public function createTermSetting(array $data, array $termServicesIds = []): TermSetting
     {
         $termSetting = $this->create($data);
-        
+
         if (!empty($termServicesIds)) {
             $termSetting->termServices()->sync($termServicesIds);
         }
-        
+
         return $termSetting->fresh(['termServices']);
     }
 
@@ -50,11 +50,11 @@ class TermSettingRepository extends BaseRepository
     {
         $termSetting = $this->model->findOrFail($id);
         $updated = $termSetting->update($data);
-        
+
         if ($updated) {
             $termSetting->termServices()->sync($termServicesIds);
         }
-        
+
         return $updated;
     }
 
@@ -76,12 +76,5 @@ class TermSettingRepository extends BaseRepository
         return $this->model
             ->with(['children', 'termServices', 'projectType'])
             ->findOrFail($id);
-    }
-
-    public function getTermSettingChildren(int $id): Collection
-    {
-        $termSetting = $this->model->findOrFail($id);
-        
-        return $termSetting->children()->with(['projectType'])->get();
     }
 }
