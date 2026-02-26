@@ -26,6 +26,7 @@ class TermSettingPresenter extends AbstractPresenter
             'project_type_id' => $this->termSetting->project_type_id,
             'is_active' => $this->termSetting->is_active,
             'children_count' => $this->termSetting->children()->count(),
+            "services" => $this->termSetting->termServices,
             'term_services_count' => $this->termSetting->termServices()->count(),
             'created_at' => $this->termSetting->created_at?->toDateTimeString(),
             'updated_at' => $this->termSetting->updated_at?->toDateTimeString(),
