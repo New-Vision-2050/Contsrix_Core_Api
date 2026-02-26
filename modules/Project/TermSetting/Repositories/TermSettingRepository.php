@@ -84,4 +84,14 @@ class TermSettingRepository extends BaseRepository
 
         return $termSetting->children()->with(['projectType'])->get();
     }
+
+    public function getTermsTree(): Collection
+    {
+        return $this->model
+            ->whereNull('parent_id')
+            ->with(['children' => function ($query) {
+                $query->with(['children.children.children.children']);
+            }])
+            ->get();
+    }
 }
