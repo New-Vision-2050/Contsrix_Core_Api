@@ -7,6 +7,7 @@ namespace Modules\ClientRequest\Controllers;
 use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Modules\ClientRequest\Models\ClientRequestReceiverFrom;
+use Modules\ClientRequest\Presenters\ClientRequestReceiverFromPresenter;
 
 class ClientRequestReceiverFromController extends Controller
 {
@@ -14,6 +15,6 @@ class ClientRequestReceiverFromController extends Controller
     {
         $receivers = ClientRequestReceiverFrom::all();
 
-        return Json::items($receivers);
+        return Json::items(ClientRequestReceiverFromPresenter::collection($receivers));
     }
 }
