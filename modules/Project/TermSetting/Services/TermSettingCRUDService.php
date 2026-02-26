@@ -31,6 +31,7 @@ class TermSettingCRUDService
     public function list(int $page = 1, int $perPage = 10): array
     {
         return $this->repository->paginated(
+            conditions: ["parent_id"=>null],
             page: $page,
             perPage: $perPage,
         );

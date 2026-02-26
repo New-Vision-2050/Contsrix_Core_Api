@@ -87,7 +87,7 @@ class TermSettingController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'term_setting.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new TermSettingExport($this->termSettingService, $filters), $fileName);
     }
 
@@ -95,6 +95,5 @@ class TermSettingController extends Controller
     {
         $children = $this->termSettingService->getChildren((int) $request->route('id'));
 
-        return Json::items(TermSettingPresenter::collection($children));
-    }
+        return Json::items(TermSettingPresenter::collection($children));    }
 }
