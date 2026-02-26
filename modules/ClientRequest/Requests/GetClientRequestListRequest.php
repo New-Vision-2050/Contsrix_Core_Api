@@ -28,6 +28,10 @@ class GetClientRequestListRequest extends FormRequest
             'pending' => 'nullable|boolean',
             'accepted' => 'nullable|boolean',
             'rejected' => 'nullable|boolean',
+            'client_price_offer_status' => 'nullable|string|in:pending,rejected,accepted',
+            'price_offer_pending' => 'nullable|boolean',
+            'price_offer_accepted' => 'nullable|boolean',
+            'price_offer_rejected' => 'nullable|boolean',
         ];
     }
 }

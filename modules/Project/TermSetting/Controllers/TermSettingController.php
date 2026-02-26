@@ -20,6 +20,7 @@ use Modules\Project\TermSetting\Exports\TermSettingExport;
 use Modules\Project\TermSetting\Requests\ExportTermSettingRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Project\TermSetting\Requests\GetTermSettingChildrenRequest;
+use Modules\Project\TermSetting\Presenters\TermSettingTreePresenter;
 
 class TermSettingController extends Controller
 {
@@ -95,5 +96,13 @@ class TermSettingController extends Controller
     {
         $children = $this->termSettingService->getChildren((int) $request->route('id'));
 
-        return Json::items(TermSettingPresenter::collection($children));    }
+        return Json::items(TermSettingPresenter::collection($children));
+    }
+
+    public function getTree(): JsonResponse
+    {
+        $tree = $this->termSettingService->getTermsTree();
+
+        return Json::items(TermSettingTreePresenter::collection($tree));
+    }
 }
