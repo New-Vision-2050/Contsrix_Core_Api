@@ -93,10 +93,8 @@ class TermSettingController extends Controller
 
     public function getChildren(GetTermSettingChildrenRequest $request): JsonResponse
     {
-        $item = $this->termSettingService->getWithChildren((int) $request->route('id'));
+        $children = $this->termSettingService->getChildren((int) $request->route('id'));
 
-        $presenter = new TermSettingPresenter($item);
-
-        return Json::item($presenter->getData());
+        return Json::items(TermSettingPresenter::collection($children));
     }
 }

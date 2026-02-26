@@ -68,6 +68,7 @@ class ProjectManagementPresenter extends AbstractPresenter
                 'name' => $this->projectManagement->branch->name,
             ] : null;
 
+
             $data['project_owner'] = $this->projectManagement->projectOwner ? [
                 'id' => $this->projectManagement->projectOwner->id,
                 'name' => $this->projectManagement->projectOwner->name ?? null,
@@ -119,4 +120,6 @@ class ProjectManagementPresenter extends AbstractPresenter
 
         return $data;
     }
+
+
 }
