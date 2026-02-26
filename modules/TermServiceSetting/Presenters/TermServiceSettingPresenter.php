@@ -27,9 +27,9 @@ class TermServiceSettingPresenter extends AbstractPresenter
 
         if (!$isListing && $this->termServiceSetting->relationLoaded('termSettings')) {
             if ($this->termServiceSetting->termSettings->isNotEmpty()) {
-                $data['terms'] = $this->formatTermsHierarchy();
+                $data['children'] = $this->formatTermsHierarchy();
             } else {
-                $data['terms'] = [];
+                $data['children'] = [];
             }
         }
 
@@ -39,10 +39,10 @@ class TermServiceSettingPresenter extends AbstractPresenter
     private function formatTermsHierarchy(): array
     {
         $trees = [];
-        
+
         foreach ($this->termServiceSetting->termSettings as $termSetting) {
             $rootTerm = $this->getRootTerm($termSetting);
-            
+
             $rootId = $rootTerm->id;
             if (!isset($trees[$rootId])) {
                 $trees[$rootId] = $this->buildTermTree($rootTerm);

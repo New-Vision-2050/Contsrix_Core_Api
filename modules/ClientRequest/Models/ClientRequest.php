@@ -27,10 +27,12 @@ class ClientRequest extends Model implements HasMedia
     use BelongsToTenant;
     use InteractsWithMedia;
 
+    public const STATUS_DRAFT = 'draft';
     public const STATUS_PENDING = 'pending';
     public const STATUS_REJECTED = 'rejected';
     public const STATUS_ACCEPTED = 'accepted';
 
+    public const PRICE_OFFER_STATUS_DRAFT = 'draft';
     public const PRICE_OFFER_STATUS_PENDING = 'pending';
     public const PRICE_OFFER_STATUS_REJECTED = 'rejected';
     public const PRICE_OFFER_STATUS_ACCEPTED = 'accepted';
@@ -127,6 +129,11 @@ class ClientRequest extends Model implements HasMedia
         return $this->belongsTo(User::class, 'client_id');
     }
 
+    public function isDraft(): bool
+    {
+        return $this->status_client_request === self::STATUS_DRAFT;
+    }
+
     public function isPending(): bool
     {
         return $this->status_client_request === self::STATUS_PENDING;
@@ -140,6 +147,11 @@ class ClientRequest extends Model implements HasMedia
     public function isRejected(): bool
     {
         return $this->status_client_request === self::STATUS_REJECTED;
+    }
+
+    public function scopeDraft($query)
+    {
+        return $query->where('status_client_request', self::STATUS_DRAFT);
     }
 
     public function scopePending($query)
@@ -157,6 +169,11 @@ class ClientRequest extends Model implements HasMedia
         return $query->where('status_client_request', self::STATUS_REJECTED);
     }
 
+    public function isPriceOfferDraft(): bool
+    {
+        return $this->client_price_offer_status === self::PRICE_OFFER_STATUS_DRAFT;
+    }
+
     public function isPriceOfferPending(): bool
     {
         return $this->client_price_offer_status === self::PRICE_OFFER_STATUS_PENDING;
@@ -170,6 +187,11 @@ class ClientRequest extends Model implements HasMedia
     public function isPriceOfferRejected(): bool
     {
         return $this->client_price_offer_status === self::PRICE_OFFER_STATUS_REJECTED;
+    }
+
+    public function scopePriceOfferDraft($query)
+    {
+        return $query->where('client_price_offer_status', self::PRICE_OFFER_STATUS_DRAFT);
     }
 
     public function scopePriceOfferPending($query)
