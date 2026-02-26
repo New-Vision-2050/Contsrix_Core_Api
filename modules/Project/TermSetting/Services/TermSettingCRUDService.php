@@ -51,4 +51,9 @@ class TermSettingCRUDService
     {
         return $this->repository->getTermSettingWithChildren($id);
     }
+
+    public function getChildren(int $id): Collection
+    {
+        return $this->repository->getTermSettingChildren($id);
+    }
 }
