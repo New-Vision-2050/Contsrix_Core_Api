@@ -21,6 +21,8 @@ use Modules\Project\TermSetting\Requests\ExportTermSettingRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Project\TermSetting\Requests\GetTermSettingChildrenRequest;
 use Modules\Project\TermSetting\Presenters\TermSettingTreePresenter;
+use Modules\Project\TermSetting\Requests\UpdateTermSettingServicesRequest;
+use Modules\Project\TermSetting\Requests\UpdateTermSettingStatusRequest;
 
 class TermSettingController extends Controller
 {
@@ -104,5 +106,33 @@ class TermSettingController extends Controller
         $tree = $this->termSettingService->getTermsTree();
 
         return Json::items(TermSettingTreePresenter::collection($tree));
+    }
+
+    public function updateServices(UpdateTermSettingServicesRequest $request): JsonResponse
+    {
+        $dto = $request->createUpdateTermSettingServicesDTO();
+        
+        $item = $this->termSettingService->updateServices(
+            $dto->getId(),
+            $dto->getTermServiceIds()
+        );
+
+        $presenter = new TermSettingPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function updateStatus(UpdateTermSettingStatusRequest $request): JsonResponse
+    {
+        $dto = $request->createUpdateTermSettingStatusDTO();
+        
+        $item = $this->termSettingService->updateStatus(
+            $dto->getId(),
+            $dto->getIsActive()
+        );
+
+        $presenter = new TermSettingPresenter($item);
+
+        return Json::item($presenter->getData());
     }
 }

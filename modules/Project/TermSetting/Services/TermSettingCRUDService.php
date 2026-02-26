@@ -61,4 +61,14 @@ class TermSettingCRUDService
     {
         return $this->repository->getTermsTree();
     }
+
+    public function updateServices(int $id, array $termServiceIds): TermSetting
+    {
+        return $this->repository->updateTermSettingServices($id, $termServiceIds);
+    }
+
+    public function updateStatus(int $id, int $isActive): TermSetting
+    {
+        return $this->repository->updateTermSettingStatus($id, $isActive);
+    }
 }

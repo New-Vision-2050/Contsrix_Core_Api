@@ -94,4 +94,20 @@ class TermSettingRepository extends BaseRepository
             }])
             ->get();
     }
+
+    public function updateTermSettingServices(int $id, array $termServiceIds): TermSetting
+    {
+        $termSetting = $this->model->findOrFail($id);
+        $termSetting->termServices()->sync($termServiceIds);
+        
+        return $termSetting->fresh(['termServices']);
+    }
+
+    public function updateTermSettingStatus(int $id, int $isActive): TermSetting
+    {
+        $termSetting = $this->model->findOrFail($id);
+        $termSetting->update(['is_active' => $isActive]);
+        
+        return $termSetting->fresh();
+    }
 }
