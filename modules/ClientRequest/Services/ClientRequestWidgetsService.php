@@ -60,10 +60,10 @@ class ClientRequestWidgetsService
             ->whereMonth('created_at', $date->month);
 
         return [
-            'total' => (clone $query)->count(),
-            'pending' => (clone $query)->where('client_price_offer_status', 'pending')->count(),
-            'accepted' => (clone $query)->where('client_price_offer_status', 'accepted')->count(),
-            'rejected' => (clone $query)->where('client_price_offer_status', 'rejected')->count(),
+            'total' => (clone $query)->where('status_client_request', 'accepted')->count(),
+            'pending' => (clone $query)->where('client_price_offer_status', 'pending')->where('status_client_request', 'accepted')->count(),
+            'accepted' => (clone $query)->where('client_price_offer_status', 'accepted')->where('status_client_request', 'accepted')->count(),
+            'rejected' => (clone $query)->where('client_price_offer_status', 'rejected')->where('status_client_request', 'accepted')->count(),
         ];
     }
 
