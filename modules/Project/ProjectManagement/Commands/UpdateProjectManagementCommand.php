@@ -14,7 +14,11 @@ class UpdateProjectManagementCommand
         private int $subProjectTypeId,
         private int $subSubProjectTypeId,
         private ?string $name = null,
-        private ?string $responsibleEmployeeId = null,
+        private ?string $managerId = null,
+        private ?string $branchId = null,
+        private ?string $projectOwnerType = null,
+        private ?string $projectOwnerId = null,
+        private ?string $contractId = null,
         private ?string $clientId = null,
         private ?string $projectClassificationId = null,
         private ?string $costCenterBranchId = null,
@@ -50,9 +54,29 @@ class UpdateProjectManagementCommand
         return $this->name;
     }
 
-    public function getResponsibleEmployeeId(): ?string
+    public function getManagerId(): ?string
     {
-        return $this->responsibleEmployeeId;
+        return $this->managerId;
+    }
+
+    public function getBranchId(): ?string
+    {
+        return $this->branchId;
+    }
+
+    public function getProjectOwnerType(): ?string
+    {
+        return $this->projectOwnerType;
+    }
+
+    public function getProjectOwnerId(): ?string
+    {
+        return $this->projectOwnerId;
+    }
+
+    public function getContractId(): ?string
+    {
+        return $this->contractId;
     }
 
     public function getClientId(): ?string
@@ -97,7 +121,11 @@ class UpdateProjectManagementCommand
             'sub_project_type_id' => $this->subProjectTypeId,
             'sub_sub_project_type_id' => $this->subSubProjectTypeId,
             'name' => $this->name,
-            'responsible_employee_id' => $this->responsibleEmployeeId,
+            'manager_id' => $this->managerId,
+            'branch_id' => $this->branchId,
+            'project_owner_type' => $this->projectOwnerType,
+            'project_owner_id' => $this->projectOwnerId,
+            'contract_id' => $this->contractId,
             'client_id' => $this->clientId,
             'project_classification_id' => $this->projectClassificationId,
             'cost_center_branch_id' => $this->costCenterBranchId,
@@ -110,7 +138,11 @@ class UpdateProjectManagementCommand
             'sub_project_type_id' => $this->subProjectTypeId,
             'sub_sub_project_type_id' => $this->subSubProjectTypeId,
             'name' => $this->name,
-            'responsible_employee_id' => $this->responsibleEmployeeId,
+            'manager_id' => $this->managerId,
+            'branch_id' => $this->branchId,
+            'project_owner_type' => $this->projectOwnerType,
+            'project_owner_id' => $this->projectOwnerId,
+            'contract_id' => $this->contractId,
             'client_id' => $this->clientId,
             'project_classification_id' => $this->projectClassificationId,
             'cost_center_branch_id' => $this->costCenterBranchId,

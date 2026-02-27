@@ -58,9 +58,29 @@
 							"description": "Filter by sub-sub project type ID"
 						},
 						{
-							"key": "responsible_employee_id",
+							"key": "manager_id",
 							"value": "",
-							"description": "Filter by responsible employee ID"
+							"description": "Filter by manager ID"
+						},
+						{
+							"key": "branch_id",
+							"value": "",
+							"description": "Filter by branch ID"
+						},
+						{
+							"key": "project_owner_type",
+							"value": "",
+							"description": "Filter by project owner type (company, individual)"
+						},
+						{
+							"key": "project_owner_id",
+							"value": "",
+							"description": "Filter by project owner ID"
+						},
+						{
+							"key": "contract_id",
+							"value": "",
+							"description": "Filter by contract ID"
 						},
 						{
 							"key": "client_id",
@@ -100,7 +120,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"project_type_id\": \"{{project_type_id}}\",\n    \"sub_project_type_id\": \"{{sub_project_type_id}}\",\n    \"sub_sub_project_type_id\": \"{{sub_sub_project_type_id}}\",\n    \"name\": \"New Project Name\",\n    \"responsible_employee_id\": \"{{employee_id}}\",\n    \"client_id\": \"{{client_id}}\",\n    \"project_classification_id\": \"{{classification_id}}\",\n    \"cost_center_branch_id\": \"{{branch_id}}\",\n    \"management_id\": \"{{management_id}}\",\n    \"currency_id\": \"{{currency_id}}\",\n    \"project_value\": 100000.50,\n    \"status\": 1\n}",
+					"raw": "{\n    \"project_type_id\": \"{{project_type_id}}\",\n    \"sub_project_type_id\": \"{{sub_project_type_id}}\",\n    \"sub_sub_project_type_id\": \"{{sub_sub_project_type_id}}\",\n    \"name\": \"New Project Name\",\n    \"manager_id\": \"{{manager_id}}\",\n    \"branch_id\": \"{{branch_id}}\",\n    \"project_owner_type\": \"company\",\n    \"project_owner_id\": \"{{project_owner_id}}\",\n    \"contract_id\": \"{{contract_id}}\",\n    \"client_id\": \"{{client_id}}\",\n    \"project_classification_id\": \"{{classification_id}}\",\n    \"cost_center_branch_id\": \"{{cost_center_branch_id}}\",\n    \"management_id\": \"{{management_id}}\",\n    \"currency_id\": \"{{currency_id}}\",\n    \"project_value\": 100000.50,\n    \"status\": 1\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -112,7 +132,7 @@
 					"host": ["{{url}}"],
 					"path": ["projects"]
 				},
-				"description": "Create a new project\n\n**Required Fields:**\n- project_type_id (uuid, required)\n- sub_project_type_id (uuid, required)\n- sub_sub_project_type_id (uuid, required)\n\n**Optional Fields:**\n- name (string, nullable)\n- responsible_employee_id (uuid, nullable)\n- client_id (uuid, nullable)\n- project_classification_id (uuid, nullable)\n- cost_center_branch_id (uuid, nullable)\n- management_id (uuid, nullable)\n- currency_id (uuid, nullable)\n- project_value (decimal, nullable)\n- status (integer: -1, 0, 1, default: 1)"
+				"description": "Create a new project\n\n**Required Fields:**\n- project_type_id (integer, required)\n- sub_project_type_id (integer, required)\n- sub_sub_project_type_id (integer, required)\n\n**Optional Fields:**\n- name (string, nullable)\n- manager_id (uuid, nullable) - Project manager\n- branch_id (uuid, nullable) - Related branch from management hierarchies\n- project_owner_type (string, nullable) - Owner type: 'company' or 'individual'\n- project_owner_id (uuid, nullable) - Owner ID based on type\n- contract_id (uuid, nullable) - Related contract ID\n- client_id (uuid, nullable)\n- project_classification_id (uuid, nullable)\n- cost_center_branch_id (uuid, nullable)\n- management_id (uuid, nullable)\n- currency_id (uuid, nullable)\n- project_value (decimal, nullable)\n- status (integer: -1, 0, 1, default: 1)"
 			},
 			"response": [
 				{
@@ -192,7 +212,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"project_type_id\": \"{{project_type_id}}\",\n    \"sub_project_type_id\": \"{{sub_project_type_id}}\",\n    \"sub_sub_project_type_id\": \"{{sub_sub_project_type_id}}\",\n    \"name\": \"Updated Project Name\",\n    \"responsible_employee_id\": \"{{employee_id}}\",\n    \"client_id\": \"{{client_id}}\",\n    \"project_classification_id\": \"{{classification_id}}\",\n    \"cost_center_branch_id\": \"{{branch_id}}\",\n    \"management_id\": \"{{management_id}}\",\n    \"currency_id\": \"{{currency_id}}\",\n    \"project_value\": 150000.75,\n    \"status\": 1\n}",
+					"raw": "{\n    \"project_type_id\": \"{{project_type_id}}\",\n    \"sub_project_type_id\": \"{{sub_project_type_id}}\",\n    \"sub_sub_project_type_id\": \"{{sub_sub_project_type_id}}\",\n    \"name\": \"Updated Project Name\",\n    \"manager_id\": \"{{manager_id}}\",\n    \"branch_id\": \"{{branch_id}}\",\n    \"project_owner_type\": \"individual\",\n    \"project_owner_id\": \"{{project_owner_id}}\",\n    \"contract_id\": \"{{contract_id}}\",\n    \"client_id\": \"{{client_id}}\",\n    \"project_classification_id\": \"{{classification_id}}\",\n    \"cost_center_branch_id\": \"{{cost_center_branch_id}}\",\n    \"management_id\": \"{{management_id}}\",\n    \"currency_id\": \"{{currency_id}}\",\n    \"project_value\": 150000.75,\n    \"status\": 1\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -300,9 +320,28 @@
 			"type": "string"
 		},
 		{
-			"key": "employee_id",
+			"key": "manager_id",
 			"value": "uuid-here",
-			"type": "string"
+			"type": "string",
+			"description": "Project manager user ID"
+		},
+		{
+			"key": "project_owner_id",
+			"value": "uuid-here",
+			"type": "string",
+			"description": "Project owner ID (company or individual)"
+		},
+		{
+			"key": "contract_id",
+			"value": "uuid-here",
+			"type": "string",
+			"description": "Contract ID (nullable)"
+		},
+		{
+			"key": "cost_center_branch_id",
+			"value": "uuid-here",
+			"type": "string",
+			"description": "Cost center branch ID"
 		},
 		{
 			"key": "client_id",

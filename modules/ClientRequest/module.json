@@ -1,0 +1,14 @@
+{
+    "name": "ClientRequest",
+    "alias": "clientrequest",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ClientRequest\\Providers\\ClientRequestServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

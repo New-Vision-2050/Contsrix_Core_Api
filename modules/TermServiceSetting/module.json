@@ -1,0 +1,14 @@
+{
+    "name": "TermServiceSetting",
+    "alias": "termservicesetting",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\TermServiceSetting\\Providers\\TermServiceSettingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

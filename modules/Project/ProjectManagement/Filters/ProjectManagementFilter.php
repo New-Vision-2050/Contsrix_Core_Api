@@ -30,9 +30,29 @@ class ProjectManagementFilter extends SearchModelFilter
         return $this->where('sub_sub_project_type_id', $subSubProjectTypeId);
     }
 
-    public function responsibleEmployeeId($responsibleEmployeeId)
+    public function managerId($managerId)
     {
-        return $this->where('responsible_employee_id', $responsibleEmployeeId);
+        return $this->where('manager_id', $managerId);
+    }
+
+    public function branchId($branchId)
+    {
+        return $this->where('branch_id', $branchId);
+    }
+
+    public function projectOwnerType($projectOwnerType)
+    {
+        return $this->where('project_owner_type', $projectOwnerType);
+    }
+
+    public function projectOwnerId($projectOwnerId)
+    {
+        return $this->where('project_owner_id', $projectOwnerId);
+    }
+
+    public function contractId($contractId)
+    {
+        return $this->where('contract_id', $contractId);
     }
 
     public function clientId($clientId)

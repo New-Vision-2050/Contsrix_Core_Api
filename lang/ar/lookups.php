@@ -32,6 +32,18 @@ return [
     "active_companies" => "الشركات الفعالة",
     "incomplete_data_companies" => "شركات غير مكتملة البيانات",
     "nearly_expiring_companies" => "شركات قاربت على الانتهاء",
+
+    // Client Request Price Offer Widget Titles
+    "total_client_requests" => "اجمالي عروض الأسعار للعملاء",
+    "pending_client_requests" => "عروض الأسعار المعلقة",
+    "accepted_client_requests" => "عروض الأسعار المقبولة",
+    "rejected_client_requests" => "عروض الأسعار المرفوضة",
+
+    // Client Request Status Widget Titles
+    "total_client_requests_status" => "اجمالي طلبات العملاء",
+    "pending_client_requests_status" => "طلبات العملاء المعلقة",
+    "accepted_client_requests_status" => "طلبات العملاء المقبولة",
+    "rejected_client_requests_status" => "طلبات العملاء المرفوضة",
     "services"=>"خدمات",
     "news"=>"اخبار",
 

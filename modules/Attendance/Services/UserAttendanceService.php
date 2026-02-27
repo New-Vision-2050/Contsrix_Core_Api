@@ -125,7 +125,7 @@ class UserAttendanceService
      */
     private function enhancePeriodsWithAttendance(array $periods, Collection $attendances, Carbon $date, array $earlyClockInRules): array
     {
-        $enhancedPeriods = array_map(function ($period) use ($attendances, $date, $earlyClockInRules) {
+        return array_map(function ($period) use ($attendances, $date, $earlyClockInRules) {
             $periodStart = $this->parsePeriodTime($period, 'start', $date);
             $periodEnd = $this->parsePeriodTime($period, 'end', $date);
 
@@ -141,21 +141,6 @@ class UserAttendanceService
             return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive, $earlyClockInRules);
         }, $periods);
 
-        // If all periods are inactive but can_clock_out is true, make the period with active attendance active
-        $allInactive = collect($enhancedPeriods)->every(fn($period) => ($period['is_active'] ?? false) === false);
-        $hasClockOut = collect($enhancedPeriods)->contains(fn($period) => ($period['can_clock_out'] ?? false) === true);
-
-        if ($allInactive && $hasClockOut) {
-            foreach ($enhancedPeriods as &$period) {
-                if ($period['can_clock_out'] ?? false) {
-                    $period['is_active'] = true;
-                    break;
-                }
-            }
-            unset($period); // Break reference
-        }
-
-        return $enhancedPeriods;
     }
 
     /**

@@ -32,6 +32,18 @@ return [
     "active_companies" => "Active Companies",
     "incomplete_data_companies" => "Incomplete Data Companies",
     "nearly_expiring_companies" => "Nearly Expiring Companies",
+
+    // Client Request Price Offer Widget Titles
+    "total_client_requests" => "Total Client Price Offers",
+    "pending_client_requests" => "Pending Client Price Offers",
+    "accepted_client_requests" => "Accepted Client Price Offers",
+    "rejected_client_requests" => "Rejected Client Price Offers",
+
+    // Client Request Status Widget Titles
+    "total_client_requests_status" => "Total Client Requests",
+    "pending_client_requests_status" => "Pending Client Requests",
+    "accepted_client_requests_status" => "Accepted Client Requests",
+    "rejected_client_requests_status" => "Rejected Client Requests",
     "services"=>"Services",
     "hexa"=>"Hexa",
     "cards"=>"Cards",

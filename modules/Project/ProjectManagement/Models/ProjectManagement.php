@@ -15,6 +15,7 @@ use Modules\Shared\Currency\Models\Currency;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ProjectManagement extends Model
 {
@@ -25,6 +26,11 @@ class ProjectManagement extends Model
 
     protected $table = 'projects';
 
+    /**
+     * Store the original project_owner_type alias
+     */
+    protected $originalProjectOwnerType;
+
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -34,7 +40,11 @@ class ProjectManagement extends Model
         'sub_project_type_id',
         'sub_sub_project_type_id',
         'name',
-        'responsible_employee_id',
+        'manager_id',
+        'branch_id',
+        'project_owner_type',
+        'project_owner_id',
+        'contract_id',
         'client_id',
         'project_classification_id',
         'cost_center_branch_id',
@@ -50,7 +60,11 @@ class ProjectManagement extends Model
         'project_type_id' => 'integer',
         'sub_project_type_id' => 'integer',
         'sub_sub_project_type_id' => 'integer',
-        'responsible_employee_id' => 'string',
+        'manager_id' => 'string',
+        'branch_id' => 'string',
+        'project_owner_type' => 'string',
+        'project_owner_id' => 'string',
+        'contract_id' => 'string',
         'client_id' => 'string',
         'project_classification_id' => 'string',
         'cost_center_branch_id' => 'string',
@@ -60,6 +74,26 @@ class ProjectManagement extends Model
         'project_value' => 'decimal:2',
         'status' => 'integer',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        
+        // Ensure UUID is generated (in case UuidTrait boot doesn't fire)
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) \Ramsey\Uuid\Uuid::uuid4();
+            }
+        });
+    }
+    
+    /**
+     * Get the original project owner type alias for presentation
+     */
+    public function getProjectOwnerTypeAlias(): ?string
+    {
+        return $this->getAttributeFromArray('project_owner_type');
+    }
 
     public function getTenantIdColumn(): string
     {
@@ -82,9 +116,50 @@ class ProjectManagement extends Model
         return $this->belongsTo(ProjectType::class, 'sub_sub_project_type_id');
     }
 
-    public function responsibleEmployee()
+    public function manager()
     {
-        return $this->belongsTo(User::class, 'responsible_employee_id');
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(ManagementHierarchy::class, 'branch_id');
+    }
+
+    /**
+     * Get the project owner (company or individual)
+     */
+    public function getProjectOwnerAttribute()
+    {
+        if (!$this->project_owner_type || !$this->project_owner_id) {
+            return null;
+        }
+        
+        if ($this->project_owner_type === 'company') {
+            return $this->ownerCompany;
+        }
+        
+        if ($this->project_owner_type === 'individual') {
+            return $this->ownerIndividual;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Relationship to Company when project_owner_type is 'company'
+     */
+    public function ownerCompany()
+    {
+        return $this->belongsTo(Company::class, 'project_owner_id');
+    }
+    
+    /**
+     * Relationship to User when project_owner_type is 'individual'
+     */
+    public function ownerIndividual()
+    {
+        return $this->belongsTo(User::class, 'project_owner_id');
     }
 
     public function client()

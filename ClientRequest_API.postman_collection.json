@@ -1,0 +1,501 @@
+{
+	"info": {
+		"_postman_id": "client-request-api-collection",
+		"name": "ClientRequest API",
+		"description": "API endpoints for managing Client Requests in Constrix API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Client Requests",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/client_requests/client-requests?page=1&per_page=15",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-requests"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "per_page",
+							"value": "15",
+							"description": "Items per page (max: 100)"
+						},
+						{
+							"key": "client_request_type_id",
+							"value": "",
+							"description": "Filter by request type ID (1: عرض سعر, 2: اجتماع)",
+							"disabled": true
+						},
+						{
+							"key": "client_request_receiver_from_id",
+							"value": "",
+							"description": "Filter by receiver from ID (1: واتساب, 2: بريد, 3: موظف, 4: وسطاء)",
+							"disabled": true
+						},
+						{
+							"key": "client_type",
+							"value": "",
+							"description": "Filter by client type (partial match)",
+							"disabled": true
+						},
+						{
+							"key": "client_id",
+							"value": "",
+							"description": "Filter by client UUID",
+							"disabled": true
+						},
+						{
+							"key": "status_client_request",
+							"value": "",
+							"description": "Filter by status (pending, rejected, accepted)",
+							"disabled": true
+						},
+						{
+							"key": "content",
+							"value": "",
+							"description": "Search in content (partial match)",
+							"disabled": true
+						},
+						{
+							"key": "term_setting_id",
+							"value": "",
+							"description": "Filter by term setting ID",
+							"disabled": true
+						},
+						{
+							"key": "branch_id",
+							"value": "",
+							"description": "Filter by branch ID",
+							"disabled": true
+						},
+						{
+							"key": "management_id",
+							"value": "",
+							"description": "Filter by management ID",
+							"disabled": true
+						},
+						{
+							"key": "service_id",
+							"value": "",
+							"description": "Filter by service ID",
+							"disabled": true
+						},
+						{
+							"key": "date_from",
+							"value": "",
+							"description": "Filter from date (YYYY-MM-DD)",
+							"disabled": true
+						},
+						{
+							"key": "date_to",
+							"value": "",
+							"description": "Filter to date (YYYY-MM-DD)",
+							"disabled": true
+						},
+						{
+							"key": "pending",
+							"value": "",
+							"description": "Filter pending requests (true/false)",
+							"disabled": true
+						},
+						{
+							"key": "accepted",
+							"value": "",
+							"description": "Filter accepted requests (true/false)",
+							"disabled": true
+						},
+						{
+							"key": "rejected",
+							"value": "",
+							"description": "Filter rejected requests (true/false)",
+							"disabled": true
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Create Client Request",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "client_request_type_id",
+							"value": "1",
+							"type": "text",
+							"description": "Client request type ID (required) - 1: عرض سعر, 2: اجتماع"
+						},
+						{
+							"key": "client_request_receiver_from_id",
+							"value": "1",
+							"type": "text",
+							"description": "Receiver from ID (required) - 1: رقم واتساب, 2: بريد الكتروني, 3: موظف, 4: الوسطاء"
+						},
+						{
+							"key": "client_type",
+							"value": "individual",
+							"type": "text",
+							"description": "Client type (required) - e.g., individual, company"
+						},
+						{
+							"key": "client_id",
+							"value": "{{client_id}}",
+							"type": "text",
+							"description": "Client UUID (required)"
+						},
+						{
+							"key": "content",
+							"value": "طلب عرض سعر لمشروع تربة وخرسانة",
+							"type": "text",
+							"description": "Request content (nullable)"
+						},
+						{
+							"key": "status_client_request",
+							"value": "pending",
+							"type": "text",
+							"description": "Request status (nullable, default: pending) - pending, rejected, accepted"
+						},
+						{
+							"key": "service_ids[]",
+							"value": "1",
+							"type": "text",
+							"description": "Service ID array (nullable) - 1: تربه وخرسانه"
+						},
+						{
+							"key": "term_setting_id",
+							"value": "",
+							"type": "text",
+							"description": "Term setting ID (nullable)"
+						},
+						{
+							"key": "branch_id",
+							"value": "",
+							"type": "text",
+							"description": "Branch ID from management_hierarchies (nullable)"
+						},
+						{
+							"key": "management_id",
+							"value": "",
+							"type": "text",
+							"description": "Management ID from management_hierarchies (nullable)"
+						},
+						{
+							"key": "attachments[]",
+							"type": "file",
+							"description": "Attachments array (nullable, max 10MB, formats: pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,svg,webp)",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/client_requests/client-requests",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-requests"]
+				}
+			}
+		},
+		{
+			"name": "Get Client Request",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/client_requests/client-requests/{{client_request_id}}",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-requests", "{{client_request_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Update Client Request",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "_method",
+							"value": "PUT",
+							"type": "text",
+							"description": "Method spoofing for file upload"
+						},
+						{
+							"key": "client_request_type_id",
+							"value": "2",
+							"type": "text",
+							"description": "Client request type ID (required)"
+						},
+						{
+							"key": "client_request_receiver_from_id",
+							"value": "2",
+							"type": "text",
+							"description": "Receiver from ID (required)"
+						},
+						{
+							"key": "client_type",
+							"value": "company",
+							"type": "text",
+							"description": "Client type (required)"
+						},
+						{
+							"key": "client_id",
+							"value": "{{client_id}}",
+							"type": "text",
+							"description": "Client UUID (required)"
+						},
+						{
+							"key": "content",
+							"value": "طلب اجتماع محدث",
+							"type": "text",
+							"description": "Request content (nullable)"
+						},
+						{
+							"key": "status_client_request",
+							"value": "accepted",
+							"type": "text",
+							"description": "Request status (nullable) - pending, rejected, accepted"
+						},
+						{
+							"key": "service_ids[]",
+							"value": "1",
+							"type": "text",
+							"description": "Service ID array (nullable)"
+						},
+						{
+							"key": "term_setting_id",
+							"value": "",
+							"type": "text",
+							"description": "Term setting ID (nullable)"
+						},
+						{
+							"key": "branch_id",
+							"value": "",
+							"type": "text",
+							"description": "Branch ID (nullable)"
+						},
+						{
+							"key": "management_id",
+							"value": "",
+							"type": "text",
+							"description": "Management ID (nullable)"
+						},
+						{
+							"key": "attachments[]",
+							"type": "file",
+							"description": "Additional attachments (nullable)",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "{{url}}/client_requests/client-requests/{{client_request_id}}",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-requests", "{{client_request_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Delete Client Request",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/client_requests/client-requests/{{client_request_id}}",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-requests", "{{client_request_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Export Client Requests",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"format\": \"xlsx\",\n    \"ids\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/client_requests/client-requests/export",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-requests", "export"]
+				}
+			}
+		},
+		{
+			"name": "Get Client Request Types (Lookup)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/client_requests/client-request-types",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-request-types"]
+				},
+				"description": "Get all client request types for dropdown - عرض سعر (price_quote), اجتماع (meeting)"
+			}
+		},
+		{
+			"name": "Get Client Request Receiver From (Lookup)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/client_requests/client-request-receiver-from",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-request-receiver-from"]
+				},
+				"description": "Get all receiver from options - رقم واتساب, بريد الكتروني, موظف, الوسطاء"
+			}
+		},
+		{
+			"name": "Get Client Request Services (Lookup)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/client_requests/client-request-services",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-request-services"]
+				},
+				"description": "Get all services for dropdown - تربه وخرسانه (soil_concrete)"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		},
+		{
+			"key": "client_request_id",
+			"value": "uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "client_id",
+			"value": "client-uuid-here",
+			"type": "string"
+		}
+	]
+}
