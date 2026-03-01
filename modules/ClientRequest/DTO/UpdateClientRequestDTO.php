@@ -6,16 +6,17 @@ namespace Modules\ClientRequest\DTO;
 
 use Illuminate\Http\UploadedFile;
 
-class CreateClientRequestDTO
+class UpdateClientRequestDTO
 {
     public function __construct(
-        public int $client_request_type_id,
-        public int $client_request_receiver_from_id,
-        public string $client_type,
-        public string $client_id,
+        public string $id,
+        public ?int $client_request_type_id = null,
+        public ?int $client_request_receiver_from_id = null,
+        public ?string $client_type = null,
+        public ?string $client_id = null,
         public ?string $content = null,
-        public string $status_client_request = 'pending',
-        public string $client_price_offer_status = 'pending',
+        public ?string $status_client_request = null,
+        public ?string $client_price_offer_status = null,
         public array $service_ids = [],
         public array $term_setting_ids = [],
         public ?int $branch_id = null,
@@ -26,8 +27,7 @@ class CreateClientRequestDTO
 
     public function toArray(): array
     {
-        return [
-            'company_id' => tenant('id'),
+        return array_filter([
             'client_request_type_id' => $this->client_request_type_id,
             'client_request_receiver_from_id' => $this->client_request_receiver_from_id,
             'client_type' => $this->client_type,
@@ -35,9 +35,10 @@ class CreateClientRequestDTO
             'content' => $this->content,
             'status_client_request' => $this->status_client_request,
             'client_price_offer_status' => $this->client_price_offer_status,
-            'term_setting_id' => $this->term_setting_id,
             'branch_id' => $this->branch_id,
             'management_id' => $this->management_id,
-        ];
+        ], function ($value) {
+            return $value !== null;
+        });
     }
 }

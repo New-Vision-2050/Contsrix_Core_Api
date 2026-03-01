@@ -29,7 +29,6 @@ class ClientRequestPresenter extends AbstractPresenter
             'content' => $this->clientRequest->content,
             'status_client_request' => $this->clientRequest->status_client_request,
             'client_price_offer_status' => $this->clientRequest->client_price_offer_status,
-            'term_setting_id' => $this->clientRequest->term_setting_id,
             'branch_id' => $this->clientRequest->branch_id,
             'management_id' => $this->clientRequest->management_id,
             'created_at' => $this->clientRequest->created_at?->toDateTimeString(),
@@ -96,16 +95,18 @@ class ClientRequestPresenter extends AbstractPresenter
             })->toArray();
         }
 
-        // Add term setting relationship
-        $data['term_setting'] = null;
-        if ($this->clientRequest->relationLoaded('termSetting') && $this->clientRequest->termSetting) {
-            $data['term_setting'] = [
-                'id' => $this->clientRequest->termSetting->id,
-                'name' => $this->clientRequest->termSetting->name ?? null,
-                'description' => $this->clientRequest->termSetting->description ?? null,
-                'is_active' => $this->clientRequest->termSetting->is_active ?? null,
-                'created_at' => $this->clientRequest->termSetting->created_at?->toDateTimeString(),
-            ];
+        // Add term settings relationship
+        $data['term_settings'] = [];
+        if ($this->clientRequest->relationLoaded('termSettings') && $this->clientRequest->termSettings) {
+            $data['term_settings'] = $this->clientRequest->termSettings->map(function ($termSetting) {
+                return [
+                    'id' => $termSetting->id,
+                    'name' => $termSetting->name ?? null,
+                    'description' => $termSetting->description ?? null,
+                    'is_active' => $termSetting->is_active ?? null,
+                    'created_at' => $termSetting->created_at?->toDateTimeString(),
+                ];
+            })->toArray();
         }
 
         // Add branch relationship - always include even if null

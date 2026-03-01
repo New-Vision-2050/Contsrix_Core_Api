@@ -74,7 +74,7 @@
 							"disabled": true
 						},
 						{
-							"key": "term_setting_id",
+							"key": "term_setting_ids[]",
 							"value": "",
 							"description": "Filter by term setting ID",
 							"disabled": true
@@ -193,7 +193,7 @@
 							"description": "Service ID array (nullable) - 1: تربه وخرسانه"
 						},
 						{
-							"key": "term_setting_id",
+							"key": "term_setting_ids[]",
 							"value": "",
 							"type": "text",
 							"description": "Term setting ID (nullable)"
@@ -316,7 +316,7 @@
 							"description": "Service ID array (nullable)"
 						},
 						{
-							"key": "term_setting_id",
+							"key": "term_setting_ids[]",
 							"value": "",
 							"type": "text",
 							"description": "Term setting ID (nullable)"
