@@ -7,7 +7,7 @@ namespace Modules\ClientRequest\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\ClientRequest\DTO\UpdateClientRequestDTO;
 
-class UpdateClientRequestRequest extends FormRequest
+class UpdateClientRequestFullRequest extends FormRequest
 {
     public function rules(): array
     {
