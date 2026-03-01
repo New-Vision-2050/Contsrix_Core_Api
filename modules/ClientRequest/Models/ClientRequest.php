@@ -47,7 +47,7 @@ class ClientRequest extends Model implements HasMedia
         'clientRequestType',
         'clientRequestReceiverFrom',
         'services',
-        'termSetting',
+        'termSettings',
         'branch',
         'management',
     ];
@@ -61,7 +61,6 @@ class ClientRequest extends Model implements HasMedia
         'content',
         'status_client_request',
         'client_price_offer_status',
-        'term_setting_id',
         'branch_id',
         'management_id',
         'serial_number',
@@ -101,9 +100,14 @@ class ClientRequest extends Model implements HasMedia
         return $this->belongsTo(ClientRequestReceiverFrom::class);
     }
 
-    public function termSetting(): BelongsTo
+    public function termSettings(): BelongsToMany
     {
-        return $this->belongsTo(TermSetting::class);
+        return $this->belongsToMany(
+            TermSetting::class,
+            'client_request_term_setting',
+            'client_request_id',
+            'term_setting_id'
+        );
     }
 
     public function branch(): BelongsTo

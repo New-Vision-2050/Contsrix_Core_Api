@@ -40,12 +40,16 @@ class ClientRequestRepository extends BaseRepository
         ]);
     }
 
-    public function createClientRequest(array $data, array $serviceIds = [], array $attachments = []): ClientRequest
+    public function createClientRequest(array $data, array $serviceIds = [], array $termSettingIds = [], array $attachments = []): ClientRequest
     {
         $clientRequest = $this->create($data);
 
         if (!empty($serviceIds)) {
             $clientRequest->services()->sync($serviceIds);
+        }
+
+        if (!empty($termSettingIds)) {
+            $clientRequest->termSettings()->sync($termSettingIds);
         }
 
         if (!empty($attachments)) {
@@ -60,18 +64,22 @@ class ClientRequestRepository extends BaseRepository
             }
         }
 
-        return $clientRequest->fresh(['services', 'media']);
+        return $clientRequest->fresh(['services', 'termSettings', 'media']);
     }
 
-    public function updateClientRequest(UuidInterface $id, array $data, array $serviceIds = [], array $attachments = []): bool
+    public function updateClientRequest(UuidInterface $id, array $data, array $serviceIds = [], array $termSettingIds = [], array $attachments = []): bool
     {
-        $updated = $this->update($id, $data);
+        $updated = $this->update($id->toString(), $data);
 
         if ($updated) {
             $clientRequest = $this->findOneOrFail($id);
 
             if (!empty($serviceIds)) {
                 $clientRequest->services()->sync($serviceIds);
+            }
+
+            if (!empty($termSettingIds)) {
+                $clientRequest->termSettings()->sync($termSettingIds);
             }
 
             if (!empty($attachments)) {
