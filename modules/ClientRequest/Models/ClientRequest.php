@@ -64,6 +64,7 @@ class ClientRequest extends Model implements HasMedia
         'term_setting_id',
         'branch_id',
         'management_id',
+        'serial_number',
     ];
 
     protected $casts = [
@@ -72,6 +73,7 @@ class ClientRequest extends Model implements HasMedia
         'client_id' => 'string',
         'status_client_request' => 'string',
         'client_price_offer_status' => 'string',
+        'serial_number' => 'string',
     ];
 
     public function getTenantIdColumn(): string

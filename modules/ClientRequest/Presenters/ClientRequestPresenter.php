@@ -20,6 +20,7 @@ class ClientRequestPresenter extends AbstractPresenter
     {
         $data = [
             'id' => $this->clientRequest->id,
+            'serial_number' => $this->clientRequest->serial_number,
             'company_id' => $this->clientRequest->company_id,
             'client_request_type_id' => $this->clientRequest->client_request_type_id,
             'client_request_receiver_from_id' => $this->clientRequest->client_request_receiver_from_id,
