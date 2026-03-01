@@ -15,7 +15,6 @@ use Modules\ClientRequest\Requests\DeleteClientRequestRequest;
 use Modules\ClientRequest\Requests\GetClientRequestListRequest;
 use Modules\ClientRequest\Requests\GetClientRequestRequest;
 use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
-use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
 use Modules\ClientRequest\Services\ClientRequestCRUDService;
 use Modules\ClientRequest\Services\ClientRequestWidgetsService;
 use Modules\ClientRequest\Services\ClientRequestStatusWidgetsService;
