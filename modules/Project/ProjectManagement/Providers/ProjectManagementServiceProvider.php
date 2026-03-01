@@ -6,6 +6,8 @@ namespace Modules\Project\ProjectManagement\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Observers\ProjectManagementObserver;
 
 class ProjectManagementServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +21,9 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        
+        // Register observer
+        ProjectManagement::observe(ProjectManagementObserver::class);
     }
 
     public function register(): void
