@@ -20,6 +20,7 @@ class ProjectManagementPresenter extends AbstractPresenter
     {
         $data = [
             'id' => $this->projectManagement->id,
+            'serial_number' => $this->projectManagement->serial_number,
             'name' => $this->projectManagement->name,
             'project_type_id' => $this->projectManagement->project_type_id,
             'sub_project_type_id' => $this->projectManagement->sub_project_type_id,

@@ -53,6 +53,7 @@ class ProjectManagement extends Model
         'project_value',
         'company_id',
         'status',
+        'serial_number',
     ];
 
     protected $casts = [
@@ -73,6 +74,7 @@ class ProjectManagement extends Model
         'company_id' => 'string',
         'project_value' => 'decimal:2',
         'status' => 'integer',
+        'serial_number' => 'string',
     ];
 
     protected static function boot()
