@@ -14,7 +14,7 @@ use Modules\ClientRequest\Requests\CreateClientRequestRequest;
 use Modules\ClientRequest\Requests\DeleteClientRequestRequest;
 use Modules\ClientRequest\Requests\GetClientRequestListRequest;
 use Modules\ClientRequest\Requests\GetClientRequestRequest;
-use Modules\ClientRequest\Requests\UpdateClientRequestRequest;
+use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
 use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
 use Modules\ClientRequest\Services\ClientRequestCRUDService;
 use Modules\ClientRequest\Services\ClientRequestWidgetsService;
@@ -67,7 +67,7 @@ class ClientRequestController extends Controller
         return Json::item($presenter->getData());
     }
 
-    public function update(UpdateClientRequestRequest $request): JsonResponse
+    public function update(UpdateClientRequestFullRequest $request): JsonResponse
     {
         $command = $request->createUpdateClientRequestCommand();
         $this->updateClientRequestHandler->handle($command);
