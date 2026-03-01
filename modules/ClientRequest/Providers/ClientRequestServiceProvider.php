@@ -6,6 +6,8 @@ namespace Modules\ClientRequest\Providers;
 
 use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
+use Modules\ClientRequest\Models\ClientRequest;
+use Modules\ClientRequest\Observers\ClientRequestObserver;
 
 class ClientRequestServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +21,9 @@ class ClientRequestServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        
+        // Register observer
+        ClientRequest::observe(ClientRequestObserver::class);
     }
 
     public function register(): void
