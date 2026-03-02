@@ -69,6 +69,36 @@ class ProjectType extends Model
         )->withTimestamps();
     }
 
+    public function projectDataSetting()
+    {
+        return $this->hasOne(ProjectDataSetting::class, 'project_type_id');
+    }
+
+    public function attachmentContractSetting()
+    {
+        return $this->hasOne(AttachmentContractSetting::class, 'project_type_id');
+    }
+
+    public function attachmentTermsContractSetting()
+    {
+        return $this->hasOne(AttachmentTermsContractSetting::class, 'project_type_id');
+    }
+
+    public function contractorContractSetting()
+    {
+        return $this->hasOne(ContractorContractSetting::class, 'project_type_id');
+    }
+
+    public function employeeContractSetting()
+    {
+        return $this->hasOne(EmployeeContractSetting::class, 'project_type_id');
+    }
+
+    public function departmentContractSetting()
+    {
+        return $this->hasOne(DepartmentContractSetting::class, 'project_type_id');
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";

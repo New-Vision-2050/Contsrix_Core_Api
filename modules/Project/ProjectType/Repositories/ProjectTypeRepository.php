@@ -114,7 +114,7 @@ class ProjectTypeRepository extends BaseRepository
                 ->where('id', $data['parent_id'])
                 ->where('company_id', $data['company_id'])
                 ->first();
-                
+
             if (!$parent) {
                 throw new \Exception(
                     "Parent project type with ID {$data['parent_id']} not found for company {$data['company_id']}. " .
@@ -122,7 +122,7 @@ class ProjectTypeRepository extends BaseRepository
                 );
             }
         }
-        
+
         $projectType = $this->create($data);
 
         if (!empty($schemaIds)) {
