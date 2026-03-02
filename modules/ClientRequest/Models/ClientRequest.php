@@ -48,6 +48,7 @@ class ClientRequest extends Model implements HasMedia
         'clientRequestReceiverFrom',
         'services',
         'termSettings',
+        'serviceTerms',
         'branch',
         'management',
     ];
@@ -128,6 +129,11 @@ class ClientRequest extends Model implements HasMedia
             'client_request_id',
             'client_request_service_id'
         );
+    }
+
+    public function serviceTerms()
+    {
+        return $this->hasMany(ClientRequestServiceTerm::class, 'client_request_id');
     }
 
     public function client(): BelongsTo
