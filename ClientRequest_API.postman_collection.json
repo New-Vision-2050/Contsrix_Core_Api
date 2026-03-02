@@ -74,9 +74,9 @@
 							"disabled": true
 						},
 						{
-							"key": "term_setting_ids[]",
+							"key": "term_setting_ids",
 							"value": "",
-							"description": "Filter by term setting ID",
+							"description": "Filter by term setting IDs with service relationship - Format: [{term_service_id: int, term_ids: []}]",
 							"disabled": true
 						},
 						{
@@ -193,10 +193,10 @@
 							"description": "Service ID array (nullable) - 1: تربه وخرسانه"
 						},
 						{
-							"key": "term_setting_ids[]",
-							"value": "",
+							"key": "term_setting_ids",
+							"value": "[{\"term_service_id\": 1, \"term_ids\": [1, 2, 3]}, {\"term_service_id\": 2, \"term_ids\": [4, 5, 6]}]",
 							"type": "text",
-							"description": "Term setting ID (nullable)"
+							"description": "Term setting IDs with service relationship (nullable) - Format: [{term_service_id: int, term_ids: []}]"
 						},
 						{
 							"key": "branch_id",
@@ -216,13 +216,52 @@
 							"description": "Attachments array (nullable, max 10MB, formats: pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,svg,webp)",
 							"src": []
 						}
-					]
+					],
+					"description": "Note: term_setting_ids should be sent as a JSON string array of objects. Example: [{\"term_service_id\": 1, \"term_ids\": [1, 2, 3]}]"
 				},
 				"url": {
 					"raw": "{{url}}/client_requests/client-requests",
 					"host": ["{{url}}"],
 					"path": ["client_requests", "client-requests"]
 				}
+			}
+		},
+		{
+			"name": "Create Client Request (JSON)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"client_request_type_id\": 1,\n    \"client_request_receiver_from_id\": 1,\n    \"client_type\": \"individual\",\n    \"client_id\": \"{{client_id}}\",\n    \"content\": \"طلب عرض سعر لمشروع تربة وخرسانة\",\n    \"status_client_request\": \"pending\",\n    \"service_ids\": [1, 2],\n    \"term_setting_ids\": [\n        {\"term_service_id\": 1, \"term_ids\": [1, 2, 3]},\n        {\"term_service_id\": 2, \"term_ids\": [4, 5, 6]}\n    ],\n    \"branch_id\": 1,\n    \"management_id\": 2\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/client_requests/client-requests",
+					"host": ["{{url}}"],
+					"path": ["client_requests", "client-requests"]
+				},
+				"description": "Create a new client request using JSON body (no file uploads)"
 			}
 		},
 		{
@@ -316,10 +355,10 @@
 							"description": "Service ID array (nullable)"
 						},
 						{
-							"key": "term_setting_ids[]",
-							"value": "",
+							"key": "term_setting_ids",
+							"value": "[{\"term_service_id\": 1, \"term_ids\": [1, 2, 3]}, {\"term_service_id\": 2, \"term_ids\": [4, 5, 6]}]",
 							"type": "text",
-							"description": "Term setting ID (nullable)"
+							"description": "Term setting IDs with service relationship (nullable) - Format: [{term_service_id: int, term_ids: []}]"
 						},
 						{
 							"key": "branch_id",
