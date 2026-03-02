@@ -11,6 +11,7 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Project\TermSetting\Models\TermSetting;
+use Modules\ClientRequest\Models\ClientRequestService;
 
 class TermServiceSetting extends Model
 {

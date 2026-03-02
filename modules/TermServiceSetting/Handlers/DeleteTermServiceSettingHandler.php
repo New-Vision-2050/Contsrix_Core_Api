@@ -14,7 +14,7 @@ class DeleteTermServiceSettingHandler
     ) {
     }
 
-    public function handle(UuidInterface $id)
+    public function handle(int $id)
     {
         $this->repository->deleteTermServiceSetting($id);
     }

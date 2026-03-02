@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Modules\TermServiceSetting\Models\TermServiceSetting;
 
 class ClientRequestServiceTerm extends Model
 {
@@ -23,7 +24,7 @@ class ClientRequestServiceTerm extends Model
 
     protected $fillable = [
         'client_request_id',
-        'client_request_service_id',
+        'term_service_setting_id',
         'term_ids',
         'company_id',
     ];
@@ -40,9 +41,9 @@ class ClientRequestServiceTerm extends Model
         return $this->belongsTo(ClientRequest::class, 'client_request_id');
     }
 
-    public function service()
+    public function termServiceSetting()
     {
-        return $this->belongsTo(ClientRequestService::class, 'client_request_service_id');
+        return $this->belongsTo(TermServiceSetting::class, 'term_service_setting_id');
     }
 
     protected static function newFactory()
