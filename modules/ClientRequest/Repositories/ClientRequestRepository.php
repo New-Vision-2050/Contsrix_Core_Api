@@ -36,9 +36,14 @@ class ClientRequestRepository extends BaseRepository
 
     public function getClientRequest(UuidInterface $id): ClientRequest
     {
-        return $this->findOneByOrFail([
-            'id' => $id->toString(),
-        ]);
+        return $this->model
+            ->with([
+                'serviceTerms.termServiceSetting',
+                'serviceTerms' => function ($query) {
+                    // We'll load the term trees in the presenter using the term_ids
+                }
+            ])
+            ->findOrFail($id->toString());
     }
 
     public function createClientRequest(array $data, array $serviceIds = [], array $termSettingIds = [], array $attachments = []): ClientRequest
@@ -58,7 +63,7 @@ class ClientRequestRepository extends BaseRepository
                     ClientRequestServiceTerm::create([
                         'id' => \Ramsey\Uuid\Uuid::uuid4()->toString(),
                         'client_request_id' => $clientRequest->id,
-                        'client_request_service_id' => $termSetting['term_service_id'],
+                        'term_service_setting_id' => $termSetting['term_service_id'],
                         'term_ids' => $termSetting['term_ids'],
                         'company_id' => $data['company_id'],
                     ]);
@@ -84,7 +89,9 @@ class ClientRequestRepository extends BaseRepository
             }
         }
 
-        return $clientRequest->fresh(['services', 'termSettings', 'serviceTerms', 'media']);
+        return $clientRequest->fresh(['services', 'termSettings' => function ($query) {
+            $query->with(['parent.parent.parent.parent']);
+        }, 'serviceTerms', 'media']);
     }
 
     public function updateClientRequest(UuidInterface $id, array $data, array $serviceIds = [], array $termSettingIds = [], array $attachments = []): bool
@@ -110,7 +117,7 @@ class ClientRequestRepository extends BaseRepository
                         ClientRequestServiceTerm::create([
                             'id' => \Ramsey\Uuid\Uuid::uuid4()->toString(),
                             'client_request_id' => $clientRequest->id,
-                            'client_request_service_id' => $termSetting['term_service_id'],
+                            'term_service_setting_id' => $termSetting['term_service_id'],
                             'term_ids' => $termSetting['term_ids'],
                             'company_id' => $clientRequest->company_id,
                         ]);

@@ -35,7 +35,6 @@ class CreateClientRequestDTO
             'content' => $this->content,
             'status_client_request' => $this->status_client_request,
             'client_price_offer_status' => $this->client_price_offer_status,
-            'term_setting_id' => $this->term_setting_id,
             'branch_id' => $this->branch_id,
             'management_id' => $this->management_id,
         ];

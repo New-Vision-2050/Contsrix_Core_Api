@@ -25,11 +25,14 @@ class TermServiceSettingPresenter extends AbstractPresenter
             'updated_at' => $this->termServiceSetting->updated_at?->toDateTimeString(),
         ];
 
-        if (!$isListing && $this->termServiceSetting->relationLoaded('termSettings')) {
-            if ($this->termServiceSetting->termSettings->isNotEmpty()) {
-                $data['children'] = $this->formatTermsHierarchy();
-            } else {
-                $data['children'] = [];
+        if (!$isListing) {
+            // Build tree from leaf terms stored in termSettings relationship
+            if ($this->termServiceSetting->relationLoaded('termSettings')) {
+                if ($this->termServiceSetting->termSettings->isNotEmpty()) {
+                    $data['children'] = $this->formatTermsHierarchyFromLeafs();
+                } else {
+                    $data['children'] = [];
+                }
             }
         }
 
@@ -50,6 +53,76 @@ class TermServiceSettingPresenter extends AbstractPresenter
         }
 
         return array_values($trees);
+    }
+
+    private function formatTermsHierarchyFromLeafs(): array
+    {
+        $trees = [];
+        $leafTerms = $this->termServiceSetting->termSettings;
+
+        foreach ($leafTerms as $leafTerm) {
+            // Build the path from leaf to root
+            $path = $this->buildPathToRoot($leafTerm);
+            
+            // Build the tree from this path
+            $this->mergePathIntoTree($trees, $path);
+        }
+
+        return array_values($trees);
+    }
+
+    private function buildPathToRoot($term): array
+    {
+        $path = [];
+        $current = $term;
+        
+        // Build path from leaf to root
+        while ($current) {
+            array_unshift($path, $current);
+            $current = $current->parent;
+        }
+        
+        return $path;
+    }
+
+    private function mergePathIntoTree(&$trees, array $path)
+    {
+        if (empty($path)) return;
+        
+        $rootId = $path[0]->id;
+        
+        // If root doesn't exist, create it
+        if (!isset($trees[$rootId])) {
+            $trees[$rootId] = $this->buildTermTree($path[0]);
+        }
+        
+        // Merge the rest of the path
+        $currentNode = &$trees[$rootId];
+        for ($i = 1; $i < count($path); $i++) {
+            $term = $path[$i];
+            $found = false;
+            
+            // Check if this child already exists
+            if (isset($currentNode['children'])) {
+                foreach ($currentNode['children'] as &$child) {
+                    if ($child['id'] == $term->id) {
+                        $currentNode = &$child;
+                        $found = true;
+                        break;
+                    }
+                }
+            }
+            
+            // If not found, add it
+            if (!$found) {
+                if (!isset($currentNode['children'])) {
+                    $currentNode['children'] = [];
+                }
+                $newChild = $this->buildTermTree($term);
+                $currentNode['children'][] = &$newChild;
+                $currentNode = &$newChild;
+            }
+        }
     }
 
     private function getRootTerm($termSetting)
