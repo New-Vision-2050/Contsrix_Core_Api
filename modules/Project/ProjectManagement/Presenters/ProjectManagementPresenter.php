@@ -6,12 +6,6 @@ namespace Modules\Project\ProjectManagement\Presenters;
 
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use BasePackage\Shared\Presenters\AbstractPresenter;
-use Modules\Project\ProjectType\Presenters\ProjectDataSettingPresenter;
-use Modules\Project\ProjectType\Presenters\AttachmentContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\AttachmentTermsContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\ContractorContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\EmployeeContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\DepartmentContractSettingPresenter;
 
 class ProjectManagementPresenter extends AbstractPresenter
 {
@@ -111,35 +105,6 @@ class ProjectManagementPresenter extends AbstractPresenter
                 'name' => $this->projectManagement->currency->name,
                 'code' => $this->projectManagement->currency->code ?? null,
             ] : null;
-
-            // Add contract settings from projectType wrapped in permissions array
-            $permissions = [];
-            if ($this->projectManagement->subProjectType) {
-                if ($this->projectManagement->projectType->relationLoaded('projectDataSetting') && $this->projectManagement->subProjectType->projectDataSetting) {
-                    $permissions['project_data_setting'] = (new ProjectDataSettingPresenter($this->projectManagement->subProjectType->projectDataSetting))->toArray();
-                }
-
-                if ($this->projectManagement->subProjectType->relationLoaded('attachmentContractSetting') && $this->projectManagement->subProjectType->attachmentContractSetting) {
-                    $permissions['attachment_contract_setting'] = (new AttachmentContractSettingPresenter($this->projectManagement->subProjectType->attachmentContractSetting))->toArray();
-                }
-
-                if ($this->projectManagement->subProjectType->relationLoaded('attachmentTermsContractSetting') && $this->projectManagement->subProjectType->attachmentTermsContractSetting) {
-                    $permissions['attachment_terms_contract_setting'] = (new AttachmentTermsContractSettingPresenter($this->projectManagement->subProjectType->attachmentTermsContractSetting))->toArray();
-                }
-
-                if ($this->projectManagement->subProjectType->relationLoaded('contractorContractSetting') && $this->projectManagement->subProjectType->contractorContractSetting) {
-                    $permissions['contractor_contract_setting'] = (new ContractorContractSettingPresenter($this->projectManagement->subProjectType->contractorContractSetting))->toArray();
-                }
-
-                if ($this->projectManagement->subProjectType->relationLoaded('employeeContractSetting') && $this->projectManagement->subProjectType->employeeContractSetting) {
-                    $permissions['employee_contract_setting'] = (new EmployeeContractSettingPresenter($this->projectManagement->subProjectType->employeeContractSetting))->toArray();
-                }
-
-                if ($this->projectManagement->subProjectType->relationLoaded('departmentContractSetting') && $this->projectManagement->subProjectType->departmentContractSetting) {
-                    $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectManagement->subProjectType->departmentContractSetting))->toArray();
-                }
-            }
-            $data['permissions'] = $permissions;
         } else {
             $data['project_type_name'] = $this->projectManagement->projectType?->name;
             $data['sub_project_type_name'] = $this->projectManagement->subProjectType?->name;

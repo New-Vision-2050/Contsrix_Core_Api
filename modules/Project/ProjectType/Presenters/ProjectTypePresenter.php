@@ -6,12 +6,6 @@ namespace Modules\Project\ProjectType\Presenters;
 
 use Modules\Project\ProjectType\Models\ProjectType;
 use BasePackage\Shared\Presenters\AbstractPresenter;
-use Modules\Project\ProjectType\Presenters\ProjectDataSettingPresenter;
-use Modules\Project\ProjectType\Presenters\AttachmentContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\AttachmentTermsContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\ContractorContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\EmployeeContractSettingPresenter;
-use Modules\Project\ProjectType\Presenters\DepartmentContractSettingPresenter;
 
 class ProjectTypePresenter extends AbstractPresenter
 {
@@ -62,34 +56,6 @@ class ProjectTypePresenter extends AbstractPresenter
                     ];
                 })->toArray();
             }
-
-            // Add contract settings wrapped in permissions array
-            $permissions = [];
-            if ($this->projectType->relationLoaded('projectDataSetting') && $this->projectType->projectDataSetting) {
-                $permissions['project_data_setting'] = (new ProjectDataSettingPresenter($this->projectType->projectDataSetting))->toArray();
-            }
-
-            if ($this->projectType->relationLoaded('attachmentContractSetting') && $this->projectType->attachmentContractSetting) {
-                $permissions['attachment_contract_setting'] = (new AttachmentContractSettingPresenter($this->projectType->attachmentContractSetting))->toArray();
-            }
-
-            if ($this->projectType->relationLoaded('attachmentTermsContractSetting') && $this->projectType->attachmentTermsContractSetting) {
-                $permissions['attachment_terms_contract_setting'] = (new AttachmentTermsContractSettingPresenter($this->projectType->attachmentTermsContractSetting))->toArray();
-            }
-
-            if ($this->projectType->relationLoaded('contractorContractSetting') && $this->projectType->contractorContractSetting) {
-                $permissions['contractor_contract_setting'] = (new ContractorContractSettingPresenter($this->projectType->contractorContractSetting))->toArray();
-            }
-
-            if ($this->projectType->relationLoaded('employeeContractSetting') && $this->projectType->employeeContractSetting) {
-                $permissions['employee_contract_setting'] = (new EmployeeContractSettingPresenter($this->projectType->employeeContractSetting))->toArray();
-            }
-
-            if ($this->projectType->relationLoaded('departmentContractSetting') && $this->projectType->departmentContractSetting) {
-                $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectType->departmentContractSetting))->toArray();
-            }
-
-            $data['permissions'] = $permissions;
         }
 
         return $data;
