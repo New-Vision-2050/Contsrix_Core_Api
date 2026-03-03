@@ -50,7 +50,12 @@ class ProjectManagementRepository extends BaseRepository
         return $this->model->with([
             'projectType',
             'subProjectType',
-            'subSubProjectType',
+            'subSubProjectType.projectDataSetting',
+            'subSubProjectType.attachmentContractSetting',
+            'subSubProjectType.attachmentTermsContractSetting',
+            'subSubProjectType.contractorContractSetting',
+            'subSubProjectType.employeeContractSetting',
+            'subSubProjectType.departmentContractSetting',
             'manager',
             'branch',
             'ownerCompany',
