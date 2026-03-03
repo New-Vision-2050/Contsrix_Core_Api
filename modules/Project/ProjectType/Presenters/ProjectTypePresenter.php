@@ -17,7 +17,7 @@ class ProjectTypePresenter extends AbstractPresenter
 {
     private ProjectType $projectType;
 
-    public function getData()__construct(ProjectType $projectType)
+    public function __construct(ProjectType $projectType)
     {
         $this->projectType = $projectType;
     }
