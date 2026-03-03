@@ -32,9 +32,16 @@ class ProjectTypeRepository extends BaseRepository
 
     public function getProjectType(int $id): ProjectType
     {
-        return $this->findOneByOrFail([
-            'id' => $id,
-        ]);
+        return $this->model->with([
+            'projectDataSetting',
+            'attachmentContractSetting',
+            'attachmentTermsContractSetting',
+            'contractorContractSetting',
+            'employeeContractSetting',
+            'departmentContractSetting',
+            'parent',
+            'children'
+        ])->findOrFail($id);
     }
 
     public function createProjectType(array $data): ProjectType
