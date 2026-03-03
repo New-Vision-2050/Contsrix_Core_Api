@@ -69,6 +69,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
                     ->ignore($this->route('constraint')),
             ],
             'constraint_config' => 'sometimes|required|array',
+            'max_over_time' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'is_active' => 'sometimes|boolean',
             'inherit_from_parent' => ['sometimes', 'boolean'],
             'priority' => 'sometimes|integer|min:1|max:10',
@@ -146,6 +147,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
             inherit_from_parent: $validated['inherit_from_parent'] ?? null,
             effective_from: $validated['start_date'] ?? null,
             effective_to: $validated['end_date'] ?? null,
+            max_over_time: array_key_exists('max_over_time', $validated) ? (isset($validated['max_over_time']) ? (int) $validated['max_over_time'] : null) : null,
         );
     }
 }

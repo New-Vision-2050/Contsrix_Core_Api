@@ -58,6 +58,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
             'constraint_config' => 'nullable|array',
+            'max_over_time' => ['nullable', 'integer', 'min:0'],
             'is_active' => 'boolean',
             'inherit_from_parent' => ['boolean'],
             'priority' => ['nullable', 'integer', 'min:1', 'max:10'],
@@ -133,6 +134,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
             inherit_from_parent: $validated['inherit_from_parent'] ?? false,
             effective_from: $validated['start_date'] ?? null,
             effective_to: $validated['end_date'] ?? null,
+            max_over_time: isset($validated['max_over_time']) ? (int) $validated['max_over_time'] : null,
         );
     }
 }

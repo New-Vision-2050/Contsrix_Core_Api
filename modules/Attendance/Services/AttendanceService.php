@@ -79,6 +79,7 @@ class AttendanceService
             'is_holiday' => 0,
             'day_status' => 'in_location',
             'timezone' => $timezone,
+            'max_over_time' => $constraints['max_over_time'] ?? null,
         ];
 
         $startTimeStr = $startDateTime->format('Y-m-d H:i:s');

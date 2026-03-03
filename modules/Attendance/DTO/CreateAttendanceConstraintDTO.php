@@ -22,6 +22,7 @@ class CreateAttendanceConstraintDTO
         public bool $inherit_from_parent = false,
         public ?string $effective_from = null,
         public ?string $effective_to = null,
+        public ?int $max_over_time = null,
     ) {}
 
     public function toArray(): array
@@ -42,6 +43,7 @@ class CreateAttendanceConstraintDTO
             'inherit_from_parent' => $this->inherit_from_parent,
             'start_date' => $this->effective_from,
             'end_date' => $this->effective_to,
+            'max_over_time' => $this->max_over_time,
         ];
     }
 
