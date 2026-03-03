@@ -7,6 +7,8 @@ use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
+use Modules\Project\TermServices\Database\Seeders\TermServicesSeeder;
+use Modules\ClientRequest\Database\Seeders\ClientRequestSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
@@ -147,5 +149,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PaymentMethodDataSeeder::class);
         $this->call(DefaultWebsiteThemeSettingSeeder::class);
         $this->call(ContractualRelationshipTypeSeeder::class);
+        $this->call(TermServicesSeeder::class);
+        $this->call(ClientRequestSeeder::class);
     }
 }

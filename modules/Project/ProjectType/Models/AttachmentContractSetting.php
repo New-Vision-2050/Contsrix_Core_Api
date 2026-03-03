@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Project\ProjectType\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class AttachmentContractSetting extends Model
+{
+    protected $table = "attachment_contract_settings";
+
+    protected $fillable = [
+        'project_type_id',
+        'is_name',
+        'is_type',
+        'is_size',
+        'is_creator',
+        'is_create_date',
+        'is_downloadable',
+    ];
+
+    protected $casts = [
+        'is_name' => 'int',
+        'is_type' => 'int',
+        'is_size' => 'int',
+        'is_creator' => 'int',
+        'is_create_date' => 'int',
+        'is_downloadable' => 'int',
+    ];
+
+    public function projectType(): BelongsTo
+    {
+        return $this->belongsTo(ProjectType::class, 'project_type_id');
+    }
+}

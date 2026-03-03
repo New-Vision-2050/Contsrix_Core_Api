@@ -87,12 +87,12 @@ class SubEntityRecordsService
         }
 
         $query = $query->when($type != null, function ($query) use ($type) {
-            $query->whereHas("companies", function ($query) use ($type) {
-                $query->where("company_users_companies.role", $type);
+            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
+                $query->where("role", $type);
             });
         })->when(request()->has('sub_entity_id'), function ($query) use ($type) {
-            $query->whereHas("companies", function ($query) use ($type) {
-                $query->where("company_users_companies.sub_entity_id", request()->sub_entity_id);
+            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
+                $query->where("sub_entity_id", request()->sub_entity_id);
             });
         })
             // Only count users who have roles (user relationship exists)
@@ -102,11 +102,11 @@ class SubEntityRecordsService
 
         // Get current period data
         $totalRecords = $query->count();
-        $activeRecords = (clone $query)->whereHas("companies", function ($q) {
-            $q->where("company_users_companies.status", 1);
+        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
+            $q->where("status", 1);
         })->count();
-        $suspendedRecords = (clone $query)->whereHas("companies", function ($q) {
-            $q->where("company_users_companies.status", 0);
+        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
+            $q->where("status", 0);
         })->count();
 
         // Get last month data for comparison
@@ -118,8 +118,8 @@ class SubEntityRecordsService
         // Get previous month data for percentage calculation
         $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
-        $activeRecordsPrevMonth = (clone $query)->whereHas("companies", function ($q) {
-            $q->where("company_users_companies.status", 1);
+        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
+            $q->where("status", 1);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
         if (CompanyUserRole::BROKER->value == $type) {
@@ -268,15 +268,15 @@ class SubEntityRecordsService
         }
 
         $query = $query->when($type != null, function ($query) use ($type) {
-            $query->whereHas("companies", function ($query) use ($type) {
-                $query->where("company_users_companies.role", $type);
+            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
+                $query->where("role", $type);
             });
         });
 
         // Apply branch filter if provided
         if ($branchId) {
-            $query->whereHas("companies", function ($query) use ($branchId) {
-                $query->where("company_users_companies.branch_id", $branchId);
+            $query->whereHas("users.companyUserCompanies", function ($query) use ($branchId) {
+                $query->where("branch_id", $branchId);
             });
         }
 

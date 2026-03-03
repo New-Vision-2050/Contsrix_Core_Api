@@ -192,4 +192,14 @@ class CompanyCRUDService
         $cacheKey = 'current_company_logged_in_' . $company->id . '_' . $branch->id;
         Cache::forget($cacheKey);
     }
+
+    public function getClientCompanies(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->getClientCompanies($page, $perPage);
+    }
+
+    public function getBrokerCompanies(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->getBrokerCompanies($page, $perPage);
+    }
 }

@@ -1,0 +1,255 @@
+{
+	"info": {
+		"_postman_id": "term-service-setting-api-collection",
+		"name": "TermServiceSetting API",
+		"description": "API endpoints for managing Term Service Settings with hierarchical term relationships",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Term Service Settings",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/term-service-settings?page=1&per_page=15",
+					"host": ["{{url}}"],
+					"path": ["term-service-settings"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"description": "Page number"
+						},
+						{
+							"key": "per_page",
+							"value": "15",
+							"description": "Items per page"
+						}
+					]
+				},
+				"description": "Get paginated list of term service settings"
+			}
+		},
+		{
+			"name": "Create Term Service Setting",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Service Name\",\n    \"term_setting_ids\": [1, 2, 3]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/term-service-settings",
+					"host": ["{{url}}"],
+					"path": ["term-service-settings"]
+				},
+				"description": "Create a new term service setting with leaf term settings"
+			}
+		},
+		{
+			"name": "Get Term Service Setting",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/term-service-settings/{{term_service_setting_id}}",
+					"host": ["{{url}}"],
+					"path": ["term-service-settings", "{{term_service_setting_id}}"]
+				},
+				"description": "Get a single term service setting with hierarchical term structure showing parents and leaves"
+			}
+		},
+		{
+			"name": "Update Term Service Setting",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"Updated Service Name\",\n    \"term_setting_ids\": [1, 2, 3, 4]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/term-service-settings/{{term_service_setting_id}}",
+					"host": ["{{url}}"],
+					"path": ["term-service-settings", "{{term_service_setting_id}}"]
+				},
+				"description": "Update an existing term service setting"
+			}
+		},
+		{
+			"name": "Delete Term Service Setting",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/term-service-settings/{{term_service_setting_id}}",
+					"host": ["{{url}}"],
+					"path": ["term-service-settings", "{{term_service_setting_id}}"]
+				},
+				"description": "Delete a term service setting"
+			}
+		},
+		{
+			"name": "Export Term Service Settings",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"format\": \"xlsx\",\n    \"ids\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/term-service-settings/export",
+					"host": ["{{url}}"],
+					"path": ["term-service-settings", "export"]
+				},
+				"description": "Export term service settings to XLSX or CSV format"
+			}
+		},
+		{
+			"name": "Get All Term Service Settings with Terms",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "X-Tenant",
+						"value": "{{company_id}}",
+						"type": "text",
+						"description": "Company ID for tenant context"
+					}
+				],
+				"url": {
+					"raw": "{{url}}/term-service-settings/all",
+					"host": ["{{url}}"],
+					"path": ["term-service-settings", "all"]
+				},
+				"description": "Get all term service settings with their complete term hierarchies"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		},
+		{
+			"key": "term_service_setting_id",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

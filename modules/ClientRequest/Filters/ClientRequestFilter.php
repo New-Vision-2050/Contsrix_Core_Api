@@ -1,0 +1,116 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\ClientRequest\Filters;
+
+use BasePackage\Shared\Filters\SearchModelFilter;
+
+class ClientRequestFilter extends SearchModelFilter
+{
+    public $relations = [
+        'clientRequestType',
+        'clientRequestReceiverFrom',
+        'services',
+        'termSetting',
+        'branch',
+        'management',
+    ];
+
+    public function clientRequestTypeId($typeId)
+    {
+        return $this->where('client_request_type_id', $typeId);
+    }
+
+    public function clientRequestReceiverFromId($receiverId)
+    {
+        return $this->where('client_request_receiver_from_id', $receiverId);
+    }
+
+    public function clientType($clientType)
+    {
+        return $this->where('client_type', 'like', '%' . $clientType . '%');
+    }
+
+    public function clientId($clientId)
+    {
+        return $this->where('client_id', $clientId);
+    }
+
+    public function statusClientRequest($status)
+    {
+        return $this->where('status_client_request', $status);
+    }
+
+    public function content($content)
+    {
+        return $this->where('content', 'like', '%' . $content . '%');
+    }
+
+    public function termSettingId($termSettingId)
+    {
+        return $this->where('term_setting_id', $termSettingId);
+    }
+
+    public function branchId($branchId)
+    {
+        return $this->where('branch_id', $branchId);
+    }
+
+    public function managementId($managementId)
+    {
+        return $this->where('management_id', $managementId);
+    }
+
+    public function serviceId($serviceId)
+    {
+        return $this->whereHas('services', function ($query) use ($serviceId) {
+            $query->where('client_request_services.id', $serviceId);
+        });
+    }
+
+    public function dateFrom($dateFrom)
+    {
+        return $this->where('created_at', '>=', $dateFrom);
+    }
+
+    public function dateTo($dateTo)
+    {
+        return $this->where('created_at', '<=', $dateTo);
+    }
+
+    public function pending()
+    {
+        return $this->where('status_client_request', 'pending');
+    }
+
+    public function accepted()
+    {
+        return $this->where('status_client_request', 'accepted');
+    }
+
+    public function rejected()
+    {
+        return $this->where('status_client_request', 'rejected');
+    }
+
+    public function clientPriceOfferStatus($status)
+    {
+        return $this->where('client_price_offer_status', $status);
+    }
+
+    public function priceOfferPending()
+    {
+        return $this->where('client_price_offer_status', 'pending');
+    }
+
+    public function priceOfferAccepted()
+    {
+        return $this->where('client_price_offer_status', 'accepted');
+    }
+
+    public function priceOfferRejected()
+    {
+        return $this->where('client_price_offer_status', 'rejected');
+    }
+}

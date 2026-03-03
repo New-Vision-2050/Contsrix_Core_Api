@@ -16,6 +16,8 @@ use Modules\Company\CompanyCore\Presenters\CompanyPresenter;
 use Modules\Company\CompanyCore\Presenters\CompanyUnAuthPresenter;
 use Modules\Company\CompanyCore\Requests\CreateCompanyRequest;
 use Modules\Company\CompanyCore\Requests\DeleteCompanyRequest;
+use Modules\Company\CompanyCore\Requests\GetBrokerCompaniesRequest;
+use Modules\Company\CompanyCore\Requests\GetClientCompaniesRequest;
 use Modules\Company\CompanyCore\Requests\GetCompanyListRequest;
 use Modules\Company\CompanyCore\Requests\GetCompanyRequest;
 use Modules\Company\CompanyCore\Requests\UpdateCompanyRequest;
@@ -58,6 +60,26 @@ class CompanyController extends Controller
     {
 
         $list = $this->companyService->list(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(CompanyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function getClientCompanies(GetClientCompaniesRequest $request): JsonResponse
+    {
+        $list = $this->companyService->getClientCompanies(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(CompanyPresenter::collection($list['data']), paginationSettings: $list['pagination']);
+    }
+
+    public function getBrokerCompanies(GetBrokerCompaniesRequest $request): JsonResponse
+    {
+        $list = $this->companyService->getBrokerCompanies(
             (int) $request->get('page', 1),
             (int) $request->get('per_page', 10)
         );

@@ -80,12 +80,12 @@ class CompanyUserRepository extends BaseRepository
             $query = $this->model->with($relations);
         }
         $query = $query->when($type != null, function ($query) use ($type) {
-            $query->whereHas("companies", function ($query) use ($type) {
-                $query->where("company_users_companies.role", $type);
+            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
+                $query->where("role", $type);
             });
         })->when(request()->has('sub_entity_id'), function ($query) use ($type) {
-            $query->whereHas("companies", function ($query) use ($type) {
-                $query->where("company_users_companies.sub_entity_id", request()->sub_entity_id);
+            $query->whereHas("users.companyUserCompanies", function ($query) use ($type) {
+                $query->where("sub_entity_id", request()->sub_entity_id);
             });
         })
 
@@ -131,18 +131,18 @@ class CompanyUserRepository extends BaseRepository
             $query->whereYear('created_at', $date->year)
                 ->whereMonth('created_at', $date->month);
         })->when($status == CompanyUserStatus::ACTIVE->value, function ($q) { //one active mean user active
-            $q->whereHas("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE->value);
+            $q->whereHas("users.companyUserCompanies", function ($query) {
+                $query->where("status", CompanyUserStatus::ACTIVE->value);
             });
         })->when($status == CompanyUserStatus::INACTIVE->value, function ($q) { //use does not have any active and inactive
-            $q->WhereDoesntHave("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE->value)->orWhere("company_users_companies.status", CompanyUserStatus::PENDING->value);
+            $q->WhereDoesntHave("users.companyUserCompanies", function ($query) {
+                $query->where("status", CompanyUserStatus::ACTIVE->value)->orWhere("status", CompanyUserStatus::PENDING->value);
             });
         })->when($status == CompanyUserStatus::PENDING->value, function ($q) {//user would have at least one pending and does not have any active rolr
-            $q->WhereDoesntHave("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::ACTIVE->value);
-            })->whereHas("companies", function ($query) {
-                $query->where("company_users_companies.status", CompanyUserStatus::PENDING->value);
+            $q->WhereDoesntHave("users.companyUserCompanies", function ($query) {
+                $query->where("status", CompanyUserStatus::ACTIVE->value);
+            })->whereHas("users.companyUserCompanies", function ($query) {
+                $query->where("status", CompanyUserStatus::PENDING->value);
             });
         })->count();
     }
@@ -273,8 +273,7 @@ class CompanyUserRepository extends BaseRepository
         return $this->model->withoutParentModel()
             ->with(['companies' => function ($query) {
                 $query->withoutTenancy()
-                    ->with('domains')
-                    ->wherePivotNull('deleted_at');
+                    ->with('domains');
             }])
             ->where('email', $email)
             ->first();
@@ -934,9 +933,9 @@ class CompanyUserRepository extends BaseRepository
 
         // Filter by role if specified
         if ($role !== null) {
-            $query->whereHas('companies', function ($q) use ($role) {
+            $query->whereHas('users.companyUserCompanies', function ($q) use ($role) {
                 $q->where('company_id', tenant('id'))
-                    ->where('company_users_companies.role', $role);
+                    ->where('role', $role);
             });
         }
 

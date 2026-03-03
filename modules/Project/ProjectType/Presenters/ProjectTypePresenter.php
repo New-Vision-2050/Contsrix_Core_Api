@@ -1,0 +1,97 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Project\ProjectType\Presenters;
+
+use Modules\Project\ProjectType\Models\ProjectType;
+use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Project\ProjectType\Presenters\ProjectDataSettingPresenter;
+use Modules\Project\ProjectType\Presenters\AttachmentContractSettingPresenter;
+use Modules\Project\ProjectType\Presenters\AttachmentTermsContractSettingPresenter;
+use Modules\Project\ProjectType\Presenters\ContractorContractSettingPresenter;
+use Modules\Project\ProjectType\Presenters\EmployeeContractSettingPresenter;
+use Modules\Project\ProjectType\Presenters\DepartmentContractSettingPresenter;
+
+class ProjectTypePresenter extends AbstractPresenter
+{
+    private ProjectType $projectType;
+
+    public function __construct(ProjectType $projectType)
+    {
+        $this->projectType = $projectType;
+    }
+
+    protected function present(bool $isListing = false): array
+    {
+        $data = [
+            'id' => $this->projectType->id,
+            'name' => $this->projectType->name,
+            'icon' => $this->projectType->icon,
+            'parent_id' => $this->projectType->parent_id,
+            'is_created' => $this->projectType->is_created,
+            'is_have_schema' => $this->projectType->is_have_schema,
+            'is_active' => $this->projectType->is_active,
+            'path' => $this->projectType->path,
+        ];
+
+        if (!$isListing) {
+            $data['parent'] = $this->projectType->parent ? [
+                'id' => $this->projectType->parent->id,
+                'name' => $this->projectType->parent->name,
+            ] : null;
+
+            $data['children'] = $this->projectType->children->map(function ($child) {
+                return [
+                    'id' => $child->id,
+                    'name' => $child->name,
+                    'icon' => $child->icon,
+                    'is_have_schema' => $child->is_have_schema,
+                ];
+            })->toArray();
+
+            if ($this->projectType->is_have_schema && $this->projectType->relationLoaded('activeSchemas')) {
+                $data['schemas'] = $this->projectType->activeSchemas->map(function ($schema) {
+                    return [
+                        'id' => $schema->id,
+                        'name' => $schema->name,
+                        'field_type' => $schema->field_type,
+                        'is_required' => $schema->is_required,
+                        'options' => $schema->options,
+                        'order' => $schema->order,
+                    ];
+                })->toArray();
+            }
+
+            // Add contract settings wrapped in permissions array
+            $permissions = [];
+            if ($this->projectType->relationLoaded('projectDataSetting') && $this->projectType->projectDataSetting) {
+                $permissions['project_data_setting'] = (new ProjectDataSettingPresenter($this->projectType->projectDataSetting))->toArray();
+            }
+
+            if ($this->projectType->relationLoaded('attachmentContractSetting') && $this->projectType->attachmentContractSetting) {
+                $permissions['attachment_contract_setting'] = (new AttachmentContractSettingPresenter($this->projectType->attachmentContractSetting))->toArray();
+            }
+
+            if ($this->projectType->relationLoaded('attachmentTermsContractSetting') && $this->projectType->attachmentTermsContractSetting) {
+                $permissions['attachment_terms_contract_setting'] = (new AttachmentTermsContractSettingPresenter($this->projectType->attachmentTermsContractSetting))->toArray();
+            }
+
+            if ($this->projectType->relationLoaded('contractorContractSetting') && $this->projectType->contractorContractSetting) {
+                $permissions['contractor_contract_setting'] = (new ContractorContractSettingPresenter($this->projectType->contractorContractSetting))->toArray();
+            }
+
+            if ($this->projectType->relationLoaded('employeeContractSetting') && $this->projectType->employeeContractSetting) {
+                $permissions['employee_contract_setting'] = (new EmployeeContractSettingPresenter($this->projectType->employeeContractSetting))->toArray();
+            }
+
+            if ($this->projectType->relationLoaded('departmentContractSetting') && $this->projectType->departmentContractSetting) {
+                $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectType->departmentContractSetting))->toArray();
+            }
+
+            $data['permissions'] = $permissions;
+        }
+
+        return $data;
+    }
+}
