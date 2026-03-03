@@ -106,22 +106,44 @@ class ProjectTypeController extends Controller
     public function getSchemas(GetProjectTypeRequest $request): JsonResponse
     {
         $projectTypeId = (int) $request->route('id');
-        
+
         // Get the project type with children
         $projectType = $this->projectTypeService->getProjectTypeWithChildren($projectTypeId);
-        
+
         // Check if project type has children
         if ($projectType->children->isEmpty()) {
             return Json::items([]);
         }
-        
+
         // Check if project type is at second level (has parent but parent has no parent)
         $isSecondLevel = $projectType->parent_id && $projectType->parent && is_null($projectType->parent->parent_id);
-        
+
         if (!$isSecondLevel) {
             return Json::items([]);
         }
-        
+
+        // Get schemas only if has children and is at second level
+        $schemas = $this->projectTypeService->getSchemasForProjectType($projectTypeId);
+
+        return Json::items(SchemaPresenter::collection($schemas));
+    }
+
+
+    public function getSecondLevelProjectTypeSchemas(GetProjectTypeRequest $request): JsonResponse
+    {
+        $projectTypeId = (int) $request->route('id');
+
+        // Get the project type with children
+        $projectType = $this->projectTypeService->getProjectTypeWithChildren($projectTypeId);
+
+
+        // Check if project type is at second level (has parent but parent has no parent)
+        $isSecondLevel = $projectType->parent_id && $projectType->parent && is_null($projectType->parent->parent_id);
+
+        if (!$isSecondLevel) {
+            return Json::items([]);
+        }
+
         // Get schemas only if has children and is at second level
         $schemas = $this->projectTypeService->getSchemasForProjectType($projectTypeId);
 
@@ -152,7 +174,7 @@ class ProjectTypeController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'project_type.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new ProjectTypeExport($this->projectTypeService, $filters), $fileName);
     }
 }
