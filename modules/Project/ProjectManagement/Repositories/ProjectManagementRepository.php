@@ -48,14 +48,14 @@ class ProjectManagementRepository extends BaseRepository
     public function getProjectManagement(UuidInterface $id): ProjectManagement
     {
         return $this->model->with([
-            'projectType.projectDataSetting',
-            'projectType.attachmentContractSetting',
-            'projectType.attachmentTermsContractSetting',
-            'projectType.contractorContractSetting',
-            'projectType.employeeContractSetting',
-            'projectType.departmentContractSetting',
+            'projectType',
             'subProjectType',
-            'subSubProjectType',
+            'subSubProjectType.projectDataSetting',
+            'subSubProjectType.attachmentContractSetting',
+            'subSubProjectType.attachmentTermsContractSetting',
+            'subSubProjectType.contractorContractSetting',
+            'subSubProjectType.employeeContractSetting',
+            'subSubProjectType.departmentContractSetting',
             'manager',
             'branch',
             'ownerCompany',

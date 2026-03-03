@@ -8,7 +8,6 @@ use BasePackage\Shared\Presenters\Json;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\TermServiceSetting\Handlers\DeleteTermServiceSettingHandler;
-use Modules\TermServiceSetting\Handlers\UpdateTermServiceSettingHandler;
 use Modules\TermServiceSetting\Presenters\TermServiceSettingPresenter;
 use Modules\TermServiceSetting\Requests\CreateTermServiceSettingRequest;
 use Modules\TermServiceSetting\Requests\DeleteTermServiceSettingRequest;
@@ -23,7 +22,6 @@ class TermServiceSettingController extends Controller
 {
     public function __construct(
         private TermServiceSettingCRUDService $termServiceSettingService,
-        private UpdateTermServiceSettingHandler $updateTermServiceSettingHandler,
         private DeleteTermServiceSettingHandler $deleteTermServiceSettingHandler,
     ) {
     }
@@ -58,14 +56,11 @@ class TermServiceSettingController extends Controller
 
     public function update(UpdateTermServiceSettingRequest $request): JsonResponse
     {
-        $command = $request->createUpdateTermServiceSettingCommand();
-        $this->updateTermServiceSettingHandler->handle($command);
+        $updatedItem = $this->termServiceSettingService->update($request->createUpdateTermServiceSettingDTO());
 
-        $item = $this->termServiceSettingService->get($command->getId());
+        $presenter = new TermServiceSettingPresenter($updatedItem);
 
-        $presenter = new TermServiceSettingPresenter($item);
-
-        return Json::item( $presenter->getData());
+        return Json::item($presenter->getData());
     }
 
     public function delete(DeleteTermServiceSettingRequest $request): JsonResponse
