@@ -6,6 +6,7 @@ namespace Modules\ClientRequest\Services;
 
 use Illuminate\Support\Collection;
 use Modules\ClientRequest\DTO\CreateClientRequestDTO;
+use Modules\ClientRequest\DTO\UpdateClientRequestDTO;
 use Modules\ClientRequest\Models\ClientRequest;
 use Modules\ClientRequest\Repositories\ClientRequestRepository;
 use Ramsey\Uuid\UuidInterface;
@@ -25,6 +26,7 @@ class ClientRequestCRUDService
          return $this->repository->createClientRequest(
              $createClientRequestDTO->toArray(),
              $createClientRequestDTO->service_ids,
+             $createClientRequestDTO->term_setting_ids,
              $createClientRequestDTO->attachments
          );
     }
@@ -42,5 +44,20 @@ class ClientRequestCRUDService
         return $this->repository->getClientRequest(
             id: $id,
         );
+    }
+
+    public function update(UpdateClientRequestDTO $updateClientRequestDTO): ClientRequest
+    {
+        $uuid = \Ramsey\Uuid\Uuid::fromString($updateClientRequestDTO->id);
+        
+        $this->repository->updateClientRequest(
+            $uuid,
+            $updateClientRequestDTO->toArray(),
+            $updateClientRequestDTO->service_ids,
+            $updateClientRequestDTO->term_setting_ids,
+            $updateClientRequestDTO->attachments
+        );
+
+        return $this->repository->getClientRequest($uuid);
     }
 }

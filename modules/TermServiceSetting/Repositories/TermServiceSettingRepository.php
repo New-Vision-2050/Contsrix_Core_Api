@@ -56,13 +56,13 @@ class TermServiceSettingRepository extends BaseRepository
     {
         return DB::transaction(function () use ($data, $termSettingIds) {
             $data['company_id'] = tenant('company_id');
-            
+
             $termServiceSetting = $this->create($data);
-            
+
             if (!empty($termSettingIds)) {
                 $termServiceSetting->termSettings()->sync($termSettingIds);
             }
-            
+
             return $termServiceSetting->load(['termSettings' => function ($query) {
                 $query->with(['parent.parent.parent.parent', 'children.children.children.children']);
             }]);
@@ -74,11 +74,11 @@ class TermServiceSettingRepository extends BaseRepository
         return DB::transaction(function () use ($id, $data, $termSettingIds) {
             $termServiceSetting = $this->findOneOrFail($id);
             $termServiceSetting->update($data);
-            
+
             if (!empty($termSettingIds)) {
                 $termServiceSetting->termSettings()->sync($termSettingIds);
             }
-            
+
             return $termServiceSetting->load(['termSettings' => function ($query) {
                 $query->with(['parent.parent.parent.parent', 'children.children.children.children']);
             }]);
@@ -89,7 +89,18 @@ class TermServiceSettingRepository extends BaseRepository
     {
         return DB::transaction(function () use ($id) {
             $termServiceSetting = $this->findOneOrFail($id);
+
+            // Check if there are any ClientRequests using this TermServiceSetting
+            $hasClientRequests = \Modules\ClientRequest\Models\ClientRequestServiceTerm::where('term_service_setting_id', $id)->exists();
+
+            if ($hasClientRequests) {
+                throw new \Exception('Cannot delete TermServiceSetting: It is being used by one or more Client Requests');
+            }
+
+            // Delete from pivot table (term_service_setting_term_setting)
             $termServiceSetting->termSettings()->detach();
+
+            // Delete the TermServiceSetting itself
             return $termServiceSetting->delete();
         });
     }

@@ -18,6 +18,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::post('/export', [ClientRequestController::class, 'export']);
     Route::get('/{id}', [ClientRequestController::class, 'show']);
     Route::put('/{id}', [ClientRequestController::class, 'update']);
+    Route::put('/{id}/full', [ClientRequestController::class, 'updateFull']);
     Route::delete('/{id}', [ClientRequestController::class, 'delete']);
 
 

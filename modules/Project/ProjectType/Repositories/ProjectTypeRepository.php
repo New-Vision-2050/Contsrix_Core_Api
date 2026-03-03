@@ -32,9 +32,16 @@ class ProjectTypeRepository extends BaseRepository
 
     public function getProjectType(int $id): ProjectType
     {
-        return $this->findOneByOrFail([
-            'id' => $id,
-        ]);
+        return $this->model->with([
+            'projectDataSetting',
+            'attachmentContractSetting',
+            'attachmentTermsContractSetting',
+            'contractorContractSetting',
+            'employeeContractSetting',
+            'departmentContractSetting',
+            'parent',
+            'children'
+        ])->findOrFail($id);
     }
 
     public function createProjectType(array $data): ProjectType
@@ -114,7 +121,7 @@ class ProjectTypeRepository extends BaseRepository
                 ->where('id', $data['parent_id'])
                 ->where('company_id', $data['company_id'])
                 ->first();
-                
+
             if (!$parent) {
                 throw new \Exception(
                     "Parent project type with ID {$data['parent_id']} not found for company {$data['company_id']}. " .
@@ -122,7 +129,7 @@ class ProjectTypeRepository extends BaseRepository
                 );
             }
         }
-        
+
         $projectType = $this->create($data);
 
         if (!empty($schemaIds)) {

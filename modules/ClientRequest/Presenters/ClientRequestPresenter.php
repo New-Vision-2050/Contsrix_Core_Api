@@ -20,6 +20,7 @@ class ClientRequestPresenter extends AbstractPresenter
     {
         $data = [
             'id' => $this->clientRequest->id,
+            'serial_number' => $this->clientRequest->serial_number,
             'company_id' => $this->clientRequest->company_id,
             'client_request_type_id' => $this->clientRequest->client_request_type_id,
             'client_request_receiver_from_id' => $this->clientRequest->client_request_receiver_from_id,
@@ -28,7 +29,6 @@ class ClientRequestPresenter extends AbstractPresenter
             'content' => $this->clientRequest->content,
             'status_client_request' => $this->clientRequest->status_client_request,
             'client_price_offer_status' => $this->clientRequest->client_price_offer_status,
-            'term_setting_id' => $this->clientRequest->term_setting_id,
             'branch_id' => $this->clientRequest->branch_id,
             'management_id' => $this->clientRequest->management_id,
             'created_at' => $this->clientRequest->created_at?->toDateTimeString(),
@@ -95,16 +95,24 @@ class ClientRequestPresenter extends AbstractPresenter
             })->toArray();
         }
 
-        // Add term setting relationship
-        $data['term_setting'] = null;
-        if ($this->clientRequest->relationLoaded('termSetting') && $this->clientRequest->termSetting) {
-            $data['term_setting'] = [
-                'id' => $this->clientRequest->termSetting->id,
-                'name' => $this->clientRequest->termSetting->name ?? null,
-                'description' => $this->clientRequest->termSetting->description ?? null,
-                'is_active' => $this->clientRequest->termSetting->is_active ?? null,
-                'created_at' => $this->clientRequest->termSetting->created_at?->toDateTimeString(),
-            ];
+        // Add term settings relationship - build tree from serviceTerms
+        $data['term_service_settings'] = [];
+        if ($this->clientRequest->relationLoaded('serviceTerms') && $this->clientRequest->serviceTerms) {
+            $data['term_service_settings'] = $this->buildServiceTermTrees($this->clientRequest->serviceTerms);
+        }
+        
+        // Keep old term_settings for backward compatibility (flat list)
+        $data['term_settings'] = [];
+        if ($this->clientRequest->relationLoaded('termSettings') && $this->clientRequest->termSettings) {
+            $data['term_settings'] = $this->clientRequest->termSettings->map(function ($termSetting) {
+                return [
+                    'id' => $termSetting->id,
+                    'name' => $termSetting->name ?? null,
+                    'description' => $termSetting->description ?? null,
+                    'is_active' => $termSetting->is_active ?? null,
+                    'created_at' => $termSetting->created_at?->toDateTimeString(),
+                ];
+            })->toArray();
         }
 
         // Add branch relationship - always include even if null
@@ -162,5 +170,128 @@ class ClientRequestPresenter extends AbstractPresenter
         }
 
         return round($bytes, $precision) . ' ' . $units[$i];
+    }
+
+    private function buildServiceTermTrees($serviceTerms): array
+    {
+        $result = [];
+        
+        foreach ($serviceTerms as $serviceTerm) {
+            // Get the TermServiceSetting
+            $termServiceSetting = $serviceTerm->termServiceSetting;
+            
+            if (!$termServiceSetting) continue;
+            
+            // Get all leaf term IDs from the JSON column
+            $leafTermIds = $serviceTerm->term_ids ?? [];
+            
+            if (empty($leafTermIds)) continue;
+            
+            // Load all leaf terms with their full parent chain recursively
+            $leafTerms = \Modules\Project\TermSetting\Models\TermSetting::query()
+                ->whereIn('id', $leafTermIds)
+                ->with(['parent' => function ($query) {
+                    $query->with('parent.parent.parent.parent.parent.parent.parent.parent');
+                }])
+                ->get();
+            
+            // Build tree from leaf terms
+            $termTree = $this->buildTermTreeFromLeafs($leafTerms);
+            
+            // Create service node with term tree as children
+            $result[] = [
+                'id' => $termServiceSetting->id,
+                'name' => $termServiceSetting->name,
+                'created_at' => $termServiceSetting->created_at?->toDateTimeString(),
+                'updated_at' => $termServiceSetting->updated_at?->toDateTimeString(),
+                'children' => $termTree,
+            ];
+        }
+        
+        return $result;
+    }
+
+    private function buildTermTreeFromLeafs($leafTerms): array
+    {
+        $trees = [];
+        
+        foreach ($leafTerms as $leafTerm) {
+            // Build the path from leaf to root
+            $path = $this->buildPathToRoot($leafTerm);
+            
+            // Merge the path into the tree
+            $this->mergePathIntoTree($trees, $path);
+        }
+        
+        return array_values($trees);
+    }
+
+    private function buildPathToRoot($term): array
+    {
+        $path = [];
+        $current = $term;
+        
+        // Build path from leaf to root
+        while ($current) {
+            array_unshift($path, $current);
+            $current = $current->parent;
+        }
+        
+        return $path;
+    }
+
+    private function mergePathIntoTree(&$trees, array $path)
+    {
+        if (empty($path)) return;
+        
+        $rootId = $path[0]->id;
+        
+        // If root doesn't exist, create it
+        if (!isset($trees[$rootId])) {
+            $trees[$rootId] = $this->buildTermNode($path[0]);
+        }
+        
+        // Merge the rest of the path
+        $currentNode = &$trees[$rootId];
+        for ($i = 1; $i < count($path); $i++) {
+            $term = $path[$i];
+            $found = false;
+            
+            // Check if this child already exists
+            if (isset($currentNode['children'])) {
+                foreach ($currentNode['children'] as &$child) {
+                    if ($child['id'] == $term->id) {
+                        $currentNode = &$child;
+                        $found = true;
+                        break;
+                    }
+                }
+            }
+            
+            // If not found, add it
+            if (!$found) {
+                if (!isset($currentNode['children'])) {
+                    $currentNode['children'] = [];
+                }
+                $newChild = $this->buildTermNode($term);
+                $currentNode['children'][] = &$newChild;
+                $currentNode = &$newChild;
+            }
+        }
+    }
+
+    private function buildTermNode($term): array
+    {
+        $node = [
+            'id' => $term->id,
+            'name' => $term->name ?? null,
+            'description' => $term->description ?? null,
+            'parent_id' => $term->parent_id,
+            'is_active' => $term->is_active ?? null,
+            'created_at' => $term->created_at?->toDateTimeString(),
+            'children' => [],
+        ];
+        
+        return $node;
     }
 }
