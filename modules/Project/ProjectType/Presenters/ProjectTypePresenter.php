@@ -46,6 +46,11 @@ class ProjectTypePresenter extends AbstractPresenter
         }
 
 
+        if ($this->projectType->relationLoaded('referenceProjectType')) {
+            $data['reference_project_type'] = $this->projectType->referenceProjectType;
+        }
+
+
         if (!$isListing) {
             $data['parent'] = $this->projectType->parent ? [
                 'id' => $this->projectType->parent->id,
