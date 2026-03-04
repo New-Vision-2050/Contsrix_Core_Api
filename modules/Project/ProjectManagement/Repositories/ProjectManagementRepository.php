@@ -117,7 +117,7 @@ class ProjectManagementRepository extends BaseRepository
         return (float) $this->model
             ->where('company_id', $companyId)
             ->where('created_at', '<=', $endDate)
-            ->sum('total_value');
+            ->sum('project_value');
     }
 
     /**
