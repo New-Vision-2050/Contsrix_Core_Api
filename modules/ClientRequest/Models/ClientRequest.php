@@ -50,6 +50,7 @@ class ClientRequest extends Model implements HasMedia
         'termSettings',
         'serviceTerms',
         'branch',
+        "media",
         'management',
     ];
 
