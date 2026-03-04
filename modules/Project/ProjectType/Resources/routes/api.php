@@ -14,6 +14,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/filter', [ProjectTypeController::class, 'getByFilter']);
     Route::post('/', [ProjectTypeController::class, 'store']);
     Route::post('/second-level', [ProjectTypeController::class, 'createSecondLevel']);
+    Route::put('/second-level/{id}', [ProjectTypeController::class, 'updateSecondLevel']);
     Route::post('/export', [ProjectTypeController::class, 'export']);
     Route::get('/roots', [ProjectTypeController::class, 'getRootProjectTypes']);
 

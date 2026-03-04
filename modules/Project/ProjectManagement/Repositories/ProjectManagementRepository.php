@@ -97,4 +97,50 @@ class ProjectManagementRepository extends BaseRepository
     {
         return $this->delete($id);
     }
+
+    /**
+     * Get total projects count for a company up to a specific date
+     */
+    public function getTotalProjectsCount(string $companyId, $endDate): int
+    {
+        return $this->model
+            ->where('company_id', $companyId)
+            ->where('created_at', '<=', $endDate)
+            ->count();
+    }
+
+    /**
+     * Get total projects value for a company up to a specific date
+     */
+    public function getTotalProjectsValue(string $companyId, $endDate): float
+    {
+        return (float) $this->model
+            ->where('company_id', $companyId)
+            ->where('created_at', '<=', $endDate)
+            ->sum('total_value');
+    }
+
+    /**
+     * Get active projects count for a company up to a specific date
+     */
+    public function getActiveProjectsCount(string $companyId, $endDate): int
+    {
+        return $this->model
+            ->where('company_id', $companyId)
+            ->where('created_at', '<=', $endDate)
+            ->where('status', 1)
+            ->count();
+    }
+
+    /**
+     * Get inactive projects count for a company up to a specific date
+     */
+    public function getInactiveProjectsCount(string $companyId, $endDate): int
+    {
+        return $this->model
+            ->where('company_id', $companyId)
+            ->where('created_at', '<=', $endDate)
+            ->where('status', 0)
+            ->count();
+    }
 }

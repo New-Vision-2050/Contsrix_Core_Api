@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Handlers\DeleteProjectTypeHandler;
 use Modules\Project\ProjectType\Handlers\UpdateProjectTypeHandler;
+use Modules\Project\ProjectType\Handlers\UpdateSecondLevelProjectTypeHandler;
 use Modules\Project\ProjectType\Presenters\ProjectTypePresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectTypeRequest;
 use Modules\Project\ProjectType\Requests\CreateSecondLevelProjectTypeRequest;
@@ -16,6 +17,7 @@ use Modules\Project\ProjectType\Requests\DeleteProjectTypeRequest;
 use Modules\Project\ProjectType\Requests\GetProjectTypeListRequest;
 use Modules\Project\ProjectType\Requests\GetProjectTypeRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectTypeRequest;
+use Modules\Project\ProjectType\Requests\UpdateSecondLevelProjectTypeRequest;
 use Modules\Project\ProjectType\Services\ProjectTypeCRUDService;
 use Modules\Project\ProjectType\Exports\ProjectTypeExport;
 use Modules\Project\ProjectType\Requests\ExportProjectTypeRequest;
@@ -28,6 +30,7 @@ class ProjectTypeController extends Controller
     public function __construct(
         private ProjectTypeCRUDService $projectTypeService,
         private UpdateProjectTypeHandler $updateProjectTypeHandler,
+        private UpdateSecondLevelProjectTypeHandler $updateSecondLevelProjectTypeHandler,
         private DeleteProjectTypeHandler $deleteProjectTypeHandler,
     ) {
     }
@@ -99,6 +102,18 @@ class ProjectTypeController extends Controller
         $createdItem = $this->projectTypeService->createSecondLevelProjectType($request->createDTO());
 
         $presenter = new ProjectTypePresenter($createdItem);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function updateSecondLevel(UpdateSecondLevelProjectTypeRequest $request): JsonResponse
+    {
+        $command = $request->createCommand();
+        $this->updateSecondLevelProjectTypeHandler->handle($command);
+
+        $item = $this->projectTypeService->get($command->getId());
+
+        $presenter = new ProjectTypePresenter($item);
 
         return Json::item($presenter->getData());
     }
