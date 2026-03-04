@@ -16,15 +16,19 @@ use Modules\Project\ProjectManagement\Requests\GetProjectManagementListRequest;
 use Modules\Project\ProjectManagement\Requests\GetProjectManagementRequest;
 use Modules\Project\ProjectManagement\Requests\UpdateProjectManagementRequest;
 use Modules\Project\ProjectManagement\Services\ProjectManagementCRUDService;
+use Modules\Project\ProjectManagement\Services\ProjectManagementDashboardWidgetsService;
+use Modules\Project\ProjectManagement\Presenters\ProjectManagementDashboardWidgetsPresenter;
 use Modules\Project\ProjectManagement\Exports\ProjectManagementExport;
 use Modules\Project\ProjectManagement\Requests\ExportProjectManagementRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
+use Illuminate\Http\Request;
 
 class ProjectManagementController extends Controller
 {
     public function __construct(
         private ProjectManagementCRUDService $projectManagementService,
+        private ProjectManagementDashboardWidgetsService $dashboardWidgetsService,
         private UpdateProjectManagementHandler $updateProjectManagementHandler,
         private DeleteProjectManagementHandler $deleteProjectManagementHandler,
     ) {
@@ -89,5 +93,23 @@ class ProjectManagementController extends Controller
         $filters = $request->getFilters();
         
         return Excel::download(new ProjectManagementExport($this->projectManagementService, $filters), $fileName);
+    }
+
+    /**
+     * Get project dashboard widgets data
+     */
+    public function widgets(Request $request): JsonResponse
+    {
+        $companyId = tenant('id');
+        $dateRange = [
+            'start_date' => $request->input('start_date'),
+            'end_date' => $request->input('end_date'),
+        ];
+
+        $widgetsData = $this->dashboardWidgetsService->getWidgetsData($companyId, $dateRange);
+
+        $presentedData = ProjectManagementDashboardWidgetsPresenter::presentWidgets($widgetsData);
+
+        return Json::items($presentedData);
     }
 }

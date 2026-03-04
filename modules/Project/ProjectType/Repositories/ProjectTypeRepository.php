@@ -177,6 +177,34 @@ class ProjectTypeRepository extends BaseRepository
         return collect();
     }
 
+    public function updateSecondLevelProjectType(int $id, array $data, array $schemaIds): ProjectType
+    {
+        // Load parent if parent_id is provided to prevent AsTree trait errors
+        if (!empty($data['parent_id'])) {
+            $parent = $this->model->withoutGlobalScopes()
+                ->where('id', $data['parent_id'])
+                ->where('company_id', tenant('id'))
+                ->first();
+
+            if (!$parent) {
+                throw new \Exception(
+                    "Parent project type with ID {$data['parent_id']} not found for company " . tenant('id') . ". " .
+                    "Please ensure the parent project type exists and belongs to the same company."
+                );
+            }
+        }
+
+        $this->update($id, $data);
+
+        $projectType = $this->findOneOrFail($id);
+
+        if (!empty($schemaIds)) {
+            $projectType->schemas()->sync($schemaIds);
+        }
+
+        return $projectType->fresh(['schemas', 'parent', 'referenceProjectType']);
+    }
+
     public function getProjectTypesByFilter(array $filters = []): Collection
     {
         $query = $this->model->query();
