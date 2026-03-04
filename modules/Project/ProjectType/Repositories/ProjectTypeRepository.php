@@ -61,7 +61,7 @@ class ProjectTypeRepository extends BaseRepository
 
     public function getDirectChildren(int $parentId): Collection
     {
-        return $this->model->where('parent_id', $parentId)
+        return $this->model->where('parent_id', $parentId)->with(["schemas","referenceProjectType"])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();

@@ -33,7 +33,23 @@ class ProjectTypePresenter extends AbstractPresenter
             'is_have_schema' => $this->projectType->is_have_schema,
             'is_active' => $this->projectType->is_active,
             'path' => $this->projectType->path,
+            "reference_project_type_id"=>$this->projectType->reference_project_type_id,
         ];
+        if ($this->projectType->is_have_schema && $this->projectType->relationLoaded('schemas')) {
+            $data['schemas'] = $this->projectType->schemas->map(function ($schema) {
+                return [
+                    'id' => $schema->id,
+                    'name' => $schema->name,
+
+                ];
+            })->toArray();
+        }
+
+
+        if ($this->projectType->relationLoaded('referenceProjectType')) {
+            $data['reference_project_type'] = $this->projectType->referenceProjectType;
+        }
+
 
         if (!$isListing) {
             $data['parent'] = $this->projectType->parent ? [
@@ -50,18 +66,6 @@ class ProjectTypePresenter extends AbstractPresenter
                 ];
             })->toArray();
 
-            if ($this->projectType->is_have_schema && $this->projectType->relationLoaded('activeSchemas')) {
-                $data['schemas'] = $this->projectType->activeSchemas->map(function ($schema) {
-                    return [
-                        'id' => $schema->id,
-                        'name' => $schema->name,
-                        'field_type' => $schema->field_type,
-                        'is_required' => $schema->is_required,
-                        'options' => $schema->options,
-                        'order' => $schema->order,
-                    ];
-                })->toArray();
-            }
 
             // Add contract settings wrapped in permissions array
             $permissions = [];
