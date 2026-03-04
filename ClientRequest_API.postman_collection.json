@@ -181,6 +181,36 @@
 							"description": "Request content (nullable)"
 						},
 						{
+							"key": "receiver_phone",
+							"value": "+966501234567",
+							"type": "text",
+							"description": "Receiver phone number (nullable)"
+						},
+						{
+							"key": "receiver_email",
+							"value": "receiver@example.com",
+							"type": "text",
+							"description": "Receiver email address (nullable)"
+						},
+						{
+							"key": "receiver_broker_type",
+							"value": "individual",
+							"type": "text",
+							"description": "Receiver broker type (nullable) - individual, company"
+						},
+						{
+							"key": "receiver_broker_id",
+							"value": "",
+							"type": "text",
+							"description": "Receiver broker UUID (nullable)"
+						},
+						{
+							"key": "receiver_employee_id",
+							"value": "",
+							"type": "text",
+							"description": "Receiver employee UUID (nullable)"
+						},
+						{
 							"key": "status_client_request",
 							"value": "pending",
 							"type": "text",
@@ -249,7 +279,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"client_request_type_id\": 1,\n    \"client_request_receiver_from_id\": 1,\n    \"client_type\": \"individual\",\n    \"client_id\": \"{{client_id}}\",\n    \"content\": \"طلب عرض سعر لمشروع تربة وخرسانة\",\n    \"status_client_request\": \"pending\",\n    \"service_ids\": [1, 2],\n    \"term_setting_ids\": [\n        {\"term_service_id\": 1, \"term_ids\": [1, 2, 3]},\n        {\"term_service_id\": 2, \"term_ids\": [4, 5, 6]}\n    ],\n    \"branch_id\": 1,\n    \"management_id\": 2\n}",
+					"raw": "{\n    \"client_request_type_id\": 1,\n    \"client_request_receiver_from_id\": 1,\n    \"client_type\": \"individual\",\n    \"client_id\": \"{{client_id}}\",\n    \"content\": \"طلب عرض سعر لمشروع تربة وخرسانة\",\n    \"receiver_phone\": \"+966501234567\",\n    \"receiver_email\": \"receiver@example.com\",\n    \"receiver_broker_type\": \"individual\",\n    \"receiver_broker_id\": null,\n    \"receiver_employee_id\": null,\n    \"status_client_request\": \"pending\",\n    \"service_ids\": [1, 2],\n    \"term_setting_ids\": [\n        {\"term_service_id\": 1, \"term_ids\": [1, 2, 3]},\n        {\"term_service_id\": 2, \"term_ids\": [4, 5, 6]}\n    ],\n    \"branch_id\": 1,\n    \"management_id\": 2\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -341,6 +371,36 @@
 							"value": "طلب اجتماع محدث",
 							"type": "text",
 							"description": "Request content (nullable)"
+						},
+						{
+							"key": "receiver_phone",
+							"value": "+966509876543",
+							"type": "text",
+							"description": "Receiver phone number (nullable)"
+						},
+						{
+							"key": "receiver_email",
+							"value": "updated@example.com",
+							"type": "text",
+							"description": "Receiver email address (nullable)"
+						},
+						{
+							"key": "receiver_broker_type",
+							"value": "company",
+							"type": "text",
+							"description": "Receiver broker type (nullable) - individual, company"
+						},
+						{
+							"key": "receiver_broker_id",
+							"value": "",
+							"type": "text",
+							"description": "Receiver broker UUID (nullable)"
+						},
+						{
+							"key": "receiver_employee_id",
+							"value": "",
+							"type": "text",
+							"description": "Receiver employee UUID (nullable)"
 						},
 						{
 							"key": "status_client_request",
