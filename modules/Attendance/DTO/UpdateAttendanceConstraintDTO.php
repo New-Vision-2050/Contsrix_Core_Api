@@ -21,6 +21,7 @@ class UpdateAttendanceConstraintDTO
         public ?bool $inherit_from_parent = null,
         public ?string $effective_from = null,
         public ?string $effective_to = null,
+        public ?int $max_over_time = null,
     ) {}
 
     public function toArray(): array
@@ -65,6 +66,9 @@ class UpdateAttendanceConstraintDTO
         }
         if ($this->effective_to !== null) {
             $data['effective_to'] = $this->effective_to;
+        }
+        if ($this->max_over_time !== null) {
+            $data['max_over_time'] = $this->max_over_time;
         }
 
         return $data;

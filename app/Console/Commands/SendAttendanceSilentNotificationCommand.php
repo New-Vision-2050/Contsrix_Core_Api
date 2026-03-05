@@ -50,6 +50,24 @@ class SendAttendanceSilentNotificationCommand extends Command
                 continue;
             }
 
+            $timezone = $attendance->timezone ?? config('app.timezone');
+            if ($attendance->end_time) {
+                $endTimeRaw = $attendance->end_time instanceof \DateTimeInterface
+                    ? $attendance->end_time->format('Y-m-d H:i:s')
+                    : (string) $attendance->end_time;
+                $endTime = Carbon::parse($endTimeRaw, $timezone);
+                $maxOverHours = (int) ($attendance->max_over_time ?? 0);
+                $latestClockOut = $endTime->copy()->addHours($maxOverHours);
+                $now = Carbon::now($timezone);
+                if ($now->lte($latestClockOut)) {
+                    if ($isDryRun) {
+                        $this->line("  SKIP (before deadline) user: {$user->name} - now {$now->toISOString()} <= latest_clock_out {$latestClockOut->toISOString()}");
+                    }
+                    $notificationsSkipped++;
+                    continue;
+                }
+            }
+
             // Prepare notification data
             $notificationData = [
                 'type' => 'attendance_tracking',
