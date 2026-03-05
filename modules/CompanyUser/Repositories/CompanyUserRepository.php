@@ -200,14 +200,20 @@ class CompanyUserRepository extends BaseRepository
 
             // Check if trying to delete self
             $currentUserId = auth()->user()->global_company_user_id ?? null;
-            if ($currentUserId && $currentUserId === $companyUser->global_id) {
-                throw new CustomException(__("validation.cannot_delete_yourself"), 400);
-            }
+//            if ($currentUserId && $currentUserId === $companyUser->global_id) {
+//                throw new CustomException(__("validation.cannot_delete_yourself"), 400);
+//            }
 
             // Check if trying to delete company owner
             $isOwner = $user->is_owner;
-            if ($isOwner) {
+            if ($isOwner && $role === CompanyUserRole::EMPLOYEE->value) {
                 throw new CustomException(__("validation.cannot_delete_company_owner"), 400);
+            }
+
+            if ($role == CompanyUserRole::CLIENT->value && count( $user->clientRequests))
+            {
+                throw new CustomException("this user has client requests ", 400);
+
             }
 
             $this->companyUserCompanyRepository->deleteWhere(["global_company_user_id" => $companyUser->global_id, "company_id" => $companyId, "role" => $role]);
