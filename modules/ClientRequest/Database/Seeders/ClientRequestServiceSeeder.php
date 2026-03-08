@@ -21,6 +21,6 @@ class ClientRequestServiceSeeder extends Seeder
             ],
         ];
 
-        DB::table('client_request_services')->insert($services);
+        DB::table('client_request_services')->insertOrIgnore($services);
     }
 }
