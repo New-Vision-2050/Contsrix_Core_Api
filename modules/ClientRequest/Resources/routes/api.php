@@ -17,7 +17,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::get('/status/widgets', [ClientRequestController::class, 'getStatusWidgets'])
         ->permission(Permission::CLIENT_REQUEST_LIST());
     Route::get('/', [ClientRequestController::class, 'index'])
-        ->permission(Permission::CLIENT_REQUEST_LIST());
+        ->permission(Permission::CLIENT_REQUEST_LIST(),Permission::PRICE_OFFER_LIST());
     Route::post('/', [ClientRequestController::class, 'store'])
         ->permission(Permission::CLIENT_REQUEST_CREATE());
     Route::post('/export', [ClientRequestController::class, 'export'])
