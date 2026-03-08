@@ -267,6 +267,22 @@ return [
     "folder"=>"المجلدات",
     "file"=>"الملفات",
     "log"=>"سجل الانشطة",
+    
+    // Client Relations Module
+    "client-requests"=>"طلبات العملاء",
+    "client-relations*client-requests"=>"طلبات العملاء",
+    "client-setting*term-service-settings"=>"اعدادات شروط الخدمة",
+    "client-setting*term-setting"=>"اعدادات الشروط",
+    
+    // Work Panel Module
+    "work-panel"=>"لوحة العمل",
+    "project-management"=>"ادارة المشاريع",
+    "work-panel*project-management"=>"ادارة المشاريع",
+    "project-settings"=>"اعدادات المشاريع",
+    "work-panel*project-settings"=>"اعدادات المشاريع",
+    "project-type"=>"نوع المشروع",
+    "term-setting"=>"اعدادات الشروط",
+    "term-service-settings"=>"اعدادات شروط الخدمة",
 
     // ================================================================================================
     // WEBSITE CMS MODULE TRANSLATIONS - ترجمات نظام إدارة محتوى الموقع

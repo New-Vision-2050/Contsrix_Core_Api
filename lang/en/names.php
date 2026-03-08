@@ -206,6 +206,24 @@ return [
     "border-number-information" => "Border Number Information",
     "program-management" => "Program Management",
     "support-data" => "support data",
+    
+    // Client Relations Module
+    "client-relations" => "Client Relations",
+    "client-requests" => "Client Requests",
+    "client-relations*client-requests" => "Client Requests",
+    "client-setting" => "Client Settings",
+    "client-setting*term-service-settings" => "Term Service Settings",
+    "client-setting*term-setting" => "Term Settings",
+    
+    // Work Panel Module
+    "work-panel" => "Work Panel",
+    "project-management" => "Project Management",
+    "work-panel*project-management" => "Project Management",
+    "project-settings" => "Project Settings",
+    "work-panel*project-settings" => "Project Settings",
+    "project-type" => "Project Type",
+    "term-setting" => "Term Settings",
+    "term-service-settings" => "Term Service Settings",
 
     // ================================================================================================
     // WEBSITE CMS MODULE TRANSLATIONS
