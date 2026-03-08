@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Project\ProjectType\Handlers\DeleteProjectTypeHandler;
 use Modules\Project\ProjectType\Handlers\UpdateProjectTypeHandler;
+use Modules\Project\ProjectType\Handlers\UpdateSecondLevelProjectTypeHandler;
 use Modules\Project\ProjectType\Presenters\ProjectTypePresenter;
 use Modules\Project\ProjectType\Requests\CreateProjectTypeRequest;
 use Modules\Project\ProjectType\Requests\CreateSecondLevelProjectTypeRequest;
@@ -16,6 +17,7 @@ use Modules\Project\ProjectType\Requests\DeleteProjectTypeRequest;
 use Modules\Project\ProjectType\Requests\GetProjectTypeListRequest;
 use Modules\Project\ProjectType\Requests\GetProjectTypeRequest;
 use Modules\Project\ProjectType\Requests\UpdateProjectTypeRequest;
+use Modules\Project\ProjectType\Requests\UpdateSecondLevelProjectTypeRequest;
 use Modules\Project\ProjectType\Services\ProjectTypeCRUDService;
 use Modules\Project\ProjectType\Exports\ProjectTypeExport;
 use Modules\Project\ProjectType\Requests\ExportProjectTypeRequest;
@@ -28,6 +30,7 @@ class ProjectTypeController extends Controller
     public function __construct(
         private ProjectTypeCRUDService $projectTypeService,
         private UpdateProjectTypeHandler $updateProjectTypeHandler,
+        private UpdateSecondLevelProjectTypeHandler $updateSecondLevelProjectTypeHandler,
         private DeleteProjectTypeHandler $deleteProjectTypeHandler,
     ) {
     }
@@ -103,25 +106,59 @@ class ProjectTypeController extends Controller
         return Json::item($presenter->getData());
     }
 
+    public function updateSecondLevel(UpdateSecondLevelProjectTypeRequest $request): JsonResponse
+    {
+        $command = $request->createCommand();
+        $this->updateSecondLevelProjectTypeHandler->handle($command);
+
+        $item = $this->projectTypeService->get($command->getId());
+
+        $presenter = new ProjectTypePresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
     public function getSchemas(GetProjectTypeRequest $request): JsonResponse
     {
         $projectTypeId = (int) $request->route('id');
-        
+
         // Get the project type with children
         $projectType = $this->projectTypeService->getProjectTypeWithChildren($projectTypeId);
-        
+
         // Check if project type has children
         if ($projectType->children->isEmpty()) {
             return Json::items([]);
         }
-        
+
         // Check if project type is at second level (has parent but parent has no parent)
         $isSecondLevel = $projectType->parent_id && $projectType->parent && is_null($projectType->parent->parent_id);
-        
+
         if (!$isSecondLevel) {
             return Json::items([]);
         }
-        
+
+        // Get schemas only if has children and is at second level
+        $schemas = $this->projectTypeService->getSchemasForProjectType($projectTypeId);
+
+        return Json::items(SchemaPresenter::collection($schemas));
+    }
+
+
+    public function getSecondLevelProjectTypeSchemas(GetProjectTypeRequest $request): JsonResponse
+    {
+        $projectTypeId = (int) $request->route('id');
+
+        // Get the project type with children
+        $projectType = $this->projectTypeService->getProjectTypeWithChildren($projectTypeId);
+
+
+        // Check if project type is at second level (has parent but parent has no parent)
+        $isSecondLevel = $projectType->parent_id && $projectType->parent && is_null($projectType->parent->parent_id);
+
+        if (!$isSecondLevel) {
+            return Json::items([]);
+        }
+
         // Get schemas only if has children and is at second level
         $schemas = $this->projectTypeService->getSchemasForProjectType($projectTypeId);
 
@@ -152,7 +189,7 @@ class ProjectTypeController extends Controller
         $format = $request->get('format', 'xlsx');
         $fileName = 'project_type.' . $format;
         $filters = $request->getFilters();
-        
+
         return Excel::download(new ProjectTypeExport($this->projectTypeService, $filters), $fileName);
     }
 }

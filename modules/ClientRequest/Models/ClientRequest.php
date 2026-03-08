@@ -50,6 +50,7 @@ class ClientRequest extends Model implements HasMedia
         'termSettings',
         'serviceTerms',
         'branch',
+        "media",
         'management',
     ];
 
@@ -60,6 +61,11 @@ class ClientRequest extends Model implements HasMedia
         'client_type',
         'client_id',
         'content',
+        'receiver_phone',
+        'receiver_email',
+        'receiver_broker_type',
+        'receiver_broker_id',
+        'receiver_employee_id',
         'status_client_request',
         'client_price_offer_status',
         'branch_id',
@@ -71,6 +77,8 @@ class ClientRequest extends Model implements HasMedia
         'id' => 'string',
         'company_id' => 'string',
         'client_id' => 'string',
+        'receiver_broker_id' => 'string',
+        'receiver_employee_id' => 'string',
         'status_client_request' => 'string',
         'client_price_offer_status' => 'string',
         'serial_number' => 'string',
