@@ -137,7 +137,7 @@ class UserAttendanceService
             
             // Active when now is inside period, or inside early clock-in window (e.g. start 16:00, early 30 min → active from 15:30)
             $isActive = $this->isPeriodActiveIncludingEarly($periodStart, $periodEnd, $now, $earlyClockInRules);
-
+  
             return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive, $earlyClockInRules);
         }, $periods);
 
@@ -303,8 +303,10 @@ class UserAttendanceService
         
         $getCurrentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
         $canClockIn = $isActive && !$hasActiveAttendance && (bool) !$getCurrentAttendance;
-        
-        // Expose early clock-in rules for the client (early_period, early_unit, prevent_early_clock_in)
+
+
+        $effectiveIsActive = $isActive || $hasActiveAttendance;
+
         $earlyClockInRulesForResponse = [
             'prevent_early_clock_in' => (bool) ($earlyClockInRules['prevent_early_clock_in'] ?? false),
             'early_period' => (int) ($earlyClockInRules['early_period'] ?? 0),
@@ -313,7 +315,7 @@ class UserAttendanceService
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
-            'is_active' => $isActive,
+            'is_active' => $effectiveIsActive,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
             'can_clock_out' => (bool) $getCurrentAttendance,
@@ -395,6 +397,7 @@ class UserAttendanceService
             $earlyUnit = 'minutes';
         }
         $earliestAllowed = $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
+
         return $now->between($earliestAllowed, $periodEnd, true);
     }
 
