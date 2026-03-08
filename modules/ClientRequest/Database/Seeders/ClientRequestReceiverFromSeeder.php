@@ -39,6 +39,6 @@ class ClientRequestReceiverFromSeeder extends Seeder
             ],
         ];
 
-        DB::table('client_request_receiver_from')->insert($receivers);
+        DB::table('client_request_receiver_from')->insertOrIgnore($receivers);
     }
 }
