@@ -27,6 +27,6 @@ class ClientRequestTypeSeeder extends Seeder
             ],
         ];
 
-        DB::table('client_request_types')->insert($types);
+        DB::table('client_request_types')->insertOrIgnore($types);
     }
 }

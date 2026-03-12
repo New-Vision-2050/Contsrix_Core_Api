@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
-use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 
 class UserAttendanceService
 {
@@ -24,13 +20,16 @@ class UserAttendanceService
         private AttendanceService $attendanceService
     ) {}
 
+    // =============================================================================
+    // Public API
+    // =============================================================================
+
     /**
      * Get work rules/constraints for a user
      *
      * @param UuidInterface|string $userId
      * @param string|null $date Optional date (Y-m-d format), defaults to today
      * @return array
-     * @throws ModelNotFoundException
      */
     public function getUserConstraints(UuidInterface|string $userId, ?string $date = null): array
     {
@@ -67,7 +66,6 @@ class UserAttendanceService
      *
      * @param UuidInterface|string $userId
      * @return array
-     * @throws ModelNotFoundException|AttendanceException
      */
     public function checkClockInStatus(UuidInterface|string $userId): array
     {
@@ -80,14 +78,14 @@ class UserAttendanceService
             'is_clocked_in' => $attendance?->isActive() ?? false,
             'is_on_break' => $attendance?->isOnBreak() ?? false,
             'attendance_id' => $attendance ? (string) $attendance->id : null,
-            'clock_in_time' => $attendance?->clock_in_time ? 
-                (is_string($attendance->clock_in_time) ? 
-                    Carbon::parse($attendance->clock_in_time)->format('Y-m-d H:i:s') : 
-                    $attendance->clock_in_time->format('Y-m-d H:i:s')
-                ) : null,
+            'clock_in_time' => $attendance?->clock_in_time ? $this->toCarbon($attendance->clock_in_time)->format('Y-m-d H:i:s') : null,
             'status' => $attendance?->status ?? 'not_clocked_in',
         ];
     }
+
+    // =============================================================================
+    // Period & Attendance Enhancement
+    // =============================================================================
 
     /**
      * Get attendance records for a user on a specific date
@@ -137,7 +135,7 @@ class UserAttendanceService
             
             // Active when now is inside period, or inside early clock-in window (e.g. start 16:00, early 30 min → active from 15:30)
             $isActive = $this->isPeriodActiveIncludingEarly($periodStart, $periodEnd, $now, $earlyClockInRules);
-
+  
             return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive, $earlyClockInRules);
         }, $periods);
 
@@ -207,64 +205,45 @@ class UserAttendanceService
     }
 
     /**
-     * Get attendance time (start or end)
-     *
-     * @param Attendance $attendance
-     * @param string $type 'start' or 'end'
-     * @return Carbon|null
+     * Parse datetime value to Carbon instance.
      */
-    private function getAttendanceTime(Attendance $attendance, string $type): ?Carbon
+    private function toCarbon(mixed $value, ?string $timezone = null): Carbon
     {
-        $time = $type === 'start'
-            ? ($attendance->start_time ?? $attendance->clock_in_time)
-            : ($attendance->end_time ?? $attendance->clock_out_time);
-
-        if (!$time) {
-            return null;
-        }
-
-        return $time instanceof Carbon ? $time : Carbon::parse($time);
+        $tz = $timezone ?? $this->getTimezone();
+        return $value instanceof Carbon ? $value->copy()->setTimezone($tz) : Carbon::parse($value, $tz);
     }
 
     /**
-     * Format attendance data for period response
+     * Extract clock-in/out times and Carbon instances from attendance.
      *
-     * @param Attendance $attendance
-     * @param Carbon $periodStart Period start time
-     * @param Carbon $periodEnd Period end time
-     * @return array
+     * @return array{clock_in_carbon: Carbon|null, clock_out_carbon: Carbon|null, clock_in_time: string|null, clock_out_time: string|null}
+     */
+    private function extractAttendanceClockData(Attendance $attendance): array
+    {
+        $clockInCarbon = $attendance->clock_in_time ? $this->toCarbon($attendance->clock_in_time) : null;
+        $clockOutCarbon = $attendance->clock_out_time ? $this->toCarbon($attendance->clock_out_time) : null;
+
+        return [
+            'clock_in_carbon' => $clockInCarbon,
+            'clock_out_carbon' => $clockOutCarbon,
+            'clock_in_time' => $clockInCarbon?->format('H:i'),
+            'clock_out_time' => $clockOutCarbon?->format('H:i'),
+        ];
+    }
+
+    /**
+     * Format attendance data for period response.
      */
     private function formatAttendanceForPeriod(Attendance $attendance, Carbon $periodStart, Carbon $periodEnd): array
     {
-        // Get clock_in_time and clock_out_time
-        $clockInTime = null;
-        $clockOutTime = null;
-        $clockInCarbon = null;
-        $clockOutCarbon = null;
-        
-        if ($attendance->clock_in_time) {
-            $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
-                ? $attendance->clock_in_time 
-                : Carbon::parse($attendance->clock_in_time, getTimeZoneBranchByRequest());
-            $clockInTime = $clockInCarbon->format('H:i');
-        }
-        
-    
-        if ($attendance->clock_out_time) {
-            $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
-                ? $attendance->clock_out_time 
-                : Carbon::parse($attendance->clock_out_time);
-            $clockOutTime = $clockOutCarbon->format('H:i');
-        }
+        $clock = $this->extractAttendanceClockData($attendance);
+        $clockInCarbon = $clock['clock_in_carbon'];
+        $clockOutCarbon = $clock['clock_out_carbon'];
 
-        // Calculate total hours present
         $totalHoursPresent = 0;
         if ($clockInCarbon) {
-            if ($clockOutCarbon) {
-                $totalHoursPresent = round(max(0, $clockInCarbon->diffInMinutes($clockOutCarbon, true)) / 60, 2);
-            } else {
-                $totalHoursPresent = round(max(0, $clockInCarbon->diffInMinutes($this->now(), true)) / 60, 2);
-            }
+            $endRef = $clockOutCarbon ?? $this->now();
+            $totalHoursPresent = round(max(0, $clockInCarbon->diffInMinutes($endRef, true)) / 60, 2);
         }
 
         return [
@@ -272,8 +251,8 @@ class UserAttendanceService
             'date' => $clockInCarbon?->format('Y-m-d') ?? $periodStart->format('Y-m-d'),
             'start_time' => $periodStart->format('H:i'),
             'end_time' => $periodEnd->format('H:i'),
-            'clock_in_time' => $clockInTime,
-            'clock_out_time' => $clockOutTime,
+            'clock_in_time' => $clock['clock_in_time'],
+            'clock_out_time' => $clock['clock_out_time'],
             'total_hours_present' => $totalHoursPresent,
         ];
     }
@@ -303,23 +282,31 @@ class UserAttendanceService
         
         $getCurrentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
         $canClockIn = $isActive && !$hasActiveAttendance && (bool) !$getCurrentAttendance;
-        
-        // Expose early clock-in rules for the client (early_period, early_unit, prevent_early_clock_in)
-        $earlyClockInRulesForResponse = [
+
+
+        $effectiveIsActive = $isActive || $hasActiveAttendance;
+
+        return array_merge($cleanedPeriod, [
+            'total_work_hours' => $totalWorkHours,
+            'is_active' => $effectiveIsActive,
+            'total_hours_present' => round($totalHoursPresent, 2),
+            'can_clock_in' => $canClockIn,
+            'can_clock_out' => (bool) $getCurrentAttendance,
+            'early_clock_in_rules' => $this->buildEarlyClockInRulesForResponse($earlyClockInRules),
+            'attendance' => $attendance,
+        ]);
+    }
+
+    /**
+     * Build early clock-in rules for API response.
+     */
+    private function buildEarlyClockInRulesForResponse(array $earlyClockInRules): array
+    {
+        return [
             'prevent_early_clock_in' => (bool) ($earlyClockInRules['prevent_early_clock_in'] ?? false),
             'early_period' => (int) ($earlyClockInRules['early_period'] ?? 0),
             'early_unit' => $earlyClockInRules['early_unit'] ?? 'minutes',
         ];
-
-        return array_merge($cleanedPeriod, [
-            'total_work_hours' => $totalWorkHours,
-            'is_active' => $isActive,
-            'total_hours_present' => round($totalHoursPresent, 2),
-            'can_clock_in' => $canClockIn,
-            'can_clock_out' => (bool) $getCurrentAttendance,
-            'early_clock_in_rules' => $earlyClockInRulesForResponse,
-            'attendance' => $attendance,
-        ]);
     }
 
     /**
@@ -395,6 +382,7 @@ class UserAttendanceService
             $earlyUnit = 'minutes';
         }
         $earliestAllowed = $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
+
         return $now->between($earliestAllowed, $periodEnd, true);
     }
 
@@ -414,6 +402,10 @@ class UserAttendanceService
         }
     }
 
+    // =============================================================================
+    // Attendance History
+    // =============================================================================
+
     /**
      * Get user attendance history grouped by date with periods
      *
@@ -423,7 +415,6 @@ class UserAttendanceService
      * @param int $page
      * @param int $perPage
      * @return array
-     * @throws ModelNotFoundException
      */
     public function getUserAttendanceHistory(
         UuidInterface|string $userId,
@@ -512,7 +503,7 @@ class UserAttendanceService
     }
 
     /**
-     * Build periods data directly from attendances without heavy constraint lookups
+     * Build periods data directly from attendances without heavy constraint lookups.
      */
     private function buildPeriodsFromAttendances(Collection $attendances): array
     {
@@ -522,51 +513,20 @@ class UserAttendanceService
 
         $periods = [];
         foreach ($attendances as $attendance) {
-            $clockInTime = null;
-            $clockOutTime = null;
-            $clockInLocation = null;
-            $clockOutLocation = null;
+            $clock = $this->extractAttendanceClockData($attendance);
+            $clockInCarbon = $clock['clock_in_carbon'];
+            $clockOutCarbon = $clock['clock_out_carbon'];
 
-            if ($attendance->clock_in_time) {
-                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
-                    ? $attendance->clock_in_time 
-                    : Carbon::parse($attendance->clock_in_time);
-                $clockInTime = $clockInCarbon->format('H:i');
-                $clockInLocation = $attendance->clock_in_location;
-            }
-
-            if ($attendance->clock_out_time) {
-                $clockOutCarbon = $attendance->clock_out_time instanceof Carbon 
-                    ? $attendance->clock_out_time 
-                    : Carbon::parse($attendance->clock_out_time);
-                $clockOutTime = $clockOutCarbon->format('H:i');
-                $clockOutLocation = $attendance->clock_out_location;
-            }
-
-            // Calculate work hours
-            $totalWorkHours = 0;
-            if (isset($attendance->total_work_hours) && $attendance->total_work_hours > 0) {
-                $totalWorkHours = (float) $attendance->total_work_hours;
-            } elseif ($attendance->clock_in_time) {
-                $clockInCarbon = $this->parseDateTime($attendance->clock_in_time);
-                
-                if ($attendance->clock_out_time) {
-                    $clockOutCarbon = $this->parseDateTime($attendance->clock_out_time);
-                    $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon, true);
-                } else {
-                    $workMinutes = $clockInCarbon->diffInMinutes($this->now(), true);
-                }
-                $totalWorkHours = round(max(0, $workMinutes) / 60, 2);
-            }
+            $totalWorkHours = $this->calculateAttendanceWorkHours($attendance, $clockInCarbon, $clockOutCarbon);
 
             $periods[] = [
-                'clock_in_time' => $clockInTime,
-                'clock_out_time' => $clockOutTime,
+                'clock_in_time' => $clock['clock_in_time'],
+                'clock_out_time' => $clock['clock_out_time'],
                 'work_hours' => $this->formatHoursToTime($totalWorkHours),
                 'delay_hours' => $this->formatMinutesToTime((int) ($attendance->late_minutes ?? 0)),
                 'overtime_hours' => $this->formatHoursToTime((float) ($attendance->overtime_hours ?? 0)),
-                'clock_in_location' => $clockInLocation,
-                'clock_out_location' => $clockOutLocation,
+                'clock_in_location' => $attendance->clock_in_location,
+                'clock_out_location' => $attendance->clock_out_location,
             ];
         }
 
@@ -574,114 +534,18 @@ class UserAttendanceService
     }
 
     /**
-     * Match attendances to work periods
-     *
-     * @param array $periods
-     * @param Collection $attendances
-     * @param Carbon $date
-     * @return array
+     * Calculate total work hours for an attendance record.
      */
-    private function matchAttendancesToPeriods(array $periods, Collection $attendances, Carbon $date): array
+    private function calculateAttendanceWorkHours(Attendance $attendance, ?Carbon $clockInCarbon, ?Carbon $clockOutCarbon): float
     {
-        $periodsWithAttendance = [];
-
-        foreach ($periods as $index => $period) {
-            $periodStart = $this->parsePeriodTime($period, 'start', $date);
-            $periodEnd = $this->parsePeriodTime($period, 'end', $date);
-
-            // Find attendances that fall within this period
-            $periodAttendances = $attendances->filter(function ($attendance) use ($periodStart, $periodEnd) {
-                $clockInTime = $attendance->clock_in_time;
-                if (!$clockInTime) {
-                    return false;
-                }
-                $clockInCarbon = $clockInTime instanceof Carbon ? $clockInTime : Carbon::parse($clockInTime);
-                return $clockInCarbon->between($periodStart, $periodEnd, true);
-            });
-
-            if ($periodAttendances->isEmpty()) {
-                continue;
-            }
-
-            // Sort attendances by clock_in_time to get the latest one
-            $sortedAttendances = $periodAttendances->sortByDesc(function ($attendance) {
-                if (!$attendance->clock_in_time) {
-                    return 0;
-                }
-                $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
-                    ? $attendance->clock_in_time 
-                    : Carbon::parse($attendance->clock_in_time);
-                return $clockInCarbon->timestamp;
-            })->values();
-
-            // Get the latest attendance record (last clock_in)
-            $latestAttendance = $sortedAttendances->first();
-
-            // Get clock_in_time and clock_out_time from the latest attendance
-            $clockInTime = null;
-            $clockOutTime = null;
-            $clockInLocation = null;
-            $clockOutLocation = null;
-
-            if ($latestAttendance->clock_in_time) {
-                $clockInCarbon = $latestAttendance->clock_in_time instanceof Carbon 
-                    ? $latestAttendance->clock_in_time 
-                    : Carbon::parse($latestAttendance->clock_in_time);
-                $clockInTime = $clockInCarbon->format('H:i');
-                $clockInLocation = $latestAttendance->clock_in_location;
-            }
-
-            // Get clock_out_time from the same attendance record (last clock_in)
-            if ($latestAttendance->clock_out_time) {
-                $clockOutCarbon = $latestAttendance->clock_out_time instanceof Carbon 
-                    ? $latestAttendance->clock_out_time 
-                    : Carbon::parse($latestAttendance->clock_out_time);
-                $clockOutTime = $clockOutCarbon->format('H:i');
-                $clockOutLocation = $latestAttendance->clock_out_location;
-            }
-
-            // Calculate total_work_hours from all attendances in the period
-            $totalWorkHours = 0;
-            foreach ($periodAttendances as $attendance) {
-                // Use total_work_hours from attendance record if available and > 0
-                if (isset($attendance->total_work_hours) && $attendance->total_work_hours > 0) {
-                    $totalWorkHours += (float) $attendance->total_work_hours;
-                } elseif ($attendance->clock_in_time) {
-                    // If total_work_hours is 0 or not set, calculate from clock_in to clock_out
-                    $clockInCarbon = $attendance->clock_in_time instanceof Carbon 
-                        ? $attendance->clock_in_time 
-                        : Carbon::parse($attendance->clock_in_time);
-                    
-                    if ($attendance->clock_out_time) {
-                        $clockOutCarbon = $this->parseDateTime($attendance->clock_out_time);
-                        $workMinutes = $clockInCarbon->diffInMinutes($clockOutCarbon, true);
-                    } else {
-                        $workMinutes = $clockInCarbon->diffInMinutes($this->now(), true);
-                    }
-                    $totalWorkHours += round(max(0, $workMinutes) / 60, 2);
-                }
-            }
-
-            // Aggregate delay and overtime from all attendances in period
-            $totalDelayMinutes = 0;
-            $totalOvertimeHours = 0;
-            foreach ($periodAttendances as $attendance) {
-                $totalDelayMinutes += (int) ($attendance->late_minutes ?? 0);
-                $totalOvertimeHours += (float) ($attendance->overtime_hours ?? 0);
-            }
-
-            $periodsWithAttendance[] = [
-                'clock_in_time' => $clockInTime,
-                'clock_out_time' => $clockOutTime, // Will be null if no clock_out in last clock_in
-                'work_hours' => $this->formatHoursToTime($totalWorkHours),
-                'delay_hours' => $this->formatMinutesToTime($totalDelayMinutes),
-                'overtime_hours' => $this->formatHoursToTime($totalOvertimeHours),
-                'clock_in_location' => $clockInLocation,
-                'clock_out_location' => $clockOutLocation,
-            ];
+        if (isset($attendance->total_work_hours) && $attendance->total_work_hours > 0) {
+            return (float) $attendance->total_work_hours;
         }
-
-        return $periodsWithAttendance;
+        if (!$clockInCarbon) {
+            return 0.0;
+        }
+        $endRef = $clockOutCarbon ?? $this->now();
+        return round(max(0, $clockInCarbon->diffInMinutes($endRef, true)) / 60, 2);
     }
 
     /**
@@ -763,6 +627,10 @@ class UserAttendanceService
         $m = $minutes % 60;
         return sprintf('%02d:%02d', $h, $m);
     }
+
+    // =============================================================================
+    // Utilities
+    // =============================================================================
 
     /**
      * Get the resolved timezone for the current request
