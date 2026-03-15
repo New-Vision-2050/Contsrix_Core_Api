@@ -25,8 +25,7 @@ class SchemaSeeder extends Seeder
                 'الكادر',
                 'اوامر العمل',
                 'المالية',
-
-
+                'اداره العقد'
             ];
 
             $createdCount = 0;
