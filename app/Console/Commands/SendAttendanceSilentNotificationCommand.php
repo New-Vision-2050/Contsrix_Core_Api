@@ -24,8 +24,7 @@ class SendAttendanceSilentNotificationCommand extends Command
         $this->info('Starting attendance silent notification process...');
         
         // Get all active attendances (clocked in but not clocked out)
-        $activeAttendances = Attendance::where('status', Attendance::STATUS_ACTIVE)
-            ->whereNotNull('clock_in_time')
+        $activeAttendances = Attendance::whereNotNull('clock_in_time')
             ->whereNull('clock_out_time')
             ->with('user')
             ->get();
