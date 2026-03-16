@@ -49,6 +49,8 @@ class SendAttendanceSilentNotificationCommand extends Command
                 continue;
             }
 
+            // Only send notification when now >= end_time + max_over_time (so app can auto clock-out)
+            // Example: end_time=16:00, max_over_time=4h → latestClockOut=20:00 → send when now >= 20:00
             $timezone = $attendance->timezone ?? config('app.timezone');
             if ($attendance->end_time) {
                 $endTimeRaw = $attendance->end_time instanceof \DateTimeInterface
@@ -58,13 +60,25 @@ class SendAttendanceSilentNotificationCommand extends Command
                 $maxOverHours = (int) ($attendance->max_over_time ?? 0);
                 $latestClockOut = $endTime->copy()->addHours($maxOverHours);
                 $now = Carbon::now($timezone);
-                if ($now->lte($latestClockOut)) {
+                if ($now->lt($latestClockOut)) {
                     if ($isDryRun) {
-                        $this->line("  SKIP (before deadline) user: {$user->name} - now {$now->toISOString()} <= latest_clock_out {$latestClockOut->toISOString()}");
+                        $this->line("  SKIP (before deadline) user: {$user->name} - now {$now->toISOString()} < latest_clock_out {$latestClockOut->toISOString()}");
                     }
                     $notificationsSkipped++;
                     continue;
                 }
+            }
+
+            // Auto clock-out when deadline passed (end_time + max_over_time): update DB so user is clocked out
+            if ($attendance->end_time) {
+                $clockOutAt = Carbon::now($timezone);
+                $attendance->update([
+                    'clock_out_time' => $clockOutAt,
+                    'notes' => trim(($attendance->notes ?? '') . "\n" . 'Auto clock-out (exceeded max over time)'),
+                    'status' => 'completed',
+                    'day_status' => 'clocked_out',
+                ]);
+                $attendance->calculateWorkHours();
             }
 
             // Prepare notification data
