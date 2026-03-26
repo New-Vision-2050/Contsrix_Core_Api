@@ -33,7 +33,7 @@ class CreateClientRequestRequest extends FormRequest
             'branch_id' => 'nullable|integer|exists:management_hierarchies,id',
             'management_id' => 'nullable|integer|exists:management_hierarchies,id',
             'attachments' => 'nullable|array',
-            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,svg,webp|max:10240',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,svg,webp|max:30000',
         ];
     }
 
