@@ -36,7 +36,7 @@ class CompanyRepository extends BaseRepository
     {
         return $this->model->whereHas("domains",function ($query) use ($domain) {
             $query->where("domain", $domain);
-        })->where('is_active',1)->firstOrFail();
+        })->firstOrFail();
 
     }
 
@@ -250,7 +250,7 @@ class CompanyRepository extends BaseRepository
             ->with($this->relations);
 
         $total = $query->count();
-        
+
         if ($page && $perPage) {
             $data = $query->skip(($page - 1) * $perPage)
                 ->take($perPage)
@@ -279,7 +279,7 @@ class CompanyRepository extends BaseRepository
             ->with($this->relations);
 
         $total = $query->count();
-        
+
         if ($page && $perPage) {
             $data = $query->skip(($page - 1) * $perPage)
                 ->take($perPage)
