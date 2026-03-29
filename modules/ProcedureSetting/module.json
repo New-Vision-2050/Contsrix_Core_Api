@@ -1,0 +1,14 @@
+{
+    "name": "ProcedureSetting",
+    "alias": "proceduresetting",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ProcedureSetting\\Providers\\ProcedureSettingServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

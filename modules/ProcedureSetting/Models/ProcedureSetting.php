@@ -1,0 +1,61 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\ProcedureSetting\Models;
+
+use BasePackage\Shared\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\ProcedureSetting\Database\factories\ProcedureSettingFactory;
+use BasePackage\Shared\Traits\BaseFilterable;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Modules\Company\CompanyCore\Models\Company;
+
+class ProcedureSetting extends Model
+{
+    use HasFactory;
+    use UuidTrait;
+    use BaseFilterable;
+    use BelongsToTenant;
+
+    protected $table = 'procedure_settings';
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'name',
+        'type',
+        'execute_type',
+        'icon',
+        'percentage',
+        'company_id',
+    ];
+
+    protected $casts = [
+        'id'         => 'string',
+        'percentage' => 'float',
+    ];
+
+    public function getRelationshipToPrimaryModel(): string
+    {
+        return 'company';
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+
+    public function steps()
+    {
+        return $this->hasMany(ProcedureSettingStep::class, 'procedure_setting_id');
+    }
+
+    protected static function newFactory(): ProcedureSettingFactory
+    {
+        return ProcedureSettingFactory::new();
+    }
+}
