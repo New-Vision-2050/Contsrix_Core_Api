@@ -147,9 +147,7 @@ class AttendanceService
      */
     public function startBreak(UuidInterface|string $userId, ?string $notes = null): Attendance
     {
-        if (is_string($userId)) {
-            $userId = Uuid::fromString($userId);
-        }
+        $userId = $this->toUuid($userId);
 
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
 
@@ -194,9 +192,7 @@ class AttendanceService
      */
     public function endBreak(UuidInterface|string $userId, ?string $notes = null): Attendance
     {
-        if (is_string($userId)) {
-            $userId = Uuid::fromString($userId);
-        }
+        $userId = $this->toUuid($userId);
 
         $attendance = $this->attendanceRepository->getCurrentAttendance($userId);
 
@@ -307,8 +303,6 @@ class AttendanceService
     /**
      * Get attendance summary
      */
-// In AttendanceService.php
-
     public function getAttendanceSummary(UuidInterface $userId, ?string $startDate = null, ?string $endDate = null): array
     {
         $startDate = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
@@ -367,7 +361,8 @@ class AttendanceService
 
         return $summary;
     }
-   /**
+
+    /**
      * Helper function to safely calculate a percentage.
      * @param int|float $part The value for which to calculate the percentage.
      * @param int|float $total The total value to compare against.
@@ -380,6 +375,44 @@ class AttendanceService
         }
         return round(($part / $total) * 100, 2);
     }
+
+    private function toUuid(UuidInterface|string $id): UuidInterface
+    {
+        return $id instanceof UuidInterface ? $id : Uuid::fromString($id);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function baseAttendanceSelectColumns(): array
+    {
+        return [
+            'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
+            'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
+            'start_time', 'overtime_hours', 'clock_in_location', 'location_tracking',
+        ];
+    }
+
+    private function fetchAttendanceRecordsForExport(array $filters, array $with, ?string $userId = null): Collection
+    {
+        return Attendance::query()
+            ->filter($filters)
+            ->when($userId, static function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->select($this->baseAttendanceSelectColumns())
+            ->with($with)
+            ->orderBy('start_time')
+            ->get();
+    }
+
+    private function recalculateWorkHoursAndSave(Attendance $attendance): void
+    {
+        $attendance->updateTotalBreakHours();
+        $attendance->calculateWorkHours();
+        $attendance->save();
+    }
+
     /**
      * Update attendance record
      */
@@ -400,9 +433,7 @@ class AttendanceService
 
         // Recalculate work hours if clock times were updated
         if (isset($data['clock_in_time']) || isset($data['clock_out_time'])) {
-            $attendance->updateTotalBreakHours();
-            $attendance->calculateWorkHours();
-            $attendance->save();
+            $this->recalculateWorkHoursAndSave($attendance);
         }
 
         return $attendance;
@@ -431,9 +462,7 @@ class AttendanceService
         $attendance = $this->attendanceRepository->updateAttendance($uuid, $data);
 
         // Recalculate work hours after approval
-        $attendance->updateTotalBreakHours();
-        $attendance->calculateWorkHours();
-        $attendance->save();
+        $this->recalculateWorkHoursAndSave($attendance);
 
         return $attendance;
     }
@@ -476,44 +505,21 @@ class AttendanceService
     }
     public function getAttendanceForExport(array $filters): Collection
     {
-        $realAttendanceRecords = Attendance::query()
-            ->filter($filters)
-            ->select([
-                'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
-                'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
-                'start_time', 'overtime_hours', 'clock_in_location', 'location_tracking'
-            ])
-            ->with([
-                'user',
-                'user.userProfessionalData',
-                'user.company'
-            ])
-            ->orderBy('start_time')
-            ->get();
+        $realAttendanceRecords = $this->fetchAttendanceRecordsForExport(
+            $filters,
+            ['user', 'user.userProfessionalData', 'user.company']
+        );
 
         return $this->processAttendancePeriods($realAttendanceRecords);
     }
 
-    public function getTeamAttendance(array $filters, ?int $page = 1, ?int $perPage = 10,$userId = null)//: array // تغيير نوع العودة إلى array
+    public function getTeamAttendance(array $filters, ?int $page = 1, ?int $perPage = 10, $userId = null)
     {
-        $realAttendanceRecords = Attendance::query()
-            ->filter($filters)
-            ->when($userId, function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->select([
-                'id', 'user_id', 'company_id', 'status', 'is_late', 'is_absent',
-                'is_holiday', 'day_status', 'clock_in_time', 'clock_out_time',
-                'start_time', 'overtime_hours', 'clock_in_location', 'location_tracking'
-            ])
-            ->with([
-                'user',
-                'user.userProfessionalData',
-
-            ])
-            ->orderBy('start_time')
-            ->get();
-
+        $realAttendanceRecords = $this->fetchAttendanceRecordsForExport(
+            $filters,
+            ['user', 'user.userProfessionalData'],
+            $userId
+        );
 
         $processedRecords = $this->processAttendancePeriods($realAttendanceRecords);
 
@@ -525,8 +531,8 @@ class AttendanceService
         );
     }
 
-    private function processAttendancePeriods(Collection $realAttendanceRecords)//: Collection
-  {
+    private function processAttendancePeriods(Collection $realAttendanceRecords): Collection
+    {
         $processedRecords = collect();
 
         $realAttendanceRecords
@@ -553,6 +559,7 @@ class AttendanceService
 
         return $processedRecords->sortBy('start_time')->values();
     }
+
     /**
      * Get late arrivals with filtering and pagination
      */
@@ -616,10 +623,7 @@ class AttendanceService
 
         // Calculate break hours first
         if ($attendance) {
-            $attendance->updateTotalBreakHours();
-            // Calculate work hours after ending the shift
-            $attendance->calculateWorkHours();
-            $attendance->save();
+            $this->recalculateWorkHoursAndSave($attendance);
         }
 
         return $attendance;
@@ -633,9 +637,7 @@ class AttendanceService
      */
     public function getBreaks(UuidInterface|string $attendanceId): array
     {
-        if (is_string($attendanceId)) {
-            $attendanceId = Uuid::fromString($attendanceId);
-        }
+        $attendanceId = $this->toUuid($attendanceId);
 
         $attendance = $this->attendanceRepository->getAttendance($attendanceId);
 
@@ -659,7 +661,7 @@ class AttendanceService
         return $breaks;
     }
 
-        public function getAttendanceForUserOnDate(User $user, Carbon $date): ?Attendance
+    public function getAttendanceForUserOnDate(User $user, Carbon $date): ?Attendance
     {
         // Use the repository to find a single record matching the criteria.
         // This is more efficient than getting a collection and checking if it's empty.
