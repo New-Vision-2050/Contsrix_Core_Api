@@ -31,6 +31,7 @@ class ProcedureSettingStep extends Model
         'forms',
         'procedure_setting_id',
         'company_id',
+        'name',
     ];
 
     protected $casts = [

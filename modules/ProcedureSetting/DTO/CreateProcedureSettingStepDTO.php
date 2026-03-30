@@ -8,6 +8,7 @@ class CreateProcedureSettingStepDTO
 {
     public function __construct(
         public readonly string $procedure_setting_id,
+        public readonly ?string $name = null,
         public readonly ?string $employee_id = null,
         public readonly bool $is_accept = false,
         public readonly bool $is_approve = false,
@@ -20,6 +21,7 @@ class CreateProcedureSettingStepDTO
     {
         return [
             'procedure_setting_id' => $this->procedure_setting_id,
+            'name'                 => $this->name,
             'employee_id'          => $this->employee_id,
             'is_accept'            => $this->is_accept,
             'is_approve'           => $this->is_approve,

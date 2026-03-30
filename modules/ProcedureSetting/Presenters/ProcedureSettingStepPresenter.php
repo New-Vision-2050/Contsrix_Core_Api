@@ -21,6 +21,7 @@ class ProcedureSettingStepPresenter extends AbstractPresenter
         $data = [
             'id'                   => $this->step->id,
             'procedure_setting_id' => $this->step->procedure_setting_id,
+            'name'                 => $this->step->name,
             'employee_id'          => $this->step->employee_id,
             'is_accept'            => $this->step->is_accept,
             'is_approve'           => $this->step->is_approve,

@@ -12,6 +12,7 @@ class CreateProcedureSettingStepRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'name'        => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|uuid|exists:users,id',
             'is_accept'   => 'nullable|boolean',
             'is_approve'  => 'nullable|boolean',
@@ -24,6 +25,7 @@ class CreateProcedureSettingStepRequest extends FormRequest
     {
         return new CreateProcedureSettingStepDTO(
             procedure_setting_id: $this->route('procedureSettingId'),
+            name:                 $this->get('name'),
             employee_id:          $this->get('employee_id'),
             is_accept:            $this->boolean('is_accept', false),
             is_approve:           $this->boolean('is_approve', false),

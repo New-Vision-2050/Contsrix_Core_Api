@@ -8,6 +8,7 @@ class UpdateProcedureSettingStepCommand
 {
     public function __construct(
         private int $id,
+        private ?string $name = null,
         private ?string $employee_id = null,
         private ?bool $is_accept = null,
         private ?bool $is_approve = null,
@@ -19,6 +20,11 @@ class UpdateProcedureSettingStepCommand
     public function getId(): int
     {
         return $this->id;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
     }
 
     public function getEmployeeId(): ?string
@@ -49,6 +55,10 @@ class UpdateProcedureSettingStepCommand
     public function toArray(): array
     {
         $data = [];
+
+        if ($this->name !== null) {
+            $data['name'] = $this->name;
+        }
 
         if ($this->employee_id !== null) {
             $data['employee_id'] = $this->employee_id;
