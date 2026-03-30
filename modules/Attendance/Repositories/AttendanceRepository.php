@@ -6,6 +6,7 @@ namespace Modules\Attendance\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
 use Ramsey\Uuid\UuidInterface;
@@ -39,23 +40,14 @@ class AttendanceRepository extends BaseRepository
      */
     public function getAttendanceList(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        $query = $this->model->newQuery()->with(['user', 'company']);
-
-        // Apply filters using the filter method
+        $query = $this->newAttendanceListQuery();
         if (!empty($filters)) {
             $query->filter($filters);
         }
 
         $query->orderBy('clock_in_time', 'desc');
 
-        if ($page) {
-            return $this->getPaginationData($query, $page, $perPage);
-        }
-
-        return [
-            'data' => $query->get(),
-            'pagination' => null
-        ];
+        return $this->paginateQueryResult($query, $page, $perPage);
     }
     public function getQuery(): \Illuminate\Database\Eloquent\Builder
     {
@@ -122,42 +114,20 @@ class AttendanceRepository extends BaseRepository
      */
     public function getAttendanceHistory(array $filters = [], ?int $page = null, ?int $perPage = 10): array
     {
-        $query = $this->model->newQuery()->with(['user', 'company']);
-
-        // Apply filters using the filter method
+        $query = $this->newAttendanceListQuery();
         if (!empty($filters)) {
             $query->filter($filters);
         }
 
         $query->orderBy('start_time', 'desc');
 
-        if ($page) {
-            $results = $this->getPaginationData($query, $page, $perPage);
-        } else {
-            $results = [
-                'data' => $query->get(),
-                'pagination' => null
-            ];
-        }
+        $results = $this->paginateQueryResult($query, $page, $perPage);
 
-        // Group results by start_time and end_time
-        if (isset($results['data']) && !empty($results['data'])) {
-           $groupedData = collect($results['data'])->groupBy(function ($item) {
-                $start = $item->start_time ?? $item->clock_in_time;
-                $end = $item->end_time ?? $item->clock_out_time;
-
-                $startFormatted = $start
-                    ? ( $start instanceof \Carbon\Carbon ? $start : Carbon::parse($start) )->format('Y-m-d H:i')
-                    : null;
-
-                $endFormatted = $end
-                    ? ( $end instanceof \Carbon\Carbon ? $end : Carbon::parse($end) )->format('Y-m-d H:i')
-                    : 'Present';
-
-                return $startFormatted . ' - ' . $endFormatted;
+        if (!empty($results['data'])) {
+            $results['data'] = collect($results['data'])->groupBy(function ($item) {
+                /** @var Attendance $item */
+                return $this->historyGroupKey($item);
             });
-
-            $results['data'] = $groupedData;
         }
 
         return $results;
@@ -196,18 +166,11 @@ class AttendanceRepository extends BaseRepository
     {
         $filters['isLate'] = true;
 
-        $query = $this->model->newQuery()->with(['user', 'company']);
+        $query = $this->newAttendanceListQuery();
         $query->filter($filters);
         $query->orderBy('clock_in_time', 'desc');
 
-        if ($page) {
-            return $this->getPaginationData($query, $page, $perPage);
-        }
-
-        return [
-            'data' => $query->get(),
-            'pagination' => null
-        ];
+        return $this->paginateQueryResult($query, $page, $perPage);
     }
 
     /**
@@ -217,18 +180,11 @@ class AttendanceRepository extends BaseRepository
     {
         $filters['isEarlyLeave'] = true;
 
-        $query = $this->model->newQuery()->with(['user', 'company']);
+        $query = $this->newAttendanceListQuery();
         $query->filter($filters);
         $query->orderBy('clock_in_time', 'desc');
 
-        if ($page) {
-            return $this->getPaginationData($query, $page, $perPage);
-        }
-
-        return [
-            'data' => $query->get(),
-            'pagination' => null
-        ];
+        return $this->paginateQueryResult($query, $page, $perPage);
     }
 
     /**
@@ -238,18 +194,11 @@ class AttendanceRepository extends BaseRepository
     {
         $filters['overtimeHoursFrom'] = 0.01; // Greater than 0
 
-        $query = $this->model->newQuery()->with(['user', 'company']);
+        $query = $this->newAttendanceListQuery();
         $query->filter($filters);
         $query->orderBy('overtime_hours', 'desc');
 
-        if ($page) {
-            return $this->getPaginationData($query, $page, $perPage);
-        }
-
-        return [
-            'data' => $query->get(),
-            'pagination' => null
-        ];
+        return $this->paginateQueryResult($query, $page, $perPage);
     }
 
     /**
@@ -316,5 +265,41 @@ class AttendanceRepository extends BaseRepository
             'data' => $data,
             'pagination' => $pagination['pagination'],
         ];
+    }
+
+    private function newAttendanceListQuery(): Builder
+    {
+        return $this->model->newQuery()->with(['user', 'company']);
+    }
+
+    /**
+     * @return array{data: \Illuminate\Support\Collection|array, pagination: array|null}
+     */
+    private function paginateQueryResult(Builder $query, ?int $page, int $perPage): array
+    {
+        if ($page) {
+            return $this->getPaginationData($query, $page, $perPage);
+        }
+
+        return [
+            'data' => $query->get(),
+            'pagination' => null,
+        ];
+    }
+
+    private function historyGroupKey(Attendance $item): string
+    {
+        $start = $item->start_time ?? $item->clock_in_time;
+        $end = $item->end_time ?? $item->clock_out_time;
+
+        $startFormatted = $start
+            ? ($start instanceof Carbon ? $start : Carbon::parse($start))->format('Y-m-d H:i')
+            : null;
+
+        $endFormatted = $end
+            ? ($end instanceof Carbon ? $end : Carbon::parse($end))->format('Y-m-d H:i')
+            : 'Present';
+
+        return $startFormatted.' - '.$endFormatted;
     }
 }

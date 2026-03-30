@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\ProcedureSetting\Services;
+
+use Illuminate\Support\Collection;
+use Modules\ProcedureSetting\DTO\CreateProcedureSettingDTO;
+use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Repositories\ProcedureSettingRepository;
+use Ramsey\Uuid\UuidInterface;
+use App\Traits\HasExportService;
+
+class ProcedureSettingCRUDService
+{
+    use HasExportService;
+
+    public function __construct(
+        private ProcedureSettingRepository $repository,
+    ) {
+    }
+
+    public function create(CreateProcedureSettingDTO $createProcedureSettingDTO): ProcedureSetting
+    {
+         return $this->repository->createProcedureSetting($createProcedureSettingDTO->toArray());
+    }
+
+    public function list(): Collection
+    {
+        return $this->repository->list();
+    }
+
+    public function get(UuidInterface $id): ProcedureSetting
+    {
+        return $this->repository->getProcedureSetting(
+            id: $id,
+        );
+    }
+}
