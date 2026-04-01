@@ -6,9 +6,14 @@ namespace Modules\Attendance\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Events\AttendanceConstraintUpdated;
 use Modules\Attendance\Events\UpdateAttendance;
+use Modules\Attendance\Exceptions\AttendanceException;
+use Modules\Attendance\Models\AppliedAttendanceConstraint;
+use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Ramsey\Uuid\UuidInterface;
 
 /**
@@ -68,6 +73,8 @@ class AttendanceConstraintRepository extends BaseRepository
     public function updateConstraint(UuidInterface $id, array $data): AttendanceConstraint
     {
         $constraint = $this->getConstraint($id);
+        $this->assertNoOpenAttendanceForConstraint($id->toString(), (string) $constraint->company_id);
+
         $constraint->update($data);
         AttendanceConstraintUpdated::dispatch($constraint->id);
         UpdateAttendance::dispatch($constraint->id);
@@ -79,6 +86,9 @@ class AttendanceConstraintRepository extends BaseRepository
      */
     public function deleteConstraint(UuidInterface $id): bool
     {
+        $constraint = $this->getConstraint($id);
+        $this->assertNoOpenAttendanceForConstraint($id->toString(), (string) $constraint->company_id);
+
         return $this->delete($id);
     }
 
@@ -211,6 +221,55 @@ class AttendanceConstraintRepository extends BaseRepository
             'data' => $data,
             'pagination' => $pagination['pagination'],
         ];
+    }
+
+    /**
+     * Block constraint changes when any linked user still has clock_in set and clock_out null.
+     */
+    private function assertNoOpenAttendanceForConstraint(string $constraintId, string $companyId): void
+    {
+        if ($this->hasOpenAttendanceForConstraint($constraintId, $companyId)) {
+            throw AttendanceException::cannotModifyConstraintWithOpenAttendance();
+        }
+    }
+
+    private function hasOpenAttendanceForConstraint(string $constraintId, string $companyId): bool
+    {
+        $openAttendance = static function ($query) {
+            $query->whereNotNull('clock_in_time')->whereNull('clock_out_time');
+        };
+
+        if (AppliedAttendanceConstraint::query()
+            ->where('company_id', $companyId)
+            ->whereHas('attendance', $openAttendance)
+            ->where('constraint_snapshot->id', $constraintId)
+            ->exists()) {
+            return true;
+        }
+
+        $pivotUserIds = DB::table('attendance_constraint_user')
+            ->where('attendance_constraint_id', $constraintId)
+            ->pluck('user_id');
+
+        if ($pivotUserIds->isNotEmpty()
+            && Attendance::query()
+                ->where('company_id', $companyId)
+                ->where($openAttendance)
+                ->whereIn('user_id', $pivotUserIds)
+                ->exists()) {
+            return true;
+        }
+
+        $professionalUserIds = UserProfessionalData::query()
+            ->where('attendance_constraint_id', $constraintId)
+            ->pluck('user_id');
+
+        return $professionalUserIds->isNotEmpty()
+            && Attendance::query()
+                ->where('company_id', $companyId)
+                ->where($openAttendance)
+                ->whereIn('user_id', $professionalUserIds)
+                ->exists();
     }
 
     /**
