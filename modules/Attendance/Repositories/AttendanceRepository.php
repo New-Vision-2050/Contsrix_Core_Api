@@ -97,16 +97,23 @@ class AttendanceRepository extends BaseRepository
     }
 
     /**
-     * Get current active attendance for user
+     * Get current active attendance for user.
+     *
+     * @param  bool  $withUser  When false, skips eager-loading user (avoids an extra join/query when caller already has the user).
      */
-    public function getCurrentAttendance(UuidInterface $userId): ?Attendance
+    public function getCurrentAttendance(UuidInterface $userId, bool $withUser = true): ?Attendance
     {
-        return Attendance::with('user')
+        $query = Attendance::query()
             ->where('user_id', $userId->toString())
             ->whereNull('clock_out_time')
-            ->whereNotNull('clock_in_time')
-            ->first()
-            ?->refresh();
+            ->whereNotNull('clock_in_time');
+
+        if ($withUser) {
+            $query->with('user');
+        }
+
+        // Avoid refresh(): it ran a second identical SELECT for every call.
+        return $query->first();
     }
 
     /**

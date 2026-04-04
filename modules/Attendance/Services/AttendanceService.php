@@ -233,9 +233,9 @@ class AttendanceService
     /**
      * Get current attendance for user
      */
-    public function getCurrentAttendance(UuidInterface $userId): ?Attendance
+    public function getCurrentAttendance(UuidInterface $userId, bool $withUser = true): ?Attendance
     {
-        return $this->attendanceRepository->getCurrentAttendance($userId);
+        return $this->attendanceRepository->getCurrentAttendance($userId, $withUser);
     }
 
     /**
