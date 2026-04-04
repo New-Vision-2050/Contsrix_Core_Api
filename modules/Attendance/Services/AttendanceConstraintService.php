@@ -65,7 +65,14 @@ class AttendanceConstraintService
     public function validateAttendance(Attendance $attendance, array $requestData = [],bool $isDryRun = false): array
     {
         $violations = [];
-        $user = $attendance->user;
+        // Get user ID from attendance to avoid readonly property issue
+        $userId = $attendance->user_id;
+        $user = User::find($userId);
+        
+        if (!$user) {
+            return [];
+        }
+        
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
         if ($constraints->isEmpty()) {
@@ -115,47 +122,8 @@ class AttendanceConstraintService
      */
     public function getEffectiveConstraintForUser(User $user)
     {
-        $constraints = [];
-        $constraint = $user->professionalData?->attendanceConstraint;
-        if ($constraint) {
-            $constraints[] = $constraint;
-            return collect($constraints);
-        }
-        $userBranch = $user->userProfessionalData?->branch;
-        $userBranchId = $userBranch ? (string) $userBranch->id : null;
-
-        // --- 1. Check for a Default Constraint on the Branch ---
-        // If the branch has a default constraint, that is the ONLY one that applies.
-        if ($userBranch) {
-            /** @var Collection $defaultConstraint */
-            $defaultConstraint = $userBranch->defaultAttendanceConstraint()->get();
-
-            // If a default is found, return it immediately. This is the highest priority rule.
-            if ($defaultConstraint->isNotEmpty()) {
-                return $defaultConstraint;
-            }
-        }
-
-        // --- 2. If No Default, Find All Other Applicable Constraints ---
-        // This query runs if no default was found for the branch.
-        return AttendanceConstraint::where('company_id', $user->company_id)
-            ->where('is_active', true)
-            ->where(function ($query) use ($user, $userBranchId) {
-                // Condition A: Constraints assigned directly to this user.
-                $query->whereJsonContains('user_ids', $user->id)
-
-                // Condition B: Constraints assigned to the user's branch (if they have one).
-                ->when($userBranchId, function ($q) use ($userBranchId) {
-                    $q->orWhereJsonContains('branch_ids', $userBranchId);
-                })
-
-                // Condition C: Global constraints (not assigned to any specific user or branch).
-                ->orWhere(function ($q) {
-                    $q->where(fn($sub) => $sub->whereNull('user_ids')->orWhereJsonLength('user_ids', 0))
-                      ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
-                });
-            })
-            ->get();
+        // Use the same optimized logic as getApplicableConstraintsForDataRetrieval
+        return $this->getApplicableConstraintsForDataRetrieval($user);
     }
   public function getApplicableConstraints(User $user): Collection
     {
@@ -474,8 +442,14 @@ class AttendanceConstraintService
             return false;
         }
 
+        // Get user to avoid readonly property issue
+        $user = User::find($attendance->user_id);
+        if (!$user) {
+            return false;
+        }
+        
         // Get all applicable constraints for the user
-        $constraints = $this->getApplicableConstraints($attendance->user);
+        $constraints = $this->getApplicableConstraints($user);
 
         // Filter for break-related constraints
         $breakConstraints = $constraints->filter(function ($constraint) {
@@ -551,9 +525,10 @@ class AttendanceConstraintService
             'detected_at' => now(),
         ]);
     }
-    public function getTodaysWorkRulesForUser(User $user, $date = null): array
+    public function getTodaysWorkRulesForUser(User $user, $date = null, ?string $timezone = null): array
     {
-        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
+        // Use the provided timezone or get it once to avoid multiple calls
+        $timezone = $timezone ?? getTimeZoneBranchByRequest() ?? config('app.timezone');
         $now = $date
             ? Carbon::parse($date, $timezone)
             : Carbon::now($timezone);
@@ -915,14 +890,15 @@ class AttendanceConstraintService
         $userBranchId = $user->userProfessionalData?->branch?->id;
         $userDepartmentId = $user->userProfessionalData?->department?->id;
 
-        // 1. Check for a Default Constraint on the Branch
+        // 1. Check for a Default Constraint on the Branch (single query)
         if ($userBranchId) {
             $defaultConstraint = AttendanceConstraint::whereHas('branches', function ($query) use ($userBranchId) {
                 $query->where('management_hierarchies.id', $userBranchId)
-                      ->where('is_default', true); // Assuming a pivot or relationship for default
+                      ->where('is_default', true);
             })
+            ->where('company_id', $user->company_id)
             ->where('is_active', true)
-            ->first(); // Get the single default constraint for the branch
+            ->first();
 
             if ($defaultConstraint) {
                 return collect([$defaultConstraint]); // If default is found, return it immediately
@@ -954,15 +930,6 @@ class AttendanceConstraintService
                       ->where(fn($sub) => $sub->whereNull('branch_ids')->orWhereJsonLength('branch_ids', 0));
                 });
             })
-            // Filter by active effective dates
-            // ->where(function($query) {
-            //     $query->whereNull('effective_from')
-            //           ->orWhere('effective_from', '<=', Carbon::now());
-            // })
-            // ->where(function($query) {
-            //     $query->whereNull('effective_to')
-            //           ->orWhere('effective_to', '>=', Carbon::now());
-            // })
             ->get();
     }
 }
