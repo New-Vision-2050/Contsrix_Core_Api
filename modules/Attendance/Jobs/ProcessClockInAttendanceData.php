@@ -47,7 +47,7 @@ class ProcessClockInAttendanceData implements ShouldQueue
             Log::error("Attendance record {$this->attendanceId} not found.");
             return;
         }
-        $trackingPoints = $this->attendance->location_tracking ?? [];
+        $trackingPoints = $attendance->location_tracking ?? [];
 
         $latestPoint = !empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
 
