@@ -55,15 +55,39 @@ class UserAttendanceService
     }
 
     /**
+     * Reuse the resolved auth user and only load relations that are missing (avoids a second SELECT on users).
+     */
+    private function ensureUserWithConstraintRelations(User $user): User
+    {
+        $userIdString = (string) $user->getKey();
+
+        if (isset($this->userCache[$userIdString])) {
+            return $this->userCache[$userIdString];
+        }
+
+        $user->loadMissing([
+            'professionalData.attendanceConstraint',
+            'userProfessionalData.branch.address.country.timezones',
+            'userProfessionalData.department',
+        ]);
+
+        return $this->userCache[$userIdString] = $user;
+    }
+
+    /**
      * Get work rules/constraints for a user
      *
-     * @param UuidInterface|string $userId
+     * Pass the authenticated {@see User} when available to avoid a duplicate users-table query (e.g. mobile "today" constraint).
+     *
+     * @param User|UuidInterface|string $userOrId
      * @param string|null $date Optional date (Y-m-d format), defaults to today
      * @return array
      */
-    public function getUserConstraints(UuidInterface|string $userId, ?string $date = null): array
+    public function getUserConstraints(User|UuidInterface|string $userOrId, ?string $date = null): array
     {
-        $user = $this->getUserWithRelationships($userId);
+        $user = $userOrId instanceof User
+            ? $this->ensureUserWithConstraintRelations($userOrId)
+            : $this->getUserWithRelationships($userOrId);
 
         $previousTz = $this->requestTimezoneOverride;
         $this->requestTimezoneOverride = $this->timezoneFromUserBranch($user);
