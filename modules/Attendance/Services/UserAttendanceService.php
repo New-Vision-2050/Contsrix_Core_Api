@@ -200,26 +200,93 @@ class UserAttendanceService
         $timezone = $this->getTimezone();
         $now = Carbon::now($timezone);
 
-        return array_map(function ($period) use ($attendances, $date, $earlyClockInRules, $currentAttendance, $now) {
-            $periodStart = $this->parsePeriodTime($period, 'start', $date);
-            $periodEnd = $this->parsePeriodTime($period, 'end', $date);
+        $periodBounds = [];
+        foreach ($periods as $idx => $period) {
+            $periodBounds[$idx] = [
+                'start' => $this->parsePeriodTime($period, 'start', $date),
+                'end' => $this->parsePeriodTime($period, 'end', $date),
+            ];
+        }
+
+        $activePeriodIndex = $this->resolveSingleActivePeriodIndex(
+            $periodBounds,
+            $now,
+            $earlyClockInRules,
+            $currentAttendance
+        );
+
+        $out = [];
+        foreach ($periods as $idx => $period) {
+            $periodStart = $periodBounds[$idx]['start'];
+            $periodEnd = $periodBounds[$idx]['end'];
 
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
 
-            // Active when now is inside period, or inside early clock-in window (e.g. start 16:00, early 30 min → active from 15:30)
-            $isActive = $this->isPeriodActiveIncludingEarly($periodStart, $periodEnd, $now, $earlyClockInRules);
+            // Clock-in / early window (unchanged) — drives can_clock_in per period
+            $isActiveByTime = $this->isPeriodActiveIncludingEarly($periodStart, $periodEnd, $now, $earlyClockInRules);
+            $isActiveForDisplay = $activePeriodIndex !== null && $idx === $activePeriodIndex;
 
-            return $this->mergePeriodData(
+            $out[] = $this->mergePeriodData(
                 $period,
                 $totalWorkHours,
                 $periodAttendances,
-                $isActive,
+                $isActiveByTime,
+                $isActiveForDisplay,
                 $earlyClockInRules,
                 $currentAttendance
             );
-        }, $periods);
+        }
 
+        return $out;
+    }
+
+    /**
+     * Pick exactly one "current" period for {@see mergePeriodData} `is_active`:
+     * open shift (clock in, no clock out) → period whose bounds contain that clock-in; else first period where now falls (incl. early window).
+     *
+     * @param array<int, array{start: Carbon, end: Carbon}> $periodBounds
+     */
+    private function resolveSingleActivePeriodIndex(
+        array $periodBounds,
+        Carbon $now,
+        array $earlyClockInRules,
+        ?Attendance $currentAttendance
+    ): ?int {
+        if ($currentAttendance !== null) {
+            foreach ($periodBounds as $idx => $bounds) {
+                if ($this->isAttendanceClockInWithinPeriod($currentAttendance, $bounds['start'], $bounds['end'])) {
+                    return $idx;
+                }
+            }
+        }
+
+        foreach ($periodBounds as $idx => $bounds) {
+            if ($this->isPeriodActiveIncludingEarly($bounds['start'], $bounds['end'], $now, $earlyClockInRules)) {
+                return $idx;
+            }
+        }
+
+        return null;
+    }
+
+    private function isAttendanceClockInWithinPeriod(
+        Attendance $attendance,
+        Carbon $periodStart,
+        Carbon $periodEnd
+    ): bool {
+        if (!$attendance->clock_in_time) {
+            return false;
+        }
+
+        $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
+        $clockInCarbon = $attendance->clock_in_time instanceof Carbon
+            ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
+            : Carbon::parse($attendance->clock_in_time, $attendanceTz);
+
+        $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
+
+        return $clockInInPeriodTz->between($periodStart, $periodEnd, true);
     }
 
     /**
@@ -265,20 +332,7 @@ class UserAttendanceService
     private function findAttendancesInPeriod(Collection $attendances, Carbon $periodStart, Carbon $periodEnd): array
     {
         return $attendances
-            ->filter(function ($attendance) use ($periodStart, $periodEnd) {
-                // Only match by clock_in_time - attendance belongs to the period where clock_in happened
-                if (!$attendance->clock_in_time) {
-                    return false;
-                }
-                
-                $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
-                $clockInCarbon = $attendance->clock_in_time instanceof Carbon
-                    ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
-                    : Carbon::parse($attendance->clock_in_time, $attendanceTz);
-                    
-                $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
-                return $clockInInPeriodTz->between($periodStart, $periodEnd, true);
-            })
+            ->filter(fn (Attendance $attendance) => $this->isAttendanceClockInWithinPeriod($attendance, $periodStart, $periodEnd))
             ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance, $periodStart, $periodEnd))
             ->values()
             ->toArray();
@@ -343,14 +397,16 @@ class UserAttendanceService
      * @param array $period
      * @param float $totalWorkHours
      * @param array $attendance
-     * @param bool $isActive
+     * @param bool $isActiveByTime Now inside this period or its early clock-in window (drives can_clock_in)
+     * @param bool $isActiveForDisplay Single "current" period for UI (open shift period, else time-based)
      * @return array
      */
     private function mergePeriodData(
         array $period,
         float $totalWorkHours,
         array $attendance,
-        bool $isActive,
+        bool $isActiveByTime,
+        bool $isActiveForDisplay,
         array $earlyClockInRules,
         ?Attendance $currentAttendance = null
     ): array {
@@ -366,16 +422,14 @@ class UserAttendanceService
             return $att['status'] === 'active';
         });
 
-        $canClockIn = $isActive && ! $hasActiveAttendance && $currentAttendance === null;
-
-        $effectiveIsActive = $isActive || $hasActiveAttendance;
+        $canClockIn = $isActiveByTime && ! $hasActiveAttendance && $currentAttendance === null;
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
-            'is_active' => $effectiveIsActive,
+            'is_active' => $isActiveForDisplay,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
-            'can_clock_out' => $currentAttendance !== null,
+            'can_clock_out' => $currentAttendance !== null && $isActiveForDisplay,
             'early_clock_in_rules' => $this->buildEarlyClockInRulesForResponse($earlyClockInRules),
             'attendance' => $attendance,
         ]);
