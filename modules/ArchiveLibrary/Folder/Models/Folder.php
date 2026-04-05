@@ -35,6 +35,7 @@ class Folder extends Model implements HasMedia ,Auditable
     protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'name',
         'parent_id',
         'project_id',

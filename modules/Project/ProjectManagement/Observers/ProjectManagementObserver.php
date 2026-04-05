@@ -36,7 +36,7 @@ class ProjectManagementObserver
     public function updated(ProjectManagement $project): void
     {
         // Update the folder name if project name changed
-        if ($project->isDirty('name')) {
+        if ($project->wasChanged('name')) {
             $this->updateProjectFolder($project);
         }
     }
@@ -76,18 +76,23 @@ class ProjectManagementObserver
     private function createProjectFolder(ProjectManagement $project): void
     {
         try {
-            Folder::create([
-                "id"=>$project->id,
+            // Use DB insert to bypass UUID trait auto-generation
+            DB::table('folders')->insert([
+                'id' => $project->id,
                 'name' => $project->name,
                 'project_id' => $project->id,
                 'company_id' => $project->company_id,
                 'access_type' => 'public',
                 'status' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         } catch (\Exception $e) {
             \Log::error('Failed to create folder for project: ' . $e->getMessage(), [
                 'project_id' => $project->id,
                 'project_name' => $project->name,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }
