@@ -37,6 +37,7 @@ class Folder extends Model implements HasMedia ,Auditable
     protected $fillable = [
         'name',
         'parent_id',
+        'project_id',
         'access_type',
         'status',
         "password",
@@ -79,6 +80,11 @@ class Folder extends Model implements HasMedia ,Auditable
     public function users()
     {
         return $this->belongsToMany(User::class,"user_folder_permissions","folder_id","user_id");
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(\Modules\Project\ProjectManagement\Models\ProjectManagement::class, 'project_id');
     }
     protected static function newFactory(): FolderFactory
     {

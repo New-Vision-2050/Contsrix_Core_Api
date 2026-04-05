@@ -19,6 +19,7 @@ class CreateFileDTO
         public UploadedFile $file,
         public string $accessType,
         public ?string $folderId,
+        public ?string $projectId,
         public int $status = 1,
     )
     {
@@ -33,6 +34,7 @@ class CreateFileDTO
             'end_date' => $this->endDate,
             "access_type"=>$this->accessType,
             "folder_id"=>$this->folderId,
+            "project_id"=>$this->projectId,
             "status"=>$this->status
         ];
     }

@@ -31,6 +31,7 @@ class UpdateFileRequest extends FormRequest
             'user_ids.*' => 'sometimes|exists:users,id',
             "file" => "nullable",
             "parent_id" => "nullable|exists:folders,id",
+            "project_id"=>"nullable|uuid|exists:projects,id",
             "status" => "sometimes|integer|in:0,1"
         ];
     }
@@ -47,6 +48,7 @@ class UpdateFileRequest extends FormRequest
             userIds: $this->get('user_ids', []),
             file: $this->hasFile('file') ? $this->file("file") : null,
             folderId: $this->get('folder_id'),
+            projectId: $this->get('project_id'),
             status: $this->has('status') ? (int) $this->get('status') : null
         );
     }

@@ -19,6 +19,7 @@ class UpdateFileCommand
         private array $userIds = [],
         private ?UploadedFile  $file,
         private ?string $folderId,
+        private ?string $projectId,
         private ?int $status = null
     ) {
     }
@@ -62,6 +63,7 @@ class UpdateFileCommand
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
             "folder_id"=>$this->folderId,
+            "project_id"=>$this->projectId,
             "status"=>$this->status
         ], fn($value) => !is_null($value));
     }

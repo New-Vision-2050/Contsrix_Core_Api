@@ -13,6 +13,7 @@ class UpdateFolderCommand
         private UuidInterface $id,
         private string $name,
         private ?string $parentId,
+        private ?string $projectId,
         private ?string $password,
         private string $accessType,
         private array $userIds = [],
@@ -36,6 +37,11 @@ class UpdateFolderCommand
         return $this->parentId;
     }
 
+    public function getProjectId(): ?string
+    {
+        return $this->projectId;
+    }
+
     public function getPassword(): ?string
     {
         return $this->password;
@@ -56,6 +62,7 @@ class UpdateFolderCommand
         $data = [
             'name' => $this->name,
             'parent_id' => $this->parentId,
+            'project_id' => $this->projectId,
             'access_type' => $this->accessType,
         ];
 

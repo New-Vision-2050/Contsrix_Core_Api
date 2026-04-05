@@ -28,6 +28,7 @@ class CreateFileRequest extends FormRequest
             "access_type"=>"required|in:private,public",
             "file"=>"required|mimes:pdf,jpeg,jpg,png,doc,docx",
             "parent_id"=>"nullable|exists:folders,id",
+            "project_id"=>"nullable|uuid|exists:projects,id",
             "status"=>"sometimes|integer|in:0,1"
         ];
     }
@@ -43,6 +44,7 @@ class CreateFileRequest extends FormRequest
             file: $this->file('file'),
             accessType: $this->get('access_type'),
             folderId: $this->get('parent_id'),
+            projectId: $this->get('project_id'),
             status: (int) $this->get('status', 1)
         );
     }
