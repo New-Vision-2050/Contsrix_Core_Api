@@ -16,6 +16,7 @@ use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Carbon\CarbonPeriod;
+use Modules\Attendance\Jobs\AutoClockOutAtNextShiftStartJob;
 use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
 
 class AttendanceService
@@ -100,7 +101,59 @@ class AttendanceService
             ProcessClockInAttendanceData::dispatch($attendance->id)->delay($endDateTime);
         }
 
+        $this->scheduleAutoClockOutWhenNextShiftStarts($attendance, $constraints, $endDateTime);
+
         return $attendance;
+    }
+
+    /**
+     * Queue auto clock-out at the start of the next scheduled period (same merged day list from constraints)
+     * if the user is still clocked into this shift.
+     */
+    private function scheduleAutoClockOutWhenNextShiftStarts(
+        Attendance $attendance,
+        array $constraints,
+        Carbon $currentPeriodEnd
+    ): void {
+        $nextStart = $this->resolveNextShiftStartAfterPeriodEnd($constraints, $currentPeriodEnd);
+        if ($nextStart === null || !$nextStart->isFuture()) {
+            return;
+        }
+
+        AutoClockOutAtNextShiftStartJob::dispatch(
+            (string) $attendance->id,
+            (string) $attendance->company_id,
+            $nextStart->copy()->utc()->toIso8601String(),
+        )->delay($nextStart);
+    }
+
+    /**
+     * @param  array<string, mixed>  $constraints  Output of {@see AttendanceConstraintService::getTodaysWorkRulesForUser}
+     */
+    private function resolveNextShiftStartAfterPeriodEnd(array $constraints, Carbon $currentPeriodEnd): ?Carbon
+    {
+        $tz = $currentPeriodEnd->getTimezone();
+
+        foreach ($constraints['all_work_periods'] ?? [] as $period) {
+            $pStart = $period['period_start_time_carbon'] ?? null;
+            if (!$pStart instanceof Carbon) {
+                $date = $period['date'] ?? $currentPeriodEnd->format('Y-m-d');
+                $startTime = $period['start_time'] ?? null;
+                if (!is_string($startTime) || $startTime === '') {
+                    continue;
+                }
+                $timeHi = strlen($startTime) > 5 ? substr($startTime, 0, 5) : $startTime;
+                $pStart = Carbon::createFromFormat('Y-m-d H:i', $date . ' ' . $timeHi, $tz);
+            } else {
+                $pStart = $pStart->copy()->setTimezone($tz);
+            }
+
+            if ($pStart->greaterThan($currentPeriodEnd)) {
+                return $pStart;
+            }
+        }
+
+        return null;
     }
 
 
@@ -233,9 +286,9 @@ class AttendanceService
     /**
      * Get current attendance for user
      */
-    public function getCurrentAttendance(UuidInterface $userId): ?Attendance
+    public function getCurrentAttendance(UuidInterface $userId, bool $withUser = true): ?Attendance
     {
-        return $this->attendanceRepository->getCurrentAttendance($userId);
+        return $this->attendanceRepository->getCurrentAttendance($userId, $withUser);
     }
 
     /**

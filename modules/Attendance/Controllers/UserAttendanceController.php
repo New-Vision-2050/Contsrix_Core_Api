@@ -18,6 +18,7 @@ use Modules\Attendance\Requests\GetUserConstraintRequest;
 use Modules\Attendance\Requests\GetUserAttendanceHistoryRequest;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\UserAttendanceService;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
 class UserAttendanceController extends Controller
@@ -42,13 +43,11 @@ class UserAttendanceController extends Controller
     public function getMyConstraintForToday(GetUserConstraintRequest $request): JsonResponse
     {
         try {
-            $userId = (string) Auth::id();
-            $date = $request->input('date'); // Optional: Y-m-d format, defaults to today if null
-
-            $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
-            $targetDate = $date ?? \Carbon\Carbon::now($timezone)->format('Y-m-d');
-
-            $result = $this->userAttendanceService->getUserConstraints($userId, $targetDate);
+            $user = $request->user();
+            if (!$user instanceof User) {
+                return Json::error('Unauthorized.', 401);
+            }
+            $result = $this->userAttendanceService->getUserConstraints($user, $request->input('date'));
             
             return Json::item($result, message: __('messages.attendance.user_constraint_today_retrieved'));
         } catch (AttendanceException $e) {

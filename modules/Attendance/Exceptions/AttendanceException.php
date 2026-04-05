@@ -85,4 +85,15 @@ class AttendanceException extends CustomException
     {
         return new self('User not found.', 404);
     }
+
+    /**
+     * Thrown when updating/deleting a constraint while linked employees still have an open shift.
+     */
+    public static function cannotModifyConstraintWithOpenAttendance(): self
+    {
+        return new self(
+            'Cannot modify this attendance constraint while any linked employee is still clocked in (clock out is pending).',
+            409
+        );
+    }
 }
