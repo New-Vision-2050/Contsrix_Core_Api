@@ -50,6 +50,7 @@ class File extends Model implements HasMedia , Auditable
         'start_date',
         'end_date',
         'folder_id',
+        'project_id',
         'access_type',
         'status',
         "management_hierarchy_id",
@@ -196,5 +197,9 @@ class File extends Model implements HasMedia , Auditable
         )->withTimestamps();
     }
 
+    public function project()
+    {
+        return $this->belongsTo(\Modules\Project\ProjectManagement\Models\ProjectManagement::class, 'project_id');
+    }
 
 }

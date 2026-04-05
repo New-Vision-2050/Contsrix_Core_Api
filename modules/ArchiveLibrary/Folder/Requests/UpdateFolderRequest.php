@@ -16,6 +16,7 @@ class UpdateFolderRequest extends FormRequest
         return [
             'name' => 'required|string',
             'parent_id' => 'nullable',
+            'project_id'=>'nullable|uuid|exists:projects,id',
             'password' => 'nullable',
             'access_type' => 'required|in:public,private',
             'user_ids' => 'required_if:access_type,private|array',
@@ -31,6 +32,7 @@ class UpdateFolderRequest extends FormRequest
             id: Uuid::fromString($this->route('id')),
             name: $this->get('name'),
             parentId: $this->get('parent_id'),
+            projectId: $this->get('project_id'),
             password: $this->get('password'),
             accessType: $this->get('access_type'),
             userIds: $this->get('user_ids', []),

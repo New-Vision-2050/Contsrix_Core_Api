@@ -143,6 +143,7 @@ class FolderPresenter extends AbstractPresenter
             'id' => $this->folder->id,
             'name' => $this->folder->name,
             'parent_id' => $this->folder?->parent_id,
+            'project_id' => $this->folder?->project_id,
             'access_type' => $this->folder->access_type,
             'status' => $this->folder->status ?? 1,
             "is_file"=>0,
