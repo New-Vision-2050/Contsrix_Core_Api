@@ -3,6 +3,8 @@
 ## Overview
 The Laravel application requires an `APP_KEY` environment variable for encryption and security. This document explains how it's automatically handled in the deployment process.
 
+> **📘 For GitHub Workflow Users**: See [GITHUB_WORKFLOW_SETUP.md](./GITHUB_WORKFLOW_SETUP.md) for specific instructions on using APP_KEY with GitHub Actions CI/CD.
+
 ## Automatic Generation
 The `entrypoint.sh` script now automatically generates the `APP_KEY` if it's missing or invalid when the container starts.
 
@@ -16,16 +18,18 @@ APP_KEY=base64:PLACEHOLDER_WILL_BE_GENERATED_BY_ARTISAN
 
 ### 2. Automatic Generation in `entrypoint.sh`
 When the container starts, the entrypoint script:
-- Checks if `APP_KEY` exists in `.env`
-- Checks if it's empty or contains the placeholder value
+- Checks if `.env` file exists
+- **Adds `APP_KEY=` line to `.env` if it doesn't exist**
+- Checks if `APP_KEY` is empty or contains the placeholder value
 - Automatically runs `php artisan key:generate --force` if needed
 - Logs the generation process
 
 ### 3. Detection Logic
-The script detects missing/invalid APP_KEY in these cases:
-- `APP_KEY=` (empty value)
-- `APP_KEY=base64:PLACEHOLDER` (placeholder value)
-- Missing `APP_KEY=base64:` prefix (invalid format)
+The script handles these cases:
+- **No `APP_KEY` line in `.env`** - Adds the line automatically
+- `APP_KEY=` (empty value) - Generates new key
+- `APP_KEY=base64:PLACEHOLDER` (placeholder value) - Generates new key
+- Missing `APP_KEY=base64:` prefix (invalid format) - Generates new key
 
 ## Manual Generation (If Needed)
 
@@ -79,8 +83,15 @@ php artisan key:generate --force
 The entrypoint script logs APP_KEY generation:
 ```
 [2026-04-07 14:32:00] Checking APP_KEY...
-[2026-04-07 14:32:01] APP_KEY not found or invalid. Generating new APP_KEY...
-[2026-04-07 14:32:02] APP_KEY generated successfully
+[2026-04-07 14:32:01] APP_KEY line not found in .env. Adding it...
+[2026-04-07 14:32:02] APP_KEY not set or invalid. Generating new APP_KEY...
+[2026-04-07 14:32:03] APP_KEY generated successfully
+```
+
+Or if APP_KEY already exists:
+```
+[2026-04-07 14:32:00] Checking APP_KEY...
+[2026-04-07 14:32:01] APP_KEY already set
 ```
 
 ## CI/CD Integration
