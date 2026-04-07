@@ -20,23 +20,6 @@ if [ ! -f /var/www/.env ]; then
     handle_error ".env file not found. Container cannot start without environment configuration."
 fi
 
-# Generate APP_KEY if not set or empty
-log "Checking APP_KEY..."
-# Check if APP_KEY line exists in .env
-if ! grep -q "^APP_KEY=" /var/www/.env; then
-    log "APP_KEY line not found in .env. Adding it..."
-    echo "APP_KEY=" >> /var/www/.env
-fi
-
-# Check if APP_KEY is empty or invalid and generate if needed
-if ! grep -q "^APP_KEY=base64:" /var/www/.env || grep -q "^APP_KEY=$" /var/www/.env || grep -q "^APP_KEY=base64:PLACEHOLDER" /var/www/.env; then
-    log "APP_KEY not set or invalid. Generating new APP_KEY..."
-    php artisan key:generate --force || handle_error "Failed to generate APP_KEY"
-    log "APP_KEY generated successfully"
-else
-    log "APP_KEY already set"
-fi
-
 # Ensure storage/logs directory exists and has correct permissions
 log "Setting up storage directories and permissions..."
 mkdir -p /var/www/storage/logs
