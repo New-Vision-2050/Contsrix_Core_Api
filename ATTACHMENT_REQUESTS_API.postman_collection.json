@@ -1,0 +1,598 @@
+{
+	"info": {
+		"_postman_id": "attachment-requests-api-collection",
+		"name": "Attachment Requests API",
+		"description": "API endpoints for managing attachment requests between companies in shared projects",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Folder Management",
+			"item": [
+				{
+					"name": "Get Folder Children (for dropdown)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/folders/children?project_id={{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "folders", "children"],
+							"query": [
+								{
+									"key": "project_id",
+									"value": "{{project_id}}",
+									"description": "Get root folders for this project"
+								},
+								{
+									"key": "parent_id",
+									"value": "",
+									"description": "Get subfolders of this folder (optional)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get folder children for selecting attachment types. Use project_id to get root folders, or parent_id to get subfolders."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/projects/attachment-requests/folders/children?project_id={{project_id}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "projects", "attachment-requests", "folders", "children"],
+									"query": [
+										{
+											"key": "project_id",
+											"value": "{{project_id}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"data\": [\n        {\n            \"id\": \"folder-uuid-1\",\n            \"name\": \"Technical Drawings\",\n            \"parent_id\": null,\n            \"project_id\": \"project-uuid\"\n        },\n        {\n            \"id\": \"folder-uuid-2\",\n            \"name\": \"Contracts\",\n            \"parent_id\": null,\n            \"project_id\": \"project-uuid\"\n        },\n        {\n            \"id\": \"folder-uuid-3\",\n            \"name\": \"Reports\",\n            \"parent_id\": null,\n            \"project_id\": \"project-uuid\"\n        }\n    ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Outgoing Requests",
+			"item": [
+				{
+					"name": "Create Attachment Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Project Technical Drawings Request",
+									"type": "text",
+									"description": "Request name (required)"
+								},
+								{
+									"key": "date",
+									"value": "2026-04-10",
+									"type": "text",
+									"description": "Request date (required, format: YYYY-MM-DD)"
+								},
+								{
+									"key": "project_id",
+									"value": "{{project_id}}",
+									"type": "text",
+									"description": "Project ID (required)"
+								},
+								{
+									"key": "receiver_company_id",
+									"value": "{{receiver_company_id}}",
+									"type": "text",
+									"description": "Company to receive the request (required)"
+								},
+								{
+									"key": "attachment_type_id",
+									"value": "folder-uuid-1",
+									"type": "text",
+									"description": "Folder ID for attachment type (optional - root folder)"
+								},
+								{
+									"key": "attachment_sub_type_id",
+									"value": "subfolder-uuid-1",
+									"type": "text",
+									"description": "Folder ID for attachment sub type (optional - level 2)"
+								},
+								{
+									"key": "attachment_sub_sub_type_id",
+									"value": "",
+									"type": "text",
+									"description": "Folder ID for attachment sub-sub type (optional - level 3)"
+								},
+								{
+									"key": "attachments[]",
+									"type": "file",
+									"description": "Attachment file 1 (required, max 10MB)",
+									"src": []
+								},
+								{
+									"key": "attachments[]",
+									"type": "file",
+									"description": "Attachment file 2 (optional)",
+									"src": []
+								},
+								{
+									"key": "attachments[]",
+									"type": "file",
+									"description": "Attachment file 3 (optional)",
+									"src": []
+								},
+								{
+									"key": "notes",
+									"value": "Please review and approve these technical drawings for construction phase 1",
+									"type": "text",
+									"description": "Additional notes (optional)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests"]
+						},
+						"description": "Create a new attachment request to send files to another company in a shared project. Attachment types represent folder structure in ArchiveLibrary."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "name",
+											"value": "Project Technical Drawings Request",
+											"type": "text"
+										},
+										{
+											"key": "date",
+											"value": "2026-04-10",
+											"type": "text"
+										},
+										{
+											"key": "project_id",
+											"value": "{{project_id}}",
+											"type": "text"
+										},
+										{
+											"key": "receiver_company_id",
+											"value": "{{receiver_company_id}}",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/projects/attachment-requests",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "projects", "attachment-requests"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"data\": {\n        \"id\": \"request-uuid\",\n        \"serial_number\": \"ATR-20260409-0001\",\n        \"name\": \"Project Technical Drawings Request\",\n        \"date\": \"2026-04-10\",\n        \"project_id\": \"project-uuid\",\n        \"status\": \"pending\",\n        \"attachment_type_id\": \"folder-uuid-1\",\n        \"attachment_sub_type_id\": \"subfolder-uuid-1\",\n        \"attachment_sub_sub_type_id\": null,\n        \"notes\": \"Please review and approve these technical drawings\",\n        \"created_at\": \"2026-04-09T00:10:00.000Z\",\n        \"responded_at\": null,\n        \"items\": [\n            {\n                \"id\": \"item-uuid-1\",\n                \"file_name\": \"drawing1.pdf\",\n                \"file_url\": \"/storage/attachment-requests/2026/04/drawing1.pdf\",\n                \"file_size\": 1024000,\n                \"file_size_formatted\": \"1.00 MB\",\n                \"status\": \"pending\"\n            },\n            {\n                \"id\": \"item-uuid-2\",\n                \"file_name\": \"drawing2.pdf\",\n                \"file_url\": \"/storage/attachment-requests/2026/04/drawing2.pdf\",\n                \"file_size\": 2048000,\n                \"file_size_formatted\": \"2.00 MB\",\n                \"status\": \"pending\"\n            }\n        ],\n        \"statistics\": {\n            \"total_items\": 2,\n            \"approved_items\": 0,\n            \"declined_items\": 0,\n            \"pending_items\": 2,\n            \"update_requested_items\": 0\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Outgoing Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/outgoing?project_id={{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "outgoing"],
+							"query": [
+								{
+									"key": "project_id",
+									"value": "{{project_id}}",
+									"description": "Filter by specific project (optional)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all attachment requests sent by your company. Optionally filter by project_id."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/projects/attachment-requests/outgoing",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "projects", "attachment-requests", "outgoing"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"data\": [\n        {\n            \"id\": \"request-uuid-1\",\n            \"serial_number\": \"ATR-20260409-0001\",\n            \"name\": \"Technical Drawings Request\",\n            \"date\": \"2026-04-10\",\n            \"project_id\": \"project-uuid\",\n            \"status\": \"semi-approved\",\n            \"created_at\": \"2026-04-09T00:10:00.000Z\",\n            \"responded_at\": \"2026-04-09T10:30:00.000Z\"\n        },\n        {\n            \"id\": \"request-uuid-2\",\n            \"serial_number\": \"ATR-20260409-0002\",\n            \"name\": \"Contract Documents Request\",\n            \"date\": \"2026-04-11\",\n            \"project_id\": \"project-uuid\",\n            \"status\": \"pending\",\n            \"created_at\": \"2026-04-09T12:00:00.000Z\",\n            \"responded_at\": null\n        }\n    ]\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Incoming Requests",
+			"item": [
+				{
+					"name": "Get Incoming Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/incoming?project_id={{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "incoming"],
+							"query": [
+								{
+									"key": "project_id",
+									"value": "{{project_id}}",
+									"description": "Filter by specific project (optional)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all attachment requests received by your company. Optionally filter by project_id."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/projects/attachment-requests/incoming",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "projects", "attachment-requests", "incoming"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"data\": [\n        {\n            \"id\": \"request-uuid-1\",\n            \"serial_number\": \"ATR-20260409-0001\",\n            \"name\": \"Project Specifications Request\",\n            \"date\": \"2026-04-10\",\n            \"project_id\": \"project-uuid\",\n            \"status\": \"pending\",\n            \"created_at\": \"2026-04-09T08:00:00.000Z\",\n            \"responded_at\": null\n        },\n        {\n            \"id\": \"request-uuid-2\",\n            \"serial_number\": \"ATR-20260409-0002\",\n            \"name\": \"Safety Reports Request\",\n            \"date\": \"2026-04-11\",\n            \"project_id\": \"project-uuid\",\n            \"status\": \"approved\",\n            \"created_at\": \"2026-04-09T09:00:00.000Z\",\n            \"responded_at\": \"2026-04-09T15:00:00.000Z\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Pending Incoming Requests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/incoming/pending?project_id={{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "incoming", "pending"],
+							"query": [
+								{
+									"key": "project_id",
+									"value": "{{project_id}}",
+									"description": "Filter by specific project (optional)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get only pending and semi-approved incoming requests that need action. Optionally filter by project_id."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Request Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/{{request_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "{{request_id}}"]
+						},
+						"description": "Get full details of a specific attachment request including all items"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/projects/attachment-requests/{{request_id}}",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "projects", "attachment-requests", "{{request_id}}"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"data\": {\n        \"id\": \"request-uuid\",\n        \"serial_number\": \"ATR-20260409-0001\",\n        \"name\": \"Technical Drawings Request\",\n        \"date\": \"2026-04-10\",\n        \"project_id\": \"project-uuid\",\n        \"status\": \"semi-approved\",\n        \"attachment_type_id\": \"folder-uuid-1\",\n        \"attachment_sub_type_id\": \"subfolder-uuid-1\",\n        \"attachment_sub_sub_type_id\": null,\n        \"notes\": \"Please review these drawings\",\n        \"created_at\": \"2026-04-09T00:10:00.000Z\",\n        \"responded_at\": \"2026-04-09T10:30:00.000Z\",\n        \"project\": {\n            \"id\": \"project-uuid\",\n            \"name\": \"Downtown Construction Project\",\n            \"serial_number\": \"PROJ-001\"\n        },\n        \"sender_company\": {\n            \"id\": \"company-uuid-1\",\n            \"name\": \"ABC Construction Ltd\",\n            \"serial_number\": \"COMPANY-12345678\"\n        },\n        \"receiver_company\": {\n            \"id\": \"company-uuid-2\",\n            \"name\": \"XYZ Engineering Co\",\n            \"serial_number\": \"COMPANY-87654321\"\n        },\n        \"created_by\": {\n            \"id\": \"user-uuid-1\",\n            \"name\": \"John Doe\",\n            \"email\": \"john@abc.com\"\n        },\n        \"responded_by\": {\n            \"id\": \"user-uuid-2\",\n            \"name\": \"Jane Smith\",\n            \"email\": \"jane@xyz.com\"\n        },\n        \"items\": [\n            {\n                \"id\": \"item-uuid-1\",\n                \"file_name\": \"drawing1.pdf\",\n                \"file_url\": \"/storage/attachment-requests/2026/04/drawing1.pdf\",\n                \"file_type\": \"application/pdf\",\n                \"file_size\": 1024000,\n                \"file_size_formatted\": \"1.00 MB\",\n                \"status\": \"approved\",\n                \"response_notes\": \"Approved for construction\",\n                \"responded_by\": {\n                    \"id\": \"user-uuid-2\",\n                    \"name\": \"Jane Smith\",\n                    \"email\": \"jane@xyz.com\"\n                },\n                \"responded_at\": \"2026-04-09T10:30:00.000Z\"\n            },\n            {\n                \"id\": \"item-uuid-2\",\n                \"file_name\": \"drawing2.pdf\",\n                \"file_url\": \"/storage/attachment-requests/2026/04/drawing2.pdf\",\n                \"file_type\": \"application/pdf\",\n                \"file_size\": 2048000,\n                \"file_size_formatted\": \"2.00 MB\",\n                \"status\": \"pending\",\n                \"response_notes\": null,\n                \"responded_by\": null,\n                \"responded_at\": null\n            },\n            {\n                \"id\": \"item-uuid-3\",\n                \"file_name\": \"drawing3.pdf\",\n                \"file_url\": \"/storage/attachment-requests/2026/04/drawing3.pdf\",\n                \"file_type\": \"application/pdf\",\n                \"file_size\": 1536000,\n                \"file_size_formatted\": \"1.50 MB\",\n                \"status\": \"update_requested\",\n                \"response_notes\": \"Please update dimensions on page 3\",\n                \"responded_by\": {\n                    \"id\": \"user-uuid-2\",\n                    \"name\": \"Jane Smith\",\n                    \"email\": \"jane@xyz.com\"\n                },\n                \"responded_at\": \"2026-04-09T10:25:00.000Z\"\n            }\n        ],\n        \"statistics\": {\n            \"total_items\": 3,\n            \"approved_items\": 1,\n            \"declined_items\": 0,\n            \"pending_items\": 1,\n            \"update_requested_items\": 1\n        }\n    }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Response Actions",
+			"item": [
+				{
+					"name": "Respond to Attachment Item - Approve",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"item_id\": \"{{item_id}}\",\n  \"action\": \"approve\",\n  \"notes\": \"Drawing approved. File saved to ArchiveLibrary.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/items/respond",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "items", "respond"]
+						},
+						"description": "Approve a specific attachment. When approved, the file is automatically saved to the ArchiveLibrary folder based on attachment_type_id (folder path)."
+					},
+					"response": []
+				},
+				{
+					"name": "Respond to Attachment Item - Decline",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"item_id\": \"{{item_id}}\",\n  \"action\": \"decline\",\n  \"notes\": \"Drawing does not meet specifications. Please revise.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/items/respond",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "items", "respond"]
+						},
+						"description": "Decline a specific attachment with notes explaining why"
+					},
+					"response": []
+				},
+				{
+					"name": "Respond to Attachment Item - Request Update",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"item_id\": \"{{item_id}}\",\n  \"action\": \"request_update\",\n  \"notes\": \"Please update the dimensions on page 3 and resubmit.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/items/respond",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "items", "respond"]
+						},
+						"description": "Request an update for a specific attachment. Sender will need to modify and resubmit."
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Entire Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/{{request_id}}/approve",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "{{request_id}}", "approve"]
+						},
+						"description": "Approve entire request. All attachments will be marked as approved and saved to ArchiveLibrary."
+					},
+					"response": []
+				},
+				{
+					"name": "Decline Entire Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/attachment-requests/{{request_id}}/decline",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "attachment-requests", "{{request_id}}", "decline"]
+						},
+						"description": "Decline entire request. All attachments will be marked as declined."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		},
+		{
+			"key": "project_id",
+			"value": "project-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "receiver_company_id",
+			"value": "company-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "request_id",
+			"value": "request-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "item_id",
+			"value": "item-uuid-here",
+			"type": "string"
+		}
+	]
+}
