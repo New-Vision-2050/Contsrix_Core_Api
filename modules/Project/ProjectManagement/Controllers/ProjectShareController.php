@@ -222,4 +222,45 @@ class ProjectShareController extends Controller
             return Json::error($e->getMessage(), 500);
         }
     }
+
+    /**
+     * Get list of companies that a project is shared with (accepted shares only)
+     */
+    public function getSharedCompanies(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->route('id');
+
+            if (!$projectId) {
+                return Json::error('Project ID is required', 400);
+            }
+
+            // Verify project access (owner or shared with)
+            $project = ProjectManagement::find($projectId);
+
+            if (!$project) {
+                return Json::error('Project not found', 404);
+            }
+
+            // Get accepted shares for this project
+            $shares = $this->shareService->getSharesForResource(
+                ProjectManagement::class,
+                $projectId
+            )->where('status', 'accepted');
+
+            $companies = $shares->map(function ($share) {
+                return [
+                    'id' => $share->sharedWithCompany->id,
+                    'name' => $share->sharedWithCompany->name,
+                    'serial_number' => $share->sharedWithCompany->serial_number,
+                    'shared_at' => $share->created_at?->toISOString(),
+                    'accepted_at' => $share->responded_at?->toISOString(),
+                ];
+            });
+
+            return Json::items($companies->values()->toArray());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
 }

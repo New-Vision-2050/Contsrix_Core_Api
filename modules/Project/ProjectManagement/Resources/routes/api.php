@@ -21,6 +21,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::prefix('sharing')->group(function () {
         Route::post('/share', [ProjectShareController::class, 'shareProject']);
         Route::get('/projects/{id}/shares', [ProjectShareController::class, 'getProjectShares']);
+        Route::get('/projects/{id}/shared-companies', [ProjectShareController::class, 'getSharedCompanies']);
         Route::get('/invitations/pending', [ProjectShareController::class, 'getPendingInvitations']);
         Route::post('/invitations/respond', [ProjectShareController::class, 'respondToShare']);
         Route::delete('/shares/{id}', [ProjectShareController::class, 'removeShare']);

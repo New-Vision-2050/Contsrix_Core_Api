@@ -146,6 +146,52 @@
 					"response": []
 				},
 				{
+					"name": "Get Shared Companies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/sharing/projects/:project_id/shared-companies",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "sharing", "projects", ":project_id", "shared-companies"],
+							"variable": [
+								{
+									"key": "project_id",
+									"value": "{{project_id}}",
+									"description": "Project ID"
+								}
+							]
+						},
+						"description": "Get simple list of companies that accepted project share (for dropdown/selection)"
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/projects/sharing/projects/:project_id/shared-companies",
+									"host": ["{{base_url}}"],
+									"path": ["api", "v1", "projects", "sharing", "projects", ":project_id", "shared-companies"],
+									"variable": [
+										{
+											"key": "project_id",
+											"value": "{{project_id}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"data\": [\n        {\n            \"id\": \"company-uuid-1\",\n            \"name\": \"ABC Construction Ltd\",\n            \"serial_number\": \"COMPANY-12345678\",\n            \"shared_at\": \"2026-04-01T10:00:00.000Z\",\n            \"accepted_at\": \"2026-04-01T15:30:00.000Z\"\n        },\n        {\n            \"id\": \"company-uuid-2\",\n            \"name\": \"XYZ Engineering Co\",\n            \"serial_number\": \"COMPANY-87654321\",\n            \"shared_at\": \"2026-04-05T08:00:00.000Z\",\n            \"accepted_at\": \"2026-04-05T09:15:00.000Z\"\n        },\n        {\n            \"id\": \"company-uuid-3\",\n            \"name\": \"DEF Architects\",\n            \"serial_number\": \"COMPANY-11223344\",\n            \"shared_at\": \"2026-04-08T12:00:00.000Z\",\n            \"accepted_at\": \"2026-04-08T14:00:00.000Z\"\n        }\n    ]\n}"
+						}
+					]
+				},
+				{
 					"name": "Get Pending Invitations",
 					"request": {
 						"method": "GET",

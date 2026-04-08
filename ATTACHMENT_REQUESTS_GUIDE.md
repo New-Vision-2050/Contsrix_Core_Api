@@ -64,7 +64,37 @@ if (attachment_sub_sub_type_id exists) {
 
 ## API Endpoints
 
-### **1. Get Folder Children (For Dropdown Selection)**
+### **1. Get Shared Companies (For Dropdown Selection)**
+
+```http
+GET /api/v1/projects/sharing/projects/{project_id}/shared-companies
+```
+
+**Use Case:** Get list of companies that have accepted the project share. Use this to populate the `receiver_company_id` dropdown when creating an attachment request.
+
+**Response Example:**
+```json
+{
+  "data": [
+    {
+      "id": "company-uuid-1",
+      "name": "ABC Construction Ltd",
+      "serial_number": "COMPANY-12345678",
+      "shared_at": "2026-04-01T10:00:00.000Z",
+      "accepted_at": "2026-04-01T15:30:00.000Z"
+    },
+    {
+      "id": "company-uuid-2",
+      "name": "XYZ Engineering Co",
+      "serial_number": "COMPANY-87654321",
+      "shared_at": "2026-04-05T08:00:00.000Z",
+      "accepted_at": "2026-04-05T09:15:00.000Z"
+    }
+  ]
+}
+```
+
+### **2. Get Folder Children (For Dropdown Selection)**
 
 ```http
 GET /api/v1/projects/attachment-requests/folders/children?project_id={project_id}
@@ -93,7 +123,7 @@ GET /api/v1/projects/attachment-requests/folders/children?parent_id={folder_id}
 }
 ```
 
-### **2. Create Attachment Request**
+### **3. Create Attachment Request**
 
 ```http
 POST /api/v1/projects/attachment-requests
@@ -103,7 +133,7 @@ Fields:
 - name (required)
 - date (required, YYYY-MM-DD)
 - project_id (required)
-- receiver_company_id (required)
+- receiver_company_id (required - use Get Shared Companies endpoint)
 - attachment_type_id (optional - folder ID)
 - attachment_sub_type_id (optional - subfolder ID)
 - attachment_sub_sub_type_id (optional - sub-subfolder ID)
@@ -113,7 +143,7 @@ Fields:
 
 **Serial Number:** Auto-generated as `ATR-YYYYMMDD-####` (e.g., `ATR-20260409-0001`)
 
-### **3. View Outgoing Requests (Sender)**
+### **4. View Outgoing Requests (Sender)**
 
 ```http
 GET /api/v1/projects/attachment-requests/outgoing
@@ -122,7 +152,7 @@ GET /api/v1/projects/attachment-requests/outgoing?project_id={project_id}
 
 Lists all requests your company has sent to other companies. Optionally filter by `project_id` to see requests for a specific project.
 
-### **4. View Incoming Requests (Receiver)**
+### **5. View Incoming Requests (Receiver)**
 
 ```http
 GET /api/v1/projects/attachment-requests/incoming
@@ -133,7 +163,7 @@ GET /api/v1/projects/attachment-requests/incoming/pending?project_id={project_id
 
 Lists all requests received by your company. Optionally filter by `project_id` to see requests for a specific project.
 
-### **5. Get Request Details**
+### **6. Get Request Details**
 
 ```http
 GET /api/v1/projects/attachment-requests/{id}
@@ -141,7 +171,7 @@ GET /api/v1/projects/attachment-requests/{id}
 
 Returns full details including all attachment items with their individual statuses.
 
-### **6. Respond to Individual Attachment**
+### **7. Respond to Individual Attachment**
 
 ```http
 POST /api/v1/projects/attachment-requests/items/respond
@@ -159,7 +189,7 @@ Content-Type: application/json
 - **`decline`** - Rejects the file
 - **`request_update`** - Asks sender to modify and resubmit
 
-### **7. Approve/Decline Entire Request**
+### **8. Approve/Decline Entire Request**
 
 ```http
 POST /api/v1/projects/attachment-requests/{id}/approve
