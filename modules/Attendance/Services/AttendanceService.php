@@ -446,12 +446,18 @@ class AttendanceService
         ];
     }
 
-    private function fetchAttendanceRecordsForExport(array $filters, array $with, ?string $userId = null): Collection
+    private function fetchAttendanceRecordsForExport(
+        array $filters,
+        array $with,
+        UuidInterface|string|null $userId = null
+    ): Collection
     {
+        $normalizedUserId = $userId instanceof UuidInterface ? $userId->toString() : $userId;
+
         return Attendance::query()
             ->filter($filters)
-            ->when($userId, static function ($query) use ($userId) {
-                $query->where('user_id', $userId);
+            ->when($normalizedUserId, static function ($query) use ($normalizedUserId) {
+                $query->where('user_id', $normalizedUserId);
             })
             ->select($this->baseAttendanceSelectColumns())
             ->with($with)
