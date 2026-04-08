@@ -298,4 +298,14 @@ class CompanyRepository extends BaseRepository
             ]
         ];
     }
+
+    /**
+     * Get company by serial number (for sharing purposes)
+     */
+    public function getBySerialNumber(string $serialNumber): ?Company
+    {
+        return $this->model
+            ->where('serial_no', $serialNumber)
+            ->first();
+    }
 }
