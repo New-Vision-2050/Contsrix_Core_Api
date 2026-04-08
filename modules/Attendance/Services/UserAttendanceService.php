@@ -162,22 +162,51 @@ class UserAttendanceService
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
 
-        $records = Attendance::query()
+        $columns = [
+            'id',
+            'user_id',
+            'status',
+            'timezone',
+            'start_time',
+            'clock_in_time',
+            'clock_out_time',
+            'late_minutes',
+            'overtime_hours',
+            'total_work_hours',
+            'clock_in_location',
+            'clock_out_location',
+        ];
+
+        // Keep this query range-based and narrow to avoid large filesort memory pressure.
+        $dayRecords = Attendance::query()
+            ->select($columns)
             ->where('user_id', $user->id)
             ->where(function ($query) use ($dayStartUtc, $dayEndUtc) {
-                $query->where(function ($inner) use ($dayStartUtc, $dayEndUtc) {
-                    $inner->whereBetween('start_time', [$dayStartUtc, $dayEndUtc])
-                        ->orWhereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
-                })->orWhere(function ($inner) {
-                    $inner->whereNotNull('clock_in_time')->whereNull('clock_out_time');
-                });
+                $query->whereBetween('start_time', [$dayStartUtc, $dayEndUtc])
+                    ->orWhere(function ($inner) use ($dayStartUtc, $dayEndUtc) {
+                        $inner->whereNull('start_time')
+                            ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
+                    });
             })
-            ->orderBy('start_time')
+            ->orderByRaw('COALESCE(start_time, clock_in_time) ASC')
             ->get();
 
-        $currentOpen = $records->first(static function (Attendance $a) {
-            return $a->clock_in_time !== null && $a->clock_out_time === null;
-        });
+        // Fetch latest open attendance separately to avoid combining it in a broad OR query.
+        $currentOpen = Attendance::query()
+            ->select($columns)
+            ->where('user_id', $user->id)
+            ->whereNotNull('clock_in_time')
+            ->whereNull('clock_out_time')
+            ->orderByDesc('clock_in_time')
+            ->first();
+
+        if ($currentOpen !== null && !$dayRecords->contains('id', $currentOpen->id)) {
+            $dayRecords->push($currentOpen);
+        }
+
+        $records = $dayRecords
+            ->sortBy(static fn (Attendance $attendance) => $attendance->start_time ?? $attendance->clock_in_time)
+            ->values();
 
         return [$records, $currentOpen];
     }
