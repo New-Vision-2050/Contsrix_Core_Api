@@ -202,4 +202,12 @@ class CompanyCRUDService
     {
         return $this->repository->getBrokerCompanies($page, $perPage);
     }
+
+    /**
+     * Get company by serial number
+     */
+    public function getBySerialNumber(string $serialNumber): ?Company
+    {
+        return $this->repository->getBySerialNumber($serialNumber);
+    }
 }

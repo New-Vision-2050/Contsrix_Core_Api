@@ -112,30 +112,92 @@ class ProjectManagementPresenter extends AbstractPresenter
                 'code' => $this->projectManagement->currency->code ?? null,
             ] : null;
 
+            // Add employees assigned to this project
+            $data['employees'] = [];
+            if ($this->projectManagement->relationLoaded('employees')) {
+                $data['employees'] = $this->projectManagement->employees->map(function ($employee) {
+                    return [
+                        'id' => $employee->id,
+                        'name' => $employee->name,
+                        'email' => $employee->email,
+                        'assigned_at' => $employee->pivot?->assigned_at,
+                    ];
+                })->toArray();
+            }
+
+            // Check if project is shared and get allowed schemas
+            $allowedSchemas = null;
+            $isShared = false;
+            
+            if ($this->projectManagement->company_id !== tenant('id')) {
+                // This is a shared project, get the share record
+                $isShared = true;
+                if ($this->projectManagement->relationLoaded('shares')) {
+                    $share = $this->projectManagement->shares->first(function ($share) {
+                        return $share->shared_with_company_id === tenant('id') && $share->status === 'accepted';
+                    });
+                    
+                    if ($share && $share->schema_ids) {
+                        $allowedSchemas = $share->schema_ids;
+                    }
+                }
+            }
+
+            $data['is_shared'] = $isShared;
+            $data['allowed_schemas'] = $allowedSchemas;
+
+            // Schema ID mapping
+            $schemaMapping = [
+                1 => 'project_data_setting',
+                2 => 'attachment_contract_setting',
+                3 => 'attachment_terms_contract_setting',
+                4 => 'contractor_contract_setting',
+                5 => 'employee_contract_setting',
+                6 => 'department_contract_setting',
+            ];
+
             // Add contract settings from subSubProjectType wrapped in permissions array
             $permissions = [];
             if ($this->projectManagement->subSubProjectType) {
-                if ($this->projectManagement->subSubProjectType->relationLoaded('projectDataSetting') && $this->projectManagement->subSubProjectType->projectDataSetting) {
+                // Schema 1: Project Data Setting
+                if ($this->shouldIncludeSchema(1, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('projectDataSetting') && 
+                    $this->projectManagement->subSubProjectType->projectDataSetting) {
                     $permissions['project_data_setting'] = (new ProjectDataSettingPresenter($this->projectManagement->subSubProjectType->projectDataSetting))->getData();
                 }
 
-                if ($this->projectManagement->subSubProjectType->relationLoaded('attachmentContractSetting') && $this->projectManagement->subSubProjectType->attachmentContractSetting) {
+                // Schema 2: Attachment Contract Setting
+                if ($this->shouldIncludeSchema(2, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('attachmentContractSetting') && 
+                    $this->projectManagement->subSubProjectType->attachmentContractSetting) {
                     $permissions['attachment_contract_setting'] = (new AttachmentContractSettingPresenter($this->projectManagement->subSubProjectType->attachmentContractSetting))->getData();
                 }
 
-                if ($this->projectManagement->subSubProjectType->relationLoaded('attachmentTermsContractSetting') && $this->projectManagement->subSubProjectType->attachmentTermsContractSetting) {
+                // Schema 3: Attachment Terms Contract Setting
+                if ($this->shouldIncludeSchema(3, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('attachmentTermsContractSetting') && 
+                    $this->projectManagement->subSubProjectType->attachmentTermsContractSetting) {
                     $permissions['attachment_terms_contract_setting'] = (new AttachmentTermsContractSettingPresenter($this->projectManagement->subSubProjectType->attachmentTermsContractSetting))->getData();
                 }
 
-                if ($this->projectManagement->subSubProjectType->relationLoaded('contractorContractSetting') && $this->projectManagement->subSubProjectType->contractorContractSetting) {
+                // Schema 4: Contractor Contract Setting
+                if ($this->shouldIncludeSchema(4, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('contractorContractSetting') && 
+                    $this->projectManagement->subSubProjectType->contractorContractSetting) {
                     $permissions['contractor_contract_setting'] = (new ContractorContractSettingPresenter($this->projectManagement->subSubProjectType->contractorContractSetting))->getData();
                 }
 
-                if ($this->projectManagement->subSubProjectType->relationLoaded('employeeContractSetting') && $this->projectManagement->subSubProjectType->employeeContractSetting) {
+                // Schema 5: Employee Contract Setting
+                if ($this->shouldIncludeSchema(5, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('employeeContractSetting') && 
+                    $this->projectManagement->subSubProjectType->employeeContractSetting) {
                     $permissions['employee_contract_setting'] = (new EmployeeContractSettingPresenter($this->projectManagement->subSubProjectType->employeeContractSetting))->getData();
                 }
 
-                if ($this->projectManagement->subSubProjectType->relationLoaded('departmentContractSetting') && $this->projectManagement->subSubProjectType->departmentContractSetting) {
+                // Schema 6: Department Contract Setting
+                if ($this->shouldIncludeSchema(6, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('departmentContractSetting') && 
+                    $this->projectManagement->subSubProjectType->departmentContractSetting) {
                     $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectManagement->subSubProjectType->departmentContractSetting))->getData();
                 }
             }
@@ -157,5 +219,17 @@ class ProjectManagementPresenter extends AbstractPresenter
         return $data;
     }
 
-
+    /**
+     * Check if a schema should be included based on allowed schemas
+     * If allowedSchemas is null, all schemas are allowed (owner company)
+     * Otherwise, only schemas in the allowedSchemas array are included
+     */
+    private function shouldIncludeSchema(int $schemaId, ?array $allowedSchemas): bool
+    {
+        if ($allowedSchemas === null) {
+            return true; // Owner company sees everything
+        }
+        
+        return in_array($schemaId, $allowedSchemas);
+    }
 }

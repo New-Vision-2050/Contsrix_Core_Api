@@ -8,6 +8,7 @@ use Modules\Project\ProjectType\Controllers\AttachmentTermsContractSettingContro
 use Modules\Project\ProjectType\Controllers\ContractorContractSettingController;
 use Modules\Project\ProjectType\Controllers\EmployeeContractSettingController;
 use Modules\Project\ProjectType\Controllers\DepartmentContractSettingController;
+use Modules\Project\ProjectType\Controllers\SchemaController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -25,6 +26,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_TYPE_EXPORT());
     Route::get('/roots', [ProjectTypeController::class, 'getRootProjectTypes'])
         ->permission(Permission::PROJECT_TYPE_LIST());
+
+    Route::get('/schemas', [SchemaController::class, 'index']);
 
     Route::get('/{id}', [ProjectTypeController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
@@ -74,4 +77,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_TYPE_VIEW());
     Route::put('/{projectTypeId}/department-contract-settings', [DepartmentContractSettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Schema routes
+//    Route::get('/schemas/{id}', [SchemaController::class, 'show'])
+//        ->permission(Permission::PROJECT_TYPE_VIEW());
 });

@@ -14,7 +14,7 @@ use Modules\Project\ProjectType\Models\ProjectType;
 use Modules\Shared\Currency\Models\Currency;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
-use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use App\Traits\Shareable;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ProjectManagement extends Model
@@ -22,7 +22,7 @@ class ProjectManagement extends Model
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
-    use BelongsToTenant;
+    use Shareable;
 
     protected $table = 'projects';
 
@@ -187,6 +187,18 @@ class ProjectManagement extends Model
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
+    }
+
+    public function projectEmployees()
+    {
+        return $this->hasMany(ProjectEmployee::class, 'project_id');
+    }
+
+    public function employees()
+    {
+        return $this->belongsToMany(User::class, 'project_employees', 'project_id', 'user_id')
+            ->withPivot('assigned_at', 'assigned_by_user_id')
+            ->withTimestamps();
     }
 
     protected static function newFactory(): ProjectManagementFactory
