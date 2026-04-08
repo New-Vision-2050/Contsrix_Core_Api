@@ -30,7 +30,6 @@ class AttachmentRequestPresenter extends AbstractPresenter
             'responded_at' => $this->request->responded_at?->toISOString(),
         ];
 
-        if (!$isListing) {
             $data['project'] = $this->request->project ? [
                 'id' => $this->request->project->id,
                 'name' => $this->request->project->name,
@@ -67,6 +66,19 @@ class AttachmentRequestPresenter extends AbstractPresenter
                     return (new AttachmentRequestItemPresenter($item))->getData();
                 })->toArray();
 
+                // Add attachments preview (simplified for quick view)
+                $data['attachments_preview'] = $this->request->items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'file_name' => $item->file_name,
+                        'file_url' => $item->file_path ? asset('storage/' . $item->file_path) : null,
+                        'file_size' => $item->file_size,
+                        'file_size_formatted' => $this->formatFileSize($item->file_size),
+                        'file_type' => $item->file_type,
+                        'status' => $item->status,
+                    ];
+                })->toArray();
+
                 // Add statistics
                 $totalItems = $this->request->items->count();
                 $approvedItems = $this->request->items->where('status', 'approved')->count();
@@ -82,8 +94,29 @@ class AttachmentRequestPresenter extends AbstractPresenter
                     'update_requested_items' => $updateRequestedItems,
                 ];
             }
-        }
+
 
         return $data;
+    }
+
+    /**
+     * Format file size to human readable format
+     */
+    private function formatFileSize(?int $bytes): string
+    {
+        if (!$bytes || $bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+        $size = $bytes;
+
+        while ($size >= 1024 && $i < count($units) - 1) {
+            $size /= 1024;
+            $i++;
+        }
+
+        return round($size, 2) . ' ' . $units[$i];
     }
 }
