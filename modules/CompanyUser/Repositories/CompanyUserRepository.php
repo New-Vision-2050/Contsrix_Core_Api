@@ -96,7 +96,7 @@ class CompanyUserRepository extends BaseRepository
             });
         })->when($branchId != null, function ($query) use ($branchId, $type) {
             $query->whereHas('users', function ($userQuery) use ($branchId, $type) {
-                $userQuery->whereHas('companyUserCompanyManagementHierarchies', function ($hierarchyQuery) use ($branchId, $type) {
+                $userQuery->whereHas('roleAndBranches', function ($hierarchyQuery) use ($branchId, $type) {
                     $hierarchyQuery->where('management_hierarchy_id', $branchId)
                         ->when($type != null, function ($q) use ($type) {
                             $q->whereHas('companyUserCompany', function ($companyUserCompanyQuery) use ($type) {

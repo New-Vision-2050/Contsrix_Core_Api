@@ -56,8 +56,15 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
     protected function gate(): void
     {
         Gate::define('viewTelescope', function ($user) {
+            // Allow access in local and development environments
+            if (in_array(config('app.env'), ['local', 'development', 'dev'])) {
+                return true;
+            }
+
+            // In production/stage, only allow specific admin emails
             return in_array($user->email, [
-                //
+                // Add your admin emails here
+                // 'admin@example.com',
             ]);
         });
     }
