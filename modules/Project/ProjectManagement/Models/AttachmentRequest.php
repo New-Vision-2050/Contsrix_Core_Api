@@ -92,6 +92,15 @@ class AttachmentRequest extends Model
     }
 
     /**
+     * Get all history entries for this request
+     */
+    public function history(): HasMany
+    {
+        return $this->hasMany(AttachmentRequestHistory::class, 'attachment_request_id')
+            ->orderBy('created_at', 'asc');
+    }
+
+    /**
      * Check if request is pending
      */
     public function isPending(): bool

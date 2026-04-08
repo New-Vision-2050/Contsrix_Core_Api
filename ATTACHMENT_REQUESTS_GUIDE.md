@@ -169,7 +169,11 @@ Lists all requests received by your company. Optionally filter by `project_id` t
 GET /api/v1/projects/attachment-requests/{id}
 ```
 
-Returns full details including all attachment items with their individual statuses.
+Returns full details including:
+- All attachment items with their individual statuses
+- Attachments preview (quick overview with file URLs and sizes)
+- Statistics (count by status)
+- **Complete history/timeline** of all request activities
 
 ### **7. Respond to Individual Attachment**
 
@@ -318,6 +322,24 @@ POST /attachment-requests/{id}/approve
 - responded_by_user_id, responded_at, response_notes
 ```
 
+### **attachment_request_history**
+```sql
+- id (UUID, PK)
+- attachment_request_id (FK → attachment_requests)
+- attachment_request_item_id (FK → attachment_request_items, nullable)
+- action (request_created|attachment_approved|attachment_declined|etc.)
+- description (human-readable text)
+- user_id (FK → users, nullable)
+- metadata (JSON - flexible additional data)
+- created_at (timestamp)
+```
+
+**History Events Captured:**
+- Request creation
+- Each individual attachment approval/decline/update request
+- Overall request approval/decline
+- All events include: who did it, when, and relevant details
+
 ## Media Duplication Strategy
 
 **No Physical File Duplication:**
@@ -377,13 +399,165 @@ Each request includes real-time statistics:
 
 Use these to show progress indicators in the UI.
 
+## Request History/Timeline
+
+**Automatic History Tracking:** Every action on an attachment request is automatically saved to the database (`attachment_request_history` table) and returned in the API response.
+
+Each request includes a complete chronological history of all activities:
+
+```json
+"history": [
+  {
+    "id": "history-uuid-1",
+    "action": "request_created",
+    "description": "Attachment request created",
+    "user": {
+      "id": "user-uuid-1",
+      "name": "John Doe",
+      "email": "john@abc.com"
+    },
+    "timestamp": "2026-04-09T08:00:00.000Z",
+    "metadata": {
+      "request_name": "Technical Drawings Request",
+      "total_attachments": 3,
+      "receiver_company": "company-uuid-2"
+    }
+  },
+  {
+    "id": "history-uuid-2",
+    "action": "attachment_approved",
+    "description": "Attachment approved",
+    "user": {
+      "id": "user-uuid-2",
+      "name": "Jane Smith",
+      "email": "jane@xyz.com"
+    },
+    "timestamp": "2026-04-09T10:15:00.000Z",
+    "metadata": {
+      "item_id": "item-uuid-1",
+      "file_name": "drawing1.pdf",
+      "file_path": "attachment-requests/2026/04/drawing1.pdf",
+      "file_url": "http://localhost/storage/attachment-requests/2026/04/drawing1.pdf",
+      "file_type": "application/pdf",
+      "file_size": 1024000,
+      "file_size_formatted": "1.00 MB",
+      "status": "approved",
+      "response_notes": "Approved for construction",
+      "previous_status": "pending"
+    }
+  },
+  {
+    "id": "history-uuid-3",
+    "action": "attachment_update_requested",
+    "description": "Update requested for attachment",
+    "user": {
+      "id": "user-uuid-2",
+      "name": "Jane Smith",
+      "email": "jane@xyz.com"
+    },
+    "timestamp": "2026-04-09T10:20:00.000Z",
+    "metadata": {
+      "item_id": "item-uuid-2",
+      "file_name": "drawing2.pdf",
+      "file_path": "attachment-requests/2026/04/drawing2.pdf",
+      "file_url": "http://localhost/storage/attachment-requests/2026/04/drawing2.pdf",
+      "file_type": "application/pdf",
+      "file_size": 2048000,
+      "file_size_formatted": "2.00 MB",
+      "status": "update_requested",
+      "response_notes": "Please fix dimensions on page 3",
+      "previous_status": "pending"
+    }
+  },
+  {
+    "id": "history-uuid-4",
+    "action": "request_approved",
+    "description": "Request fully approved - All attachments approved",
+    "user": {
+      "id": "user-uuid-2",
+      "name": "Jane Smith",
+      "email": "jane@xyz.com"
+    },
+    "timestamp": "2026-04-09T10:30:00.000Z",
+    "metadata": {
+      "total_items": 3,
+      "files_approved": [
+        {
+          "item_id": "item-uuid-1",
+          "file_name": "drawing1.pdf",
+          "file_size": 1024000,
+          "file_size_formatted": "1.00 MB",
+          "file_type": "application/pdf"
+        },
+        {
+          "item_id": "item-uuid-2",
+          "file_name": "drawing2.pdf",
+          "file_size": 2048000,
+          "file_size_formatted": "2.00 MB",
+          "file_type": "application/pdf"
+        },
+        {
+          "item_id": "item-uuid-3",
+          "file_name": "drawing3.pdf",
+          "file_size": 3072000,
+          "file_size_formatted": "3.00 MB",
+          "file_type": "application/pdf"
+        }
+      ]
+    }
+  }
+]
+```
+
+**Action Types:**
+- `request_created` - Request was submitted
+- `attachment_approved` - Individual file approved and saved to ArchiveLibrary
+- `attachment_declined` - Individual file rejected
+- `attachment_update_requested` - Changes requested for individual file
+- `request_approved` - All items approved
+- `request_declined` - All items declined
+
+**Database Table:** `attachment_request_history`
+- Persistent storage of all events
+- Chronologically ordered (oldest first)
+- Links to user who performed action
+- Flexible JSON metadata field for additional details
+
+**Metadata Fields for Individual File Actions:**
+- `item_id` - Attachment item UUID
+- `file_name` - Original file name
+- `file_path` - Storage path
+- `file_url` - Direct download URL
+- `file_type` - MIME type
+- `file_size` - Size in bytes
+- `file_size_formatted` - Human-readable size (e.g., "1.50 MB")
+- `status` - Current status after action
+- `response_notes` - User's comments/notes
+- `previous_status` - Status before action
+
+**Metadata Fields for Bulk Actions (Approve/Decline All):**
+- `total_items` - Total number of attachments
+- `files_approved` - Array of all approved files with details
+- `files_declined` - Array of all declined files with details
+
+**Use Cases:**
+- Display detailed activity timeline in UI with file previews
+- Track exactly which file was approved/declined/updated by whom and when
+- Download files directly from history
+- Permanent audit trail for compliance
+- Show approval workflow progress with file-level details
+- Export comprehensive history reports
+- Filter history by specific files or actions
+
 ## Best Practices
 
 1. **Always select folder path when creating requests** - Makes file organization automatic
 2. **Use meaningful request names** - Helps track requests later
-3. **Add notes when declining or requesting updates** - Sender knows what to fix
+3. **Add notes when declining or requesting updates** - Sender knows what to fix (appears in history)
 4. **Review items individually before bulk approval** - Ensures quality control
 5. **Use the statistics** - Show progress bars/badges in UI
+6. **Display history timeline** - Provides transparency and audit trail for all stakeholders
+7. **Use attachments_preview** - Quick overview without loading full item details
 
 ## Postman Collection
 

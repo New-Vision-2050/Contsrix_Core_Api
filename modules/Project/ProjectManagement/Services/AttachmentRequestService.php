@@ -7,6 +7,7 @@ namespace Modules\Project\ProjectManagement\Services;
 use Modules\Project\ProjectManagement\Repositories\AttachmentRequestRepository;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
+use Modules\Project\ProjectManagement\Models\AttachmentRequestHistory;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\ArchiveLibrary\File\Models\File;
@@ -41,19 +42,34 @@ class AttachmentRequestService
             'name' => $data['name'],
             'date' => $data['date'],
             'project_id' => $data['project_id'],
-            'sender_company_id' => tenant('id'),
+            'sender_company_id' => (string) tenant('id'),
             'receiver_company_id' => $data['receiver_company_id'],
             'attachment_type_id' => $data['attachment_type_id'] ?? null,
             'attachment_sub_type_id' => $data['attachment_sub_type_id'] ?? null,
             'attachment_sub_sub_type_id' => $data['attachment_sub_sub_type_id'] ?? null,
             'status' => 'pending',
-            'created_by_user_id' => Auth::id(),
+            'created_by_user_id' => (string) Auth::id(),
             'notes' => $data['notes'] ?? null,
         ];
 
         $items = $this->prepareAttachmentItems($data['attachments']);
 
-        return $this->repository->createWithItems($requestData, $items);
+        $request = $this->repository->createWithItems($requestData, $items);
+
+        // Log history
+        AttachmentRequestHistory::log(
+            requestId: $request->id,
+            action: 'request_created',
+            description: 'Attachment request created',
+            userId: (string) Auth::id(),
+            metadata: [
+                'request_name' => $request->name,
+                'total_attachments' => count($items),
+                'receiver_company' => $data['receiver_company_id'],
+            ]
+        );
+
+        return $request;
     }
 
     /**
@@ -111,7 +127,19 @@ class AttachmentRequestService
             throw new \Exception('Unauthorized to respond to this item');
         }
 
-        $userId = Auth::id();
+        $userId = (string) Auth::id();
+
+        $actionDescriptions = [
+            'approve' => 'Attachment approved',
+            'decline' => 'Attachment declined',
+            'request_update' => 'Update requested for attachment',
+        ];
+
+        $actionKeys = [
+            'approve' => 'attachment_approved',
+            'decline' => 'attachment_declined',
+            'request_update' => 'attachment_update_requested',
+        ];
 
         switch ($action) {
             case 'approve':
@@ -129,6 +157,27 @@ class AttachmentRequestService
                 throw new \Exception('Invalid action');
         }
 
+        // Log history with detailed file information
+        AttachmentRequestHistory::log(
+            requestId: $item->attachment_request_id,
+            action: $actionKeys[$action],
+            description: $actionDescriptions[$action],
+            userId: $userId,
+            itemId: $item->id,
+            metadata: [
+                'item_id' => $item->id,
+                'file_name' => $item->file_name,
+                'file_path' => $item->file_path,
+                'file_url' => $item->file_path ? asset('storage/' . $item->file_path) : null,
+                'file_type' => $item->file_type,
+                'file_size' => $item->file_size,
+                'file_size_formatted' => $this->formatFileSize($item->file_size),
+                'status' => $item->status,
+                'response_notes' => $notes,
+                'previous_status' => 'pending',
+            ]
+        );
+
         return $item->fresh(['respondedByUser', 'attachmentRequest']);
     }
 
@@ -143,7 +192,32 @@ class AttachmentRequestService
             throw new \Exception('Unauthorized to approve this request');
         }
 
-        $request->approveAll(Auth::id());
+        $userId = (string) Auth::id();
+        
+        // Get all file details before approving
+        $filesApproved = $request->items->map(function ($item) {
+            return [
+                'item_id' => $item->id,
+                'file_name' => $item->file_name,
+                'file_size' => $item->file_size,
+                'file_size_formatted' => $this->formatFileSize($item->file_size),
+                'file_type' => $item->file_type,
+            ];
+        })->toArray();
+
+        $request->approveAll($userId);
+
+        // Log history with all approved files
+        AttachmentRequestHistory::log(
+            requestId: $request->id,
+            action: 'request_approved',
+            description: 'Request fully approved - All attachments approved',
+            userId: $userId,
+            metadata: [
+                'total_items' => $request->items->count(),
+                'files_approved' => $filesApproved,
+            ]
+        );
 
         return $request->fresh(['items', 'respondedByUser']);
     }
@@ -159,7 +233,32 @@ class AttachmentRequestService
             throw new \Exception('Unauthorized to decline this request');
         }
 
-        $request->declineAll(Auth::id());
+        $userId = (string) Auth::id();
+        
+        // Get all file details before declining
+        $filesDeclined = $request->items->map(function ($item) {
+            return [
+                'item_id' => $item->id,
+                'file_name' => $item->file_name,
+                'file_size' => $item->file_size,
+                'file_size_formatted' => $this->formatFileSize($item->file_size),
+                'file_type' => $item->file_type,
+            ];
+        })->toArray();
+
+        $request->declineAll($userId);
+
+        // Log history with all declined files
+        AttachmentRequestHistory::log(
+            requestId: $request->id,
+            action: 'request_declined',
+            description: 'Request declined - All attachments declined',
+            userId: $userId,
+            metadata: [
+                'total_items' => $request->items->count(),
+                'files_declined' => $filesDeclined,
+            ]
+        );
 
         return $request->fresh(['items', 'respondedByUser']);
     }
@@ -224,7 +323,7 @@ class AttachmentRequestService
             'name' => pathinfo($item->file_name, PATHINFO_FILENAME),
             'folder_id' => $folderId,
             'project_id' => $request->project_id,
-            'company_id' => tenant('id'),
+            'company_id' => (string) tenant('id'),
             'access_type' => 'private',
             'status' => 1,
         ]);
@@ -306,5 +405,26 @@ class AttachmentRequestService
         return $query->where('company_id', tenant('id'))
             ->orderBy('name')
             ->get(['id', 'name', 'parent_id', 'project_id']);
+    }
+
+    /**
+     * Format file size to human readable format
+     */
+    private function formatFileSize(?int $bytes): string
+    {
+        if (!$bytes || $bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+        $size = $bytes;
+
+        while ($size >= 1024 && $i < count($units) - 1) {
+            $size /= 1024;
+            $i++;
+        }
+
+        return round($size, 2) . ' ' . $units[$i];
     }
 }

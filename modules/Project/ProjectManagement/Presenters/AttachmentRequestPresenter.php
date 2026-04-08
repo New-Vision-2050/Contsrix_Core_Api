@@ -95,6 +95,24 @@ class AttachmentRequestPresenter extends AbstractPresenter
                 ];
             }
 
+            // Add request history from database
+            if ($this->request->relationLoaded('history')) {
+                $data['history'] = $this->request->history->map(function ($historyEntry) {
+                    return [
+                        'id' => $historyEntry->id,
+                        'action' => $historyEntry->action,
+                        'description' => $historyEntry->description,
+                        'user' => $historyEntry->user ? [
+                            'id' => $historyEntry->user->id,
+                            'name' => $historyEntry->user->name,
+                            'email' => $historyEntry->user->email,
+                        ] : null,
+                        'timestamp' => $historyEntry->created_at?->toISOString(),
+                        'metadata' => $historyEntry->metadata,
+                    ];
+                })->toArray();
+            }
+
 
         return $data;
     }
