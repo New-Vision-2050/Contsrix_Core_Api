@@ -42,7 +42,7 @@ class UserAttendanceController extends Controller
      */
     public function getMyConstraintForToday(GetUserConstraintRequest $request): JsonResponse
     {
-        // try {
+        try {
             $user = $request->user();
             if (!$user instanceof User) {
                 return Json::error('Unauthorized.', 401);
@@ -50,32 +50,32 @@ class UserAttendanceController extends Controller
             $result = $this->userAttendanceService->getUserConstraints($user, $request->input('date'));
             
             return Json::item($result, message: __('messages.attendance.user_constraint_today_retrieved'));
-        // } catch (AttendanceException $e) {
-        //     return Json::error(
-        //         $e->getMessage(),
-        //         $e->getStatusCode()
-        //     );
-        // } catch (ModelNotFoundException $e) {
-        //     return Json::error(
-        //         'Resource not found.',
-        //         404
-        //     );
-        // } catch (ValidationException $e) {
-        //     return Json::error(
-        //         $e->getMessage(),
-        //         422
-        //     );
-        // } catch (\InvalidArgumentException $e) {
-        //     return Json::error(
-        //         $e->getMessage(),
-        //         400
-        //     );
-        // } catch (\Exception $e) {
-        //     return Json::error(
-        //         'An unexpected error occurred. Please try again later.',
-        //         500
-        //     );
-        // }
+        } catch (AttendanceException $e) {
+            return Json::error(
+                $e->getMessage(),
+                $e->getStatusCode()
+            );
+        } catch (ModelNotFoundException $e) {
+            return Json::error(
+                'Resource not found.',
+                404
+            );
+        } catch (ValidationException $e) {
+            return Json::error(
+                $e->getMessage(),
+                422
+            );
+        } catch (\InvalidArgumentException $e) {
+            return Json::error(
+                $e->getMessage(),
+                400
+            );
+        } catch (\Exception $e) {
+            return Json::error(
+                'An unexpected error occurred. Please try again later.',
+                500
+            );
+        }
     }
 
     /**
