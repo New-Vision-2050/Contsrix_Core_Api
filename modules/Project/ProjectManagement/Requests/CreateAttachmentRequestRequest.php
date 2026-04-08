@@ -15,9 +15,9 @@ class CreateAttachmentRequestRequest extends FormRequest
             'date' => 'required|date',
             'project_id' => 'required|string|exists:projects,id',
             'receiver_company_id' => 'required|string|exists:companies,id',
-            'attachment_type_id' => 'nullable|integer',
-            'attachment_sub_type_id' => 'nullable|integer',
-            'attachment_sub_sub_type_id' => 'nullable|integer',
+            'attachment_type_id' => 'nullable',
+            'attachment_sub_type_id' => 'nullable',
+            'attachment_sub_sub_type_id' => 'nullable',
             'attachments' => 'required|array|min:1',
             'attachments.*' => 'required|file|max:10240', // 10MB max
             'notes' => 'nullable|string',

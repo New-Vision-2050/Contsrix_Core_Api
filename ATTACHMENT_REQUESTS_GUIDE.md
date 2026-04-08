@@ -202,7 +202,16 @@ Bulk approve or decline ALL attachments at once.
 
 ### **Scenario: Company A sends drawings to Company B**
 
-**Step 1: Company A selects folder structure**
+**Step 1: Company A gets list of shared companies**
+```http
+GET /projects/sharing/projects/project-123/shared-companies
+→ Returns: [
+    {"id": "company-b-id", "name": "Company B", "serial_number": "COMPANY-87654321"},
+    {"id": "company-c-id", "name": "Company C", "serial_number": "COMPANY-11223344"}
+  ]
+```
+
+**Step 2: Company A selects folder structure**
 ```http
 GET /folders/children?project_id=project-123
 → Returns: ["Technical Drawings", "Contracts", "Reports"]
@@ -214,7 +223,7 @@ GET /folders/children?parent_id=architectural-id
 → Returns: ["Floor Plans", "Elevations", "Sections"]
 ```
 
-**Step 2: Company A creates request**
+**Step 3: Company A creates request**
 ```http
 POST /attachment-requests
 {
@@ -229,7 +238,7 @@ POST /attachment-requests
 }
 ```
 
-**Step 3: Company B views incoming requests**
+**Step 4: Company B views incoming requests**
 ```http
 GET /attachment-requests/incoming/pending
 → Shows: All pending requests across all projects
@@ -239,7 +248,7 @@ GET /attachment-requests/incoming/pending?project_id=project-123
 → Result: "Architectural Drawings Approval" with 3 pending items
 ```
 
-**Step 4: Company B reviews each drawing**
+**Step 5: Company B reviews each drawing**
 ```http
 POST /items/respond
 {
@@ -265,7 +274,7 @@ POST /items/respond
 → Not saved yet
 ```
 
-**Step 5: Request status updates automatically**
+**Step 6: Request status updates automatically**
 ```
 Total: 3 items
 Approved: 2
@@ -273,7 +282,7 @@ Update Requested: 1
 → Request Status = "semi-approved"
 ```
 
-**Step 6: Company B approves entire request**
+**Step 7: Company B approves entire request**
 ```http
 POST /attachment-requests/{id}/approve
 → All items (including item-3) become "approved"
