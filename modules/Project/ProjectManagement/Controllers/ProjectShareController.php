@@ -32,7 +32,7 @@ class ProjectShareController extends Controller
         try {
             // Get the company by serial number
             $company = $this->companyService->getBySerialNumber($request->company_serial_number);
-            
+
             if (!$company) {
                 return Json::error('Company not found with serial number: ' . $request->company_serial_number, 404);
             }
@@ -76,7 +76,7 @@ class ProjectShareController extends Controller
     public function getProjectShares(Request $request): JsonResponse
     {
         try {
-            $projectId = $request->route('project_id');
+            $projectId = $request->route('id');
 
             if (!$projectId) {
                 return Json::error('Project ID is required', 400);
@@ -121,7 +121,7 @@ class ProjectShareController extends Controller
             $data = $invitations->map(function ($share) {
                 $presenter = new ResourceSharePresenter($share);
                 $shareData = $presenter->getData();
-                
+
                 // Add project details
                 if ($share->shareable) {
                     $shareData['project'] = [
@@ -130,7 +130,7 @@ class ProjectShareController extends Controller
                         'serial_number' => $share->shareable->serial_number,
                     ];
                 }
-                
+
                 return $shareData;
             });
 
@@ -203,7 +203,7 @@ class ProjectShareController extends Controller
             $data = $shares->map(function ($share) {
                 $presenter = new ResourceSharePresenter($share);
                 $shareData = $presenter->getData();
-                
+
                 // Add project details
                 if ($share->shareable) {
                     $shareData['project'] = [
@@ -213,7 +213,7 @@ class ProjectShareController extends Controller
                         'status' => $share->shareable->status,
                     ];
                 }
-                
+
                 return $shareData;
             });
 

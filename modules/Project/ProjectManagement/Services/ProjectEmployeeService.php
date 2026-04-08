@@ -27,7 +27,7 @@ class ProjectEmployeeService
             projectId: $projectId,
             userIds: $userIds,
             companyId: tenant('id'),
-            assignedByUserId: Auth::id()
+            assignedByUserId: Auth::id() ? (string) Auth::id() : null
         );
 
         return $this->repository->getByProject($projectId);
