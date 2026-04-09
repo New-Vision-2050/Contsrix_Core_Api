@@ -15,7 +15,7 @@ class CreateProfessionalCertificateDTO
         public ?string $professional_bodie_id,
         public ?string $accreditation_name,
         public ?string $accreditation_number,
-        public ?string $accreditation_degree,
+        public ?int $professional_degree_id,
         public ?string $date_obtain,
         public ?string $date_end,
         public ?UploadedFile $file
@@ -30,7 +30,7 @@ class CreateProfessionalCertificateDTO
             'professional_bodie_id'=> $this->professional_bodie_id,
             'accreditation_name'=> $this->accreditation_name,
             'accreditation_number'=> $this->accreditation_number,
-            'accreditation_degree'=> $this->accreditation_degree,
+            'professional_degree_id'=> $this->professional_degree_id,
             'date_obtain'=> $this->date_obtain,
             'date_end'=> $this->date_end,
         ];

@@ -10,7 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Modules\User\Repositories\UserRepository;
 use Modules\UserInfo\ProfessionalCertificate\Handlers\DeleteProfessionalCertificateHandler;
 use Modules\UserInfo\ProfessionalCertificate\Handlers\UpdateProfessionalCertificateHandler;
+use Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalDegree;
 use Modules\UserInfo\ProfessionalCertificate\Presenters\ProfessionalCertificatePresenter;
+use Modules\UserInfo\ProfessionalCertificate\Presenters\ProfessionalDegreePresenter;
 use Modules\UserInfo\ProfessionalCertificate\Requests\CreateProfessionalCertificateRequest;
 use Modules\UserInfo\ProfessionalCertificate\Requests\DeleteProfessionalCertificateRequest;
 use Modules\UserInfo\ProfessionalCertificate\Requests\GetProfessionalCertificateListRequest;
@@ -87,5 +89,14 @@ class ProfessionalCertificateController extends Controller
         $this->deleteProfessionalCertificateHandler->handle(Uuid::fromString($request->route('id')));
 
         return Json::deleted();
+    }
+
+    public function getProfessionalDegrees(): JsonResponse
+    {
+        $degrees = ProfessionalDegree::where('is_active', true)
+            ->orderBy('name_ar')
+            ->get();
+
+        return Json::items(ProfessionalDegreePresenter::collection($degrees));
     }
 }
