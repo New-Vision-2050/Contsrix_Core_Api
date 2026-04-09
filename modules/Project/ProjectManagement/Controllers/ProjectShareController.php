@@ -32,7 +32,7 @@ class ProjectShareController extends Controller
         try {
             // Get the company by serial number
             $company = $this->companyService->getBySerialNumber($request->company_serial_number);
-            
+
             if (!$company) {
                 return Json::error('Company not found with serial number: ' . $request->company_serial_number, 404);
             }
@@ -76,7 +76,7 @@ class ProjectShareController extends Controller
     public function getProjectShares(Request $request): JsonResponse
     {
         try {
-            $projectId = $request->route('project_id');
+            $projectId = $request->route('id');
 
             if (!$projectId) {
                 return Json::error('Project ID is required', 400);
@@ -121,7 +121,7 @@ class ProjectShareController extends Controller
             $data = $invitations->map(function ($share) {
                 $presenter = new ResourceSharePresenter($share);
                 $shareData = $presenter->getData();
-                
+
                 // Add project details
                 if ($share->shareable) {
                     $shareData['project'] = [
@@ -130,7 +130,7 @@ class ProjectShareController extends Controller
                         'serial_number' => $share->shareable->serial_number,
                     ];
                 }
-                
+
                 return $shareData;
             });
 
@@ -203,7 +203,7 @@ class ProjectShareController extends Controller
             $data = $shares->map(function ($share) {
                 $presenter = new ResourceSharePresenter($share);
                 $shareData = $presenter->getData();
-                
+
                 // Add project details
                 if ($share->shareable) {
                     $shareData['project'] = [
@@ -213,11 +213,52 @@ class ProjectShareController extends Controller
                         'status' => $share->shareable->status,
                     ];
                 }
-                
+
                 return $shareData;
             });
 
             return Json::items($data->toArray());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get list of companies that a project is shared with (accepted shares only)
+     */
+    public function getSharedCompanies(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->route('id');
+
+            if (!$projectId) {
+                return Json::error('Project ID is required', 400);
+            }
+
+            // Verify project access (owner or shared with)
+            $project = ProjectManagement::find($projectId);
+
+            if (!$project) {
+                return Json::error('Project not found', 404);
+            }
+
+            // Get accepted shares for this project
+            $shares = $this->shareService->getSharesForResource(
+                ProjectManagement::class,
+                $projectId
+            )->where('status', 'accepted');
+
+            $companies = $shares->map(function ($share) {
+                return [
+                    'id' => $share->sharedWithCompany->id,
+                    'name' => $share->sharedWithCompany->name,
+                    'serial_number' => $share->sharedWithCompany->serial_number,
+                    'shared_at' => $share->created_at?->toISOString(),
+                    'accepted_at' => $share->responded_at?->toISOString(),
+                ];
+            });
+
+            return Json::items($companies->values()->toArray());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }

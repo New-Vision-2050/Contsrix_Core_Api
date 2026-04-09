@@ -26,8 +26,8 @@ class ProjectEmployeeService
         $this->repository->syncEmployees(
             projectId: $projectId,
             userIds: $userIds,
-            companyId: tenant('id'),
-            assignedByUserId: Auth::id()
+            companyId: (string) tenant('id'),
+            assignedByUserId: Auth::id() ? (string) Auth::id() : null
         );
 
         return $this->repository->getByProject($projectId);

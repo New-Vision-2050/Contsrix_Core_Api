@@ -63,7 +63,7 @@ class ResourceShareService
             throw new \Exception('Share is not pending');
         }
 
-        return $share->accept(Auth::id());
+        return $share->accept((string) Auth::id());
     }
 
     /**
@@ -85,7 +85,7 @@ class ResourceShareService
             throw new \Exception('Share is not pending');
         }
 
-        return $share->reject(Auth::id());
+        return $share->reject((string) Auth::id());
     }
 
     /**
