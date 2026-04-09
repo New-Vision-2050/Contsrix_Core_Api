@@ -854,4 +854,3 @@ class UserAttendanceService
         return Carbon::parse($value, $tz);
     }
 }
-
