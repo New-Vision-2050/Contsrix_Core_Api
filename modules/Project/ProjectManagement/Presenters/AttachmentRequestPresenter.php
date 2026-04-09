@@ -96,7 +96,6 @@ class AttachmentRequestPresenter extends AbstractPresenter
             }
 
             // Add request history from database
-            if ($this->request->relationLoaded('history')) {
                 $data['history'] = $this->request->history->map(function ($historyEntry) {
                     return [
                         'id' => $historyEntry->id,
@@ -111,7 +110,6 @@ class AttachmentRequestPresenter extends AbstractPresenter
                         'metadata' => $historyEntry->metadata,
                     ];
                 })->toArray();
-            }
 
 
         return $data;
