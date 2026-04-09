@@ -100,7 +100,7 @@ class UserAttendanceController extends Controller
      */
     public function getUserAttendanceHistory(GetUserAttendanceHistoryRequest $request): JsonResponse
     {
-        try {
+        // try {
             $userId = (string) Auth::id();
             $month = $request->input('month') ? (int) $request->input('month') : null;
             $year = $request->input('year') ? (int) $request->input('year') : null;
@@ -142,17 +142,17 @@ class UserAttendanceController extends Controller
                     'can_clock_in' => $canClockIn,
                 ]
             );
-        } catch (ModelNotFoundException $e) {
-            return Json::error(
-                'User not found.',
-                404
-            );
-        } catch (\Exception $e) {
-            return Json::error(
-                'An unexpected error occurred. Please try again later.',
-                500
-            );
-        }
+        // } catch (ModelNotFoundException $e) {
+        //     return Json::error(
+        //         'User not found.',
+        //         404
+        //     );
+        // } catch (\Exception $e) {
+        //     return Json::error(
+        //         'An unexpected error occurred. Please try again later.',
+        //         500
+        //     );
+        // }
     }
 }
 
