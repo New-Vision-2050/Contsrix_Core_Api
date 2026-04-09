@@ -446,6 +446,21 @@ class AttendanceService
         ];
     }
 
+    /**
+     * Calendar-day interpretation for attendance list/export date filters (matches {@see AttendanceFilter}).
+     */
+    private function attendanceFilterCalendarTimezone(): string
+    {
+        if (function_exists('getTimeZoneBranchByRequest')) {
+            $tz = getTimeZoneBranchByRequest();
+            if (is_string($tz) && $tz !== '') {
+                return $tz;
+            }
+        }
+
+        return (string) config('app.timezone');
+    }
+
     private function fetchAttendanceRecordsForExport(
         array $filters,
         array $with,
@@ -454,10 +469,33 @@ class AttendanceService
     {
         $normalizedUserId = $userId instanceof UuidInterface ? $userId->toString() : $userId;
 
+        // Do not pass start_date/end_date into ->filter(): AttendanceFilter historically used
+        // whereDate('start_time', …) → DATE(start_time), which breaks indexes and can exhaust sort memory.
+        $filterInput = $filters;
+        $startDate = $filterInput['start_date'] ?? null;
+        $endDate = $filterInput['end_date'] ?? null;
+        unset($filterInput['start_date'], $filterInput['end_date']);
+
+        $calendarTz = $this->attendanceFilterCalendarTimezone();
+
         return Attendance::query()
-            ->filter($filters)
+            ->filter($filterInput)
             ->when($normalizedUserId, static function ($query) use ($normalizedUserId) {
                 $query->where('user_id', $normalizedUserId);
+            })
+            ->when($startDate !== null && $startDate !== '', function ($query) use ($startDate, $calendarTz) {
+                $query->where(
+                    'start_time',
+                    '>=',
+                    Carbon::parse((string) $startDate, $calendarTz)->startOfDay()->utc()
+                );
+            })
+            ->when($endDate !== null && $endDate !== '', function ($query) use ($endDate, $calendarTz) {
+                $query->where(
+                    'start_time',
+                    '<',
+                    Carbon::parse((string) $endDate, $calendarTz)->addDay()->startOfDay()->utc()
+                );
             })
             ->select($this->baseAttendanceSelectColumns())
             ->with($with)
