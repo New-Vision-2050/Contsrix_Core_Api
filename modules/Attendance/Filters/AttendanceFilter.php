@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
+use Carbon\Carbon;
 
 class AttendanceFilter extends SearchModelFilter
 {
@@ -27,12 +28,35 @@ class AttendanceFilter extends SearchModelFilter
 
     public function startDate($date)
     {
-        return $this->whereDate('start_time', '>=', $date);
+        // Sargable range — avoid DATE(start_time) (cannot use indexes; large filesorts).
+        // Calendar day in branch/request TZ, compared using UTC `start_time` in the database.
+        $tz = $this->filterCalendarTimezone();
+        $start = Carbon::parse((string) $date, $tz)->startOfDay()->utc();
+
+        return $this->where('start_time', '>=', $start);
     }
 
     public function endDate($date)
     {
-        return $this->whereDate('start_time', '<=', $date);
+        $tz = $this->filterCalendarTimezone();
+        $endExclusive = Carbon::parse((string) $date, $tz)->addDay()->startOfDay()->utc();
+
+        return $this->where('start_time', '<', $endExclusive);
+    }
+
+    /**
+     * Timezone for interpreting filter date strings (Y-m-d) as calendar days.
+     */
+    private function filterCalendarTimezone(): string
+    {
+        if (function_exists('getTimeZoneBranchByRequest')) {
+            $tz = getTimeZoneBranchByRequest();
+            if (is_string($tz) && $tz !== '') {
+                return $tz;
+            }
+        }
+
+        return (string) config('app.timezone');
     }
 
     public function clockInTimeFrom($time)
