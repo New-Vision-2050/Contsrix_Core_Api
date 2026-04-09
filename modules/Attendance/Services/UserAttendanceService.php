@@ -605,17 +605,44 @@ class UserAttendanceService
         $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
         $rangeEndUtc = $rangeEnd->copy()->setTimezone('UTC');
 
-        // Single query to get all attendances for the month window (sargable ranges)
-        $allAttendances = Attendance::where('user_id', $user->id)
+        $historyColumns = [
+            'id',
+            'user_id',
+            'company_id',
+            'status',
+            'timezone',
+            'start_time',
+            'end_time',
+            'clock_in_time',
+            'clock_out_time',
+            'late_minutes',
+            'overtime_hours',
+            'total_work_hours',
+            'clock_in_location',
+            'clock_out_location',
+        ];
+
+        $allAttendances = Attendance::query()
+            ->select($historyColumns)
+            ->where('user_id', $user->id)
+            ->where('status', '!=', Attendance::STATUS_WAITING)
             ->where(function ($q) use ($rangeStartUtc, $rangeEndUtc) {
                 $q->whereBetween('start_time', [$rangeStartUtc, $rangeEndUtc])
-                  ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
-                      $q2->whereNull('start_time')
-                         ->whereBetween('clock_in_time', [$rangeStartUtc, $rangeEndUtc]);
-                  });
+                    ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
+                        $q2->whereNull('start_time')
+                            ->whereBetween('clock_in_time', [$rangeStartUtc, $rangeEndUtc]);
+                    });
             })
-            ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
-            ->get();
+            ->get()
+            ->sortByDesc(function (Attendance $a) {
+                $ref = $a->start_time ?? $a->clock_in_time;
+                if ($ref === null) {
+                    return 0;
+                }
+
+                return $ref instanceof Carbon ? $ref->timestamp : Carbon::parse($ref)->timestamp;
+            })
+            ->values();
 
         // Group attendances by date in the request timezone
         $attendancesByDate = $allAttendances->groupBy(function ($attendance) use ($timezone) {
