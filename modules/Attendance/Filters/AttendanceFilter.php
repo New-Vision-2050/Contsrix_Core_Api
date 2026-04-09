@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
+use Carbon\Carbon;
 
 class AttendanceFilter extends SearchModelFilter
 {
@@ -27,12 +28,16 @@ class AttendanceFilter extends SearchModelFilter
 
     public function startDate($date)
     {
-        return $this->whereDate('start_time', '>=', $date);
+        $start = Carbon::parse((string) $date, 'UTC')->startOfDay();
+
+        return $this->where('start_time', '>=', $start);
     }
 
     public function endDate($date)
     {
-        return $this->whereDate('start_time', '<=', $date);
+        $endExclusive = Carbon::parse((string) $date, 'UTC')->addDay()->startOfDay();
+
+        return $this->where('start_time', '<', $endExclusive);
     }
 
     public function clockInTimeFrom($time)
