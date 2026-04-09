@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProfessionalDegreesSeeder extends Seeder
 {
+    use SeedOnce;
     /**
      * Run the database seeds.
      */
