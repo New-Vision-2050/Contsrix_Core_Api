@@ -454,10 +454,29 @@ class AttendanceService
     {
         $normalizedUserId = $userId instanceof UuidInterface ? $userId->toString() : $userId;
 
+        $filterInput = $filters;
+        $startDate = $filterInput['start_date'] ?? null;
+        $endDate = $filterInput['end_date'] ?? null;
+        unset($filterInput['start_date'], $filterInput['end_date']);
+
         return Attendance::query()
-            ->filter($filters)
+            ->filter($filterInput)
             ->when($normalizedUserId, static function ($query) use ($normalizedUserId) {
                 $query->where('user_id', $normalizedUserId);
+            })
+            ->when($startDate !== null && $startDate !== '', function ($query) use ($startDate) {
+                $query->where(
+                    'start_time',
+                    '>=',
+                    Carbon::parse((string) $startDate, 'UTC')->startOfDay()
+                );
+            })
+            ->when($endDate !== null && $endDate !== '', function ($query) use ($endDate) {
+                $query->where(
+                    'start_time',
+                    '<',
+                    Carbon::parse((string) $endDate, 'UTC')->addDay()->startOfDay()
+                );
             })
             ->select($this->baseAttendanceSelectColumns())
             ->with($with)
