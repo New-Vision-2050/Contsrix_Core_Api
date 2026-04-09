@@ -151,5 +151,6 @@ class DatabaseSeeder extends Seeder
         $this->call(ContractualRelationshipTypeSeeder::class);
         $this->call(TermServicesSeeder::class);
         $this->call(ClientRequestSeeder::class);
+        $this->call(ProfessionalDegreesSeeder::class);
     }
 }
