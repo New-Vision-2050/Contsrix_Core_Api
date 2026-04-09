@@ -21,6 +21,7 @@ class ProfessionalDegreePresenter extends AbstractPresenter
         return [
             'id' => $this->professionalDegree->id,
             'name_ar' => $this->professionalDegree->name_ar,
+            'name' => $this->professionalDegree->name_ar,
             'name_en' => $this->professionalDegree->name_en,
             'is_active' => $this->professionalDegree->is_active,
         ];

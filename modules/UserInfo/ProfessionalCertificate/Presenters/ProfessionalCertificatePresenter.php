@@ -28,6 +28,7 @@ class ProfessionalCertificatePresenter extends AbstractPresenter
             'accreditation_number' => $this->professionalCertificate->accreditation_number,
             'professional_degree_id' => $this->professionalCertificate->professional_degree_id,
             'professional_degree_name_ar' => $this->professionalCertificate->professionalDegree?->name_ar,
+            'professional_degree_name' => $this->professionalCertificate->professionalDegree?->name_ar,
             'professional_degree_name_en' => $this->professionalCertificate->professionalDegree?->name_en,
             'date_obtain' => $this->professionalCertificate->date_obtain,
             'date_end' => $this->professionalCertificate->date_end,
