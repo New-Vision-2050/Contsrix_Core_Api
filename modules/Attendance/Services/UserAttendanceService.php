@@ -607,7 +607,6 @@ class UserAttendanceService
 
         // Single query to get all attendances for the month window (sargable ranges)
         $allAttendances = Attendance::where('user_id', $user->id)
-            ->where('status', '!=', Attendance::STATUS_WAITING)
             ->where(function ($q) use ($rangeStartUtc, $rangeEndUtc) {
                 $q->whereBetween('start_time', [$rangeStartUtc, $rangeEndUtc])
                   ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
@@ -640,15 +639,9 @@ class UserAttendanceService
         foreach ($paginatedDates as $dateString) {
             $dateCarbon = $this->parseDateTime($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
-            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString, $timezone);
 
-            // Build scheduled periods, then inject actual attendance records inside each period.
-            $periodsWithAttendance = $this->buildHistoryPeriodsWithAttendance(
-                $workRules['all_work_periods'] ?? [],
-                $attendances,
-                $dateCarbon,
-                $workRules['early_clock_in_rules'] ?? []
-            );
+            // Build simple periods directly from attendances without heavy constraint lookups
+            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
 
             // Determine day status from attendance
             $dayStatus = $this->determineDayStatus($attendances);
@@ -679,71 +672,32 @@ class UserAttendanceService
     /**
      * Build periods data directly from attendances without heavy constraint lookups.
      */
-    private function buildHistoryPeriodsWithAttendance(
-        array $periods,
-        Collection $attendances,
-        Carbon $date,
-        array $earlyClockInRules = []
-    ): array
+    private function buildPeriodsFromAttendances(Collection $attendances): array
     {
-        if (empty($periods)) {
+        if ($attendances->isEmpty()) {
             return [];
         }
 
-        $output = [];
-        foreach ($periods as $period) {
-            $periodStart = $this->parsePeriodTime($period, 'start', $date);
-            $periodEnd = $this->parsePeriodTime($period, 'end', $date);
+        $periods = [];
+        foreach ($attendances as $attendance) {
+            $clock = $this->extractAttendanceClockData($attendance);
+            $clockInCarbon = $clock['clock_in_carbon'];
+            $clockOutCarbon = $clock['clock_out_carbon'];
 
-            $periodAttendances = $attendances
-                ->filter(fn (Attendance $attendance) => $this->isAttendanceClockInWithinPeriod($attendance, $periodStart, $periodEnd))
-                ->map(fn (Attendance $attendance) => $this->formatHistoryAttendanceItem($attendance))
-                ->values()
-                ->toArray();
+            $totalWorkHours = $this->calculateAttendanceWorkHours($attendance, $clockInCarbon, $clockOutCarbon);
 
-            if (empty($periodAttendances)) {
-                $periodAttendances[] = $this->emptyHistoryAttendanceItem();
-            }
-
-            $output[] = [
-                'start_time' => $periodStart->format('H:i'),
-                'end_time' => $periodEnd->format('H:i'),
-                'total_work_hours' => $this->calculatePeriodWorkHours($periodStart, $periodEnd),
-                'early_clock_in_rules' => $this->buildEarlyClockInRulesForResponse($earlyClockInRules),
-                'attendance' => $periodAttendances,
+            $periods[] = [
+                'clock_in_time' => $clock['clock_in_time'],
+                'clock_out_time' => $clock['clock_out_time'],
+                'work_hours' => $this->formatHoursToTime($totalWorkHours),
+                'delay_hours' => $this->formatMinutesToTime((int) ($attendance->late_minutes ?? 0)),
+                'overtime_hours' => $this->formatHoursToTime((float) ($attendance->overtime_hours ?? 0)),
+                'clock_in_location' => $attendance->clock_in_location,
+                'clock_out_location' => $attendance->clock_out_location,
             ];
         }
 
-        return $output;
-    }
-
-    private function formatHistoryAttendanceItem(Attendance $attendance): array
-    {
-        $clock = $this->extractAttendanceClockData($attendance);
-        $totalWorkHours = $this->calculateAttendanceWorkHours($attendance, $clock['clock_in_carbon'], $clock['clock_out_carbon']);
-
-        return [
-            'clock_in_time' => $clock['clock_in_time'],
-            'clock_out_time' => $clock['clock_out_time'],
-            'work_hours' => $this->formatHoursToTime($totalWorkHours),
-            'delay_hours' => $this->formatMinutesToTime((int) ($attendance->late_minutes ?? 0)),
-            'overtime_hours' => $this->formatHoursToTime((float) ($attendance->overtime_hours ?? 0)),
-            'clock_in_location' => $attendance->clock_in_location,
-            'clock_out_location' => $attendance->clock_out_location,
-        ];
-    }
-
-    private function emptyHistoryAttendanceItem(): array
-    {
-        return [
-            'clock_in_time' => null,
-            'clock_out_time' => null,
-            'work_hours' => '00:00',
-            'delay_hours' => '00:00',
-            'overtime_hours' => '00:00',
-            'clock_in_location' => null,
-            'clock_out_location' => null,
-        ];
+        return $periods;
     }
 
     /**
@@ -900,4 +854,3 @@ class UserAttendanceService
         return Carbon::parse($value, $tz);
     }
 }
-
