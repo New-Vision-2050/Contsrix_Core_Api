@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Ranium\SeedOnce\Traits\SeedOnce;
 
 class ProfessionalDegreesSeeder extends Seeder
 {
