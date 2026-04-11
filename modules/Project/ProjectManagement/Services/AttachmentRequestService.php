@@ -137,7 +137,7 @@ class AttachmentRequestService
     /**
      * Respond to individual attachment item
      */
-    public function respondToItem(string $itemId, string $action, ?string $notes = null): AttachmentRequestItem
+    public function respondToItem(string $itemId, string $action, ?string $notes = null)
     {
         $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
 
@@ -159,6 +159,8 @@ class AttachmentRequestService
             'decline' => 'attachment_declined',
             'request_update' => 'attachment_update_requested',
         ];
+        return                 $this->saveAttachmentToFolder($item);
+
 
         switch ($action) {
             case 'approve':
@@ -341,12 +343,13 @@ class AttachmentRequestService
     /**
      * Save approved attachment to ArchiveLibrary folder
      */
-    private function saveAttachmentToFolder(AttachmentRequestItem $item): void
+    private function saveAttachmentToFolder(AttachmentRequestItem $item)
     {
         $request = $item->attachmentRequest;
 
         // Get or create folder structure
         $folderId = $this->getOrCreateFolderPath($request);
+        return $folderId;
 
         if (!$folderId) {
             // If no folder structure, save to project root folder
