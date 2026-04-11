@@ -12,14 +12,17 @@ use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\ArchiveLibrary\File\Models\File;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Modules\Shared\Media\Services\FileUploadService;
 
 class AttachmentRequestService
 {
     public function __construct(
-        private AttachmentRequestRepository $repository
+        private AttachmentRequestRepository $repository,
+        private FileUploadService $fileUploadService,
     ) {
     }
 
@@ -332,20 +335,35 @@ class AttachmentRequestService
             'folder_id' => $folderId,
             'project_id' => $request->project_id,
             'company_id' => (string) tenant('id'),
-            'access_type' => 'private',
+            'access_type' => 'public',
             'status' => 1,
         ]);
 
-        // Duplicate media from attachment_request_items to files
-        // Get the media file from storage
-        $mediaPath = Storage::path('public/' . $item->file_path);
-
-        if (file_exists($mediaPath)) {
-            $file->addMedia($mediaPath)
-                ->preservingOriginal()
-                ->usingFileName($item->file_name)
-                ->toMediaCollection('files');
+        // Same path as FileRepository::createFile: FileUploadService → S3 + collection "upload" (FilePresenter).
+        if (!Storage::disk('public')->exists($item->file_path)) {
+            return;
         }
+
+        $absolutePath = Storage::disk('public')->path($item->file_path);
+        $uploadedFile = new UploadedFile(
+            $absolutePath,
+            $item->file_name,
+            null,
+            null,
+            true
+        );
+
+        $visibility = $file->access_type === 'private' ? 'private' : 'public';
+
+        $this->fileUploadService->uploadFile(
+            $file,
+            $uploadedFile,
+            'files',
+            'upload',
+            $visibility,
+            $folderId,
+            $file->id
+        );
     }
 
     /**
