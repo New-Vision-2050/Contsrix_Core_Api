@@ -57,13 +57,13 @@ class AutoClockOutAtNextShiftStartJob implements ShouldQueue
                 return;
             }
 
-            $clockOutAt = Carbon::parse(now(),$attendance->timezone);
+            $clockOutAt = Carbon::now($attendance->timezone);
 
             $trackingPoints = $attendance->location_tracking ?? [];
             $latestPoint = !empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
 
 
-            $noteLine = '[Auto] Clock-out: next work period started';
+            $noteLine = '[Auto] Clock-out: next work period started '.$clockOutAt;
             $attendance->update([
                 'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
                 'clock_out_location' => $latestPoint,
