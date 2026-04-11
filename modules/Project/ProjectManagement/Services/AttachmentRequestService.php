@@ -30,7 +30,7 @@ class AttachmentRequestService
     {
         // Verify project exists and is shared
         $project = ProjectManagement::findOrFail($data['project_id']);
-        
+
         // Verify companies are involved in project sharing
         $this->verifyCompanyAccess($project, $data['receiver_company_id']);
 
@@ -110,7 +110,7 @@ class AttachmentRequestService
     public function getRequest(string $requestId): AttachmentRequest
     {
         $request = $this->repository->getWithItems($requestId);
-        
+
         if (!$request) {
             throw new \Exception('Attachment request not found');
         }
@@ -129,7 +129,7 @@ class AttachmentRequestService
     public function respondToItem(string $itemId, string $action, ?string $notes = null): AttachmentRequestItem
     {
         $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
-        
+
         // Verify receiver company
         if ($item->attachmentRequest->receiver_company_id !== tenant('id')) {
             throw new \Exception('Unauthorized to respond to this item');
@@ -195,13 +195,13 @@ class AttachmentRequestService
     public function approveRequest(string $requestId): AttachmentRequest
     {
         $request = $this->getRequest($requestId);
-        
+
         if ($request->receiver_company_id !== tenant('id')) {
             throw new \Exception('Unauthorized to approve this request');
         }
 
         $userId = (string) Auth::id();
-        
+
         // Get all file details before approving
         $filesApproved = $request->items->map(function ($item) {
             return [
@@ -236,13 +236,13 @@ class AttachmentRequestService
     public function declineRequest(string $requestId): AttachmentRequest
     {
         $request = $this->getRequest($requestId);
-        
+
         if ($request->receiver_company_id !== tenant('id')) {
             throw new \Exception('Unauthorized to decline this request');
         }
 
         $userId = (string) Auth::id();
-        
+
         // Get all file details before declining
         $filesDeclined = $request->items->map(function ($item) {
             return [
@@ -281,7 +281,7 @@ class AttachmentRequestService
         foreach ($attachments as $attachment) {
             // Store file
             $path = $attachment->store('attachment-requests/' . date('Y/m'), 'public');
-            
+
             $items[] = [
                 'file_name' => $attachment->getClientOriginalName(),
                 'file_path' => $path,
@@ -300,7 +300,7 @@ class AttachmentRequestService
     private function verifyCompanyAccess(ProjectManagement $project, string $companyId): void
     {
         // Check if project is owned or shared with the company
-        $hasAccess = $project->company_id === $companyId || 
+        $hasAccess = $project->company_id === $companyId ||
                      $project->shares()
                          ->where('shared_with_company_id', $companyId)
                          ->where('status', 'accepted')
@@ -317,10 +317,10 @@ class AttachmentRequestService
     private function saveAttachmentToFolder(AttachmentRequestItem $item): void
     {
         $request = $item->attachmentRequest;
-        
+
         // Get or create folder structure
         $folderId = $this->getOrCreateFolderPath($request);
-        
+
         if (!$folderId) {
             // If no folder structure, save to project root folder
             $folderId = $this->getProjectRootFolder($request->project_id);
@@ -339,7 +339,7 @@ class AttachmentRequestService
         // Duplicate media from attachment_request_items to files
         // Get the media file from storage
         $mediaPath = Storage::path('public/' . $item->file_path);
-        
+
         if (file_exists($mediaPath)) {
             $file->addMedia($mediaPath)
                 ->preservingOriginal()
@@ -354,7 +354,7 @@ class AttachmentRequestService
     private function getOrCreateFolderPath(AttachmentRequest $request): ?string
     {
         $projectFolder = $this->getProjectRootFolder($request->project_id);
-        
+
         if (!$projectFolder) {
             return null;
         }
@@ -378,7 +378,7 @@ class AttachmentRequestService
 
         // Verify folder exists
         $folder = Folder::find($currentFolderId);
-        
+
         return $folder ? $folder->id : $projectFolder;
     }
 
@@ -390,7 +390,7 @@ class AttachmentRequestService
         $folder = Folder::where('project_id', $projectId)
             ->whereNull('parent_id')
             ->first();
-        
+
         return $folder?->id;
     }
 
@@ -399,7 +399,7 @@ class AttachmentRequestService
      */
     public function getFolderChildren(?string $parentId = null, ?string $projectId = null): Collection
     {
-        $query = Folder::query();
+        $query = Folder::query()->withoutTenancy();
 
         if ($parentId) {
             $query->where('parent_id', $parentId);
