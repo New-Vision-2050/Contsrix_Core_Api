@@ -41,6 +41,9 @@ class AttachmentRequest extends Model
     protected $casts = [
         'date' => 'date',
         'responded_at' => 'datetime',
+        'attachment_type_id' => 'string',
+        'attachment_sub_type_id' => 'string',
+        'attachment_sub_sub_type_id' => 'string',
     ];
 
     /**
