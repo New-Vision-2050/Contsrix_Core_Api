@@ -48,7 +48,7 @@ class AttachmentRequest extends Model
      */
     public function project(): BelongsTo
     {
-        return $this->belongsTo(ProjectManagement::class, 'project_id');
+        return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
     /**
@@ -56,7 +56,7 @@ class AttachmentRequest extends Model
      */
     public function senderCompany(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'sender_company_id');
+        return $this->belongsTo(Company::class, 'sender_company_id')->withoutGlobalScopes();
     }
 
     /**
@@ -64,7 +64,7 @@ class AttachmentRequest extends Model
      */
     public function receiverCompany(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'receiver_company_id');
+        return $this->belongsTo(Company::class, 'receiver_company_id')->withoutGlobalScopes();
     }
 
     /**
@@ -72,7 +72,7 @@ class AttachmentRequest extends Model
      */
     public function createdByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by_user_id');
+        return $this->belongsTo(User::class, 'created_by_user_id')->withoutGlobalScopes();
     }
 
     /**
@@ -80,7 +80,7 @@ class AttachmentRequest extends Model
      */
     public function respondedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'responded_by_user_id');
+        return $this->belongsTo(User::class, 'responded_by_user_id')->withoutGlobalScopes();
     }
 
     /**

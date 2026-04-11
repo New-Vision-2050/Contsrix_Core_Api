@@ -16,6 +16,32 @@ class AttachmentRequestRepository extends BaseRepository
     }
 
     /**
+     * Get all requests (incoming and outgoing) for a company
+     */
+    public function getAllRequests(string $companyId, ?string $projectId = null): Collection
+    {
+        $query = $this->model
+            ->where(function ($q) use ($companyId) {
+                $q->where('sender_company_id', $companyId)
+                  ->orWhere('receiver_company_id', $companyId);
+            })
+            ->with([
+                'project',
+                'senderCompany',
+                'receiverCompany',
+                'createdByUser',
+                'respondedByUser',
+                'items.respondedByUser'
+            ]);
+
+        if ($projectId) {
+            $query->where('project_id', $projectId);
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
+    }
+
+    /**
      * Get outgoing requests for a company
      */
     public function getOutgoingRequests(string $companyId, ?string $projectId = null): Collection

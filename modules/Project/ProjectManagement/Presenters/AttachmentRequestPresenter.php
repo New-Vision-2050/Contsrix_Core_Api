@@ -22,6 +22,7 @@ class AttachmentRequestPresenter extends AbstractPresenter
             'date' => $this->request->date?->toDateString(),
             'project_id' => $this->request->project_id,
             'status' => $this->request->status,
+            'type' => $this->request->sender_company_id === tenant('id') ? 'outgoing' : 'incoming',
             'attachment_type_id' => $this->request->attachment_type_id,
             'attachment_sub_type_id' => $this->request->attachment_sub_type_id,
             'attachment_sub_sub_type_id' => $this->request->attachment_sub_sub_type_id,

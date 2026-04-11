@@ -73,6 +73,14 @@ class AttachmentRequestService
     }
 
     /**
+     * Get all requests (incoming and outgoing) for current company
+     */
+    public function getAllRequests(?string $projectId = null): Collection
+    {
+        return $this->repository->getAllRequests(tenant('id'), $projectId);
+    }
+
+    /**
      * Get outgoing requests for current company
      */
     public function getOutgoingRequests(?string $projectId = null): Collection

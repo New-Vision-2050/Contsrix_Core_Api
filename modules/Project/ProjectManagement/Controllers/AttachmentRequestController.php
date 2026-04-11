@@ -37,6 +37,26 @@ class AttachmentRequestController extends Controller
     }
 
     /**
+     * Get all requests (incoming and outgoing) for current company
+     */
+    public function getAllRequests(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->query('project_id');
+            
+            $requests = $this->service->getAllRequests($projectId);
+
+            $data = $requests->map(function ($request) {
+                return (new AttachmentRequestPresenter($request))->getData(true);
+            });
+
+            return Json::items($data->toArray());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get all outgoing requests for current company
      */
     public function getOutgoingRequests(Request $request): JsonResponse
