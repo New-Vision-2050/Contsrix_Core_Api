@@ -452,7 +452,7 @@ class AttachmentRequestService
         }
 
         // Verify folder exists
-        $folder = Folder::find($currentFolderId);
+        $folder = Folder::where("id",$currentFolderId)->withoutTenancy()->first();
 
         return $folder ? $folder->id : $projectFolder;
     }
@@ -462,7 +462,7 @@ class AttachmentRequestService
      */
     private function getProjectRootFolder(string $projectId): ?string
     {
-        $folder = Folder::where('project_id', $projectId)->withoutTenancy()
+        $folder = Folder::where('id', $projectId)->withoutTenancy()
             ->whereNull('parent_id')
             ->first();
 
