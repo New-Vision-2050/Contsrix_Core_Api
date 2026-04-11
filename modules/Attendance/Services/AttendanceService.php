@@ -123,7 +123,7 @@ class AttendanceService
         AutoClockOutAtNextShiftStartJob::dispatch(
             (string) $attendance->id,
             (string) $attendance->company_id,
-            $nextStart->copy()->utc()->toIso8601String(),
+            $nextStart->copy()->format('Y-m-d H:i:s'),
         )->delay($nextStart);
     }
 
@@ -700,9 +700,9 @@ class AttendanceService
         }
 
         // Set clock out time to current time in UTC for database storage
-        $timestamp = Carbon::now('UTC');
+        $timestamp = Carbon::now($attendance->timezone);
         $updateData = [
-            'clock_out_time' => $timestamp,
+            'clock_out_time' => $timestamp->format('Y-m-d H:i:s'),
             'status' => Attendance::STATUS_COMPLETED,
             'shift_end_method' => $method,
             'notes' => ($attendance->notes ? $attendance->notes . "\n\n" : '') .
