@@ -218,6 +218,14 @@ class AttachmentRequestService
 
         $request->approveAll($userId);
 
+        foreach (
+            AttachmentRequestItem::with('attachmentRequest')
+                ->where('attachment_request_id', $request->id)
+                ->get() as $item
+        ) {
+            $this->saveAttachmentToFolder($item);
+        }
+
         // Log history with all approved files
         AttachmentRequestHistory::log(
             requestId: $request->id,
@@ -329,41 +337,90 @@ class AttachmentRequestService
             $folderId = $this->getProjectRootFolder($request->project_id);
         }
 
-        // Create File record in ArchiveLibrary
-        $file = File::create([
-            'name' => pathinfo($item->file_name, PATHINFO_FILENAME),
-            'folder_id' => $folderId,
-            'project_id' => $request->project_id,
-            'company_id' => (string) tenant('id'),
-            'access_type' => 'public',
-            'status' => 1,
-        ]);
+        // Attachment bytes live on the sender tenant's "public" disk (see prepareAttachmentItems + tenancy
+        // filesystem suffix). Approval runs as the receiver tenant — read from sender, then upload under receiver.
+        $receiverTenantId = (string) tenant('id');
+        $tempPath = $this->copyAttachmentFromSenderTenantToTemp($item, $receiverTenantId);
 
-        // Same path as FileRepository::createFile: FileUploadService → S3 + collection "upload" (FilePresenter).
-        if (!Storage::disk('public')->exists($item->file_path)) {
-            return;
+        try {
+            $file = File::create([
+                'name' => pathinfo($item->file_name, PATHINFO_FILENAME),
+                'folder_id' => $folderId,
+                'project_id' => $request->project_id,
+                'company_id' => (string) tenant('id'),
+                'access_type' => 'public',
+                'status' => 1,
+            ]);
+
+            $uploadedFile = new UploadedFile(
+                $tempPath,
+                $item->file_name,
+                null,
+                null,
+                true
+            );
+
+            $visibility = $file->access_type === 'private' ? 'private' : 'public';
+
+            $this->fileUploadService->uploadFile(
+                $file,
+                $uploadedFile,
+                'files',
+                'upload',
+                $visibility,
+                $folderId,
+                $file->id
+            );
+        } finally {
+            if (is_file($tempPath)) {
+                @unlink($tempPath);
+            }
+        }
+    }
+
+    /**
+     * Copy the pending attachment from the tenant that stored it (sender) to a local temp path for Spatie upload.
+     */
+    private function copyAttachmentFromSenderTenantToTemp(
+        AttachmentRequestItem $item,
+        string $receiverTenantId
+    ): string {
+        $senderTenantId = (string) $item->attachmentRequest->sender_company_id;
+
+        $tmp = tempnam(sys_get_temp_dir(), 'att_req_');
+        if ($tmp === false) {
+            throw new \Exception('Could not create temporary file for attachment import');
         }
 
-        $absolutePath = Storage::disk('public')->path($item->file_path);
-        $uploadedFile = new UploadedFile(
-            $absolutePath,
-            $item->file_name,
-            null,
-            null,
-            true
-        );
+        try {
+            if ($senderTenantId === $receiverTenantId) {
+                if (!Storage::disk('public')->exists($item->file_path)) {
+                    throw new \Exception('Attachment file is missing from storage');
+                }
+                file_put_contents($tmp, Storage::disk('public')->get($item->file_path));
 
-        $visibility = $file->access_type === 'private' ? 'private' : 'public';
+                return $tmp;
+            }
 
-        $this->fileUploadService->uploadFile(
-            $file,
-            $uploadedFile,
-            'files',
-            'upload',
-            $visibility,
-            $folderId,
-            $file->id
-        );
+            tenancy()->end();
+            tenancy()->initialize($senderTenantId);
+            try {
+                if (!Storage::disk('public')->exists($item->file_path)) {
+                    throw new \Exception('Attachment file is missing from sender company storage');
+                }
+                file_put_contents($tmp, Storage::disk('public')->get($item->file_path));
+            } finally {
+                tenancy()->end();
+                tenancy()->initialize($receiverTenantId);
+            }
+
+            return $tmp;
+        } catch (\Throwable $e) {
+            if (is_file($tmp)) {
+                @unlink($tmp);
+            }
+            throw $e;
+        }
     }
 
     /**
