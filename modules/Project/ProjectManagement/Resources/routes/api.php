@@ -37,6 +37,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
 
     // Attachment Request Routes
     Route::prefix('attachment-requests')->group(function () {
+        // Get all requests (incoming and outgoing)
+        Route::get('/', [AttachmentRequestController::class, 'getAllRequests']);
+        
         // Get folder children for attachment type selection
         Route::get('/folders/children', [AttachmentRequestController::class, 'getFolderChildren']);
         

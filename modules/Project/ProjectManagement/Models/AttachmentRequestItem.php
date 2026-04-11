@@ -49,7 +49,7 @@ class AttachmentRequestItem extends Model
      */
     public function respondedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'responded_by_user_id');
+        return $this->belongsTo(User::class, 'responded_by_user_id')->withoutGlobalScopes();
     }
 
     /**

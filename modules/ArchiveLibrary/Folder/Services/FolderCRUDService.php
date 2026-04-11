@@ -135,7 +135,8 @@ class FolderCRUDService
         ?string $search = null,
         string $searchType = 'all',
         ?int $branchId = null,
-        ?string $sort = null
+        ?string $sort = null,
+        bool $withoutTenancy = false
     )
     {
         return $this->repository->getFoldersAndFilesByParent(
@@ -151,7 +152,8 @@ class FolderCRUDService
             $search,
             $searchType,
             $branchId,
-            $sort
+            $sort,
+            $withoutTenancy
         );
     }
 

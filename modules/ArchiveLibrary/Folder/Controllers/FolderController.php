@@ -161,7 +161,8 @@ class FolderController extends Controller
             $search,
             $searchType,
             $branchId,
-            $sort
+            $sort,
+            $request->wantsWithoutTenancy()
         );
 
 

@@ -224,7 +224,7 @@ class ProjectShareController extends Controller
     }
 
     /**
-     * Get list of companies that a project is shared with (accepted shares only)
+     * Get list of companies that can view the project (sender and receivers, excluding current company)
      */
     public function getSharedCompanies(Request $request): JsonResponse
     {
@@ -242,21 +242,46 @@ class ProjectShareController extends Controller
                 return Json::error('Project not found', 404);
             }
 
-            // Get accepted shares for this project
+            $currentCompanyId = tenant('id');
+            $companies = collect();
+
+            // Add owner company (sender) if not current company
+            if ($project->company_id !== $currentCompanyId) {
+                $ownerCompany = $project->company()->withoutGlobalScopes()->first();
+                if ($ownerCompany) {
+                    $companies->push([
+                        'id' => $ownerCompany->id,
+                        'name' => $ownerCompany->name,
+                        'serial_number' => $ownerCompany->serial_number,
+                        'role' => 'owner',
+                        'shared_at' => $project->created_at?->toISOString(),
+                    ]);
+                }
+            }
+
+            // Get accepted shares for this project (receivers)
             $shares = $this->shareService->getSharesForResource(
                 ProjectManagement::class,
                 $projectId
             )->where('status', 'accepted');
 
-            $companies = $shares->map(function ($share) {
-                return [
-                    'id' => $share->sharedWithCompany->id,
-                    'name' => $share->sharedWithCompany->name,
-                    'serial_number' => $share->sharedWithCompany->serial_number,
-                    'shared_at' => $share->created_at?->toISOString(),
-                    'accepted_at' => $share->responded_at?->toISOString(),
-                ];
-            });
+            // Add shared companies (receivers) excluding current company
+            $sharedCompanies = $shares
+                ->filter(function ($share) use ($currentCompanyId) {
+                    return $share->shared_with_company_id !== $currentCompanyId;
+                })
+                ->map(function ($share) {
+                    return [
+                        'id' => $share->sharedWithCompany->id,
+                        'name' => $share->sharedWithCompany->name,
+                        'serial_number' => $share->sharedWithCompany->serial_number,
+                        'role' => 'receiver',
+                        'shared_at' => $share->created_at?->toISOString(),
+                        'accepted_at' => $share->responded_at?->toISOString(),
+                    ];
+                });
+
+            $companies = $companies->merge($sharedCompanies);
 
             return Json::items($companies->values()->toArray());
         } catch (\Exception $e) {

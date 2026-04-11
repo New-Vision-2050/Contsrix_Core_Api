@@ -12,14 +12,17 @@ use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Modules\ArchiveLibrary\File\Models\File;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Modules\Shared\Media\Services\FileUploadService;
 
 class AttachmentRequestService
 {
     public function __construct(
-        private AttachmentRequestRepository $repository
+        private AttachmentRequestRepository $repository,
+        private FileUploadService $fileUploadService,
     ) {
     }
 
@@ -30,7 +33,7 @@ class AttachmentRequestService
     {
         // Verify project exists and is shared
         $project = ProjectManagement::findOrFail($data['project_id']);
-        
+
         // Verify companies are involved in project sharing
         $this->verifyCompanyAccess($project, $data['receiver_company_id']);
 
@@ -73,6 +76,14 @@ class AttachmentRequestService
     }
 
     /**
+     * Get all requests (incoming and outgoing) for current company
+     */
+    public function getAllRequests(?string $projectId = null): Collection
+    {
+        return $this->repository->getAllRequests(tenant('id'), $projectId);
+    }
+
+    /**
      * Get outgoing requests for current company
      */
     public function getOutgoingRequests(?string $projectId = null): Collection
@@ -102,7 +113,7 @@ class AttachmentRequestService
     public function getRequest(string $requestId): AttachmentRequest
     {
         $request = $this->repository->getWithItems($requestId);
-        
+
         if (!$request) {
             throw new \Exception('Attachment request not found');
         }
@@ -121,7 +132,7 @@ class AttachmentRequestService
     public function respondToItem(string $itemId, string $action, ?string $notes = null): AttachmentRequestItem
     {
         $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
-        
+
         // Verify receiver company
         if ($item->attachmentRequest->receiver_company_id !== tenant('id')) {
             throw new \Exception('Unauthorized to respond to this item');
@@ -187,13 +198,13 @@ class AttachmentRequestService
     public function approveRequest(string $requestId): AttachmentRequest
     {
         $request = $this->getRequest($requestId);
-        
+
         if ($request->receiver_company_id !== tenant('id')) {
             throw new \Exception('Unauthorized to approve this request');
         }
 
         $userId = (string) Auth::id();
-        
+
         // Get all file details before approving
         $filesApproved = $request->items->map(function ($item) {
             return [
@@ -228,13 +239,13 @@ class AttachmentRequestService
     public function declineRequest(string $requestId): AttachmentRequest
     {
         $request = $this->getRequest($requestId);
-        
+
         if ($request->receiver_company_id !== tenant('id')) {
             throw new \Exception('Unauthorized to decline this request');
         }
 
         $userId = (string) Auth::id();
-        
+
         // Get all file details before declining
         $filesDeclined = $request->items->map(function ($item) {
             return [
@@ -273,7 +284,7 @@ class AttachmentRequestService
         foreach ($attachments as $attachment) {
             // Store file
             $path = $attachment->store('attachment-requests/' . date('Y/m'), 'public');
-            
+
             $items[] = [
                 'file_name' => $attachment->getClientOriginalName(),
                 'file_path' => $path,
@@ -292,7 +303,7 @@ class AttachmentRequestService
     private function verifyCompanyAccess(ProjectManagement $project, string $companyId): void
     {
         // Check if project is owned or shared with the company
-        $hasAccess = $project->company_id === $companyId || 
+        $hasAccess = $project->company_id === $companyId ||
                      $project->shares()
                          ->where('shared_with_company_id', $companyId)
                          ->where('status', 'accepted')
@@ -309,10 +320,10 @@ class AttachmentRequestService
     private function saveAttachmentToFolder(AttachmentRequestItem $item): void
     {
         $request = $item->attachmentRequest;
-        
+
         // Get or create folder structure
         $folderId = $this->getOrCreateFolderPath($request);
-        
+
         if (!$folderId) {
             // If no folder structure, save to project root folder
             $folderId = $this->getProjectRootFolder($request->project_id);
@@ -324,20 +335,35 @@ class AttachmentRequestService
             'folder_id' => $folderId,
             'project_id' => $request->project_id,
             'company_id' => (string) tenant('id'),
-            'access_type' => 'private',
+            'access_type' => 'public',
             'status' => 1,
         ]);
 
-        // Duplicate media from attachment_request_items to files
-        // Get the media file from storage
-        $mediaPath = Storage::path('public/' . $item->file_path);
-        
-        if (file_exists($mediaPath)) {
-            $file->addMedia($mediaPath)
-                ->preservingOriginal()
-                ->usingFileName($item->file_name)
-                ->toMediaCollection('files');
+        // Same path as FileRepository::createFile: FileUploadService → S3 + collection "upload" (FilePresenter).
+        if (!Storage::disk('public')->exists($item->file_path)) {
+            return;
         }
+
+        $absolutePath = Storage::disk('public')->path($item->file_path);
+        $uploadedFile = new UploadedFile(
+            $absolutePath,
+            $item->file_name,
+            null,
+            null,
+            true
+        );
+
+        $visibility = $file->access_type === 'private' ? 'private' : 'public';
+
+        $this->fileUploadService->uploadFile(
+            $file,
+            $uploadedFile,
+            'files',
+            'upload',
+            $visibility,
+            $folderId,
+            $file->id
+        );
     }
 
     /**
@@ -346,7 +372,7 @@ class AttachmentRequestService
     private function getOrCreateFolderPath(AttachmentRequest $request): ?string
     {
         $projectFolder = $this->getProjectRootFolder($request->project_id);
-        
+
         if (!$projectFolder) {
             return null;
         }
@@ -370,7 +396,7 @@ class AttachmentRequestService
 
         // Verify folder exists
         $folder = Folder::find($currentFolderId);
-        
+
         return $folder ? $folder->id : $projectFolder;
     }
 
@@ -379,10 +405,10 @@ class AttachmentRequestService
      */
     private function getProjectRootFolder(string $projectId): ?string
     {
-        $folder = Folder::where('project_id', $projectId)
+        $folder = Folder::where('project_id', $projectId)->withoutTenancy()
             ->whereNull('parent_id')
             ->first();
-        
+
         return $folder?->id;
     }
 
@@ -391,7 +417,7 @@ class AttachmentRequestService
      */
     public function getFolderChildren(?string $parentId = null, ?string $projectId = null): Collection
     {
-        $query = Folder::query();
+        $query = Folder::query()->withoutTenancy();
 
         if ($parentId) {
             $query->where('parent_id', $parentId);
@@ -402,7 +428,7 @@ class AttachmentRequestService
             $query->whereNull('parent_id');
         }
 
-        return $query->where('company_id', tenant('id'))
+        return $query
             ->orderBy('name')
             ->get(['id', 'name', 'parent_id', 'project_id']);
     }

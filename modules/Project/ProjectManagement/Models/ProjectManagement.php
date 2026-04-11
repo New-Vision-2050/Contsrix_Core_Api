@@ -120,12 +120,12 @@ class ProjectManagement extends Model
 
     public function manager()
     {
-        return $this->belongsTo(User::class, 'manager_id');
+        return $this->belongsTo(User::class, 'manager_id')->withoutGlobalScopes();
     }
 
     public function branch()
     {
-        return $this->belongsTo(ManagementHierarchy::class, 'branch_id');
+        return $this->belongsTo(ManagementHierarchy::class, 'branch_id')->withoutGlobalScopes();
     }
 
     /**
@@ -153,7 +153,7 @@ class ProjectManagement extends Model
      */
     public function ownerCompany()
     {
-        return $this->belongsTo(Company::class, 'project_owner_id');
+        return $this->belongsTo(Company::class, 'project_owner_id')->withoutGlobalScopes();
     }
     
     /**
@@ -161,22 +161,22 @@ class ProjectManagement extends Model
      */
     public function ownerIndividual()
     {
-        return $this->belongsTo(User::class, 'project_owner_id');
+        return $this->belongsTo(User::class, 'project_owner_id')->withoutGlobalScopes();
     }
 
     public function client()
     {
-        return $this->belongsTo(User::class, 'client_id');
+        return $this->belongsTo(User::class, 'client_id')->withoutGlobalScopes();
     }
 
     public function costCenterBranch()
     {
-        return $this->belongsTo(ManagementHierarchy::class, 'cost_center_branch_id');
+        return $this->belongsTo(ManagementHierarchy::class, 'cost_center_branch_id')->withoutGlobalScopes();
     }
 
     public function management()
     {
-        return $this->belongsTo(ManagementHierarchy::class, 'management_id');
+        return $this->belongsTo(ManagementHierarchy::class, 'management_id')->withoutGlobalScopes();
     }
 
     public function currency()
@@ -186,7 +186,7 @@ class ProjectManagement extends Model
 
     public function company()
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 
     public function projectEmployees()
@@ -197,6 +197,7 @@ class ProjectManagement extends Model
     public function employees()
     {
         return $this->belongsToMany(User::class, 'project_employees', 'project_id', 'user_id')
+            ->withoutGlobalScopes()
             ->withPivot('assigned_at', 'assigned_by_user_id')
             ->withTimestamps();
     }

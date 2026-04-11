@@ -13,6 +13,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Models\Attendance;
 
+use function Symfony\Component\Clock\now;
+
 /**
  * When a later work period starts the same day, clock out the still-open previous shift.
  * Scheduled from {@see AttendanceService::clockIn} at the next period's start time.
@@ -55,30 +57,24 @@ class AutoClockOutAtNextShiftStartJob implements ShouldQueue
                 return;
             }
 
-            $clockOutAt = Carbon::parse($this->clockOutAtIso)->utc();
+            $clockOutAt = Carbon::parse(now(),$attendance->timezone);
 
             $trackingPoints = $attendance->location_tracking ?? [];
             $latestPoint = !empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
 
-            $activeBreak = $attendance->activeBreak();
-            if ($activeBreak) {
-                $activeBreak->end_time = $clockOutAt->copy();
-                $activeBreak->calculateDuration();
-                $activeBreak->save();
-            }
 
             $noteLine = '[Auto] Clock-out: next work period started';
             $attendance->update([
-                'clock_out_time' => $clockOutAt,
+                'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
                 'clock_out_location' => $latestPoint,
                 'status' => Attendance::STATUS_COMPLETED,
                 'day_status' => 'clocked_out',
                 'notes' => trim(($attendance->notes ?? '') . "\n" . $noteLine),
             ]);
 
-            $attendance->refresh();
-            $attendance->updateTotalBreakHours();
-            $attendance->calculateWorkHours();
+            // $attendance->refresh();
+            // $attendance->updateTotalBreakHours();
+            // $attendance->calculateWorkHours();
         } finally {
             tenancy()->end();
         }
