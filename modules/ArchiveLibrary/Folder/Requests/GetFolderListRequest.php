@@ -22,7 +22,13 @@ class GetFolderListRequest extends FormRequest
             'type' => 'nullable|string|in:all,name,reference_number,employee',
             'branch_id' => 'nullable|integer|exists:management_hierarchies,id',
             'sort' => 'nullable|string|in:asc,desc',
+            'withoutTenancy' => 'nullable|boolean',
         ];
+    }
+
+    public function wantsWithoutTenancy(): bool
+    {
+        return $this->boolean('withoutTenancy');
     }
 
     public function getDocumentType(): ?string
