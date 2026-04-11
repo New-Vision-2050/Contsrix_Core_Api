@@ -149,7 +149,6 @@ class AttachmentRequestController extends Controller
                 $request->action,
                 $request->notes
             );
-return $item;
             // Return the full request with updated items
             $attachmentRequest = $item->attachmentRequest->load(['items.respondedByUser']);
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();

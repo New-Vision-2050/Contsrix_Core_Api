@@ -151,7 +151,6 @@ class AttachmentRequestService
             'decline' => 'attachment_declined',
             'request_update' => 'attachment_update_requested',
         ];
-        return                 $this->saveAttachmentToFolder($item);
 
 
         switch ($action) {
@@ -333,7 +332,6 @@ class AttachmentRequestService
 
         // Get or create folder structure
         $folderId = $this->getOrCreateFolderPath($request);
-        return $folderId;
 
         if (!$folderId) {
             // If no folder structure, save to project root folder
