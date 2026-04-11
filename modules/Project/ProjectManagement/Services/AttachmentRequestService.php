@@ -410,7 +410,7 @@ class AttachmentRequestService
             $query->whereNull('parent_id');
         }
 
-        return $query->where('company_id', tenant('id'))
+        return $query
             ->orderBy('name')
             ->get(['id', 'name', 'parent_id', 'project_id']);
     }
