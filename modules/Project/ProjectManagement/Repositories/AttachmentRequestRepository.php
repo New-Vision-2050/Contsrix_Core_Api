@@ -7,11 +7,14 @@ namespace Modules\Project\ProjectManagement\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Modules\Project\ProjectManagement\Models\AttachmentRequest;
 use Illuminate\Database\Eloquent\Collection;
+use Modules\Shared\Media\Services\FileUploadService;
 
 class AttachmentRequestRepository extends BaseRepository
 {
-    public function __construct(AttachmentRequest $model)
-    {
+    public function __construct(
+        AttachmentRequest $model,
+        private FileUploadService $fileUploadService
+    ) {
         parent::__construct($model);
     }
 
@@ -129,7 +132,25 @@ class AttachmentRequestRepository extends BaseRepository
         $request = $this->create($requestData);
         
         foreach ($items as $itemData) {
-            $request->items()->create($itemData);
+            $uploadedFile = $itemData['uploaded_file'] ?? null;
+            unset($itemData['uploaded_file']);
+            
+            $item = $request->items()->create($itemData);
+            
+            if ($uploadedFile) {
+                $this->fileUploadService->uploadFile(
+                    $item,
+                    $uploadedFile,
+                    'attachment-requests',
+                    'attachments',
+                    'public'
+                );
+                
+                $media = $item->getFirstMedia('attachments');
+                if ($media) {
+                    $item->update(['file_path' => $media->getPath()]);
+                }
+            }
         }
 
         return $request->load('items');

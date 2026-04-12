@@ -6,7 +6,6 @@ namespace Modules\Project\ProjectManagement\Presenters;
 
 use Modules\Project\ProjectManagement\Models\AttachmentRequestItem;
 use BasePackage\Shared\Presenters\AbstractPresenter;
-use Illuminate\Support\Facades\Storage;
 
 class AttachmentRequestItemPresenter extends AbstractPresenter
 {
@@ -21,7 +20,7 @@ class AttachmentRequestItemPresenter extends AbstractPresenter
             'attachment_request_id' => $this->item->attachment_request_id,
             'file_name' => $this->item->file_name,
             'file_path' => $this->item->file_path,
-            'file_url' => $this->item->file_path ? Storage::url($this->item->file_path) : null,
+            'file_url' => $this->item->getFirstMediaUrl('attachments') ?: null,
             'file_type' => $this->item->file_type,
             'file_size' => $this->item->file_size,
             'file_size_formatted' => $this->formatFileSize($this->item->file_size),
