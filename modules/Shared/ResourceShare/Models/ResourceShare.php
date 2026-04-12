@@ -57,7 +57,8 @@ class ResourceShare extends Model
      */
     public function ownerCompany(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'owner_company_id');
+        return $this->belongsTo(Company::class, 'owner_company_id')
+            ->withoutGlobalScopes();
     }
 
     /**
@@ -65,7 +66,8 @@ class ResourceShare extends Model
      */
     public function sharedWithCompany(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'shared_with_company_id');
+        return $this->belongsTo(Company::class, 'shared_with_company_id')
+            ->withoutGlobalScopes();
     }
 
     /**
@@ -73,7 +75,8 @@ class ResourceShare extends Model
      */
     public function sharedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'shared_by_user_id');
+        return $this->belongsTo(User::class, 'shared_by_user_id')
+            ->withoutGlobalScopes();
     }
 
     /**
@@ -81,7 +84,8 @@ class ResourceShare extends Model
      */
     public function respondedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'responded_by_user_id');
+        return $this->belongsTo(User::class, 'responded_by_user_id')
+            ->withoutGlobalScopes();
     }
 
     /**

@@ -8,6 +8,9 @@ use Modules\Shared\ResourceShare\Repositories\ResourceShareRepository;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Modules\Shared\ResourceShare\Events\ResourceShared;
+use Modules\Shared\ResourceShare\Events\ResourceShareResponded;
+use Modules\User\Models\User;
 
 class ResourceShareService
 {
@@ -32,7 +35,7 @@ class ResourceShareService
             throw new \Exception('Resource is already shared with this company');
         }
 
-        return $this->repository->createShare([
+        $share = $this->repository->createShare([
             'shareable_type' => $shareableType,
             'shareable_id' => $shareableId,
             'owner_company_id' => $ownerCompanyId,
@@ -42,6 +45,11 @@ class ResourceShareService
             'shared_by_user_id' => Auth::id(),
             'notes' => $notes,
         ]);
+
+        // Broadcast notification to shared company users
+        $this->broadcastToSharedCompany($share);
+
+        return $share;
     }
 
     /**
@@ -63,7 +71,15 @@ class ResourceShareService
             throw new \Exception('Share is not pending');
         }
 
-        return $share->accept((string) Auth::id());
+        $result = $share->accept((string) Auth::id());
+
+        // Reload relationships
+        $share = $share->fresh(['ownerCompany', 'sharedWithCompany', 'respondedByUser', 'shareable']);
+
+        // Broadcast notification to owner company users
+        $this->broadcastToOwnerCompany($share, 'accepted');
+
+        return $result;
     }
 
     /**
@@ -85,7 +101,15 @@ class ResourceShareService
             throw new \Exception('Share is not pending');
         }
 
-        return $share->reject((string) Auth::id());
+        $result = $share->reject((string) Auth::id());
+
+        // Reload relationships
+        $share = $share->fresh(['ownerCompany', 'sharedWithCompany', 'respondedByUser', 'shareable']);
+
+        // Broadcast notification to owner company users
+        $this->broadcastToOwnerCompany($share, 'rejected');
+
+        return $result;
     }
 
     /**
@@ -155,5 +179,33 @@ class ResourceShareService
         }
 
         return $share->update(['schema_ids' => $schemaIds]);
+    }
+
+    /**
+     * Broadcast notification to shared company when resource is shared
+     */
+    private function broadcastToSharedCompany(ResourceShare $share): void
+    {
+        // Load all relationships needed for broadcasting
+        $share->load(['ownerCompany', 'sharedWithCompany', 'sharedByUser', 'shareable']);
+
+        \Log::info('Broadcasting ResourceShared to company channel: company.' . $share->shared_with_company_id);
+
+        // Broadcast a single event to the company channel
+        event(new ResourceShared($share));
+    }
+
+    /**
+     * Broadcast notification to owner company when share is responded
+     */
+    private function broadcastToOwnerCompany(ResourceShare $share, string $action): void
+    {
+        // Load all relationships needed for broadcasting
+        $share->load(['ownerCompany', 'sharedWithCompany', 'sharedByUser', 'shareable', 'respondedByUser']);
+
+        \Log::info('Broadcasting ResourceShareResponded to company channel: company.' . $share->owner_company_id);
+
+        // Broadcast a single event to the company channel
+        event(new ResourceShareResponded($share, $action));
     }
 }

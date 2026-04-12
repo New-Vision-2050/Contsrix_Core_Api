@@ -8,10 +8,12 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class AttachmentRequestItem extends Model
+class AttachmentRequestItem extends Model implements HasMedia
 {
-    use UuidTrait;
+    use UuidTrait, InteractsWithMedia;
 
     protected $table = 'attachment_request_items';
 

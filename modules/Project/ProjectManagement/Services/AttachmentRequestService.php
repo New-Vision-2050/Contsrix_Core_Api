@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Modules\Shared\Media\Services\FileUploadService;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Ramsey\Uuid\Uuid;
+use Modules\Project\ProjectManagement\Events\AttachmentRequestCreated;
+use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
+use Modules\User\Models\User;
 
 class AttachmentRequestService
 {
@@ -71,6 +76,9 @@ class AttachmentRequestService
                 'receiver_company' => $data['receiver_company_id'],
             ]
         );
+
+        // Broadcast notification to receiver company users
+        $this->broadcastToReceiverCompany($request);
 
         return $request;
     }
@@ -239,7 +247,12 @@ class AttachmentRequestService
             ]
         );
 
-        return $request->fresh(['items', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser']);
+
+        // Broadcast notification to sender company users
+        $this->broadcastToSenderCompany($request, 'approved');
+
+        return $request;
     }
 
     /**
@@ -280,7 +293,12 @@ class AttachmentRequestService
             ]
         );
 
-        return $request->fresh(['items', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser']);
+
+        // Broadcast notification to sender company users
+        $this->broadcastToSenderCompany($request, 'declined');
+
+        return $request;
     }
 
     /**
@@ -291,15 +309,13 @@ class AttachmentRequestService
         $items = [];
 
         foreach ($attachments as $attachment) {
-            // Store file
-            $path = $attachment->store('attachment-requests/' . date('Y/m'), 'public');
-
             $items[] = [
                 'file_name' => $attachment->getClientOriginalName(),
-                'file_path' => $path,
+                'file_path' => null, // Will be populated by media library
                 'file_type' => $attachment->getClientMimeType(),
                 'file_size' => $attachment->getSize(),
                 'status' => 'pending',
+                'uploaded_file' => $attachment, // Store for media library processing
             ];
         }
 
@@ -338,90 +354,65 @@ class AttachmentRequestService
             $folderId = $this->getProjectRootFolder($request->project_id);
         }
 
-        // Attachment bytes live on the sender tenant's "public" disk (see prepareAttachmentItems + tenancy
-        // filesystem suffix). Approval runs as the receiver tenant — read from sender, then upload under receiver.
+        // Get media items from the attachment request item
         $receiverTenantId = (string) tenant('id');
-        $tempPath = $this->copyAttachmentFromSenderTenantToTemp($item, $receiverTenantId);
+        $senderTenantId = (string) $request->sender_company_id;
+        
+        // Switch to sender tenant to get media
+        $mediaItems = $this->getMediaFromSenderTenant($item, $senderTenantId, $receiverTenantId);
+        
+        if ($mediaItems->isEmpty()) {
+            return;
+        }
 
-        try {
-            $file = File::create([
-                'name' => pathinfo($item->file_name, PATHINFO_FILENAME),
-                'folder_id' => $folderId,
-                'project_id' => $request->project_id,
-                'company_id' => (string) tenant('id'),
-                'access_type' => 'public',
-                'status' => 1,
-            ]);
+        // Create file record in receiver tenant
+        $file = File::create([
+            'name' => pathinfo($item->file_name, PATHINFO_FILENAME),
+            'folder_id' => $folderId,
+            'project_id' => $request->project_id,
+            'company_id' => $receiverTenantId,
+            'access_type' => 'public',
+            'status' => 1,
+        ]);
 
-            $uploadedFile = new UploadedFile(
-                $tempPath,
-                $item->file_name,
-                null,
-                null,
-                true
-            );
-
-            $visibility = $file->access_type === 'private' ? 'private' : 'public';
-
-            $this->fileUploadService->uploadFile(
-                $file,
-                $uploadedFile,
-                'files',
-                'upload',
-                $visibility,
-                $folderId,
-                $file->id
-            );
-        } finally {
-            if (is_file($tempPath)) {
-                @unlink($tempPath);
-            }
+        // Replicate media items to the file (like legal data pattern)
+        foreach ($mediaItems as $mediaItem) {
+            $replicatedMedia = $mediaItem->replicate(['id', 'uuid']);
+            $replicatedMedia->model_id = $file->id;
+            $replicatedMedia->model_type = File::class;
+            $replicatedMedia->save();
         }
     }
 
     /**
-     * Copy the pending attachment from the tenant that stored it (sender) to a local temp path for Spatie upload.
+     * Get media items from sender tenant for the attachment request item
      */
-    private function copyAttachmentFromSenderTenantToTemp(
+    private function getMediaFromSenderTenant(
         AttachmentRequestItem $item,
+        string $senderTenantId,
         string $receiverTenantId
-    ): string {
-        $senderTenantId = (string) $item->attachmentRequest->sender_company_id;
-
-        $tmp = tempnam(sys_get_temp_dir(), 'att_req_');
-        if ($tmp === false) {
-            throw new \Exception('Could not create temporary file for attachment import');
+    ): \Illuminate\Support\Collection {
+        if ($senderTenantId === $receiverTenantId) {
+            // Same tenant - get media directly
+            return Media::where('model_id', Uuid::fromString($item->id))
+                ->where('model_type', AttachmentRequestItem::class)
+                ->get();
         }
 
+        // Different tenant - switch context to get media
+        tenancy()->end();
+        tenancy()->initialize($senderTenantId);
+        
         try {
-            if ($senderTenantId === $receiverTenantId) {
-                if (!Storage::disk('public')->exists($item->file_path)) {
-                    throw new \Exception('Attachment file is missing from storage');
-                }
-                file_put_contents($tmp, Storage::disk('public')->get($item->file_path));
-
-                return $tmp;
-            }
-
+            $mediaItems = Media::where('model_id', Uuid::fromString($item->id))
+                ->where('model_type', AttachmentRequestItem::class)
+                ->get();
+        } finally {
             tenancy()->end();
-            tenancy()->initialize($senderTenantId);
-            try {
-                if (!Storage::disk('public')->exists($item->file_path)) {
-                    throw new \Exception('Attachment file is missing from sender company storage');
-                }
-                file_put_contents($tmp, Storage::disk('public')->get($item->file_path));
-            } finally {
-                tenancy()->end();
-                tenancy()->initialize($receiverTenantId);
-            }
-
-            return $tmp;
-        } catch (\Throwable $e) {
-            if (is_file($tmp)) {
-                @unlink($tmp);
-            }
-            throw $e;
+            tenancy()->initialize($receiverTenantId);
         }
+
+        return $mediaItems;
     }
 
     /**
@@ -510,5 +501,35 @@ class AttachmentRequestService
         }
 
         return round($size, 2) . ' ' . $units[$i];
+    }
+
+    /**
+     * Broadcast notification to receiver company users when new request is created
+     */
+    private function broadcastToReceiverCompany(AttachmentRequest $request): void
+    {
+        // Get all users from receiver company
+        $receiverCompanyUsers = User::where('company_id', $request->receiver_company_id)
+            ->whereNotNull('id')
+            ->get();
+
+        foreach ($receiverCompanyUsers as $user) {
+            event(new AttachmentRequestCreated($request, (string) $user->id));
+        }
+    }
+
+    /**
+     * Broadcast notification to sender company users when request is responded
+     */
+    private function broadcastToSenderCompany(AttachmentRequest $request, string $action): void
+    {
+        // Get all users from sender company
+        $senderCompanyUsers = User::where('company_id', $request->sender_company_id)
+            ->whereNotNull('id')
+            ->get();
+
+        foreach ($senderCompanyUsers as $user) {
+            event(new AttachmentRequestResponded($request, (string) $user->id, $action));
+        }
     }
 }
