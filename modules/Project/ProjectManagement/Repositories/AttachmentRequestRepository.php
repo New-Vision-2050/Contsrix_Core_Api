@@ -119,6 +119,7 @@ class AttachmentRequestRepository extends BaseRepository
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser',
+                'items.media',
                 'history.user'
             ])
             ->find($requestId);

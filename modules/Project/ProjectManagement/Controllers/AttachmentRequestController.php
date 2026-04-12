@@ -151,7 +151,7 @@ class AttachmentRequestController extends Controller
             );
 
             // Return the full request with updated items
-            $attachmentRequest = $item->attachmentRequest->load(['items.respondedByUser']);
+            $attachmentRequest = $item->attachmentRequest->load(['items.respondedByUser', 'items.media']);
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);
