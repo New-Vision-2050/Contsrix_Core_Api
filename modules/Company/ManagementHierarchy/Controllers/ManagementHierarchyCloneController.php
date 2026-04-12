@@ -27,10 +27,8 @@ class ManagementHierarchyCloneController extends Controller
      */
     public function cloneManagement(CloneManagementRequest $request)
     {
-//        try {
+        try {
             $clonedDepartment = $this->cloneService->cloneManagement($request->createCloneManagementDTO());
-
-
 
             return response()->json([
                 'success' => true,
@@ -39,12 +37,12 @@ class ManagementHierarchyCloneController extends Controller
                     'department' => $clonedDepartment->load('detail'),
                 ],
             ]);
-//        } catch (\Exception $e) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'Failed to clone department: ' . $e->getMessage(),
-//            ], 500);
-//        }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clone department: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
 

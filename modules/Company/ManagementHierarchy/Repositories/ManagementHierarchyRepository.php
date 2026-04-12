@@ -203,12 +203,14 @@ class ManagementHierarchyRepository extends BaseRepository
 //            $managementData['parent_id'] = $managementHierarchyId;
         $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
         $detail = $managementHierarchy->detail()->create(array_merge(["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $managementDetail));
+
         if ($deputyManagers != null && count($deputyManagers) > 0) {
             foreach ($deputyManagers as $deputyManager) {
-                ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
-
+                ManagementHierarchyDetailManager::create([
+                    "deputy_manager_id" => $deputyManager,
+                    "management_hierarchy_detail_id" => $detail->id
+                ]);
             }
-
         }
         DB::commit();
 //        } catch (\Exception $e) {
