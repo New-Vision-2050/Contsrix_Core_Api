@@ -99,7 +99,7 @@ class UserAttendanceController extends Controller
      * @return JsonResponse
      */
     public function getUserAttendanceHistory(GetUserAttendanceHistoryRequest $request): JsonResponse
-    {
+    { 
         // try {
             $userId = (string) Auth::id();
             $month = $request->input('month') ? (int) $request->input('month') : null;
@@ -121,7 +121,7 @@ class UserAttendanceController extends Controller
                 }
             }
 
-            $result = $this->userAttendanceService->getUserAttendanceHistory(
+            $result = $this->userAttendanceService->getUserAttendanceHistoryMobileApi(
                 $userId,
                 $month,
                 $year,
