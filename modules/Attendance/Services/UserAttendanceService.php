@@ -580,7 +580,7 @@ class UserAttendanceService
         int $page = 1,
         int $perPage = 10
     ): array {
-        $user = User::findOrFail($userId);
+        $user = $this->getUserWithRelationships($userId);
         $timezone = $this->getTimezone();
         $now = $this->now();
         $currentYear = $year ?? $now->year;
@@ -657,8 +657,7 @@ class UserAttendanceService
             $dateCarbon = $this->parseDateTime($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
-            // Build simple periods directly from attendances without heavy constraint lookups
-            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
+            $periodsWithAttendance = $this->buildHistoryPeriodsForDay($user, $dateString, $dateCarbon, $attendances, $timezone);
 
             // Determine day status from attendance
             $dayStatus = $this->determineDayStatus($attendances);
@@ -693,7 +692,7 @@ class UserAttendanceService
         int $page = 1,
         int $perPage = 10
     ): array {
-        $user = User::findOrFail($userId);
+        $user = $this->getUserWithRelationships($userId);
         $timezone = $this->getTimezone();
         $now = $this->now();
         $currentYear = $year ?? $now->year;
@@ -770,8 +769,7 @@ class UserAttendanceService
             $dateCarbon = $this->parseDateTime($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
-            // Build simple periods directly from attendances without heavy constraint lookups
-            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
+            $periodsWithAttendance = $this->buildHistoryPeriodsForDay($user, $dateString, $dateCarbon, $attendances, $timezone);
 
             // Determine day status from attendance
             $dayStatus = $this->determineDayStatus($attendances);
@@ -800,15 +798,310 @@ class UserAttendanceService
     }
 
     /**
+     * Merge scheduled work periods for the day with aggregated attendance; missing periods show null / 00:00.
+     */
+    private function buildHistoryPeriodsForDay(
+        User $user,
+        string $dateString,
+        Carbon $dateCarbon,
+        Collection $attendances,
+        string $timezone
+    ): array {
+        $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $dateString, $timezone);
+        $scheduled = $workRules['all_work_periods'] ?? [];
+        $isScheduledWorkDay = ($workRules['day_status'] ?? null) === 'work_day';
+
+        if (!$isScheduledWorkDay || !is_array($scheduled) || $scheduled === []) {
+            return $this->buildPeriodsFromAttendances($attendances);
+        }
+
+        $earlyRules = $workRules['early_clock_in_rules'] ?? [];
+        $earlyRules = is_array($earlyRules) ? $earlyRules : [];
+
+        return $this->mergeScheduledPeriodsWithAggregatedAttendances(
+            $dateString,
+            $dateCarbon,
+            $attendances,
+            $scheduled,
+            $timezone,
+            $earlyRules
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $scheduled
+     */
+    private function mergeScheduledPeriodsWithAggregatedAttendances(
+        string $dateString,
+        Carbon $dateCarbon,
+        Collection $attendances,
+        array $scheduled,
+        string $timezone,
+        array $earlyClockInRules
+    ): array {
+        $aggregatedMap = $this->buildAggregatedPeriodsKeyed($attendances);
+        $filtered = $this->sortAndFilterScheduledPeriodsForHistory($scheduled, $dateString, $timezone);
+
+        if ($filtered === []) {
+            return $this->buildPeriodsFromAttendances($attendances);
+        }
+
+        $remaining = $aggregatedMap;
+        $periods = [];
+
+        foreach ($filtered as $period) {
+            $exactKey = $this->scheduledPeriodMatchKeyFromWorkPeriod($period, $dateCarbon);
+            $pickedKey = null;
+
+            if (isset($remaining[$exactKey])) {
+                $pickedKey = $exactKey;
+            } else {
+                $fuzzyKey = $this->findBestRemainingGroupKeyForPeriodWindow(
+                    $remaining,
+                    $period,
+                    $dateCarbon,
+                    $earlyClockInRules
+                );
+                if ($fuzzyKey !== null) {
+                    $pickedKey = $fuzzyKey;
+                }
+            }
+
+            if ($pickedKey !== null) {
+                $row = $remaining[$pickedKey];
+                unset($remaining[$pickedKey]);
+                $periods[] = $this->mergeAttendanceRowWithSchedulePeriod($row, $period, $dateCarbon);
+            } else {
+                $periods[] = $this->emptyScheduledPeriodRow($period, $dateCarbon);
+            }
+        }
+
+        foreach ($remaining as $row) {
+            $periods[] = $this->stripInternalHistoryPeriodKeys($row);
+        }
+
+        return $periods;
+    }
+
+    /**
+     * Align displayed shift bounds with the schedule row; drop internal merge keys.
+     *
+     * @param array<string, mixed> $row
+     * @param array<string, mixed> $schedulePeriod
+     * @return array<string, mixed>
+     */
+    private function mergeAttendanceRowWithSchedulePeriod(array $row, array $schedulePeriod, Carbon $dateCarbon): array
+    {
+        unset($row['first_clock_in_timestamp']);
+
+        if (!empty($schedulePeriod['period_start_time_carbon']) && !empty($schedulePeriod['period_end_time_carbon'])) {
+            $tz = $this->getTimezone();
+            $start = $schedulePeriod['period_start_time_carbon']->copy()->setTimezone($tz);
+            $end = $schedulePeriod['period_end_time_carbon']->copy()->setTimezone($tz);
+        } else {
+            $start = $this->parsePeriodTime($schedulePeriod, 'start', $dateCarbon);
+            $end = $this->parsePeriodTime($schedulePeriod, 'end', $dateCarbon);
+        }
+
+        $row['start_time'] = $start->format('H:i');
+        $row['end_time'] = $end->format('H:i');
+
+        return $row;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function stripInternalHistoryPeriodKeys(array $row): array
+    {
+        unset($row['first_clock_in_timestamp']);
+
+        return $row;
+    }
+
+    /**
+     * When DB shift bounds do not match the schedule key, map by first clock-in falling in the period window (incl. early clock-in).
+     *
+     * @param array<string, array<string, mixed>> $remaining
+     */
+    private function findBestRemainingGroupKeyForPeriodWindow(
+        array $remaining,
+        array $schedulePeriod,
+        Carbon $dateCarbon,
+        array $earlyClockInRules
+    ): ?string {
+        $tz = $this->getTimezone();
+        $candidates = [];
+        foreach ($remaining as $key => $row) {
+            $ts = $row['first_clock_in_timestamp'] ?? null;
+            if ($ts === null) {
+                continue;
+            }
+            $clockIn = Carbon::createFromTimestamp($ts, $tz);
+            if ($this->clockInFallsInScheduledPeriodWindow($clockIn, $schedulePeriod, $dateCarbon, $earlyClockInRules)) {
+                $candidates[] = ['key' => (string) $key, 'ts' => (int) $ts];
+            }
+        }
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        usort($candidates, static fn (array $a, array $b): int => $a['ts'] <=> $b['ts']);
+
+        return $candidates[0]['key'];
+    }
+
+    private function clockInFallsInScheduledPeriodWindow(
+        Carbon $clockIn,
+        array $period,
+        Carbon $dateCarbon,
+        array $earlyClockInRules
+    ): bool {
+        $tz = $this->getTimezone();
+        if (!empty($period['period_start_time_carbon']) && !empty($period['period_end_time_carbon'])) {
+            $periodStart = $period['period_start_time_carbon']->copy()->setTimezone($tz);
+            $periodEnd = $period['period_end_time_carbon']->copy()->setTimezone($tz);
+        } else {
+            $periodStart = $this->parsePeriodTime($period, 'start', $dateCarbon);
+            $periodEnd = $this->parsePeriodTime($period, 'end', $dateCarbon);
+        }
+
+        $ci = $clockIn->copy()->setTimezone($tz);
+
+        if ($ci->between($periodStart, $periodEnd, true)) {
+            return true;
+        }
+
+        $earlyPeriod = (int) ($earlyClockInRules['early_period'] ?? 0);
+        $earlyUnit = (string) ($earlyClockInRules['early_unit'] ?? 'minutes');
+        if ($earlyPeriod <= 0 || $earlyUnit === '') {
+            return false;
+        }
+        if (strtolower($earlyUnit) === 'minute') {
+            $earlyUnit = 'minutes';
+        }
+        $earliestAllowed = $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
+
+        return $ci->between($earliestAllowed, $periodEnd, true);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $scheduled
+     * @return array<int, array<string, mixed>>
+     */
+    private function sortAndFilterScheduledPeriodsForHistory(array $scheduled, string $dateString, string $timezone): array
+    {
+        $filtered = array_values(array_filter($scheduled, function (array $p) use ($dateString, $timezone) {
+            return $this->periodAppliesToHistoryDate($p, $dateString, $timezone);
+        }));
+
+        usort($filtered, function (array $a, array $b) {
+            $ta = isset($a['period_start_time_carbon']) ? $a['period_start_time_carbon']->timestamp : 0;
+            $tb = isset($b['period_start_time_carbon']) ? $b['period_start_time_carbon']->timestamp : 0;
+
+            return $ta <=> $tb;
+        });
+
+        return $filtered;
+    }
+
+    private function periodAppliesToHistoryDate(array $period, string $dateString, string $timezone): bool
+    {
+        // Skip spillover rows (previous calendar day) — history card should only list that day's own schedule slots.
+        if (($period['status'] ?? '') === 'spillover') {
+            return false;
+        }
+
+        if (isset($period['date']) && (string) $period['date'] !== $dateString) {
+            return false;
+        }
+
+        if (!empty($period['period_start_time_carbon'])) {
+            return $period['period_start_time_carbon']->copy()->setTimezone($timezone)->toDateString() === $dateString;
+        }
+
+        return ($period['date'] ?? null) === $dateString;
+    }
+
+    /**
+     * Must match {@see shiftScheduleGroupKey} for the same shift bounds.
+     */
+    private function scheduledPeriodMatchKeyFromWorkPeriod(array $period, Carbon $dateCarbon): string
+    {
+        if (!empty($period['period_start_time_carbon']) && !empty($period['period_end_time_carbon'])) {
+            $ps = $period['period_start_time_carbon']->copy()->setTimezone($this->getTimezone());
+            $pe = $period['period_end_time_carbon']->copy()->setTimezone($this->getTimezone());
+
+            return $this->scheduleBoundsKey($ps, $pe);
+        }
+
+        $ps = $this->parsePeriodTime($period, 'start', $dateCarbon);
+        $pe = $this->parsePeriodTime($period, 'end', $dateCarbon);
+
+        return $this->scheduleBoundsKey($ps, $pe);
+    }
+
+    private function scheduleBoundsKey(Carbon $start, Carbon $end): string
+    {
+        return $start->timestamp . '|' . $end->timestamp;
+    }
+
+    private function emptyScheduledPeriodRow(array $period, Carbon $dateCarbon): array
+    {
+        if (!empty($period['period_start_time_carbon']) && !empty($period['period_end_time_carbon'])) {
+            $tz = $this->getTimezone();
+            $start = $period['period_start_time_carbon']->copy()->setTimezone($tz);
+            $end = $period['period_end_time_carbon']->copy()->setTimezone($tz);
+        } else {
+            $start = $this->parsePeriodTime($period, 'start', $dateCarbon);
+            $end = $this->parsePeriodTime($period, 'end', $dateCarbon);
+        }
+
+        return [
+            'start_time' => $start->format('H:i'),
+            'end_time' => $end->format('H:i'),
+            'first_clock_in_time' => null,
+            'last_clock_out_time' => null,
+            'clock_in_time' => null,
+            'clock_out_time' => null,
+            'work_hours' => '00:00',
+            'delay_hours' => '00:00',
+            'overtime_hours' => '00:00',
+            'clock_in_location' => null,
+            'clock_out_location' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function buildAggregatedPeriodsKeyed(Collection $attendances): array
+    {
+        if ($attendances->isEmpty()) {
+            return [];
+        }
+
+        $keyed = [];
+        foreach ($attendances->groupBy(fn (Attendance $a) => $this->shiftScheduleGroupKey($a)) as $key => $group) {
+            $keyed[$key] = $this->buildAggregatedPeriodFromShiftGroup($group);
+        }
+
+        return $keyed;
+    }
+
+    /**
      * Rows that share the same scheduled {@see Attendance::$start_time} and {@see Attendance::$end_time}
      * are one logical shift; rows without both bounds stay unmerged (one group per row).
      */
     private function shiftScheduleGroupKey(Attendance $attendance): string
     {
         if ($attendance->start_time !== null && $attendance->end_time !== null) {
-            return $this->toCarbon($attendance->start_time)->format('c')
-                . '|'
-                . $this->toCarbon($attendance->end_time)->format('c');
+            return $this->scheduleBoundsKey(
+                $this->toCarbon($attendance->start_time),
+                $this->toCarbon($attendance->end_time)
+            );
         }
 
         return 'id:' . $attendance->id;
@@ -828,7 +1121,9 @@ class UserAttendanceService
 
         return $groups
             ->sortBy(fn (Collection $group) => $this->earliestClockInTimestampInGroup($group))
-            ->map(fn (Collection $group) => $this->buildAggregatedPeriodFromShiftGroup($group))
+            ->map(function (Collection $group) {
+                return $this->stripInternalHistoryPeriodKeys($this->buildAggregatedPeriodFromShiftGroup($group));
+            })
             ->values()
             ->all();
     }
@@ -916,6 +1211,7 @@ class UserAttendanceService
             'overtime_hours' => $this->formatHoursToTime($totalOvertimeHours),
             'clock_in_location' => $firstClockInAttendance?->clock_in_location,
             'clock_out_location' => $lastClockOutAttendance?->clock_out_location,
+            'first_clock_in_timestamp' => $firstClockInCarbon?->timestamp,
         ];
     }
 
