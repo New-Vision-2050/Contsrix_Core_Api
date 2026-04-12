@@ -43,7 +43,7 @@ class AttachmentRequestController extends Controller
     {
         try {
             $projectId = $request->query('project_id');
-            
+
             $requests = $this->service->getAllRequests($projectId);
 
             $data = $requests->map(function ($request) {
@@ -63,7 +63,7 @@ class AttachmentRequestController extends Controller
     {
         try {
             $projectId = $request->query('project_id');
-            
+
             $requests = $this->service->getOutgoingRequests($projectId);
 
             $data = $requests->map(function ($request) {
@@ -83,7 +83,7 @@ class AttachmentRequestController extends Controller
     {
         try {
             $projectId = $request->query('project_id');
-            
+
             $requests = $this->service->getIncomingRequests($projectId);
 
             $data = $requests->map(function ($request) {
@@ -103,7 +103,7 @@ class AttachmentRequestController extends Controller
     {
         try {
             $projectId = $request->query('project_id');
-            
+
             $requests = $this->service->getPendingIncoming($projectId);
 
             $data = $requests->map(function ($request) {
@@ -151,7 +151,7 @@ class AttachmentRequestController extends Controller
             );
 
             // Return the full request with updated items
-            $attachmentRequest = $item->attachmentRequest->load(['items.respondedByUser', 'items.media']);
+            $attachmentRequest = $item->attachmentRequest->load(['items.respondedByUser']);
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
 
             return Json::item($data);

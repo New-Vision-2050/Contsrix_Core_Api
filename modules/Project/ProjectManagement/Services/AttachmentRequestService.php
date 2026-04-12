@@ -246,7 +246,7 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'items.media', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'approved');
@@ -292,7 +292,7 @@ class AttachmentRequestService
             ]
         );
 
-        $request = $request->fresh(['items', 'items.media', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser']);
 
         // Broadcast notification to sender company users
         $this->broadcastToSenderCompany($request, 'declined');
@@ -379,7 +379,7 @@ class AttachmentRequestService
             $replicatedMedia = $mediaItem->replicate(['id', 'uuid']);
             $replicatedMedia->model_id = $file->id;
             $replicatedMedia->model_type = File::class;
-            $replicatedMedia->collection_name= "upload"
+            $replicatedMedia->collection_name= "upload";
             $replicatedMedia->save();
         }
     }
@@ -417,10 +417,6 @@ class AttachmentRequestService
 
     /**
      * Get or create folder path based on attachment types
-     *
-     * Note: attachment_type_id, attachment_sub_type_id, and attachment_sub_sub_type_id
-     * should reference folder IDs that exist in the RECEIVER company's tenant.
-     * These folders are queried within the current tenant context (receiver company).
      */
     private function getOrCreateFolderPath(AttachmentRequest $request): ?string
     {
@@ -432,23 +428,23 @@ class AttachmentRequestService
 
         $currentFolderId = $projectFolder;
 
-        // attachment_type_id represents the first level folder (in receiver tenant)
+        // attachment_type_id represents the first level folder
         if ($request->attachment_type_id) {
             $currentFolderId = $request->attachment_type_id;
         }
 
-        // attachment_sub_type_id represents the second level (subfolder in receiver tenant)
+        // attachment_sub_type_id represents the second level (subfolder)
         if ($request->attachment_sub_type_id) {
             $currentFolderId = $request->attachment_sub_type_id;
         }
 
-        // attachment_sub_sub_type_id represents the third level (sub-subfolder in receiver tenant)
+        // attachment_sub_sub_type_id represents the third level (sub-subfolder)
         if ($request->attachment_sub_sub_type_id) {
             $currentFolderId = $request->attachment_sub_sub_type_id;
         }
 
-        // Verify folder exists in current tenant (receiver company)
-        $folder = Folder::where("id",$currentFolderId)->first();
+        // Verify folder exists
+        $folder = Folder::where("id",$currentFolderId)->withoutTenancy()->first();
 
         return $folder ? $folder->id : $projectFolder;
     }
@@ -458,7 +454,7 @@ class AttachmentRequestService
      */
     private function getProjectRootFolder(string $projectId): ?string
     {
-        $folder = Folder::where('id', $projectId)
+        $folder = Folder::where('id', $projectId)->withoutTenancy()
             ->whereNull('parent_id')
             ->first();
 
@@ -470,7 +466,7 @@ class AttachmentRequestService
      */
     public function getFolderChildren(?string $parentId = null, ?string $projectId = null): Collection
     {
-        $query = Folder::query();
+        $query = Folder::query()->withoutTenancy();
 
         if ($parentId) {
             $query->where('parent_id', $parentId);

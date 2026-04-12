@@ -119,7 +119,6 @@ class AttachmentRequestRepository extends BaseRepository
                 'createdByUser',
                 'respondedByUser',
                 'items.respondedByUser',
-                'items.media',
                 'history.user'
             ])
             ->find($requestId);
@@ -131,13 +130,13 @@ class AttachmentRequestRepository extends BaseRepository
     public function createWithItems(array $requestData, array $items): AttachmentRequest
     {
         $request = $this->create($requestData);
-        
+
         foreach ($items as $itemData) {
             $uploadedFile = $itemData['uploaded_file'] ?? null;
             unset($itemData['uploaded_file']);
-            
+
             $item = $request->items()->create($itemData);
-            
+
             if ($uploadedFile) {
                 $this->fileUploadService->uploadFile(
                     $item,
@@ -146,7 +145,7 @@ class AttachmentRequestRepository extends BaseRepository
                     'attachments',
                     'public'
                 );
-                
+
                 $media = $item->getFirstMedia('attachments');
                 if ($media) {
                     $item->update(['file_path' => $media->getPath()]);
@@ -186,7 +185,7 @@ class AttachmentRequestRepository extends BaseRepository
     {
         $prefix = 'ATR';
         $date = now()->format('Ymd');
-        
+
         $lastRequest = $this->model
             ->where('serial_number', 'like', $prefix . '-' . $date . '-%')
             ->orderBy('serial_number', 'desc')
