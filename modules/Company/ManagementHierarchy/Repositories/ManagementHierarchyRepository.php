@@ -206,8 +206,10 @@ class ManagementHierarchyRepository extends BaseRepository
 
         if ($deputyManagers != null && count($deputyManagers) > 0) {
             foreach ($deputyManagers as $deputyManager) {
-                ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
-
+                ManagementHierarchyDetailManager::create([
+                    "deputy_manager_id" => $deputyManager,
+                    "management_hierarchy_detail_id" => $detail->id
+                ]);
             }
 
         }
