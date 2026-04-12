@@ -211,6 +211,7 @@ class ManagementHierarchyRepository extends BaseRepository
                     "management_hierarchy_detail_id" => $detail->id
                 ]);
             }
+
         }
         DB::commit();
 //        } catch (\Exception $e) {

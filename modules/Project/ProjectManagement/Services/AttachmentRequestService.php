@@ -357,10 +357,10 @@ class AttachmentRequestService
         // Get media items from the attachment request item
         $receiverTenantId = (string) tenant('id');
         $senderTenantId = (string) $request->sender_company_id;
-        
+
         // Switch to sender tenant to get media
         $mediaItems = $this->getMediaFromSenderTenant($item, $senderTenantId, $receiverTenantId);
-        
+
         if ($mediaItems->isEmpty()) {
             return;
         }
@@ -380,6 +380,7 @@ class AttachmentRequestService
             $replicatedMedia = $mediaItem->replicate(['id', 'uuid']);
             $replicatedMedia->model_id = $file->id;
             $replicatedMedia->model_type = File::class;
+            $replicatedMedia->collection_name= "upload";
             $replicatedMedia->save();
         }
     }
@@ -402,7 +403,7 @@ class AttachmentRequestService
         // Different tenant - switch context to get media
         tenancy()->end();
         tenancy()->initialize($senderTenantId);
-        
+
         try {
             $mediaItems = Media::where('model_id', Uuid::fromString($item->id))
                 ->where('model_type', AttachmentRequestItem::class)
