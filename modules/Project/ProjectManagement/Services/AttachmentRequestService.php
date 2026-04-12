@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\DB;
 use Modules\Shared\Media\Services\FileUploadService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Ramsey\Uuid\Uuid;
+use Modules\Project\ProjectManagement\Events\AttachmentRequestCreated;
+use Modules\Project\ProjectManagement\Events\AttachmentRequestResponded;
+use Modules\User\Models\User;
 
 class AttachmentRequestService
 {
@@ -73,6 +76,9 @@ class AttachmentRequestService
                 'receiver_company' => $data['receiver_company_id'],
             ]
         );
+
+        // Broadcast notification to receiver company users
+        $this->broadcastToReceiverCompany($request);
 
         return $request;
     }
@@ -240,7 +246,12 @@ class AttachmentRequestService
             ]
         );
 
-        return $request->fresh(['items', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser']);
+
+        // Broadcast notification to sender company users
+        $this->broadcastToSenderCompany($request, 'approved');
+
+        return $request;
     }
 
     /**
@@ -281,7 +292,12 @@ class AttachmentRequestService
             ]
         );
 
-        return $request->fresh(['items', 'respondedByUser']);
+        $request = $request->fresh(['items', 'respondedByUser']);
+
+        // Broadcast notification to sender company users
+        $this->broadcastToSenderCompany($request, 'declined');
+
+        return $request;
     }
 
     /**
@@ -484,5 +500,35 @@ class AttachmentRequestService
         }
 
         return round($size, 2) . ' ' . $units[$i];
+    }
+
+    /**
+     * Broadcast notification to receiver company users when new request is created
+     */
+    private function broadcastToReceiverCompany(AttachmentRequest $request): void
+    {
+        // Get all users from receiver company
+        $receiverCompanyUsers = User::where('company_id', $request->receiver_company_id)
+            ->whereNotNull('id')
+            ->get();
+
+        foreach ($receiverCompanyUsers as $user) {
+            event(new AttachmentRequestCreated($request, (string) $user->id));
+        }
+    }
+
+    /**
+     * Broadcast notification to sender company users when request is responded
+     */
+    private function broadcastToSenderCompany(AttachmentRequest $request, string $action): void
+    {
+        // Get all users from sender company
+        $senderCompanyUsers = User::where('company_id', $request->sender_company_id)
+            ->whereNotNull('id')
+            ->get();
+
+        foreach ($senderCompanyUsers as $user) {
+            event(new AttachmentRequestResponded($request, (string) $user->id, $action));
+        }
     }
 }
