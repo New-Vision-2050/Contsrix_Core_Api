@@ -573,16 +573,119 @@ class UserAttendanceService
     // Attendance History
     // =============================================================================
 
-    /**
-     * Get user attendance history grouped by date with periods
-     *
-     * @param UuidInterface|string $userId
-     * @param int|null $month
-     * @param int|null $year
-     * @param int $page
-     * @param int $perPage
-     * @return array
-     */
+    public function getUserAttendanceHistoryMobileApi(
+        UuidInterface|string $userId,
+        ?int $month = null,
+        ?int $year = null,
+        int $page = 1,
+        int $perPage = 10
+    ): array {
+        $user = User::findOrFail($userId);
+        $timezone = $this->getTimezone();
+        $now = $this->now();
+        $currentYear = $year ?? $now->year;
+        $currentMonth = $month ?? $now->month;
+
+        // Build date range in user's timezone, then convert to UTC for database query
+        $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
+        $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
+        $rangeEnd = $monthEnd->gt($now) ? $now->copy()->endOfDay() : $monthEnd;
+
+        // Convert to UTC for database query (database stores times in UTC)
+        $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
+        $rangeEndUtc = $rangeEnd->copy()->setTimezone('UTC');
+
+        $historyColumns = [
+            'id',
+            'user_id',
+            'company_id',
+            'status',
+            'timezone',
+            'start_time',
+            'end_time',
+            'clock_in_time',
+            'clock_out_time',
+            'late_minutes',
+            'overtime_hours',
+            'total_work_hours',
+            'clock_in_location',
+            'clock_out_location',
+        ];
+
+        $allAttendances = Attendance::query()
+            ->select($historyColumns)
+            ->where('user_id', $user->id)
+            ->where('status', '!=', Attendance::STATUS_WAITING)
+            ->where(function ($q) use ($rangeStartUtc, $rangeEndUtc) {
+                $q->whereBetween('start_time', [$rangeStartUtc, $rangeEndUtc])
+                    ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
+                        $q2->whereNull('start_time')
+                            ->whereBetween('clock_in_time', [$rangeStartUtc, $rangeEndUtc]);
+                    });
+            })
+            ->get()
+            ->sortByDesc(function (Attendance $a) {
+                $ref = $a->start_time ?? $a->clock_in_time;
+                if ($ref === null) {
+                    return 0;
+                }
+
+                return $ref instanceof Carbon ? $ref->timestamp : Carbon::parse($ref)->timestamp;
+            })
+            ->values();
+
+        // Group attendances by date in the request timezone
+        $attendancesByDate = $allAttendances->groupBy(function ($attendance) use ($timezone) {
+            $dateField = $attendance->start_time ?? $attendance->clock_in_time;
+            if (!$dateField) {
+                return null;
+            }
+            return $this->parseDateTime($dateField, $timezone)->toDateString();
+        })->filter(fn($group, $key) => $key !== null);
+
+        // Get unique dates sorted descending
+        $allDates = $attendancesByDate->keys()->sort()->reverse()->values();
+        $totalDates = $allDates->count();
+        $lastPage = (int) ceil($totalDates / $perPage);
+        $offset = ($page - 1) * $perPage;
+
+        // Paginate dates
+        $paginatedDates = $allDates->slice($offset, $perPage);
+
+        $result = [];
+        foreach ($paginatedDates as $dateString) {
+            $dateCarbon = $this->parseDateTime($dateString, $timezone);
+            $attendances = $attendancesByDate->get($dateString, collect());
+
+            // Build simple periods directly from attendances without heavy constraint lookups
+            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
+
+            // Determine day status from attendance
+            $dayStatus = $this->determineDayStatus($attendances);
+            $dayName = $this->getDayNameArabic($dateCarbon);
+
+            $result[] = [
+                'date' => $dateString,
+                'day_name' => $dayName,
+                'status' => $dayStatus,
+                'periods_count' => count($periodsWithAttendance),
+                'periods' => $periodsWithAttendance,
+            ];
+        }
+
+        return [
+            'data' => $result,
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $perPage,
+                'total' => $totalDates,
+                'last_page' => $lastPage,
+                'next_page' => $page < $lastPage ? $page + 1 : null,
+                'result_count' => count($result),
+            ],
+        ];
+    }
+
     public function getUserAttendanceHistory(
         UuidInterface|string $userId,
         ?int $month = null,
@@ -697,7 +800,23 @@ class UserAttendanceService
     }
 
     /**
+     * Rows that share the same scheduled {@see Attendance::$start_time} and {@see Attendance::$end_time}
+     * are one logical shift; rows without both bounds stay unmerged (one group per row).
+     */
+    private function shiftScheduleGroupKey(Attendance $attendance): string
+    {
+        if ($attendance->start_time !== null && $attendance->end_time !== null) {
+            return $this->toCarbon($attendance->start_time)->format('c')
+                . '|'
+                . $this->toCarbon($attendance->end_time)->format('c');
+        }
+
+        return 'id:' . $attendance->id;
+    }
+
+    /**
      * Build periods data directly from attendances without heavy constraint lookups.
+     * Groups by scheduled start/end; each group exposes first clock-in, last clock-out, and summed metrics.
      */
     private function buildPeriodsFromAttendances(Collection $attendances): array
     {
@@ -705,26 +824,99 @@ class UserAttendanceService
             return [];
         }
 
-        $periods = [];
-        foreach ($attendances as $attendance) {
+        $groups = $attendances->groupBy(fn (Attendance $a) => $this->shiftScheduleGroupKey($a));
+
+        return $groups
+            ->sortBy(fn (Collection $group) => $this->earliestClockInTimestampInGroup($group))
+            ->map(fn (Collection $group) => $this->buildAggregatedPeriodFromShiftGroup($group))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param Collection<int, Attendance> $group
+     */
+    private function earliestClockInTimestampInGroup(Collection $group): int
+    {
+        $min = null;
+        foreach ($group as $attendance) {
+            if (!$attendance->clock_in_time) {
+                continue;
+            }
+            $ts = $this->toCarbon($attendance->clock_in_time)->timestamp;
+            $min = $min === null ? $ts : min($min, $ts);
+        }
+
+        return $min ?? PHP_INT_MAX;
+    }
+
+    /**
+     * @param Collection<int, Attendance> $group
+     */
+    private function buildAggregatedPeriodFromShiftGroup(Collection $group): array
+    {
+        $sortedByClockIn = $group->sortBy(function (Attendance $a) {
+            if (!$a->clock_in_time) {
+                return PHP_INT_MAX;
+            }
+
+            return $this->toCarbon($a->clock_in_time)->timestamp;
+        })->values();
+
+        $firstClockInCarbon = null;
+        $lastClockOutCarbon = null;
+        $firstClockInAttendance = null;
+        $lastClockOutAttendance = null;
+        $totalWorkHours = 0.0;
+        $totalLateMinutes = 0;
+        $totalOvertimeHours = 0.0;
+
+        foreach ($sortedByClockIn as $attendance) {
             $clock = $this->extractAttendanceClockData($attendance);
             $clockInCarbon = $clock['clock_in_carbon'];
             $clockOutCarbon = $clock['clock_out_carbon'];
 
-            $totalWorkHours = $this->calculateAttendanceWorkHours($attendance, $clockInCarbon, $clockOutCarbon);
+            $totalWorkHours += $this->calculateAttendanceWorkHours($attendance, $clockInCarbon, $clockOutCarbon);
+            $totalLateMinutes += (int) ($attendance->late_minutes ?? 0);
+            $totalOvertimeHours += (float) ($attendance->overtime_hours ?? 0);
 
-            $periods[] = [
-                'clock_in_time' => $clock['clock_in_time'],
-                'clock_out_time' => $clock['clock_out_time'],
-                'work_hours' => $this->formatHoursToTime($totalWorkHours),
-                'delay_hours' => $this->formatMinutesToTime((int) ($attendance->late_minutes ?? 0)),
-                'overtime_hours' => $this->formatHoursToTime((float) ($attendance->overtime_hours ?? 0)),
-                'clock_in_location' => $attendance->clock_in_location,
-                'clock_out_location' => $attendance->clock_out_location,
-            ];
+            if ($clockInCarbon !== null) {
+                if ($firstClockInCarbon === null || $clockInCarbon->lt($firstClockInCarbon)) {
+                    $firstClockInCarbon = $clockInCarbon;
+                    $firstClockInAttendance = $attendance;
+                }
+            }
+
+            if ($clockOutCarbon !== null) {
+                if ($lastClockOutCarbon === null || $clockOutCarbon->gt($lastClockOutCarbon)) {
+                    $lastClockOutCarbon = $clockOutCarbon;
+                    $lastClockOutAttendance = $attendance;
+                }
+            }
         }
 
-        return $periods;
+        $representative = $sortedByClockIn->first();
+        $scheduledStart = $representative->start_time
+            ? $this->toCarbon($representative->start_time)->format('H:i')
+            : null;
+        $scheduledEnd = $representative->end_time
+            ? $this->toCarbon($representative->end_time)->format('H:i')
+            : null;
+
+        $firstIn = $firstClockInCarbon?->format('H:i');
+        $lastOut = $lastClockOutCarbon?->format('H:i');
+
+        return [
+            'start_time' => $scheduledStart,
+            'end_time' => $scheduledEnd,
+            'clock_in_time' => $firstIn,
+            'clock_out_time' => $lastOut,
+            'work_hours' => $this->formatHoursToTime($totalWorkHours),
+            'delay_hours' => $this->formatMinutesToTime($totalLateMinutes),
+            'overtime_hours' => $this->formatHoursToTime($totalOvertimeHours),
+            'clock_in_location' => $firstClockInAttendance?->clock_in_location,
+            'clock_out_location' => $lastClockOutAttendance?->clock_out_location,
+        ];
     }
 
     /**
