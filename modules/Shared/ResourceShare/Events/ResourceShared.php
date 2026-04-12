@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace Modules\Shared\ResourceShare\Events;
 
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 use Modules\Shared\ResourceShare\Models\ResourceShare;
 
-class ResourceShared implements ShouldBroadcast
+class ResourceShared implements ShouldBroadcastNow
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, InteractsWithSockets;
 
     /**
      * Create a new event instance.
@@ -31,7 +29,7 @@ class ResourceShared implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('company.' . $this->resourceShare->shared_with_company_id),
+            new Channel('company.' . $this->resourceShare->shared_with_company_id),
         ];
     }
 

@@ -72,9 +72,9 @@ class AutoClockOutAtNextShiftStartJob implements ShouldQueue
                 'notes' => trim(($attendance->notes ?? '') . "\n" . $noteLine),
             ]);
 
-            // $attendance->refresh();
-            // $attendance->updateTotalBreakHours();
-            // $attendance->calculateWorkHours();
+            $attendance->refresh();
+            $attendance->updateTotalBreakHours();
+            $attendance->calculateWorkHours();
         } finally {
             tenancy()->end();
         }
