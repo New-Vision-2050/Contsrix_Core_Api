@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\ClientRequest\Handlers\DeleteClientRequestHandler;
 use Modules\ClientRequest\Handlers\UpdateClientRequestHandler;
 use Modules\ClientRequest\Presenters\ClientRequestPresenter;
+use Modules\ClientRequest\Presenters\ClientRequestMyRequestsPresenter;
 use Modules\ClientRequest\Requests\CreateClientRequestRequest;
 use Modules\ClientRequest\Requests\DeleteClientRequestRequest;
 use Modules\ClientRequest\Requests\GetClientRequestListRequest;
@@ -115,6 +116,16 @@ class ClientRequestController extends Controller
         $filters = $request->getFilters();
 
         return Excel::download(new ClientRequestExport($this->clientRequestService, $filters), $fileName);
+    }
+
+    public function getMyRequests(GetClientRequestListRequest $request): JsonResponse
+    {
+        $list = $this->clientRequestService->getMyRequests(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(ClientRequestMyRequestsPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function getPriceOfferWidgets(): JsonResponse

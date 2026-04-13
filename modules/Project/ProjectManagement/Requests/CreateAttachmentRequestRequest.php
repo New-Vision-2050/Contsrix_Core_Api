@@ -11,6 +11,7 @@ class CreateAttachmentRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'serial_number' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
             'date' => 'required|date',
             'project_id' => 'required|string|exists:projects,id',

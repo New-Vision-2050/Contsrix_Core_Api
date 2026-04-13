@@ -42,8 +42,8 @@ class AttachmentRequestService
         // Verify companies are involved in project sharing
         $this->verifyCompanyAccess($project, $data['receiver_company_id']);
 
-        // Generate serial number
-        $serialNumber = $this->repository->generateSerialNumber();
+        // Use provided serial number or auto-generate
+        $serialNumber = $data['serial_number'] ?? $this->repository->generateSerialNumber();
 
         $requestData = [
             'serial_number' => $serialNumber,

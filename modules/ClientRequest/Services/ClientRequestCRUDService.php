@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ClientRequest\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Modules\ClientRequest\DTO\CreateClientRequestDTO;
 use Modules\ClientRequest\DTO\UpdateClientRequestDTO;
 use Modules\ClientRequest\Models\ClientRequest;
@@ -43,6 +44,15 @@ class ClientRequestCRUDService
     {
         return $this->repository->getClientRequest(
             id: $id,
+        );
+    }
+
+    public function getMyRequests(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->getMyRequests(
+            userId: (string) Auth::id(),
+            page: $page,
+            perPage: $perPage,
         );
     }
 
