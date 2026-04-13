@@ -513,8 +513,13 @@ class AttachmentRequestService
             ->whereNotNull('id')
             ->get();
 
+        // Count pending incoming requests for receiver company (including the new one)
+        $pendingIncomingCount = AttachmentRequest::where('receiver_company_id', $request->receiver_company_id)
+            ->whereIn('status', ['pending', 'semi-approved'])
+            ->count();
+
         foreach ($receiverCompanyUsers as $user) {
-            event(new AttachmentRequestCreated($request, (string) $user->id));
+            event(new AttachmentRequestCreated($request, $pendingIncomingCount));
         }
     }
 
