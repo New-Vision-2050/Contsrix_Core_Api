@@ -18,9 +18,9 @@ class ProjectEmployeeService
 
     public function assignEmployeesToProject(string $projectId, array $userIds): Collection
     {
-        $project = ProjectManagement::withoutGlobalScope('shareable')
-            ->where('id', $projectId)
-            ->where('company_id', tenant('id'))
+        $project = ProjectManagement
+            ::where('id', $projectId)
+//            ->where('company_id', tenant('id'))
             ->firstOrFail();
 
         $this->repository->syncEmployees(
