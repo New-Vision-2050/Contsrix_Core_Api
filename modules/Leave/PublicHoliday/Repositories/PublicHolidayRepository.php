@@ -32,7 +32,7 @@ class PublicHolidayRepository extends BaseRepository
 
     public function paginatedWithConditions(array $conditions = [], $page = 1, $perPage = 10)
     {
-        $query = $this->model->where($conditions)->filter(request()->all());
+        $query = $this->model->where($conditions)->with('days')->filter(request()->all());
         $count = $query->count();
         $paginatedData = $query->forPage($page, $perPage)->get();
         $paginationArray = $this->getPaginationInformation($page, $perPage, $count);
@@ -44,12 +44,27 @@ class PublicHolidayRepository extends BaseRepository
     {
         return $this->findOneByOrFail([
             'id' => $id->toString(),
-        ]);
+        ])->load('days');
     }
 
     public function createPublicHoliday(array $data): PublicHoliday
     {
         return $this->create($data+["year"=>Carbon::parse($data['date_start'])->year,"holiday_type"=>"national"]);
+    }
+
+    /**
+     * @param array<int, array{date: \Carbon\CarbonInterface, is_compensation: bool}> $days
+     */
+    public function syncPublicHolidayDays(PublicHoliday $publicHoliday, array $days): void
+    {
+        $publicHoliday->days()->delete();
+
+        foreach ($days as $day) {
+            $publicHoliday->days()->create([
+                'date' => $day['date'],
+                'is_compensation' => $day['is_compensation'],
+            ]);
+        }
     }
 
     public function updatePublicHoliday(UuidInterface $id, array $data): bool
