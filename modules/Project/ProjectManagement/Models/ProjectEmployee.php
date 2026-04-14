@@ -34,21 +34,21 @@ class ProjectEmployee extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(ProjectManagement::class, 'project_id');
+        return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withoutGlobalScopes();
     }
 
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 
     public function assignedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_by_user_id');
+        return $this->belongsTo(User::class, 'assigned_by_user_id')->withoutGlobalScopes();
     }
 }

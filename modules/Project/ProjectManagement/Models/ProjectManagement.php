@@ -191,7 +191,7 @@ class ProjectManagement extends Model
 
     public function projectEmployees()
     {
-        return $this->hasMany(ProjectEmployee::class, 'project_id');
+        return $this->hasMany(ProjectEmployee::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function employees()
