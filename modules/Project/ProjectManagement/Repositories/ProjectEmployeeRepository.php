@@ -105,9 +105,7 @@ class ProjectEmployeeRepository extends BaseRepository
                     ->where('role', \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
             })
             ->whereNotIn('id', $assignedUserIds)
-            ->with(['companyUser' => function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
-            }])
+            ->with(['companyUser.jobTitle', 'companyUser.country'])
             ->get();
     }
 }
