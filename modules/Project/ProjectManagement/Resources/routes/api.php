@@ -5,6 +5,8 @@ use Modules\Project\ProjectManagement\Controllers\ProjectManagementController;
 use Modules\Project\ProjectManagement\Controllers\ProjectShareController;
 use Modules\Project\ProjectManagement\Controllers\ProjectEmployeeController;
 use Modules\Project\ProjectManagement\Controllers\AttachmentRequestController;
+use Modules\Project\ProjectManagement\Controllers\ProjectPermissionController;
+use Modules\Project\ProjectManagement\Controllers\ProjectRoleController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -40,33 +42,54 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::prefix('attachment-requests')->group(function () {
         // Get all requests (incoming and outgoing)
         Route::get('/', [AttachmentRequestController::class, 'getAllRequests']);
-        
+
         // Get folder children for attachment type selection
         Route::get('/folders/children', [AttachmentRequestController::class, 'getFolderChildren']);
-        
+
         // Create new request (outgoing)
         Route::post('/', [AttachmentRequestController::class, 'createRequest']);
-        
+
         // Get outgoing requests (sent by current company)
         Route::get('/outgoing', [AttachmentRequestController::class, 'getOutgoingRequests']);
-        
+
         // Get incoming requests (received by current company)
         Route::get('/incoming', [AttachmentRequestController::class, 'getIncomingRequests']);
-        
+
+        // Get incoming requests count
+        Route::get('/count', [AttachmentRequestController::class, 'getIncomingRequestsCount']);
+
         // Get pending incoming requests
         Route::get('/incoming/pending', [AttachmentRequestController::class, 'getPendingIncoming']);
-        
+
         // Get specific request details
         Route::get('/{id}', [AttachmentRequestController::class, 'getRequest']);
-        
+
         // Respond to individual attachment item
         Route::post('/items/respond', [AttachmentRequestController::class, 'respondToItem']);
-        
+
         // Approve entire request
         Route::post('/{id}/approve', [AttachmentRequestController::class, 'approveRequest']);
-        
+
         // Decline entire request
         Route::post('/{id}/decline', [AttachmentRequestController::class, 'declineRequest']);
+    });
+
+    // Project Permissions Routes
+    Route::prefix('permissions')->group(function () {
+        Route::get('/', [ProjectPermissionController::class, 'index']);
+        Route::get('/submodule/{submodule}', [ProjectPermissionController::class, 'getBySubmodule']);
+        Route::put('/{id}', [ProjectPermissionController::class, 'update']);
+    });
+
+    // Project Roles Routes
+    Route::prefix('{project_id}/roles')->group(function () {
+        Route::get('/', [ProjectRoleController::class, 'index']);
+        Route::post('/', [ProjectRoleController::class, 'store']);
+        Route::get('/{id}', [ProjectRoleController::class, 'show']);
+        Route::put('/{id}', [ProjectRoleController::class, 'update']);
+        Route::delete('/{id}', [ProjectRoleController::class, 'delete']);
+        Route::post('/{id}/assign-permissions', [ProjectRoleController::class, 'assignPermissions']);
+        Route::post('/{id}/sync-permissions', [ProjectRoleController::class, 'syncPermissions']);
     });
 
     Route::get('/{id}', [ProjectManagementController::class, 'show'])

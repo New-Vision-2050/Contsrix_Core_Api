@@ -117,6 +117,24 @@ class AttachmentRequestController extends Controller
     }
 
     /**
+     * Get incoming requests count for current company (pending only)
+     */
+    public function getIncomingRequestsCount(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->query('project_id');
+
+            $requests = $this->service->getPendingIncoming($projectId);
+
+            return response()->json([
+                'count' => $requests->count()
+            ]);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get specific request details
      */
     public function getRequest(Request $request): JsonResponse

@@ -41,6 +41,7 @@ class ProjectManagement extends Model
         'sub_sub_project_type_id',
         'name',
         'manager_id',
+        'created_by_user_id',
         'branch_id',
         'project_owner_type',
         'project_owner_id',
@@ -62,6 +63,7 @@ class ProjectManagement extends Model
         'sub_project_type_id' => 'integer',
         'sub_sub_project_type_id' => 'integer',
         'manager_id' => 'string',
+        'created_by_user_id' => 'string',
         'branch_id' => 'string',
         'project_owner_type' => 'string',
         'project_owner_id' => 'string',
@@ -189,6 +191,11 @@ class ProjectManagement extends Model
         return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id')->withoutGlobalScopes();
+    }
+
     public function projectEmployees()
     {
         return $this->hasMany(ProjectEmployee::class, 'project_id')->withoutGlobalScopes();
@@ -200,6 +207,11 @@ class ProjectManagement extends Model
             ->withoutGlobalScopes()
             ->withPivot('assigned_at', 'assigned_by_user_id')
             ->withTimestamps();
+    }
+
+    public function projectRoles()
+    {
+        return $this->hasMany(ProjectRole::class, 'project_id');
     }
 
     protected static function newFactory(): ProjectManagementFactory
