@@ -28,6 +28,10 @@ class ProjectEmployeePresenter extends AbstractPresenter
                 'id' => $this->projectEmployee->assignedBy->id,
                 'name' => $this->projectEmployee->assignedBy->name,
             ] : null,
+            "company"=>$this->projectEmployee->company ? [
+                'id' => $this->projectEmployee->company->id,
+                'name' => $this->projectEmployee->company->name,
+            ] : null,
             'created_at' => $this->projectEmployee->created_at?->toISOString(),
         ];
     }
