@@ -33,6 +33,22 @@ class ProjectEmployeeService
         return $this->repository->getByProject($projectId);
     }
 
+    public function appendEmployeesToProject(string $projectId, array $userIds): Collection
+    {
+        $project = ProjectManagement
+            ::where('id', $projectId)
+            ->firstOrFail();
+
+        $this->repository->appendEmployees(
+            projectId: $projectId,
+            userIds: $userIds,
+            companyId: (string) tenant('id'),
+            assignedByUserId: Auth::id() ? (string) Auth::id() : null
+        );
+
+        return $this->repository->getByProject($projectId);
+    }
+
     public function getProjectEmployees(string $projectId): Collection
     {
         $project = ProjectManagement::findOrFail($projectId);
@@ -55,5 +71,13 @@ class ProjectEmployeeService
     public function getEmployeeProjects(string $userId): Collection
     {
         return $this->repository->getProjectsByEmployee($userId);
+    }
+
+    public function getEmployeesNotInProject(string $projectId): Collection
+    {
+        return $this->repository->getEmployeesNotInProject(
+            projectId: $projectId,
+            companyId: (string) tenant('id')
+        );
     }
 }

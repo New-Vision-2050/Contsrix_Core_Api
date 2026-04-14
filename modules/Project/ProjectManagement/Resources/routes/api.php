@@ -32,6 +32,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::prefix('employees')->group(function () {
         Route::post('/assign', [ProjectEmployeeController::class, 'assignEmployees']);
         Route::get('/project/{project_id}', [ProjectEmployeeController::class, 'getProjectEmployees']);
+        Route::get('/not-in-project/{project_id}', [ProjectEmployeeController::class, 'getEmployeesNotInProject']);
         Route::delete('/{id}', [ProjectEmployeeController::class, 'removeEmployee']);
     });
 

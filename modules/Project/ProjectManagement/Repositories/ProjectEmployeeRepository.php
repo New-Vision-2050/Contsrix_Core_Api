@@ -70,11 +70,44 @@ class ProjectEmployeeRepository extends BaseRepository
         }
     }
 
+    public function appendEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null): void
+    {
+        foreach ($userIds as $userId) {
+            if (!$this->isEmployeeAssigned($projectId, $userId)) {
+                $this->assignEmployee([
+                    'project_id' => $projectId,
+                    'user_id' => $userId,
+                    'company_id' => $companyId,
+                    'assigned_by_user_id' => $assignedByUserId,
+                ]);
+            }
+        }
+    }
+
     public function getProjectsByEmployee(string $userId): Collection
     {
         return $this->model
             ->where('user_id', $userId)
             ->with('project')
+            ->get();
+    }
+
+    public function getEmployeesNotInProject(string $projectId, string $companyId): Collection
+    {
+        $assignedUserIds = $this->model
+            ->where('project_id', $projectId)
+            ->pluck('user_id')
+            ->toArray();
+
+        return \Modules\User\Models\User::query()
+            ->whereHas('companyUserCompanies', function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                    ->where('role', \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
+            })
+            ->whereNotIn('id', $assignedUserIds)
+            ->with(['companyUser' => function ($query) use ($companyId) {
+                $query->where('company_id', $companyId);
+            }])
             ->get();
     }
 }

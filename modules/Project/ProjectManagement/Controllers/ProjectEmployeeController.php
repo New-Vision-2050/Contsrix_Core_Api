@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Modules\Project\ProjectManagement\Services\ProjectEmployeeService;
 use Modules\Project\ProjectManagement\Requests\AssignEmployeesRequest;
 use Modules\Project\ProjectManagement\Presenters\ProjectEmployeePresenter;
+use Modules\User\Presenters\EmployeePresenter;
 
 class ProjectEmployeeController extends Controller
 {
@@ -25,7 +26,7 @@ class ProjectEmployeeController extends Controller
     public function assignEmployees(AssignEmployeesRequest $request): JsonResponse
     {
         try {
-            $employees = $this->service->assignEmployeesToProject(
+            $employees = $this->service->appendEmployeesToProject(
                 $request->project_id,
                 $request->user_ids
             );
@@ -83,6 +84,28 @@ class ProjectEmployeeController extends Controller
             }
 
             return Json::error('Failed to remove employee', 400);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 400);
+        }
+    }
+
+    /**
+     * Get employees not assigned to a project (for dropdown)
+     */
+    public function getEmployeesNotInProject(Request $request): JsonResponse
+    {
+        try {
+            $projectId = $request->route('project_id');
+
+            if (!$projectId) {
+                return Json::error('Project ID is required', 400);
+            }
+
+            $employees = $this->service->getEmployeesNotInProject($projectId);
+
+            $data = EmployeePresenter::collection($employees, \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
+
+            return Json::items($data);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400);
         }
