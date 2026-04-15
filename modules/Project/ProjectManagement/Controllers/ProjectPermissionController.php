@@ -89,7 +89,7 @@ class ProjectPermissionController extends Controller
             ]);
 
             $updateData = [];
-            
+
             if (isset($validated['title_ar']) || isset($validated['title_en'])) {
                 $updateData['title'] = [];
                 if (isset($validated['title_ar'])) {
@@ -122,7 +122,7 @@ class ProjectPermissionController extends Controller
             $presenter = new ProjectPermissionLookupPresenter();
             $tree = $presenter->present($permissions);
 
-            return Json::items($tree);
+            return Json::item($tree);
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400);
         }

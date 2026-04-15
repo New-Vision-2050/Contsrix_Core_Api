@@ -36,20 +36,69 @@ class ProjectPermissionLookupPresenter
             ];
         }
 
-        // Group by submodule first, then by action within each submodule
+        // Group by category, then by submodule
+        $result = [];
         $groupedBySubmodule = collect($modified)->groupBy('submodule');
 
-        return $groupedBySubmodule->map(function ($group, $submodule) {
-            // Get the localized submodule name
-            $submoduleName = $this->getSubmoduleName($submodule);
+        foreach ($groupedBySubmodule as $submodule => $group) {
+            $categoryName = $this->getCategoryName($submodule);
             
-            return [
-                'name' => $submoduleName,
-                'key' => $submodule,
-                'permissions' => $group->values()->toArray(),
-                'count' => $group->count(),
-            ];
-        })->values()->toArray();
+            if (!isset($result[$categoryName])) {
+                $result[$categoryName] = [];
+            }
+            
+            $result[$categoryName][$submodule] = $group->values()->toArray();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get category name for submodule grouping
+     */
+    private function getCategoryName(string $submodule): string
+    {
+        $categories = [
+            'employee' => [
+                'ar' => 'إدارة الموظفين',
+                'en' => 'Employee Management',
+            ],
+            'archive-library' => [
+                'ar' => 'المكتبة الأرشيفية',
+                'en' => 'Archive Library',
+            ],
+            'archive-cycle' => [
+                'ar' => 'دورة الأرشيف',
+                'en' => 'Archive Cycle',
+            ],
+            'role' => [
+                'ar' => 'إدارة الأدوار',
+                'en' => 'Role Management',
+            ],
+            'settings' => [
+                'ar' => 'الإعدادات',
+                'en' => 'Settings',
+            ],
+            'task' => [
+                'ar' => 'إدارة المهام',
+                'en' => 'Task Management',
+            ],
+            'budget' => [
+                'ar' => 'إدارة الميزانية',
+                'en' => 'Budget Management',
+            ],
+            'expense' => [
+                'ar' => 'إدارة المصروفات',
+                'en' => 'Expense Management',
+            ],
+            'report' => [
+                'ar' => 'التقارير',
+                'en' => 'Reports',
+            ],
+        ];
+
+        $locale = app()->getLocale();
+        return $categories[$submodule][$locale] ?? ucfirst(str_replace('-', ' ', $submodule));
     }
 
     /**
@@ -62,9 +111,21 @@ class ProjectPermissionLookupPresenter
                 'ar' => 'الموظفين',
                 'en' => 'Employees',
             ],
+            'archive-library' => [
+                'ar' => 'المكتبة الأرشيفية',
+                'en' => 'Archive Library',
+            ],
             'archiveLibrary' => [
                 'ar' => 'المكتبة الأرشيفية',
                 'en' => 'Archive Library',
+            ],
+            'archive-cycle' => [
+                'ar' => 'دورة الأرشيف',
+                'en' => 'Archive Cycle',
+            ],
+            'archiveCycle' => [
+                'ar' => 'دورة الأرشيف',
+                'en' => 'Archive Cycle',
             ],
             'project' => [
                 'ar' => 'المشروع',
