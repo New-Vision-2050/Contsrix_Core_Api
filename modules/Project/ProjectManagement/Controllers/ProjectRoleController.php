@@ -72,7 +72,10 @@ class ProjectRoleController extends Controller
 
             $role = $this->service->createRole($projectId, $validated, $permissionIds);
 
-            return Json::item($role, 201);
+            return response()->json(
+                Json::item($role)->getData(),
+                201
+            );
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 400);
         }
