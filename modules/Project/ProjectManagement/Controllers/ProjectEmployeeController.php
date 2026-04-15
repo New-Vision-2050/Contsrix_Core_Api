@@ -111,4 +111,29 @@ class ProjectEmployeeController extends Controller
             return Json::error($e->getMessage(), 400);
         }
     }
+
+    /**
+     * Assign or update project role for an employee
+     */
+    public function assignRole(Request $request): JsonResponse
+    {
+        try {
+            $projectEmployeeId = $request->route('id');
+
+            $validated = $request->validate([
+                'project_role_id' => 'required|string|exists:project_roles,id',
+            ]);
+
+            $employee = $this->service->assignRoleToEmployee(
+                $projectEmployeeId,
+                $validated['project_role_id']
+            );
+
+            $data = (new ProjectEmployeePresenter($employee))->getData();
+
+            return Json::item($data);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 400);
+        }
+    }
 }

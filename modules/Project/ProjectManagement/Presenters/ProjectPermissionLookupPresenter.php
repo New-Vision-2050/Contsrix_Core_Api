@@ -16,6 +16,9 @@ class ProjectPermissionLookupPresenter
     {
         $modified = [];
         
+        // Get permission key mapping (reverse lookup)
+        $permissionKeys = array_flip(config('projectmanagement.permissions', []));
+        
         foreach ($permissions as $permission) {
             // Get translated title from JSON field
             $titleAr = $permission->getTranslation('title', 'ar');
@@ -27,6 +30,7 @@ class ProjectPermissionLookupPresenter
             $modified[] = [
                 "id" => $permission->id,
                 "key" => $permission->name,
+                "permission_key" => $permissionKeys[$permission->name] ?? null,
                 "submodule" => $permission->submodule,
                 "action" => $permission->action,
                 "type" => $permission->action,
@@ -166,7 +170,10 @@ class ProjectPermissionLookupPresenter
      */
     public function presentFlat(Collection $permissions): array
     {
-        return $permissions->map(function ($permission) {
+        // Get permission key mapping (reverse lookup)
+        $permissionKeys = array_flip(config('projectmanagement.permissions', []));
+        
+        return $permissions->map(function ($permission) use ($permissionKeys) {
             $titleAr = $permission->getTranslation('title', 'ar');
             $titleEn = $permission->getTranslation('title', 'en');
             $translatedName = app()->getLocale() === 'ar' ? $titleAr : $titleEn;
@@ -174,6 +181,7 @@ class ProjectPermissionLookupPresenter
             return [
                 'id' => $permission->id,
                 'name' => $permission->name,
+                'permission_key' => $permissionKeys[$permission->name] ?? null,
                 'title' => $translatedName,
                 'title_ar' => $titleAr,
                 'title_en' => $titleEn,

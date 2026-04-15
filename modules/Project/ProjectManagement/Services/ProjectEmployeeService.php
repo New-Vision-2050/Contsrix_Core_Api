@@ -82,4 +82,16 @@ class ProjectEmployeeService
             companyId: (string) tenant('id')
         );
     }
+
+    public function assignRoleToEmployee(string $projectEmployeeId, string $projectRoleId)
+    {
+        $projectEmployee = $this->repository->findOneOrFail($projectEmployeeId);
+
+        $updated = $this->repository->update($projectEmployeeId, [
+            'project_role_id' => $projectRoleId,
+        ]);
+
+        // Reload with relationships
+        return $this->repository->findOneOrFail($projectEmployeeId, ['user', 'assignedBy', 'projectRole', 'company']);
+    }
 }

@@ -211,7 +211,7 @@ class ProjectPermissionController extends Controller
             $presenter = new ProjectPermissionLookupPresenter();
             $flat = $presenter->presentFlat($permissions);
 
-            return Json::success([
+            return Json::item([
                 'project_id' => $projectId,
                 'user_id' => $userId,
                 'role' => [
