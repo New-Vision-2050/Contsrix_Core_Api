@@ -39,15 +39,15 @@ class ArchiveLibrarySettingController extends Controller
     public function show(int $projectTypeId): JsonResponse
     {
         try {
-            $setting = $this->service->getByProjectTypeId($projectTypeId);
+            $setting = $this->service->getOrCreateByProjectTypeId($projectTypeId);
 
             return Json::item((new ArchiveLibrarySettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Archive library setting not found',
+                'message' => 'Failed to retrieve archive library setting',
                 'error' => $e->getMessage()
-            ], 404);
+            ], 500);
         }
     }
 }
