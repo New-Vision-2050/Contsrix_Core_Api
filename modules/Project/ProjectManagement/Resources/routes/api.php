@@ -88,13 +88,13 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // User Project Permissions Routes
     Route::get('/{project_id}/my-permissions', [ProjectPermissionController::class, 'getUserProjectPermissions']);
     Route::get('/{project_id}/my-permissions/flat', [ProjectPermissionController::class, 'getUserProjectPermissionsFlat']);
-    
+
     // Bulk Permission Check
     Route::post('/{project_id}/check-permissions', [ProjectPermissionController::class, 'checkBulkPermissions']);
-    
+
     // Users with Permission
     Route::get('/{project_id}/users-with-permission/{permission_key}', [ProjectPermissionController::class, 'getUsersWithPermission']);
-    
+
     // Role Comparison
     Route::get('/{project_id}/roles/compare', [ProjectPermissionController::class, 'compareRoles']);
 

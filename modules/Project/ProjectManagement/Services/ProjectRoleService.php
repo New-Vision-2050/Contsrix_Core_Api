@@ -25,7 +25,7 @@ class ProjectRoleService
     public function createRole(string $projectId, array $data, array $permissionIds = []): array
     {
         $project = ProjectManagement::findOrFail($projectId);
-        
+
         $roleData = [
             'project_id' => $projectId,
             'name' => $data['name'],
@@ -33,9 +33,9 @@ class ProjectRoleService
             'description' => $data['description'] ?? null,
             'is_active' => $data['is_active'] ?? true,
         ];
-        
+
         $role = $this->repository->createRole($roleData, $permissionIds);
-        
+
         return $this->formatRoleData($role);
     }
 
@@ -47,9 +47,9 @@ class ProjectRoleService
             'description' => $data['description'] ?? null,
             'is_active' => $data['is_active'] ?? null,
         ], fn($value) => $value !== null);
-        
+
         $role = $this->repository->updateRole($id, $updateData, $permissionIds);
-        
+
         return $this->formatRoleData($role);
     }
 
@@ -68,11 +68,11 @@ class ProjectRoleService
     public function deleteRole(string $id): bool
     {
         $role = $this->repository->findOneOrFail($id);
-        
+
         if ($role->is_default) {
             throw new \Exception('Cannot delete default role');
         }
-        
+
         return $this->repository->delete($id);
     }
 

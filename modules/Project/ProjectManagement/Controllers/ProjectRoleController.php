@@ -9,6 +9,7 @@ use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Project\ProjectManagement\Services\ProjectRoleService;
+use Modules\Project\ProjectManagement\Presenters\ProjectPermissionLookupPresenter;
 
 class ProjectRoleController extends Controller
 {
@@ -27,8 +28,11 @@ class ProjectRoleController extends Controller
             }
 
             $roles = $this->service->getProjectRoles($projectId);
+            $presenter = new ProjectPermissionLookupPresenter();
 
-            $data = $roles->map(function ($role) {
+            $data = $roles->map(function ($role) use ($presenter) {
+                $permissionsTree = $presenter->present($role->permissions);
+
                 return [
                     'id' => $role->id,
                     'project_id' => $role->project_id,
@@ -38,11 +42,7 @@ class ProjectRoleController extends Controller
                     'is_default' => $role->is_default,
                     'is_active' => $role->is_active,
                     'permissions_count' => $role->permissions->count(),
-                    'permissions' => $role->permissions->map(fn($p) => [
-                        'id' => $p->id,
-                        'name' => $p->name,
-                        'title' => $p->title,
-                    ]),
+                    'permissions' => $permissionsTree,
                     'created_at' => $role->created_at?->toISOString(),
                 ];
             });
@@ -89,6 +89,9 @@ class ProjectRoleController extends Controller
                 return Json::error('Role not found', 404);
             }
 
+            $presenter = new ProjectPermissionLookupPresenter();
+            $permissionsTree = $presenter->present($role->permissions);
+
             $data = [
                 'id' => $role->id,
                 'project_id' => $role->project_id,
@@ -97,13 +100,8 @@ class ProjectRoleController extends Controller
                 'description' => $role->description,
                 'is_default' => $role->is_default,
                 'is_active' => $role->is_active,
-                'permissions' => $role->permissions->map(fn($p) => [
-                    'id' => $p->id,
-                    'name' => $p->name,
-                    'submodule' => $p->submodule,
-                    'action' => $p->action,
-                    'title' => $p->title,
-                ]),
+                'permissions_count' => $role->permissions->count(),
+                'permissions' => $permissionsTree,
                 'created_at' => $role->created_at?->toISOString(),
                 'updated_at' => $role->updated_at?->toISOString(),
             ];
