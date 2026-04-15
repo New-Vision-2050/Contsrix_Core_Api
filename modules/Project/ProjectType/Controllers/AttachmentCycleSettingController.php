@@ -39,15 +39,15 @@ class AttachmentCycleSettingController extends Controller
     public function show(int $projectTypeId): JsonResponse
     {
         try {
-            $setting = $this->service->getByProjectTypeId($projectTypeId);
+            $setting = $this->service->getOrCreateByProjectTypeId($projectTypeId);
 
             return Json::item((new AttachmentCycleSettingPresenter($setting))->getData());
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Attachment cycle setting not found',
+                'message' => 'Failed to retrieve attachment cycle setting',
                 'error' => $e->getMessage()
-            ], 404);
+            ], 500);
         }
     }
 }
