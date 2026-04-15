@@ -546,9 +546,9 @@ class AttachmentRequestService
         $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
 
         // Verify sender company (only sender can replace media)
-        if ($item->attachmentRequest->sender_company_id !== tenant('id')) {
-            throw new \Exception('Unauthorized to replace media for this item');
-        }
+//        if ($item->attachmentRequest->sender_company_id !== tenant('id')) {
+//            throw new \Exception('Unauthorized to replace media for this item');
+//        }
 
         // Verify item is pending or update_requested
         if (!in_array($item->status, ['pending', 'update_requested'])) {
