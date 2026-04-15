@@ -67,6 +67,9 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         // Respond to individual attachment item
         Route::post('/items/respond', [AttachmentRequestController::class, 'respondToItem']);
 
+        // Replace media in attachment item
+        Route::post('/items/replace-media', [AttachmentRequestController::class, 'replaceMedia']);
+
         // Approve entire request
         Route::post('/{id}/approve', [AttachmentRequestController::class, 'approveRequest']);
 
@@ -77,9 +80,23 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     // Project Permissions Routes
     Route::prefix('permissions')->group(function () {
         Route::get('/', [ProjectPermissionController::class, 'index']);
+        Route::get('/tree', [ProjectPermissionController::class, 'getPermissionsTree']);
         Route::get('/submodule/{submodule}', [ProjectPermissionController::class, 'getBySubmodule']);
         Route::put('/{id}', [ProjectPermissionController::class, 'update']);
     });
+
+    // User Project Permissions Routes
+    Route::get('/{project_id}/my-permissions', [ProjectPermissionController::class, 'getUserProjectPermissions']);
+    Route::get('/{project_id}/my-permissions/flat', [ProjectPermissionController::class, 'getUserProjectPermissionsFlat']);
+    
+    // Bulk Permission Check
+    Route::post('/{project_id}/check-permissions', [ProjectPermissionController::class, 'checkBulkPermissions']);
+    
+    // Users with Permission
+    Route::get('/{project_id}/users-with-permission/{permission_key}', [ProjectPermissionController::class, 'getUsersWithPermission']);
+    
+    // Role Comparison
+    Route::get('/{project_id}/roles/compare', [ProjectPermissionController::class, 'compareRoles']);
 
     // Project Roles Routes
     Route::prefix('{project_id}/roles')->group(function () {

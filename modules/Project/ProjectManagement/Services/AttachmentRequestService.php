@@ -537,4 +537,68 @@ class AttachmentRequestService
             event(new AttachmentRequestResponded($request, (string) $user->id, $action));
         }
     }
+
+    /**
+     * Replace media in attachment request item
+     */
+    public function replaceMedia(string $itemId, UploadedFile $newFile): AttachmentRequestItem
+    {
+        $item = AttachmentRequestItem::with('attachmentRequest')->findOrFail($itemId);
+
+        // Verify sender company (only sender can replace media)
+        if ($item->attachmentRequest->sender_company_id !== tenant('id')) {
+            throw new \Exception('Unauthorized to replace media for this item');
+        }
+
+        // Verify item is pending or update_requested
+        if (!in_array($item->status, ['pending', 'update_requested'])) {
+            throw new \Exception('Can only replace media for pending or update requested items');
+        }
+
+        return DB::transaction(function () use ($item, $newFile) {
+            // Clear existing media
+            $item->clearMediaCollection('attachments');
+
+            // Upload new file
+            $this->fileUploadService->uploadFile(
+                $item,
+                $newFile,
+                'attachment-requests/items',
+                'attachments',
+                'public'
+            );
+
+            // Update item file information
+            $item->update([
+                'file_name' => $newFile->getClientOriginalName(),
+                'file_type' => $newFile->getClientMimeType(),
+                'file_size' => $newFile->getSize(),
+                'status' => 'pending', // Reset to pending after replacement
+                'responded_by_user_id' => null,
+                'responded_at' => null,
+                'response_notes' => null,
+            ]);
+
+            // Log history
+            AttachmentRequestHistory::log(
+                requestId: $item->attachment_request_id,
+                action: 'media_replaced',
+                description: 'Media file replaced',
+                userId: (string) Auth::id(),
+                itemId: $item->id,
+                metadata: [
+                    'item_id' => $item->id,
+                    'new_file_name' => $newFile->getClientOriginalName(),
+                    'new_file_type' => $newFile->getClientMimeType(),
+                    'new_file_size' => $newFile->getSize(),
+                    'new_file_size_formatted' => $this->formatFileSize($newFile->getSize()),
+                ]
+            );
+
+            // Update parent request status if needed
+            $item->attachmentRequest->updateStatusBasedOnItems();
+
+            return $item->fresh(['media', 'attachmentRequest']);
+        });
+    }
 }

@@ -16,7 +16,7 @@ class ProjectEmployeeService
     ) {
     }
 
-    public function assignEmployeesToProject(string $projectId, array $userIds): Collection
+    public function assignEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null): Collection
     {
         $project = ProjectManagement
             ::where('id', $projectId)
@@ -27,13 +27,14 @@ class ProjectEmployeeService
             projectId: $projectId,
             userIds: $userIds,
             companyId: (string) tenant('id'),
-            assignedByUserId: Auth::id() ? (string) Auth::id() : null
+            assignedByUserId: Auth::id() ? (string) Auth::id() : null,
+            projectRoleId: $projectRoleId
         );
 
         return $this->repository->getByProject($projectId);
     }
 
-    public function appendEmployeesToProject(string $projectId, array $userIds): Collection
+    public function appendEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null): Collection
     {
         $project = ProjectManagement
             ::where('id', $projectId)
@@ -43,7 +44,8 @@ class ProjectEmployeeService
             projectId: $projectId,
             userIds: $userIds,
             companyId: (string) tenant('id'),
-            assignedByUserId: Auth::id() ? (string) Auth::id() : null
+            assignedByUserId: Auth::id() ? (string) Auth::id() : null,
+            projectRoleId: $projectRoleId
         );
 
         return $this->repository->getByProject($projectId);

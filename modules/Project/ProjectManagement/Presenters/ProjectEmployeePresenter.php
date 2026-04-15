@@ -23,6 +23,12 @@ class ProjectEmployeePresenter extends AbstractPresenter
                 'name' => $this->projectEmployee->user->name,
                 'email' => $this->projectEmployee->user->email,
             ] : null,
+            'project_role' => $this->projectEmployee->projectRole ? [
+                'id' => $this->projectEmployee->projectRole->id,
+                'name' => $this->projectEmployee->projectRole->name,
+                'slug' => $this->projectEmployee->projectRole->slug,
+                'is_default' => $this->projectEmployee->projectRole->is_default,
+            ] : null,
             'assigned_at' => $this->projectEmployee->assigned_at?->toISOString(),
             'assigned_by' => $this->projectEmployee->assignedBy ? [
                 'id' => $this->projectEmployee->assignedBy->id,

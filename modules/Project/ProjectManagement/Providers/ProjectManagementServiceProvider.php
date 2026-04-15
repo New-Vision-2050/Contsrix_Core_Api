@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Observers\ProjectManagementObserver;
+use Modules\Project\ProjectManagement\Middleware\CheckProjectPermission;
 
 class ProjectManagementServiceProvider extends ModuleServiceProvider
 {
@@ -24,6 +25,9 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
         
         // Register observer
         ProjectManagement::observe(ProjectManagementObserver::class);
+
+        // Register middleware
+        $this->app['router']->aliasMiddleware('project.permission', CheckProjectPermission::class);
     }
 
     public function register(): void

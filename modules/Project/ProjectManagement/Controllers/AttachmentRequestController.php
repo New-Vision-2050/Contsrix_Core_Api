@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Modules\Project\ProjectManagement\Services\AttachmentRequestService;
 use Modules\Project\ProjectManagement\Requests\CreateAttachmentRequestRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToAttachmentItemRequest;
+use Modules\Project\ProjectManagement\Requests\ReplaceMediaRequest;
 use Modules\Project\ProjectManagement\Presenters\AttachmentRequestPresenter;
 
 class AttachmentRequestController extends Controller
@@ -245,6 +246,27 @@ class AttachmentRequestController extends Controller
             return Json::items($data->toArray());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Replace media in attachment request item
+     */
+    public function replaceMedia(ReplaceMediaRequest $request): JsonResponse
+    {
+        try {
+            $item = $this->service->replaceMedia(
+                $request->item_id,
+                $request->file('new_file')
+            );
+
+            // Return the full request with updated items
+            $attachmentRequest = $item->attachmentRequest->load(['items.respondedByUser']);
+            $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();
+
+            return Json::item($data);
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 400);
         }
     }
 }

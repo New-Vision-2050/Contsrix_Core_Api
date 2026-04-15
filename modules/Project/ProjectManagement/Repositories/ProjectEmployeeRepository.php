@@ -19,7 +19,7 @@ class ProjectEmployeeRepository extends BaseRepository
     {
         return $this->model
             ->where('project_id', $projectId)
-            ->with(['user', 'assignedBy'])
+            ->with(['user', 'assignedBy', 'projectRole.permissions'])
             ->get();
     }
 
@@ -44,7 +44,7 @@ class ProjectEmployeeRepository extends BaseRepository
             ->delete() > 0;
     }
 
-    public function syncEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null): void
+    public function syncEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null, ?string $projectRoleId = null): void
     {
         $existingUserIds = $this->model
             ->where('project_id', $projectId)
@@ -65,12 +65,13 @@ class ProjectEmployeeRepository extends BaseRepository
                     'user_id' => $userId,
                     'company_id' => $companyId,
                     'assigned_by_user_id' => $assignedByUserId,
+                    'project_role_id' => $projectRoleId,
                 ]);
             }
         }
     }
 
-    public function appendEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null): void
+    public function appendEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null, ?string $projectRoleId = null): void
     {
         foreach ($userIds as $userId) {
             if (!$this->isEmployeeAssigned($projectId, $userId)) {
@@ -79,6 +80,7 @@ class ProjectEmployeeRepository extends BaseRepository
                     'user_id' => $userId,
                     'company_id' => $companyId,
                     'assigned_by_user_id' => $assignedByUserId,
+                    'project_role_id' => $projectRoleId,
                 ]);
             }
         }
