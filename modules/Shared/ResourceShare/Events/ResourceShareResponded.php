@@ -30,7 +30,7 @@ class ResourceShareResponded implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new Channel('company.' . $this->resourceShare->owner_company_id),
+            new Channel('company.' . $this->resourceShare->shared_with_company_id),
         ];
     }
 

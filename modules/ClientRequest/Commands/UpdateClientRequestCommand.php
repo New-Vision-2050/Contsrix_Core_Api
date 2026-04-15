@@ -20,6 +20,8 @@ class UpdateClientRequestCommand
         private ?string $receiver_broker_type = null,
         private ?string $receiver_broker_id = null,
         private ?string $receiver_employee_id = null,
+        private ?array $receiver_employee_ids = null,
+        private ?string $reject_cause = null,
         private ?string $status_client_request = null,
         private ?string $client_price_offer_status = null,
         private ?int $branch_id = null,
@@ -85,6 +87,16 @@ class UpdateClientRequestCommand
         return $this->receiver_employee_id;
     }
 
+    public function getReceiverEmployeeIds(): ?array
+    {
+        return $this->receiver_employee_ids;
+    }
+
+    public function getRejectCause(): ?string
+    {
+        return $this->reject_cause;
+    }
+
     public function getStatusClientRequest(): ?string
     {
         return $this->status_client_request;
@@ -133,6 +145,8 @@ class UpdateClientRequestCommand
             'receiver_broker_type' => $this->receiver_broker_type,
             'receiver_broker_id' => $this->receiver_broker_id,
             'receiver_employee_id' => $this->receiver_employee_id,
+            'receiver_employee_ids' => $this->receiver_employee_ids,
+            'reject_cause' => $this->reject_cause,
             'status_client_request' => $this->status_client_request,
             'client_price_offer_status' => $this->client_price_offer_status,
             'branch_id' => $this->branch_id,

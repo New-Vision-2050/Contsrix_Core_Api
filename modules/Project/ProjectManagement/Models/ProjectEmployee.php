@@ -26,6 +26,7 @@ class ProjectEmployee extends Model
         'company_id',
         'assigned_at',
         'assigned_by_user_id',
+        'project_role_id',
     ];
 
     protected $casts = [
@@ -34,21 +35,26 @@ class ProjectEmployee extends Model
 
     public function project(): BelongsTo
     {
-        return $this->belongsTo(ProjectManagement::class, 'project_id');
+        return $this->belongsTo(ProjectManagement::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id')->withoutGlobalScopes();
     }
 
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 
     public function assignedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_by_user_id');
+        return $this->belongsTo(User::class, 'assigned_by_user_id')->withoutGlobalScopes();
+    }
+
+    public function projectRole(): BelongsTo
+    {
+        return $this->belongsTo(ProjectRole::class, 'project_role_id');
     }
 }

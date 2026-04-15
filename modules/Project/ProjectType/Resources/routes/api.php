@@ -8,6 +8,8 @@ use Modules\Project\ProjectType\Controllers\AttachmentTermsContractSettingContro
 use Modules\Project\ProjectType\Controllers\ContractorContractSettingController;
 use Modules\Project\ProjectType\Controllers\EmployeeContractSettingController;
 use Modules\Project\ProjectType\Controllers\DepartmentContractSettingController;
+use Modules\Project\ProjectType\Controllers\AttachmentCycleSettingController;
+use Modules\Project\ProjectType\Controllers\ArchiveLibrarySettingController;
 use Modules\Project\ProjectType\Controllers\SchemaController;
 use Modules\RoleAndPermission\Enums\Permission;
 
@@ -76,6 +78,18 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::get('/{projectTypeId}/department-contract-settings', [DepartmentContractSettingController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
     Route::put('/{projectTypeId}/department-contract-settings', [DepartmentContractSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Attachment Cycle Settings routes
+    Route::get('/{projectTypeId}/attachment-cycle-settings', [AttachmentCycleSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/attachment-cycle-settings', [AttachmentCycleSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Archive Library Settings routes
+    Route::get('/{projectTypeId}/archive-library-settings', [ArchiveLibrarySettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/archive-library-settings', [ArchiveLibrarySettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 
     // Schema routes

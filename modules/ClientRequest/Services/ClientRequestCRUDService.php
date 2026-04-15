@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Modules\ClientRequest\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Modules\ClientRequest\DTO\CreateClientRequestDTO;
 use Modules\ClientRequest\DTO\UpdateClientRequestDTO;
+use Modules\ClientRequest\Events\ClientRequestCreated;
+use Modules\ClientRequest\Events\ClientRequestStatusChanged;
 use Modules\ClientRequest\Models\ClientRequest;
 use Modules\ClientRequest\Repositories\ClientRequestRepository;
 use Ramsey\Uuid\UuidInterface;
@@ -23,12 +26,19 @@ class ClientRequestCRUDService
 
     public function create(CreateClientRequestDTO $createClientRequestDTO): ClientRequest
     {
-         return $this->repository->createClientRequest(
-             $createClientRequestDTO->toArray(),
-             $createClientRequestDTO->service_ids,
-             $createClientRequestDTO->term_setting_ids,
-             $createClientRequestDTO->attachments
-         );
+        $clientRequest = $this->repository->createClientRequest(
+            $createClientRequestDTO->toArray(),
+            $createClientRequestDTO->service_ids,
+            $createClientRequestDTO->term_setting_ids,
+            $createClientRequestDTO->attachments
+        );
+
+        $clientRequest->load(['company', 'createdByUser', 'receiverEmployees']);
+        foreach ($clientRequest->receiverEmployees as $employee) {
+            event(new ClientRequestCreated($clientRequest, (string) $employee->id));
+        }
+
+        return $clientRequest;
     }
 
     public function list(int $page = 1, int $perPage = 10): array
@@ -46,6 +56,36 @@ class ClientRequestCRUDService
         );
     }
 
+    public function getMyRequests(int $page = 1, int $perPage = 10): array
+    {
+        return $this->repository->getMyRequests(
+            userId: (string) Auth::id(),
+            page: $page,
+            perPage: $perPage,
+        );
+    }
+
+    public function changeStatus(string $id, string $status, ?string $rejectCause = null): ClientRequest
+    {
+        $uuid = \Ramsey\Uuid\Uuid::fromString($id);
+
+        $data = ['status_client_request' => $status];
+        if ($rejectCause !== null) {
+            $data['reject_cause'] = $rejectCause;
+        }
+
+        $this->repository->updateClientRequest($uuid, $data);
+
+        $clientRequest = $this->repository->getClientRequest($uuid);
+        $clientRequest->load(['company', 'createdByUser', 'receiverEmployees']);
+
+        foreach ($clientRequest->receiverEmployees as $employee) {
+            event(new ClientRequestStatusChanged($clientRequest, $status, (string) $employee->id));
+        }
+
+        return $clientRequest;
+    }
+
     public function update(UpdateClientRequestDTO $updateClientRequestDTO): ClientRequest
     {
         $uuid = \Ramsey\Uuid\Uuid::fromString($updateClientRequestDTO->id);
@@ -58,6 +98,12 @@ class ClientRequestCRUDService
             $updateClientRequestDTO->attachments
         );
 
-        return $this->repository->getClientRequest($uuid);
+        $clientRequest = $this->repository->getClientRequest($uuid);
+        $clientRequest->load(['company', 'createdByUser', 'receiverEmployees']);
+        foreach ($clientRequest->receiverEmployees as $employee) {
+            event(new ClientRequestStatusChanged($clientRequest, $updateClientRequestDTO->status_client_request ?? 'updated', (string) $employee->id));
+        }
+
+        return $clientRequest;
     }
 }

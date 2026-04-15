@@ -16,6 +16,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         ->permission(Permission::CLIENT_REQUEST_LIST());
     Route::get('/status/widgets', [ClientRequestController::class, 'getStatusWidgets'])
         ->permission(Permission::CLIENT_REQUEST_LIST());
+    Route::get('/my-requests', [ClientRequestController::class, 'getMyRequests'])
+        ->permission(Permission::CLIENT_REQUEST_LIST());
     Route::get('/', [ClientRequestController::class, 'index'])
         ->permission(Permission::CLIENT_REQUEST_LIST(),Permission::PRICE_OFFER_LIST());
     Route::post('/', [ClientRequestController::class, 'store'])
@@ -27,6 +29,8 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
     Route::put('/{id}', [ClientRequestController::class, 'update'])
         ->permission(Permission::CLIENT_REQUEST_UPDATE());
     Route::put('/{id}/full', [ClientRequestController::class, 'updateFull'])
+        ->permission(Permission::CLIENT_REQUEST_UPDATE());
+    Route::patch('/{id}/status', [ClientRequestController::class, 'changeStatus'])
         ->permission(Permission::CLIENT_REQUEST_UPDATE());
     Route::delete('/{id}', [ClientRequestController::class, 'delete'])
         ->permission(Permission::CLIENT_REQUEST_DELETE());

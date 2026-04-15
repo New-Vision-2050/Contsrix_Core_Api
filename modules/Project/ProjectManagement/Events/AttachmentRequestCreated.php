@@ -17,7 +17,7 @@ class AttachmentRequestCreated implements ShouldBroadcast
 
     public function __construct(
         public AttachmentRequest $attachmentRequest,
-        public string $receiverUserId
+        public int $pendingIncomingCount = 0
     ) {
     }
 
@@ -29,7 +29,7 @@ class AttachmentRequestCreated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('inbox.' . $this->receiverUserId),
+            new Channel('company.' . $this->attachmentRequest->receiver_company_id),
         ];
     }
 
@@ -64,6 +64,7 @@ class AttachmentRequestCreated implements ShouldBroadcast
             ],
             'created_at' => $this->attachmentRequest->created_at?->toISOString(),
             'notification_type' => 'attachment_request',
+            'pending_incoming_count' => $this->pendingIncomingCount,
         ];
     }
 }

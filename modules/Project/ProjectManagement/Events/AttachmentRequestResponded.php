@@ -30,7 +30,7 @@ class AttachmentRequestResponded implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('inbox.' . $this->senderUserId),
+            new Channel('company.' . $this->attachmentRequest->receiver_company_id),
         ];
     }
 

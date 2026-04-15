@@ -16,18 +16,36 @@ class ProjectEmployeeService
     ) {
     }
 
-    public function assignEmployeesToProject(string $projectId, array $userIds): Collection
+    public function assignEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null): Collection
     {
-        $project = ProjectManagement::withoutGlobalScope('shareable')
-            ->where('id', $projectId)
-            ->where('company_id', tenant('id'))
+        $project = ProjectManagement
+            ::where('id', $projectId)
+//            ->where('company_id', tenant('id'))
             ->firstOrFail();
 
         $this->repository->syncEmployees(
             projectId: $projectId,
             userIds: $userIds,
             companyId: (string) tenant('id'),
-            assignedByUserId: Auth::id() ? (string) Auth::id() : null
+            assignedByUserId: Auth::id() ? (string) Auth::id() : null,
+            projectRoleId: $projectRoleId
+        );
+
+        return $this->repository->getByProject($projectId);
+    }
+
+    public function appendEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null): Collection
+    {
+        $project = ProjectManagement
+            ::where('id', $projectId)
+            ->firstOrFail();
+
+        $this->repository->appendEmployees(
+            projectId: $projectId,
+            userIds: $userIds,
+            companyId: (string) tenant('id'),
+            assignedByUserId: Auth::id() ? (string) Auth::id() : null,
+            projectRoleId: $projectRoleId
         );
 
         return $this->repository->getByProject($projectId);
@@ -55,5 +73,13 @@ class ProjectEmployeeService
     public function getEmployeeProjects(string $userId): Collection
     {
         return $this->repository->getProjectsByEmployee($userId);
+    }
+
+    public function getEmployeesNotInProject(string $projectId): Collection
+    {
+        return $this->repository->getEmployeesNotInProject(
+            projectId: $projectId,
+            companyId: (string) tenant('id')
+        );
     }
 }
