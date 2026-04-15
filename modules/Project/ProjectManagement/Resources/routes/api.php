@@ -35,6 +35,7 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         Route::post('/assign', [ProjectEmployeeController::class, 'assignEmployees']);
         Route::get('/project/{project_id}', [ProjectEmployeeController::class, 'getProjectEmployees']);
         Route::get('/not-in-project/{project_id}', [ProjectEmployeeController::class, 'getEmployeesNotInProject']);
+        Route::put('/{id}/assign-role', [ProjectEmployeeController::class, 'assignRole']);
         Route::delete('/{id}', [ProjectEmployeeController::class, 'removeEmployee']);
     });
 
