@@ -20,7 +20,6 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
     public function boot(): void
     {
         $this->registerTranslations();
-        //$this->registerConfig();
         $this->registerMigrations();
         
         // Register observer
@@ -32,6 +31,7 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->registerConfig(); // Load config before routes
         $this->registerRoutes();
     }
 
