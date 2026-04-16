@@ -161,7 +161,7 @@ class ProjectManagementPresenter extends AbstractPresenter
             ];
 
             // Add contract settings from subSubProjectType wrapped in permissions array
-
+            $permissions = [];
 
             if ($this->projectManagement->subSubProjectType) {
                 // Schema 1: Project Data Setting
