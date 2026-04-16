@@ -75,11 +75,11 @@ class ProjectEmployeeService
         return $this->repository->getProjectsByEmployee($userId);
     }
 
-    public function getEmployeesNotInProject(string $projectId): Collection
+    public function getEmployeesNotInProject(string $projectId, ?string $companyId = null): Collection
     {
         return $this->repository->getEmployeesNotInProject(
             projectId: $projectId,
-            companyId: (string) tenant('id')
+            companyId: $companyId ?? (string) tenant('id')
         );
     }
 
