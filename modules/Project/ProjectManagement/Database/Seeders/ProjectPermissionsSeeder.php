@@ -6,6 +6,7 @@ namespace Modules\Project\ProjectManagement\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Project\ProjectManagement\Models\ProjectPermission;
+use Modules\Project\ProjectManagement\Models\ProjectRole;
 use Illuminate\Support\Facades\Log;
 
 class ProjectPermissionsSeeder extends Seeder
@@ -23,6 +24,7 @@ class ProjectPermissionsSeeder extends Seeder
         }
 
         $createdCount = 0;
+        $newPermissionIds = [];
 
         foreach ($configPermissions as $key => $name) {
             // Parse permission name to extract submodule and action
@@ -60,11 +62,77 @@ class ProjectPermissionsSeeder extends Seeder
                 ]
             );
 
+            // Track newly created permissions
+            if ($permission->wasRecentlyCreated) {
+                $newPermissionIds[] = $permission->id;
+            }
+
             $createdCount++;
         }
 
-        Log::info('Project permissions seeded successfully', ['count' => $createdCount]);
+        // Assign new permissions to all Project Admin roles
+        if (!empty($newPermissionIds)) {
+            $this->assignPermissionsToProjectAdminRoles($newPermissionIds);
+        }
+
+        Log::info('Project permissions seeded successfully', ['count' => $createdCount, 'new_permissions' => count($newPermissionIds)]);
         $this->command->info("✓ Project permissions seeded: {$createdCount}");
+        
+        if (!empty($newPermissionIds)) {
+            $this->command->info("✓ Assigned " . count($newPermissionIds) . " new permissions to all Project Admin roles");
+        }
+    }
+
+    /**
+     * Assign new permissions to all Project Admin roles across all projects
+     */
+    private function assignPermissionsToProjectAdminRoles(array $permissionIds): void
+    {
+        try {
+            // Find all Project Admin roles (is_default = true)
+            $adminRoles = ProjectRole::where('is_default', true)->get();
+
+            if ($adminRoles->isEmpty()) {
+                Log::warning('No Project Admin roles found to assign permissions');
+                $this->command->warn('⚠ No Project Admin roles found');
+                return;
+            }
+
+            $rolesUpdated = 0;
+
+            foreach ($adminRoles as $adminRole) {
+                // Get existing permission IDs
+                $existingPermissionIds = $adminRole->permissions()->pluck('project_permission_id')->toArray();
+
+                // Merge with new permissions (avoid duplicates)
+                $allPermissionIds = array_unique(array_merge($existingPermissionIds, $permissionIds));
+
+                // Sync all permissions to the role
+                $adminRole->permissions()->sync($allPermissionIds);
+
+                $rolesUpdated++;
+
+                Log::info('Assigned new permissions to Project Admin role', [
+                    'role_id' => $adminRole->id,
+                    'project_id' => $adminRole->project_id,
+                    'new_permissions_count' => count($permissionIds),
+                    'total_permissions' => count($allPermissionIds),
+                ]);
+            }
+
+            Log::info('Successfully assigned permissions to all Project Admin roles', [
+                'roles_updated' => $rolesUpdated,
+                'permissions_assigned' => count($permissionIds),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to assign permissions to Project Admin roles: ' . $e->getMessage(), [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $this->command->error('✗ Failed to assign permissions to Project Admin roles: ' . $e->getMessage());
+        }
     }
 
     /**
