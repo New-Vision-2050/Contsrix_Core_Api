@@ -102,7 +102,9 @@ class ProjectEmployeeController extends Controller
                 return Json::error('Project ID is required', 400);
             }
 
-            $employees = $this->service->getEmployeesNotInProject($projectId);
+            $companyId = $request->query('company_id');
+
+            $employees = $this->service->getEmployeesNotInProject($projectId, $companyId);
 
             $data = EmployeePresenter::collection($employees, \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
 
