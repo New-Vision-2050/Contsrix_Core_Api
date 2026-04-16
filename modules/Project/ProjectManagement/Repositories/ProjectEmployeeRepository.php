@@ -101,7 +101,7 @@ class ProjectEmployeeRepository extends BaseRepository
             ->pluck('user_id')
             ->toArray();
 
-        return \Modules\User\Models\User::query()
+        return \Modules\User\Models\User::query()->withoutTenancy()
             ->whereHas('companyUserCompanies', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId)
                     ->where('role', \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
