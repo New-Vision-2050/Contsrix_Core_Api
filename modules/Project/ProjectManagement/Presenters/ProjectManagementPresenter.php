@@ -161,7 +161,18 @@ class ProjectManagementPresenter extends AbstractPresenter
             ];
 
             // Add contract settings from subSubProjectType wrapped in permissions array
-            $permissions = [];
+            // Initialize all permissions with 0
+            $permissions = [
+                'project_data_setting' => 0,
+                'attachment_contract_setting' => 0,
+                'attachment_terms_contract_setting' => 0,
+                'contractor_contract_setting' => 0,
+                'employee_contract_setting' => 0,
+                'department_contract_setting' => 0,
+                'attachment_cycle_setting' => 0,
+                'archive_library_setting' => 0,
+            ];
+
             if ($this->projectManagement->subSubProjectType) {
                 // Schema 1: Project Data Setting
                 if ($this->shouldIncludeSchema(1, $allowedSchemas) &&
