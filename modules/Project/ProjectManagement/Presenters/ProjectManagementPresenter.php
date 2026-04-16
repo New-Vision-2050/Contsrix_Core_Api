@@ -12,6 +12,8 @@ use Modules\Project\ProjectType\Presenters\AttachmentTermsContractSettingPresent
 use Modules\Project\ProjectType\Presenters\ContractorContractSettingPresenter;
 use Modules\Project\ProjectType\Presenters\EmployeeContractSettingPresenter;
 use Modules\Project\ProjectType\Presenters\DepartmentContractSettingPresenter;
+use Modules\Project\ProjectType\Presenters\AttachmentCycleSettingPresenter;
+use Modules\Project\ProjectType\Presenters\ArchiveLibrarySettingPresenter;
 
 class ProjectManagementPresenter extends AbstractPresenter
 {
@@ -154,6 +156,8 @@ class ProjectManagementPresenter extends AbstractPresenter
                 4 => 'contractor_contract_setting',
                 5 => 'employee_contract_setting',
                 6 => 'department_contract_setting',
+                7 => 'attachment_cycle_setting',
+                8 => 'archive_library_setting',
             ];
 
             // Add contract settings from subSubProjectType wrapped in permissions array
@@ -199,6 +203,20 @@ class ProjectManagementPresenter extends AbstractPresenter
                     $this->projectManagement->subSubProjectType->relationLoaded('departmentContractSetting') && 
                     $this->projectManagement->subSubProjectType->departmentContractSetting) {
                     $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectManagement->subSubProjectType->departmentContractSetting))->getData();
+                }
+
+                // Schema 7: Attachment Cycle Setting
+                if ($this->shouldIncludeSchema(7, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('attachmentCycleSetting') && 
+                    $this->projectManagement->subSubProjectType->attachmentCycleSetting) {
+                    $permissions['attachment_cycle_setting'] = (new AttachmentCycleSettingPresenter($this->projectManagement->subSubProjectType->attachmentCycleSetting))->getData();
+                }
+
+                // Schema 8: Archive Library Setting
+                if ($this->shouldIncludeSchema(8, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('archiveLibrarySetting') && 
+                    $this->projectManagement->subSubProjectType->archiveLibrarySetting) {
+                    $permissions['archive_library_setting'] = (new ArchiveLibrarySettingPresenter($this->projectManagement->subSubProjectType->archiveLibrarySetting))->getData();
                 }
             }
             $data['permissions'] = $permissions;

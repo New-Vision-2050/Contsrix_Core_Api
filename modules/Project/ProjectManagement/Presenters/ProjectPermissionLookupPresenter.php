@@ -75,6 +75,14 @@ class ProjectPermissionLookupPresenter
                 'ar' => 'دورة الأرشيف',
                 'en' => 'Archive Cycle',
             ],
+            'attachment-cycle-settings' => [
+                'ar' => 'إعدادات دورة المرفقات',
+                'en' => 'Attachment Cycle Settings',
+            ],
+            'archive-library-settings' => [
+                'ar' => 'إعدادات المكتبة الأرشيفية',
+                'en' => 'Archive Library Settings',
+            ],
             'role' => [
                 'ar' => 'إدارة الأدوار',
                 'en' => 'Role Management',
@@ -130,6 +138,22 @@ class ProjectPermissionLookupPresenter
             'archiveCycle' => [
                 'ar' => 'دورة الأرشيف',
                 'en' => 'Archive Cycle',
+            ],
+            'attachment-cycle-settings' => [
+                'ar' => 'إعدادات دورة المرفقات',
+                'en' => 'Attachment Cycle Settings',
+            ],
+            'attachmentCycleSettings' => [
+                'ar' => 'إعدادات دورة المرفقات',
+                'en' => 'Attachment Cycle Settings',
+            ],
+            'archive-library-settings' => [
+                'ar' => 'إعدادات المكتبة الأرشيفية',
+                'en' => 'Archive Library Settings',
+            ],
+            'archiveLibrarySettings' => [
+                'ar' => 'إعدادات المكتبة الأرشيفية',
+                'en' => 'Archive Library Settings',
             ],
             'project' => [
                 'ar' => 'المشروع',
