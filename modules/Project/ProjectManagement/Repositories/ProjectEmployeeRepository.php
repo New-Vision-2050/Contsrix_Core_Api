@@ -17,7 +17,7 @@ class ProjectEmployeeRepository extends BaseRepository
 
     public function getByProject(string $projectId): Collection
     {
-        return $this->model->withoutTenancy()
+        return $this->model
             ->where('project_id', $projectId)
             ->with(['user', 'assignedBy', 'projectRole.permissions', 'company'])
             ->get();
@@ -38,7 +38,7 @@ class ProjectEmployeeRepository extends BaseRepository
 
     public function isEmployeeAssignedWithoutTenancy(string $projectId, string $userId): bool
     {
-        return $this->model->withoutTenancy()
+        return $this->model
             ->where('project_id', $projectId)
             ->where('user_id', $userId)
             ->exists();
@@ -54,7 +54,7 @@ class ProjectEmployeeRepository extends BaseRepository
 
     public function syncEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null, ?string $projectRoleId = null): void
     {
-        $existingUserIds = $this->model->withoutTenancy()
+        $existingUserIds = $this->model
             ->where('project_id', $projectId)
             ->pluck('user_id')
             ->toArray();
