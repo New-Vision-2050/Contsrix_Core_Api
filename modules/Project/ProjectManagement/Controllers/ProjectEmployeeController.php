@@ -29,7 +29,8 @@ class ProjectEmployeeController extends Controller
             $employees = $this->service->appendEmployeesToProject(
                 $request->project_id,
                 $request->user_ids,
-                $request->project_role_id
+                $request->project_role_id,
+                $request->company_id
             );
 
             $data = $employees->map(function ($employee) {

@@ -17,9 +17,9 @@ class ProjectEmployeeRepository extends BaseRepository
 
     public function getByProject(string $projectId): Collection
     {
-        return $this->model
+        return $this->model->withoutTenancy()
             ->where('project_id', $projectId)
-            ->with(['user', 'assignedBy', 'projectRole.permissions'])
+            ->with(['user', 'assignedBy', 'projectRole.permissions', 'company'])
             ->get();
     }
 
@@ -36,6 +36,14 @@ class ProjectEmployeeRepository extends BaseRepository
             ->exists();
     }
 
+    public function isEmployeeAssignedWithoutTenancy(string $projectId, string $userId): bool
+    {
+        return $this->model->withoutTenancy()
+            ->where('project_id', $projectId)
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
     public function removeEmployee(string $projectId, string $userId): bool
     {
         return $this->model
@@ -46,7 +54,7 @@ class ProjectEmployeeRepository extends BaseRepository
 
     public function syncEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null, ?string $projectRoleId = null): void
     {
-        $existingUserIds = $this->model
+        $existingUserIds = $this->model->withoutTenancy()
             ->where('project_id', $projectId)
             ->pluck('user_id')
             ->toArray();
@@ -74,7 +82,7 @@ class ProjectEmployeeRepository extends BaseRepository
     public function appendEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null, ?string $projectRoleId = null): void
     {
         foreach ($userIds as $userId) {
-            if (!$this->isEmployeeAssigned($projectId, $userId)) {
+            if (!$this->isEmployeeAssignedWithoutTenancy($projectId, $userId)) {
                 $this->assignEmployee([
                     'project_id' => $projectId,
                     'user_id' => $userId,
