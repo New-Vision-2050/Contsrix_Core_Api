@@ -103,7 +103,7 @@ class ProjectEmployeeRepository extends BaseRepository
 
         return \Modules\User\Models\User::query()->withoutTenancy()
             ->whereHas('companyUserCompanies', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId)
+                $query->withoutTenancy()->where('company_id', $companyId)
                     ->where('role', \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
             })
             ->whereNotIn('id', $assignedUserIds)
