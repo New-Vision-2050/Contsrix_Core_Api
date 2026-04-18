@@ -18,14 +18,14 @@ class UpdateProjectSharingSettingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'is_enabled' => ['sometimes', 'boolean'],
+            'is_all_data_visible' => ['sometimes', 'boolean'],
         ];
     }
 
     public function toCommand(int $projectTypeId): UpdateProjectSharingSettingCommand
     {
         $dto = new UpdateProjectSharingSettingDTO(
-            is_enabled: $this->has('is_enabled') ? (int) $this->input('is_enabled') : null,
+            is_all_data_visible: $this->has('is_all_data_visible') ? (int) $this->input('is_all_data_visible') : null,
         );
 
         return new UpdateProjectSharingSettingCommand($projectTypeId, $dto);

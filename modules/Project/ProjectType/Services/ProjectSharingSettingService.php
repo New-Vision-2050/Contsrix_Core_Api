@@ -27,7 +27,7 @@ class ProjectSharingSettingService
         if (!$setting) {
             $setting = $this->repository->create([
                 'project_type_id' => $projectTypeId,
-                'is_enabled' => 0,
+                'is_all_data_visible' => 0,
             ]);
         }
         

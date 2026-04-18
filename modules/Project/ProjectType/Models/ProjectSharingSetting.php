@@ -13,11 +13,11 @@ class ProjectSharingSetting extends Model
 
     protected $fillable = [
         'project_type_id',
-        'is_enabled',
+        'is_all_data_visible',
     ];
 
     protected $casts = [
-        'is_enabled' => 'int',
+        'is_all_data_visible' => 'int',
     ];
 
     public function projectType(): BelongsTo

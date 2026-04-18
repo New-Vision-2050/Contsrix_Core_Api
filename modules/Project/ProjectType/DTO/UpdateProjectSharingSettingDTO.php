@@ -7,14 +7,14 @@ namespace Modules\Project\ProjectType\DTO;
 class UpdateProjectSharingSettingDTO
 {
     public function __construct(
-        public readonly ?int $is_enabled = null,
+        public readonly ?int $is_all_data_visible = null,
     ) {
     }
 
     public function toArray(): array
     {
         return array_filter([
-            'is_enabled' => $this->is_enabled,
+            'is_all_data_visible' => $this->is_all_data_visible,
         ], fn($value) => $value !== null);
     }
 }
