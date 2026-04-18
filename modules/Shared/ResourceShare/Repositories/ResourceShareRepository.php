@@ -23,7 +23,18 @@ class ResourceShareRepository extends BaseRepository
         return $this->model
             ->where('shareable_type', $shareableType)
             ->where('shareable_id', $shareableId)
-            ->with(['sharedWithCompany', 'respondedByUser'])
+            ->with([
+                'shareable' => function ($morphTo) {
+                    $morphTo->constrain([
+                        \Modules\Project\ProjectManagement\Models\ProjectManagement::class => function ($query) {
+                            // Load projects from any company (bypass company_id filter)
+                            $query->withoutGlobalScopes();
+                        },
+                    ]);
+                },
+                'sharedWithCompany',
+                'respondedByUser'
+            ])
             ->get();
     }
 
@@ -35,7 +46,18 @@ class ResourceShareRepository extends BaseRepository
         return $this->model
             ->where('shared_with_company_id', $companyId)
             ->where('status', 'pending')
-            ->with(['shareable', 'ownerCompany', 'sharedByUser'])
+            ->with([
+                'shareable' => function ($morphTo) {
+                    $morphTo->constrain([
+                        \Modules\Project\ProjectManagement\Models\ProjectManagement::class => function ($query) {
+                            // Load projects from any company (bypass company_id filter)
+                            $query->withoutGlobalScopes();
+                        },
+                    ]);
+                },
+                'ownerCompany',
+                'sharedByUser'
+            ])
             ->get();
     }
 
@@ -47,7 +69,17 @@ class ResourceShareRepository extends BaseRepository
         return $this->model
             ->where('shared_with_company_id', $companyId)
             ->where('status', 'accepted')
-            ->with(['shareable', 'ownerCompany'])
+            ->with([
+                'shareable' => function ($morphTo) {
+                    $morphTo->constrain([
+                        \Modules\Project\ProjectManagement\Models\ProjectManagement::class => function ($query) {
+                            // Load projects from any company (bypass company_id filter)
+                            $query->withoutGlobalScopes();
+                        },
+                    ]);
+                },
+                'ownerCompany'
+            ])
             ->get();
     }
 
@@ -110,7 +142,16 @@ class ResourceShareRepository extends BaseRepository
             ->where('shared_with_company_id', $companyId)
             ->where('shareable_type', $shareableType)
             ->where('status', 'accepted')
-            ->with('shareable')
+            ->with([
+                'shareable' => function ($morphTo) {
+                    $morphTo->constrain([
+                        \Modules\Project\ProjectManagement\Models\ProjectManagement::class => function ($query) {
+                            // Load projects from any company (bypass company_id filter)
+                            $query->withoutGlobalScopes();
+                        },
+                    ]);
+                }
+            ])
             ->get();
     }
 }
