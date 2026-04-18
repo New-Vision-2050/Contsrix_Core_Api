@@ -49,7 +49,7 @@ class ResourceShare extends Model
      */
     public function shareable(): MorphTo
     {
-        return $this->morphTo();
+        return $this->morphTo()->withoutGlobalScopes();
     }
 
     /**
