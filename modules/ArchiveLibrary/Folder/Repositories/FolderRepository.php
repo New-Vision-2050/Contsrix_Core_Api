@@ -169,7 +169,7 @@ class FolderRepository extends BaseRepository
             : $this->model->query();
 
 
-        $folderQuery = $folderQuery->when(!request()->has("project_id")
+        $folderQuery = $folderQuery->when(!request()->has("project_id") && !request()->has("is_project")
         ,function($query){
            $query->whereNull("project_id");
         })->when(request()->has("is_project") && $parentId == null,function ($query){
