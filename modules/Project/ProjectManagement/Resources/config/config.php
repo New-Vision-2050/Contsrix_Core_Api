@@ -2,7 +2,7 @@
 
 return [
     'name' => 'ProjectManagement',
-    
+
     'permissions' => [
         // ================================================================================================
         // PROJECT MANAGEMENT MODULE PERMISSIONS
@@ -35,6 +35,13 @@ return [
         'PROJECT_ROLE_CREATE' => 'project-management.project-management*role.create',
         'PROJECT_ROLE_UPDATE' => 'project-management.project-management*role.update',
         'PROJECT_ROLE_DELETE' => 'project-management.project-management*role.delete',
+
+
+        'PROJECT_SHARE_VIEW' => 'project-management.project-management*project-share.view',
+        'PROJECT_SHARE_LIST' => 'project-management.project-management*project-share.list',
+        'PROJECT_SHARE_CREATE' => 'project-management.project-management*project-share.create',
+        'PROJECT_SHARE_UPDATE' => 'project-management.project-management*project-share.update',
+        'PROJECT_SHARE_DELETE' => 'project-management.project-management*project-share.delete',
 
         // ============================================================
         // Archive Cycle Permissions
