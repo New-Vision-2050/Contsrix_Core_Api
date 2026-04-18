@@ -519,7 +519,7 @@ return [
         'in_loction'=>'في الموقع',
         'clocked_out'=> 'تم الانصراف'
     ],
-    
+
     'unique_translation' => ':attribute بـ :locale مستخدم بالفعل.',
     'arabic' => 'العربية',
     'english' => 'الإنجليزية',
