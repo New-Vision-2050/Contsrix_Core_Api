@@ -46,12 +46,13 @@ class ProjectPermissionLookupPresenter
 
         foreach ($groupedBySubmodule as $submodule => $group) {
             $categoryName = $this->getCategoryName($submodule);
+            $translatedSubmodule = $this->getSubmoduleName($submodule);
             
             if (!isset($result[$categoryName])) {
                 $result[$categoryName] = [];
             }
             
-            $result[$categoryName][$submodule] = $group->values()->toArray();
+            $result[$categoryName][$translatedSubmodule] = $group->values()->toArray();
         }
 
         return $result;
@@ -86,6 +87,18 @@ class ProjectPermissionLookupPresenter
             'role' => [
                 'ar' => 'إدارة الأدوار',
                 'en' => 'Role Management',
+            ],
+            'project-share' => [
+                'ar' => 'مشاركة المشاريع',
+                'en' => 'Project Sharing',
+            ],
+            'roles-and-permissions-settings' => [
+                'ar' => 'إعدادات الأدوار والصلاحيات',
+                'en' => 'Roles and Permissions Settings',
+            ],
+            'project-sharing-settings' => [
+                'ar' => 'إعدادات مشاركة المشاريع',
+                'en' => 'Project Sharing Settings',
             ],
             'settings' => [
                 'ar' => 'الإعدادات',
@@ -166,6 +179,30 @@ class ProjectPermissionLookupPresenter
             'role' => [
                 'ar' => 'الأدوار',
                 'en' => 'Roles',
+            ],
+            'project-share' => [
+                'ar' => 'مشاركة المشاريع',
+                'en' => 'Project Sharing',
+            ],
+            'projectShare' => [
+                'ar' => 'مشاركة المشاريع',
+                'en' => 'Project Sharing',
+            ],
+            'roles-and-permissions-settings' => [
+                'ar' => 'إعدادات الأدوار والصلاحيات',
+                'en' => 'Roles and Permissions Settings',
+            ],
+            'rolesAndPermissionsSettings' => [
+                'ar' => 'إعدادات الأدوار والصلاحيات',
+                'en' => 'Roles and Permissions Settings',
+            ],
+            'project-sharing-settings' => [
+                'ar' => 'إعدادات مشاركة المشاريع',
+                'en' => 'Project Sharing Settings',
+            ],
+            'projectSharingSettings' => [
+                'ar' => 'إعدادات مشاركة المشاريع',
+                'en' => 'Project Sharing Settings',
             ],
             'task' => [
                 'ar' => 'المهام',
