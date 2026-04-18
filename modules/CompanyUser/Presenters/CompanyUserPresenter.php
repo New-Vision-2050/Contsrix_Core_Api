@@ -59,6 +59,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,
             'user_professional_data' => $this->companyUser->userProfessionalData ? (new UserProfessionalDataPresenter($this->companyUser->userProfessionalData))->getData():null,
             "currency"=> $this->companyUser->currency?(new CountryCurrencyPresenter($this->companyUser->currency))->getData():null,
+            "photo"=>$this->companyUser->getFirstMedia('upload_user')?->getFullUrl()
 
         ];
     }
