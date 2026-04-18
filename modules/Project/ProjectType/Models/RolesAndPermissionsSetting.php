@@ -6,6 +6,8 @@ namespace Modules\Project\ProjectType\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\RoleAndPermission\Models\Permission;
 
 class RolesAndPermissionsSetting extends Model
 {
@@ -24,4 +26,6 @@ class RolesAndPermissionsSetting extends Model
     {
         return $this->belongsTo(ProjectType::class, 'project_type_id');
     }
+
+
 }

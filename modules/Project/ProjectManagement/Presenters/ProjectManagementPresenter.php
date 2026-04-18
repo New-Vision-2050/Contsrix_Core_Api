@@ -14,6 +14,8 @@ use Modules\Project\ProjectType\Presenters\EmployeeContractSettingPresenter;
 use Modules\Project\ProjectType\Presenters\DepartmentContractSettingPresenter;
 use Modules\Project\ProjectType\Presenters\AttachmentCycleSettingPresenter;
 use Modules\Project\ProjectType\Presenters\ArchiveLibrarySettingPresenter;
+use Modules\Project\ProjectType\Presenters\RolesAndPermissionsSettingPresenter;
+use Modules\Project\ProjectType\Presenters\ProjectSharingSettingPresenter;
 
 class ProjectManagementPresenter extends AbstractPresenter
 {
@@ -218,6 +220,20 @@ class ProjectManagementPresenter extends AbstractPresenter
                     $this->projectManagement->subSubProjectType->relationLoaded('archiveLibrarySetting') &&
                     $this->projectManagement->subSubProjectType->archiveLibrarySetting) {
                     $permissions['archive_library_setting'] = (new ArchiveLibrarySettingPresenter($this->projectManagement->subSubProjectType->archiveLibrarySetting))->getData();
+                }
+
+                // Schema 10: Roles and Permissions Setting
+                if ($this->shouldIncludeSchema(10, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('rolesAndPermissionsSetting') &&
+                    $this->projectManagement->subSubProjectType->rolesAndPermissionsSetting) {
+                    $permissions['roles_and_permissions_setting'] = (new RolesAndPermissionsSettingPresenter($this->projectManagement->subSubProjectType->rolesAndPermissionsSetting))->getData();
+                }
+
+                // Schema 11: Project Sharing Setting
+                if ($this->shouldIncludeSchema(11, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('projectSharingSetting') &&
+                    $this->projectManagement->subSubProjectType->projectSharingSetting) {
+                    $permissions['project_sharing_setting'] = (new ProjectSharingSettingPresenter($this->projectManagement->subSubProjectType->projectSharingSetting))->getData();
                 }
             }
             $data['permissions'] = $permissions;
