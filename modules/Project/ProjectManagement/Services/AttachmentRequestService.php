@@ -443,6 +443,28 @@ class AttachmentRequestService
             $currentFolderId = $request->attachment_sub_sub_type_id;
         }
 
+        // Create or get serial_number folder as the fourth level
+        if ($request->serial_number) {
+            $serialNumberFolder = Folder::withoutTenancy()
+                ->where('parent_id', $currentFolderId)
+                ->where('name', $request->serial_number)
+                ->first();
+
+            if (!$serialNumberFolder) {
+                // Create the serial_number folder
+                $serialNumberFolder = Folder::create([
+                    'name' => $request->serial_number,
+                    'parent_id' => $currentFolderId,
+                    'project_id' => $request->project_id,
+                    'company_id' => tenant('id'),
+                    'access_type' => 'public',
+                    'status' => 1,
+                ]);
+            }
+
+            $currentFolderId = $serialNumberFolder->id;
+        }
+
         // Verify folder exists
         $folder = Folder::where("id",$currentFolderId)->withoutTenancy()->first();
 
