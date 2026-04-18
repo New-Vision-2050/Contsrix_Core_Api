@@ -58,6 +58,8 @@ class ProjectManagementRepository extends BaseRepository
             'subSubProjectType.departmentContractSetting',
             'subSubProjectType.attachmentCycleSetting',
             'subSubProjectType.archiveLibrarySetting',
+            'subSubProjectType.rolesAndPermissionsSetting',
+            'subSubProjectType.projectSharingSetting',
             'manager',
             'branch',
             'ownerCompany',

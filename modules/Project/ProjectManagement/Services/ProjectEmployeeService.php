@@ -16,17 +16,18 @@ class ProjectEmployeeService
     ) {
     }
 
-    public function assignEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null): Collection
+    public function assignEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null, ?string $companyId = null): Collection
     {
-        $project = ProjectManagement
-            ::where('id', $projectId)
-//            ->where('company_id', tenant('id'))
+        $project = ProjectManagement::withoutGlobalScopes()
+            ->where('id', $projectId)
             ->firstOrFail();
+
+        $targetCompanyId = $companyId ?? (string) tenant('id');
 
         $this->repository->syncEmployees(
             projectId: $projectId,
             userIds: $userIds,
-            companyId: (string) tenant('id'),
+            companyId: $targetCompanyId,
             assignedByUserId: Auth::id() ? (string) Auth::id() : null,
             projectRoleId: $projectRoleId
         );
@@ -34,16 +35,18 @@ class ProjectEmployeeService
         return $this->repository->getByProject($projectId);
     }
 
-    public function appendEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null): Collection
+    public function appendEmployeesToProject(string $projectId, array $userIds, ?string $projectRoleId = null, ?string $companyId = null): Collection
     {
-        $project = ProjectManagement
-            ::where('id', $projectId)
+        $project = ProjectManagement::withoutGlobalScopes()
+            ->where('id', $projectId)
             ->firstOrFail();
+
+        $targetCompanyId = $companyId ?? (string) tenant('id');
 
         $this->repository->appendEmployees(
             projectId: $projectId,
             userIds: $userIds,
-            companyId: (string) tenant('id'),
+            companyId: $targetCompanyId,
             assignedByUserId: Auth::id() ? (string) Auth::id() : null,
             projectRoleId: $projectRoleId
         );

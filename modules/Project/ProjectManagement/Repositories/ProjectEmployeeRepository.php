@@ -19,7 +19,7 @@ class ProjectEmployeeRepository extends BaseRepository
     {
         return $this->model
             ->where('project_id', $projectId)
-            ->with(['user', 'assignedBy', 'projectRole.permissions'])
+            ->with(['user', 'assignedBy', 'projectRole.permissions', 'company'])
             ->get();
     }
 
@@ -29,6 +29,14 @@ class ProjectEmployeeRepository extends BaseRepository
     }
 
     public function isEmployeeAssigned(string $projectId, string $userId): bool
+    {
+        return $this->model
+            ->where('project_id', $projectId)
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
+    public function isEmployeeAssignedWithoutTenancy(string $projectId, string $userId): bool
     {
         return $this->model
             ->where('project_id', $projectId)
@@ -74,7 +82,7 @@ class ProjectEmployeeRepository extends BaseRepository
     public function appendEmployees(string $projectId, array $userIds, string $companyId, ?string $assignedByUserId = null, ?string $projectRoleId = null): void
     {
         foreach ($userIds as $userId) {
-            if (!$this->isEmployeeAssigned($projectId, $userId)) {
+            if (!$this->isEmployeeAssignedWithoutTenancy($projectId, $userId)) {
                 $this->assignEmployee([
                     'project_id' => $projectId,
                     'user_id' => $userId,
@@ -103,7 +111,7 @@ class ProjectEmployeeRepository extends BaseRepository
 
         return \Modules\User\Models\User::query()->withoutTenancy()
             ->whereHas('companyUserCompanies', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId)
+                $query->withoutTenancy()->where('company_id', $companyId)
                     ->where('role', \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
             })
             ->whereNotIn('id', $assignedUserIds)
