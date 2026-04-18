@@ -555,7 +555,7 @@ return [
         'in_loction'=>'in loction',
         'clocked_out'=> 'clocked out'
     ],
-    
+
     'unique_translation' => 'The :locale :attribute has already been taken.',
     'arabic' => 'Arabic',
     'english' => 'English',
