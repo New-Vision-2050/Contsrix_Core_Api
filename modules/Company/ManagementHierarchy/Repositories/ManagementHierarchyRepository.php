@@ -595,11 +595,10 @@ class ManagementHierarchyRepository extends BaseRepository
             ->unique('id');
 
         // Apply name filter if provided in request
-        $name = request()->input('name');
-        if ($name) {
-            $allUsers = $allUsers->filter(function ($user) use ($name) {
-                return stripos($user->first_name, $name) !== false ||
-                       stripos($user->last_name, $name) !== false;
+        $nameFilter = request()->input('name');
+        if ($nameFilter) {
+            $allUsers = $allUsers->filter(function ($user) use ($nameFilter) {
+                return $user->name && stripos($user->name, $nameFilter) !== false;
             });
         }
 
