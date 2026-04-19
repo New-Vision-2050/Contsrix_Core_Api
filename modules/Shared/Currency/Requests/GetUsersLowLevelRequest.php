@@ -13,6 +13,7 @@ class GetUsersLowLevelRequest extends FormRequest
     {
         return [
             'user_id' => 'required|exists:users,id',
+            'name' => 'nullable|string|max:255',
         ];
     }
 }
