@@ -621,7 +621,7 @@ class ManagementHierarchyRepository extends BaseRepository
         }
 
 
-        $query = SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company'])
+        $query = SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company', 'parent'])
             ->when(isset($filters["type"]), function ($query) use ($filters) {
                 $query->where("type", $filters["type"]);
             })->when(request()->has("ignore_branch_id"), function ($query) {
@@ -662,7 +662,7 @@ class ManagementHierarchyRepository extends BaseRepository
             $filters["type"] = "management";
         }
 
-        return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'company'])
+        return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'company', 'parent'])
             ->where('company_id', $company->id)
             ->when(request()->has("name"), function ($query) {
                 $name = request()->input("name");
