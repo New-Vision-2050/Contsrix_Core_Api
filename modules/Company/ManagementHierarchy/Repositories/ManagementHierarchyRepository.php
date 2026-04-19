@@ -587,12 +587,23 @@ class ManagementHierarchyRepository extends BaseRepository
             ->where('id', '!=', $userId)
             ->get();
 
-        // Merge all users and return unique result
-        return $lowerUsers
+        // Merge all users and get unique result
+        $allUsers = $lowerUsers
             ->merge($managerUsers)
             ->merge($deputyUsers)
             ->merge($directUserChildren)
             ->unique('id');
+
+        // Apply name filter if provided in request
+        $name = request()->input('name');
+        if ($name) {
+            $allUsers = $allUsers->filter(function ($user) use ($name) {
+                return stripos($user->first_name, $name) !== false ||
+                       stripos($user->last_name, $name) !== false;
+            });
+        }
+
+        return $allUsers;
     }
 
     /**

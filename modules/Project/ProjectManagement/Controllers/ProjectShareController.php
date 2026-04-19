@@ -59,7 +59,10 @@ class ProjectShareController extends Controller
                 ownerCompanyId: tenant('id'),
                 sharedWithCompanyId: $company->id,
                 schemaIds: $request->schema_ids,
-                notes: $request->notes
+                notes: $request->notes,
+                typeId: $request->type_id,
+                relationId: $request->relation_id,
+                roleId: $request->role_id
             );
 
             $presenter = new ResourceSharePresenter($share);

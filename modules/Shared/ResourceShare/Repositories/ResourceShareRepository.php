@@ -56,7 +56,10 @@ class ResourceShareRepository extends BaseRepository
                     ]);
                 },
                 'ownerCompany',
-                'sharedByUser'
+                'sharedByUser',
+                'type',
+                'relation',
+                'role'
             ])
             ->get();
     }
