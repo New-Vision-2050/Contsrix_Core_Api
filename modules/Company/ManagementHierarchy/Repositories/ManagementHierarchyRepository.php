@@ -634,6 +634,10 @@ class ManagementHierarchyRepository extends BaseRepository
                         $query->where("branch_id", request()->ignore_branch_id);
                     });
             })
+            ->when(request()->has("name"), function ($query) {
+                $name = request()->input("name");
+                $query->where("name", "like", "%" . $name . "%");
+            })
             ->where('company_id', $company->id);
 
         $count = $query->count();
@@ -659,7 +663,12 @@ class ManagementHierarchyRepository extends BaseRepository
         }
 
         return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'company'])
-            ->where('company_id', $company->id)->filter($filters)
+            ->where('company_id', $company->id)
+            ->when(request()->has("name"), function ($query) {
+                $name = request()->input("name");
+                $query->where("name", "like", "%" . $name . "%");
+            })
+            ->filter($filters)
             ->get();
     }
 
