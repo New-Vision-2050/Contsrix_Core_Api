@@ -20,6 +20,9 @@ class ResourceShare extends Model
         'shareable_id',
         'owner_company_id',
         'shared_with_company_id',
+        'type_id',
+        'relation_id',
+        'role_id',
         'status',
         'schema_ids',
         'shared_by_user_id',
@@ -86,6 +89,30 @@ class ResourceShare extends Model
     {
         return $this->belongsTo(User::class, 'responded_by_user_id')
             ->withoutGlobalScopes();
+    }
+
+    /**
+     * Get the type (النوع)
+     */
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(ProjectShareType::class, 'type_id');
+    }
+
+    /**
+     * Get the relation (العلاقة)
+     */
+    public function relation(): BelongsTo
+    {
+        return $this->belongsTo(ProjectShareType::class, 'relation_id');
+    }
+
+    /**
+     * Get the role (الدور)
+     */
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(ProjectShareType::class, 'role_id');
     }
 
     /**

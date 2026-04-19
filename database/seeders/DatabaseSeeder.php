@@ -154,6 +154,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ClientRequestSeeder::class);
         $this->call(ProfessionalDegreesSeeder::class);
         $this->call(ProjectPermissionsSeeder::class);
+        $this->call(ProjectShareTypeSeeder::class);
 
     }
 }
