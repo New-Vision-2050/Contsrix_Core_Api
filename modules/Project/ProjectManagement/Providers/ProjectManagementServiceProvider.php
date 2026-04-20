@@ -11,6 +11,7 @@ use Modules\Project\ProjectManagement\Models\ProjectRole;
 use Modules\Project\ProjectManagement\Observers\ProjectManagementObserver;
 use Modules\Project\ProjectManagement\Observers\ProjectRoleObserver;
 use Modules\Project\ProjectManagement\Middleware\CheckProjectPermission;
+use Modules\Project\ProjectManagement\Commands\TestProjectShareEmailCommand;
 
 class ProjectManagementServiceProvider extends ModuleServiceProvider
 {
@@ -24,6 +25,7 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         $this->registerMigrations();
         $this->registerViews();
+        $this->registerCommands();
         
         // Register observers
         ProjectManagement::observe(ProjectManagementObserver::class);
@@ -31,6 +33,18 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
 
         // Register middleware
         $this->app['router']->aliasMiddleware('project.permission', CheckProjectPermission::class);
+    }
+
+    /**
+     * Register commands
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                TestProjectShareEmailCommand::class,
+            ]);
+        }
     }
 
     /**

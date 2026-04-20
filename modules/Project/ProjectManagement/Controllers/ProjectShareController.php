@@ -304,15 +304,20 @@ class ProjectShareController extends Controller
      */
     private function sendShareNotificationEmail($share, $company, $project): void
     {
-        // Get the owner/admin of the shared company
-        $recipient = $company->owner ?? $company->generalManager;
+        // Get the owner of the shared company WITHOUT tenancy scope
+        // This is crucial because the receiver company is in a different tenant
+        $recipient = User::withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->where('is_owner', 1)
+            ->first();
 
         if (!$recipient || !$recipient->email) {
-            \Log::warning("No recipient found for project share notification", [
+            \Log::warning("No owner found for project share notification", [
                 'company_id' => $company->id,
+                'company_name' => $company->name,
                 'project_id' => $project->id,
             ]);
-            throw new \Exception("No recipient email found for company: " . $company->name);
+            throw new \Exception("No owner email found for company: " . $company->name);
         }
 
         // Get current user as sender
@@ -335,6 +340,8 @@ class ProjectShareController extends Controller
 
         \Log::info("Project share notification email sent successfully", [
             'recipient_email' => $recipient->email,
+            'recipient_name' => $recipient->name,
+            'company_id' => $company->id,
             'project_id' => $project->id,
             'share_id' => $share->id,
             'action_url' => $actionUrl,
