@@ -8,12 +8,15 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Requests\ShareProjectRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToShareRequest;
+use Modules\Project\ProjectManagement\Mail\ProjectShareMail;
 use Modules\Shared\ResourceShare\Services\ResourceShareService;
 use Modules\Shared\ResourceShare\Presenters\ResourceSharePresenter;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
 class ProjectShareController extends Controller
@@ -64,6 +67,9 @@ class ProjectShareController extends Controller
                 relationId: $request->relation_id,
                 roleId: $request->role_id
             );
+
+            // Send email notification to the owner of the shared company
+            $this->sendShareNotificationEmail($share, $company, $project);
 
             $presenter = new ResourceSharePresenter($share);
 
@@ -290,5 +296,86 @@ class ProjectShareController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Send email notification to the owner of the shared company
+     * Note: This method will never throw exceptions - email failures are logged but don't affect the share process
+     */
+    private function sendShareNotificationEmail($share, $company, $project): void
+    {
+        try {
+            // Get the owner/admin of the shared company
+            $recipient = $company->owner ?? $company->generalManager;
+
+            if (!$recipient || !$recipient->email) {
+                \Log::warning("No recipient found for project share notification", [
+                    'company_id' => $company->id,
+                    'project_id' => $project->id,
+                ]);
+                return;
+            }
+
+            // Get current user as sender
+            $currentUser = auth()->user();
+            $senderName = $currentUser ? $currentUser->name : 'مدير النظام';
+
+            // Build action URL from tenant's domain
+            $actionUrl = $this->buildActionUrl($company, $share);
+
+            // Send the email - wrapped in try-catch to prevent any mail exceptions
+            try {
+                Mail::to($recipient->email)->send(
+                    new ProjectShareMail(
+                        share: $share,
+                        project: $project,
+                        recipientName: $recipient->name,
+                        senderName: $senderName,
+                        actionUrl: $actionUrl
+                    )
+                );
+
+                \Log::info("Project share notification email sent successfully", [
+                    'recipient_email' => $recipient->email,
+                    'project_id' => $project->id,
+                    'share_id' => $share->id,
+                    'action_url' => $actionUrl,
+                ]);
+            } catch (\Exception $mailException) {
+                \Log::error("Failed to send project share notification email", [
+                    'error' => $mailException->getMessage(),
+                    'trace' => $mailException->getTraceAsString(),
+                    'recipient_email' => $recipient->email,
+                    'project_id' => $project->id,
+                    'share_id' => $share->id,
+                ]);
+                // Don't re-throw - email failure should not break the share process
+            }
+        } catch (\Exception $e) {
+            \Log::error("Unexpected error in project share notification process", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'project_id' => $project->id,
+                'company_id' => $company->id,
+            ]);
+            // Don't re-throw - ensure method never throws exceptions
+        }
+    }
+
+    /**
+     * Build action URL from company's domain
+     */
+    private function buildActionUrl($company, $share): string
+    {
+        // Get the company's primary domain
+        $domain = $company->domains()->first();
+
+        if ($domain && $domain->domain) {
+            // Build URL using company's domain: https://{domain}/ar/projects/inbox
+            return 'https://' . $domain->domain . '/ar/projects/inbox';
+        }
+
+        // Fallback to config if no domain found
+        return config('app.frontend_url', 'https://constrix.com') . '/ar/projects/inbox';
     }
 }
