@@ -8,12 +8,15 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Requests\ShareProjectRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToShareRequest;
+use Modules\Project\ProjectManagement\Mail\ProjectShareMail;
 use Modules\Shared\ResourceShare\Services\ResourceShareService;
 use Modules\Shared\ResourceShare\Presenters\ResourceSharePresenter;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
 class ProjectShareController extends Controller
@@ -64,6 +67,9 @@ class ProjectShareController extends Controller
                 relationId: $request->relation_id,
                 roleId: $request->role_id
             );
+
+            // Send email notification to the owner of the shared company
+            $this->sendShareNotificationEmail($share, $company, $project);
 
             $presenter = new ResourceSharePresenter($share);
 
@@ -289,6 +295,56 @@ class ProjectShareController extends Controller
             return Json::items($companies->values()->toArray());
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Send email notification to the owner of the shared company
+     */
+    private function sendShareNotificationEmail($share, $company, $project): void
+    {
+        try {
+            // Get the owner/admin of the shared company
+            $recipient = $company->owner ?? $company->generalManager;
+
+            if (!$recipient || !$recipient->email) {
+                \Log::warning("No recipient found for project share notification", [
+                    'company_id' => $company->id,
+                    'project_id' => $project->id,
+                ]);
+                return;
+            }
+
+            // Get current user as sender
+            $currentUser = auth()->user();
+            $senderName = $currentUser ? $currentUser->name : 'مدير النظام';
+
+            // Build action URL (frontend URL for project review)
+            $actionUrl = config('app.frontend_url', 'https://constrix.com') 
+                . '/projects/shared/' . $share->id;
+
+            // Send the email
+            Mail::to($recipient->email)->send(
+                new ProjectShareMail(
+                    share: $share,
+                    project: $project,
+                    recipientName: $recipient->name,
+                    senderName: $senderName,
+                    actionUrl: $actionUrl
+                )
+            );
+
+            \Log::info("Project share notification email sent", [
+                'recipient_email' => $recipient->email,
+                'project_id' => $project->id,
+                'share_id' => $share->id,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Failed to send project share notification email", [
+                'error' => $e->getMessage(),
+                'project_id' => $project->id,
+                'company_id' => $company->id,
+            ]);
         }
     }
 }
