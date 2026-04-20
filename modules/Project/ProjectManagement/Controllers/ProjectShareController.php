@@ -300,66 +300,45 @@ class ProjectShareController extends Controller
 
     /**
      * Send email notification to the owner of the shared company
-     * Note: This method will never throw exceptions - email failures are logged but don't affect the share process
+     * Note: This method will throw exceptions if email sending fails for testing purposes
      */
     private function sendShareNotificationEmail($share, $company, $project): void
     {
-        try {
-            // Get the owner/admin of the shared company
-            $recipient = $company->owner ?? $company->generalManager;
+        // Get the owner/admin of the shared company
+        $recipient = $company->owner ?? $company->generalManager;
 
-            if (!$recipient || !$recipient->email) {
-                \Log::warning("No recipient found for project share notification", [
-                    'company_id' => $company->id,
-                    'project_id' => $project->id,
-                ]);
-                return;
-            }
-
-            // Get current user as sender
-            $currentUser = auth()->user();
-            $senderName = $currentUser ? $currentUser->name : 'مدير النظام';
-
-            // Build action URL from tenant's domain
-            $actionUrl = $this->buildActionUrl($company, $share);
-
-            // Send the email - wrapped in try-catch to prevent any mail exceptions
-            try {
-                Mail::to($recipient->email)->send(
-                    new ProjectShareMail(
-                        share: $share,
-                        project: $project,
-                        recipientName: $recipient->name,
-                        senderName: $senderName,
-                        actionUrl: $actionUrl
-                    )
-                );
-
-                \Log::info("Project share notification email sent successfully", [
-                    'recipient_email' => $recipient->email,
-                    'project_id' => $project->id,
-                    'share_id' => $share->id,
-                    'action_url' => $actionUrl,
-                ]);
-            } catch (\Exception $mailException) {
-                \Log::error("Failed to send project share notification email", [
-                    'error' => $mailException->getMessage(),
-                    'trace' => $mailException->getTraceAsString(),
-                    'recipient_email' => $recipient->email,
-                    'project_id' => $project->id,
-                    'share_id' => $share->id,
-                ]);
-                // Don't re-throw - email failure should not break the share process
-            }
-        } catch (\Exception $e) {
-            \Log::error("Unexpected error in project share notification process", [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'project_id' => $project->id,
+        if (!$recipient || !$recipient->email) {
+            \Log::warning("No recipient found for project share notification", [
                 'company_id' => $company->id,
+                'project_id' => $project->id,
             ]);
-            // Don't re-throw - ensure method never throws exceptions
+            throw new \Exception("No recipient email found for company: " . $company->name);
         }
+
+        // Get current user as sender
+        $currentUser = auth()->user();
+        $senderName = $currentUser ? $currentUser->name : 'مدير النظام';
+
+        // Build action URL from tenant's domain
+        $actionUrl = $this->buildActionUrl($company, $share);
+
+        // Send the email - will throw exception if it fails
+        Mail::to($recipient->email)->send(
+            new ProjectShareMail(
+                share: $share,
+                project: $project,
+                recipientName: $recipient->name,
+                senderName: $senderName,
+                actionUrl: $actionUrl
+            )
+        );
+
+        \Log::info("Project share notification email sent successfully", [
+            'recipient_email' => $recipient->email,
+            'project_id' => $project->id,
+            'share_id' => $share->id,
+            'action_url' => $actionUrl,
+        ]);
     }
 
     /**
