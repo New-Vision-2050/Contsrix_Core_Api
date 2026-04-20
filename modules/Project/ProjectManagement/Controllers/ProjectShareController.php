@@ -300,6 +300,7 @@ class ProjectShareController extends Controller
 
     /**
      * Send email notification to the owner of the shared company
+     * Note: This method will never throw exceptions - email failures are logged but don't affect the share process
      */
     private function sendShareNotificationEmail($share, $company, $project): void
     {
@@ -319,32 +320,62 @@ class ProjectShareController extends Controller
             $currentUser = auth()->user();
             $senderName = $currentUser ? $currentUser->name : 'مدير النظام';
 
-            // Build action URL (frontend URL for project review)
-            $actionUrl = config('app.frontend_url', 'https://constrix.com') 
-                . '/projects/shared/' . $share->id;
+            // Build action URL from tenant's domain
+            $actionUrl = $this->buildActionUrl($company, $share);
 
-            // Send the email
-            Mail::to($recipient->email)->send(
-                new ProjectShareMail(
-                    share: $share,
-                    project: $project,
-                    recipientName: $recipient->name,
-                    senderName: $senderName,
-                    actionUrl: $actionUrl
-                )
-            );
+            // Send the email - wrapped in try-catch to prevent any mail exceptions
+            try {
+                Mail::to($recipient->email)->send(
+                    new ProjectShareMail(
+                        share: $share,
+                        project: $project,
+                        recipientName: $recipient->name,
+                        senderName: $senderName,
+                        actionUrl: $actionUrl
+                    )
+                );
 
-            \Log::info("Project share notification email sent", [
-                'recipient_email' => $recipient->email,
-                'project_id' => $project->id,
-                'share_id' => $share->id,
-            ]);
+                \Log::info("Project share notification email sent successfully", [
+                    'recipient_email' => $recipient->email,
+                    'project_id' => $project->id,
+                    'share_id' => $share->id,
+                    'action_url' => $actionUrl,
+                ]);
+            } catch (\Exception $mailException) {
+                \Log::error("Failed to send project share notification email", [
+                    'error' => $mailException->getMessage(),
+                    'trace' => $mailException->getTraceAsString(),
+                    'recipient_email' => $recipient->email,
+                    'project_id' => $project->id,
+                    'share_id' => $share->id,
+                ]);
+                // Don't re-throw - email failure should not break the share process
+            }
         } catch (\Exception $e) {
-            \Log::error("Failed to send project share notification email", [
+            \Log::error("Unexpected error in project share notification process", [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'project_id' => $project->id,
                 'company_id' => $company->id,
             ]);
+            // Don't re-throw - ensure method never throws exceptions
         }
+    }
+
+    /**
+     * Build action URL from company's domain
+     */
+    private function buildActionUrl($company, $share): string
+    {
+        // Get the company's primary domain
+        $domain = $company->domains()->first();
+
+        if ($domain && $domain->domain) {
+            // Build URL using company's domain: https://{domain}/ar/projects/inbox
+            return 'https://' . $domain->domain . '/ar/projects/inbox';
+        }
+
+        // Fallback to config if no domain found
+        return config('app.frontend_url', 'https://constrix.com') . '/ar/projects/inbox';
     }
 }
