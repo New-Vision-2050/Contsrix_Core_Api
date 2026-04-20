@@ -23,6 +23,7 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
     {
         $this->registerTranslations();
         $this->registerMigrations();
+        $this->registerViews();
         
         // Register observers
         ProjectManagement::observe(ProjectManagementObserver::class);
@@ -30,6 +31,17 @@ class ProjectManagementServiceProvider extends ModuleServiceProvider
 
         // Register middleware
         $this->app['router']->aliasMiddleware('project.permission', CheckProjectPermission::class);
+    }
+
+    /**
+     * Register views
+     */
+    protected function registerViews(): void
+    {
+        $viewPath = resource_path('views/modules/' . strtolower($this->getModuleName()));
+        $sourcePath = $this->getModulePath() . '/Resources/views';
+
+        $this->loadViewsFrom(array_merge([$sourcePath], [$viewPath]), 'project-management');
     }
 
     public function register(): void
