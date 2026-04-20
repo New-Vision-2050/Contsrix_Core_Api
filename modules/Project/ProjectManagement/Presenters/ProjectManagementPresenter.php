@@ -167,31 +167,38 @@ class ProjectManagementPresenter extends AbstractPresenter
 
             if ($this->projectManagement->subSubProjectType) {
                 // Schema 1: Project Data Setting
-                if ($this->shouldIncludeSchema(1, $allowedSchemas) &&
-                    $this->projectManagement->subSubProjectType->relationLoaded('projectDataSetting') &&
-                    $this->projectManagement->subSubProjectType->projectDataSetting) {
-                    $permissions['project_data_setting'] = (new ProjectDataSettingPresenter($this->projectManagement->subSubProjectType->projectDataSetting))->getData();
-                }
+//                if ($this->shouldIncludeSchema(1, $allowedSchemas) &&
+//                    $this->projectManagement->subSubProjectType->relationLoaded('projectDataSetting') &&
+//                    $this->projectManagement->subSubProjectType->projectDataSetting) {
+//                    $permissions['project_data_setting'] = (new ProjectDataSettingPresenter($this->projectManagement->subSubProjectType->projectDataSetting))->getData();
+//                }
 
                 // Schema 2: Attachment Contract Setting
-                if ($this->shouldIncludeSchema(2, $allowedSchemas) &&
-                    $this->projectManagement->subSubProjectType->relationLoaded('attachmentContractSetting') &&
-                    $this->projectManagement->subSubProjectType->attachmentContractSetting) {
-                    $permissions['attachment_contract_setting'] = (new AttachmentContractSettingPresenter($this->projectManagement->subSubProjectType->attachmentContractSetting))->getData();
-                }
+//                if ($this->shouldIncludeSchema(2, $allowedSchemas) &&
+//                    $this->projectManagement->subSubProjectType->relationLoaded('attachmentContractSetting') &&
+//                    $this->projectManagement->subSubProjectType->attachmentContractSetting) {
+//                    $permissions['attachment_contract_setting'] = (new AttachmentContractSettingPresenter($this->projectManagement->subSubProjectType->attachmentContractSetting))->getData();
+//                }
 
                 // Schema 3: Attachment Terms Contract Setting
-                if ($this->shouldIncludeSchema(3, $allowedSchemas) &&
-                    $this->projectManagement->subSubProjectType->relationLoaded('attachmentTermsContractSetting') &&
-                    $this->projectManagement->subSubProjectType->attachmentTermsContractSetting) {
-                    $permissions['attachment_terms_contract_setting'] = (new AttachmentTermsContractSettingPresenter($this->projectManagement->subSubProjectType->attachmentTermsContractSetting))->getData();
-                }
+//                if ($this->shouldIncludeSchema(3, $allowedSchemas) &&
+//                    $this->projectManagement->subSubProjectType->relationLoaded('attachmentTermsContractSetting') &&
+//                    $this->projectManagement->subSubProjectType->attachmentTermsContractSetting) {
+//                    $permissions['attachment_terms_contract_setting'] = (new AttachmentTermsContractSettingPresenter($this->projectManagement->subSubProjectType->attachmentTermsContractSetting))->getData();
+//                }
 
                 // Schema 4: Contractor Contract Setting
-                if ($this->shouldIncludeSchema(4, $allowedSchemas) &&
-                    $this->projectManagement->subSubProjectType->relationLoaded('contractorContractSetting') &&
-                    $this->projectManagement->subSubProjectType->contractorContractSetting) {
-                    $permissions['contractor_contract_setting'] = (new ContractorContractSettingPresenter($this->projectManagement->subSubProjectType->contractorContractSetting))->getData();
+//                if ($this->shouldIncludeSchema(4, $allowedSchemas) &&
+//                    $this->projectManagement->subSubProjectType->relationLoaded('contractorContractSetting') &&
+//                    $this->projectManagement->subSubProjectType->contractorContractSetting) {
+//                    $permissions['contractor_contract_setting'] = (new ContractorContractSettingPresenter($this->projectManagement->subSubProjectType->contractorContractSetting))->getData();
+//                }
+
+                // Schema 3: Archive Library Setting
+                if ($this->shouldIncludeSchema(3, $allowedSchemas) &&
+                    $this->projectManagement->subSubProjectType->relationLoaded('archiveLibrarySetting') &&
+                    $this->projectManagement->subSubProjectType->archiveLibrarySetting) {
+                    $permissions['archive_library_setting'] = (new ArchiveLibrarySettingPresenter($this->projectManagement->subSubProjectType->archiveLibrarySetting))->getData();
                 }
 
                 // Schema 5: Employee Contract Setting
@@ -202,25 +209,20 @@ class ProjectManagementPresenter extends AbstractPresenter
                 }
 
                 // Schema 6: Department Contract Setting
-                if ($this->shouldIncludeSchema(6, $allowedSchemas) &&
-                    $this->projectManagement->subSubProjectType->relationLoaded('departmentContractSetting') &&
-                    $this->projectManagement->subSubProjectType->departmentContractSetting) {
-                    $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectManagement->subSubProjectType->departmentContractSetting))->getData();
-                }
+//                if ($this->shouldIncludeSchema(6, $allowedSchemas) &&
+//                    $this->projectManagement->subSubProjectType->relationLoaded('departmentContractSetting') &&
+//                    $this->projectManagement->subSubProjectType->departmentContractSetting) {
+//                    $permissions['department_contract_setting'] = (new DepartmentContractSettingPresenter($this->projectManagement->subSubProjectType->departmentContractSetting))->getData();
+//                }
 
                 // Schema 7: Attachment Cycle Setting
-                if ($this->shouldIncludeSchema(7, $allowedSchemas) &&
+                if ($this->shouldIncludeSchema(9, $allowedSchemas) &&
                     $this->projectManagement->subSubProjectType->relationLoaded('attachmentCycleSetting') &&
                     $this->projectManagement->subSubProjectType->attachmentCycleSetting) {
                     $permissions['attachment_cycle_setting'] = (new AttachmentCycleSettingPresenter($this->projectManagement->subSubProjectType->attachmentCycleSetting))->getData();
                 }
 
-                // Schema 8: Archive Library Setting
-                if ($this->shouldIncludeSchema(8, $allowedSchemas) &&
-                    $this->projectManagement->subSubProjectType->relationLoaded('archiveLibrarySetting') &&
-                    $this->projectManagement->subSubProjectType->archiveLibrarySetting) {
-                    $permissions['archive_library_setting'] = (new ArchiveLibrarySettingPresenter($this->projectManagement->subSubProjectType->archiveLibrarySetting))->getData();
-                }
+
 
                 // Schema 10: Roles and Permissions Setting
                 if ($this->shouldIncludeSchema(10, $allowedSchemas) &&
