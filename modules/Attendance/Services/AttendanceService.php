@@ -320,7 +320,6 @@ class AttendanceService
                 'status' => Attendance::STATUS_COMPLETED,
                 'is_absent' => true,
                 'id' => Uuid::uuid4(),
-                // Add start_time and end_time for proper grouping
                 'start_time' => Carbon::now('UTC')->format('Y-m-d H:i:s'),
                 'end_time' => null
             ]);

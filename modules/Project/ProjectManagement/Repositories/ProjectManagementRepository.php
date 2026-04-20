@@ -68,7 +68,8 @@ class ProjectManagementRepository extends BaseRepository
             'costCenterBranch',
             'management',
             'currency',
-            'company'
+            'company',
+            'shares'
         ])->findOrFail($id->toString());
     }
 
