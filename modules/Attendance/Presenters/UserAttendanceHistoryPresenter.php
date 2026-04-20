@@ -21,6 +21,9 @@ class UserAttendanceHistoryPresenter extends AbstractPresenter
             'date' => $this->dayData['date'] ?? null,
             'day_name' => $this->dayData['day_name'] ?? null,
             'status' => $this->dayData['status'] ?? 'غائب',
+            'is_late' => (int) ($this->dayData['is_late'] ?? 0),
+            'is_absent' => (int) ($this->dayData['is_absent'] ?? 0),
+            'is_holiday' => (int) ($this->dayData['is_holiday'] ?? 0),
             'periods_count' => $this->dayData['periods_count'] ?? 0,
             'periods' => $this->dayData['periods'] ?? [],
         ];
