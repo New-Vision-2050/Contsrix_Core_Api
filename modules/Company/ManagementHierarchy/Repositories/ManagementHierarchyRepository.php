@@ -279,6 +279,13 @@ class ManagementHierarchyRepository extends BaseRepository
             $managementHierarchy->update($branchData);
             $managementHierarchy->fresh();
 
+            //update main management
+            $mainManagement = $this->model->where([
+                "parent_id" => $managementHierarchy->id,
+                "type" => "management",
+                "is_main" => 1
+            ])->first()?->update(['manager_id' => $managementHierarchy->manager_id]);
+
             $managementHierarchy->address()->update($addressData);
 
             // Dispatch event for branch location update instead of direct method call
