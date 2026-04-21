@@ -126,6 +126,11 @@ class AttendanceServiceProvider extends ServiceProvider
             $schedule = $this->app->make(Schedule::class);
             $schedule->command('attendance:create-waiting')->everySixHours();
             // $schedule->command('attendance:update-status')->everyThreeHours();
+            $schedule->command('attendance:create-holiday-attendance')
+                ->dailyAt('00:05')
+                ->timezone('Asia/Riyadh')
+                ->withoutOverlapping()
+                ->appendOutputTo(storage_path('logs/attendance-holiday.log'));
         });
     }
     protected function registerEventListeners(): void
