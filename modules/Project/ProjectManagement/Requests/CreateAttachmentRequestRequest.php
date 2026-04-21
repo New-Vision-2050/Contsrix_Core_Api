@@ -20,7 +20,7 @@ class CreateAttachmentRequestRequest extends FormRequest
             'attachment_sub_type_id' => 'nullable',
             'attachment_sub_sub_type_id' => 'nullable',
             'attachments' => 'required|array|min:1',
-            'attachments.*' => 'required|file|max:10240', // 10MB max
+            'attachments.*' => 'required|file', // 10MB max
             'notes' => 'nullable|string',
         ];
     }
