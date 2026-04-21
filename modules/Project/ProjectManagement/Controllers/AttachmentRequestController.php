@@ -368,11 +368,11 @@ class AttachmentRequestController extends Controller
         $domain = $company->domains()->first();
 
         if ($domain && $domain->domain) {
-            return "https://{$domain->domain}/ar/projects/{$attachmentRequest->project_id}/attachment-requests/{$attachmentRequest->id}";
+            return "https://{$domain->domain}/ar/projects/{$attachmentRequest->project_id}";
         }
 
         // Fallback to configured frontend URL
         $frontendUrl = config('app.frontend_url', 'https://constrix.com');
-        return "{$frontendUrl}/ar/projects/{$attachmentRequest->project_id}/attachment-requests/{$attachmentRequest->id}";
+        return "{$frontendUrl}/ar/projects/{$attachmentRequest->project_id}";
     }
 }
