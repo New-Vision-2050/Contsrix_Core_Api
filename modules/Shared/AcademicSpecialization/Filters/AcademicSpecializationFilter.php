@@ -16,8 +16,8 @@ class AcademicSpecializationFilter extends SearchModelFilter
                $q->where('content','like','%'.$name.'%');
            });
        }
-        public function academicQualification($academic_qualification_id)
-       {
-           return $this->where('academic_qualification_id',$academic_qualification_id);
-       }
+//        public function academicQualification($academic_qualification_id)
+//       {
+//           return $this->where('academic_qualification_id',$academic_qualification_id);
+//       }
 }
