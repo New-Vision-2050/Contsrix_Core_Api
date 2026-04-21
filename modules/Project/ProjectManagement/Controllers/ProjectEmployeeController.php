@@ -205,23 +205,32 @@ class ProjectEmployeeController extends Controller
                     // Build action URL
                     $actionUrl = $this->buildActionUrlForEmployee($company, $projectId);
 
-                    // Send the email
-                    Mail::to($user->email)->send(
-                        new EmployeeAssignedMail(
-                            project: $project,
-                            employeeName: $user->name,
-                            assignedByName: $assignedByName,
-                            roleName: $roleName,
-                            actionUrl: $actionUrl
-                        )
-                    );
+                    // Send the email with extra error protection
+                    try {
+                        Mail::to($user->email)->send(
+                            new EmployeeAssignedMail(
+                                project: $project,
+                                employeeName: $user->name,
+                                assignedByName: $assignedByName,
+                                roleName: $roleName,
+                                actionUrl: $actionUrl
+                            )
+                        );
 
-                    \Log::info("Employee assignment email sent successfully", [
-                        'employee_email' => $user->email,
-                        'employee_name' => $user->name,
-                        'project_id' => $projectId,
-                        'project_name' => $project->name,
-                    ]);
+                        \Log::info("Employee assignment email sent successfully", [
+                            'employee_email' => $user->email,
+                            'employee_name' => $user->name,
+                            'project_id' => $projectId,
+                            'project_name' => $project->name,
+                        ]);
+                    } catch (\Exception $mailException) {
+                        \Log::error("Mail sending failed for employee assignment", [
+                            'user_id' => $userId,
+                            'project_id' => $projectId,
+                            'employee_email' => $user->email,
+                            'error' => $mailException->getMessage(),
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     \Log::error("Failed to send employee assignment email to individual user", [
                         'user_id' => $userId,

@@ -326,23 +326,31 @@ class AttachmentRequestController extends Controller
             // Build action URL
             $actionUrl = $this->buildActionUrlForAttachment($receiverCompany, $attachmentRequest);
 
-            // Send the email
-            Mail::to($recipient->email)->send(
-                new AttachmentRequestMail(
-                    attachmentRequest: $attachmentRequest,
-                    project: $project,
-                    recipientName: $recipient->name,
-                    senderName: $senderName,
-                    actionUrl: $actionUrl
-                )
-            );
+            // Send the email with extra error protection
+            try {
+                Mail::to($recipient->email)->send(
+                    new AttachmentRequestMail(
+                        attachmentRequest: $attachmentRequest,
+                        project: $project,
+                        recipientName: $recipient->name,
+                        senderName: $senderName,
+                        actionUrl: $actionUrl
+                    )
+                );
 
-            \Log::info("Attachment request email sent successfully", [
-                'recipient_email' => $recipient->email,
-                'recipient_name' => $recipient->name,
-                'request_id' => $attachmentRequest->id,
-                'company_id' => $receiverCompany->id,
-            ]);
+                \Log::info("Attachment request email sent successfully", [
+                    'recipient_email' => $recipient->email,
+                    'recipient_name' => $recipient->name,
+                    'request_id' => $attachmentRequest->id,
+                    'company_id' => $receiverCompany->id,
+                ]);
+            } catch (\Exception $mailException) {
+                \Log::error("Mail sending failed for attachment request", [
+                    'request_id' => $attachmentRequest->id,
+                    'recipient_email' => $recipient->email,
+                    'error' => $mailException->getMessage(),
+                ]);
+            }
         } catch (\Exception $e) {
             \Log::error("Failed to send attachment request email", [
                 'request_id' => $attachmentRequest->id,
