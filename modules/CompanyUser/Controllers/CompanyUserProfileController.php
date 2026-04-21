@@ -85,7 +85,7 @@ class CompanyUserProfileController extends Controller
     public function uploadPhoto(UploadPhotoCompanyUserRequest $request)//: JsonResponse
     {
         try {
-            $userId = $request->route('id') ? Uuid::fromString($request->route('id')) : auth()->user()->id;
+            $userId = $request->route('user_id') ? Uuid::fromString($request->route('user_id')) : auth()->user()->id;
 
             $companyUser = $this->companyUserIUploadImageService->uploadFile($request, $userId);
 
