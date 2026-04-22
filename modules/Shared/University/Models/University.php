@@ -30,6 +30,8 @@ class University extends Model
     protected $fillable = [
         'name',
         'country_iso2',
+        'country_id',
+        'link',
     ];
 
     protected $casts = [
