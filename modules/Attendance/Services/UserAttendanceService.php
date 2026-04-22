@@ -583,14 +583,11 @@ class UserAttendanceService
         $user = $this->getUserWithRelationships($userId);
         $timezone = $this->getTimezone();
         $now = $this->now();
-        $currentYear = $year ?? $now->year;
-        $currentMonth = $month ?? $now->month;
 
-        // Build date range for the full requested month (including future auto-generated
-        // absent/holiday records that may already exist for days later in the month).
-        $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
-        $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
-        $rangeEnd = $monthEnd;
+        // Last 3 calendar days in branch timezone: today, yesterday, day-before (e.g. 22, 21, 20).
+        // month/year query params are ignored for this mobile history endpoint.
+        $rangeStart = $now->copy()->startOfDay()->subDays(2);
+        $rangeEnd = $now->copy()->endOfDay();
 
         // Convert to UTC for database query (database stores times in UTC)
         $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
@@ -644,14 +641,12 @@ class UserAttendanceService
             return $this->parseDateTime($dateField, $timezone)->toDateString();
         })->filter(fn($group, $key) => $key !== null);
 
-        // Keep month history consistent by returning every date in the requested month.
-        $allDates = $this->buildMonthDateKeysDesc($rangeStart, $monthEnd);
+        $allDates = $this->buildLastThreeCalendarDaysKeysDescending($now);
         $totalDates = $allDates->count();
         $lastPage = (int) ceil($totalDates / $perPage);
         $offset = ($page - 1) * $perPage;
 
-        // Paginate dates
-        $paginatedDates = $allDates->slice($offset, $perPage);
+        $paginatedDates = $allDates->slice($offset, $perPage)->values();
 
         $result = [];
         foreach ($paginatedDates as $dateValue) {
@@ -757,14 +752,13 @@ class UserAttendanceService
             return $this->parseDateTime($dateField, $timezone)->toDateString();
         })->filter(fn($group, $key) => $key !== null);
 
-        // Keep month history consistent by returning every date in the requested month.
-        $allDates = $this->buildMonthDateKeysDesc($rangeStart, $monthEnd);
+        // Full month, day 1 → last day (matches calendar pagination; avoids JSON object keys from slice()).
+        $allDates = $this->buildMonthDateKeysAsc($rangeStart, $monthEnd);
         $totalDates = $allDates->count();
         $lastPage = (int) ceil($totalDates / $perPage);
         $offset = ($page - 1) * $perPage;
 
-        // Paginate dates
-        $paginatedDates = $allDates->slice($offset, $perPage);
+        $paginatedDates = $allDates->slice($offset, $perPage)->values();
 
         $result = [];
         foreach ($paginatedDates as $dateValue) {
@@ -804,9 +798,23 @@ class UserAttendanceService
     }
 
     /**
-     * Build all month dates sorted descending (Y-m-d).
+     * Today, yesterday, and two days ago (Y-m-d), newest first — branch-local calendar days.
      */
-    private function buildMonthDateKeysDesc(Carbon $rangeStart, Carbon $monthEnd): Collection
+    private function buildLastThreeCalendarDaysKeysDescending(Carbon $nowAtBranch): Collection
+    {
+        $todayStart = $nowAtBranch->copy()->startOfDay();
+
+        return collect([
+            $todayStart->toDateString(),
+            $todayStart->copy()->subDay()->toDateString(),
+            $todayStart->copy()->subDays(2)->toDateString(),
+        ])->values();
+    }
+
+    /**
+     * Build all month dates ascending (Y-m-d), first day of month → last.
+     */
+    private function buildMonthDateKeysAsc(Carbon $rangeStart, Carbon $monthEnd): Collection
     {
         $dates = [];
         $cursor = $rangeStart->copy()->startOfDay();
@@ -817,7 +825,7 @@ class UserAttendanceService
             $cursor->addDay();
         }
 
-        return collect($dates)->reverse()->values();
+        return collect($dates)->values();
     }
 
     /**
