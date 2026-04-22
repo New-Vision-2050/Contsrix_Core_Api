@@ -209,7 +209,7 @@ class AttendanceFilter extends SearchModelFilter
     public function constraint($constraintId)
     {
        return $this->whereHas('appliedAttendanceConstraint', function ($query) use ($constraintId) {
-            $query->where('attendance_constraint_id',$constraintId);
+           $query->where('constraint_snapshot->id', $constraintId);
         });
     }
 }
