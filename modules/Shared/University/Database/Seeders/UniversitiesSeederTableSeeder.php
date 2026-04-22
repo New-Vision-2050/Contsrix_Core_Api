@@ -19,6 +19,11 @@ class UniversitiesSeederTableSeeder extends Seeder
      */
     public function run()
     {
+        $this->command->info('Fetching universities from API for all countries...');
+        $this->callSilently('universities:fetch');
+        $this->command->info('Universities import completed.');
+        return;
+
         Model::unguard();
 
         // --- EGYPT (Country ID: 65) ---
