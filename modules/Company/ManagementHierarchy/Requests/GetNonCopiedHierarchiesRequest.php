@@ -14,6 +14,7 @@ class GetNonCopiedHierarchiesRequest extends FormRequest
         return [
             'per_page' => 'integer|min:1|max:100',
             'page' => 'integer|min:1',
+            'name' => 'nullable|string|max:255',
         ];
     }
 

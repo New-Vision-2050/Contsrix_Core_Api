@@ -56,6 +56,7 @@ class ClientRequest extends Model implements HasMedia
 
     protected $fillable = [
         'company_id',
+        'created_by_user_id',
         'client_request_type_id',
         'client_request_receiver_from_id',
         'client_type',
@@ -66,6 +67,7 @@ class ClientRequest extends Model implements HasMedia
         'receiver_broker_type',
         'receiver_broker_id',
         'receiver_employee_id',
+        'reject_cause',
         'status_client_request',
         'client_price_offer_status',
         'branch_id',
@@ -76,9 +78,11 @@ class ClientRequest extends Model implements HasMedia
     protected $casts = [
         'id' => 'string',
         'company_id' => 'string',
+        'created_by_user_id' => 'string',
         'client_id' => 'string',
         'receiver_broker_id' => 'string',
         'receiver_employee_id' => 'string',
+        'reject_cause' => 'string',
         'status_client_request' => 'string',
         'client_price_offer_status' => 'string',
         'serial_number' => 'string',
@@ -147,6 +151,21 @@ class ClientRequest extends Model implements HasMedia
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function receiverEmployees(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'client_request_receiver_employees',
+            'client_request_id',
+            'user_id'
+        );
     }
 
     public function isDraft(): bool

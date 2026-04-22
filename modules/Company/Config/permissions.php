@@ -72,5 +72,13 @@ return [
 
         // Organization Users
         'ORGANIZATION_USERS_VIEW' => 'human-resources.organization-list*users.view',
+
+        'HUMAN_RESOURCES_CHARTS_VIEW' => 'human-resources.work-panel*charts.view',
+
+
+        'HUMAN_RESOURCES_PROCEDURES_VIEW' => 'human-resources.work-panel*procedures.view',
+
+        'HUMAN_RESOURCES_SERVICES_VIEW' => 'human-resources.work-panel*services.view',
+
     ]
 ];

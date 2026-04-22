@@ -28,7 +28,10 @@ class ResourceShareService
         string $ownerCompanyId,
         string $sharedWithCompanyId,
         ?array $schemaIds = null,
-        ?string $notes = null
+        ?string $notes = null,
+        ?int $typeId = null,
+        ?int $relationId = null,
+        ?int $roleId = null
     ): ResourceShare {
         // Check if already shared
         if ($this->repository->isSharedWith($shareableType, $shareableId, $sharedWithCompanyId)) {
@@ -40,6 +43,9 @@ class ResourceShareService
             'shareable_id' => $shareableId,
             'owner_company_id' => $ownerCompanyId,
             'shared_with_company_id' => $sharedWithCompanyId,
+            'type_id' => $typeId,
+            'relation_id' => $relationId,
+            'role_id' => $roleId,
             'status' => 'pending',
             'schema_ids' => $schemaIds,
             'shared_by_user_id' => Auth::id(),

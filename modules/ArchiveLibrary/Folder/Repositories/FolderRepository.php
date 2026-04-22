@@ -168,6 +168,17 @@ class FolderRepository extends BaseRepository
             ? $this->model->query()->withoutTenancy()
             : $this->model->query();
 
+
+        $folderQuery = $folderQuery->when(!request()->has("project_id") && !request()->has("is_project")
+        ,function($query){
+           $query->whereNull("project_id");
+        })->when(request()->has("is_project") && $parentId == null,function ($query){
+            $query->whereNotNull("project_id");
+        });
+//        })->when(request()->has("project_id"),function($query){
+//            $query->where("project_id",request()->get("project_id"));
+//        });
+
         $fileQueryBase = $withoutTenancy
             ? File::query()->withoutTenancy()
             : File::query();

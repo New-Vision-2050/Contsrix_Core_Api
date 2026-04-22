@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Modules\Project\ProjectManagement\Observers;
 
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
+use Modules\Project\ProjectManagement\Models\ProjectRole;
+use Modules\Project\ProjectManagement\Models\ProjectEmployee;
+use Modules\Project\ProjectManagement\Models\ProjectPermission;
 use Modules\ArchiveLibrary\Folder\Models\Folder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProjectManagementObserver
 {
@@ -19,6 +23,11 @@ class ProjectManagementObserver
         if (is_null($project->serial_number)) {
             $project->serial_number = $this->generateSerialNumber($project->company_id);
         }
+
+        // Set created_by_user_id if not already set
+        if (is_null($project->created_by_user_id) && auth()->check()) {
+            $project->created_by_user_id = auth()->id();
+        }
     }
 
     /**
@@ -28,6 +37,9 @@ class ProjectManagementObserver
     {
         // Create a folder for the project
         $this->createProjectFolder($project);
+
+        // Create default admin role and assign manager/creator
+        $this->createProjectAdminRole($project);
     }
 
     /**
@@ -114,6 +126,77 @@ class ProjectManagementObserver
             \Log::error('Failed to update folder for project: ' . $e->getMessage(), [
                 'project_id' => $project->id,
                 'project_name' => $project->name,
+            ]);
+        }
+    }
+
+    /**
+     * Create default admin role for project and assign manager/creator
+     */
+    private function createProjectAdminRole(ProjectManagement $project): void
+    {
+        try {
+            DB::transaction(function () use ($project) {
+                // Create default "Project Admin" role
+                $adminRole = ProjectRole::create([
+                    'project_id' => $project->id,
+                    'name' => 'Project Admin',
+                    'slug' => 'project-admin',
+                    'description' => 'Full access to project resources',
+                    'is_default' => true,
+                    'is_active' => true,
+                ]);
+
+                // Assign ALL permissions to admin role
+                $allPermissions = ProjectPermission::where('is_active', true)->pluck('id');
+                if ($allPermissions->isNotEmpty()) {
+                    $adminRole->permissions()->sync($allPermissions);
+                }
+
+                // Add manager as admin (if exists)
+                if ($project->manager_id) {
+                    ProjectEmployee::updateOrCreate(
+                        [
+                            'project_id' => $project->id,
+                            'user_id' => $project->manager_id,
+                        ],
+                        [
+                            'company_id' => $project->company_id,
+                            'project_role_id' => $adminRole->id,
+                            'assigned_by_user_id' => $project->created_by_user_id,
+                            'assigned_at' => now(),
+                        ]
+                    );
+                }
+
+                // Add creator as admin (if different from manager)
+                if ($project->created_by_user_id && $project->created_by_user_id !== $project->manager_id) {
+                    ProjectEmployee::updateOrCreate(
+                        [
+                            'project_id' => $project->id,
+                            'user_id' => $project->created_by_user_id,
+                        ],
+                        [
+                            'company_id' => $project->company_id,
+                            'project_role_id' => $adminRole->id,
+                            'assigned_by_user_id' => $project->created_by_user_id,
+                            'assigned_at' => now(),
+                        ]
+                    );
+                }
+
+                Log::info('Project admin role created successfully', [
+                    'project_id' => $project->id,
+                    'admin_role_id' => $adminRole->id,
+                    'permissions_count' => $allPermissions->count(),
+                ]);
+            });
+        } catch (\Exception $e) {
+            Log::error('Failed to create admin role for project: ' . $e->getMessage(), [
+                'project_id' => $project->id,
+                'project_name' => $project->name,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }

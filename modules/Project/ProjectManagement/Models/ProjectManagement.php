@@ -41,6 +41,7 @@ class ProjectManagement extends Model
         'sub_sub_project_type_id',
         'name',
         'manager_id',
+        'created_by_user_id',
         'branch_id',
         'project_owner_type',
         'project_owner_id',
@@ -62,6 +63,7 @@ class ProjectManagement extends Model
         'sub_project_type_id' => 'integer',
         'sub_sub_project_type_id' => 'integer',
         'manager_id' => 'string',
+        'created_by_user_id' => 'string',
         'branch_id' => 'string',
         'project_owner_type' => 'string',
         'project_owner_id' => 'string',
@@ -80,7 +82,7 @@ class ProjectManagement extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         // Ensure UUID is generated (in case UuidTrait boot doesn't fire)
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
@@ -88,7 +90,7 @@ class ProjectManagement extends Model
             }
         });
     }
-    
+
     /**
      * Get the original project owner type alias for presentation
      */
@@ -105,17 +107,17 @@ class ProjectManagement extends Model
     // Relationships
     public function projectType()
     {
-        return $this->belongsTo(ProjectType::class, 'project_type_id');
+        return $this->belongsTo(ProjectType::class, 'project_type_id')->withoutGlobalScopes();
     }
 
     public function subProjectType()
     {
-        return $this->belongsTo(ProjectType::class, 'sub_project_type_id');
+        return $this->belongsTo(ProjectType::class, 'sub_project_type_id')->withoutGlobalScopes();
     }
 
     public function subSubProjectType()
     {
-        return $this->belongsTo(ProjectType::class, 'sub_sub_project_type_id');
+        return $this->belongsTo(ProjectType::class, 'sub_sub_project_type_id')->withoutGlobalScopes();
     }
 
     public function manager()
@@ -136,18 +138,18 @@ class ProjectManagement extends Model
         if (!$this->project_owner_type || !$this->project_owner_id) {
             return null;
         }
-        
+
         if ($this->project_owner_type === 'company') {
             return $this->ownerCompany;
         }
-        
+
         if ($this->project_owner_type === 'individual') {
             return $this->ownerIndividual;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Relationship to Company when project_owner_type is 'company'
      */
@@ -155,7 +157,7 @@ class ProjectManagement extends Model
     {
         return $this->belongsTo(Company::class, 'project_owner_id')->withoutGlobalScopes();
     }
-    
+
     /**
      * Relationship to User when project_owner_type is 'individual'
      */
@@ -189,9 +191,14 @@ class ProjectManagement extends Model
         return $this->belongsTo(Company::class, 'company_id')->withoutGlobalScopes();
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id')->withoutGlobalScopes();
+    }
+
     public function projectEmployees()
     {
-        return $this->hasMany(ProjectEmployee::class, 'project_id');
+        return $this->hasMany(ProjectEmployee::class, 'project_id')->withoutGlobalScopes();
     }
 
     public function employees()
@@ -200,6 +207,11 @@ class ProjectManagement extends Model
             ->withoutGlobalScopes()
             ->withPivot('assigned_at', 'assigned_by_user_id')
             ->withTimestamps();
+    }
+
+    public function projectRoles()
+    {
+        return $this->hasMany(ProjectRole::class, 'project_id');
     }
 
     protected static function newFactory(): ProjectManagementFactory

@@ -56,6 +56,10 @@ class ProjectManagementRepository extends BaseRepository
             'subSubProjectType.contractorContractSetting',
             'subSubProjectType.employeeContractSetting',
             'subSubProjectType.departmentContractSetting',
+            'subSubProjectType.attachmentCycleSetting',
+            'subSubProjectType.archiveLibrarySetting',
+            'subSubProjectType.rolesAndPermissionsSetting',
+            'subSubProjectType.projectSharingSetting',
             'manager',
             'branch',
             'ownerCompany',
@@ -64,7 +68,8 @@ class ProjectManagementRepository extends BaseRepository
             'costCenterBranch',
             'management',
             'currency',
-            'company'
+            'company',
+            'shares'
         ])->findOrFail($id->toString());
     }
 
@@ -95,6 +100,24 @@ class ProjectManagementRepository extends BaseRepository
 
     public function deleteProjectManagement(UuidInterface $id): bool
     {
+        $project = $this->find($id);
+
+        if (!$project) {
+            throw new \Exception(__('validation.project-not-found'), 404);
+        }
+
+        // Check for related employees
+        $employeesCount = $project->projectEmployees()->count();
+        if ($employeesCount > 0) {
+            throw new \Exception(__('validation.cannot_delete_project_has_employees', ['count' => $employeesCount]), 422);
+        }
+
+        // Check for related roles
+        $rolesCount = $project->projectRoles()->count();
+        if ($rolesCount > 0) {
+            throw new \Exception(__('validation.cannot_delete_project_has_roles', ['count' => $rolesCount]), 422);
+        }
+
         return $this->delete($id);
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\ClientRequest\Observers;
 
 use Modules\ClientRequest\Models\ClientRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ClientRequestObserver
@@ -17,6 +18,11 @@ class ClientRequestObserver
         // Generate serial number only if it's not already set
         if (is_null($clientRequest->serial_number)) {
             $clientRequest->serial_number = $this->generateSerialNumber($clientRequest->company_id);
+        }
+
+        // Set created_by_user_id from authenticated user if not already set
+        if (is_null($clientRequest->created_by_user_id) && Auth::check()) {
+            $clientRequest->created_by_user_id = (string) Auth::id();
         }
     }
 

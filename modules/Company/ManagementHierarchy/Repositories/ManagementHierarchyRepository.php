@@ -203,10 +203,13 @@ class ManagementHierarchyRepository extends BaseRepository
 //            $managementData['parent_id'] = $managementHierarchyId;
         $managementHierarchy = $this->create($managementData + ["id" => $this->nextId]);
         $detail = $managementHierarchy->detail()->create(array_merge(["reference_department_id" => $sourceManagementHierarchy->id, "is_copied" => 1], $managementDetail));
+
         if ($deputyManagers != null && count($deputyManagers) > 0) {
             foreach ($deputyManagers as $deputyManager) {
-                ManagementHierarchyDetailManager::create(["deputy_manager_id" => $deputyManager, "management_hierarchy_detail_id" => $managementHierarchy->detail->id]);
-
+                ManagementHierarchyDetailManager::create([
+                    "deputy_manager_id" => $deputyManager,
+                    "management_hierarchy_detail_id" => $detail->id
+                ]);
             }
 
         }
@@ -275,6 +278,13 @@ class ManagementHierarchyRepository extends BaseRepository
 
             $managementHierarchy->update($branchData);
             $managementHierarchy->fresh();
+
+            //update main management
+            $mainManagement = $this->model->where([
+                "parent_id" => $managementHierarchy->id,
+                "type" => "management",
+                "is_main" => 1
+            ])->first()?->update(['manager_id' => $managementHierarchy->manager_id]);
 
             $managementHierarchy->address()->update($addressData);
 
@@ -584,12 +594,22 @@ class ManagementHierarchyRepository extends BaseRepository
             ->where('id', '!=', $userId)
             ->get();
 
-        // Merge all users and return unique result
-        return $lowerUsers
+        // Merge all users and get unique result
+        $allUsers = $lowerUsers
             ->merge($managerUsers)
             ->merge($deputyUsers)
             ->merge($directUserChildren)
             ->unique('id');
+
+        // Apply name filter if provided in request
+        $nameFilter = request()->input('name');
+        if ($nameFilter) {
+            $allUsers = $allUsers->filter(function ($user) use ($nameFilter) {
+                return $user->name && stripos($user->name, $nameFilter) !== false;
+            });
+        }
+
+        return $allUsers;
     }
 
     /**
@@ -608,7 +628,7 @@ class ManagementHierarchyRepository extends BaseRepository
         }
 
 
-        $query = SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company'])
+        $query = SourceManagementHierarchy::query()->with(['details.managementHierarchy', 'company', 'parent'])
             ->when(isset($filters["type"]), function ($query) use ($filters) {
                 $query->where("type", $filters["type"]);
             })->when(request()->has("ignore_branch_id"), function ($query) {
@@ -620,6 +640,10 @@ class ManagementHierarchyRepository extends BaseRepository
                     $query->whereHas("relatedBranches", function ($query) {
                         $query->where("branch_id", request()->ignore_branch_id);
                     });
+            })
+            ->when(request()->has("name"), function ($query) {
+                $name = request()->input("name");
+                $query->where("name", "like", "%" . $name . "%");
             })
             ->where('company_id', $company->id);
 
@@ -645,8 +669,13 @@ class ManagementHierarchyRepository extends BaseRepository
             $filters["type"] = "management";
         }
 
-        return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'company'])
-            ->where('company_id', $company->id)->filter($filters)
+        return SourceManagementHierarchy::query()->with(['detail.managementHierarchy', 'company', 'parent'])
+            ->where('company_id', $company->id)
+            ->when(request()->has("name"), function ($query) {
+                $name = request()->input("name");
+                $query->where("name", "like", "%" . $name . "%");
+            })
+            ->filter($filters)
             ->get();
     }
 

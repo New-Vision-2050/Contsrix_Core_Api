@@ -8,12 +8,15 @@ use App\Http\Controllers\Controller;
 use BasePackage\Shared\Presenters\Json;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Modules\Company\CompanyCore\Services\CompanyCRUDService;
 use Modules\Project\ProjectManagement\Models\ProjectManagement;
 use Modules\Project\ProjectManagement\Requests\ShareProjectRequest;
 use Modules\Project\ProjectManagement\Requests\RespondToShareRequest;
+use Modules\Project\ProjectManagement\Mail\ProjectShareMail;
 use Modules\Shared\ResourceShare\Services\ResourceShareService;
 use Modules\Shared\ResourceShare\Presenters\ResourceSharePresenter;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
 class ProjectShareController extends Controller
@@ -59,8 +62,14 @@ class ProjectShareController extends Controller
                 ownerCompanyId: tenant('id'),
                 sharedWithCompanyId: $company->id,
                 schemaIds: $request->schema_ids,
-                notes: $request->notes
+                notes: $request->notes,
+                typeId: $request->type_id,
+                relationId: $request->relation_id,
+                roleId: $request->role_id
             );
+
+            // Send email notification to the owner of the shared company
+            $this->sendShareNotificationEmail($share, $company, $project);
 
             $presenter = new ResourceSharePresenter($share);
 
@@ -287,5 +296,72 @@ class ProjectShareController extends Controller
         } catch (\Exception $e) {
             return Json::error($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Send email notification to the owner of the shared company
+     * Note: This method will throw exceptions if email sending fails for testing purposes
+     */
+    private function sendShareNotificationEmail($share, $company, $project): void
+    {
+        // Get the owner of the shared company WITHOUT tenancy scope
+        // This is crucial because the receiver company is in a different tenant
+        $recipient = User::withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->where('is_owner', 1)
+            ->first();
+
+        if (!$recipient || !$recipient->email) {
+            \Log::warning("No owner found for project share notification", [
+                'company_id' => $company->id,
+                'company_name' => $company->name,
+                'project_id' => $project->id,
+            ]);
+            throw new \Exception("No owner email found for company: " . $company->name);
+        }
+
+        // Get current user as sender
+        $currentUser = auth()->user();
+        $senderName = $currentUser ? $currentUser->name : 'مدير النظام';
+
+        // Build action URL from tenant's domain
+        $actionUrl = $this->buildActionUrl($company, $share);
+
+        // Send the email - will throw exception if it fails
+        Mail::to($recipient->email)->send(
+            new ProjectShareMail(
+                share: $share,
+                project: $project,
+                recipientName: $recipient->name,
+                senderName: $senderName,
+                actionUrl: $actionUrl
+            )
+        );
+
+        \Log::info("Project share notification email sent successfully", [
+            'recipient_email' => $recipient->email,
+            'recipient_name' => $recipient->name,
+            'company_id' => $company->id,
+            'project_id' => $project->id,
+            'share_id' => $share->id,
+            'action_url' => $actionUrl,
+        ]);
+    }
+
+    /**
+     * Build action URL from company's domain
+     */
+    private function buildActionUrl($company, $share): string
+    {
+        // Get the company's primary domain
+        $domain = $company->domains()->first();
+
+        if ($domain && $domain->domain) {
+            // Build URL using company's domain: https://{domain}/ar/projects/inbox
+            return 'https://' . $domain->domain . '/ar/projects/inbox';
+        }
+
+        // Fallback to config if no domain found
+        return config('app.frontend_url', 'https://constrix.com') . '/ar/projects/inbox';
     }
 }

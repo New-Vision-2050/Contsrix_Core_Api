@@ -30,7 +30,7 @@ class ResourceShareResponded implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new Channel('company.' . $this->resourceShare->owner_company_id),
+            new Channel('company.' . $this->resourceShare->shared_with_company_id),
         ];
     }
 
@@ -67,7 +67,7 @@ class ResourceShareResponded implements ShouldBroadcastNow
             ];
         } catch (\Exception $e) {
             \Log::error('ResourceShareResponded broadcast error: ' . $e->getMessage());
-            
+
             // Return minimal safe data
             return [
                 'id' => $this->resourceShare->id,
@@ -86,7 +86,7 @@ class ResourceShareResponded implements ShouldBroadcastNow
     {
         try {
             $shareable = $this->resourceShare->shareable;
-            
+
             if (!$shareable) {
                 return 'Shared Resource';
             }

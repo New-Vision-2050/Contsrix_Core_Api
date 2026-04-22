@@ -24,7 +24,7 @@ class IdentityDataRequest extends FormRequest
 
             'passport_end_date' => 'required_with:passport_start_date|date|after:passport_start_date',
             'identity_end_date' => 'required_with:identity_start_date|date|after:identity_start_date',
-            'border_number_end_date' => 'required_with:border_number_start_date|date|after:border_number_start_date',
+            'border_number_end_date' => 'nullable|date|after:border_number_start_date',
             'entry_number_end_date' => 'required_with:entry_number_start_date|date|after:entry_number_start_date',
 
             'file_passport.*' => 'nullable',
@@ -49,7 +49,6 @@ class IdentityDataRequest extends FormRequest
             'identity_end_date.date' => __('validation.identity.identity_end_date_date'),
             'identity_end_date.after' => __('validation.identity.identity_end_date_after'),
 
-            'border_number_end_date.required_with' => __('validation.identity.border_number_end_date_required_with'),
             'border_number_end_date.date' => __('validation.identity.border_number_end_date_date'),
             'border_number_end_date.after' => __('validation.identity.border_number_end_date_after'),
 

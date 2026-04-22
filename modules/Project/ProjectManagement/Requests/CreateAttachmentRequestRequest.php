@@ -11,6 +11,7 @@ class CreateAttachmentRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'serial_number' => 'nullable|string|unique:attachment_requests,serial_number|max:255',
             'name' => 'required|string|max:255',
             'date' => 'required|date',
             'project_id' => 'required|string|exists:projects,id',
@@ -19,7 +20,7 @@ class CreateAttachmentRequestRequest extends FormRequest
             'attachment_sub_type_id' => 'nullable',
             'attachment_sub_sub_type_id' => 'nullable',
             'attachments' => 'required|array|min:1',
-            'attachments.*' => 'required|file|max:10240', // 10MB max
+            'attachments.*' => 'required|file', // 10MB max
             'notes' => 'nullable|string',
         ];
     }

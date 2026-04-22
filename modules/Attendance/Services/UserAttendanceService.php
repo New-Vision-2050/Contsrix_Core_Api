@@ -586,7 +586,8 @@ class UserAttendanceService
         $currentYear = $year ?? $now->year;
         $currentMonth = $month ?? $now->month;
 
-        // Build date range in user's timezone, then convert to UTC for database query
+        // Build date range for the full requested month (including future auto-generated
+        // absent/holiday records that may already exist for days later in the month).
         $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
         $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
         $rangeEnd = $monthEnd;
@@ -781,6 +782,9 @@ class UserAttendanceService
                 'date' => $dateString,
                 'day_name' => $dayName,
                 'status' => $dayStatus,
+                'is_late' => (int) $attendances->contains(fn($a) => (bool) $a->is_late),
+                'is_absent' => (int) $attendances->contains(fn($a) => (bool) $a->is_absent),
+                'is_holiday' => (int) $attendances->contains(fn($a) => (bool) $a->is_holiday),
                 'periods_count' => count($periodsWithAttendance),
                 'periods' => $periodsWithAttendance,
             ];

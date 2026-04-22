@@ -40,6 +40,23 @@ class ResourceSharePresenter
             ] : null,
             'responded_at' => $this->share->responded_at?->toISOString(),
             'notes' => $this->share->notes,
+            'shareable' => $this->share->shareable ? [
+                'id' => $this->share->shareable->id,
+                'name' => $this->share->shareable->name,
+                'serial_number' => $this->share->shareable->serial_number,
+            ] : null,
+            'type' => $this->share->type ? [
+                'id' => $this->share->type->id,
+                'name' => $this->share->type->name,
+            ] : null,
+            'relation' => $this->share->relation ? [
+                'id' => $this->share->relation->id,
+                'name' => $this->share->relation->name,
+            ] : null,
+            'role' => $this->share->role ? [
+                'id' => $this->share->role->id,
+                'name' => $this->share->role->name,
+            ] : null,
             'created_at' => $this->share->created_at?->toISOString(),
             'updated_at' => $this->share->updated_at?->toISOString(),
         ];

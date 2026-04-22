@@ -10,10 +10,12 @@ use Illuminate\Http\JsonResponse;
 use Modules\ClientRequest\Handlers\DeleteClientRequestHandler;
 use Modules\ClientRequest\Handlers\UpdateClientRequestHandler;
 use Modules\ClientRequest\Presenters\ClientRequestPresenter;
+use Modules\ClientRequest\Presenters\ClientRequestMyRequestsPresenter;
 use Modules\ClientRequest\Requests\CreateClientRequestRequest;
 use Modules\ClientRequest\Requests\DeleteClientRequestRequest;
 use Modules\ClientRequest\Requests\GetClientRequestListRequest;
 use Modules\ClientRequest\Requests\GetClientRequestRequest;
+use Modules\ClientRequest\Requests\ChangeClientRequestStatusRequest;
 use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
 use Modules\ClientRequest\Services\ClientRequestCRUDService;
 use Modules\ClientRequest\Services\ClientRequestWidgetsService;
@@ -115,6 +117,32 @@ class ClientRequestController extends Controller
         $filters = $request->getFilters();
 
         return Excel::download(new ClientRequestExport($this->clientRequestService, $filters), $fileName);
+    }
+
+    public function changeStatus(ChangeClientRequestStatusRequest $request): JsonResponse
+    {
+        $item = $this->clientRequestService->changeStatus(
+            $request->route('id'),
+            $request->get('status_client_request'),
+            $request->get('reject_cause')
+        );
+
+        $this->clientRequestWidgetsService->clearWidgetCache();
+        $this->clientRequestStatusWidgetsService->clearWidgetCache();
+
+        $presenter = new ClientRequestPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function getMyRequests(GetClientRequestListRequest $request): JsonResponse
+    {
+        $list = $this->clientRequestService->getMyRequests(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(ClientRequestMyRequestsPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function getPriceOfferWidgets(): JsonResponse

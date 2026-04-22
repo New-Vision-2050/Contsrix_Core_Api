@@ -26,6 +26,60 @@ class CompanyObserver
     }
 
     /**
+     * Handle the Company "deleting" event.
+     * Soft delete all related domains when company is soft deleted.
+     */
+    public function deleting(Company $company): void
+    {
+        try {
+            // Get all domains for this company
+            $domains = $company->domains()->withoutTrashed()->get();
+            
+            foreach ($domains as $domain) {
+                $domain->delete(); // This will soft delete the domain
+            }
+
+            \Log::info("Company domains soft deleted", [
+                'company_id' => $company->id,
+                'company_name' => $company->name,
+                'domains_count' => $domains->count(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Failed to soft delete company domains", [
+                'company_id' => $company->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Handle the Company "restoring" event.
+     * Restore all related domains when company is restored.
+     */
+    public function restoring(Company $company): void
+    {
+        try {
+            // Get all soft deleted domains for this company
+            $domains = $company->domains()->onlyTrashed()->get();
+            
+            foreach ($domains as $domain) {
+                $domain->restore(); // This will restore the domain
+            }
+
+            \Log::info("Company domains restored", [
+                'company_id' => $company->id,
+                'company_name' => $company->name,
+                'domains_count' => $domains->count(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Failed to restore company domains", [
+                'company_id' => $company->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Create default job types and titles for a new company
      */
     private function createDefaultJobTypesAndTitles(Company $company): void

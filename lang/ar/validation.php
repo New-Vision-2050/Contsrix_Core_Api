@@ -508,6 +508,15 @@ return [
     'admin_account_cannot_be_deleted' => 'لا يمكن حذف حساب المسؤول.',
     'cannot_delete_yourself' => 'لا يمكنك حذف حسابك الشخصي.',
     'cannot_delete_company_owner' => 'لا يمكن حذف حساب مالك الشركة.',
+    'cannot_delete_company_has_users' => 'لا يمكن حذف الشركة لأنها تحتوي على :count موظف/موظفين.',
+    'cannot_delete_company_has_projects' => 'لا يمكن حذف الشركة لأنها تحتوي على :count مشروع/مشاريع.',
+    'cannot_delete_company_has_branches' => 'لا يمكن حذف الشركة لأنها تحتوي على :count فرع/فروع.',
+    'cannot_delete_company_has_managements' => 'لا يمكن حذف الشركة لأنها تحتوي على :count إدارة/إدارات.',
+    'cannot_delete_company_has_related_data' => 'لا يمكن حذف الشركة لأنها تحتوي على بيانات مرتبطة (موظفين، مشاريع، فروع، إدارات). يرجى حذف البيانات المرتبطة أولاً.',
+    'cannot_delete_project_has_employees' => 'لا يمكن حذف المشروع لأنه يحتوي على :count موظف/موظفين.',
+    'cannot_delete_project_has_roles' => 'لا يمكن حذف المشروع لأنه يحتوي على :count دور/أدوار.',
+    'cannot_delete_project_has_related_data' => 'لا يمكن حذف المشروع لأنه يحتوي على بيانات مرتبطة (موظفين، أدوار). يرجى حذف البيانات المرتبطة أولاً.',
+    'project-not-found' => 'المشروع غير موجود.',
     'regular' => 'منتظم',
     'male' => 'ذكر',
     'female' => 'أنثى',
@@ -519,7 +528,7 @@ return [
         'in_loction'=>'في الموقع',
         'clocked_out'=> 'تم الانصراف'
     ],
-    
+
     'unique_translation' => ':attribute بـ :locale مستخدم بالفعل.',
     'arabic' => 'العربية',
     'english' => 'الإنجليزية',
