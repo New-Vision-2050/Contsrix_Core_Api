@@ -6,6 +6,7 @@ namespace Modules\Shared\University\Providers;
 
 use BasePackage\Shared\Module\ModuleServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Modules\Shared\University\Console\FetchUniversitiesCommand;
 
 class UniversityServiceProvider extends ModuleServiceProvider
 {
@@ -19,6 +20,16 @@ class UniversityServiceProvider extends ModuleServiceProvider
         $this->registerTranslations();
         //$this->registerConfig();
         $this->registerMigrations();
+        $this->registerCommands();
+    }
+
+    public function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                FetchUniversitiesCommand::class,
+            ]);
+        }
     }
 
     public function register(): void
