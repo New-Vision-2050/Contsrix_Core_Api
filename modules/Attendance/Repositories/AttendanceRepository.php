@@ -35,6 +35,7 @@ class AttendanceRepository extends BaseRepository
             $page,
         );
     }
+
     /**
      * Get attendance list with filters and pagination
      */
@@ -49,10 +50,12 @@ class AttendanceRepository extends BaseRepository
 
         return $this->paginateQueryResult($query, $page, $perPage);
     }
+
     public function getQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return $this->model->newQuery();
     }
+
     /**
      * Get attendance by ID
      */
@@ -99,7 +102,7 @@ class AttendanceRepository extends BaseRepository
     /**
      * Get current active attendance for user.
      *
-     * @param  bool  $withUser  When false, skips eager-loading user (avoids an extra join/query when caller already has the user).
+     * @param bool $withUser When false, skips eager-loading user (avoids an extra join/query when caller already has the user).
      */
     public function getCurrentAttendance(UuidInterface $userId, bool $withUser = true): ?Attendance
     {
@@ -139,13 +142,14 @@ class AttendanceRepository extends BaseRepository
 
         return $results;
     }
+
     /**
      * Get attendance by date range
      */
     public function getAttendanceByDateRange(UuidInterface $userId, Carbon $startDate, Carbon $endDate): Collection
     {
         return Attendance::whereBetween('start_time', [$startDate->startOfDay(), $endDate->endOfDay()])
-        // where('user_id', $userId)
+            // where('user_id', $userId)
             ->orderBy('start_time', 'desc')
             ->get();
     }
@@ -160,7 +164,7 @@ class AttendanceRepository extends BaseRepository
         $dateInTz = $date->copy()->setTimezone($timezone);
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
-        
+
         return Attendance::where('user_id', $userId)
             ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc])
             ->first();
@@ -296,17 +300,10 @@ class AttendanceRepository extends BaseRepository
 
     private function historyGroupKey(Attendance $item): string
     {
-        $start = $item->start_time ?? $item->clock_in_time;
-        $end = $item->end_time ?? $item->clock_out_time;
-
-        $startFormatted = $start
-            ? ($start instanceof Carbon ? $start : Carbon::parse($start))->format('Y-m-d H:i')
-            : null;
-
-        $endFormatted = $end
-            ? ($end instanceof Carbon ? $end : Carbon::parse($end))->format('Y-m-d H:i')
-            : 'Present';
-
-        return $startFormatted.' - '.$endFormatted;
+        $start = $item->getRawOriginal('start_time') ?? $item->getRawOriginal('clock_in_time');
+        $end = $item->getRawOriginal('end_time') ?? $item->getRawOriginal('clock_out_time');
+        $startFormatted = $start ? Carbon::parse($start)->format('Y-m-d H:i') : null;
+        $endFormatted = $end ? Carbon::parse($end)->format('Y-m-d H:i') : 'Present';
+        return $startFormatted . ' - ' . $endFormatted;
     }
 }
