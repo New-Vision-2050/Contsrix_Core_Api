@@ -24,6 +24,15 @@ class PublicHolidayPresenter extends AbstractPresenter
             'country_id' => $this->publicHoliday->country_id,
             'date_start' => $this->publicHoliday->date_start?->format('Y-m-d'),
             'date_end' => $this->publicHoliday->date_end?->format('Y-m-d'),
+            'days' => $this->publicHoliday->relationLoaded('days')
+                ? $this->publicHoliday->days->map(static function ($day) {
+                    return [
+                        'id' => $day->id,
+                        'date' => $day->date?->format('Y-m-d'),
+                        'is_compensation' => $day->is_compensation,
+                    ];
+                })->values()->all()
+                : [],
             'country' => $this->publicHoliday->country ? [
                 'id' => $this->publicHoliday->country->id,
                 'name' => $this->publicHoliday->country->name,

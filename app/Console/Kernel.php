@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Console\Commands\CreateHolidayAttendanceCommand;
 use App\Console\Commands\CreateWaitingAttendanceCommand;
 use App\Console\Commands\UpdateAttendanceStatusCommand;
 use App\Console\Commands\SendAttendanceSilentNotificationCommand;
@@ -48,7 +49,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-silent-notifications.log'));
 
-
+        $schedule->command(CreateHolidayAttendanceCommand::class)
+            ->dailyAt('00:05')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/attendance-holiday.log'));
     }
 
     /**

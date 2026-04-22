@@ -17,7 +17,7 @@ class SetCompanyLogoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'logo' => 'required|image|mimes:jpeg,jpg,png,gif,svg|max:5000|dimensions:width=1920,height=1080'
+            'logo' => 'required|image|mimes:jpeg,jpg,png,gif,svg|max:5000'
             ];
     }
 

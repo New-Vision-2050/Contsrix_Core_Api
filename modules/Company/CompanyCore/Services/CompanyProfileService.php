@@ -375,12 +375,15 @@ class CompanyProfileService
         list($width, $height) = getimagesize($image->getPathname());
 
         // Validate dimensions
-        if ($width ==  1080 && $height == 1920) {
-            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1, "validate" => "required"]);
-        } else {
-            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0, "validate" => "required"]);
-            $flag = 0;
-        }
+
+        array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1, "validate" => "required"]);
+
+//        if ($width ==  1080 && $height == 1920) {
+//            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 1, "validate" => "required"]);
+//        } else {
+//            array_push($errors, ["sentence" => "أبعاد الصورة غير صحيحة. يجب أن تكون الأبعاد بين  1920*1080", "sub_title" => null, "status" => 0, "validate" => "required"]);
+//            $flag = 0;
+//        }
 
         $result = $this->checkImage($image);
 

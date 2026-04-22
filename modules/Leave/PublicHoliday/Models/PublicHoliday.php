@@ -6,6 +6,7 @@ namespace Modules\Leave\PublicHoliday\Models;
 
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Leave\PublicHoliday\Database\factories\PublicHolidayFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
@@ -62,6 +63,12 @@ class PublicHoliday extends Model
     public function country()
     {
         return $this->belongsTo(\Modules\Country\Models\Country::class, 'country_id');
+    }
+
+
+    public function days(): HasMany
+    {
+        return $this->hasMany(PublicHolidayDay::class, 'public_holiday_id')->orderBy('date');
     }
 
     /**
