@@ -589,7 +589,8 @@ class UserAttendanceService
         // Build date range for the full requested month (including future auto-generated
         // absent/holiday records that may already exist for days later in the month).
         $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
-        $rangeEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
+        $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
+        $rangeEnd = $monthEnd;
 
         // Convert to UTC for database query (database stores times in UTC)
         $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
@@ -643,8 +644,8 @@ class UserAttendanceService
             return $this->parseDateTime($dateField, $timezone)->toDateString();
         })->filter(fn($group, $key) => $key !== null);
 
-        // Get unique dates sorted descending
-        $allDates = $attendancesByDate->keys()->sort()->reverse()->values();
+        // Keep month history consistent by returning every date in the requested month.
+        $allDates = $this->buildMonthDateKeysDesc($rangeStart, $monthEnd);
         $totalDates = $allDates->count();
         $lastPage = (int) ceil($totalDates / $perPage);
         $offset = ($page - 1) * $perPage;
@@ -653,7 +654,8 @@ class UserAttendanceService
         $paginatedDates = $allDates->slice($offset, $perPage);
 
         $result = [];
-        foreach ($paginatedDates as $dateString) {
+        foreach ($paginatedDates as $dateValue) {
+            $dateString = (string) $dateValue;
             $dateCarbon = $this->parseDateTime($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
@@ -701,7 +703,7 @@ class UserAttendanceService
         // Build date range in user's timezone, then convert to UTC for database query
         $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
         $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
-        $rangeEnd = $monthEnd->gt($now) ? $now->copy()->endOfDay() : $monthEnd;
+        $rangeEnd = $monthEnd;
 
         // Convert to UTC for database query (database stores times in UTC)
         $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
@@ -755,8 +757,8 @@ class UserAttendanceService
             return $this->parseDateTime($dateField, $timezone)->toDateString();
         })->filter(fn($group, $key) => $key !== null);
 
-        // Get unique dates sorted descending
-        $allDates = $attendancesByDate->keys()->sort()->reverse()->values();
+        // Keep month history consistent by returning every date in the requested month.
+        $allDates = $this->buildMonthDateKeysDesc($rangeStart, $monthEnd);
         $totalDates = $allDates->count();
         $lastPage = (int) ceil($totalDates / $perPage);
         $offset = ($page - 1) * $perPage;
@@ -765,7 +767,8 @@ class UserAttendanceService
         $paginatedDates = $allDates->slice($offset, $perPage);
 
         $result = [];
-        foreach ($paginatedDates as $dateString) {
+        foreach ($paginatedDates as $dateValue) {
+            $dateString = (string) $dateValue;
             $dateCarbon = $this->parseDateTime($dateString, $timezone);
             $attendances = $attendancesByDate->get($dateString, collect());
 
@@ -798,6 +801,23 @@ class UserAttendanceService
                 'result_count' => count($result),
             ],
         ];
+    }
+
+    /**
+     * Build all month dates sorted descending (Y-m-d).
+     */
+    private function buildMonthDateKeysDesc(Carbon $rangeStart, Carbon $monthEnd): Collection
+    {
+        $dates = [];
+        $cursor = $rangeStart->copy()->startOfDay();
+        $end = $monthEnd->copy()->startOfDay();
+
+        while ($cursor->lte($end)) {
+            $dates[] = $cursor->toDateString();
+            $cursor->addDay();
+        }
+
+        return collect($dates)->reverse()->values();
     }
 
     /**
