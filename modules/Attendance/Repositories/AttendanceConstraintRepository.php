@@ -73,7 +73,7 @@ class AttendanceConstraintRepository extends BaseRepository
     public function updateConstraint(UuidInterface $id, array $data): AttendanceConstraint
     {
         $constraint = $this->getConstraint($id);
-        $this->assertNoOpenAttendanceForConstraint($id->toString(), (string) $constraint->company_id);
+        // $this->assertNoOpenAttendanceForConstraint($id->toString(), (string) $constraint->company_id);
 
         $constraint->update($data);
         AttendanceConstraintUpdated::dispatch($constraint->id);
@@ -87,7 +87,7 @@ class AttendanceConstraintRepository extends BaseRepository
     public function deleteConstraint(UuidInterface $id): bool
     {
         $constraint = $this->getConstraint($id);
-        $this->assertNoOpenAttendanceForConstraint($id->toString(), (string) $constraint->company_id);
+        // $this->assertNoOpenAttendanceForConstraint($id->toString(), (string) $constraint->company_id);
 
         return $this->delete($id);
     }
