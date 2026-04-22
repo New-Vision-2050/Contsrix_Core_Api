@@ -907,11 +907,39 @@ class UserAttendanceService
             }
         }
 
+        // Drop placeholder groups that never matched a schedule slot (e.g. DB row with start_time
+        // but null end_time → id:* key) and carry no clock/work — avoids a duplicate empty "period".
+        foreach ($remaining as $key => $row) {
+            if ($this->isOrphanEmptyHistoryAggregatedRow($row)) {
+                unset($remaining[$key]);
+            }
+        }
+
         foreach ($remaining as $row) {
             $periods[] = $this->stripInternalHistoryPeriodKeys($row);
         }
 
         return $periods;
+    }
+
+    /**
+     * True when this aggregated attendance row has nothing to show (no punches, no time totals).
+     * Such rows often come from mis-keyed schedule bounds vs. {@see shiftScheduleGroupKey} and would
+     * duplicate the scheduled slot as an extra empty period.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function isOrphanEmptyHistoryAggregatedRow(array $row): bool
+    {
+        if (($row['clock_in_time'] ?? null) !== null || ($row['clock_out_time'] ?? null) !== null) {
+            return false;
+        }
+
+        $wh = (string) ($row['work_hours'] ?? '00:00');
+        $dh = (string) ($row['delay_hours'] ?? '00:00');
+        $oh = (string) ($row['overtime_hours'] ?? '00:00');
+
+        return $wh === '00:00' && $dh === '00:00' && $oh === '00:00';
     }
 
     /**
