@@ -120,7 +120,7 @@ class FetchUniversitiesCommand extends Command
                         ->whereHas('translations', function ($q) use ($name) {
                             $q->where('locale', 'en')
                               ->where('field', 'name')
-                              ->where('content', G);
+                              ->where('content', $name);
                         })
                         ->exists();
 
