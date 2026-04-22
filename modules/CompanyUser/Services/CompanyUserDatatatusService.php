@@ -111,7 +111,7 @@ private function hasFilledFields(?object $object, array $fields): bool
             ? ['identity', 'identity_start_date', 'identity_end_date']
             : [
                 'passport', 'passport_start_date', 'passport_end_date',
-                'border_number', 'border_number_start_date', 'border_number_end_date',
+                'border_number', 'border_number_start_date',
                 'entry_number', 'entry_number_start_date', 'entry_number_end_date',
                 'work_permit', 'work_permit_start_date', 'work_permit_end_date',
             ];
@@ -156,8 +156,7 @@ private function hasFilledFields(?object $object, array $fields): bool
         }
 
         $socialFields = [
-             'whatsapp', 'facebook',
-            'telegram', 'instagram', 'snapchat', 'linkedin'
+             'whatsapp'
         ];
 
         foreach ($socialFields as $field) {
