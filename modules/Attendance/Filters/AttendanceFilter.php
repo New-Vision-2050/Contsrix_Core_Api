@@ -26,6 +26,35 @@ class AttendanceFilter extends SearchModelFilter
         return $this->where('status', $status);
     }
 
+    /** Day outcome (is_* flags), not the workflow `status` column. */
+    public function attendanceStatus(string $attendanceStatus)
+    {
+        $v = strtolower($attendanceStatus);
+
+        if ($v === 'holiday') {
+            return $this->where('is_holiday', true);
+        }
+
+        if ($v === 'absent') {
+            return $this->where('is_absent', true);
+        }
+
+        if ($v === 'late') {
+            return $this->where('is_late', true)
+                ->where('is_absent', false)
+                ->where('is_holiday', false);
+        }
+
+        if ($v === 'present') {
+            return $this->where('is_late', false)
+                ->where('is_absent', false)
+                ->where('is_holiday', false)
+                ->whereNotNull('clock_in_time');
+        }
+
+        return $this;
+    }
+
     public function startDate($date)
     {
         // Sargable range — avoid DATE(start_time) (cannot use indexes; large filesorts).
