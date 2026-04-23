@@ -98,8 +98,13 @@ class UniversitiesSeederTableSeeder extends Seeder
             ['ar' => 'الجامعة العربية المفتوحة', 'en' => 'Arab Open University', 'country_id' => 194, 'link' => null], // Has branches including Saudi Arabia
         ];
 
+        // --- JORDAN (Country ID: 111) ---
+        $jordan_universities = [
+            ['ar' => 'أكاديمية الأمير حسين بن عبدالله الثاني للحماية المدنية', 'en' => 'Prince Hussein bin Abdullah II Academy for Civil Defense', 'country_id' => 111, 'link' => null],
+        ];
+
         // Combine all universities
-        $all_universities = array_merge($egypt_universities, $saudi_universities);
+        $all_universities = array_merge($egypt_universities, $saudi_universities, $jordan_universities);
 
         foreach ($all_universities as $university) {
             University::create(

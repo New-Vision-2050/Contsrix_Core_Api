@@ -97,6 +97,8 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicQualificationSeederTableSeeder::class);
 
         $this->call(AcademicSpecializationssSeederTableSeeder::class);
+        $this->call(Modules\Shared\AcademicSpecialization\Database\Seeders\SafetyEngineeringSpecializationSeeder::class);
+
 
         $this->call(UniversitiesSeederTableSeeder::class);
         $this->call(ProfessionalBodiessSeeder::class);
