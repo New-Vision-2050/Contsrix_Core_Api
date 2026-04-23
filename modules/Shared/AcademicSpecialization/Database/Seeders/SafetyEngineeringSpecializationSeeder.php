@@ -27,7 +27,7 @@ class SafetyEngineeringSpecializationSeeder extends Seeder
         ];
 
         // Get the max ID and add 1 to avoid conflicts
-        $maxId = AcademicSpecialization::max('id') ?? 0;
+        $maxId = (int) (AcademicSpecialization::max('id') ?? 0);
         $newId = $maxId + 1;
 
         AcademicSpecialization::firstOrCreate(
