@@ -71,6 +71,12 @@ class FetchUniversitiesCommand extends Command
         $progressBar->finish();
         $this->newLine(2);
 
+        // Add manual universities that aren't available in the API
+        $this->info('📝 Adding manual universities...');
+        $manualResult = $this->addManualUniversities($force);
+        $totalCreated += $manualResult['created'];
+        $totalSkipped += $manualResult['skipped'];
+
         $this->info('✅ Import completed!');
         $this->table(
             ['Status', 'Count'],
@@ -160,6 +166,69 @@ class FetchUniversitiesCommand extends Command
             'created' => $created,
             'skipped' => $skipped,
             'failed' => $failed,
+        ];
+    }
+
+    private function addManualUniversities(bool $force): array
+    {
+        $created = 0;
+        $skipped = 0;
+
+        // Manual universities that aren't available in the Hipolabs API
+        $manualUniversities = [
+            [
+                'name_ar' => 'أكاديمية الأمير حسين بن عبدالله الثاني للحماية المدنية',
+                'name_en' => 'Prince Hussein bin Abdullah II Academy for Civil Defense',
+                'country_id' => 111, // Jordan
+                'link' => null,
+            ],
+        ];
+
+        foreach ($manualUniversities as $uniData) {
+            try {
+                $country = Country::find($uniData['country_id']);
+
+                if (!$country) {
+                    $this->warn("⚠️  Country not found for ID: {$uniData['country_id']}");
+                    continue;
+                }
+
+                if (!$force) {
+                    $exists = University::where('country_id', $country->id)
+                        ->whereHas('translations', function ($q) use ($uniData) {
+                            $q->where('locale', 'ar')
+                              ->where('field', 'name')
+                              ->where('content', $uniData['name_ar']);
+                        })
+                        ->exists();
+
+                    if ($exists) {
+                        $skipped++;
+                        continue;
+                    }
+                }
+
+                University::create([
+                    'name' => [
+                        'en' => $uniData['name_en'],
+                        'ar' => $uniData['name_ar']
+                    ],
+                    'country_id' => $country->id,
+                    'link' => $uniData['link'],
+                ]);
+
+                $created++;
+            } catch (\Exception $e) {
+                \Log::error('Failed to create manual university', [
+                    'university' => $uniData['name_ar'],
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return [
+            'created' => $created,
+            'skipped' => $skipped,
         ];
     }
 }
