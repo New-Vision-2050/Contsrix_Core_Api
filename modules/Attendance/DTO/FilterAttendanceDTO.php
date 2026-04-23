@@ -10,6 +10,7 @@ class FilterAttendanceDTO
         public string $company_id,
         public ?string $user_id = null,
         public ?string $status = null,
+        public ?string $attendance_status = null,
         public ?string $start_date = null,
         public ?string $end_date = null,
         public ?string $department_id = null,
@@ -43,6 +44,9 @@ class FilterAttendanceDTO
         }
         if ($this->status !== null) {
             $data['status'] = $this->status;
+        }
+        if ($this->attendance_status !== null) {
+            $data['attendance_status'] = $this->attendance_status;
         }
         if ($this->start_date !== null) {
             $data['start_date'] = $this->start_date;

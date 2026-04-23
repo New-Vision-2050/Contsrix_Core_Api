@@ -26,6 +26,7 @@ class ConstraintPresenter extends AbstractPresenter
             'priority' => (int) $this->constraint->priority,
             'start_date' => $this->constraint->start_date?->format('Y-m-d'),
             'end_date' => $this->constraint->end_date?->format('Y-m-d'),
+            'max_over_time' => $this->constraint->max_over_time,
             'config' => $this->formatConstraintConfig(),
             'branches' => $this->formatBranches(),
             'created_by' => $this->constraint->creator?->name,
