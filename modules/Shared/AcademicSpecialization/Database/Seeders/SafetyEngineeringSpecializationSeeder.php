@@ -26,18 +26,13 @@ class SafetyEngineeringSpecializationSeeder extends Seeder
             'code' => 'engineering-safety'
         ];
 
+        // Get the max ID and add 1 to avoid conflicts
+        $maxId = AcademicSpecialization::max('id') ?? 0;
+        $newId = $maxId + 1;
+
         AcademicSpecialization::firstOrCreate(
-            [
-                'name->ar' => $specialization['ar'],
-                'code' => $specialization['code']
-            ],
-            [
-                'name' => [
-                    'en' => $specialization['en'],
-                    'ar' => $specialization['ar']
-                ],
-                'code' => $specialization['code']
-            ]
+            ['id' => $newId],
+            ['name' => ['en' => $specialization['en'], 'ar' => $specialization['ar']], 'code' => $specialization['code']]
         );
 
         $this->command->info('✅ Safety and Security Engineering specialization added successfully!');
