@@ -2,56 +2,104 @@
 
 namespace App\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Models\Attendance;
 use Modules\NotificationSettings\Services\FirebaseNotificationService;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 class SendAttendanceSilentNotificationCommand extends Command
 {
     protected $signature = 'attendance:send-silent-notifications {--dry-run : Show users who would receive notifications without sending}';
-    protected $description = 'Send silent notifications to users who are clocked in but not clocked out (runs every 5 minutes)';
+
+    protected $description = 'Send silent notifications to all clocked-in users; auto clock-out when now >= end_time + max_over_time (hours) in attendance timezone';
 
     public function handle()
     {
         $isDryRun = $this->option('dry-run');
-        
+
         if ($isDryRun) {
-            $this->info('DRY RUN MODE - No notifications will be sent');
+            $this->info('DRY RUN MODE - No notifications or DB updates will be applied');
         }
 
         $this->info('Starting attendance silent notification process...');
-        
-        // Get all active attendances (clocked in but not clocked out)
-        $activeAttendances = Attendance::whereNotNull('clock_in_time')
+
+        $activeAttendances = Attendance::query()
+            ->whereNotNull('clock_in_time')
             ->whereNull('clock_out_time')
             ->with('user')
             ->get();
 
-        $this->info('Found ' . $activeAttendances->count() . ' active attendances.');
-        
+        $this->info('Found '.$activeAttendances->count().' active attendances.');
+
         $notificationsSent = 0;
         $notificationsSkipped = 0;
+        $autoClockOuts = 0;
 
         foreach ($activeAttendances as $attendance) {
             $user = $attendance->user;
-            
-            if (!$user) {
+
+            if (! $user) {
                 $this->warn("Skipping attendance {$attendance->id} - no user found");
                 $notificationsSkipped++;
+
                 continue;
             }
 
-            if (!$user->fcm_token) {
-                $this->warn("Skipping user {$user->name} - no FCM token");
-                $notificationsSkipped++;
-                continue;
-            }
-
-            // Only send notification when now >= end_time + max_over_time (so app can auto clock-out)
-            // Example: end_time=16:00, max_over_time=4h → latestClockOut=20:00 → send when now >= 20:00
             $timezone = $attendance->timezone ?? config('app.timezone');
+
+            $notificationData = [
+                'type' => 'attendance_tracking',
+                'attendance_id' => (string) $attendance->id,
+                'user_id' => (string) $user->id,
+                'clock_in_time' => $attendance->clock_in_time
+                    ? (is_string($attendance->clock_in_time)
+                        ? Carbon::parse($attendance->clock_in_time)->toISOString()
+                        : $attendance->clock_in_time->toISOString())
+                    : null,
+                'status' => $attendance->status,
+                'timestamp' => Carbon::now()->toISOString(),
+                'action' => 'sync_attendance_status',
+            ];
+
+            if ($user->fcm_token) {
+                if ($isDryRun) {
+                    $this->info("WOULD SEND silent notification to: {$user->name} ({$user->email})");
+                    $this->line("  - Attendance ID: {$attendance->id}");
+                    $this->line('  - Clock In: '.($attendance->clock_in_time ?? 'N/A'));
+                    $this->line('  - Data: '.json_encode($notificationData, JSON_PRETTY_PRINT));
+                    $this->line('');
+                    $notificationsSent++;
+                } else {
+                    $success = FirebaseNotificationService::sendSilent($user->fcm_token, $notificationData);
+
+                    if ($success) {
+                        $this->info("✓ Sent silent notification to: {$user->name}");
+                        $notificationsSent++;
+                        Log::info('Attendance silent notification sent', [
+                            'user_id' => $user->id,
+                            'user_name' => $user->name,
+                            'attendance_id' => $attendance->id,
+                            'clock_in_time' => $attendance->clock_in_time,
+                            'timestamp' => Carbon::now()->toISOString(),
+                        ]);
+                    } else {
+                        $this->error("✗ Failed to send notification to: {$user->name}");
+                        $notificationsSkipped++;
+                        Log::error('Attendance silent notification failed', [
+                            'user_id' => $user->id,
+                            'user_name' => $user->name,
+                            'attendance_id' => $attendance->id,
+                            'fcm_token' => $user->fcm_token,
+                            'timestamp' => Carbon::now()->toISOString(),
+                        ]);
+                    }
+                }
+            } else {
+                $this->warn("Skipping silent notification for {$user->name} - no FCM token");
+                $notificationsSkipped++;
+            }
+
             if ($attendance->end_time) {
                 $endTimeRaw = $attendance->end_time instanceof \DateTimeInterface
                     ? $attendance->end_time->format('Y-m-d H:i:s')
@@ -60,75 +108,41 @@ class SendAttendanceSilentNotificationCommand extends Command
                 $maxOverHours = (int) ($attendance->max_over_time ?? 0);
                 $latestClockOut = $endTime->copy()->addHours($maxOverHours);
                 $now = Carbon::now($timezone);
-                if ($now->lt($latestClockOut)) {
-                    if ($isDryRun) {
-                        $this->line("  SKIP (before deadline) user: {$user->name} - now {$now->toISOString()} < latest_clock_out {$latestClockOut->toISOString()}");
+
+                if ($now->gte($latestClockOut)) {
+                    $attendance->refresh();
+                    if ($attendance->clock_out_time !== null || $attendance->clock_in_time === null) {
+                        continue;
                     }
-                    $notificationsSkipped++;
-                    continue;
-                }
-            }
 
-            // Auto clock-out when deadline passed (end_time + max_over_time): update DB so user is clocked out
-            if ($attendance->end_time) {
-                $clockOutAt = Carbon::now($timezone);
-                $attendance->update([
-                    'clock_out_time' => $clockOutAt,
-                    'notes' => trim(($attendance->notes ?? '') . "\n" . 'Auto clock-out (exceeded max over time)'),
-                    'status' => 'completed',
-                    'day_status' => 'clocked_out',
-                ]);
-                $attendance->calculateWorkHours();
-            }
+                    if ($isDryRun) {
+                        $this->line("  WOULD AUTO CLOCK-OUT attendance {$attendance->id} (user: {$user->name}) — now >= end_time + max_over_time (latest: {$latestClockOut->toISOString()})");
+                        $autoClockOuts++;
 
-            // Prepare notification data
-            $notificationData = [
-                'type' => 'attendance_tracking',
-                'attendance_id' => (string) $attendance->id,
-                'user_id' => (string) $user->id,
-                'clock_in_time' => $attendance->clock_in_time ? 
-                    (is_string($attendance->clock_in_time) ? 
-                        Carbon::parse($attendance->clock_in_time)->toISOString() : 
-                        $attendance->clock_in_time->toISOString()
-                    ) : null,
-                'status' => $attendance->status,
-                'timestamp' => Carbon::now()->toISOString(),
-                'action' => 'sync_attendance_status'
-            ];
+                        continue;
+                    }
 
-            if ($isDryRun) {
-                $this->info("WOULD SEND to user: {$user->name} ({$user->email})");
-                $this->line("  - Attendance ID: {$attendance->id}");
-                $this->line("  - Clock In: " . ($attendance->clock_in_time ?? 'N/A'));
-                $this->line("  - Data: " . json_encode($notificationData, JSON_PRETTY_PRINT));
-                $this->line("");
-            } else {
-                // Send silent notification
-                $success = FirebaseNotificationService::sendSilent($user->fcm_token, $notificationData);
-                
-                if ($success) {
-                    $this->info("✓ Sent silent notification to: {$user->name}");
-                    $notificationsSent++;
-                    
-                    // Log successful notification
-                    Log::info('Attendance silent notification sent', [
-                        'user_id' => $user->id,
-                        'user_name' => $user->name,
-                        'attendance_id' => $attendance->id,
-                        'clock_in_time' => $attendance->clock_in_time,
-                        'timestamp' => Carbon::now()->toISOString()
+                    $clockOutAt = Carbon::now($timezone);
+                    $trackingPoints = $attendance->location_tracking ?? [];
+                    $latestPoint = ! empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
+                    $noteLine = '[Auto] Clock-out: exceeded end_time + max_over_time at '.$clockOutAt->toISOString();
+
+                    $attendance->update([
+                        'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
+                        'clock_out_location' => $latestPoint,
+                        'status' => Attendance::STATUS_COMPLETED,
+                        'day_status' => 'clocked_out',
+                        'notes' => trim(($attendance->notes ?? '')."\n".$noteLine),
                     ]);
-                } else {
-                    $this->error("✗ Failed to send notification to: {$user->name}");
-                    $notificationsSkipped++;
-                    
-                    // Log failed notification
-                    Log::error('Attendance silent notification failed', [
-                        'user_id' => $user->id,
-                        'user_name' => $user->name,
+
+                    $attendance->refresh();
+                    $attendance->updateTotalBreakHours();
+                    $attendance->calculateWorkHours();
+                    $autoClockOuts++;
+                    Log::info('Attendance auto clock-out (silent notification command)', [
                         'attendance_id' => $attendance->id,
-                        'fcm_token' => $user->fcm_token,
-                        'timestamp' => Carbon::now()->toISOString()
+                        'user_id' => $user->id,
+                        'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
                     ]);
                 }
             }
@@ -137,11 +151,12 @@ class SendAttendanceSilentNotificationCommand extends Command
         $this->info('');
         $this->info('Process completed:');
         $this->line("  - Total active attendances: {$activeAttendances->count()}");
-        $this->line("  - Notifications sent: {$notificationsSent}");
-        $this->line("  - Notifications skipped: {$notificationsSkipped}");
-        
+        $this->line("  - Notifications sent (or would send in dry-run): {$notificationsSent}");
+        $this->line("  - Notifications skipped (no user / no FCM / send failed): {$notificationsSkipped}");
+        $this->line("  - Auto clock-outs applied (or would apply in dry-run): {$autoClockOuts}");
+
         if ($isDryRun) {
-            $this->info('DRY RUN COMPLETED - No actual notifications were sent');
+            $this->info('DRY RUN COMPLETED - No notifications sent and no DB updates applied');
         }
 
         return Command::SUCCESS;
