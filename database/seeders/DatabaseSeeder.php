@@ -98,8 +98,6 @@ class DatabaseSeeder extends Seeder
         $this->call(AcademicQualificationSeederTableSeeder::class);
 
         $this->call(AcademicSpecializationssSeederTableSeeder::class);
-        $this->call(SafetyEngineeringSpecializationSeeder::class);
-
 
         $this->call(UniversitiesSeederTableSeeder::class);
         $this->call(ProfessionalBodiessSeeder::class);
