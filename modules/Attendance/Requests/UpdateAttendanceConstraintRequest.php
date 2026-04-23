@@ -69,7 +69,7 @@ class UpdateAttendanceConstraintRequest extends FormRequest
                     ->ignore($this->route('constraint')),
             ],
             'constraint_config' => 'sometimes|required|array',
-            'max_over_time' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'max_over_time' => ['sometimes', 'nullable'],
             'is_active' => 'sometimes|boolean',
             'inherit_from_parent' => ['sometimes', 'boolean'],
             'priority' => 'sometimes|integer|min:1|max:10',

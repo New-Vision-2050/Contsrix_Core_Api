@@ -58,7 +58,7 @@ class CreateAttendanceConstraintRequest extends FormRequest
                     ->whereNull('deleted_at'),
             ],
             'constraint_config' => 'nullable|array',
-            'max_over_time' => ['nullable', 'integer', 'min:0'],
+            'max_over_time' => ['nullable'],
             'is_active' => 'boolean',
             'inherit_from_parent' => ['boolean'],
             'priority' => ['nullable', 'integer', 'min:1', 'max:10'],
