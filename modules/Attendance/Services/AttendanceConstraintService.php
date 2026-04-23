@@ -894,7 +894,7 @@ class AttendanceConstraintService
         if ($userBranchId) {
             $defaultConstraint = AttendanceConstraint::whereHas('branches', function ($query) use ($userBranchId) {
                 $query->where('management_hierarchies.id', $userBranchId)
-                      ->where('is_default', true);
+                      ->wherePivot('is_default', true);
             })
             ->where('company_id', $user->company_id)
             ->where('is_active', true)
