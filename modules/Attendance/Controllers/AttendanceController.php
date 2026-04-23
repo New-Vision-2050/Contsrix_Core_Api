@@ -306,6 +306,37 @@ class AttendanceController extends Controller
     /**
      * Get team attendance with filtering and pagination
      */
+    /**
+     * Users currently clocked in (not clocked out) for the company.
+     */
+    public function getOpenAttendances(FilterAttendanceRequest $request): JsonResponse
+    {
+        $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
+
+        $result = $this->attendanceService->getOpenAttendances(
+            $filterDTO->toArray(),
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 10)
+        );
+
+        if ($result->isEmpty()) {
+            return Json::items([], message: 'No open attendance records found');
+        }
+
+        return Json::items(
+            AttendanceTeamPresenter::collection($result->items()),
+            [],
+            200,
+            [
+                'total' => $result->total(),
+                'per_page' => $result->perPage(),
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'result_count' => $result->total(),
+            ]
+        );
+    }
+
     public function getTeamAttendance(FilterAttendanceRequest $request)//: JsonResponse
     {
         $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);

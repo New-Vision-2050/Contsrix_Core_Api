@@ -82,6 +82,10 @@ Route::post('test', [AttendanceController::class, 'test'])
     });
 
     // Team Attendance (for supervisors)
+    Route::get('open', [AttendanceController::class, 'getOpenAttendances'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
+        ->name('attendance.open');
+
     Route::get('team', [AttendanceController::class, 'getTeamAttendance'])
        ->permission(Permission::EMPLOYEE_ATTENDANCE_VIEW())
         ->name('attendance.team');

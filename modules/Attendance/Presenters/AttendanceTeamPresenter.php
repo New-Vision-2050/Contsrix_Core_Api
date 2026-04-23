@@ -26,10 +26,12 @@ class AttendanceTeamPresenter extends AbstractPresenter
         return [
 
             'id' => $this->attendance->id ? (string)$this->attendance->id : null,
+            'user_id' => $this->attendance->user_id ? (string) $this->attendance->user_id : null,
 
             'user' => $this->attendance->user ? [
                 'id' => $this->attendance->user->id ? (string)$this->attendance->user->id : null,
                 'name' => $this->attendance->user->name,
+                'email' => $this->attendance->user->email,
                 'company_id'=> $this->attendance->user->company_id,
                 'company_name' => $this->attendance?->user?->company?->name,
             ] : null,

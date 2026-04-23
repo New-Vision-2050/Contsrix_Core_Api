@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceBreak;
@@ -625,6 +626,37 @@ class AttendanceService
             $page,
             $perPage
         );
+    }
+
+    /**
+     * All users currently clocked in (active status, no clock-out). Ignores date range and workflow status from filters.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function getOpenAttendances(array $filters, int $page = 1, int $perPage = 10): LengthAwarePaginator
+    {
+        $filterInput = $filters;
+        unset(
+            $filterInput['start_date'],
+            $filterInput['end_date'],
+            $filterInput['attendance_status'],
+            $filterInput['status'],
+        );
+
+        return Attendance::query()
+            ->active()
+            ->whereNotNull('clock_in_time')
+            ->filter($filterInput)
+            ->with([
+                'user.company',
+                'user.userProfessionalData.jobTitle',
+                'user.userProfessionalData.department',
+                'user.userProfessionalData.branch',
+                'user.userProfessionalData.management',
+                'user.userProfessionalData.attendanceConstraint',
+            ])
+            ->orderByDesc('clock_in_time')
+            ->paginate($perPage, ['*'], 'page', $page);
     }
 
     private function processAttendancePeriods(Collection $realAttendanceRecords): Collection
