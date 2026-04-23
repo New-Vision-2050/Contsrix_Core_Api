@@ -25,6 +25,7 @@ class FilterAttendanceRequest extends FormRequest
         return [
             'user_id' => ['sometimes', 'string', 'exists:users,id'],
             'status' => ['sometimes', 'string', 'in:active,completed,pending_approval,approved,rejected'],
+            'attendance_status' => ['sometimes', 'string', 'in:late,present,absent,holiday'],
             'start_date' => ['sometimes', 'date'],
             'end_date' => ['sometimes', 'date', 'after_or_equal:start_date'],
             'department_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
@@ -87,6 +88,7 @@ class FilterAttendanceRequest extends FormRequest
             company_id: $companyId,
             user_id: $validated['user_id'] ?? null,
             status: $validated['status'] ?? null,
+            attendance_status: $validated['attendance_status'] ?? null,
             start_date: $validated['start_date'] ?? null,
             end_date: $validated['end_date'] ?? null,
             department_id: $validated['department_id'] ?? null,
