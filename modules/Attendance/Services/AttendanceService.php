@@ -73,7 +73,7 @@ class AttendanceService
         return $attendance;
     }
 
-    private function ensureUserHasNoActiveClockIn(string $userId): void
+    private function ensureUserHasNoActiveClockIn( $userId): void
     {
         $existing = $this->attendanceRepository->getCurrentAttendance($userId);
         if ($existing && !$existing->clock_out_time && $existing->clock_in_time) {
@@ -160,7 +160,7 @@ class AttendanceService
      * one exists (see CreateWaitingAttendanceCommand), otherwise create a new row.
      */
     private function persistClockInAttendance(
-        string $userId,
+         $userId,
         Carbon $startDateTime,
         array $attendanceData
     ): Attendance {
@@ -893,7 +893,7 @@ class AttendanceService
         // Get timezone and convert to UTC for database query
         $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $dateInTz = $date->copy()->setTimezone($timezone);
-        
+
         if ($period && isset($period['start_time']) && isset($period['end_time'])) {
             // Check for records within the specific period on the given date
             $startTime = Carbon::parse($dateInTz->toDateString() . ' ' . $period['start_time'], $timezone)->setTimezone('UTC');
@@ -976,7 +976,7 @@ class AttendanceService
         $dateInTz = $date->copy()->setTimezone($timezone);
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
-        
+
         $query = $this->attendanceRepository->getQuery()
             ->where('status', Attendance::STATUS_WAITING)
             ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);

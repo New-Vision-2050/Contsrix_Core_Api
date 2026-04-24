@@ -21,6 +21,9 @@ use Modules\Attendance\Domain\Time\SystemClock;
 use Modules\Attendance\Domain\Time\TimezoneResolver;
 use Modules\Attendance\Events\AttendanceClockedIn;
 use Modules\Attendance\Listeners\HandleAttendanceLateness;
+use Modules\Attendance\Services\AutoCloseAttendanceService;
+use Modules\Attendance\Services\ClockInService;
+use Modules\Attendance\Services\ClockOutService;
 
 class AttendanceServiceProvider extends ServiceProvider
 {
@@ -75,6 +78,11 @@ class AttendanceServiceProvider extends ServiceProvider
                 $app->make(EarlyDeparturePolicy::class),
             );
         });
+
+        // Application services — stateless, Octane-safe.
+        $this->app->singleton(AutoCloseAttendanceService::class);
+        $this->app->singleton(ClockInService::class);
+        $this->app->singleton(ClockOutService::class);
     }
 
     /**
