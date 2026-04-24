@@ -34,7 +34,7 @@ class UpdateBankAccountRequest extends FormRequest
             user_name: $this->get('user_name'),
             account_number: $this->get('account_number'),
             iban: $this->get('iban'),
-            swift_bic: $this->get('swift_bic'),
+            swift_bic: $this->get('swift_bic') ?? '',
             type_id: $this->get('type_id'),
         );
     }
