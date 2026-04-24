@@ -34,7 +34,12 @@ return new class extends Migration
             DB::statement("ALTER TABLE attendances MODIFY max_over_time DECIMAL(8,1) UNSIGNED NULL COMMENT 'Hours (decimal). Snapshot of constraint.max_over_time at clock-in.'");
             DB::statement("ALTER TABLE attendance_constraints MODIFY max_over_time DECIMAL(8,1) UNSIGNED NULL COMMENT 'Hours (decimal). Cap on overtime above scheduled period length.'");
 
-            // Soft guard — MySQL 8.0.16+ only; older versions silently ignore CHECK constraints.
+            // Normalise any legacy status values that fall outside the allowed set before adding
+            // the CHECK constraint. Old data may contain values like 'pending' (pre-waiting era).
+            DB::statement("UPDATE attendances SET status = 'completed' WHERE status NOT IN ('waiting','active','completed','pending_approval','approved','rejected')");
+
+            // Soft guard — MySQL 8.0.16+ / MariaDB 10.3.10+ enforces CHECK constraints at write time.
+            // Older MySQL versions parse but silently ignore them.
             DB::statement("ALTER TABLE attendances ADD CONSTRAINT chk_att_status CHECK (status IN ('waiting','active','completed','pending_approval','approved','rejected'))");
         }
     }
