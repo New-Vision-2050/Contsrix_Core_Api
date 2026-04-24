@@ -27,77 +27,43 @@ class AttendanceService
     ) {}
 
     /**
-     * Clock in employee
+     * Clock in the authenticated employee for their current work period.
+     *
+     * Behaviour (preserved from earlier inline implementation):
+     *  1. Reject if the user already has an active, un-closed attendance.
+     *  2. Resolve today's work-period start/end in the branch timezone.
+     *  3. Enforce the "prevent early clock-in" rule if configured.
+     *  4. Upgrade a pre-existing "waiting" row for the period if present;
+     *     otherwise create a new attendance row.
+     *  5. When the shift extends into the next day, schedule the next-day
+     *     transition job.
+     *  6. Always schedule auto-clock-out at the next shift's start time.
      */
-    public function clockIn(ClockInDTO $clockInDTO)
+    public function clockIn(ClockInDTO $clockInDTO): Attendance
     {
-        $existingAttendance = $this->attendanceRepository->getCurrentAttendance($clockInDTO->getUserId());
-       
-        if ($existingAttendance && !$existingAttendance->clock_out_time && $existingAttendance->clock_in_time) {
-            throw AttendanceException::alreadyClockedIn();
-        }
-   
+        $this->ensureUserHasNoActiveClockIn($clockInDTO->getUserId());
+
         $user = User::find(auth()->user()->id);
-        $constraintService = app(AttendanceConstraintService::class);
         $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
         $currentDate = Carbon::now($timezone)->format('Y-m-d');
+
+        $constraintService = app(AttendanceConstraintService::class);
         $constraints = $constraintService->getTodaysWorkRulesForUser($user, $currentDate);
+
+        [$startDateTime, $endDateTime] = $this->resolveWorkPeriodBounds($constraints, $currentDate, $timezone);
+
+        $this->enforceEarlyClockInRule($clockInDTO, $startDateTime, $constraints, $timezone);
+
+        $attendanceData = $this->buildClockInAttendanceData(
+            $clockInDTO,
+            $constraints,
+            $startDateTime,
+            $endDateTime,
+            $timezone
+        );
+        $attendance = $this->persistClockInAttendance($clockInDTO->getUserId(), $startDateTime, $attendanceData);
+
         $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'] ?? false;
-
-
-        $periodStartTime = data_get($constraints, 'current_work_period.start_time');
-        $periodEndTime = data_get($constraints, 'current_work_period.end_time');
-
-        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodStartTime, $timezone);
-        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodEndTime, $timezone);
-        if ($startDateTime->gt($endDateTime)) {
-            $endDateTime->addDay();
-        }
-
-        $earlyClockInRules = data_get($constraints, 'early_clock_in_rules');
-        if ($earlyClockInRules && ($earlyClockInRules['prevent_early_clock_in'] ?? false)) {
-            $earlyPeriod = (int) ($earlyClockInRules['early_period'] ?? 0);
-            $earlyUnit = $earlyClockInRules['early_unit'] ?? 'minutes';
-            $clockInMoment = Carbon::parse($clockInDTO->getClockInTime(), $timezone);
-            $earliestAllowedTime = $startDateTime->copy()->sub($earlyPeriod, $earlyUnit);
-            if ($clockInMoment->lt($earliestAllowedTime)) {
-                throw new \Exception("غير مسموح بتسجيل الحضور قبل {$earlyPeriod} {$earlyUnit} من بداية الفترة.");
-            }
-        }
-
-        $attendanceData = [
-            'user_id' => $clockInDTO->getUserId(),
-            'company_id' => $clockInDTO->getCompanyId(),
-            'clock_in_time' => $clockInDTO->getClockInTime(),
-            'clock_in_location' => $clockInDTO->getLocation(),
-            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
-            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
-            'notes' => $clockInDTO->getNotes(),
-            'ip_address' => $clockInDTO->getIpAddress(),
-            'user_agent' => $clockInDTO->getUserAgent(),
-            'status' => 'active',
-            'is_absent' => 0,
-            'is_late' => 0,
-            'is_holiday' => 0,
-            'day_status' => 'in_location',
-            'timezone' => $timezone,
-            'max_over_time' => $constraints['max_over_time'] ?? null,
-        ];
-
-        $startTimeStr = $startDateTime->format('Y-m-d H:i:s');
-        $attendance = Attendance::query()
-            ->where('user_id', $clockInDTO->getUserId())
-            ->where('start_time', $startTimeStr)
-            ->whereNull('clock_in_time')
-            ->first();
-
-        if ($attendance) {
-            $attendance->update($attendanceData);
-            $attendance = $attendance->refresh();
-        } else {
-            $attendance = $this->attendanceRepository->create($attendanceData);
-        }
-
         if ($extendsNextDay) {
             ProcessClockInAttendanceData::dispatch($attendance->id)->delay($endDateTime);
         }
@@ -105,6 +71,113 @@ class AttendanceService
         $this->scheduleAutoClockOutWhenNextShiftStarts($attendance, $constraints, $endDateTime);
 
         return $attendance;
+    }
+
+    private function ensureUserHasNoActiveClockIn(string $userId): void
+    {
+        $existing = $this->attendanceRepository->getCurrentAttendance($userId);
+        if ($existing && !$existing->clock_out_time && $existing->clock_in_time) {
+            throw AttendanceException::alreadyClockedIn();
+        }
+    }
+
+    /**
+     * Build scheduled start/end datetimes for the current work period in the branch
+     * timezone. Overnight shift support: if end <= start, bump end to the next day.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function resolveWorkPeriodBounds(array $constraints, string $currentDate, string $timezone): array
+    {
+        $periodStart = data_get($constraints, 'current_work_period.start_time');
+        $periodEnd = data_get($constraints, 'current_work_period.end_time');
+
+        $startDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodStart, $timezone);
+        $endDateTime = Carbon::createFromFormat('Y-m-d H:i', $currentDate . ' ' . $periodEnd, $timezone);
+        if ($startDateTime->gt($endDateTime)) {
+            $endDateTime->addDay();
+        }
+        return [$startDateTime, $endDateTime];
+    }
+
+    /**
+     * Reject a clock-in that arrives before the configured early-clock-in window
+     * (when the constraint has `prevent_early_clock_in` enabled).
+     */
+    private function enforceEarlyClockInRule(
+        ClockInDTO $dto,
+        Carbon $scheduledStart,
+        array $constraints,
+        string $timezone
+    ): void {
+        $rules = data_get($constraints, 'early_clock_in_rules');
+        if (!$rules || !($rules['prevent_early_clock_in'] ?? false)) {
+            return;
+        }
+
+        $earlyPeriod = (int) ($rules['early_period'] ?? 0);
+        $earlyUnit = $rules['early_unit'] ?? 'minutes';
+        $clockInMoment = Carbon::parse($dto->getClockInTime(), $timezone);
+        $earliestAllowed = $scheduledStart->copy()->sub($earlyPeriod, $earlyUnit);
+
+        if ($clockInMoment->lt($earliestAllowed)) {
+            throw new \Exception("غير مسموح بتسجيل الحضور قبل {$earlyPeriod} {$earlyUnit} من بداية الفترة.");
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildClockInAttendanceData(
+        ClockInDTO $dto,
+        array $constraints,
+        Carbon $startDateTime,
+        Carbon $endDateTime,
+        string $timezone
+    ): array {
+        return [
+            'user_id' => $dto->getUserId(),
+            'company_id' => $dto->getCompanyId(),
+            'clock_in_time' => $dto->getClockInTime(),
+            'clock_in_location' => $dto->getLocation(),
+            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
+            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
+            'notes' => $dto->getNotes(),
+            'ip_address' => $dto->getIpAddress(),
+            'user_agent' => $dto->getUserAgent(),
+            'status' => Attendance::STATUS_ACTIVE,
+            'is_absent' => 0,
+            'is_late' => 0,
+            'is_holiday' => 0,
+            'day_status' => 'in_location',
+            'timezone' => $timezone,
+            'max_over_time' => $constraints['max_over_time'] ?? null,
+        ];
+    }
+
+    /**
+     * Activate the pre-created "waiting" attendance row for this user/period if
+     * one exists (see CreateWaitingAttendanceCommand), otherwise create a new row.
+     */
+    private function persistClockInAttendance(
+        string $userId,
+        Carbon $startDateTime,
+        array $attendanceData
+    ): Attendance {
+        $startTimeStr = $startDateTime->format('Y-m-d H:i:s');
+
+        $waiting = Attendance::query()
+            ->where('user_id', $userId)
+            ->where('start_time', $startTimeStr)
+            ->whereNull('clock_in_time')
+            ->first();
+
+        if ($waiting) {
+            $waiting->update($attendanceData);
+            return $waiting->refresh();
+        }
+
+        return $this->attendanceRepository->create($attendanceData);
     }
 
     /**
@@ -159,36 +232,48 @@ class AttendanceService
 
 
     /**
-     * Clock out employee
+     * Clock out the authenticated employee.
+     *
+     * Behaviour (preserved):
+     *  1. Reject if the user has no active attendance.
+     *  2. Reject if the attendance already has a clock_out_time.
+     *  3. Persist clock_out_time (normalised to branch timezone), clock_out_location,
+     *     appended notes, and mark the row completed + day_status=clocked_out.
+     *  4. Re-run the calculator so total_work_hours / overtime_hours / early_departure
+     *     are recomputed from the final clock-in/clock-out pair.
      */
     public function clockOut(ClockOutDTO $clockOutDTO): Attendance
     {
-        // Get current attendance
         $attendance = $this->attendanceRepository->getCurrentAttendance($clockOutDTO->getUserId());
         if (!$attendance) {
             throw AttendanceException::notClockedIn();
         }
-
         if ($attendance->clock_out_time) {
             throw AttendanceException::alreadyClockedOut();
         }
 
-
-        // Update attendance record
-        $updateData = [
-            'clock_out_time' => Carbon::parse($clockOutDTO->getClockOutTime())->setTimezone(getTimeZoneBranchByRequest()),
-            'clock_out_location' => $clockOutDTO->getLocation(),
-            'notes' => $attendance->notes . ($clockOutDTO->getNotes() ? "\n" . $clockOutDTO->getNotes() : ''),
-            'status' => 'completed',
-            'day_status' => 'clocked_out'
-        ];
-
-        $this->attendanceRepository->update($attendance->id, $updateData);
+        $this->attendanceRepository->update(
+            $attendance->id,
+            $this->buildClockOutUpdatePayload($attendance, $clockOutDTO)
+        );
         $attendance->refresh();
-        // Calculate and save work hours
         $attendance->calculateWorkHours();
 
         return $attendance->refresh();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildClockOutUpdatePayload(Attendance $attendance, ClockOutDTO $dto): array
+    {
+        return [
+            'clock_out_time' => Carbon::parse($dto->getClockOutTime())->setTimezone(getTimeZoneBranchByRequest()),
+            'clock_out_location' => $dto->getLocation(),
+            'notes' => $attendance->notes . ($dto->getNotes() ? "\n" . $dto->getNotes() : ''),
+            'status' => Attendance::STATUS_COMPLETED,
+            'day_status' => 'clocked_out',
+        ];
     }
 
     /**
@@ -258,7 +343,7 @@ class AttendanceService
             throw AttendanceException::notOnBreak();
         }
 
-        // Find and update the active break
+        // Close the active break with its end time and (optionally) a note.
         $activeBreak = $attendance->activeBreak();
         if ($activeBreak) {
             $activeBreak->end_time = now();
@@ -267,16 +352,11 @@ class AttendanceService
                 $activeBreak->notes = ($activeBreak->notes ? $activeBreak->notes . "\n" : '') . "End: " . $notes;
             }
             $activeBreak->save();
-
-            // Update total break hours in attendance record
-            $attendance->updateTotalBreakHours();
         }
 
-        // Update attendance notes if provided
-        $updateData = [
-            'total_break_hours' => $attendance->total_break_hours,
-        ];
-
+        // Persist the new total_break_hours (+ optional notes) in a single attendance update.
+        // Previously this flow issued 3 saves (break.save + updateTotalBreakHours save + updateAttendance save).
+        $updateData = ['total_break_hours' => $attendance->calculateTotalBreakHours()];
         if ($notes) {
             $updateData['notes'] = $attendance->notes . "\nBreak ended: " . $notes;
         }
@@ -505,9 +585,10 @@ class AttendanceService
 
     private function recalculateWorkHoursAndSave(Attendance $attendance): void
     {
-        $attendance->updateTotalBreakHours();
+        // calculateWorkHours() recomputes total_break_hours, total_work_hours, overtime,
+        // early_departure and persists them in a single save() — no need for the previous
+        // updateTotalBreakHours()+save() combo.
         $attendance->calculateWorkHours();
-        $attendance->save();
     }
 
     /**

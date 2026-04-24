@@ -12,7 +12,7 @@ class SendAttendanceSilentNotificationCommand extends Command
 {
     protected $signature = 'attendance:send-silent-notifications {--dry-run : Show users who would receive notifications without sending}';
 
-    protected $description = 'Send silent notifications to all clocked-in users; auto clock-out when now >= end_time + max_over_time (hours) in attendance timezone';
+    protected $description = 'Send silent notifications to all clocked-in users. When now >= end_time + max_over_time (hours) in the attendance timezone, auto clock-out the user and record clock_out_time = end_time (shift end), so overtime stays 0.';
 
     public function handle()
     {
@@ -104,9 +104,15 @@ class SendAttendanceSilentNotificationCommand extends Command
                 $endTimeRaw = $attendance->end_time instanceof \DateTimeInterface
                     ? $attendance->end_time->format('Y-m-d H:i:s')
                     : (string) $attendance->end_time;
+                // end_time is stored in the branch timezone, so parse it as such.
                 $endTime = Carbon::parse($endTimeRaw, $timezone);
-                $maxOverHours = (int) ($attendance->max_over_time ?? 0);
-                $latestClockOut = $endTime->copy()->addHours($maxOverHours);
+
+                // max_over_time is stored as HOURS (can be decimal, e.g. 4.5).
+                // It acts only as the AUTO-CLOSE TRIGGER — how long past end_time we
+                // wait before forcibly closing the shift. The stored clock_out_time is
+                // always end_time exactly (overtime for the attendance is therefore 0).
+                $maxOverTimeHours = (float) ($attendance->max_over_time ?? 0);
+                $latestClockOut = $endTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
                 $now = Carbon::now($timezone);
 
                 if ($now->gte($latestClockOut)) {
@@ -116,19 +122,21 @@ class SendAttendanceSilentNotificationCommand extends Command
                     }
 
                     if ($isDryRun) {
-                        $this->line("  WOULD AUTO CLOCK-OUT attendance {$attendance->id} (user: {$user->name}) — now >= end_time + max_over_time (latest: {$latestClockOut->toISOString()})");
+                        $this->line("  WOULD AUTO CLOCK-OUT attendance {$attendance->id} (user: {$user->name}) — now >= end_time + max_over_time (trigger: {$latestClockOut->toISOString()}; stored clock_out_time will be end_time: {$endTime->toISOString()})");
                         $autoClockOuts++;
 
                         continue;
                     }
 
-                    $clockOutAt = Carbon::now($timezone);
                     $trackingPoints = $attendance->location_tracking ?? [];
                     $latestPoint = ! empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
-                    $noteLine = '[Auto] Clock-out: exceeded end_time + max_over_time at '.$clockOutAt->toISOString();
+                    $noteLine = '[Auto] Clock-out: exceeded end_time + max_over_time; stored as end_time ('.$endTime->toISOString().')';
 
                     $attendance->update([
-                        'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
+                        // Store end_time as clock_out_time (not now()) so the recorded shift
+                        // ends cleanly at the scheduled boundary regardless of when the
+                        // cron actually ran.
+                        'clock_out_time' => $endTime->format('Y-m-d H:i:s'),
                         'clock_out_location' => $latestPoint,
                         'status' => Attendance::STATUS_COMPLETED,
                         'day_status' => 'clocked_out',
@@ -136,13 +144,12 @@ class SendAttendanceSilentNotificationCommand extends Command
                     ]);
 
                     $attendance->refresh();
-                    $attendance->updateTotalBreakHours();
                     $attendance->calculateWorkHours();
                     $autoClockOuts++;
                     Log::info('Attendance auto clock-out (silent notification command)', [
                         'attendance_id' => $attendance->id,
                         'user_id' => $user->id,
-                        'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
+                        'clock_out_time' => $endTime->format('Y-m-d H:i:s'),
                     ]);
                 }
             }

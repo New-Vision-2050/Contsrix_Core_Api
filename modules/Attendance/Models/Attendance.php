@@ -99,6 +99,8 @@ class Attendance extends Model implements Auditable
         'end_time',
         'day_status',
         'date',
+        'business_date',
+        'shift_end_method',
     ];
 
     protected $casts = [
@@ -114,11 +116,12 @@ class Attendance extends Model implements Auditable
         'total_work_hours' => 'decimal:2',
         'total_break_hours' => 'decimal:2',
         'overtime_hours' => 'decimal:2',
-        'max_over_time' => 'integer',
+        'max_over_time' => 'decimal:1',
         'late_minutes' => 'integer',
         'early_departure_minutes' => 'integer',
         'is_late' => 'boolean',
         'is_early_departure' => 'boolean',
+        'business_date' => 'date',
         'clock_in_location' => 'array',
         'clock_out_location' => 'array',
         'verification_data' => 'array',
@@ -182,37 +185,11 @@ class Attendance extends Model implements Auditable
         }
     }
 
-    public function getClockInTimeAttribute($value)
-    {
-        // if ($this->timezone && $value) {
-        //     return Carbon::parse($value, timezone: 'UTC')->setTimezone($this->timezone);
-        // }
-        return $value;
-    }
-
-    public function getClockOutTimeAttribute($value)
-    {
-        // if ($this->timezone && $value) {
-        //     return Carbon::parse($value,'r')->setTimezone($this->timezone);
-        // }
-        return $value;
-    } 
-
-    public function getStartTimeAttribute($value)
-    {
-        if ($this->timezone && $value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
-        }
-        return $value;
-    }
-
-    public function getEndTimeAttribute($value)
-    {
-        if ($this->timezone && $value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
-        }
-        return $value;
-    }
+    // NOTE: start_time / end_time / clock_in_time / clock_out_time are stored in the
+    // branch timezone (see AttendanceService::clockIn — $startDateTime built with $timezone).
+    // We intentionally do NOT define TZ-converting accessors: doing so would re-parse the
+    // stored value as UTC and shift it by the branch offset, producing wrong lateness and
+    // overtime values. Callers receive raw datetime strings and work with them directly.
     /**
      * Get the user that owns the attendance record.
      */
@@ -285,6 +262,26 @@ class Attendance extends Model implements Auditable
     }
 
     /**
+     * Extract the time-of-day portion ("H:i:s") from a value that may be a
+     * Carbon instance, a full datetime string ("Y-m-d H:i:s"), or a bare
+     * time string ("H:i" / "H:i:s"). Returns $default when value is empty.
+     */
+    private function extractTimeOfDay(mixed $value, string $default): string
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+        if ($value instanceof Carbon) {
+            return $value->format('H:i:s');
+        }
+        $string = (string) $value;
+        if (str_contains($string, ' ') || str_contains($string, 'T')) {
+            return Carbon::parse($string)->format('H:i:s');
+        }
+        return $string;
+    }
+
+    /**
      * Calculate total break duration in minutes.
      */
     public function calculateTotalBreakMinutes(): int
@@ -304,18 +301,15 @@ class Attendance extends Model implements Auditable
     }
 
     /**
-     * Calculate total break hours.
+     * Compute total break hours (rounded to 2 decimals). Pure calculation — does NOT persist.
      */
     public function calculateTotalBreakHours(): float
     {
-        $hours = round($this->calculateTotalBreakMinutes() / 60, 2);
-        $this->total_break_hours = $hours;
-        $this->save();
-        return $hours;
+        return round($this->calculateTotalBreakMinutes() / 60, 2);
     }
 
     /**
-     * Update total break hours in the model.
+     * Persist total_break_hours in a single save().
      */
     public function updateTotalBreakHours(): self
     {
@@ -524,74 +518,52 @@ class Attendance extends Model implements Auditable
 
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
-            $clockInDate = $clockIn->format('Y-m-d');
 
-            $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
-            $user = $this->user;
-            $config = $constraintService->getTodaysWorkRulesForUser($user);
+            $gracePeriodMinutes = $this->resolveGracePeriodMinutes();
 
+            $scheduledStartString = $this->extractTimeOfDay(
+                $this->start_time ?? $this->user->start_time ?? null,
+                '09:00:00'
+            );
+            $scheduledEndString = $this->extractTimeOfDay(
+                $this->end_time ?? $this->user->end_time ?? null,
+                '17:00:00'
+            );
 
-            $rules = $config['lateness_rules'] ?? [];
-            $latenessPeriod = (int)($rules['lateness_period'] ?? 0);
-            $latenessUnit = $rules['lateness_unit'] ?? 'minute';
+            $scheduledStart = $clockIn->copy()->setTimeFromTimeString($scheduledStartString);
+            $latestAllowedArrival = $scheduledStart->copy()->addMinutes($gracePeriodMinutes);
 
-            $gracePeriodMinutes = $this->convertToMinutes($latenessPeriod, $latenessUnit);
-
-            if ($gracePeriodMinutes <= 0) {
-                $gracePeriodMinutes = (int)($rules['grace_period_minutes'] ?? 0);
-            }
-
-            $previousAttendances = self::where('user_id', $this->user_id)
-                ->whereDate('clock_in_time', $clockInDate)
+            // Find the most recent clock-in for the same user on the same calendar day
+            // (excluding this row). Used to decide whether this is a re-clock-in within
+            // the same scheduled period.
+            $previousAttendance = self::where('user_id', $this->user_id)
+                ->whereDate('clock_in_time', $clockIn->format('Y-m-d'))
                 ->where('id', '!=', $this->id)
                 ->orderBy('clock_in_time', 'desc')
-                ->get();
+                ->first();
 
-            // Always get the scheduled start time for the period
-            $scheduledStartTimeString = $this->start_time ?? $this->user->start_time ?? '09:00';
-            if ($scheduledStartTimeString instanceof Carbon) {
-                $scheduledStartTimeString = $scheduledStartTimeString->format('H:i');
+            $anchor = $scheduledStart;
+            if ($previousAttendance && $this->isSameScheduledPeriod(
+                Carbon::parse($previousAttendance->clock_in_time)->setTimezone($timezone),
+                $clockIn,
+                $scheduledStartString,
+                $scheduledEndString
+            )) {
+                // Re-clock-in inside the same scheduled period: anchor lateness at the
+                // previous clock-in instead of the scheduled start.
+                $anchor = Carbon::parse($previousAttendance->clock_in_time)->setTimezone($timezone);
+                $latestAllowedArrival = $anchor->copy()->addMinutes($gracePeriodMinutes);
             }
 
-            $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
-            $latestAllowedArrival = $scheduledStartTime->copy()->addMinutes($gracePeriodMinutes);
-
-            // Always calculate is_late based on scheduled period time
-            $this->is_late = $clockIn->gt($latestAllowedArrival);
-
-            if ($previousAttendances->isEmpty()) {
-                // First clock-in: late_minutes is calculated from scheduled start time
-                $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
+            if ($clockIn->gt($latestAllowedArrival)) {
+                $this->is_late = true;
+                // Business rule: lateness = full minutes past the anchor, NOT minutes
+                // past the grace window. So if grace=15 and user is 16 min late,
+                // late_minutes = 16 (not 1).
+                $this->late_minutes = (int) $anchor->diffInMinutes($clockIn);
             } else {
-                // Subsequent clock-in: check if in same period
-                $lastAttendance = $previousAttendances->first();
-                $lastClockInTime = Carbon::parse($lastAttendance->clock_in_time)->setTimezone($timezone);
-
-                $scheduledEndTimeString = $this->end_time ?? $this->user->end_time ?? '17:00';
-                if ($scheduledEndTimeString instanceof Carbon) {
-                    $scheduledEndTimeString = $scheduledEndTimeString->format('H:i');
-                }
-
-                $periodStart = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
-                $periodEnd = $clockIn->copy()->setTimeFromTimeString($scheduledEndTimeString);
-
-                // Check if the last clock-in was in the same period
-                $lastClockInPeriodStart = $lastClockInTime->copy()->setTimeFromTimeString($scheduledStartTimeString);
-                $lastClockInPeriodEnd = $lastClockInTime->copy()->setTimeFromTimeString($scheduledEndTimeString);
-
-                $sameDay = $lastClockInTime->isSameDay($clockIn);
-                $samePeriod = $sameDay &&
-                             (($lastClockInTime->between($lastClockInPeriodStart, $lastClockInPeriodEnd) &&
-                               $clockIn->between($periodStart, $periodEnd)));
-
-                if ($samePeriod) {
-                    // Same period - calculate late_minutes from last clock-in time
-                    $lastClockInWithGrace = $lastClockInTime->copy()->addMinutes($gracePeriodMinutes);
-                    $this->late_minutes = $clockIn->gt($lastClockInWithGrace) ?
-                                         $lastClockInWithGrace->diffInMinutes($clockIn) : 0;
-                } else {
-                    $this->late_minutes = $this->is_late ? $latestAllowedArrival->diffInMinutes($clockIn) : 0;
-                }
+                $this->is_late = false;
+                $this->late_minutes = 0;
             }
 
             $this->save();
@@ -600,7 +572,6 @@ class Attendance extends Model implements Auditable
             Log::error('Error checking lateness: ' . $e->getMessage(), [
                 'clock_in_time' => $this->clock_in_time,
                 'attendance_id' => $this->id,
-                'trace' => $e->getTraceAsString()
             ]);
 
             $this->is_late = false;
@@ -608,6 +579,51 @@ class Attendance extends Model implements Auditable
         }
 
         return $this;
+    }
+
+    /**
+     * Resolve the grace period (in minutes) from the user's active constraint config.
+     * Falls back to the legacy `grace_period_minutes` key when `lateness_period`+`lateness_unit`
+     * are not set.
+     */
+    private function resolveGracePeriodMinutes(): int
+    {
+        $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
+        $config = $constraintService->getTodaysWorkRulesForUser($this->user);
+        $rules = $config['lateness_rules'] ?? [];
+
+        $grace = $this->convertToMinutes(
+            (int) ($rules['lateness_period'] ?? 0),
+            (string) ($rules['lateness_unit'] ?? 'minute')
+        );
+
+        if ($grace <= 0) {
+            $grace = (int) ($rules['grace_period_minutes'] ?? 0);
+        }
+        return max(0, $grace);
+    }
+
+    /**
+     * Check whether two clock-ins fall inside the same scheduled period (same day AND
+     * both clock-ins lie between the scheduled start and end times).
+     */
+    private function isSameScheduledPeriod(
+        Carbon $previousClockIn,
+        Carbon $currentClockIn,
+        string $scheduledStartString,
+        string $scheduledEndString
+    ): bool {
+        if (!$previousClockIn->isSameDay($currentClockIn)) {
+            return false;
+        }
+
+        $currentPeriodStart = $currentClockIn->copy()->setTimeFromTimeString($scheduledStartString);
+        $currentPeriodEnd = $currentClockIn->copy()->setTimeFromTimeString($scheduledEndString);
+        $previousPeriodStart = $previousClockIn->copy()->setTimeFromTimeString($scheduledStartString);
+        $previousPeriodEnd = $previousClockIn->copy()->setTimeFromTimeString($scheduledEndString);
+
+        return $previousClockIn->between($previousPeriodStart, $previousPeriodEnd)
+            && $currentClockIn->between($currentPeriodStart, $currentPeriodEnd);
     }
 
     /**
@@ -631,130 +647,91 @@ class Attendance extends Model implements Auditable
     }
 
     /**
-     * Calculate total work hours and update the model.
+     * Calculate total work hours, total break hours, overtime, and early-departure
+     * fields and persist them in a single save().
+     *
+     * Business rules:
+     *  - Net work = (clock_out − clock_in) − breaks.
+     *  - Scheduled work = (scheduled_end − scheduled_start).
+     *  - Overtime = max(0, work − scheduled), then capped by `max_over_time` (HOURS).
+     *    `max_over_time = 0` or NULL means "no overtime allowed" (cap at zero).
+     *  - Late fields are NOT overwritten here; checkLateness() owns them.
+     *  - Early departure is set strictly from clock_out vs scheduled_end.
      */
     public function calculateWorkHours(): float
     {
-        // 1. Pre-condition check
         if (!$this->clock_in_time || !$this->clock_out_time) {
-            $this->total_work_hours = 0.0;
-            $this->total_break_hours = 0.0;
-            $this->overtime_hours = 0.0;
-            $this->is_early_departure = false;
-            $this->early_departure_minutes = 0;
-            $this->save();
-            return 0.0;
+            return $this->resetCalculatedFieldsAndSave();
         }
 
-        // 2. Timezone setup
         $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
+
         try {
-            $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
+            $clockIn  = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
             $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
         } catch (\Exception $e) {
-            Log::error('Error parsing clock_in_time or clock_out_time: ' . $e->getMessage(), [
-                'clock_in_time' => $this->clock_in_time,
-                'clock_out_time' => $this->clock_out_time,
-                'attendance_id' => $this->id,
-            ]);
-
-            // If parsing fails, reset and save.
-            $this->total_work_hours = 0.0;
-            $this->total_break_hours = 0.0;
-            $this->overtime_hours = 0.0;
-            $this->is_early_departure = false;
-            $this->early_departure_minutes = 0;
-            $this->save();
-            return 0.0;
+            Log::error('Error parsing clock times for attendance ' . $this->id . ': ' . $e->getMessage());
+            return $this->resetCalculatedFieldsAndSave();
         }
 
-        // 3. Validity check
         if ($clockOut->isBefore($clockIn)) {
-            // If data is invalid, reset and save.
-            $this->total_work_hours = 0.0;
-            $this->total_break_hours = 0.0;
-            $this->overtime_hours = 0.0;
-            $this->is_early_departure = false;
-            $this->early_departure_minutes = 0;
-            $this->save();
-            return 0.0;
+            return $this->resetCalculatedFieldsAndSave();
         }
 
-        // --- CALCULATIONS ---
+        $scheduledStartString = $this->extractTimeOfDay(
+            $this->start_time ?? $this->user->start_time ?? null,
+            '09:00:00'
+        );
+        $scheduledEndString = $this->extractTimeOfDay(
+            $this->end_time ?? $this->user->end_time ?? null,
+            '17:00:00'
+        );
 
-        // 4. Calculate Total Break Duration
+        $scheduledStart = $clockIn->copy()->setTimeFromTimeString($scheduledStartString);
+        $scheduledEnd = $clockIn->copy()->setTimeFromTimeString($scheduledEndString);
+        // Overnight shift support: if scheduled end is not after scheduled start, the
+        // shift crosses midnight — bump end to the next day.
+        if (!$scheduledEnd->greaterThan($scheduledStart)) {
+            $scheduledEnd->addDay();
+        }
+
         $breakMinutes = $this->calculateTotalBreakMinutes();
+        $grossMinutes = $clockIn->diffInMinutes($clockOut, false);
+        $workMinutes = max(0, $grossMinutes - $breakMinutes);
+        $scheduledMinutes = $scheduledStart->diffInMinutes($scheduledEnd);
+
+        $overtimeMinutes = max(0, $workMinutes - $scheduledMinutes);
+        $overtimeCapHours = (float) ($this->max_over_time ?? 0);
+        $overtimeMinutes = min($overtimeMinutes, (int) round($overtimeCapHours * 60));
+
         $this->total_break_hours = round($breakMinutes / 60, 2);
+        $this->total_work_hours = round($workMinutes / 60, 2);
+        $this->overtime_hours = round($overtimeMinutes / 60, 2);
 
-        // 5. Calculate Net Work Duration
-        $totalGrossMinutes = $clockIn->diffInMinutes($clockOut, false);
-        $workMinutes = $totalGrossMinutes - $breakMinutes;
-        $workHours = $workMinutes > 0 ? round($workMinutes / 60, 2) : 0.0;
-        $this->total_work_hours = $workHours;
-
-        // 6. Calculate Overtime
-        $standardHours = 8.0;
-        if ($workHours > $standardHours) {
-            $this->overtime_hours = round($workHours - $standardHours, 2);
-        } else {
-            $this->overtime_hours = 0.0;
-        }
-
-        // 7. Calculate Late and Early Departure
-        // *** IMPROVED: Get scheduled start and end times from user/company settings ***
-        $scheduledStartCandidate = $this->start_time ?? $this->user->start_time ?? '09:00';
-        $scheduledEndCandidate = $this->end_time ?? $this->user->end_time ?? '17:00';
-
-        // Normalize possible Carbon or datetime strings to plain time strings (H:i:s)
-        if ($scheduledStartCandidate instanceof \Carbon\Carbon) {
-            $scheduledStartTimeString = $scheduledStartCandidate->format('H:i:s');
-        } else {
-            $scheduledStartTimeString = (string) $scheduledStartCandidate;
-            if (is_string($scheduledStartCandidate) && (str_contains($scheduledStartCandidate, 'T') || str_contains($scheduledStartCandidate, ' '))) {
-                $scheduledStartTimeString = \Carbon\Carbon::parse($scheduledStartCandidate)->format('H:i:s');
-            }
-        }
-
-        if ($scheduledEndCandidate instanceof \Carbon\Carbon) {
-            $scheduledEndTimeString = $scheduledEndCandidate->format('H:i:s');
-        } else {
-            $scheduledEndTimeString = (string) $scheduledEndCandidate;
-            if (is_string($scheduledEndCandidate) && (str_contains($scheduledEndCandidate, 'T') || str_contains($scheduledEndCandidate, ' '))) {
-                $scheduledEndTimeString = \Carbon\Carbon::parse($scheduledEndCandidate)->format('H:i:s');
-            }
-        }
-
-        try {
-            $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
-            $scheduledEndTime = $clockIn->copy()->setTimeFromTimeString($scheduledEndTimeString);
-        } catch (\Exception $e) {
-            // Fallback to default values if parsing fails
-            $scheduledStartTime = $clockIn->copy()->setHour(9)->setMinute(0)->setSecond(0);
-            $scheduledEndTime = $clockIn->copy()->setHour(17)->setMinute(0)->setSecond(0);
-        }
-
-        // Only set lateness if it hasn't been set during clock-in
-        // This preserves the lateness values set by checkLateness() during clock-in
-        if ($this->is_late === null) {
-            $this->is_late = $clockIn->gt($scheduledStartTime);
-            $this->late_minutes = $this->is_late ? $scheduledStartTime->diffInMinutes($clockIn) : 0;
-        }
-
-        $this->is_early_departure = $clockOut->lt($scheduledEndTime);
-        $this->early_departure_minutes = $this->is_early_departure ? $clockOut->diffInMinutes($scheduledEndTime) : 0;
+        $this->is_early_departure = $clockOut->lt($scheduledEnd);
+        $this->early_departure_minutes = $this->is_early_departure
+            ? (int) $clockOut->diffInMinutes($scheduledEnd)
+            : 0;
 
         $this->validate();
-
         $this->save();
-        return $workHours;
+
+        return (float) $this->total_work_hours;
     }
+
     /**
-     * Calculate overtime hours based on standard work hours.
+     * Zero out the calculated fields and persist in one save. Used when clock times
+     * are missing or invalid.
      */
-    public function calculateOvertimeHours(float $standardHours = 8.0): float
+    private function resetCalculatedFieldsAndSave(): float
     {
-        $workHours = $this->calculateWorkHours();
-        return $workHours > $standardHours ? round($workHours - $standardHours, 2) : 0.0;
+        $this->total_work_hours = 0.0;
+        $this->total_break_hours = 0.0;
+        $this->overtime_hours = 0.0;
+        $this->is_early_departure = false;
+        $this->early_departure_minutes = 0;
+        $this->save();
+        return 0.0;
     }
 
     /**
@@ -836,14 +813,11 @@ class Attendance extends Model implements Auditable
             $activeBreak->save();
         }
 
-        // Calculate break hours first
-        $this->updateTotalBreakHours();
-
-        // Calculate work hours after ending the shift
+        // calculateWorkHours() recomputes total_break_hours and persists the full row.
+        // It replaces the old updateTotalBreakHours() + calculateWorkHours() + save() triple.
         $this->calculateWorkHours();
 
-        // Save changes
-        return $this->save();
+        return true;
     }
     public function appliedAttendanceConstraint()
     {

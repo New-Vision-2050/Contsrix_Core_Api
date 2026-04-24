@@ -13,8 +13,6 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Models\Attendance;
 
-use function Symfony\Component\Clock\now;
-
 /**
  * When a later work period starts the same day, clock out the still-open previous shift.
  * Scheduled from {@see AttendanceService::clockIn} at the next period's start time.
@@ -57,7 +55,9 @@ class AutoClockOutAtNextShiftStartJob implements ShouldQueue
                 return;
             }
 
-            $clockOutAt = Carbon::now($attendance->timezone);
+            // Use the pre-computed boundary time (next shift start), NOT now().
+            // If the job fires late due to queue delay we still record the correct boundary.
+            $clockOutAt = Carbon::parse($this->clockOutAtIso, $attendance->timezone);
 
             $trackingPoints = $attendance->location_tracking ?? [];
             $latestPoint = !empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
@@ -73,7 +73,8 @@ class AutoClockOutAtNextShiftStartJob implements ShouldQueue
             ]);
 
             $attendance->refresh();
-            $attendance->updateTotalBreakHours();
+            // calculateWorkHours() recomputes total_break_hours itself, so the old
+            // updateTotalBreakHours() call was redundant and caused a second save().
             $attendance->calculateWorkHours();
         } finally {
             tenancy()->end();
