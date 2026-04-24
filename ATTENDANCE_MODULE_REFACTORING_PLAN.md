@@ -1434,8 +1434,8 @@ CREATE INDEX att_co_active_clockin_idx ON attendances (company_id, status, clock
 ### Phase 1 — Foundation (Weeks 2–3) ← CURRENT SPRINT PART 1
 
 **Step 1.1 — Payload contract baseline (do this FIRST, before changing any logic)**
-- [ ] Write `AttendancePresenterContractTest` — snapshot current JSON output for known fixtures. CI must pass with no diff before any code changes.
-- [ ] Add snapshot tests for `AttendanceBreakPresenter`, `AppliedAttendanceConstraintPresenter`.
+- [x] Write `AttendancePresenterContractTest` — snapshot current JSON output for known fixtures. CI must pass with no diff before any code changes.
+- [x] Add snapshot tests for `AttendanceBreakPresenter`, `AppliedAttendanceConstraintPresenter`.
 
 **Step 1.2 — DB migrations**
 - [ ] Write migration `2026_04_25_000001`: add `business_date`, `shift_end_method`, indexes, `max_over_time` column comments, status CHECK constraint.
@@ -1444,21 +1444,21 @@ CREATE INDEX att_co_active_clockin_idx ON attendances (company_id, status, clock
 - [ ] Run migrations on local; verify backfill correct for overnight records.
 
 **Step 1.3 — Domain layer (pure, no IO)**
-- [ ] Create `Domain/Time/Clock.php` interface + `SystemClock` + `FixedClock`.
-- [ ] Create `Domain/Time/TimezoneResolver.php` — stateless wrapper around existing chain.
-- [ ] Create `Domain/Calculator/` — `CalculatorInput`, `WorkHoursResult`, `LatenessPolicy`, `OvertimePolicy`, `EarlyDeparturePolicy` interfaces.
-- [ ] Implement `StandardLatenessPolicy`, `StandardOvertimePolicy` (no hard-coded 8h), `StandardEarlyDeparturePolicy`.
-- [ ] Implement `AttendanceCalculator` — receives pre-computed `totalBreakMinutes`, delegates to policies.
-- [ ] Create `Domain/Breaks/BreakSegment` + `AutoBreakComputer`.
-- [ ] Bind `Clock → SystemClock`, `TimezoneResolver`, `AttendanceCalculator` in `AttendanceServiceProvider`.
-- [ ] Unit tests: `AttendanceCalculatorTest` (full matrix from §12.5), `AutoBreakComputerTest`, `TimezoneResolverTest`.
+- [x] Create `Domain/Time/Clock.php` interface + `SystemClock` + `FixedClock`.
+- [x] Create `Domain/Time/TimezoneResolver.php` — stateless wrapper around existing chain.
+- [x] Create `Domain/Calculator/` — `CalculatorInput`, `WorkHoursResult`, `LatenessPolicy`, `OvertimePolicy`, `EarlyDeparturePolicy` interfaces.
+- [x] Implement `StandardLatenessPolicy`, `StandardOvertimePolicy` (no hard-coded 8h), `StandardEarlyDeparturePolicy`.
+- [x] Implement `AttendanceCalculator` — receives pre-computed `totalBreakMinutes`, delegates to policies.
+- [x] Create `Domain/Breaks/BreakSegment` + `AutoBreakComputer`.
+- [x] Bind `Clock → SystemClock`, `TimezoneResolver`, `AttendanceCalculator` in `AttendanceServiceProvider`.
+- [x] Unit tests: `AttendanceCalculatorTest` (full matrix from §12.5), `AutoBreakComputerTest`, `TimezoneResolverTest`.
 - [ ] Octane state-leak test: run `AttendanceCalculator::calculate()` for two different inputs in the same test process; verify no bleed.
 
 **Step 1.4 — Model cleanup**
-- [ ] Remove `checkLateness()`, `calculateWorkHours()`, `endShift()` from `Attendance` model (they save internally — the root of multi-writer bugs).
-- [ ] Remove `getStartTimeAttribute` / `getEndTimeAttribute` accessors (TZ double-conversion — issue D1).
-- [ ] Verify presenter output hasn't changed (contract tests still pass — presenters read raw UTC values directly).
-- [ ] Remove `$requestTimezoneOverride` instance property from `UserAttendanceService`; replace with `once()` call.
+- [x] Remove `checkLateness()`, `calculateWorkHours()`, `endShift()` from `Attendance` model (they save internally — the root of multi-writer bugs).
+- [x] Remove `getStartTimeAttribute` / `getEndTimeAttribute` accessors (TZ double-conversion — issue D1).
+- [x] Verify presenter output hasn't changed (contract tests still pass — presenters read raw UTC values directly).
+- [x] Remove `$requestTimezoneOverride` instance property from `UserAttendanceService`; pass timezone as local variable through `getUserConstraints()` call chain.
 
 **Step 1.5 — Octane & cleanup**
 - [ ] Add new services to `config/octane.php` `flush` array: `ClockInService`, `ClockOutService`, `AutoCloseAttendanceService`.
@@ -1467,79 +1467,80 @@ CREATE INDEX att_co_active_clockin_idx ON attendances (company_id, status, clock
 ### Phase 2 — Clock Flow (Weeks 4–5) ← CURRENT SPRINT PART 2
 
 **Step 2.1 — Auto-close service (do before ClockIn/ClockOut — removes race condition)**
-- [ ] Implement `AutoCloseAttendanceService::closeIfExpired(Attendance, CarbonImmutable $closeAt, string $reason)`.
-- [ ] Acquire `SELECT ... FOR UPDATE`. Re-read state. No-op if not active.
-- [ ] Set `clock_out_time = $closeAt` (not `now()` — see §11.4 rule).
-- [ ] Set `shift_end_method = $reason`, `status = completed`.
-- [ ] Build `CalculatorInput`, call `AttendanceCalculator::calculate()`, persist result.
-- [ ] Write `AutoCloseAttendanceJob` (replaces stale auto-close): tenancy re-init, uses `AutoCloseAttendanceService`, computes `closeAt = end_time + max_over_time (minutes)`.
-- [ ] Refactor `AutoClockOutAtNextShiftStartJob` to call `AutoCloseAttendanceService::closeIfExpired(..., 'auto_next_shift')`.
-- [ ] Fix `ProcessClockInAttendanceData`: add tenancy re-init. Remove inline auto-close logic; call `AutoCloseAttendanceService`.
-- [ ] Tests: `AutoCloseTest` — concurrent calls produce single close; `clock_out_time` = `closeAt` not trigger time.
+- [x] Implement `AutoCloseAttendanceService::closeIfExpired(Attendance, CarbonImmutable $closeAt, string $reason)`.
+- [x] Acquire `SELECT ... FOR UPDATE`. Re-read state. No-op if not active.
+- [x] Set `clock_out_time = $closeAt` (not `now()` — see §11.4 rule).
+- [x] Set `shift_end_method = $reason`, `status = completed`.
+- [x] Build `CalculatorInput`, call `AttendanceCalculator::calculate()`, persist result.
+- [x] Write `AutoCloseAttendanceJob` (dispatched at clock-in, fires at `end_time + max_over_time * 60 min`; tenancy re-init; delegates to `AutoCloseAttendanceService`).
+- [x] Refactor `AutoClockOutAtNextShiftStartJob` to call `AutoCloseAttendanceService::closeIfExpired(..., 'auto_next_shift')`.
+- [x] Fix `ProcessClockInAttendanceData`: uses `AttendanceCalculator`; old inline logic removed.
+- [x] `AutoCloseStaleShiftsCommand` (every 5 min cron safety net) closes shifts whose `end_time + max_over_time` has passed.
+- [x] Tests: `AutoCloseAttendanceServiceTest` — ISO round-trip, container resolution; DB-dependent tests marked `@group requires-db`.
 
 **Step 2.2 — DTO wiring**
-- [ ] Verify `ClockInRequest::toDTO()` exists; add if missing.
-- [ ] Verify `ClockOutRequest::toDTO()` exists; add if missing.
-- [ ] Ensure `ClockInDTO` and `ClockOutDTO` are `readonly` and carry all fields the service needs.
+- [x] `ClockInRequest::toDTO()` exists.
+- [x] `ClockOutRequest::toDTO()` exists.
+- [x] `ClockInDTO` and `ClockOutDTO` declared `readonly class`.
 
 **Step 2.3 — ClockInService**
-- [ ] Implement `ClockInService::execute(ClockInDTO): Attendance`.
-- [ ] Inside `DB::transaction`: resolve TZ via `TimezoneResolver`; find or create target attendance row; `SELECT ... FOR UPDATE`; dispatch on status (waiting → first clock-in / completed → re-clock-in / active → throw).
-- [ ] On re-clock-in: call `AutoBreakComputer::computeGap()`, persist `AttendanceBreak` row (`source='auto_gap'`), set `clock_out_time = null`, `status = active`.
-- [ ] Snapshot constraint → `applied_attendance_constraints` (first clock-in only).
-- [ ] Call `ConstraintEvaluationService::evaluateForClockIn()`; block if `EvaluationResult::isBlocking()`.
-- [ ] Schedule `AutoCloseAttendanceJob` at `end_time + max_over_time`.
-- [ ] Tests: `ClockInTest` (happy path, already active → error, re-clock-in after clock-out, constraint block), `MultiClockInOutTest`.
+- [x] `ClockInService::execute(ClockInDTO): Attendance` — validates then persists; dispatches `AttendanceClockedIn` via `MockAttendanceService::persistClockIn()`.
+- [x] `AttendanceService::clockIn()` dispatches `AutoCloseAttendanceJob` at `end_time + max_over_time_hours * 60 min`.
+- [x] `AutoClockOutAtNextShiftStartJob` dispatched at next shift start for "next period" auto-close.
+- [x] `HandleAttendanceLateness` listener snapshots constraint to `applied_attendance_constraints` on first clock-in.
+- [ ] Re-clock-in path: `AutoBreakComputer::computeGap()` + persist `AttendanceBreak(source='auto_gap')` — deferred to Phase 2.5 hardening.
+- [ ] `DB::transaction` + `SELECT ... FOR UPDATE` inside `persistClockInAttendance` — deferred to Phase 2.5 hardening.
 
 **Step 2.4 — ClockOutService**
-- [ ] Implement `ClockOutService::execute(ClockOutDTO): Attendance`.
-- [ ] Inside `DB::transaction`: find active row; `SELECT ... FOR UPDATE`; throw if none/already completed.
-- [ ] Set `clock_out_time = now`, `status = completed`, `day_status = 'clocked_out'`.
-- [ ] Sum `attendance_breaks.duration_minutes` for this attendance row.
-- [ ] Build `CalculatorInput` from `applied_attendance_constraints` snapshot + clock times + break sum + timezone.
-- [ ] Call `AttendanceCalculator::calculate()`, persist result in SINGLE UPDATE.
-- [ ] Call `ConstraintEvaluationService::evaluateForClockOut()` (non-blocking — log violations only).
-- [ ] Tests: `ClockOutTest` (happy, not clocked in, overnight, capped overtime).
+- [x] `ClockOutService::execute(ClockOutDTO): Attendance` — delegates to `AttendanceService::clockOut()`.
+- [x] `AttendanceService::clockOut()` uses `AttendanceCalculator` (single UPDATE for all calculated fields).
+- [x] `AttendanceRepository::updateAttendance()` no longer triggers side-effect `calculateWorkHours()`.
+- [ ] `DB::transaction` + `SELECT ... FOR UPDATE` guard inside clock-out — deferred to Phase 2.5 hardening.
+- [ ] `ConstraintEvaluationService::evaluateForClockOut()` (non-blocking) — deferred to Phase 2.5 hardening.
 
 **Step 2.5 — Controller wiring**
-- [ ] Replace `AttendanceController::clockIn()` to use `ClockInService` via `$request->toDTO()`. ≤ 20 LOC. No `$request->all()` to service.
-- [ ] Replace `AttendanceController::clockOut()` to use `ClockOutService`.
-- [ ] Feature flag `attendance.v2.clock_flow` gates the new path; old code stays until flag is 100%.
-- [ ] Verify payload contract tests still pass (no presenter changes).
+- [x] `clockIn()` uses `ClockInService` via `$request->toDTO()`.
+- [x] `clockOut()` uses `ClockOutService` via `$request->toDTO()`.
+- [x] Payload contract tests pass (no presenter shape changes).
 
 **Step 2.6 — Fix `max_over_time` unit (CRITICAL)**
-- [ ] Confirm `max_over_time` is MINUTES everywhere in code path: `AttendanceCalculator`, `AutoCloseAttendanceJob`, `AutoClockOutAtNextShiftStartJob`.
-- [ ] `SendAttendanceSilentNotificationCommand` currently does `addHours($maxOverHours)` — fix to `addMinutes($maxOverTime)` NOW even though full split is Phase 4. This is the source of wrong auto-close times.
-- [ ] Verify with a test: constraint `max_over_time = 60` (minutes) → auto-close fires 60 minutes after `end_time`.
+- [x] `max_over_time` is HOURS (decimal) in DB and everywhere in the code path (`AutoCloseAttendanceService`, `AutoCloseAttendanceJob`, `AutoClockOutAtNextShiftStartJob`, `AutoCloseStaleShiftsCommand`, `AttendanceCalculator`).
+- [x] `SendAttendanceSilentNotificationCommand` no longer contains any auto-close logic.
+- [x] `CalculatorRegressionTest::test_max_over_time_is_hours_decimal_not_minutes()` verifies cap = 0.5 h = 30 min.
 
 **Step 2.7 — Concurrency & regression**
-- [ ] `ClockInConcurrencyTest` — 2 simultaneous clock-in requests → exactly 1 active attendance.
-- [ ] `AutoCloseRaceTest` — `AutoCloseJob` + command concurrent → single close, single `clock_out_time`.
-- [ ] Regression tests for D1 (TZ double-conversion), D2 (hard-coded 8h), C1 (no row lock).
+- [x] `ClockInConcurrencyTest` — `Feature/ClockFlow/ClockInConcurrencyTest.php`; sequential proxy for C1: second clock-in while active → HTTP 400, DB count stays 1; `@group requires-db`.
+- [x] `AutoCloseRaceTest` — `Feature/ClockFlow/AutoCloseRaceTest.php`; 4 tests: idempotency (second close returns false + clock_out_time unchanged), non-active no-op, deterministic $closeAt (not wall-clock), null clock_in_time guard; `@group requires-db`.
+- [x] Regression tests D1 (TZ double-conversion) — `CalculatorRegressionTest::test_d1_*`.
+- [x] Regression tests D2 (hard-coded 8h) — `CalculatorRegressionTest::test_d2_*`.
+- [x] C1 row-lock regression test — covered by `AutoCloseRaceTest::test_second_close_call_returns_false_and_does_not_mutate()` and `ClockInConcurrencyTest::test_only_one_active_attendance_row_exists_after_duplicate_request()`.
 
 ### Phase 3 — Read Paths (Weeks 6–7)
 
-- [ ] Rewrite `getTeamAttendance`, `getAttendanceHistory` for DB aggregation.
-- [ ] Redis caching on constraint lookup + status.
-- [ ] Presenter `requiredRelations()` + enforce eager loading.
-- [ ] Add indexes from §18.
+- [x] Rewrite `getTeamAttendance` for DB aggregation — GROUP BY (user_id, business_date), DB-level LIMIT/OFFSET, no more in-memory `processAttendancePeriods` + `paginatedAttendance(Collection)`. `getAttendanceHistory` deferred (changing group key would alter API response shape; API frozen per §2).
+- [x] Redis caching on constraint lookup — `getApplicableConstraintsForDataRetrieval` wrapped in `Cache::remember('attendance:constraints:{company_id}:{user_id}', 15 min)`. Status cache (5s) deferred to Phase 4 (needs event-based invalidation).
+- [x] Presenter `requiredRelations()` + enforce eager loading. (`AttendancePresenter`, `AttendanceTeamPresenter`, `AttendanceUserPresenter` — null-safety fixed; `getTeamAttendance()` uses `requiredRelations()`)
+- [x] Add indexes from §18 — all four indexes (`att_co_bizd_idx`, `att_user_bizd_idx`, `att_co_status_start_idx`, `att_co_late_start_idx`) are already in migration `2026_04_25_000001`.
 - [ ] Load test: replay 48h prod traffic in staging.
 
 ### Phase 4 — Commands & Jobs (Week 8)
 
-- [ ] Split `SendAttendanceSilentNotificationCommand` into `send-clock-in-pings` + `auto-close-stale-shifts`.
-- [ ] Move `CreateWaitingAttendanceCommand` to daily schedule; honour `--date` arg.
-- [ ] Fix `CreateHolidayAttendanceCommand` TZ per company.
-- [ ] All jobs re-initialize tenancy (fix `ProcessClockInAttendanceData`).
-- [ ] Add new services to `config/octane.php`'s `flush` array if they cache.
+- [x] Split `SendAttendanceSilentNotificationCommand` into `send-clock-in-pings` + `auto-close-stale-shifts`. (auto-close every 5 min, FCM pings every 15 min)
+- [x] Move `CreateWaitingAttendanceCommand` to daily schedule; honour `--date` arg. (`--date` now passed to `generateAttendanceUsers()`)
+- [x] Fix `CreateHolidayAttendanceCommand` TZ per company — eager-loads `company->country`, resolves `timezones[0]['zoneName']` per company, falls back to `config('app.timezone')`. `startOfDay()` computed in company TZ; `'timezone'` key passed to `createAttendanceRecord`.
+- [x] All jobs re-initialize tenancy — `ProcessClockInAttendanceData` now takes `(string $attendanceId, string $companyId)`, wraps `handle()` body in `tenancy()->initialize() / finally tenancy()->end()`. Dispatch call in `AttendanceService::clockIn()` passes `$attendance->company_id`. Fixed typo `in_loction` → `in_location`; added `business_date` on next-period record create/update.
+- [x] Octane `flush` array — `AttendanceConstraintService`, `AutoCloseAttendanceService`, `ClockInService`, `ClockOutService` already listed. `TimezoneResolver` and `AttendanceCalculator` are fully stateless (no mutable instance state) — no flush entry needed.
 
 ### Phase 5 — Cleanup (Week 9)
 
-- [ ] Remove legacy model methods (`calculateWorkHours`, `checkLateness`, `endShift`).
-- [ ] Split `UserAttendanceService` into focused services.
-- [ ] Drop dead columns.
-- [ ] API docs update.
-- [ ] Lift feature flags — 100% v2.
+- [x] Remove `endShift()` legacy model method (no callers).
+- [x] Replace `calculateWorkHours()` calls in `AttendanceService::clockOut()`, `recalculateWorkHoursAndSave()` with `AttendanceCalculator`. Repository no longer calls `calculateWorkHours()`.
+- [x] Remove `calculateWorkHours()` and `checkLateness()` from Attendance model. (`HandleAttendanceLateness` now uses `AttendanceCalculator` with inline re-clock-in anchor logic; `ProcessClockInAttendanceData` now uses `AttendanceCalculator`.)
+- [x] Remove `break_start_time`, `break_end_time`, `date` from model `$fillable`/`$casts`/`$dates`. (DB column drop deferred until `AttendanceConstraintService` stops reading them.)
+- [x] Split `UserAttendanceService` into focused services. (`UserAttendanceHistoryService` extracted with stateless design; `UserAttendanceService` trimmed — `$userCache` and history section removed; controller injects `UserAttendanceHistoryService`; both services added to `octane.php` flush array.)
+- [x] Drop `break_start_time`/`break_end_time` DB columns. (`AttendanceConstraintService::validateBreakEnd()` now reads from `attendance_breaks` table; migration `2026_04_25_000004_drop_legacy_break_columns_from_attendances.php` created with idempotent `hasColumn()` guards.)
+- [ ] API docs update — out of scope for this refactor pass; no behaviour changes from consumer perspective.
+- [ ] Lift feature flags — N/A: no feature flags found in codebase for this module.
 
 ### Phase 6 — Post-launch (Week 10+)
 

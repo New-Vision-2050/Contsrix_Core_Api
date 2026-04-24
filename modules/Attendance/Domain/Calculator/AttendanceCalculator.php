@@ -11,8 +11,8 @@ namespace Modules\Attendance\Domain\Calculator;
  * Single source of truth for: total_work_hours, total_break_hours, overtime_hours,
  * is_late, late_minutes, is_early_departure, early_departure_minutes.
  *
- * All callers (ClockOutService, AutoCloseAttendanceService, calculateWorkHours())
- * must route through this class.
+ * All callers (AttendanceService, AutoCloseAttendanceService, ProcessClockInAttendanceData,
+ * HandleAttendanceLateness) must route through this class.
  */
 final class AttendanceCalculator
 {

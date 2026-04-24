@@ -81,13 +81,6 @@ class AttendanceRepository extends BaseRepository
     {
         $attendance = $this->getAttendance($id);
         $attendance->update($data);
-
-        // Recalculate work hours if clock times are updated.
-        // calculateWorkHours() already calls save() internally — no extra save() needed.
-        if (isset($data['clock_out_time']) || isset($data['break_end_time'])) {
-            $attendance->calculateWorkHours();
-        }
-
         return $attendance->fresh();
     }
 

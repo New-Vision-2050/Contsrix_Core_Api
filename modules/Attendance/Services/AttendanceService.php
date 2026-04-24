@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Modules\Attendance\Services;
 
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Domain\Calculator\AttendanceCalculator;
+use Modules\Attendance\Domain\Calculator\CalculatorInput;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceBreak;
 use Modules\Attendance\Repositories\AttendanceRepository;
@@ -18,12 +22,15 @@ use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use Carbon\CarbonPeriod;
 use Modules\Attendance\Jobs\AutoClockOutAtNextShiftStartJob;
+use Modules\Attendance\Jobs\AutoCloseAttendanceJob;
 use Modules\Attendance\Jobs\ProcessClockInAttendanceData;
+use Modules\Attendance\Presenters\AttendanceTeamPresenter;
 
 class AttendanceService
 {
     public function __construct(
         private AttendanceRepository $attendanceRepository,
+        private AttendanceCalculator $calculator,
     ) {}
 
     /**
@@ -65,12 +72,38 @@ class AttendanceService
 
         $extendsNextDay = $constraints['current_work_period']['extends_to_next_day'] ?? false;
         if ($extendsNextDay) {
-            ProcessClockInAttendanceData::dispatch($attendance->id)->delay($endDateTime);
+            ProcessClockInAttendanceData::dispatch(
+                (string) $attendance->id,
+                (string) $attendance->company_id,
+            )->delay($endDateTime);
         }
 
         $this->scheduleAutoClockOutWhenNextShiftStarts($attendance, $constraints, $endDateTime);
+        $this->scheduleAutoCloseAtMaxOvertime($attendance, $endDateTime, (float) ($attendanceData['max_over_time'] ?? 0.0));
 
         return $attendance;
+    }
+
+    /**
+     * Dispatch AutoCloseAttendanceJob at end_time + max_over_time_hours * 60 min.
+     * This provides precise timing; AutoCloseStaleShiftsCommand is the safety-net fallback.
+     */
+    private function scheduleAutoCloseAtMaxOvertime(
+        Attendance $attendance,
+        Carbon $endDateTime,
+        float $maxOverTimeHours,
+    ): void {
+        $closeAt = $endDateTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
+
+        if (!$closeAt->isFuture()) {
+            return;
+        }
+
+        AutoCloseAttendanceJob::dispatch(
+            (string) $attendance->id,
+            (string) $attendance->company_id,
+            $closeAt->toIso8601String(),
+        )->delay($closeAt);
     }
 
     private function ensureUserHasNoActiveClockIn( $userId): void
@@ -152,6 +185,7 @@ class AttendanceService
             'day_status' => 'in_location',
             'timezone' => $timezone,
             'max_over_time' => $constraints['max_over_time'] ?? null,
+            'business_date' => $startDateTime->toDateString(),
         ];
     }
 
@@ -257,9 +291,67 @@ class AttendanceService
             $this->buildClockOutUpdatePayload($attendance, $clockOutDTO)
         );
         $attendance->refresh();
-        $attendance->calculateWorkHours();
+
+        // Use the domain calculator instead of the legacy model method.
+        // Reads timezone from the attendance row — correct in all contexts (request, job, command).
+        $input  = $this->buildCalculatorInput($attendance);
+        $result = $this->calculator->calculate($input);
+
+        $attendance->update([
+            'total_work_hours'        => $result->totalWorkHours,
+            'total_break_hours'       => $result->totalBreakHours,
+            'overtime_hours'          => $result->overtimeHours,
+            'is_late'                 => $result->isLate,
+            'late_minutes'            => $result->lateMinutes,
+            'is_early_departure'      => $result->isEarlyDeparture,
+            'early_departure_minutes' => $result->earlyDepartureMinutes,
+        ]);
 
         return $attendance->refresh();
+    }
+
+    private function buildCalculatorInput(Attendance $attendance): CalculatorInput
+    {
+        $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+
+        $scheduledStart = CarbonImmutable::parse($attendance->start_time)->setTimezone($timezone);
+        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time)->setTimezone($timezone);
+
+        if (! $scheduledEnd->greaterThan($scheduledStart)) {
+            $scheduledEnd = $scheduledEnd->addDay();
+        }
+
+        $clockIn  = $attendance->clock_in_time
+            ? CarbonImmutable::parse($attendance->clock_in_time)->setTimezone($timezone)
+            : null;
+        $clockOut = $attendance->clock_out_time
+            ? CarbonImmutable::parse($attendance->clock_out_time)->setTimezone($timezone)
+            : null;
+
+        $totalBreakMinutes = (int) $attendance->breaks()
+            ->whereNotNull('end_time')
+            ->sum('duration_minutes');
+
+        $snapshot       = $attendance->appliedAttendanceConstraint?->constraint_snapshot ?? [];
+        $latenessRules  = $snapshot['lateness_rules'] ?? [];
+        $graceValue     = (int) ($latenessRules['lateness_period'] ?? $latenessRules['grace_period_minutes'] ?? 0);
+        $graceUnit      = (string) ($latenessRules['lateness_unit'] ?? 'minute');
+        $graceMinutes   = match (strtolower($graceUnit)) {
+            'hour' => $graceValue * 60,
+            'day'  => $graceValue * 1440,
+            default => $graceValue,
+        };
+
+        return new CalculatorInput(
+            scheduledStart:     $scheduledStart,
+            scheduledEnd:       $scheduledEnd,
+            clockIn:            $clockIn,
+            clockOut:           $clockOut,
+            totalBreakMinutes:  $totalBreakMinutes,
+            gracePeriodMinutes: max(0, $graceMinutes),
+            maxOverTimeHours:   (float) ($attendance->max_over_time ?? 0.0),
+            timezone:           $timezone,
+        );
     }
 
     /**
@@ -585,10 +677,17 @@ class AttendanceService
 
     private function recalculateWorkHoursAndSave(Attendance $attendance): void
     {
-        // calculateWorkHours() recomputes total_break_hours, total_work_hours, overtime,
-        // early_departure and persists them in a single save() — no need for the previous
-        // updateTotalBreakHours()+save() combo.
-        $attendance->calculateWorkHours();
+        $attendance->refresh();
+        $result = $this->calculator->calculate($this->buildCalculatorInput($attendance));
+        $attendance->update([
+            'total_work_hours'        => $result->totalWorkHours,
+            'total_break_hours'       => $result->totalBreakHours,
+            'overtime_hours'          => $result->overtimeHours,
+            'is_late'                 => $result->isLate,
+            'late_minutes'            => $result->lateMinutes,
+            'is_early_departure'      => $result->isEarlyDeparture,
+            'early_departure_minutes' => $result->earlyDepartureMinutes,
+        ]);
     }
 
     /**
@@ -691,22 +790,67 @@ class AttendanceService
         return $this->processAttendancePeriods($realAttendanceRecords);
     }
 
-    public function getTeamAttendance(array $filters, ?int $page = 1, ?int $perPage = 10, $userId = null)
+    public function getTeamAttendance(array $filters, ?int $page = 1, ?int $perPage = 10, $userId = null): LengthAwarePaginator
     {
-        $realAttendanceRecords = $this->fetchAttendanceRecordsForExport(
-            $filters,
-            ['user', 'user.userProfessionalData'],
-            $userId
-        );
+        $page    = max(1, (int) ($page ?? 1));
+        $perPage = max(1, (int) ($perPage ?? 10));
 
-        $processedRecords = $this->processAttendancePeriods($realAttendanceRecords);
+        $normalizedUserId = $userId instanceof UuidInterface ? $userId->toString() : $userId;
+        $filterInput      = $filters;
+        $startDate        = $filterInput['start_date'] ?? null;
+        $endDate          = $filterInput['end_date'] ?? null;
+        unset($filterInput['start_date'], $filterInput['end_date']);
+        $calendarTz = $this->attendanceFilterCalendarTimezone();
 
+        // Build the shared filtered base query (WHERE conditions only, no SELECT/GROUP).
+        $base = Attendance::query()
+            ->filter($filterInput)
+            ->when($normalizedUserId, static fn($q) => $q->where('user_id', $normalizedUserId))
+            ->when(
+                $startDate !== null && $startDate !== '',
+                fn($q) => $q->where(
+                    'start_time', '>=',
+                    Carbon::parse((string) $startDate, $calendarTz)->startOfDay()->utc()
+                )
+            )
+            ->when(
+                $endDate !== null && $endDate !== '',
+                fn($q) => $q->where(
+                    'start_time', '<',
+                    Carbon::parse((string) $endDate, $calendarTz)->addDay()->startOfDay()->utc()
+                )
+            )
+            ->whereNotNull('business_date');
 
-        return $this->attendanceRepository->paginatedAttendance(
-            $processedRecords,
-            $page,
-            $perPage
-        );
+        // Count distinct (user_id, business_date) groups without loading records.
+        $countRow = $base->clone()
+            ->selectRaw('COUNT(DISTINCT CONCAT(user_id, CHAR(0), business_date)) AS grp_count')
+            ->first();
+        $total = (int) ($countRow->grp_count ?? 0);
+
+        if ($total === 0) {
+            return new LengthAwarePaginator([], 0, $perPage, $page);
+        }
+
+        // Pick one representative attendance ID per (user_id, business_date) for this page.
+        // Prefer a row that already has clock_in_time; otherwise take the lexicographically
+        // smallest UUID (deterministic tiebreaker).
+        $repIds = $base->clone()
+            ->selectRaw("COALESCE(MIN(CASE WHEN clock_in_time IS NOT NULL THEN id END), MIN(id)) AS rep_id")
+            ->groupBy('user_id', 'business_date')
+            ->orderByRaw('MIN(start_time) ASC')
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage)
+            ->pluck('rep_id');
+
+        $records = Attendance::query()
+            ->whereIn('id', $repIds)
+            ->with(AttendanceTeamPresenter::requiredRelations())
+            ->select($this->baseAttendanceSelectColumns())
+            ->orderBy('start_time')
+            ->get();
+
+        return new LengthAwarePaginator($records, $total, $perPage, $page);
     }
 
     /**
