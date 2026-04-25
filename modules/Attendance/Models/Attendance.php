@@ -105,9 +105,12 @@ class Attendance extends Model implements Auditable
         'user_id' => 'string',
         'company_id' => 'string',
         'approved_by' => 'string',
-        'clock_in_time' => 'datetime',
-        'clock_out_time' => 'datetime',
+        // clock_in_time, clock_out_time, start_time, end_time are stored in branch timezone, not UTC
+        // Do not use datetime cast - it treats values as UTC which causes wrong time conversion
         'approved_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
         'total_work_hours' => 'decimal:2',
         'total_break_hours' => 'decimal:2',
         'overtime_hours' => 'decimal:2',
@@ -121,15 +124,6 @@ class Attendance extends Model implements Auditable
         'clock_out_location' => 'array',
         'verification_data' => 'array',
         'location_tracking' => 'array',
-    ];
-
-    protected $dates = [
-        'clock_in_time',
-        'clock_out_time',
-        'approved_at',
-        'created_at',
-        'updated_at',
-        'deleted_at',
     ];
 
     // Status constants
