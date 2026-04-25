@@ -480,9 +480,12 @@ pending_approval → approved, rejected
 
 **Cast map:**
 ```php
-'clock_in_time'    => 'datetime'    // Carbon instance
-'clock_out_time'   => 'datetime'    // Carbon instance
+// clock_in_time, clock_out_time, start_time, end_time are stored in branch timezone, NOT UTC
+// Do NOT use datetime cast - it treats values as UTC which causes wrong time conversion
 'approved_at'      => 'datetime'
+'created_at'       => 'datetime'
+'updated_at'       => 'datetime'
+'deleted_at'       => 'datetime'
 'total_work_hours' => 'decimal:2'
 'total_break_hours'=> 'decimal:2'
 'overtime_hours'   => 'decimal:2'
