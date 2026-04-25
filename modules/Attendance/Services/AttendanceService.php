@@ -1058,7 +1058,7 @@ class AttendanceService
         $attendanceData = [
             'user_id' => $user->id,
             'company_id' => $user->company_id,
-            'status' => Attendance::STATUS_COMPLETED, // An absence is a "completed" state for the day.
+            'status' => Attendance::STATUS_ABSENT, // An absence is a "completed" state for the day.
             'is_absent' => true,
             'absence_reason' => $reason,
             'clock_in_time' => $dateOfAbsence->copy()->startOfDay(),

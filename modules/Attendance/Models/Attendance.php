@@ -136,6 +136,8 @@ class Attendance extends Model implements Auditable
     const STATUS_WAITING = 'waiting';  // New status for attendance records waiting for user to arrive
     const STATUS_ACTIVE = 'active';
     const STATUS_COMPLETED = 'completed';
+    const STATUS_ABSENT = 'absent';
+    const STATUS_HOLIDAY = 'holiday';
     const STATUS_PENDING_APPROVAL = 'pending_approval';
     const STATUS_APPROVED = 'approved';
     const STATUS_REJECTED = 'rejected';

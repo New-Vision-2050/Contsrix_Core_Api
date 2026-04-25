@@ -143,7 +143,7 @@ class AutoAttendanceService
                                         'day_status' => 'work_day',
                                         'timezone' => $timezone,
                                         'notes' => 'Auto-generated absent record for ' . $periodName . ' on a workday (missed period).',
-                                        'status' => Attendance::STATUS_COMPLETED,
+                                        'status' => Attendance::STATUS_ABSENT,
                                         'is_absent' => 1,
                                     ],
                                     $periodStart,
@@ -163,7 +163,7 @@ class AutoAttendanceService
                                     'day_status' => 'holiday',
                                     'timezone' => $timezone,
                                     'notes' => 'Auto-generated holiday record.',
-                                    'status' => Attendance::STATUS_COMPLETED,
+                                    'status' => Attendance::STATUS_HOLIDAY,
                                     'is_holiday' => 1,
                                 ],$carbonDate);
                         }
