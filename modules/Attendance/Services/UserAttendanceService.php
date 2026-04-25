@@ -161,9 +161,9 @@ class UserAttendanceService
      *
      * @return array{0: Collection<int, Attendance>, 1: Attendance|null}
      */
-    private function fetchDayAttendancesAndCurrentOpen(User $user, Carbon $date, ?string $timezone = null): array
+    private function fetchDayAttendancesAndCurrentOpen(User $user, Carbon $date): array
     {
-        $timezone = $timezone ?? $this->getTimezone();
+        $timezone = $this->getTimezone();
         $dateInTz = $date->copy()->setTimezone($timezone);
 
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
@@ -231,17 +231,16 @@ class UserAttendanceService
         Collection $attendances,
         Carbon $date,
         array $earlyClockInRules,
-        ?Attendance $currentAttendance = null,
-        ?string $timezone = null,
+        ?Attendance $currentAttendance = null
     ): array {
-        $timezone = $timezone ?? $this->getTimezone();
+        $timezone = $this->getTimezone();
         $now = Carbon::now($timezone);
 
         $periodBounds = [];
         foreach ($periods as $idx => $period) {
             $periodBounds[$idx] = [
-                'start' => $this->parsePeriodTime($period, 'start', $date, $timezone),
-                'end' => $this->parsePeriodTime($period, 'end', $date, $timezone),
+                'start' => $this->parsePeriodTime($period, 'start', $date),
+                'end' => $this->parsePeriodTime($period, 'end', $date),
             ];
         }
 
@@ -278,6 +277,8 @@ class UserAttendanceService
         return $out;
     }
 
+
+
     /**
      * Pick exactly one "current" period for {@see mergePeriodData} `is_active`:
      * open shift (clock in, no clock out) → period whose bounds contain that clock-in; else first period where now falls (incl. early window).
@@ -306,7 +307,6 @@ class UserAttendanceService
 
         return null;
     }
-
     private function isAttendanceClockInWithinPeriod(
         Attendance $attendance,
         Carbon $periodStart,
