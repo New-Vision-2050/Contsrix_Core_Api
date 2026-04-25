@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
+use Modules\Attendance\Services\AttendanceTimeCalculationService;
 
 /**
  * @property string $id
@@ -200,17 +201,17 @@ class Attendance extends Model implements Auditable
 
     public function getStartTimeAttribute($value)
     {
-        if ($this->timezone && $value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
-        }
+        // if ($this->timezone && $value) {
+        //     return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
+        // }
         return $value;
     }
 
     public function getEndTimeAttribute($value)
     {
-        if ($this->timezone && $value) {
-            return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
-        }
+        // if ($this->timezone && $value) {
+        //     return Carbon::parse($value, 'UTC')->setTimezone($this->timezone);
+        // }
         return $value;
     }
     /**
@@ -512,20 +513,22 @@ class Attendance extends Model implements Auditable
      *
      * @return $this
      */
-    public function checkLateness(): self
+    public function checkLateness(bool $persist = true): self
     {
-        if (!$this->clock_in_time) {
+        if (! $this->clock_in_time) {
             $this->is_late = false;
             $this->late_minutes = 0;
+
             return $this;
         }
 
-        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
+        $timezone = $this->timezone ?? (getTimeZoneBranchByRequest() ?? config('app.timezone'));
 
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
             $clockInDate = $clockIn->format('Y-m-d');
 
+            $this->loadMissing('user');
             $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
             $user = $this->user;
             $config = $constraintService->getTodaysWorkRulesForUser($user);
@@ -594,7 +597,9 @@ class Attendance extends Model implements Auditable
                 }
             }
 
-            $this->save();
+            if ($persist) {
+                $this->save();
+            }
 
         } catch (\Exception $e) {
             Log::error('Error checking lateness: ' . $e->getMessage(), [
@@ -632,22 +637,27 @@ class Attendance extends Model implements Auditable
 
     /**
      * Calculate total work hours and update the model.
+     *
+     * @param  float  $standardDayHoursWhenNoEndTime  If {@see $this->end_time} is null, hours beyond this count as overtime (legacy).
      */
-    public function calculateWorkHours(): float
+    public function calculateWorkHours(float $standardDayHoursWhenNoEndTime = 8.0): float
     {
         // 1. Pre-condition check
-        if (!$this->clock_in_time || !$this->clock_out_time) {
+        if (! $this->clock_in_time || ! $this->clock_out_time) {
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
+            $this->is_late = false;
+            $this->late_minutes = 0;
             $this->is_early_departure = false;
             $this->early_departure_minutes = 0;
             $this->save();
+
             return 0.0;
         }
 
-        // 2. Timezone setup
-        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
+        // 2. Timezone setup (attendance store wins so clock-out matches shift / API)
+        $timezone = $this->timezone ?? (getTimeZoneBranchByRequest() ?? config('app.timezone'));
         try {
             $clockIn = Carbon::parse($this->clock_in_time)->setTimezone($timezone);
             $clockOut = Carbon::parse($this->clock_out_time)->setTimezone($timezone);
@@ -662,99 +672,83 @@ class Attendance extends Model implements Auditable
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
+            $this->is_late = false;
+            $this->late_minutes = 0;
             $this->is_early_departure = false;
             $this->early_departure_minutes = 0;
             $this->save();
+
             return 0.0;
         }
 
         // 3. Validity check
         if ($clockOut->isBefore($clockIn)) {
-            // If data is invalid, reset and save.
             $this->total_work_hours = 0.0;
             $this->total_break_hours = 0.0;
             $this->overtime_hours = 0.0;
+            $this->is_late = false;
+            $this->late_minutes = 0;
             $this->is_early_departure = false;
             $this->early_departure_minutes = 0;
             $this->save();
+
             return 0.0;
         }
 
-        // --- CALCULATIONS ---
+        $this->loadMissing('user');
 
-        // 4. Calculate Total Break Duration
-        $breakMinutes = $this->calculateTotalBreakMinutes();
-        $this->total_break_hours = round($breakMinutes / 60, 2);
+        $scheduledStart = $this->start_time ?? $this->user?->start_time;
+        $scheduledEnd = $this->end_time ?? $this->user?->end_time;
 
-        // 5. Calculate Net Work Duration
-        $totalGrossMinutes = $clockIn->diffInMinutes($clockOut, false);
-        $workMinutes = $totalGrossMinutes - $breakMinutes;
-        $workHours = $workMinutes > 0 ? round($workMinutes / 60, 2) : 0.0;
-        $this->total_work_hours = $workHours;
+        /** @var AttendanceTimeCalculationService $calculator */
+        $calculator = app(AttendanceTimeCalculationService::class);
+        $durations = $calculator->calculate(
+            $this->clock_in_time,
+            $this->clock_out_time,
+            $scheduledStart,
+            $scheduledEnd,
+            $timezone
+        );
 
-        // 6. Calculate Overtime
-        $standardHours = 8.0;
-        if ($workHours > $standardHours) {
-            $this->overtime_hours = round($workHours - $standardHours, 2);
+        $this->late_minutes = $durations->delayMinutes;
+        $this->is_late = $durations->delayMinutes > 0;
+        $this->is_early_departure = $durations->isEarlyDeparture;
+        $this->early_departure_minutes = $durations->earlyDepartureMinutes;
+
+        $this->total_work_hours = $calculator->minutesToDecimalHours($durations->workMinutes);
+
+        $hasScheduledEnd = $scheduledEnd !== null
+            && ! (is_string($scheduledEnd) && $scheduledEnd === '');
+
+        if ($hasScheduledEnd) {
+            $this->overtime_hours = $calculator->minutesToDecimalHours($durations->overtimeMinutes);
         } else {
             $this->overtime_hours = 0.0;
-        }
-
-        // 7. Calculate Late and Early Departure
-        // *** IMPROVED: Get scheduled start and end times from user/company settings ***
-        $scheduledStartCandidate = $this->start_time ?? $this->user->start_time ?? '09:00';
-        $scheduledEndCandidate = $this->end_time ?? $this->user->end_time ?? '17:00';
-
-        // Normalize possible Carbon or datetime strings to plain time strings (H:i:s)
-        if ($scheduledStartCandidate instanceof \Carbon\Carbon) {
-            $scheduledStartTimeString = $scheduledStartCandidate->format('H:i:s');
-        } else {
-            $scheduledStartTimeString = (string) $scheduledStartCandidate;
-            if (is_string($scheduledStartCandidate) && (str_contains($scheduledStartCandidate, 'T') || str_contains($scheduledStartCandidate, ' '))) {
-                $scheduledStartTimeString = \Carbon\Carbon::parse($scheduledStartCandidate)->format('H:i:s');
+            if ($this->total_work_hours > $standardDayHoursWhenNoEndTime) {
+                $this->overtime_hours = round(
+                    $this->total_work_hours - $standardDayHoursWhenNoEndTime,
+                    2
+                );
             }
         }
 
-        if ($scheduledEndCandidate instanceof \Carbon\Carbon) {
-            $scheduledEndTimeString = $scheduledEndCandidate->format('H:i:s');
-        } else {
-            $scheduledEndTimeString = (string) $scheduledEndCandidate;
-            if (is_string($scheduledEndCandidate) && (str_contains($scheduledEndCandidate, 'T') || str_contains($scheduledEndCandidate, ' '))) {
-                $scheduledEndTimeString = \Carbon\Carbon::parse($scheduledEndCandidate)->format('H:i:s');
-            }
-        }
-
-        try {
-            $scheduledStartTime = $clockIn->copy()->setTimeFromTimeString($scheduledStartTimeString);
-            $scheduledEndTime = $clockIn->copy()->setTimeFromTimeString($scheduledEndTimeString);
-        } catch (\Exception $e) {
-            // Fallback to default values if parsing fails
-            $scheduledStartTime = $clockIn->copy()->setHour(9)->setMinute(0)->setSecond(0);
-            $scheduledEndTime = $clockIn->copy()->setHour(17)->setMinute(0)->setSecond(0);
-        }
-
-        // Only set lateness if it hasn't been set during clock-in
-        // This preserves the lateness values set by checkLateness() during clock-in
-        if ($this->is_late === null) {
-            $this->is_late = $clockIn->gt($scheduledStartTime);
-            $this->late_minutes = $this->is_late ? $scheduledStartTime->diffInMinutes($clockIn) : 0;
-        }
-
-        $this->is_early_departure = $clockOut->lt($scheduledEndTime);
-        $this->early_departure_minutes = $this->is_early_departure ? $clockOut->diffInMinutes($scheduledEndTime) : 0;
+        $breakMinutes = $this->calculateTotalBreakMinutes();
+        $this->total_break_hours = round($breakMinutes / 60, 2);
 
         $this->validate();
 
         $this->save();
-        return $workHours;
+
+        return (float) $this->total_work_hours;
     }
     /**
      * Calculate overtime hours based on standard work hours.
      */
-    public function calculateOvertimeHours(float $standardHours = 8.0): float
+    public function calculateOvertimeHours(float $standardDayHours = 8.0): float
     {
-        $workHours = $this->calculateWorkHours();
-        return $workHours > $standardHours ? round($workHours - $standardHours, 2) : 0.0;
+        $this->calculateWorkHours($standardDayHours);
+
+        return (float) $this->overtime_hours;
     }
 
     /**

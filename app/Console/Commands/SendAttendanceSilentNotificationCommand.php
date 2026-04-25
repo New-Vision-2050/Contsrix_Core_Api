@@ -105,6 +105,9 @@ class SendAttendanceSilentNotificationCommand extends Command
                     ? $attendance->end_time->format('Y-m-d H:i:s')
                     : (string) $attendance->end_time;
                 $endTime = Carbon::parse($endTimeRaw, $timezone);
+                $this->line("  End time: {$endTime}");
+                $this->line("  Max over time: {$attendance->max_over_time}");
+                $this->line("  attendance end_time: {$attendance->end_time}");
                 $maxOverHours = (int) ($attendance->max_over_time ?? 0);
                 $latestClockOut = $endTime->copy()->addHours($maxOverHours);
                 $now = Carbon::now($timezone);
