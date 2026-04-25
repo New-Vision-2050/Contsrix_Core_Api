@@ -14,7 +14,8 @@ class AutoAttendanceService
 {
     public function createAttendanceRecord(array $data, Carbon $startDateTime=null): Attendance
     {
-        $status = $data['status'] ?? 'pending';
+        // Keep status constrained to lifecycle states stored in attendances.status.
+        $status = $data['status'] ?? Attendance::STATUS_COMPLETED;
 
         $attendanceData = [
             'user_id' => $data['user_id'],
@@ -142,7 +143,7 @@ class AutoAttendanceService
                                         'day_status' => 'work_day',
                                         'timezone' => $timezone,
                                         'notes' => 'Auto-generated absent record for ' . $periodName . ' on a workday (missed period).',
-                                        'status' => 'absent',
+                                        'status' => Attendance::STATUS_ABSENT,
                                         'is_absent' => 1,
                                     ],
                                     $periodStart,
@@ -162,7 +163,7 @@ class AutoAttendanceService
                                     'day_status' => 'holiday',
                                     'timezone' => $timezone,
                                     'notes' => 'Auto-generated holiday record.',
-                                    'status' => 'holiday',
+                                    'status' => Attendance::STATUS_HOLIDAY,
                                     'is_holiday' => 1,
                                 ],$carbonDate);
                         }
@@ -176,5 +177,4 @@ class AutoAttendanceService
         }
     }
 }
-
 
