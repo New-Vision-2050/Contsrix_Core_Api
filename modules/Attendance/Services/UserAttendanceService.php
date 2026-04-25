@@ -190,8 +190,8 @@ class UserAttendanceService
         $periodBounds = [];
         foreach ($periods as $idx => $period) {
             $periodBounds[$idx] = [
-                'start' => $this->parsePeriodTime($period, 'start', $date),
-                'end' => $this->parsePeriodTime($period, 'end', $date),
+                'start' => $this->parsePeriodTime($period, 'start', $date, $timezone),
+                'end' => $this->parsePeriodTime($period, 'end', $date, $timezone),
             ];
         }
 
@@ -284,10 +284,10 @@ class UserAttendanceService
      * @param Carbon $date
      * @return Carbon
      */
-    private function parsePeriodTime(array $period, string $type, Carbon $date): Carbon
+    private function parsePeriodTime(array $period, string $type, Carbon $date, ?string $timezone = null): Carbon
     {
         $timeKey = "{$type}_time";
-        $timezone = $this->getTimezone();
+        $timezone = $timezone ?? $this->getTimezone();
 
         // Always parse time fresh with the correct timezone to ensure accurate comparisons
         // Pre-set Carbon instances from constraint service may have timezone context mismatches
