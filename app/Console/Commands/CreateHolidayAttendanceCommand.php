@@ -26,15 +26,16 @@ class CreateHolidayAttendanceCommand extends Command
 
     public function handle(): int
     {
-        // Parse the target date in UTC; it is a calendar-date label, not a timestamp.
-        $targetDateString = $this->option('date')
-            ? Carbon::parse($this->option('date'))->toDateString()
-            : Carbon::now('UTC')->toDateString();
+        $timezone = 'Asia/Riyadh';
 
-        $this->info("Processing holiday attendance for date: {$targetDateString}");
+        $targetDate = $this->option('date')
+            ? Carbon::parse($this->option('date'), $timezone)->startOfDay()
+            : Carbon::now($timezone)->startOfDay();
+
+        $this->info("Processing holiday attendance for date: {$targetDate->toDateString()}");
 
         $holidayDays = PublicHolidayDay::with('publicHoliday')
-            ->whereDate('date', $targetDateString)
+            ->whereDate('date', $targetDate->toDateString())
             ->whereHas('publicHoliday', fn ($q) => $q->where('is_active', true))
             ->get();
 
@@ -50,9 +51,7 @@ class CreateHolidayAttendanceCommand extends Command
 
         $this->info("Found {$holidayDays->count()} holiday day(s) across {$countryIds->count()} country/countries.");
 
-        $companies = Company::with('country')
-            ->whereIn('country_id', $countryIds)
-            ->get();
+        $companies = Company::whereIn('country_id', $countryIds)->get();
 
         if ($companies->isEmpty()) {
             $this->info('No companies found for the holiday countries.');
@@ -63,8 +62,6 @@ class CreateHolidayAttendanceCommand extends Command
         $totalSkipped = 0;
 
         foreach ($companies as $company) {
-            $timezone = $this->resolveCompanyTimezone($company);
-
             $holidayName = $holidayDays
                 ->first(fn ($day) => $day->publicHoliday->country_id === $company->country_id)
                 ?->publicHoliday
@@ -75,14 +72,11 @@ class CreateHolidayAttendanceCommand extends Command
                 ->whereNotIn('email', config('constrix.emails', []))
                 ->get();
 
-            $this->info("Company: {$company->name} [{$timezone}] — {$users->count()} user(s) — Holiday: {$holidayName}");
-
-            // startOfDay in the company's own timezone for storing correct start_time.
-            $startDateTime = Carbon::parse($targetDateString, $timezone)->startOfDay();
+            $this->info("Company: {$company->name} — {$users->count()} user(s) — Holiday: {$holidayName}");
 
             foreach ($users as $user) {
                 $exists = Attendance::where('user_id', $user->id)
-                    ->whereDate('start_time', $targetDateString)
+                    ->whereDate('start_time', $targetDate->toDateString())
                     ->where('is_holiday', 1)
                     ->exists();
 
@@ -101,7 +95,7 @@ class CreateHolidayAttendanceCommand extends Command
                         'is_holiday' => 1,
                         'notes'      => "Auto-generated holiday record: {$holidayName}",
                     ],
-                    $startDateTime->copy(),
+                    $targetDate->copy(),
                 );
 
                 $totalCreated++;
@@ -111,15 +105,5 @@ class CreateHolidayAttendanceCommand extends Command
         $this->info("Done. Created: {$totalCreated} | Skipped (already exist): {$totalSkipped}");
 
         return self::SUCCESS;
-    }
-
-    private function resolveCompanyTimezone(Company $company): string
-    {
-        $timezones = $company->country?->timezones;
-        if (is_array($timezones) && isset($timezones[0]['zoneName']) && is_string($timezones[0]['zoneName'])) {
-            return $timezones[0]['zoneName'];
-        }
-
-        return config('app.timezone') ?: 'Asia/Riyadh';
     }
 }

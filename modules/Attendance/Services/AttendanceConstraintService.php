@@ -16,7 +16,6 @@ use Modules\Attendance\Models\AttendanceConstraintViolation;
 use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Modules\Attendance\DataClasses\WeeklySchedule;
@@ -439,23 +438,20 @@ class AttendanceConstraintService
      */
     public function validateBreakEnd(Attendance $attendance): bool|array
     {
-        // Use the most recently completed break from attendance_breaks table.
-        $lastBreak = $attendance->breaks()
-            ->whereNotNull('end_time')
-            ->latest('end_time')
-            ->first();
-
-        if (!$lastBreak) {
+        if (!$attendance->break_start_time || !$attendance->break_end_time) {
             return false;
         }
 
+        // Get user to avoid readonly property issue
         $user = User::find($attendance->user_id);
         if (!$user) {
             return false;
         }
-
+        
+        // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
 
+        // Filter for break-related constraints
         $breakConstraints = $constraints->filter(function ($constraint) {
             return $constraint->type === AttendanceConstraint::TYPE_TIME &&
                    ($constraint->config['subtype'] ?? '') === AttendanceConstraint::TIME_BREAK_LIMITS;
@@ -465,49 +461,48 @@ class AttendanceConstraintService
             return false;
         }
 
-        $breakStartTime       = $lastBreak->start_time instanceof Carbon
-            ? $lastBreak->start_time
-            : Carbon::parse($lastBreak->start_time);
-        $breakEndTime         = $lastBreak->end_time instanceof Carbon
-            ? $lastBreak->end_time
-            : Carbon::parse($lastBreak->end_time);
-        $breakDurationMinutes = (int) $lastBreak->duration_minutes
-            ?: (int) $breakStartTime->diffInMinutes($breakEndTime);
-
+        // Check each break constraint
         foreach ($breakConstraints as $constraint) {
             $config = $constraint->config ?? [];
 
-            $maxBreakDuration = (int) ($config['max_break_duration_minutes'] ?? 0);
+            // Calculate break duration
+            $breakStartTime = Carbon::parse($attendance->break_start_time);
+            $breakEndTime = Carbon::parse($attendance->break_end_time);
+            $breakDurationMinutes = $breakStartTime->diffInMinutes($breakEndTime);
+
+            // Check if break duration exceeds maximum allowed
+            $maxBreakDuration = (int)($config['max_break_duration_minutes'] ?? 0);
             if ($maxBreakDuration > 0 && $breakDurationMinutes > $maxBreakDuration) {
                 return [
-                    'constraint_id'   => $constraint->id,
+                    'constraint_id' => $constraint->id,
                     'constraint_type' => AttendanceConstraint::TIME_BREAK_LIMITS,
-                    'severity'        => $config['severity'] ?? 'medium',
-                    'message'         => "Break duration ({$breakDurationMinutes} minutes) exceeds maximum allowed ({$maxBreakDuration} minutes)",
-                    'details'         => [
-                        'break_start_time'       => $breakStartTime->toDateTimeString(),
-                        'break_end_time'         => $breakEndTime->toDateTimeString(),
+                    'severity' => $config['severity'] ?? 'medium',
+                    'message' => "Break duration ({$breakDurationMinutes} minutes) exceeds maximum allowed ({$maxBreakDuration} minutes)",
+                    'details' => [
+                        'break_start_time' => $breakStartTime->toDateTimeString(),
+                        'break_end_time' => $breakEndTime->toDateTimeString(),
                         'break_duration_minutes' => $breakDurationMinutes,
-                        'max_allowed_minutes'    => $maxBreakDuration,
-                        'excess_minutes'         => $breakDurationMinutes - $maxBreakDuration,
-                    ],
+                        'max_allowed_minutes' => $maxBreakDuration,
+                        'excess_minutes' => $breakDurationMinutes - $maxBreakDuration
+                    ]
                 ];
             }
 
-            $minBreakDuration = (int) ($config['min_break_duration_minutes'] ?? 0);
+            // Check if minimum break duration is enforced
+            $minBreakDuration = (int)($config['min_break_duration_minutes'] ?? 0);
             if ($minBreakDuration > 0 && $breakDurationMinutes < $minBreakDuration) {
                 return [
-                    'constraint_id'   => $constraint->id,
+                    'constraint_id' => $constraint->id,
                     'constraint_type' => AttendanceConstraint::TIME_BREAK_LIMITS,
-                    'severity'        => $config['severity'] ?? 'low',
-                    'message'         => "Break duration ({$breakDurationMinutes} minutes) is less than minimum required ({$minBreakDuration} minutes)",
-                    'details'         => [
-                        'break_start_time'       => $breakStartTime->toDateTimeString(),
-                        'break_end_time'         => $breakEndTime->toDateTimeString(),
+                    'severity' => $config['severity'] ?? 'low',
+                    'message' => "Break duration ({$breakDurationMinutes} minutes) is less than minimum required ({$minBreakDuration} minutes)",
+                    'details' => [
+                        'break_start_time' => $breakStartTime->toDateTimeString(),
+                        'break_end_time' => $breakEndTime->toDateTimeString(),
                         'break_duration_minutes' => $breakDurationMinutes,
-                        'min_required_minutes'   => $minBreakDuration,
-                        'shortage_minutes'       => $minBreakDuration - $breakDurationMinutes,
-                    ],
+                        'min_required_minutes' => $minBreakDuration,
+                        'shortage_minutes' => $minBreakDuration - $breakDurationMinutes
+                    ]
                 ];
             }
         }
@@ -883,21 +878,16 @@ class AttendanceConstraintService
      */
     public function getApplicableConstraintsForDataRetrieval(User $user): Collection
     {
-        $cacheKey = sprintf('attendance:constraints:%s:%s', $user->company_id, $user->id);
-
-        return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($user) {
-            return $this->resolveConstraintsFromDb($user);
-        });
-    }
-
-    private function resolveConstraintsFromDb(User $user): Collection
-    {
-        $constraint = $user->professionalData?->attendanceConstraint;
+        // This logic is copied from your previous getEffectiveConstraintForUser
+        // It might need refinement based on your business rules for constraint hierarchy/application.
+        $constraints = [];
+        $constraint = $user->professionalData?->attendanceConstraint; // Assuming direct user constraint is highest
         if ($constraint) {
-            return collect([$constraint]);
+            $constraints[] = $constraint;
+            return collect($constraints);
         }
 
-        $userBranchId     = $user->userProfessionalData?->branch?->id;
+        $userBranchId = $user->userProfessionalData?->branch?->id;
         $userDepartmentId = $user->userProfessionalData?->department?->id;
 
         // 1. Check for a Default Constraint on the Branch (single query)
@@ -911,7 +901,7 @@ class AttendanceConstraintService
             ->first();
 
             if ($defaultConstraint) {
-                return collect([$defaultConstraint]);
+                return collect([$defaultConstraint]); // If default is found, return it immediately
             }
         }
 
@@ -919,17 +909,21 @@ class AttendanceConstraintService
         return AttendanceConstraint::where('company_id', $user->company_id)
             ->where('is_active', true)
             ->where(function ($query) use ($user, $userBranchId, $userDepartmentId) {
+                // Constraints assigned directly to this user.
                 $query->whereJsonContains('user_ids', $user->id)
                 ->orWhere(function ($q) use ($user) {
+                    // Constraints assigned to user's department (if they have one)
                     $q->when($user->userProfessionalData?->department_id, function ($q2) use ($user) {
                         $q2->whereJsonContains('department_ids', $user->userProfessionalData->department_id);
                     });
                 })
+                // Constraints assigned to the user's branch (if they have one).
                 ->orWhere(function ($q) use ($userBranchId) {
                     $q->when($userBranchId, function ($q2) use ($userBranchId) {
                         $q2->whereJsonContains('branch_ids', $userBranchId);
                     });
                 })
+                // Global constraints (not assigned to any specific user, department, or branch).
                 ->orWhere(function ($q) {
                     $q->where(fn($sub) => $sub->whereNull('user_ids')->orWhereJsonLength('user_ids', 0))
                       ->where(fn($sub) => $sub->whereNull('department_ids')->orWhereJsonLength('department_ids', 0))

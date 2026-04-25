@@ -13,22 +13,7 @@ class AttendancePresenter extends AbstractPresenter
     public function __construct(Attendance $attendance)
     {
         $this->attendance = $attendance;
-    }
 
-    public static function requiredRelations(): array
-    {
-        return [
-            'user.companyUser.country',
-            'user.professionalData.jobTitle',
-            'user.professionalData.department',
-            'user.professionalData.branch',
-            'user.professionalData.management',
-            'user.professionalData.attendanceConstraint',
-            'company',
-            'approvedBy',
-            'breaks',
-            'appliedAttendanceConstraint',
-        ];
     }
 
     public function present(bool $isListing = false): array

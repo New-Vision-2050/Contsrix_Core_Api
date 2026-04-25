@@ -143,11 +143,6 @@ return [
         \Modules\Attendance\Services\SecurityConstraintService::class,
         \Modules\Attendance\Services\ComplianceConstraintService::class,
         \Modules\Attendance\Services\AttendanceConstraintService::class,
-        \Modules\Attendance\Services\AutoCloseAttendanceService::class,
-        \Modules\Attendance\Services\ClockInService::class,
-        \Modules\Attendance\Services\ClockOutService::class,
-        \Modules\Attendance\Services\UserAttendanceService::class,
-        \Modules\Attendance\Services\UserAttendanceHistoryService::class,
     ],
 
     /*

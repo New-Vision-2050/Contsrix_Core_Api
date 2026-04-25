@@ -8,29 +8,6 @@ use App\Exceptions\CustomException;
 
 class AttendanceException extends CustomException
 {
-    /** @var array<int, array<string, mixed>> */
-    private array $violations = [];
-
-    /**
-     * Thrown when a clock-in is blocked by constraint violations.
-     * Carries the violation array so the controller can include it in the response.
-     *
-     * @param array<int, array<string, mixed>> $violations
-     */
-    public static function clockInBlocked(array $violations): self
-    {
-        $message = $violations[0]['message'] ?? 'Clock-in blocked due to constraint violations';
-        $instance = new self($message, 422);
-        $instance->violations = $violations;
-        return $instance;
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    public function getViolations(): array
-    {
-        return $this->violations;
-    }
-
     public static function alreadyClockedIn(): self
     {
         return new self('You are already clocked in. Please clock out first.', 400);
