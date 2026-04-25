@@ -226,9 +226,9 @@ final class UserAttendanceHistoryService
         $todayStart = $nowAtBranch->copy()->startOfDay();
 
         return collect([
-            $todayStart->copy()->subDays(2)->toDateString(),
-            $todayStart->copy()->subDay()->toDateString(),
             $todayStart->toDateString(),
+            $todayStart->copy()->subDay()->toDateString(),
+            $todayStart->copy()->subDays(2)->toDateString(),
         ])->values();
     }
 
