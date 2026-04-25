@@ -79,7 +79,7 @@ final class UserAttendanceHistoryService
             return $this->parseDateTime($dateField, $timezone)->toDateString();
         })->filter(fn($group, $key) => $key !== null);
 
-        $allDates = $this->buildLastThreeCalendarDaysKeysDescending($now);
+        $allDates = $this->buildLastThreeCalendarDaysKeysDescending($now)->reverse();
         $totalDates = $allDates->count();
         $lastPage = (int) ceil($totalDates / $perPage);
         $offset = ($page - 1) * $perPage;
