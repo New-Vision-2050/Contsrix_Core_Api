@@ -90,13 +90,16 @@ class UserAttendanceService
         $user = User::findOrFail($userId);
         $attendance = $this->getCurrentAttendanceSafely($userId);
 
+        // Use attendance's stored timezone to avoid double-conversion
+        $attendanceTimezone = $attendance?->timezone ?? $this->getTimezone();
+
         return [
             'user_id' => (string) $user->id,
             'user_name' => $user->name,
             'is_clocked_in' => $attendance?->isActive() ?? false,
             'is_on_break' => $attendance?->isOnBreak() ?? false,
             'attendance_id' => $attendance ? (string) $attendance->id : null,
-            'clock_in_time' => $attendance?->clock_in_time ? $this->toCarbon($attendance->clock_in_time)->format('Y-m-d H:i:s') : null,
+            'clock_in_time' => $attendance?->clock_in_time ? $this->toCarbon($attendance->clock_in_time, $attendanceTimezone)->format('Y-m-d H:i:s') : null,
             'status' => $attendance?->status ?? 'not_clocked_in',
         ];
     }
@@ -341,8 +344,12 @@ class UserAttendanceService
      */
     private function extractAttendanceClockData(Attendance $attendance): array
     {
-        $clockInCarbon = $attendance->clock_in_time ? $this->toCarbon($attendance->clock_in_time) : null;
-        $clockOutCarbon = $attendance->clock_out_time ? $this->toCarbon($attendance->clock_out_time) : null;
+        // Clock times are stored in the attendance's timezone (branch timezone), not UTC.
+        // Use the attendance's stored timezone to parse them correctly without double-conversion.
+        $attendanceTimezone = $attendance->timezone ?? $this->getTimezone();
+
+        $clockInCarbon = $attendance->clock_in_time ? $this->toCarbon($attendance->clock_in_time, $attendanceTimezone) : null;
+        $clockOutCarbon = $attendance->clock_out_time ? $this->toCarbon($attendance->clock_out_time, $attendanceTimezone) : null;
 
         return [
             'clock_in_carbon' => $clockInCarbon,
