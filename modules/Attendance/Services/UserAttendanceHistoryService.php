@@ -538,9 +538,11 @@ final class UserAttendanceHistoryService
     private function shiftScheduleGroupKey(Attendance $attendance): string
     {
         if ($attendance->start_time !== null && $attendance->end_time !== null) {
+            // Use attendance's stored timezone to avoid double-conversion
+            $attendanceTimezone = $attendance->timezone ?? $this->getTimezone();
             return $this->scheduleBoundsKey(
-                $this->toCarbon($attendance->start_time),
-                $this->toCarbon($attendance->end_time)
+                $this->toCarbon($attendance->start_time, $attendanceTimezone),
+                $this->toCarbon($attendance->end_time, $attendanceTimezone)
             );
         }
 
@@ -572,7 +574,9 @@ final class UserAttendanceHistoryService
             if (!$attendance->clock_in_time) {
                 continue;
             }
-            $ts  = $this->toCarbon($attendance->clock_in_time)->timestamp;
+            // Use attendance's stored timezone to avoid double-conversion
+            $attendanceTimezone = $attendance->timezone ?? $this->getTimezone();
+            $ts  = $this->toCarbon($attendance->clock_in_time, $attendanceTimezone)->timestamp;
             $min = $min === null ? $ts : min($min, $ts);
         }
 
@@ -586,7 +590,9 @@ final class UserAttendanceHistoryService
             if (!$a->clock_in_time) {
                 return PHP_INT_MAX;
             }
-            return $this->toCarbon($a->clock_in_time)->timestamp;
+            // Use attendance's stored timezone to avoid double-conversion
+            $attendanceTimezone = $a->timezone ?? $this->getTimezone();
+            return $this->toCarbon($a->clock_in_time, $attendanceTimezone)->timestamp;
         })->values();
 
         $firstClockInCarbon     = null;
@@ -622,11 +628,13 @@ final class UserAttendanceHistoryService
         }
 
         $representative = $sortedByClockIn->first();
+        // Use attendance's stored timezone to avoid double-conversion
+        $attendanceTimezone = $representative->timezone ?? $this->getTimezone();
         $scheduledStart = $representative->start_time
-            ? $this->toCarbon($representative->start_time)->format('H:i')
+            ? $this->toCarbon($representative->start_time, $attendanceTimezone)->format('H:i')
             : null;
         $scheduledEnd = $representative->end_time
-            ? $this->toCarbon($representative->end_time)->format('H:i')
+            ? $this->toCarbon($representative->end_time, $attendanceTimezone)->format('H:i')
             : null;
 
         return [
@@ -769,8 +777,12 @@ final class UserAttendanceHistoryService
 
     private function extractAttendanceClockData(Attendance $attendance): array
     {
-        $clockInCarbon  = $attendance->clock_in_time  ? $this->toCarbon($attendance->clock_in_time)  : null;
-        $clockOutCarbon = $attendance->clock_out_time ? $this->toCarbon($attendance->clock_out_time) : null;
+        // Clock times are stored in the attendance's timezone (branch timezone), not UTC.
+        // Use the attendance's stored timezone to parse them correctly without double-conversion.
+        $attendanceTimezone = $attendance->timezone ?? $this->getTimezone();
+
+        $clockInCarbon  = $attendance->clock_in_time  ? $this->toCarbon($attendance->clock_in_time, $attendanceTimezone)  : null;
+        $clockOutCarbon = $attendance->clock_out_time ? $this->toCarbon($attendance->clock_out_time, $attendanceTimezone) : null;
 
         return [
             'clock_in_carbon'  => $clockInCarbon,
