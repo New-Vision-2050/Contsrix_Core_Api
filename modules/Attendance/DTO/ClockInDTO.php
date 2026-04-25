@@ -6,7 +6,7 @@ namespace Modules\Attendance\DTO;
 
 use Ramsey\Uuid\UuidInterface;
 
-readonly class ClockInDTO
+class ClockInDTO
 {
     public function __construct(
         public UuidInterface $user_id,

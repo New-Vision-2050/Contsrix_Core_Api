@@ -14,8 +14,6 @@ use Modules\Attendance\Exceptions\AttendanceException;
 use Modules\Attendance\Presenters\AttendanceUserPresenter;
 use Modules\Attendance\Services\AttendanceService;
 use Modules\Attendance\Services\AttendanceConstraintService;
-use Modules\Attendance\Services\ClockInService;
-use Modules\Attendance\Services\ClockOutService;
 use Modules\Attendance\Requests\ClockInRequest;
 use Modules\Attendance\Requests\ClockOutRequest;
 use Modules\Attendance\Requests\GetAttendanceRequest;
@@ -41,9 +39,7 @@ class AttendanceController extends Controller
     public function __construct(
         private AttendanceService $attendanceService,
         private AttendanceConstraintService $constraintService,
-        private MockAttendanceService $mockAttendanceService,
-        private ClockInService $clockInService,
-        private ClockOutService $clockOutService,
+        private MockAttendanceService $mockAttendanceService
     ) {}
     public function test(Request $request): JsonResponse
     {
@@ -57,21 +53,25 @@ class AttendanceController extends Controller
     public function clockIn(ClockInRequest $request): JsonResponse
     {
         try {
-            $attendance = $this->clockInService->execute($request->toDTO(), $request->all());
+            $clockInDTO = $request->createClockInDTO();
+            $rawRequestData = $request->all();
+
+            $violations = $this->mockAttendanceService->validateClockIn($clockInDTO, $rawRequestData);
+            if (!empty($violations)) {
+                return Json::error(
+                    description: $violations[0]['message'] ?? 'Clock-in blocked due to constraint violations',
+                    data: ['violations' => $violations],
+                    httpStatus: 422
+                );
+            }
+
+            $attendance = $this->mockAttendanceService->persistClockIn($clockInDTO, $rawRequestData);
 
             return Json::item(
                 (new AttendancePresenter($attendance))->present(),
                 message: 'Successfully clocked in.'
             );
         } catch (AttendanceException $e) {
-            $violations = $e->getViolations();
-            if (!empty($violations)) {
-                return Json::error(
-                    description: $e->getMessage(),
-                    data: ['violations' => $violations],
-                    httpStatus: $e->getStatusCode()
-                );
-            }
             return Json::error($e->getMessage(), httpStatus: $e->getStatusCode());
         }
     }
@@ -81,15 +81,19 @@ class AttendanceController extends Controller
      */
     public function clockOut(ClockOutRequest $request): JsonResponse
     {
-        $attendance = $this->clockOutService->execute($request->toDTO());
+        $clockOutDTO = $request->createClockOutDTO();
+        $attendance = $this->attendanceService->clockOut($clockOutDTO);
 
-        // Non-blocking post-clock-out constraint logging.
+        // Validate constraints after clocking out
         $violations = $this->constraintService->validateAttendance($attendance, $request->all());
-        foreach ($violations as $violationData) {
-            if (isset($violationData['constraint_id'])) {
-                $constraint = AttendanceConstraint::find($violationData['constraint_id']);
-                if ($constraint) {
-                    $this->constraintService->createViolation($attendance, $constraint, $violationData);
+        if (!empty($violations)) {
+            // Process each violation individually
+            foreach ($violations as $violationData) {
+                if (isset($violationData['constraint_id'])) {
+                    $constraint = AttendanceConstraint::find($violationData['constraint_id']);
+                    if ($constraint) {
+                        $this->constraintService->createViolation($attendance, $constraint, $violationData);
+                    }
                 }
             }
         }

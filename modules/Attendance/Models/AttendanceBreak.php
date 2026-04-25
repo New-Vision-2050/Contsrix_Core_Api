@@ -49,7 +49,6 @@ class AttendanceBreak extends Model
         'end_time',
         'duration_minutes',
         'notes',
-        'source',
     ];
 
     protected $casts = [

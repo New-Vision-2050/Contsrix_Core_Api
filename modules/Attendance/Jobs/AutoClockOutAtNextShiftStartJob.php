@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Jobs;
 
-use Carbon\CarbonImmutable;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -12,14 +12,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Models\Attendance;
-use Modules\Attendance\Services\AutoCloseAttendanceService;
+
+use function Symfony\Component\Clock\now;
 
 /**
- * When a later work period starts, close any still-open prior shift for the same user.
+ * When a later work period starts the same day, clock out the still-open previous shift.
  * Scheduled from {@see AttendanceService::clockIn} at the next period's start time.
- *
- * Delegates all write logic to {@see AutoCloseAttendanceService} which holds the row
- * lock and guarantees a single close even when multiple callers race.
  */
 class AutoClockOutAtNextShiftStartJob implements ShouldQueue
 {
@@ -35,7 +33,7 @@ class AutoClockOutAtNextShiftStartJob implements ShouldQueue
         public readonly string $clockOutAtIso,
     ) {}
 
-    public function handle(AutoCloseAttendanceService $autoCloseService): void
+    public function handle(): void
     {
         if (tenancy()->initialized) {
             tenancy()->end();
@@ -49,21 +47,34 @@ class AutoClockOutAtNextShiftStartJob implements ShouldQueue
             if (!$attendance) {
                 Log::warning('AutoClockOutAtNextShiftStartJob: attendance not found', [
                     'attendance_id' => $this->attendanceId,
-                    'company_id'    => $this->companyId,
+                    'company_id' => $this->companyId,
                 ]);
 
                 return;
             }
 
-            $closeAt = CarbonImmutable::parse($this->clockOutAtIso);
-
-            $closed = $autoCloseService->closeIfExpired($attendance, $closeAt, 'auto_next_shift');
-
-            if (!$closed) {
-                Log::debug('AutoClockOutAtNextShiftStartJob: attendance already closed or inactive', [
-                    'attendance_id' => $this->attendanceId,
-                ]);
+            if ($attendance->clock_out_time !== null || $attendance->clock_in_time === null) {
+                return;
             }
+
+            $clockOutAt = Carbon::now($attendance->timezone);
+
+            $trackingPoints = $attendance->location_tracking ?? [];
+            $latestPoint = !empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
+
+
+            $noteLine = '[Auto] Clock-out: next work period started '.$clockOutAt;
+            $attendance->update([
+                'clock_out_time' => $clockOutAt->format('Y-m-d H:i:s'),
+                'clock_out_location' => $latestPoint,
+                'status' => Attendance::STATUS_COMPLETED,
+                'day_status' => 'clocked_out',
+                'notes' => trim(($attendance->notes ?? '') . "\n" . $noteLine),
+            ]);
+
+            $attendance->refresh();
+            $attendance->updateTotalBreakHours();
+            $attendance->calculateWorkHours();
         } finally {
             tenancy()->end();
         }
