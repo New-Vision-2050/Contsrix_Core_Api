@@ -286,18 +286,11 @@ class UserAttendanceService
      */
     private function parsePeriodTime(array $period, string $type, Carbon $date): Carbon
     {
-        $carbonKey = "period_{$type}_time_carbon";
         $timeKey = "{$type}_time";
-
         $timezone = $this->getTimezone();
 
-        if (isset($period[$carbonKey])) {
-            $time = $period[$carbonKey];
-            $carbonTime = $time instanceof Carbon ? $time : Carbon::parse($time);
-            return $carbonTime->setTimezone($timezone);
-        }
-
-        // Parse time with consistent timezone
+        // Always parse time fresh with the correct timezone to ensure accurate comparisons
+        // Pre-set Carbon instances from constraint service may have timezone context mismatches
         $time = Carbon::parse($date->format('Y-m-d') . ' ' . $period[$timeKey], $timezone);
 
         if ($type === 'end' && ($period['extends_to_next_day'] ?? false)) {

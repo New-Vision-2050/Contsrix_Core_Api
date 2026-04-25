@@ -72,7 +72,7 @@ class AutoCloseStaleShiftsCommand extends Command
                 continue;
             }
 
-            $closeAt   = CarbonImmutable::parse($triggerAt->toDateTimeString(), $timezone);
+            $closeAt   = CarbonImmutable::parse($endTime->toDateTimeString(), $timezone);
             $didClose  = $autoCloseService->closeIfExpired($attendance, $closeAt, 'auto_max_ot');
 
             if ($didClose) {
@@ -80,7 +80,7 @@ class AutoCloseStaleShiftsCommand extends Command
                 Log::info('Auto close stale shift', [
                     'attendance_id'  => $attendance->id,
                     'user_id'        => $user->id,
-                    'clock_out_time' => $triggerAt->format('Y-m-d H:i:s'),
+                    'clock_out_time' => $endTime->format('Y-m-d H:i:s'),
                     'timezone'       => $timezone,
                 ]);
                 $this->line("  closed attendance {$attendance->id} (user: {$user->name})");
