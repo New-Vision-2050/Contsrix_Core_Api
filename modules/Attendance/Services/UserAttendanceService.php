@@ -15,6 +15,17 @@ use Ramsey\Uuid\UuidInterface;
 
 class UserAttendanceService
 {
+
+    /**
+     * When set, {@see getTimezone()} returns this instead of calling the global helper (avoids duplicate user queries in one request).
+     */
+    private ?string $requestTimezoneOverride = null;
+
+    /**
+     * Cache for user data within a single request to avoid duplicate queries
+     */
+    private array $userCache = [];
+
     public function __construct(
         private AttendanceConstraintService $constraintService,
         private AttendanceService $attendanceService
@@ -33,52 +44,91 @@ class UserAttendanceService
      * @param string|null $date Optional date (Y-m-d format), defaults to today
      * @return array
      */
-    public function getUserConstraints(User|UuidInterface|string $userOrId, ?string $date = null): array
+
+    private function getUserWithRelationships(UuidInterface|string $userId): User
     {
-        if ($userOrId instanceof User) {
-            $user = $userOrId;
-            $user->loadMissing([
-                'professionalData.attendanceConstraint',
-                'userProfessionalData.branch.address.country.timezones',
-                'userProfessionalData.department',
-            ]);
-        } else {
-            $user = User::query()
+        $userIdString = is_string($userId) ? $userId : $userId->toString();
+
+        if (!isset($this->userCache[$userIdString])) {
+            $this->userCache[$userIdString] = User::query()
                 ->with([
                     'professionalData.attendanceConstraint',
                     'userProfessionalData.branch.address.country.timezones',
                     'userProfessionalData.department',
                 ])
-                ->findOrFail($userOrId);
+                ->findOrFail($userIdString);
         }
 
-        $timezone   = $this->timezoneFromUserBranch($user);
-        $targetDate = $date ?? Carbon::now($timezone)->format('Y-m-d');
-        $dateCarbon = $this->parseDateTime($targetDate, $timezone);
-
-        $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate, $timezone);
-        [$attendances, $currentAttendance] = $this->fetchDayAttendancesAndCurrentOpen($user, $dateCarbon, $timezone);
-
-        if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
-            $earlyClockInRules = $workRules['early_clock_in_rules'] ?? null;
-            $workRules['all_work_periods'] = $this->enhancePeriodsWithAttendance(
-                $workRules['all_work_periods'],
-                $attendances,
-                $dateCarbon,
-                is_array($earlyClockInRules) ? $earlyClockInRules : [],
-                $currentAttendance,
-                $timezone,
-            );
-        }
-
-        return [
-            'user_id'    => (string) $user->id,
-            'user_name'  => $user->name,
-            'date'       => $targetDate,
-            'work_rules' => $this->filterWorkRules($workRules),
-        ];
+        return $this->userCache[$userIdString];
     }
 
+    /**
+     * Reuse the resolved auth user and only load relations that are missing (avoids a second SELECT on users).
+     */
+    private function ensureUserWithConstraintRelations(User $user): User
+    {
+        $userIdString = (string) $user->getKey();
+
+        if (isset($this->userCache[$userIdString])) {
+            return $this->userCache[$userIdString];
+        }
+
+        $user->loadMissing([
+            'professionalData.attendanceConstraint',
+            'userProfessionalData.branch.address.country.timezones',
+            'userProfessionalData.department',
+        ]);
+
+        return $this->userCache[$userIdString] = $user;
+    }
+
+    /**
+     * Get work rules/constraints for a user
+     *
+     * Pass the authenticated {@see User} when available to avoid a duplicate users-table query (e.g. mobile "today" constraint).
+     *
+     * @param User|UuidInterface|string $userOrId
+     * @param string|null $date Optional date (Y-m-d format), defaults to today
+     * @return array
+     */
+    public function getUserConstraints(User|UuidInterface|string $userOrId, ?string $date = null): array
+    {
+        $user = $userOrId instanceof User
+            ? $this->ensureUserWithConstraintRelations($userOrId)
+            : $this->getUserWithRelationships($userOrId);
+
+        $previousTz = $this->requestTimezoneOverride;
+        $this->requestTimezoneOverride = $this->timezoneFromUserBranch($user);
+
+        try {
+            $timezone = $this->getTimezone();
+            $targetDate = $date ?? $this->now()->format('Y-m-d');
+            $dateCarbon = $this->parseDateTime($targetDate, $timezone);
+
+            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate, $timezone);
+            [$attendances, $currentAttendance] = $this->fetchDayAttendancesAndCurrentOpen($user, $dateCarbon);
+
+            if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
+                $earlyClockInRules = $workRules['early_clock_in_rules'] ?? null;
+                $workRules['all_work_periods'] = $this->enhancePeriodsWithAttendance(
+                    $workRules['all_work_periods'],
+                    $attendances,
+                    $dateCarbon,
+                    is_array($earlyClockInRules) ? $earlyClockInRules : [],
+                    $currentAttendance
+                );
+            }
+
+            return [
+                'user_id' => (string) $user->id,
+                'user_name' => $user->name,
+                'date' => $targetDate,
+                'work_rules' => $this->filterWorkRules($workRules),
+            ];
+        } finally {
+            $this->requestTimezoneOverride = $previousTz;
+        }
+    }
     /**
      * Check if user is clocked in
      *
@@ -487,6 +537,13 @@ class UserAttendanceService
         Carbon $now,
         array $earlyClockInRules
     ): bool {
+        \Log::info('[DEBUG isPeriodActiveIncludingEarly]', [
+            'periodStart' => $periodStart->format('Y-m-d H:i:s T'),
+            'periodEnd' => $periodEnd->format('Y-m-d H:i:s T'),
+            'now' => $now->format('Y-m-d H:i:s T'),
+            'in_period' => $now->between($periodStart, $periodEnd, true),
+        ]);
+
         if ($now->between($periodStart, $periodEnd, true)) {
             return true;
         }
@@ -500,6 +557,11 @@ class UserAttendanceService
             $earlyUnit = 'minutes';
         }
         $earliestAllowed = $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
+
+        \Log::info('[DEBUG isPeriodActiveIncludingEarly early window]', [
+            'earliestAllowed' => $earliestAllowed->format('Y-m-d H:i:s T'),
+            'in_early_window' => $now->between($earliestAllowed, $periodEnd, true),
+        ]);
 
         return $now->between($earliestAllowed, $periodEnd, true);
     }
