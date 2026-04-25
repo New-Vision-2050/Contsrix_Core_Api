@@ -1,106 +1,175 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Modules\Attendance\Jobs;
 
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Modules\Attendance\Models\Attendance;
-use Modules\Attendance\Models\AppliedAttendanceConstraint;
-use Modules\Attendance\Models\AttendanceConstraint;
 use Illuminate\Support\Facades\Log;
+use Modules\Attendance\Domain\Calculator\AttendanceCalculator;
+use Modules\Attendance\Domain\Calculator\CalculatorInput;
+use Modules\Attendance\Models\Attendance;
 use Modules\User\Models\User;
 
 class ProcessClockInAttendanceData implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * The ID of the attendance record to process.
-     * @var string
-     */
-    protected $attendanceId;
+    public function __construct(
+        public readonly string $attendanceId,
+        public readonly string $companyId,
+    ) {}
 
-    /**
-     * Create a new job instance.
-     *
-     * @param string $attendanceId The ID of the attendance record.
-     * @return void
-     */
-    public function __construct(string $attendanceId)
+    public function handle(AttendanceCalculator $calculator): void
     {
-        $this->attendanceId = $attendanceId;
-    }
-
-    /**
-     * Execute the job.
-     *
-     * @return void
-     */
-    public function handle(): void
-    {
-        $attendance = Attendance::where('id', $this->attendanceId)->first();
-
-        if (!$attendance) {
-            Log::error("Attendance record {$this->attendanceId} not found.");
-            return;
+        if (tenancy()->initialized) {
+            tenancy()->end();
         }
-        $trackingPoints = $attendance->location_tracking ?? [];
 
-        $latestPoint = !empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
+        tenancy()->initialize($this->companyId);
 
-        if($attendance->clock_out_time === null) {
-           $user = User::find($attendance->user_id);
-           $attendance->update([
-                'clock_out_time' => now(),
-                'day_status' => 'clocked_out',
-                'status' => 'completed',
-                'clock_out_location' => $latestPoint,
-            ]);
-            $attendance->refresh();
-            // Calculate and save work hours
-            $attendance->calculateWorkHours();
+        try {
+            $attendance = Attendance::where('id', $this->attendanceId)->first();
 
-           $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
-           $constraints = $constraintService->getTodaysWorkRulesForUser($user);
-
-            if (!isset($constraints['first_next_period'])) { 
-                Log::warning("No next period found for user {$user->id}");
+            if (! $attendance) {
+                Log::error("ProcessClockInAttendanceData: attendance {$this->attendanceId} not found.");
                 return;
             }
 
-            $startTimeNextDay = $constraints['first_next_period']['date'] . ' ' . $constraints['first_next_period']['start_time'].':00';
-            $attendanceNextDay = Attendance::where('user_id', $user->id)->where('start_time', '=',$startTimeNextDay )->first();
-            if ($attendanceNextDay && $attendanceNextDay->clock_in_time === null) {
-                $attendanceNextDay->update([
-                    'clock_in_time' => now(),
-                    'day_status' => 'in_loction',
-                    'status' => Attendance::STATUS_ACTIVE,
-                    'clock_in_location' => $attendance->clock_in_location,
-                    'is_absent' => 0,
-                    'is_holiday' => 0,
-                    'end_time' => $constraints['first_next_period']['date'] . ' ' . $constraints['first_next_period']['end_time'] . ':00',
-                    'timezone' => $attendance->timezone,
-                ]);
-            } elseif(!$attendanceNextDay) {
-
-                Attendance::create([
-                    'user_id' => $user->id,
-                    'company_id' => $attendance->company_id,
-                    'timezone' => $attendance->timezone,
-                    'start_time' => $startTimeNextDay,
-                    'end_time' => $constraints['first_next_period']['date'] . ' ' . $constraints['first_next_period']['end_time'] . ':00',
-                    'clock_in_time' => now(),
-                    'clock_out_time' => null,
-                    'status' => Attendance::STATUS_ACTIVE,
-                    'day_status' => 'in_loction',
-                    'clock_in_location' => $attendance->clock_in_location,
-                ]);
-
+            // Only act when the shift is still open (no manual clock-out happened between dispatch and now).
+            if ($attendance->clock_out_time !== null) {
+                return;
             }
+
+            $user           = User::find($attendance->user_id);
+            $trackingPoints = $attendance->location_tracking ?? [];
+            $lastLocation   = ! empty($trackingPoints) ? end($trackingPoints) : $attendance->clock_in_location;
+
+            $clockOutTime = Carbon::now();
+
+            $attendance->update([
+                'clock_out_time'     => $clockOutTime,
+                'day_status'         => 'clocked_out',
+                'status'             => Attendance::STATUS_COMPLETED,
+                'clock_out_location' => $lastLocation,
+            ]);
+            $attendance->refresh();
+
+            // Use the domain calculator — reads timezone from the row, not from the HTTP request.
+            $input  = $this->buildCalculatorInput($attendance);
+            $result = $calculator->calculate($input);
+
+            $attendance->update([
+                'total_work_hours'        => $result->totalWorkHours,
+                'total_break_hours'       => $result->totalBreakHours,
+                'overtime_hours'          => $result->overtimeHours,
+                'is_late'                 => $result->isLate,
+                'late_minutes'            => $result->lateMinutes,
+                'is_early_departure'      => $result->isEarlyDeparture,
+                'early_departure_minutes' => $result->earlyDepartureMinutes,
+            ]);
+
+            if (! $user) {
+                return;
+            }
+
+            $constraintService = app(\Modules\Attendance\Services\AttendanceConstraintService::class);
+            $constraints = $constraintService->getTodaysWorkRulesForUser($user);
+
+            if (! isset($constraints['first_next_period'])) {
+                Log::warning("ProcessClockInAttendanceData: no next period for user {$user->id}");
+                return;
+            }
+
+            $nextPeriod    = $constraints['first_next_period'];
+            $nextStartTime = $nextPeriod['date'] . ' ' . $nextPeriod['start_time'] . ':00';
+            $nextEndTime   = $nextPeriod['date'] . ' ' . $nextPeriod['end_time'] . ':00';
+
+            $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+
+            $nextAttendance = Attendance::where('user_id', $user->id)
+                ->where('start_time', $nextStartTime)
+                ->first();
+
+            if ($nextAttendance && $nextAttendance->clock_in_time === null) {
+                $nextAttendance->update([
+                    'clock_in_time'     => Carbon::now(),
+                    'day_status'        => 'in_location',
+                    'status'            => Attendance::STATUS_ACTIVE,
+                    'clock_in_location' => $attendance->clock_in_location,
+                    'is_absent'         => 0,
+                    'is_holiday'        => 0,
+                    'end_time'          => $nextEndTime,
+                    'timezone'          => $timezone,
+                    'business_date'     => Carbon::parse($nextStartTime, $timezone)->toDateString(),
+                ]);
+            } elseif (! $nextAttendance) {
+                Attendance::create([
+                    'user_id'           => $user->id,
+                    'company_id'        => $attendance->company_id,
+                    'timezone'          => $timezone,
+                    'start_time'        => $nextStartTime,
+                    'end_time'          => $nextEndTime,
+                    'clock_in_time'     => Carbon::now(),
+                    'clock_out_time'    => null,
+                    'status'            => Attendance::STATUS_ACTIVE,
+                    'day_status'        => 'in_location',
+                    'clock_in_location' => $attendance->clock_in_location,
+                    'business_date'     => Carbon::parse($nextStartTime, $timezone)->toDateString(),
+                ]);
+            }
+        } finally {
+            tenancy()->end();
+        }
+    }
+
+    private function buildCalculatorInput(Attendance $attendance): CalculatorInput
+    {
+        $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+
+        $scheduledStart = CarbonImmutable::parse($attendance->start_time)->setTimezone($timezone);
+        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time)->setTimezone($timezone);
+
+        if (! $scheduledEnd->greaterThan($scheduledStart)) {
+            $scheduledEnd = $scheduledEnd->addDay();
         }
 
+        $clockIn  = $attendance->clock_in_time
+            ? CarbonImmutable::parse($attendance->clock_in_time)->setTimezone($timezone)
+            : null;
+        $clockOut = $attendance->clock_out_time
+            ? CarbonImmutable::parse($attendance->clock_out_time)->setTimezone($timezone)
+            : null;
+
+        $totalBreakMinutes = (int) $attendance->breaks()
+            ->whereNotNull('end_time')
+            ->sum('duration_minutes');
+
+        $snapshot      = $attendance->appliedAttendanceConstraint?->constraint_snapshot ?? [];
+        $latenessRules = $snapshot['lateness_rules'] ?? [];
+        $graceValue    = (int) ($latenessRules['lateness_period'] ?? $latenessRules['grace_period_minutes'] ?? 0);
+        $graceUnit     = (string) ($latenessRules['lateness_unit'] ?? 'minute');
+        $graceMinutes  = match (strtolower($graceUnit)) {
+            'hour' => $graceValue * 60,
+            'day'  => $graceValue * 1440,
+            default => $graceValue,
+        };
+
+        return new CalculatorInput(
+            scheduledStart:     $scheduledStart,
+            scheduledEnd:       $scheduledEnd,
+            clockIn:            $clockIn,
+            clockOut:           $clockOut,
+            totalBreakMinutes:  $totalBreakMinutes,
+            gracePeriodMinutes: max(0, $graceMinutes),
+            maxOverTimeHours:   (float) ($attendance->max_over_time ?? 0.0),
+            timezone:           $timezone,
+        );
     }
 }

@@ -130,4 +130,10 @@ class ClockInRequest extends FormRequest
             user_agent: $validated['user_agent'] ?? null,
         );
     }
+
+    /** Standard DTO factory — delegates to createClockInDTO(). */
+    public function toDTO(): ClockInDTO
+    {
+        return $this->createClockInDTO();
+    }
 }

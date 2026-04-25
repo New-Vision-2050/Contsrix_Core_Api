@@ -27,7 +27,7 @@ class QualificationPresenter extends AbstractPresenter
             'global_id' => $this->qualification->global_id,
 
             'country_id' => $this->qualification->country_id,
-            'country_name'=>$this->qualification->country->name,
+            'country_name'=>$this->qualification->country?->name,
 
             'university_id' => $this->qualification->university_id,
             'university_name' => $this->qualification->university?->name,

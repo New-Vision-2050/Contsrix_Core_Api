@@ -17,6 +17,7 @@ use Modules\Attendance\Presenters\UserAttendanceHistoryPresenter;
 use Modules\Attendance\Requests\GetUserConstraintRequest;
 use Modules\Attendance\Requests\GetUserAttendanceHistoryRequest;
 use Modules\Attendance\Services\AttendanceService;
+use Modules\Attendance\Services\UserAttendanceHistoryService;
 use Modules\Attendance\Services\UserAttendanceService;
 use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
@@ -25,7 +26,8 @@ class UserAttendanceController extends Controller
 {
     public function __construct(
         private AttendanceService $attendanceService,
-        private UserAttendanceService $userAttendanceService
+        private UserAttendanceService $userAttendanceService,
+        private UserAttendanceHistoryService $historyService,
     ) {}
 
     /**
@@ -121,7 +123,7 @@ class UserAttendanceController extends Controller
                 }
             }
 
-            $result = $this->userAttendanceService->getUserAttendanceHistoryMobileApi(
+            $result = $this->historyService->getUserAttendanceHistoryMobileApi(
                 $userId,
                 $month,
                 $year,
