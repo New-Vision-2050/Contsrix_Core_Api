@@ -13,6 +13,10 @@ namespace Modules\Attendance\Domain\Calculator;
  *
  * All callers (AttendanceService, AutoCloseAttendanceService, ProcessClockInAttendanceData,
  * HandleAttendanceLateness) must route through this class.
+ *
+ * Partial shift: when {@see CalculatorInput::$clockIn} is set but {@see CalculatorInput::$clockOut}
+ * is null (user still working), work/overtime/early-exit are not computed; lateness is still
+ * evaluated from clock-in vs scheduled start + grace (same rules as a completed shift).
  */
 final class AttendanceCalculator
 {
@@ -24,14 +28,27 @@ final class AttendanceCalculator
 
     public function calculate(CalculatorInput $input): WorkHoursResult
     {
-        // No clock-out yet → nothing to compute.
-        if (!$input->clockIn || !$input->clockOut) {
+        if (!$input->clockIn) {
             return new WorkHoursResult(
                 totalWorkHours: 0.0,
                 totalBreakHours: 0.0,
                 overtimeHours: 0.0,
                 isLate: false,
                 lateMinutes: 0,
+                isEarlyDeparture: false,
+                earlyDepartureMinutes: 0,
+            );
+        }
+
+        if (!$input->clockOut) {
+            [$isLate, $lateMinutes] = $this->lateness->evaluate($input);
+
+            return new WorkHoursResult(
+                totalWorkHours: 0.0,
+                totalBreakHours: 0.0,
+                overtimeHours: 0.0,
+                isLate: $isLate,
+                lateMinutes: $lateMinutes,
                 isEarlyDeparture: false,
                 earlyDepartureMinutes: 0,
             );

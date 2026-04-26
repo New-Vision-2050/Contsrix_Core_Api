@@ -5,11 +5,6 @@ declare(strict_types=1);
 namespace Modules\Attendance\Listeners;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Domain\Calculator\AttendanceCalculator;
 use Modules\Attendance\Domain\Calculator\CalculatorInput;
@@ -17,13 +12,13 @@ use Modules\Attendance\Events\AttendanceClockedIn;
 use Modules\Attendance\Models\AppliedAttendanceConstraint;
 use Modules\Attendance\Models\Attendance;
 
-class HandleAttendanceLateness implements ShouldQueue
+class HandleAttendanceLateness
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    public function __construct(
+        private readonly AttendanceCalculator $calculator,
+    ) {}
 
-    public function __construct() {}
-
-    public function handle(AttendanceClockedIn $event, AttendanceCalculator $calculator): void
+    public function handle(AttendanceClockedIn $event): void
     {
         $attendance = Attendance::with([
             'user.professionalData.attendanceConstraint',
@@ -36,7 +31,7 @@ class HandleAttendanceLateness implements ShouldQueue
         }
 
         $input  = $this->buildCalculatorInput($attendance);
-        $result = $calculator->calculate($input);
+        $result = $this->calculator->calculate($input);
 
         $attendance->update([
             'is_late'      => $result->isLate,
