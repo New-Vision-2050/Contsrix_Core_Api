@@ -74,8 +74,6 @@ class ManagementHierarchy extends Model implements Auditable
      */
     protected $casts = [
         'users_count' => 'integer',
-        'latitude' => 'float',
-        'longitude' => 'float',
     ];
 
     public function company()
