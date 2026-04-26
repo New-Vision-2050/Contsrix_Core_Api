@@ -40,26 +40,37 @@ final class UserAttendanceHistoryService
         $rangeStart = $now->copy()->startOfDay()->subDays(2);
         $rangeEnd = $now->copy()->endOfDay();
 
-        $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
-        $rangeEndUtc = $rangeEnd->copy()->setTimezone('UTC');
+        $dateStart = $rangeStart->toDateString();
+        $dateEnd = $rangeEnd->toDateString();
+        $naiveStart = $rangeStart->format('Y-m-d H:i:s');
+        $naiveEnd = $rangeEnd->format('Y-m-d H:i:s');
 
         $historyColumns = [
             'id', 'user_id', 'company_id', 'status', 'timezone',
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
+            'business_date', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
             ->select($historyColumns)
             ->where('user_id', $user->id)
             ->where('status', '!=', Attendance::STATUS_WAITING)
-            ->where(function ($q) use ($rangeStartUtc, $rangeEndUtc) {
-                $q->whereBetween('start_time', [$rangeStartUtc, $rangeEndUtc])
-                    ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
-                        $q2->whereNull('start_time')
-                            ->whereBetween('clock_in_time', [$rangeStartUtc, $rangeEndUtc]);
-                    });
+            ->where(function ($q) use ($dateStart, $dateEnd, $naiveStart, $naiveEnd) {
+                $q->where(function ($q1) use ($dateStart, $dateEnd) {
+                    $q1->whereNotNull('business_date')
+                        ->whereBetween('business_date', [$dateStart, $dateEnd]);
+                })->orWhere(function ($q2) use ($naiveStart, $naiveEnd) {
+                    $q2->whereNull('business_date')
+                        ->whereNotNull('start_time')
+                        ->whereBetween('start_time', [$naiveStart, $naiveEnd]);
+                })->orWhere(function ($q3) use ($naiveStart, $naiveEnd) {
+                    $q3->whereNull('business_date')
+                        ->whereNull('start_time')
+                        ->whereNotNull('clock_in_time')
+                        ->whereBetween('clock_in_time', [$naiveStart, $naiveEnd]);
+                });
             })
             ->get()
             ->sortByDesc(function (Attendance $a) {
@@ -71,13 +82,9 @@ final class UserAttendanceHistoryService
             })
             ->values();
 
-        $attendancesByDate = $allAttendances->groupBy(function ($attendance) use ($timezone) {
-            $dateField = $attendance->start_time ?? $attendance->clock_in_time;
-            if (!$dateField) {
-                return null;
-            }
-            return $this->parseDateTime($dateField, $timezone)->toDateString();
-        })->filter(fn($group, $key) => $key !== null);
+        $attendancesByDate = $allAttendances
+            ->groupBy(fn (Attendance $a) => $this->attendanceWorkDayYmd($a, $timezone))
+            ->filter(fn ($group, $key) => $key !== null);
 
         $allDates = $this->buildLastThreeCalendarDaysKeysDescending($now)->reverse();
         $totalDates = $allDates->count();
@@ -101,6 +108,9 @@ final class UserAttendanceHistoryService
                 'date'          => $dateString,
                 'day_name'      => $dayName,
                 'status'        => $dayStatus,
+                'is_late'       => (int) $attendances->contains(fn ($a) => (bool) $a->is_late),
+                'is_absent'     => (int) $attendances->contains(fn ($a) => (bool) $a->is_absent),
+                'is_holiday'    => (int) $attendances->contains(fn ($a) => (bool) $a->is_holiday),
                 'periods_count' => count($periodsWithAttendance),
                 'periods'       => $periodsWithAttendance,
             ];
@@ -135,26 +145,37 @@ final class UserAttendanceHistoryService
         $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
         $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
 
-        $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
-        $rangeEndUtc = $monthEnd->copy()->setTimezone('UTC');
+        $dateStart = $rangeStart->toDateString();
+        $dateEnd = $monthEnd->toDateString();
+        $naiveStart = $rangeStart->format('Y-m-d 00:00:00');
+        $naiveEnd = $monthEnd->format('Y-m-d 23:59:59');
 
         $historyColumns = [
             'id', 'user_id', 'company_id', 'status', 'timezone',
             'start_time', 'end_time', 'clock_in_time', 'clock_out_time',
             'late_minutes', 'overtime_hours', 'total_work_hours',
             'clock_in_location', 'clock_out_location',
+            'business_date', 'is_late', 'is_absent', 'is_holiday',
         ];
 
         $allAttendances = Attendance::query()
             ->select($historyColumns)
             ->where('user_id', $user->id)
             ->where('status', '!=', Attendance::STATUS_WAITING)
-            ->where(function ($q) use ($rangeStartUtc, $rangeEndUtc) {
-                $q->whereBetween('start_time', [$rangeStartUtc, $rangeEndUtc])
-                    ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
-                        $q2->whereNull('start_time')
-                            ->whereBetween('clock_in_time', [$rangeStartUtc, $rangeEndUtc]);
-                    });
+            ->where(function ($q) use ($dateStart, $dateEnd, $naiveStart, $naiveEnd) {
+                $q->where(function ($q1) use ($dateStart, $dateEnd) {
+                    $q1->whereNotNull('business_date')
+                        ->whereBetween('business_date', [$dateStart, $dateEnd]);
+                })->orWhere(function ($q2) use ($naiveStart, $naiveEnd) {
+                    $q2->whereNull('business_date')
+                        ->whereNotNull('start_time')
+                        ->whereBetween('start_time', [$naiveStart, $naiveEnd]);
+                })->orWhere(function ($q3) use ($naiveStart, $naiveEnd) {
+                    $q3->whereNull('business_date')
+                        ->whereNull('start_time')
+                        ->whereNotNull('clock_in_time')
+                        ->whereBetween('clock_in_time', [$naiveStart, $naiveEnd]);
+                });
             })
             ->get()
             ->sortByDesc(function (Attendance $a) {
@@ -166,13 +187,9 @@ final class UserAttendanceHistoryService
             })
             ->values();
 
-        $attendancesByDate = $allAttendances->groupBy(function ($attendance) use ($timezone) {
-            $dateField = $attendance->start_time ?? $attendance->clock_in_time;
-            if (!$dateField) {
-                return null;
-            }
-            return $this->parseDateTime($dateField, $timezone)->toDateString();
-        })->filter(fn($group, $key) => $key !== null);
+        $attendancesByDate = $allAttendances
+            ->groupBy(fn (Attendance $a) => $this->attendanceWorkDayYmd($a, $timezone))
+            ->filter(fn ($group, $key) => $key !== null);
 
         $allDates = $this->buildMonthDateKeysAsc($rangeStart, $monthEnd);
         $totalDates = $allDates->count();
@@ -537,14 +554,66 @@ final class UserAttendanceHistoryService
 
     private function shiftScheduleGroupKey(Attendance $attendance): string
     {
-        if ($attendance->start_time !== null && $attendance->end_time !== null) {
-            return $this->scheduleBoundsKey(
-                $this->toCarbon($attendance->start_time),
-                $this->toCarbon($attendance->end_time)
-            );
+        $tz = $this->getTimezone();
+        if ($attendance->start_time === null || $attendance->end_time === null) {
+            return 'id:' . $attendance->id;
         }
 
-        return 'id:' . $attendance->id;
+        $workYmd = $this->attendanceWorkDayYmd($attendance, $tz);
+        if ($workYmd === null) {
+            $start = $this->toCarbon($attendance->start_time, $tz);
+            $end = $this->toCarbon($attendance->end_time, $tz);
+        } else {
+            $start = $this->anchorShiftNaiveToWorkDay($attendance->start_time, $workYmd, $tz);
+            $end   = $this->anchorShiftNaiveToWorkDay($attendance->end_time, $workYmd, $tz);
+        }
+        if ($end->lessThan($start)) {
+            $end = $end->copy()->addDay();
+        }
+
+        return $this->scheduleBoundsKey($start, $end);
+    }
+
+    /**
+     * Work-day in branch context for history grouping. Prefer business_date, then full clock_in / start.
+     */
+    private function attendanceWorkDayYmd(Attendance $attendance, string $tz): ?string
+    {
+        if (!empty($attendance->business_date)) {
+            $d = $attendance->business_date;
+            if ($d instanceof Carbon) {
+                return $d->format('Y-m-d');
+            }
+            if ($d instanceof \DateTimeInterface) {
+                return $d->format('Y-m-d');
+            }
+
+            return substr((string) $d, 0, 10);
+        }
+        if ($attendance->clock_in_time) {
+            return $this->toCarbon($attendance->clock_in_time, $tz)->format('Y-m-d');
+        }
+        if ($attendance->start_time) {
+            $s = (string) $attendance->start_time;
+            if (preg_match('/\d{4}-\d{2}-\d{2}/', $s)) {
+                return $this->toCarbon($s, $tz)->format('Y-m-d');
+            }
+        }
+
+        return null;
+    }
+
+    private function anchorShiftNaiveToWorkDay(mixed $value, string $workYmd, string $tz): Carbon
+    {
+        $s = trim((string) $value);
+        if ($s === '') {
+            return $this->parseDateTime($workYmd . ' 00:00:00', $tz);
+        }
+        if (preg_match('/\d{4}-\d{2}-\d{2}/', $s)) {
+            return $this->toCarbon($s, $tz);
+        }
+
+        return Carbon::parse($workYmd . ' ' . $s, $tz);
     }
 
     private function buildPeriodsFromAttendances(Collection $attendances): array
