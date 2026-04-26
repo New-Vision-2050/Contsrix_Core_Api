@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Services;
 
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Domain\Calculator\AttendanceCalculator;
 use Modules\Attendance\Domain\Calculator\CalculatorInput;
 use Modules\Attendance\Models\Attendance;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Single writer for all automatic shift-close paths.
@@ -51,7 +53,6 @@ final class AutoCloseAttendanceService
                 ->find($attendance->id);
 
             if (!$fresh
-                || $fresh->status !== Attendance::STATUS_ACTIVE
                 || $fresh->clock_out_time !== null
                 || $fresh->clock_in_time === null
             ) {
@@ -60,11 +61,12 @@ final class AutoCloseAttendanceService
 
             $input  = $this->buildCalculatorInput($fresh, $closeAt);
             $result = $this->calculator->calculate($input);
+            $now = Carbon::now($fresh->timezone);
 
-            $noteLine = '[Auto] Clock-out: ' . $reason . ' at ' . $closeAt->toIso8601String();
+            $noteLine = '[Auto] Clock-out: ' . $reason . ' at ' . $now->toIso8601String();
 
             $fresh->update([
-                'clock_out_time'          => $closeAt->format('Y-m-d H:i:s'),
+                'clock_out_time'          => $now->format('Y-m-d H:i:s'),
                 'clock_out_location'      => $this->resolveLastLocation($fresh),
                 'status'                  => Attendance::STATUS_COMPLETED,
                 'day_status'              => 'clocked_out',
