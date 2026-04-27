@@ -5,11 +5,6 @@ declare(strict_types=1);
 namespace Modules\Attendance\Listeners;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Modules\Attendance\Domain\Calculator\AttendanceCalculator;
 use Modules\Attendance\Domain\Calculator\CalculatorInput;
@@ -17,13 +12,13 @@ use Modules\Attendance\Events\AttendanceClockedIn;
 use Modules\Attendance\Models\AppliedAttendanceConstraint;
 use Modules\Attendance\Models\Attendance;
 
-class HandleAttendanceLateness implements ShouldQueue
+class HandleAttendanceLateness
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    public function __construct(
+        private readonly AttendanceCalculator $calculator,
+    ) {}
 
-    public function __construct() {}
-
-    public function handle(AttendanceClockedIn $event, AttendanceCalculator $calculator): void
+    public function handle(AttendanceClockedIn $event): void
     {
         $attendance = Attendance::with([
             'user.professionalData.attendanceConstraint',
@@ -36,7 +31,7 @@ class HandleAttendanceLateness implements ShouldQueue
         }
 
         $input  = $this->buildCalculatorInput($attendance);
-        $result = $calculator->calculate($input);
+        $result = $this->calculator->calculate($input);
 
         $attendance->update([
             'is_late'      => $result->isLate,
@@ -58,15 +53,17 @@ class HandleAttendanceLateness implements ShouldQueue
     {
         $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
 
-        $scheduledStart = CarbonImmutable::parse($attendance->start_time)->setTimezone($timezone);
-        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time)->setTimezone($timezone);
+        // Wall-clock strings stored in branch TZ; label them with that TZ instead of
+        // parsing as UTC and converting (which would shift values by the branch offset).
+        $scheduledStart = CarbonImmutable::parse($attendance->start_time, $timezone);
+        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time, $timezone);
 
         if (! $scheduledEnd->greaterThan($scheduledStart)) {
             $scheduledEnd = $scheduledEnd->addDay();
         }
 
         $clockIn = $attendance->clock_in_time
-            ? CarbonImmutable::parse($attendance->clock_in_time)->setTimezone($timezone)
+            ? CarbonImmutable::parse($attendance->clock_in_time, $timezone)
             : null;
 
         // Re-clock-in edge case: if this is not the user's first attendance record for the
@@ -82,7 +79,7 @@ class HandleAttendanceLateness implements ShouldQueue
                 ->first();
 
             if ($previous && $previous->clock_in_time) {
-                $prevClockIn = CarbonImmutable::parse($previous->clock_in_time)->setTimezone($timezone);
+                $prevClockIn = CarbonImmutable::parse($previous->clock_in_time, $timezone);
                 // Both clock-ins must fall within the same scheduled period.
                 if ($prevClockIn->between($scheduledStart, $scheduledEnd)
                     && $clockIn->between($scheduledStart, $scheduledEnd)

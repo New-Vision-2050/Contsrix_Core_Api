@@ -883,11 +883,45 @@ class AttendanceConstraintService
      */
     public function getApplicableConstraintsForDataRetrieval(User $user): Collection
     {
-        $cacheKey = sprintf('attendance:constraints:%s:%s', $user->company_id, $user->id);
+        $ver = $this->getApplicableConstraintsCacheGeneration($user->company_id);
+        $cacheKey = sprintf('attendance:constraints:%s:%s:v%s', $user->company_id, $user->id, $ver);
 
         return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($user) {
             return $this->resolveConstraintsFromDb($user);
         });
+    }
+
+    /**
+     * Central key for a single constraint row (e.g. after {@see self::bumpApplicableConstraintsCacheForCompany},
+     * or for {@see \Modules\Attendance\Controllers\AttendanceConstraintController::show} if you wrap it in Cache::remember).
+     */
+    public static function singleConstraintCacheKey(string $constraintId): string
+    {
+        return 'attendance:constraint:single:' . $constraintId;
+    }
+
+    /**
+     * Bumps a company-wide generation so all per-user applicable-constraint remember() keys miss
+     * (model updates cannot target only some users; resolution is company-scoped in the query layer).
+     */
+    public function bumpApplicableConstraintsCacheForCompany(string $companyId): void
+    {
+        if ($companyId === '') {
+            return;
+        }
+        $key = $this->applicableConstraintsCompanyGenerationKey($companyId);
+        $next = (int) Cache::get($key, 0) + 1;
+        Cache::put($key, $next, now()->addYear());
+    }
+
+    private function getApplicableConstraintsCacheGeneration(string $companyId): int
+    {
+        return (int) Cache::get($this->applicableConstraintsCompanyGenerationKey($companyId), 0);
+    }
+
+    private function applicableConstraintsCompanyGenerationKey(string $companyId): string
+    {
+        return 'attendance:constraints:ver:' . $companyId;
     }
 
     private function resolveConstraintsFromDb(User $user): Collection

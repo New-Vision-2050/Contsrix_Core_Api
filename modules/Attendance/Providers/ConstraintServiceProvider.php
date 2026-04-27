@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Modules\Attendance\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Attendance\Models\AttendanceConstraint;
+use Modules\Attendance\Observers\AttendanceConstraintObserver;
 use Modules\Attendance\Contracts\TimeConstraintServiceInterface;
 use Modules\Attendance\Contracts\LocationConstraintServiceInterface;
 use Modules\Attendance\Contracts\DeviceConstraintServiceInterface;
@@ -60,8 +64,8 @@ class ConstraintServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        AttendanceConstraint::observe(AttendanceConstraintObserver::class);
         $this->registerEventListeners();
-        // Any bootstrapping logic can go here
     }
 
     /**

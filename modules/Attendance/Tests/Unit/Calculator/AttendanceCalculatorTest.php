@@ -91,17 +91,32 @@ class AttendanceCalculatorTest extends TestCase
             isLate: false, lateMin: 0, isEarly: false, earlyMin: 0);
     }
 
-    public function test_no_clock_out_returns_zeros(): void
+    public function test_clock_in_without_clock_out_computes_lateness_only_on_time(): void
     {
         $result = $this->calculator->calculate($this->input(
             schedStart: '2024-01-15 09:00',
             schedEnd:   '2024-01-15 17:00',
             clockIn:    '2024-01-15 09:00',
             clockOut:   null,
+            gracePeriodMinutes: 10,
         ));
 
         $this->assertResult($result, workHours: 0.0, breakHours: 0.0, otHours: 0.0,
             isLate: false, lateMin: 0, isEarly: false, earlyMin: 0);
+    }
+
+    public function test_clock_in_without_clock_out_computes_lateness_only_when_late(): void
+    {
+        $result = $this->calculator->calculate($this->input(
+            schedStart: '2024-01-15 09:00',
+            schedEnd:   '2024-01-15 17:00',
+            clockIn:    '2024-01-15 09:20',
+            clockOut:   null,
+            gracePeriodMinutes: 10,
+        ));
+
+        $this->assertResult($result, workHours: 0.0, breakHours: 0.0, otHours: 0.0,
+            isLate: true, lateMin: 20, isEarly: false, earlyMin: 0);
     }
 
     // -------------------------------------------------------------------------

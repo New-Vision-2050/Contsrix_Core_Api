@@ -31,7 +31,8 @@ class MockAttendanceService
     {
         $attendance = $this->attendanceService->clockIn($clockInDTO);
         AttendanceClockedIn::dispatch($attendance->id);
-        return $attendance;
+
+        return $attendance->refresh();
     }
 
     /**

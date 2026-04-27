@@ -126,19 +126,57 @@ final class AttendancePresenterContractTest extends TestCase
         );
     }
 
-    public function test_numeric_fields_are_cast_to_expected_types(): void
+    public function test_hour_and_minute_fields_are_hhmm_strings(): void
     {
+        // Per INV-16 (deep-reference doc §20.7), all attendance hour/minute fields leave the
+        // API as zero-padded "HH:MM" strings. The boolean-flavoured ints stay int.
         $attendance = $this->makeAttendance();
         $payload    = (new AttendancePresenter($attendance))->present();
 
-        $this->assertIsFloat($payload['total_work_hours']);
-        $this->assertIsFloat($payload['total_break_hours']);
-        $this->assertIsFloat($payload['overtime_hours']);
+        $hhmmRegex = '/^\d{2,}:[0-5]\d$/'; // HH (2+ digits, no day rollover) : MM in [00..59]
+
+        $this->assertIsString($payload['total_work_hours']);
+        $this->assertMatchesRegularExpression($hhmmRegex, $payload['total_work_hours']);
+        $this->assertSame('08:00', $payload['total_work_hours']);
+
+        $this->assertIsString($payload['total_break_hours']);
+        $this->assertMatchesRegularExpression($hhmmRegex, $payload['total_break_hours']);
+        $this->assertSame('00:30', $payload['total_break_hours']);
+
+        $this->assertIsString($payload['overtime_hours']);
+        $this->assertMatchesRegularExpression($hhmmRegex, $payload['overtime_hours']);
+
+        $this->assertIsString($payload['late_minutes']);
+        $this->assertMatchesRegularExpression($hhmmRegex, $payload['late_minutes']);
+
+        $this->assertIsString($payload['early_departure_minutes']);
+        $this->assertMatchesRegularExpression($hhmmRegex, $payload['early_departure_minutes']);
+
         $this->assertIsInt($payload['is_late']);
         $this->assertIsInt($payload['is_absent']);
         $this->assertIsInt($payload['is_holiday']);
         $this->assertIsInt($payload['is_early_departure']);
         $this->assertIsInt($payload['is_clocked_in']);
+    }
+
+    public function test_hhmm_fields_normalise_decimal_carry_over(): void
+    {
+        // Regression for the "09:93" mobile-FE bug — a value of 9.93 decimal hours must
+        // present as "09:56", not "09:93", and 93 minutes of lateness must present as
+        // "01:33", not "00:93". See HoursFormatterTest for the helper-level coverage.
+        $attendance = $this->makeAttendance();
+        $attendance->forceFill([
+            'total_work_hours'  => 9.93,
+            'total_break_hours' => 0.0,
+            'overtime_hours'    => 0.93,
+            'late_minutes'      => 93,
+        ]);
+
+        $payload = (new AttendancePresenter($attendance))->present();
+
+        $this->assertSame('09:56', $payload['total_work_hours']);
+        $this->assertSame('00:56', $payload['overtime_hours']);
+        $this->assertSame('01:33', $payload['late_minutes']);
     }
 
     public function test_breaks_is_always_array(): void

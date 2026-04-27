@@ -85,25 +85,27 @@ class AttendanceService
     }
 
     /**
-     * Dispatch AutoCloseAttendanceJob at end_time + max_over_time_hours * 60 min.
-     * This provides precise timing; AutoCloseStaleShiftsCommand is the safety-net fallback.
+     * Dispatch AutoCloseAttendanceJob at end_time + max_over_time_hours * 60 min (the deadline).
+     * The recorded clock_out_time is the shift's scheduled end_time (NOT the deadline) so an
+     * employee who never clocks out is capped at scheduled hours with zero overtime — the same
+     * behaviour as the AutoCloseStaleShiftsCommand fallback.
      */
     private function scheduleAutoCloseAtMaxOvertime(
         Attendance $attendance,
         Carbon $endDateTime,
         float $maxOverTimeHours,
     ): void {
-        $closeAt = $endDateTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
+        $deadline = $endDateTime->copy()->addMinutes((int) round($maxOverTimeHours * 60));
 
-        if (!$closeAt->isFuture()) {
+        if (!$deadline->isFuture()) {
             return;
         }
 
         AutoCloseAttendanceJob::dispatch(
             (string) $attendance->id,
             (string) $attendance->company_id,
-            $closeAt->toIso8601String(),
-        )->delay($closeAt);
+            $endDateTime->toIso8601String(),
+        )->delay($deadline);
     }
 
     private function ensureUserHasNoActiveClockIn( $userId): void
@@ -231,7 +233,9 @@ class AttendanceService
         AutoClockOutAtNextShiftStartJob::dispatch(
             (string) $attendance->id,
             (string) $attendance->company_id,
-            $nextStart->copy()->format('Y-m-d H:i:s'),
+            // Pass ISO 8601 with TZ offset so the queue worker doesn't reparse this as UTC
+            // and shift the wall clock by the branch offset.
+            $nextStart->toIso8601String(),
         )->delay($nextStart);
     }
 
@@ -314,18 +318,22 @@ class AttendanceService
     {
         $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
 
-        $scheduledStart = CarbonImmutable::parse($attendance->start_time)->setTimezone($timezone);
-        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time)->setTimezone($timezone);
+        // start_time/end_time/clock_in_time/clock_out_time are stored as wall-clock strings
+        // already in the branch timezone (see Attendance model comment about no datetime cast).
+        // Pass $timezone as the second arg so Carbon labels them with that TZ instead of
+        // defaulting to UTC and converting (which shifts every value by the branch offset).
+        $scheduledStart = CarbonImmutable::parse($attendance->start_time, $timezone);
+        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time, $timezone);
 
         if (! $scheduledEnd->greaterThan($scheduledStart)) {
             $scheduledEnd = $scheduledEnd->addDay();
         }
 
         $clockIn  = $attendance->clock_in_time
-            ? CarbonImmutable::parse($attendance->clock_in_time)->setTimezone($timezone)
+            ? CarbonImmutable::parse($attendance->clock_in_time, $timezone)
             : null;
         $clockOut = $attendance->clock_out_time
-            ? CarbonImmutable::parse($attendance->clock_out_time)->setTimezone($timezone)
+            ? CarbonImmutable::parse($attendance->clock_out_time, $timezone)
             : null;
 
         $totalBreakMinutes = (int) $attendance->breaks()

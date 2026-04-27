@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Attendance\Services;
 
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Domain\Calculator\AttendanceCalculator;
 use Modules\Attendance\Domain\Calculator\CalculatorInput;
 use Modules\Attendance\Models\Attendance;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Single writer for all automatic shift-close paths.
@@ -60,11 +62,16 @@ final class AutoCloseAttendanceService
 
             $input  = $this->buildCalculatorInput($fresh, $closeAt);
             $result = $this->calculator->calculate($input);
+            $now = Carbon::now($fresh->timezone);
 
-            $noteLine = '[Auto] Clock-out: ' . $reason . ' at ' . $closeAt->toIso8601String();
+            // Normalise $closeAt to the attendance's branch timezone before formatting so the
+            // stored wall-clock matches the rest of the row (start_time/end_time/clock_in_time).
+            $branchTz       = $fresh->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+            $closeAtInBranch = $closeAt->setTimezone($branchTz);
 
+            $noteLine = '[Auto] Clock-out: ' . $reason . ' at ' . $closeAtInBranch->toIso8601String();
             $fresh->update([
-                'clock_out_time'          => $closeAt->format('Y-m-d H:i:s'),
+                'clock_out_time'          => $closeAtInBranch->format('Y-m-d H:i:s'),
                 'clock_out_location'      => $this->resolveLastLocation($fresh),
                 'status'                  => Attendance::STATUS_COMPLETED,
                 'day_status'              => 'clocked_out',
@@ -87,8 +94,12 @@ final class AutoCloseAttendanceService
     {
         $timezone = $fresh->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
 
-        $scheduledStart = CarbonImmutable::parse($fresh->start_time)->setTimezone($timezone);
-        $scheduledEnd   = CarbonImmutable::parse($fresh->end_time)->setTimezone($timezone);
+        // start_time/end_time/clock_in_time are stored as wall-clock strings already in the
+        // branch timezone. Pass $timezone as the second argument so Carbon labels them with
+        // that TZ instead of defaulting to UTC and then converting (which shifts every value
+        // by the branch offset and breaks all downstream math).
+        $scheduledStart = CarbonImmutable::parse($fresh->start_time, $timezone);
+        $scheduledEnd   = CarbonImmutable::parse($fresh->end_time, $timezone);
 
         // Overnight shift: end <= start means the period crosses midnight.
         if (!$scheduledEnd->greaterThan($scheduledStart)) {
@@ -96,7 +107,7 @@ final class AutoCloseAttendanceService
         }
 
         $clockIn = $fresh->clock_in_time
-            ? CarbonImmutable::parse($fresh->clock_in_time)->setTimezone($timezone)
+            ? CarbonImmutable::parse($fresh->clock_in_time, $timezone)
             : null;
 
         $totalBreakMinutes = (int) $fresh->breaks()
@@ -109,7 +120,7 @@ final class AutoCloseAttendanceService
             scheduledStart:    $scheduledStart,
             scheduledEnd:      $scheduledEnd,
             clockIn:           $clockIn,
-            clockOut:          $closeAt,
+            clockOut:          $closeAt->setTimezone($timezone),
             totalBreakMinutes: $totalBreakMinutes,
             gracePeriodMinutes: $gracePeriodMinutes,
             maxOverTimeHours:  $maxOverTimeHours,

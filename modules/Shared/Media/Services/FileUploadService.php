@@ -3,10 +3,26 @@
 namespace Modules\Shared\Media\Services;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Config;
 
 class FileUploadService
 {
+    /**
+     * Prefer S3/Minio when buckets are configured; otherwise local disks so
+     * Spatie does not build AwsS3V3Adapter with a null bucket (e.g. local / seeding).
+     */
+    private function resolveStorageDisk(string $visibility): string
+    {
+        if ($visibility === 'public') {
+            $bucket = config('filesystems.disks.s3_public.bucket');
+
+            return (is_string($bucket) && $bucket !== '') ? 's3_public' : 'public';
+        }
+
+        $bucket = config('filesystems.disks.s3_private.bucket');
+
+        return (is_string($bucket) && $bucket !== '') ? 's3_private' : 'local';
+    }
+
     public function uploadFile(
          $model,
         UploadedFile|array $file,
@@ -17,7 +33,7 @@ class FileUploadService
         ?string $fileId = null,
 
     ) {
-        $disk = $visibility === 'public' ? 's3_public' : 's3_private';
+        $disk = $this->resolveStorageDisk($visibility);
 
         if (empty($file)) {
             return collect();

@@ -133,18 +133,20 @@ class ProcessClockInAttendanceData implements ShouldQueue
     {
         $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
 
-        $scheduledStart = CarbonImmutable::parse($attendance->start_time)->setTimezone($timezone);
-        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time)->setTimezone($timezone);
+        // Wall-clock strings stored in branch TZ; label them with that TZ instead of
+        // parsing as UTC and converting (which would shift values by the branch offset).
+        $scheduledStart = CarbonImmutable::parse($attendance->start_time, $timezone);
+        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time, $timezone);
 
         if (! $scheduledEnd->greaterThan($scheduledStart)) {
             $scheduledEnd = $scheduledEnd->addDay();
         }
 
         $clockIn  = $attendance->clock_in_time
-            ? CarbonImmutable::parse($attendance->clock_in_time)->setTimezone($timezone)
+            ? CarbonImmutable::parse($attendance->clock_in_time, $timezone)
             : null;
         $clockOut = $attendance->clock_out_time
-            ? CarbonImmutable::parse($attendance->clock_out_time)->setTimezone($timezone)
+            ? CarbonImmutable::parse($attendance->clock_out_time, $timezone)
             : null;
 
         $totalBreakMinutes = (int) $attendance->breaks()

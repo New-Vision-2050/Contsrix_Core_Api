@@ -6,10 +6,12 @@ namespace Modules\Attendance\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Modules\Attendance\Events\AttendanceConstraintUpdated;
 use Modules\Attendance\Events\UpdateAttendance;
 use Modules\Attendance\Exceptions\AttendanceException;
+use Modules\Attendance\Services\AttendanceConstraintService;
 use Modules\Attendance\Models\AppliedAttendanceConstraint;
 use Modules\Attendance\Models\Attendance;
 use Modules\Attendance\Models\AttendanceConstraint;
@@ -89,7 +91,7 @@ class AttendanceConstraintRepository extends BaseRepository
         $constraint = $this->getConstraint($id);
         // $this->assertNoOpenAttendanceForConstraint($id->toString(), (string) $constraint->company_id);
 
-        return $this->delete($id);
+        return (bool) $constraint->delete();
     }
 
     /**
@@ -150,10 +152,15 @@ class AttendanceConstraintRepository extends BaseRepository
      */
     public function bulkActivate(array $constraintIds): int
     {
-        return $this->model->whereIn('id', $constraintIds)->update([
+        $n = $this->model->whereIn('id', $constraintIds)->update([
             'is_active' => true,
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
+        if ($n > 0) {
+            $this->bumpApplicableCacheAfterBulkMutation($constraintIds);
+        }
+
+        return $n;
     }
 
     /**
@@ -161,10 +168,15 @@ class AttendanceConstraintRepository extends BaseRepository
      */
     public function bulkDeactivate(array $constraintIds): int
     {
-        return $this->model->whereIn('id', $constraintIds)->update([
+        $n = $this->model->whereIn('id', $constraintIds)->update([
             'is_active' => false,
-            'updated_at' => now()
+            'updated_at' => now(),
         ]);
+        if ($n > 0) {
+            $this->bumpApplicableCacheAfterBulkMutation($constraintIds);
+        }
+
+        return $n;
     }
 
     /**
@@ -172,7 +184,22 @@ class AttendanceConstraintRepository extends BaseRepository
      */
     public function bulkDelete(array $constraintIds): int
     {
-        return $this->model->whereIn('id', $constraintIds)->delete();
+        if ($constraintIds === []) {
+            return 0;
+        }
+        $companyIds = $this->model->newQuery()
+            ->whereIn('id', $constraintIds)
+            ->distinct()
+            ->pluck('company_id');
+        if ($companyIds->isEmpty()) {
+            return 0;
+        }
+        $n = (int) $this->model->whereIn('id', $constraintIds)->delete();
+        if ($n > 0) {
+            $this->bumpCompaniesAndForgetConstraintKeys($constraintIds, $companyIds);
+        }
+
+        return $n;
     }
 
     /**
@@ -277,11 +304,52 @@ class AttendanceConstraintRepository extends BaseRepository
      */
     public function bulkUpdateBranch(array $constraintIds, string $branchId, string $updatedBy): int
     {
-        return $this->model->whereIn('id', $constraintIds)
+        if ($constraintIds === []) {
+            return 0;
+        }
+        $n = $this->model->whereIn('id', $constraintIds)
             ->update([
                 'branch_id' => $branchId,
                 'updated_by' => $updatedBy,
                 'updated_at' => now(),
             ]);
+        if ($n > 0) {
+            $this->bumpApplicableCacheAfterBulkMutation($constraintIds);
+        }
+
+        return $n;
+    }
+
+    /**
+     * Mass update/delete does not run Eloquent observers. Mirror observer invalidation.
+     *
+     * @param  array<int, string>  $constraintIds
+     */
+    private function bumpApplicableCacheAfterBulkMutation(array $constraintIds): void
+    {
+        $companyIds = $this->model->newQuery()
+            ->whereIn('id', $constraintIds)
+            ->distinct()
+            ->pluck('company_id');
+        $this->bumpCompaniesAndForgetConstraintKeys($constraintIds, $companyIds);
+    }
+
+    /**
+     * @param  array<int, string>  $constraintIds
+     * @param  \Illuminate\Support\Collection|iterable<int, mixed>  $companyIds
+     */
+    private function bumpCompaniesAndForgetConstraintKeys(array $constraintIds, iterable $companyIds): void
+    {
+        foreach ($constraintIds as $cid) {
+            if ($cid) {
+                Cache::forget(AttendanceConstraintService::singleConstraintCacheKey((string) $cid));
+            }
+        }
+        $service = app(AttendanceConstraintService::class);
+        foreach (collect($companyIds)->filter()->unique() as $c) {
+            if ((string) $c !== '') {
+                $service->bumpApplicableConstraintsCacheForCompany((string) $c);
+            }
+        }
     }
 }
