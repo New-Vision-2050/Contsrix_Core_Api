@@ -69,11 +69,11 @@ class AttendanceConstraintService
         // Get user ID from attendance to avoid readonly property issue
         $userId = $attendance->user_id;
         $user = User::find($userId);
-        
+
         if (!$user) {
             return [];
         }
-        
+
         // Get all applicable constraints for the user
         $constraints = $this->getApplicableConstraints($user);
         if ($constraints->isEmpty()) {
@@ -85,12 +85,12 @@ class AttendanceConstraintService
                 'details' => ['reason' => 'Missing GPS data from user.']
             ];
         }
-        
+
         foreach ($constraints as $constraint) {
             try {
-                
+
                 $violation = $this->validateSingleConstraint($attendance, $constraint, $requestData,$isDryRun);
-                
+
                 if ($violation) {
                     $violations[] = $violation;
 
@@ -538,8 +538,21 @@ class AttendanceConstraintService
             ? Carbon::parse($date, $timezone)
             : Carbon::now($timezone);
 
+        // When the caller passes a bare date string (e.g. "2026-04-27"),
+        // Carbon::parse() defaults the time to 00:00:00 in the branch TZ.
+        // For today's date that breaks current-period detection because no
+        // scheduled period contains midnight, so getCurrentOrNextPeriodDetails
+        // falls back to the first period of the day. Use the real current
+        // time when the parsed value is today's start-of-day.
+        if ($date && $now->isStartOfDay()) {
+            $today = Carbon::now($timezone);
+            if ($now->isSameDay($today)) {
+                $now = $today;
+            }
+        }
+
         $constraints = $this->getApplicableConstraintsForDataRetrieval($user);
-        
+
         if ($constraints->isEmpty()) {
             return [
                 'day_status' => 'Undefined',
