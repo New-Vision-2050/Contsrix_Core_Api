@@ -7,6 +7,7 @@ namespace Modules\Attendance\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Support\HoursFormatter;
 use Modules\User\Models\User;
 use Ramsey\Uuid\UuidInterface;
 
@@ -763,15 +764,22 @@ final class UserAttendanceHistoryService
         return $dayNames[$date->format('l')] ?? $date->format('l');
     }
 
+    /**
+     * @deprecated Kept as a thin wrapper for callers inside this service.
+     *             New code must call {@see HoursFormatter::fromHours()} directly.
+     */
     private function formatHoursToTime(float $hours): string
     {
-        $totalMinutes = (int) round($hours * 60);
-        return sprintf('%02d:%02d', intdiv($totalMinutes, 60), $totalMinutes % 60);
+        return HoursFormatter::fromHours($hours);
     }
 
+    /**
+     * @deprecated Kept as a thin wrapper for callers inside this service.
+     *             New code must call {@see HoursFormatter::fromMinutes()} directly.
+     */
     private function formatMinutesToTime(int $minutes): string
     {
-        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
+        return HoursFormatter::fromMinutes($minutes);
     }
 
     // =============================================================================

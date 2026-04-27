@@ -53,15 +53,17 @@ class HandleAttendanceLateness
     {
         $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
 
-        $scheduledStart = CarbonImmutable::parse($attendance->start_time)->setTimezone($timezone);
-        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time)->setTimezone($timezone);
+        // Wall-clock strings stored in branch TZ; label them with that TZ instead of
+        // parsing as UTC and converting (which would shift values by the branch offset).
+        $scheduledStart = CarbonImmutable::parse($attendance->start_time, $timezone);
+        $scheduledEnd   = CarbonImmutable::parse($attendance->end_time, $timezone);
 
         if (! $scheduledEnd->greaterThan($scheduledStart)) {
             $scheduledEnd = $scheduledEnd->addDay();
         }
 
         $clockIn = $attendance->clock_in_time
-            ? CarbonImmutable::parse($attendance->clock_in_time)->setTimezone($timezone)
+            ? CarbonImmutable::parse($attendance->clock_in_time, $timezone)
             : null;
 
         // Re-clock-in edge case: if this is not the user's first attendance record for the
@@ -77,7 +79,7 @@ class HandleAttendanceLateness
                 ->first();
 
             if ($previous && $previous->clock_in_time) {
-                $prevClockIn = CarbonImmutable::parse($previous->clock_in_time)->setTimezone($timezone);
+                $prevClockIn = CarbonImmutable::parse($previous->clock_in_time, $timezone);
                 // Both clock-ins must fall within the same scheduled period.
                 if ($prevClockIn->between($scheduledStart, $scheduledEnd)
                     && $clockIn->between($scheduledStart, $scheduledEnd)

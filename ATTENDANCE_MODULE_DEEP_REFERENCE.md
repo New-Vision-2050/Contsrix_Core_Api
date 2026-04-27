@@ -29,6 +29,10 @@
 21. [Concurrency & Race Conditions](#21-concurrency--race-conditions)
 22. [Test Suite Map](#22-test-suite-map)
 23. [Invariants Checklist (Dangerous Traps)](#23-invariants-checklist-dangerous-traps)
+    - [INV-13](#inv-13-always-parse-attendance-datetime-strings-with-the-branch-timezone-as-second-argument): Carbon parsing trap — never `->setTimezone()` on DB strings
+    - [INV-14](#inv-14-scheduleautocloseatmaxovertime-separates-trigger-time-from-stored-time): `scheduleAutoCloseAtMaxOvertime` — trigger time ≠ stored `clock_out_time`
+    - [INV-15](#inv-15-always-use-toiso8601string-when-passing-datetimes-through-job-constructors): Always use `->toIso8601String()` in job constructors, never `->format('Y-m-d H:i:s')`
+    - [INV-16](#inv-16-all-attendance-hour-fields-leaving-the-api-must-be-hhmm-strings-via-hoursformatter): Hour/minute fields in API payloads must be HH:MM strings (via `HoursFormatter`), never raw decimals
 
 ---
 
@@ -876,14 +880,20 @@ Injects: `UserAttendanceService`, `UserAttendanceHistoryService`.
 **`Jobs/AutoCloseAttendanceJob.php`**
 
 Dispatched by `AttendanceService::scheduleAutoCloseAtMaxOvertime()` at clock-in time.
-Delay = `end_time + max_over_time_hours * 60 minutes`.
+
+**Critical distinction — trigger time vs stored time:**
+- **`->delay($deadline)`** = `end_time + max_over_time_hours * 60 min` — when the queue worker fires.
+- **`$closeAtIso`** = `end_time` (the shift's scheduled end, as ISO 8601 with TZ offset) — what gets stored as `clock_out_time`.
+
+Employees who never clock out are capped at scheduled hours with zero overtime. This matches `AutoCloseStaleShiftsCommand`'s behaviour. See **INV-14**.
 
 ```php
 class AutoCloseAttendanceJob implements ShouldQueue {
     public function __construct(
         public readonly string $attendanceId,
         public readonly string $companyId,
-        public readonly string $closeAtIso,   // ISO 8601; becomes clock_out_time
+        /** ISO 8601 with TZ offset — equals end_time (NOT end_time + max_over_time). */
+        public readonly string $closeAtIso,
     ) {}
 
     public function handle(AutoCloseAttendanceService $service): void {
@@ -891,7 +901,7 @@ class AutoCloseAttendanceJob implements ShouldQueue {
         try {
             $attendance = Attendance::find($this->attendanceId);
             if (!$attendance) { Log::warning(…); return; }
-            $closeAt = CarbonImmutable::parse($this->closeAtIso);
+            $closeAt = CarbonImmutable::parse($this->closeAtIso); // preserves TZ offset
             $service->closeIfExpired($attendance, $closeAt, 'auto_max_ot');
         } finally {
             tenancy()->end();
@@ -908,13 +918,14 @@ Jobs run in a separate worker process that has no HTTP request context. The tena
 **`Jobs/AutoClockOutAtNextShiftStartJob.php`**
 
 Dispatched by `AttendanceService::scheduleAutoClockOutWhenNextShiftStarts()`.
-Delay = next scheduled period's `start_time`.
+Delay = next scheduled period's `start_time`. The `clockOutAtIso` must be passed as ISO 8601 **with TZ offset** (via `->toIso8601String()`). Passing `->format('Y-m-d H:i:s')` would drop the offset, causing the worker to re-parse the time as UTC and shift the stored wall-clock by the branch offset. See **INV-15**.
 
 ```php
 class AutoClockOutAtNextShiftStartJob implements ShouldQueue {
     public function __construct(
         public readonly string $attendanceId,
         public readonly string $companyId,
+        /** ISO 8601 with TZ offset — must use ->toIso8601String(), not ->format('Y-m-d H:i:s'). */
         public readonly string $clockOutAtIso,
     ) {}
 
@@ -1291,12 +1302,15 @@ CREATE  → waiting (pre-created by command; no clock-in yet)
 
 ### 16.9 Auto-Close Triggers
 
-| Trigger | Job/Command | `shift_end_method` | `clock_out_time` value |
-|---|---|---|---|
-| Max overtime exceeded | `AutoCloseAttendanceJob` | `auto_max_ot` | `end_time + max_over_time_hours * 60 min` |
-| Next shift starting | `AutoClockOutAtNextShiftStartJob` | `auto_next_shift` | Next period's `start_time` |
-| Outside geofence | (future) | `auto_radius` | `now()` at detection |
-| Employee manual | HTTP clock-out | `manual` | Actual clock-out time |
+| Trigger | Job/Command | `shift_end_method` | Job fires at | `clock_out_time` stored |
+|---|---|---|---|---|
+| Max overtime exceeded | `AutoCloseAttendanceJob` | `auto_max_ot` | `end_time + max_over_time_hours * 60 min` | **`end_time`** (shift's scheduled end) |
+| Next shift starting | `AutoClockOutAtNextShiftStartJob` | `auto_next_shift` | Next period's `start_time` | Next period's `start_time` |
+| Safety-net cron | `AutoCloseStaleShiftsCommand` (every 5 min) | `auto_max_ot` | Any time after `end_time + max_over_time` | **`end_time`** (shift's scheduled end) |
+| Outside geofence | (future) | `auto_radius` | At detection | `now()` at detection |
+| Employee manual | HTTP clock-out | `manual` | N/A | Actual clock-out time |
+
+> **Note:** `AutoCloseAttendanceJob` and `AutoCloseStaleShiftsCommand` always store the same `clock_out_time` (`end_time`). The job fires at the deadline for precise timing; the command is a safety net for lost/delayed jobs. Both delegate to `AutoCloseAttendanceService::closeIfExpired()` which holds the row lock.
 
 ---
 
@@ -1428,7 +1442,8 @@ AutoCloseAttendanceJob::handle()
     2. $attendance = Attendance::find($this->attendanceId)
        └─ not found → Log::warning + return
     3. $closeAt = CarbonImmutable::parse($this->closeAtIso)
-       └─ closeAtIso was: $endDateTime + max_over_time * 60 min (set at clock-in)
+       └─ closeAtIso = $endDateTime->toIso8601String()  ← the shift's end_time (NOT end_time + max_over_time)
+       └─ the job was DELAYED to end_time + max_over_time, but it SAVES end_time
     4. $closed = AutoCloseAttendanceService::closeIfExpired($attendance, $closeAt, 'auto_max_ot')
     5. finally: tenancy()->end()
 ```
@@ -1463,8 +1478,11 @@ DB::transaction()
     ├── calculator->calculate($input)
     │       [pure domain; returns WorkHoursResult]
     │
+    ├── $branchTz = $fresh->timezone ?: config('app.timezone') ?: 'Asia/Riyadh'
+    │   $closeAtInBranch = $closeAt->setTimezone($branchTz)   // normalise to branch TZ for storage
+    │
     ├── $fresh->update({
-    │       clock_out_time: $closeAt->format('Y-m-d H:i:s'),   // deterministic, not wall clock
+    │       clock_out_time: $closeAtInBranch->format('Y-m-d H:i:s'),   // branch-TZ wall clock, deterministic
     │       clock_out_location: last location point or clock_in_location,
     │       status: 'completed',
     │       day_status: 'clocked_out',
@@ -1511,6 +1529,70 @@ It is critical for the `getTeamAttendance()` GROUP BY and for the date-based ind
 
 This function reads the branch timezone from the authenticated user's branch → address → country → timezones chain. It uses `once()` internally so it is computed only once per request cycle and does not leak between requests under Octane.
 
+### 20.6 The Carbon Parsing Trap — `parse($str, $tz)` vs `parse($str)->setTimezone($tz)`
+
+This is the single most dangerous mistake in this codebase. The two patterns look similar but do **completely different things**:
+
+```php
+// ✅ CORRECT — labels the wall-clock string as already being in branch TZ
+$start = CarbonImmutable::parse('2024-01-15 08:30:00', 'Asia/Riyadh');
+// Result: 2024-01-15 08:30:00 Asia/Riyadh  (absolute: 05:30 UTC)
+
+// ❌ WRONG — parses the string as UTC first, then CONVERTS to branch TZ
+$start = CarbonImmutable::parse('2024-01-15 08:30:00')->setTimezone('Asia/Riyadh');
+// Result: 2024-01-15 11:30:00 Asia/Riyadh  (absolute: 08:30 UTC — shifted by +3h!)
+```
+
+**Why this matters:** `APP_TIMEZONE = UTC` (see `config/app.php`). So `CarbonImmutable::parse($str)` with no second argument treats the string as **UTC**. The attendance datetime columns (`start_time`, `end_time`, `clock_in_time`, `clock_out_time`) are stored as **branch-timezone wall-clock strings** (e.g., `2024-01-15 08:30:00` means 08:30 in Asia/Riyadh, NOT in UTC). Using `->setTimezone()` shifts every value by the branch UTC offset, corrupting all downstream calculations:
+
+| Field (Asia/Riyadh, UTC+3) | Wrong (setTimezone) | Correct (parse with tz) |
+|---|---|---|
+| `start_time = "08:30:00"` | Parsed as 08:30 UTC → 11:30 Riyadh | Stays 08:30 Riyadh |
+| `clock_in_time = "08:33:31"` | Parsed as 08:33 UTC → 11:33 Riyadh | Stays 08:33 Riyadh |
+| `end_time = "17:30:00"` | Parsed as 17:30 UTC → 20:30 Riyadh | Stays 17:30 Riyadh |
+
+**Exception — `$closeAt` passed into `closeIfExpired`:** This argument comes from `CarbonImmutable::parse($iso)` where `$iso` is `->toIso8601String()` output (includes the TZ offset, e.g., `+03:00`). Such strings parse correctly because the offset is embedded. The `setTimezone($branchTz)` call inside `closeIfExpired` is then harmless (it re-labels to the named TZ, which represents the same absolute instant).
+
+**Rule:** Always use `CarbonImmutable::parse($dbString, $timezone)` when reading from the `attendances` table. See **INV-13**.
+
+### 20.7 Display Formatting — Hours, Overtime, Lateness Are Always `HH:MM` Strings
+
+The DB stores work / break / overtime as `DECIMAL(8,2)` and lateness / early-departure as integer minutes (see migration `2025_06_18_223500_create_attendances_table`). On the **wire**, however, every report and history endpoint exposes these values as zero-padded `HH:MM` strings produced by a single helper:
+
+```
+Modules\Attendance\Support\HoursFormatter
+  │  ├─ fromHours(float $hours)            → "HH:MM"
+  │  ├─ fromMinutes(int $minutes)          → "HH:MM"
+  │  └─ fromDecimalString($eloquentValue)  → "HH:MM"
+  └─ covered by Tests/Unit/Support/HoursFormatterTest
+```
+
+**Why this exists — the "09:93" bug:**
+A mobile FE was rendering the raw `total_work_hours: 9.93` (a decimal-hour value = 9h 56m) by splitting on the dot, producing `09:93`. The colon-93 string is not a valid clock time — minutes ≥ 60 should always carry into hours. The fix is to format on the **backend** so clients receive only normalised strings.
+
+**API contract (the only legal shape for these fields):**
+
+| Field | DB type | Wire type | Example |
+|---|---|---|---|
+| `total_work_hours` | DECIMAL(8,2) hours | `"HH:MM"` string | `"10:33"` |
+| `total_break_hours` | DECIMAL(8,2) hours | `"HH:MM"` string | `"00:30"` |
+| `overtime_hours` | DECIMAL(8,2) hours | `"HH:MM"` string | `"01:33"` |
+| `late_minutes` | INT minutes | `"HH:MM"` string | `"00:03"` |
+| `early_departure_minutes` | INT minutes | `"HH:MM"` string | `"00:15"` |
+| `delay_hours` (history endpoint) | derived | `"HH:MM"` string | `"00:03"` |
+
+Hours are **never capped** at 24 — a 27-hour weekly summary returns `"27:00"`. The minute field is **always** in `[00, 59]`.
+
+**Endpoints that ship HH:MM (verified):**
+- `UserAttendanceController::getUserAttendanceHistory` → `UserAttendanceHistoryService::getUserAttendanceHistoryMobileApi` — `work_hours`, `delay_hours`, `overtime_hours`.
+- `AttendanceController::index` / `getHistory` / `getLateArrivals` / `getEarlyDepartures` / `getOvertimeRecords` — via `AttendancePresenter::present()`.
+- `AttendancePresenter::getSummaryData()` and `AttendancePresenter::getReportData()` — used by report exports.
+- `AttendanceController::clockIn` / `clockOut` / `startBreak` / `endBreak` — also use `AttendancePresenter::present()`, so they emit `HH:MM` too. This is intentional: a single payload shape for the FE.
+
+**Backwards-compatible aliases:** `AttendancePresenter::present()` still emits `duration_formatted`, `break_duration_formatted`, `overtime_formatted` in `"Xh Ym"` style for clients that already rely on those keys. They internally delegate to `HoursFormatter` so they share the same normalisation.
+
+See **INV-16** for the rule and the regression test.
+
 ---
 
 ## 21. Concurrency & Race Conditions
@@ -1541,7 +1623,7 @@ This function reads the branch timezone from the authenticated user's branch →
 
 ### Deterministic `clock_out_time`
 
-`AutoCloseAttendanceService` stores `$closeAt` (the pre-computed boundary), not `now()`. If a queue worker is delayed 5 minutes, the employee's recorded clock-out is still `end_time + max_over_time`, not `end_time + max_over_time + 5 minutes`.
+`AutoCloseAttendanceService` stores `$closeAt` (the pre-computed boundary), not `now()`. If a queue worker is delayed 5 minutes, the employee's recorded clock-out is still `end_time`, not `end_time + 5 minutes`. The boundary is always `end_time` — computed at clock-in time from the constraint snapshot and passed as `closeAtIso` in the job constructor.
 
 **Test coverage:** `AutoCloseRaceTest::test_clock_out_time_equals_close_at_not_wall_clock_time()`
 
@@ -1631,3 +1713,50 @@ Whenever you build a `CalculatorInput` from an attendance row, you must check if
 
 ### INV-12: `business_date` must be set at clock-in
 The `getTeamAttendance()` method filters with `whereNotNull('business_date')`. Attendance rows without `business_date` are invisible to the team view. Always set `business_date = $startDateTime->toDateString()` in `buildClockInAttendanceData()`.
+
+### INV-13: Always parse attendance datetime strings with the branch timezone as second argument
+Attendance datetime columns (`start_time`, `end_time`, `clock_in_time`, `clock_out_time`) are stored as **branch-TZ wall-clock strings**. Read them back with:
+```php
+// ✅ Correct
+CarbonImmutable::parse($attendance->start_time, $timezone);
+
+// ❌ Wrong — parses as UTC then shifts by branch offset
+CarbonImmutable::parse($attendance->start_time)->setTimezone($timezone);
+```
+The wrong form corrupts work-hours, overtime, and lateness calculations by shifting all attendance times by the branch UTC offset (e.g., +3 hours for Asia/Riyadh). Every `buildCalculatorInput()` in the codebase uses the correct form — any new code reading these columns must follow the same pattern. See **§20.6** for a full explanation.
+
+### INV-14: `scheduleAutoCloseAtMaxOvertime` — trigger time ≠ stored `clock_out_time`
+`AttendanceService::scheduleAutoCloseAtMaxOvertime()` dispatches `AutoCloseAttendanceJob` with:
+- **`->delay($deadline)`** where `$deadline = end_time + max_over_time_hours * 60 min` — controls **when** the job fires.
+- **`$closeAtIso = $endDateTime->toIso8601String()`** — the shift's **end_time**, which becomes `clock_out_time`.
+
+These two values are intentionally different. The job fires at the max-OT deadline so precise timing is honoured; but the stored `clock_out_time` is the scheduled shift end (not the deadline), so employees who forget to clock out are capped at zero overtime. The `AutoCloseStaleShiftsCommand` fallback stores the same `end_time`. Both writers must always agree.
+
+### INV-15: Always use `->toIso8601String()` when passing datetimes through job constructors
+Job constructors receive datetime values as strings. The worker process has `APP_TIMEZONE = UTC`, so `CarbonImmutable::parse($str)` treats any timezone-less string as UTC:
+```php
+// ❌ Wrong — drops TZ info; worker parses as UTC and shifts by branch offset
+SomeJob::dispatch($carbon->format('Y-m-d H:i:s'));
+
+// ✅ Correct — embeds the TZ offset; parse() in the worker preserves the instant
+SomeJob::dispatch($carbon->toIso8601String()); // e.g. "2024-01-15T08:30:00+03:00"
+```
+All attendance jobs (`AutoCloseAttendanceJob`, `AutoClockOutAtNextShiftStartJob`) follow this rule. Any new job that stores an attendance datetime must also use `->toIso8601String()`.
+
+### INV-16: All attendance hour fields leaving the API must be `HH:MM` strings (via `HoursFormatter`)
+Never return a raw decimal-hour value (`9.93`) or a raw minute count (`93`) from a presenter / report / history endpoint. Always funnel through `HoursFormatter::fromHours()` / `::fromMinutes()` / `::fromDecimalString()`:
+```php
+// ✅ Correct
+'total_work_hours' => HoursFormatter::fromDecimalString($attendance->total_work_hours),
+'late_minutes'     => HoursFormatter::fromMinutes((int) $attendance->late_minutes),
+
+// ❌ Wrong — raw decimal lets the FE produce "09:93" by splitting on the dot
+'total_work_hours' => (float) $attendance->total_work_hours,
+```
+The formatter guarantees:
+- Minutes field is always `[00, 59]` — a value of 93 minutes always carries to `01:33`, never displays as `00:93`.
+- Hours are never capped at 24 (weekly / monthly aggregates work).
+- Negative values are clamped to `00:00`.
+- Eloquent's `decimal:2` cast (which returns a *string*, not a float) is handled transparently.
+
+**Test coverage:** `Tests/Unit/Support/HoursFormatterTest` — includes a property-style test that walks 0–120 hours in 0.17h increments and asserts the minute field is always `< 60`.
