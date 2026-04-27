@@ -70,9 +70,15 @@ class HandleAttendanceLateness
         // same scheduled period today, anchor lateness at the earlier clock-in rather than
         // at scheduledStart. This prevents double-penalizing a user who briefly stepped out
         // and came back within the same shift period.
-        if ($clockIn) {
+        //
+        // Match by start_time/end_time so we only consider previous rows for the *same*
+        // scheduled period — matching by date alone would pick up rows that were assigned
+        // to a different period (e.g. an earlier morning shift) and produce a misleading
+        // anchor.
+        if ($clockIn && $attendance->start_time && $attendance->end_time) {
             $previous = Attendance::where('user_id', $attendance->user_id)
-                ->whereDate('clock_in_time', $clockIn->format('Y-m-d'))
+                ->where('start_time', $attendance->start_time)
+                ->where('end_time', $attendance->end_time)
                 ->where('id', '!=', $attendance->id)
                 ->whereNotNull('clock_in_time')
                 ->orderByDesc('clock_in_time')
@@ -111,7 +117,24 @@ class HandleAttendanceLateness
             return 0;
         }
 
-        $rules      = $constraint->constraint_config['time_rules']['lateness_rules'] ?? [];
+        $timeRules = $constraint->constraint_config['time_rules'] ?? [];
+
+        // Lateness rules live per-day under weekly_schedule.{dayName}.lateness_rules
+        // for multi-period schedules. Resolve the day from the attendance's scheduled
+        // start (in branch TZ) so re-clock-in rows still pick the correct day, then
+        // fall back to legacy top-level time_rules.lateness_rules for older configs.
+        $rules = [];
+        $weeklySchedule = $timeRules['weekly_schedule'] ?? null;
+        if (is_array($weeklySchedule) && $attendance->start_time) {
+            $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+            $dayName = strtolower(CarbonImmutable::parse($attendance->start_time, $timezone)->format('l'));
+            $rules = $weeklySchedule[$dayName]['lateness_rules'] ?? [];
+        }
+
+        if (empty($rules)) {
+            $rules = $timeRules['lateness_rules'] ?? [];
+        }
+
         $graceValue = (int) ($rules['lateness_period'] ?? 0);
         $graceUnit  = (string) ($rules['lateness_unit'] ?? 'minute');
 

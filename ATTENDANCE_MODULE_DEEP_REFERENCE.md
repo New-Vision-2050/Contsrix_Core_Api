@@ -33,6 +33,9 @@
     - [INV-14](#inv-14-scheduleautocloseatmaxovertime-separates-trigger-time-from-stored-time): `scheduleAutoCloseAtMaxOvertime` — trigger time ≠ stored `clock_out_time`
     - [INV-15](#inv-15-always-use-toiso8601string-when-passing-datetimes-through-job-constructors): Always use `->toIso8601String()` in job constructors, never `->format('Y-m-d H:i:s')`
     - [INV-16](#inv-16-all-attendance-hour-fields-leaving-the-api-must-be-hhmm-strings-via-hoursformatter): Hour/minute fields in API payloads must be HH:MM strings (via `HoursFormatter`), never raw decimals
+    - [INV-17](#inv-17-gettodaysworkrulesforuser-must-use-the-current-time-on-today-never-midnight): `getTodaysWorkRulesForUser` must use current time on today — never midnight from a bare date string
+    - [INV-18](#inv-18-re-clock-in-lateness-anchor-must-filter-previous-attendances-by-scheduled-period): Re-clock-in lateness anchor must filter previous rows by scheduled period (`start_time` + `end_time`), not by date alone
+    - [INV-19](#inv-19-lateness-grace-lookup-reads-per-day-rules-from-weekly_scheduledaylateness_rules): Lateness grace-period lookup must read per-day rules from `weekly_schedule.{day}.lateness_rules`, not `time_rules.lateness_rules`
 
 ---
 
@@ -1760,3 +1763,71 @@ The formatter guarantees:
 - Eloquent's `decimal:2` cast (which returns a *string*, not a float) is handled transparently.
 
 **Test coverage:** `Tests/Unit/Support/HoursFormatterTest` — includes a property-style test that walks 0–120 hours in 0.17h increments and asserts the minute field is always `< 60`.
+
+### INV-17: `getTodaysWorkRulesForUser` must use the current time on today — never midnight
+`AttendanceConstraintService::getTodaysWorkRulesForUser(User $user, $date, $timezone)` receives `$date` as a bare `Y-m-d` string from several callers (`AttendanceService::clockIn()`, `UserAttendanceService::getUserConstraints()`, `UserAttendanceHistoryService`). `Carbon::parse('2026-04-27', $timezone)` resolves to **`2026-04-27 00:00:00`** — midnight. Passing that `$now` into `getCurrentOrNextPeriodDetails()` fails to match any scheduled period (all periods start at 12:33+), so:
+- `current_period` stays `null`.
+- `fallback_period` = `$allTodaysPeriods[0]` (the earliest period of the day).
+- The caller sees `current_work_period` = the first period, regardless of the actual clock-in time.
+
+This caused real-world bug: at 18:18 Riyadh time, clock-in rows were assigned `start_time=12:33, end_time=12:49` (the day's first period), the `AutoCloseStaleShiftsCommand` then closed them instantly with `clock_out_time=12:49`.
+
+**Required pattern (in `getTodaysWorkRulesForUser`):**
+```php
+$now = $date
+    ? Carbon::parse($date, $timezone)
+    : Carbon::now($timezone);
+
+// When a bare date is passed and it's today, substitute current time so
+// getCurrentOrNextPeriodDetails() can match the active period.
+if ($date && $now->isStartOfDay()) {
+    $today = Carbon::now($timezone);
+    if ($now->isSameDay($today)) {
+        $now = $today;
+    }
+}
+```
+Historical queries (past dates) are unaffected because `isSameDay($today)` only triggers for today. Any new caller that needs the live "current period" must either pass no `$date` or ensure this normalization remains in place.
+
+### INV-18: Re-clock-in lateness anchor must filter previous attendances by scheduled period
+`HandleAttendanceLateness::buildCalculatorInput()` contains a "re-clock-in anchor" rule: if the user already has a prior attendance in the same scheduled period, use that earlier clock-in as the lateness anchor (so someone who briefly steps out and returns isn't double-penalised).
+
+**The previous-row query must filter by `start_time` AND `end_time`** — matching by date alone picks up rows assigned to a *different* scheduled period (e.g. a morning shift's row), and if that earlier clock-in happens to fall inside the current period's window the anchor shifts onto unrelated data. Real-world symptom: clock-in at 18:32 against 17:40-22:48 period showed `late_minutes=14` (difference from the unrelated 18:18 clock-in on the 12:33-12:49 period) instead of the expected 52.
+
+**Required pattern:**
+```php
+$previous = Attendance::where('user_id', $attendance->user_id)
+    ->where('start_time', $attendance->start_time)   // same scheduled period
+    ->where('end_time',   $attendance->end_time)
+    ->where('id', '!=', $attendance->id)
+    ->whereNotNull('clock_in_time')
+    ->orderByDesc('clock_in_time')
+    ->first();
+```
+The subsequent `between($scheduledStart, $scheduledEnd)` check is still required for safety but is no longer the primary filter.
+
+### INV-19: Lateness grace lookup reads per-day rules from `weekly_schedule.{day}.lateness_rules`
+Multi-period constraint configs store lateness rules per weekday:
+```
+constraint_config.time_rules.weekly_schedule.monday.lateness_rules
+                                           .tuesday.lateness_rules
+                                           ...
+```
+Reading `constraint_config.time_rules.lateness_rules` returns `[]` for these configs, so `gracePeriodMinutes` silently becomes 0 and every minute past `scheduledStart` counts as late. Only legacy single-schedule configs stored lateness rules at the `time_rules.*` root.
+
+**Required pattern (in `HandleAttendanceLateness::resolveGraceMinutes()`):**
+```php
+$timeRules = $constraint->constraint_config['time_rules'] ?? [];
+
+$rules = [];
+$weeklySchedule = $timeRules['weekly_schedule'] ?? null;
+if (is_array($weeklySchedule) && $attendance->start_time) {
+    $timezone = $attendance->timezone ?: config('app.timezone') ?: 'Asia/Riyadh';
+    $dayName  = strtolower(CarbonImmutable::parse($attendance->start_time, $timezone)->format('l'));
+    $rules    = $weeklySchedule[$dayName]['lateness_rules'] ?? [];
+}
+if (empty($rules)) {
+    $rules = $timeRules['lateness_rules'] ?? [];   // legacy fallback
+}
+```
+Day name must be derived from the attendance's `start_time` in the branch TZ — not `now()` — so a row clocked in just after midnight on a shift that extends from the previous day still reads the correct day's rules. Any other consumer that reads `lateness_rules` (e.g. snapshot-based readers in `AttendanceService::buildCalculatorInput()` and `ProcessClockInAttendanceData`) must follow the same resolution.
