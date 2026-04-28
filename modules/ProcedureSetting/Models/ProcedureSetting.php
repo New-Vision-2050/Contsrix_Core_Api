@@ -36,6 +36,7 @@ class ProcedureSetting extends Model
         'deadline_hours',
         'escalation_user_id',
         'company_id',
+        'work_flow_id',
     ];
 
     protected $casts = [
@@ -44,6 +45,7 @@ class ProcedureSetting extends Model
         'deadline_days' => 'integer',
         'deadline_hours' => 'integer',
         'escalation_user_id' => 'string',
+        'work_flow_id'       => 'string',
     ];
 
     public function getRelationshipToPrimaryModel(): string
@@ -64,6 +66,11 @@ class ProcedureSetting extends Model
     public function escalationUser()
     {
         return $this->belongsTo(User::class, 'escalation_user_id');
+    }
+
+    public function workFlow()
+    {
+        return $this->belongsTo(WorkFlow::class, 'work_flow_id');
     }
 
     protected static function newFactory(): ProcedureSettingFactory

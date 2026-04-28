@@ -28,6 +28,7 @@ class UpdateProcedureSettingRequest extends FormRequest
             'time_limit_days' => 'nullable|integer|min:0',
             'time_limit_hours' => 'nullable|integer|min:0',
             'escalation_user_id' => 'nullable|uuid|exists:users,id',
+            'work_flow_id'       => 'nullable|uuid|exists:work_flows,id',
         ];
     }
 

@@ -15,6 +15,7 @@ class CreateProcedureSettingDTO
         public readonly ?int $deadline_days = null,
         public readonly ?int $deadline_hours = null,
         public readonly ?string $escalation_user_id = null,
+        public readonly ?string $work_flow_id = null,
     ) {
     }
 
@@ -29,6 +30,7 @@ class CreateProcedureSettingDTO
             'deadline_days'  => $this->deadline_days,
             'deadline_hours' => $this->deadline_hours,
             'escalation_user_id' => $this->escalation_user_id,
+            'work_flow_id'       => $this->work_flow_id,
         ];
     }
 }
