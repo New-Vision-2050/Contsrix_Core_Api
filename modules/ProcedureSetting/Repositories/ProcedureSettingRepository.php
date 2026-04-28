@@ -6,7 +6,6 @@ namespace Modules\ProcedureSetting\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
 use App\Traits\HasExport;
@@ -32,12 +31,30 @@ class ProcedureSettingRepository extends BaseRepository
 
     public function getProcedureSetting(UuidInterface $id): ProcedureSetting
     {
-        return $this->model->with('steps.employee')->findOrFail($id->toString());
+        return $this->model->with([
+            'steps.employee',
+            'escalationUser:id,name,email,phone',
+        ])->findOrFail($id->toString());
     }
 
     public function createProcedureSetting(array $data): ProcedureSetting
     {
-        return $this->create($data);
+        $model = $this->create($data);
+        $model->load(['escalationUser:id,name,email,phone']);
+
+        return $model;
+    }
+
+    /**
+     * @param array<string, mixed> $conditions
+     */
+    public function list(array $conditions = [], string $orderBy = 'id', string $sortBy = 'asc'): Collection
+    {
+        return $this->model->newQuery()
+            ->where($conditions)
+            ->with(['escalationUser:id,name,email,phone'])
+            ->orderBy($orderBy, $sortBy)
+            ->get();
     }
 
     public function updateProcedureSetting(UuidInterface $id, array $data): bool

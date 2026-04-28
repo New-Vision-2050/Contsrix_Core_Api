@@ -8,8 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('procedure_setting_steps')) {
+            Schema::dropIfExists('procedure_setting_steps');
+        }
         Schema::create('procedure_setting_steps', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->nullable();
             $table->uuid('employee_id')->nullable()->index();
             $table->boolean('is_accept')->default(false);
             $table->boolean('is_approve')->default(false);
