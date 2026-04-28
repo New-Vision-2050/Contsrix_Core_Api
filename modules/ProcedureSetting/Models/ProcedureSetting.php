@@ -53,6 +53,11 @@ class ProcedureSetting extends Model
         return 'company';
     }
 
+    public function getTenantIdColumn(): string
+    {
+        return 'company_id';
+    }
+
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
