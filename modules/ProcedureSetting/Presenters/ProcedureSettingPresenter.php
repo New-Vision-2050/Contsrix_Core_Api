@@ -69,4 +69,24 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'phone' => $user->phone,
         ];
     }
+
+    private function workFlowPayload(): ?array
+    {
+        if ($this->procedureSetting->work_flow_id === null) {
+            return null;
+        }
+
+        $workFlow = $this->procedureSetting->relationLoaded('workFlow')
+            ? $this->procedureSetting->workFlow
+            : $this->procedureSetting->workFlow()->first(['id', 'name']);
+
+        if ($workFlow === null) {
+            return null;
+        }
+
+        return [
+            'id'   => $workFlow->id,
+            'name' => $workFlow->name,
+        ];
+    }
 }

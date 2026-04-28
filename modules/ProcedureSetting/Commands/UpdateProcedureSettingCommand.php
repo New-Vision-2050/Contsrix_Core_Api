@@ -43,6 +43,7 @@ class UpdateProcedureSettingCommand
             'deadline_days',
             'deadline_hours',
             'escalation_user_id',
+            'work_flow_id',
         ];
 
         $data = Arr::only($this->attributes, $keys);
@@ -63,6 +64,10 @@ class UpdateProcedureSettingCommand
 
         if (array_key_exists('escalation_user_id', $data) && $data['escalation_user_id'] !== null) {
             $data['escalation_user_id'] = (string) $data['escalation_user_id'];
+        }
+
+        if (array_key_exists('work_flow_id', $data) && $data['work_flow_id'] !== null) {
+            $data['work_flow_id'] = (string) $data['work_flow_id'];
         }
 
         return $data;

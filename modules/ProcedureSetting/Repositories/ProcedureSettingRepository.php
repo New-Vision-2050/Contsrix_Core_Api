@@ -8,6 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Ramsey\Uuid\UuidInterface;
 use Modules\ProcedureSetting\Models\ProcedureSetting;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use App\Traits\HasExport;
 
 /**
@@ -34,13 +35,23 @@ class ProcedureSettingRepository extends BaseRepository
         return $this->model->with([
             'steps.employee',
             'escalationUser:id,name,email,phone',
+            'workFlow:id,name',
         ])->findOrFail($id->toString());
     }
 
     public function createProcedureSetting(array $data): ProcedureSetting
     {
+        $companyId = $data['company_id'] ?? tenant('id');
+        $hasExplicitWorkFlow = isset($data['work_flow_id'])
+            && $data['work_flow_id'] !== null
+            && $data['work_flow_id'] !== '';
+
+        if (! $hasExplicitWorkFlow && $companyId !== null && $companyId !== '') {
+            $data['work_flow_id'] = WorkFlow::defaultForCompany((string) $companyId)->id;
+        }
+
         $model = $this->create($data);
-        $model->load(['escalationUser:id,name,email,phone']);
+        $model->load(['escalationUser:id,name,email,phone', 'workFlow:id,name']);
 
         return $model;
     }
@@ -52,7 +63,7 @@ class ProcedureSettingRepository extends BaseRepository
     {
         return $this->model->newQuery()
             ->where($conditions)
-            ->with(['escalationUser:id,name,email,phone'])
+            ->with(['escalationUser:id,name,email,phone', 'workFlow:id,name'])
             ->orderBy($orderBy, $sortBy)
             ->get();
     }
