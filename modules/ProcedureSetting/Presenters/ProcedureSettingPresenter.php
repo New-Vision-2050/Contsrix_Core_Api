@@ -25,6 +25,10 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'execute_type' => $this->procedureSetting->execute_type,
             'icon'         => $this->procedureSetting->icon,
             'percentage'   => $this->procedureSetting->percentage,
+            'deadline_days'  => $this->procedureSetting->deadline_days,
+            'deadline_hours' => $this->procedureSetting->deadline_hours,
+            'escalation_user_id' => $this->procedureSetting->escalation_user_id,
+            'escalation_user'    => $this->escalationUserPayload(),
         ];
 
         if (!$isListing && $this->procedureSetting->relationLoaded('steps')) {
@@ -42,5 +46,27 @@ class ProcedureSettingPresenter extends AbstractPresenter
         }
 
         return $data;
+    }
+
+    private function escalationUserPayload(): ?array
+    {
+        if ($this->procedureSetting->escalation_user_id === null) {
+            return null;
+        }
+
+        $user = $this->procedureSetting->relationLoaded('escalationUser')
+            ? $this->procedureSetting->escalationUser
+            : $this->procedureSetting->escalationUser()->first(['id', 'name', 'email', 'phone']);
+
+        if ($user === null) {
+            return null;
+        }
+
+        return [
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+        ];
     }
 }
