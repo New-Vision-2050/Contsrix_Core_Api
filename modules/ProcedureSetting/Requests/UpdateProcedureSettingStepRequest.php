@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 use Modules\ProcedureSetting\Commands\UpdateProcedureSettingStepCommand;
+use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class UpdateProcedureSettingStepRequest extends FormRequest
 {
@@ -111,7 +112,14 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'escalation_user_id' => 'sometimes|nullable|uuid|exists:users,id',
 
-            'action_taker_user_ids'   => 'sometimes|array',
+            'action_taker_user_ids'   => [
+                'sometimes',
+                'array',
+                new ActionTakerUserIdsUniquePerProcedureSetting(
+                    (string) $this->route('procedureSettingId'),
+                    (int) $this->route('stepId'),
+                ),
+            ],
             'action_taker_user_ids.*' => 'uuid|exists:users,id',
             'concerned_user_ids'      => 'sometimes|array',
             'concerned_user_ids.*'    => 'uuid|exists:users,id',

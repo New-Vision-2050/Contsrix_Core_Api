@@ -7,6 +7,7 @@ namespace Modules\ProcedureSetting\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\ProcedureSetting\DTO\CreateProcedureSettingStepDTO;
+use Modules\ProcedureSetting\Rules\ActionTakerUserIdsUniquePerProcedureSetting;
 
 class CreateProcedureSettingStepRequest extends FormRequest
 {
@@ -61,7 +62,11 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
             'escalation_user_id' => 'nullable|uuid|exists:users,id',
 
-            'action_taker_user_ids'   => 'nullable|array',
+            'action_taker_user_ids'   => [
+                'nullable',
+                'array',
+                new ActionTakerUserIdsUniquePerProcedureSetting((string) $this->route('procedureSettingId')),
+            ],
             'action_taker_user_ids.*' => 'uuid|exists:users,id',
             'concerned_user_ids'      => 'nullable|array',
             'concerned_user_ids.*'    => 'uuid|exists:users,id',
