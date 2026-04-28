@@ -33,8 +33,13 @@ return new class extends Migration
             $table->index(['project_owner_type', 'project_owner_id']);
         });
 
-        // FK to management_hierarchies is added in a later migration so it runs after
-        // that table exists (see 2025_03_11_000000_projects_branch_id_foreign_key.php).
+        // Add foreign key constraints after column creation
+        Schema::table('projects', function (Blueprint $table) {
+            $table->foreign('branch_id')
+                ->references('id')
+                ->on('management_hierarchies')
+                ->onDelete('set null');
+        });
     }
 
     /**
@@ -43,6 +48,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('projects', function (Blueprint $table) {
+            // Drop foreign keys first
+            $table->dropForeign(['branch_id']);
+
             // Drop indexes
             $table->dropIndex(['project_owner_type', 'project_owner_id']);
             $table->dropIndex(['contract_id']);

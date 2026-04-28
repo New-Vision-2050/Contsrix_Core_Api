@@ -26,8 +26,8 @@ return new class extends Migration
 
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->foreign('term_setting_id')->references('id')->on('term_settings')->onDelete('set null');
-            // FKs to management_hierarchies: added after that table exists — see
-            // 2025_03_11_000001_add_client_requests_management_hierarchy_foreign_keys.php
+            $table->foreign('branch_id')->references('id')->on('management_hierarchies')->onDelete('set null');
+            $table->foreign('management_id')->references('id')->on('management_hierarchies')->onDelete('set null');
         });
     }
 
