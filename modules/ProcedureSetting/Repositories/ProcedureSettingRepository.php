@@ -33,9 +33,13 @@ class ProcedureSettingRepository extends BaseRepository
     public function getProcedureSetting(UuidInterface $id): ProcedureSetting
     {
         return $this->model->with([
-            'steps.employee',
+            'steps.branch',
+            'steps.management',
+            'steps.escalationUser:id,name,email,phone',
+            'steps.actionTakers.user',
+            'steps.concernedUsers.user',
             'escalationUser:id,name,email,phone',
-            'workFlow:id,name',
+            'workFlow:id,name,company_id',
         ])->findOrFail($id->toString());
     }
 

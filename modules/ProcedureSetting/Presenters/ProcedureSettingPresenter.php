@@ -29,20 +29,14 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'deadline_hours' => $this->procedureSetting->deadline_hours,
             'escalation_user_id' => $this->procedureSetting->escalation_user_id,
             'escalation_user'    => $this->escalationUserPayload(),
+            'work_flow_id'       => $this->procedureSetting->work_flow_id,
+            'work_flow'          => $this->workFlowPayload(),
         ];
 
-        if (!$isListing && $this->procedureSetting->relationLoaded('steps')) {
-            $data['steps'] = $this->procedureSetting->steps->map(function ($step) {
-                return [
-                    'id'                   => $step->id,
-                    'employee_id'          => $step->employee_id,
-                    'is_accept'            => $step->is_accept,
-                    'is_approve'           => $step->is_approve,
-                    'duration'             => $step->duration,
-                    'forms'                => $step->forms, // 'approve', 'accept', or 'financial'
-                    'procedure_setting_id' => $step->procedure_setting_id,
-                ];
-            })->toArray();
+        if (! $isListing && $this->procedureSetting->relationLoaded('steps')) {
+            $data['steps'] = $this->procedureSetting->steps->map(
+                static fn ($step) => (new ProcedureSettingStepPresenter($step))->getData()
+            )->all();
         }
 
         return $data;
@@ -85,8 +79,9 @@ class ProcedureSettingPresenter extends AbstractPresenter
         }
 
         return [
-            'id'   => $workFlow->id,
-            'name' => $workFlow->name,
+            'id'         => $workFlow->id,
+            'name'       => $workFlow->name,
+            'company_id' => $workFlow->company_id ?? null,
         ];
     }
 }
