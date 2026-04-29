@@ -428,7 +428,7 @@ class UserRepository extends BaseRepository
             }
             // Update status if provided (check isset to handle 0 value)
             if (isset($data["status"])) {
-                $user->update(["status" => (string)$data["status"]]);
+                $companyUserCompany->update(["status" => (string)$data["status"]]);
             }
             $userProfessionalData = UserProfessionalData::query()->where(["global_id" => $user->global_company_user_id, "company_id" => $user->company_id])->first();
             if ($userProfessionalData) {
