@@ -7,7 +7,9 @@ namespace Modules\ProcedureSetting\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\WorkFlow;
 
 class WorkFlowForBranchesSeeder extends Seeder
@@ -16,6 +18,11 @@ class WorkFlowForBranchesSeeder extends Seeder
     {
         if (! Schema::hasTable('work_flows') || ! Schema::hasTable('management_hierarchy_work_flow')) {
             $this->command?->warn('Work flow tables are missing. Run ProcedureSetting migrations first.');
+
+            return;
+        }
+        if (! Schema::hasColumn('work_flows', 'type')) {
+            $this->command?->warn('Column [work_flows.type] is missing. Run the latest ProcedureSetting migrations first.');
 
             return;
         }
@@ -35,18 +42,42 @@ class WorkFlowForBranchesSeeder extends Seeder
                 ->groupBy('company_id');
 
             foreach ($groups as $companyId => $branches) {
-                $workFlow = WorkFlow::defaultForCompany((string) $companyId);
-
                 $branchIds = $branches->pluck('id')->filter()->values()->all();
+                foreach (ProcedureSettingType::cases() as $type) {
+                    $workFlowId = DB::table('work_flows')
+                        ->where('company_id', (string) $companyId)
+                        ->where('type', $type->value)
+                        ->value('id');
 
-                $workFlow->managementHierarchies()->syncWithoutDetaching($branchIds);
+                    if (! is_string($workFlowId) || $workFlowId === '') {
+                        $workFlowId = (string) Str::uuid();
+                        $now = now();
 
-                $this->command?->info(sprintf(
-                    'WorkFlow [%s] linked to %d branch(es) for company [%s].',
-                    $workFlow->id,
-                    count($branchIds),
-                    $companyId
-                ));
+                        DB::table('work_flows')->insert([
+                            'id'         => $workFlowId,
+                            'company_id' => (string) $companyId,
+                            'name'       => 'default',
+                            'type'       => $type->value,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    }
+
+                    $workFlow = WorkFlow::query()->find($workFlowId);
+                    if (! $workFlow) {
+                        continue;
+                    }
+
+                    $workFlow->managementHierarchies()->syncWithoutDetaching($branchIds);
+
+                    $this->command?->info(sprintf(
+                        'WorkFlow [%s] (%s) linked to %d branch(es) for company [%s].',
+                        $workFlow->id,
+                        $type->value,
+                        count($branchIds),
+                        $companyId
+                    ));
+                }
             }
         });
 

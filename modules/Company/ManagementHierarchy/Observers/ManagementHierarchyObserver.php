@@ -9,6 +9,7 @@ use Modules\Company\ManagementHierarchy\Models\Branch;
 use Modules\Company\ManagementHierarchy\Models\Management;
 use Illuminate\Support\Facades\Schema;
 use Modules\Attendance\Services\DefaultConstraintService;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Models\WorkFlow;
 
 class ManagementHierarchyObserver
@@ -169,9 +170,15 @@ class ManagementHierarchyObserver
             return;
         }
 
-        $workFlow = WorkFlow::defaultForCompany((string) $managementHierarchy->company_id);
+        $workFlowIds = [];
+        foreach (ProcedureSettingType::cases() as $type) {
+            $workFlowIds[] = WorkFlow::defaultForCompany(
+                (string) $managementHierarchy->company_id,
+                $type->value
+            )->id;
+        }
 
-        $managementHierarchy->workFlows()->syncWithoutDetaching([$workFlow->id]);
+        $managementHierarchy->workFlows()->syncWithoutDetaching($workFlowIds);
     }
 
     protected function detachBranchFromWorkFlows(ManagementHierarchy $managementHierarchy): void
