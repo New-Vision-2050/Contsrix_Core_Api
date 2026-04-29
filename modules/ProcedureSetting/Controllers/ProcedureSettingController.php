@@ -14,6 +14,7 @@ use Modules\ProcedureSetting\Requests\CreateProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\DeleteProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\GetProcedureSettingListRequest;
 use Modules\ProcedureSetting\Requests\GetProcedureSettingRequest;
+use Modules\ProcedureSetting\Requests\ToggleBranchWorkFlowRequest;
 use Modules\ProcedureSetting\Requests\UpdateProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\ProcedureSettingCRUDService;
 use Modules\ProcedureSetting\Exports\ProcedureSettingExport;
@@ -41,6 +42,18 @@ class ProcedureSettingController extends Controller
             return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow) : null);
         }
 
+        if (isset($filters['type']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
+            $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowByType((string) $filters['type']);
+
+            return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow) : null);
+        }
+
+        if (isset($filters['branch_id'])) {
+            $workFlow = $this->procedureSettingService->firstByWorkFlowFilters($filters);
+
+            return Json::item($workFlow ? $this->presentWorkFlow($workFlow) : null);
+        }
+
         $list = $this->procedureSettingService->listByWorkFlow($filters);
 
         return Json::items($list->map(fn (WorkFlow $workFlow): array => $this->presentWorkFlow($workFlow))->values()->all());
@@ -62,6 +75,18 @@ class ProcedureSettingController extends Controller
         $presenter = new ProcedureSettingPresenter($createdItem);
 
         return Json::item($presenter->getData());
+    }
+
+    public function toggleBranchWorkFlows(ToggleBranchWorkFlowRequest $request): JsonResponse
+    {
+        $workFlows = $this->procedureSettingService->toggleBranchDefaultWorkFlows(
+            (int) $request->input('branch_id'),
+            (bool) $request->boolean('checked')
+        );
+
+        $preferred = $workFlows->firstWhere('type', 'client_request') ?? $workFlows->first();
+
+        return Json::item($preferred ? $this->presentWorkFlow($preferred) : null);
     }
 
     public function update(UpdateProcedureSettingRequest $request): JsonResponse
