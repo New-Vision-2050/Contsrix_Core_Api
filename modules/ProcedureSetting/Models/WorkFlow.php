@@ -7,6 +7,7 @@ namespace Modules\ProcedureSetting\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 
@@ -23,11 +24,13 @@ class WorkFlow extends Model
     protected $fillable = [
         'company_id',
         'name',
+        'type',
     ];
 
     protected $casts = [
         'id'         => 'string',
         'company_id' => 'string',
+        'type'       => 'string',
     ];
 
     public function company()
@@ -45,15 +48,24 @@ class WorkFlow extends Model
         )->withTimestamps();
     }
 
+    public function procedureSettings()
+    {
+        return $this->hasMany(ProcedureSetting::class, 'work_flow_id');
+    }
+
     /**
      * Default workflow per company (aligned with {@see \Modules\ProcedureSetting\Database\Seeders\WorkFlowForBranchesSeeder}).
      */
-    public static function defaultForCompany(string $companyId): self
+    public static function defaultForCompany(
+        string $companyId,
+        string $type = ProcedureSettingType::ClientRequest->value
+    ): self
     {
         return static::query()->firstOrCreate(
             [
                 'company_id' => $companyId,
                 'name'       => 'default',
+                'type'       => $type,
             ],
             ['id' => (string) Str::uuid()],
         );
