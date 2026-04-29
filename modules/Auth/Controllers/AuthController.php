@@ -111,7 +111,7 @@ class AuthController extends Controller
     public function getLoginWays(GetLoginWaysRequest $request)
     {
         $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
-//        $companyUserCompany = $user->companyUserCompanies->where("company_id", tenant("id"))->first();
+        $companyUserCompany = $user->companyUserCompanies;
 //        if ($companyUserCompany->status == 0)
 //            return Json::error("user is not active");
 
@@ -121,7 +121,8 @@ class AuthController extends Controller
             "login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step, $user))->getData(),
             "token" => $token,
             "can_set_pass" => $canSetPass,
-            "first_login"=> $firstLogin
+            "first_login"=> $firstLogin,
+            "company_user_company"=> $companyUserCompany
         ]);
     }
 
