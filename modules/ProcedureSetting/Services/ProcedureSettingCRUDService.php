@@ -51,9 +51,9 @@ class ProcedureSettingCRUDService
         return $this->repository->getDefaultWorkFlowByType($type);
     }
 
-    public function toggleBranchDefaultWorkFlows(int $branchId, bool $checked): Collection
+    public function toggleBranchDefaultWorkFlows(int $branchId, bool $checked, string $type): ?WorkFlow
     {
-        return $this->repository->toggleBranchDefaultWorkFlows($branchId, $checked);
+        return $this->repository->toggleBranchDefaultWorkFlows($branchId, $checked, $type);
     }
 
     public function get(UuidInterface $id): ProcedureSetting

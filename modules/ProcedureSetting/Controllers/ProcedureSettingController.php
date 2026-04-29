@@ -79,14 +79,15 @@ class ProcedureSettingController extends Controller
 
     public function toggleBranchWorkFlows(ToggleBranchWorkFlowRequest $request): JsonResponse
     {
-        $workFlows = $this->procedureSettingService->toggleBranchDefaultWorkFlows(
-            (int) $request->input('branch_id'),
-            (bool) $request->boolean('checked')
+        $validated = $request->validated();
+
+        $workFlow = $this->procedureSettingService->toggleBranchDefaultWorkFlows(
+            (int) $validated['branch_id'],
+            (bool) $validated['checked'],
+            (string) $validated['type'],
         );
 
-        $preferred = $workFlows->firstWhere('type', 'client_request') ?? $workFlows->first();
-
-        return Json::item($preferred ? $this->presentWorkFlow($preferred) : null);
+        return Json::item($workFlow ? $this->presentWorkFlow($workFlow) : null);
     }
 
     public function update(UpdateProcedureSettingRequest $request): JsonResponse

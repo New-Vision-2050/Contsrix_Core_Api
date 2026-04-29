@@ -168,7 +168,7 @@ class ProcedureSettingRepository extends BaseRepository
         return $query->orderBy('id')->first();
     }
 
-    public function toggleBranchDefaultWorkFlows(int $branchId, bool $checked): \Illuminate\Support\Collection
+    public function toggleBranchDefaultWorkFlows(int $branchId, bool $checked, string $type): ?WorkFlow
     {
         $branch = ManagementHierarchy::query()
             ->where('id', $branchId)
@@ -176,62 +176,85 @@ class ProcedureSettingRepository extends BaseRepository
             ->whereNotNull('company_id')
             ->firstOrFail(['id', 'company_id']);
 
-        return DB::transaction(function () use ($branch, $checked) {
-            if ($checked) {
-                // Keep only default workflows when checked = true.
+        DB::transaction(function () use ($branch, $checked, $type): void {
+            $companyId = (string) $branch->company_id;
+
+            $workflowIdsForType = WorkFlow::query()
+                ->where('company_id', $companyId)
+                ->where('type', $type)
+                ->pluck('id')
+                ->all();
+
+            if ($workflowIdsForType !== []) {
                 DB::table('management_hierarchy_work_flow')
                     ->where('management_hierarchy_id', (int) $branch->id)
+                    ->whereIn('work_flow_id', $workflowIdsForType, 'and', false)
                     ->delete();
             }
 
-            foreach (ProcedureSettingType::cases() as $type) {
-                $default = WorkFlow::defaultForCompany((string) $branch->company_id, $type->value);
-
-                if ($checked) {
-                    DB::table('management_hierarchy_work_flow')->insertOrIgnore([
-                        'management_hierarchy_id' => (int) $branch->id,
-                        'work_flow_id'            => $default->id,
-                        'created_at'              => now(),
-                        'updated_at'              => now(),
-                    ]);
-                    continue;
-                }
-
-                DB::table('management_hierarchy_work_flow')
-                    ->where('management_hierarchy_id', (int) $branch->id)
-                    ->where('work_flow_id', $default->id)
-                    ->delete();
-
-                $branchSpecific = WorkFlow::query()->firstOrCreate(
-                    [
-                        'company_id' => (string) $branch->company_id,
-                        'type'       => $type->value,
-                        'name'       => 'branch_' . $branch->id,
-                    ],
-                    ['id' => (string) \Illuminate\Support\Str::uuid()]
-                );
+            if ($checked) {
+                $default = WorkFlow::defaultForCompany($companyId, $type);
 
                 DB::table('management_hierarchy_work_flow')->insertOrIgnore([
                     'management_hierarchy_id' => (int) $branch->id,
-                    'work_flow_id'            => $branchSpecific->id,
+                    'work_flow_id'            => $default->id,
                     'created_at'              => now(),
                     'updated_at'              => now(),
                 ]);
+
+                return;
             }
 
+            $branchSpecific = WorkFlow::query()->firstOrCreate(
+                [
+                    'company_id' => $companyId,
+                    'type'       => $type,
+                    'name'       => 'branch_' . $branch->id,
+                ],
+                ['id' => (string) \Illuminate\Support\Str::uuid()]
+            );
+
+            DB::table('management_hierarchy_work_flow')->insertOrIgnore([
+                'management_hierarchy_id' => (int) $branch->id,
+                'work_flow_id'            => $branchSpecific->id,
+                'created_at'              => now(),
+                'updated_at'              => now(),
+            ]);
+        });
+
+        $companyId = (string) $branch->company_id;
+
+        if ($checked) {
             return WorkFlow::query()
                 ->with([
                     'managementHierarchies:id,name,type,company_id',
                     'procedureSettings.escalationUser:id,name,email,phone',
                     'procedureSettings.workFlow:id,name,company_id',
                 ])
+                ->where('company_id', $companyId)
+                ->where('type', $type)
+                ->where('name', 'default')
                 ->whereHas('managementHierarchies', function ($q) use ($branch): void {
                     $q->where('management_hierarchies.id', (int) $branch->id);
                 })
-                ->orderBy('name')
-                ->orderBy('type')
-                ->get();
-        });
+                ->orderBy('id')
+                ->first();
+        }
+
+        return WorkFlow::query()
+            ->with([
+                'managementHierarchies:id,name,type,company_id',
+                'procedureSettings.escalationUser:id,name,email,phone',
+                'procedureSettings.workFlow:id,name,company_id',
+            ])
+            ->where('company_id', $companyId)
+            ->where('type', $type)
+            ->where('name', 'branch_' . $branch->id)
+            ->whereHas('managementHierarchies', function ($q) use ($branch): void {
+                $q->where('management_hierarchies.id', (int) $branch->id);
+            })
+            ->orderBy('id')
+            ->first();
     }
 
     public function updateProcedureSetting(UuidInterface $id, array $data): bool
