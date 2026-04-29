@@ -36,9 +36,24 @@ class ProcedureSettingCRUDService
         return $this->repository->listByWorkFlow($filters);
     }
 
+    public function firstByWorkFlowFilters(array $filters = []): ?WorkFlow
+    {
+        return $this->repository->firstByWorkFlowFilters($filters);
+    }
+
     public function getDefaultWorkFlowForList(): ?WorkFlow
     {
         return $this->repository->getDefaultWorkFlowForList();
+    }
+
+    public function getDefaultWorkFlowByType(string $type): ?WorkFlow
+    {
+        return $this->repository->getDefaultWorkFlowByType($type);
+    }
+
+    public function toggleBranchDefaultWorkFlows(int $branchId, bool $checked): Collection
+    {
+        return $this->repository->toggleBranchDefaultWorkFlows($branchId, $checked);
     }
 
     public function get(UuidInterface $id): ProcedureSetting

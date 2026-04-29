@@ -7,6 +7,7 @@ use Modules\ProcedureSetting\Controllers\ProcedureSettingStepController;
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [ProcedureSettingController::class, 'index']);
     Route::post('/', [ProcedureSettingController::class, 'store']);
+    Route::post('/work_flows', [ProcedureSettingController::class, 'toggleBranchWorkFlows']);
     Route::post('/export', [ProcedureSettingController::class, 'export']);
 
     Route::get('/{id}', [ProcedureSettingController::class, 'show']);
