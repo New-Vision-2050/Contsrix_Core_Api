@@ -122,7 +122,8 @@ class AuthController extends Controller
             "token" => $token,
             "can_set_pass" => $canSetPass,
             "first_login"=> $firstLogin,
-            "company_user_company"=> $companyUserCompany
+            "company_user_company"=> $companyUserCompany,
+            "tenant"=>tenant("id")
         ]);
     }
 
