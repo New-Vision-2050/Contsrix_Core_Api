@@ -156,11 +156,4 @@ class AttendanceConstraintFilter extends SearchModelFilter
     {
         return $this->whereJsonContains("config->{$key}", $value);
     }
-
-    public function employeeStatus($status)
-    {
-        return $this->whereHas('users', function ($query) use ($status) {
-            $query->whereCompanyUserCompanyStatus($status, \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
-        });
-    }
 }
