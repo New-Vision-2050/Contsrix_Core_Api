@@ -95,12 +95,12 @@ class ReportEmployeeQueryService
             return;
         }
 
-        // Contract-type slugs are string keys that map to `job_types.code`
+        // Contract-type slugs are string keys that map to `job_types.type`
         // (e.g. "full_time"). The schema doesn't yet enforce this mapping, so
         // callers that store contract types on a dedicated column can layer
         // their own rules on top of the query.
         $query->whereHas('userProfessionalData.jobType', function ($q) use ($s) {
-            $q->whereIn('code', $s->contractTypeIds);
+            $q->whereIn('type', $s->contractTypeIds);
         });
     }
 
