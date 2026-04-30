@@ -39,29 +39,56 @@ class ReportTemplateCRUDService
 
     public function create(CreateReportTemplateDTO $dto): ReportTemplate
     {
-        return $this->repository->create([
+        $template = $this->repository->create([
             'id'          => Uuid::uuid4()->toString(),
             'company_id'  => tenant('id'),
             'created_by'  => Auth::id(),
-            'name'        => $dto->name,
-            'description' => $dto->description,
             'config'      => $dto->config->toArray(),
             'is_active'   => true,
         ]);
+
+        // Set translations using HasTranslations trait
+        if (is_array($dto->name)) {
+            foreach ($dto->name as $locale => $value) {
+                $template->setTranslation('name', $locale, $value);
+            }
+        }
+        if (is_array($dto->description)) {
+            foreach ($dto->description as $locale => $value) {
+                $template->setTranslation('description', $locale, $value);
+            }
+        }
+        $template->save();
+
+        return $template->fresh();
     }
 
     public function update(UpdateReportTemplateDTO $dto): ReportTemplate
     {
-        $data = [
-            'name'        => $dto->name,
-            'description' => $dto->description,
-            'config'      => $dto->config->toArray(),
-        ];
+        $data = [];
+        if ($dto->config !== null) {
+            $data['config'] = $dto->config->toArray();
+        }
         if ($dto->isActive !== null) {
             $data['is_active'] = $dto->isActive;
         }
 
-        return $this->repository->updateTemplate($dto->id, $data);
+        $template = $this->repository->updateTemplate($dto->id, $data);
+
+        // Set translations using HasTranslations trait
+        if (is_array($dto->name)) {
+            foreach ($dto->name as $locale => $value) {
+                $template->setTranslation('name', $locale, $value);
+            }
+        }
+        if (is_array($dto->description)) {
+            foreach ($dto->description as $locale => $value) {
+                $template->setTranslation('description', $locale, $value);
+            }
+        }
+        $template->save();
+
+        return $template->fresh();
     }
 
     public function delete(UuidInterface $id): bool

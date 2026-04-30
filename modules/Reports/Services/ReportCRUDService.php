@@ -50,7 +50,6 @@ class ReportCRUDService
             'company_id'        => tenant('id'),
             'created_by'        => Auth::id(),
             'template_id'       => $dto->templateId,
-            'name'              => $name,
             'report_types'      => $config->step1->reportTypeIds,
             'period_type'       => $config->step1->periodType,
             'year'              => $config->step1->year,
@@ -66,6 +65,14 @@ class ReportCRUDService
             'config'            => $config->toArray(),
             'status'            => ReportStatus::PENDING,
         ]);
+
+        // Set translations using HasTranslations trait
+        if (is_array($name)) {
+            foreach ($name as $locale => $value) {
+                $report->setTranslation('name', $locale, $value);
+            }
+            $report->save();
+        }
 
         GenerateReportJob::dispatch($report->id, tenant('id'));
 

@@ -62,7 +62,6 @@ class Report extends Model
         'company_id',
         'created_by',
         'template_id',
-        'name',
         'report_types',
         'period_type',
         'year',
@@ -82,6 +81,7 @@ class Report extends Model
         'file_size',
         'generated_at',
         'error_message',
+        'name'
     ];
 
     protected $casts = [
