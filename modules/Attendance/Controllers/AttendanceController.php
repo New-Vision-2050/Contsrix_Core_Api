@@ -225,13 +225,11 @@ class AttendanceController extends Controller
     /**
      * Get attendance summary
      */
-    public function getSummary(Request $request): JsonResponse
+    public function getSummary(FilterAttendanceRequest $request): JsonResponse
     {
-        $userId = $request->input('user_id', $request->user()->id);
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        $filterDTO = $request->createFilterAttendanceDTO(Auth::user()->company_id);
 
-        $summary = $this->attendanceService->getAttendanceSummary($userId, $startDate, $endDate);
+        $summary = $this->attendanceService->getAttendanceSummary($filterDTO->toArray());
 
         return Json::item($summary, message: 'Attendance summary retrieved successfully');
     }
