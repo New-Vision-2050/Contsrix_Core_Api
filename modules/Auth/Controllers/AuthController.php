@@ -111,7 +111,7 @@ class AuthController extends Controller
     public function getLoginWays(GetLoginWaysRequest $request)
     {
         $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
-        $companyUserCompany = $user->companyUserCompanies;
+        $companyUserCompany = $user->companyUserCompanies?->where("company_id", tenant("id"))?->first();
         if ($companyUserCompany && $companyUserCompany->getRawOriginal("status") == 0)
             return Json::error("user is not active");
 
