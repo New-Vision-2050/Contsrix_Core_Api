@@ -7,6 +7,8 @@ namespace Modules\ProcedureSetting\Repositories;
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedUser;
 
 /**
  * @property ProcedureSettingStep $model
@@ -14,6 +16,14 @@ use Modules\ProcedureSetting\Models\ProcedureSettingStep;
  */
 class ProcedureSettingStepRepository extends BaseRepository
 {
+    private const STEP_WITH = [
+        'branch',
+        'management',
+        'escalationUser',
+        'actionTakers.user',
+        'concernedUsers.user',
+    ];
+
     public function __construct(ProcedureSettingStep $model)
     {
         parent::__construct($model);
@@ -22,7 +32,7 @@ class ProcedureSettingStepRepository extends BaseRepository
     public function getStepsByProcedureSettingId(string $procedureSettingId): Collection
     {
         return $this->model
-            ->with('employee')
+            ->with(self::STEP_WITH)
             ->where('procedure_setting_id', $procedureSettingId)
             ->orderBy('id')
             ->get();
@@ -30,21 +40,94 @@ class ProcedureSettingStepRepository extends BaseRepository
 
     public function getProcedureSettingStep(int $id): ProcedureSettingStep
     {
-        return $this->model->with('employee')->findOrFail($id);
+        return $this->model->with(self::STEP_WITH)->findOrFail($id);
     }
 
     public function createProcedureSettingStep(array $data): ProcedureSettingStep
     {
-        return $this->create($data);
+        [$syncAction, $syncConcerned, $actionIds, $concernedIds, $payload] = $this->splitUserSyncPayload($data);
+
+        $model = $this->create($payload);
+        $model->refresh();
+
+        if ($syncAction) {
+            $this->replaceActionTakers($model, (array) $actionIds);
+        }
+        if ($syncConcerned) {
+            $this->replaceConcernedUsers($model, (array) $concernedIds);
+        }
+
+        return $model->load(self::STEP_WITH);
     }
 
     public function updateProcedureSettingStep(int $id, array $data): bool
     {
-        return $this->update($id, $data);
+        [$syncAction, $syncConcerned, $actionIds, $concernedIds, $payload] = $this->splitUserSyncPayload($data);
+
+        if ($payload !== [] && ! $this->update($id, $payload)) {
+            return false;
+        }
+
+        $model = $this->model->newQuery()->findOrFail($id);
+
+        if ($syncAction) {
+            $this->replaceActionTakers($model, (array) $actionIds);
+        }
+        if ($syncConcerned) {
+            $this->replaceConcernedUsers($model, (array) $concernedIds);
+        }
+
+        return true;
     }
 
     public function deleteProcedureSettingStep(int $id): bool
     {
         return $this->delete($id);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array{0: bool, 1: bool, 2: mixed, 3: mixed, 4: array<string, mixed>}
+     */
+    private function splitUserSyncPayload(array $data): array
+    {
+        $syncAction = array_key_exists('action_taker_user_ids', $data);
+        $syncConcerned = array_key_exists('concerned_user_ids', $data);
+        $actionIds = $data['action_taker_user_ids'] ?? null;
+        $concernedIds = $data['concerned_user_ids'] ?? null;
+
+        unset($data['action_taker_user_ids'], $data['concerned_user_ids']);
+
+        return [$syncAction, $syncConcerned, $actionIds, $concernedIds, $data];
+    }
+
+    private function replaceActionTakers(ProcedureSettingStep $step, array $userIds): void
+    {
+        ProcedureSettingStepActionTaker::query()
+            ->where('procedure_setting_step_id', $step->id)
+            ->delete();
+
+        foreach (array_unique(array_values(array_filter($userIds, static fn ($id) => is_string($id) && $id !== ''))) as $userId) {
+            ProcedureSettingStepActionTaker::query()->create([
+                'procedure_setting_step_id' => $step->id,
+                'user_id'                   => $userId,
+                'company_id'                => $step->company_id,
+            ]);
+        }
+    }
+
+    private function replaceConcernedUsers(ProcedureSettingStep $step, array $userIds): void
+    {
+        ProcedureSettingStepConcernedUser::query()
+            ->where('procedure_setting_step_id', $step->id)
+            ->delete();
+
+        foreach (array_unique(array_values(array_filter($userIds, static fn ($id) => is_string($id) && $id !== ''))) as $userId) {
+            ProcedureSettingStepConcernedUser::query()->create([
+                'procedure_setting_step_id' => $step->id,
+                'user_id'                   => $userId,
+                'company_id'                => $step->company_id,
+            ]);
+        }
     }
 }

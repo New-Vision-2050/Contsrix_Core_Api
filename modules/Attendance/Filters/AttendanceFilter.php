@@ -241,4 +241,11 @@ class AttendanceFilter extends SearchModelFilter
            $query->where('constraint_snapshot->id', $constraintId);
         });
     }
+
+    public function employeeStatus($status)
+    {
+        return $this->whereHas('user', function ($query) use ($status) {
+            $query->whereCompanyUserCompanyStatus($status, \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
+        });
+    }
 }

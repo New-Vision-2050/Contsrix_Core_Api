@@ -283,4 +283,22 @@ class User extends Authenticatable implements JWTSubject, Auditable
         $this->hasMany(\Modules\ClientRequest\Models\ClientRequest::class,"client_id","id")->where("client_type","individual");
     }
 
+    /**
+     * Scope to filter users by company user company status and role
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $status
+     * @param int|null $role
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeWhereCompanyUserCompanyStatus($query, $status = 1, ?int $role = null)
+    {
+        return $query->whereHas('companyUserCompanies', function ($q) use ($status, $role) {
+            $q->where('status', $status)->where("company_id", tenant("id"));
+            if ($role !== null) {
+                $q->where('role', $role);
+            }
+        });
+    }
+
 }

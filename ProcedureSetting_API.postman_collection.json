@@ -117,7 +117,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Client Request Approval\",\n  \"type\": \"client_request\",\n  \"execute_type\": \"sequence\",\n  \"icon\": \"approval-icon\",\n  \"percentage\": 50\n}",
+              "raw": "{\n  \"name\": \"إجراء اعتماد العقود\",\n  \"type\": \"client_request\",\n  \"execute_type\": \"sequence\",\n  \"icon\": \"folder-archive\",\n  \"percentage\": 20,\n  \"deadline_days\": 29,\n  \"deadline_hours\": 20,\n  \"escalation_user_id\": \"550e8400-e29b-41d4-a716-446655440001\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -129,7 +129,7 @@
               "host": ["{{url}}"],
               "path": ["procedure-settings"]
             },
-            "description": "Create a new procedure setting.\n\ntype options: client_request | price_offer | contract\nexecute_type options: parallel | sequence\npercentage: 0-100"
+            "description": "POST {{url}}/procedure-settings\n\n**type:** client_request | price_offer | contract\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)"
           },
           "response": [
             {

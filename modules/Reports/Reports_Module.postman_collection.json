@@ -1,0 +1,472 @@
+{
+  "info": {
+    "name": "Reports Module",
+    "_postman_id": "reports-module-v1",
+    "description": "Complete CRUD for generated Reports, reusable Report Templates, and the wizard lookup catalogue.\n\nVariables:\n- `base_url`   e.g. http://localhost:8000\n- `token`      JWT from the auth endpoint\n- `report_id`  UUID of a created Report\n- `template_id` UUID of a created Template",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",    "value": "http://localhost:8000", "type": "string" },
+    { "key": "token",       "value": "PASTE_JWT_HERE",        "type": "string" },
+    { "key": "company_id",  "value": "PASTE_COMPANY_UUID",    "type": "string" },
+    { "key": "report_id",   "value": "",                      "type": "string" },
+    { "key": "template_id", "value": "",                      "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+
+    {
+      "name": "Lookups",
+      "item": [
+        {
+          "name": "GET All Wizard Lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}", "description": "Tenant header (if required by your setup)" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/lookups",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "lookups"]
+            },
+            "description": "Returns every dropdown / checkbox option for all 5 wizard steps:\nreport_types, period_types, export_formats, employee_statuses, contract_types,\nattendance_data_types, salary_components, salary_deductions, visual_elements, etc."
+          },
+          "response": [
+            {
+              "name": "200 OK – full lookup catalogue",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"data\": {\n    \"report_types\": [\n      { \"id\": \"attendance_absence\",  \"label\": { \"ar\": \"الحضور والغياب\", \"en\": \"Attendance & Absence\" } },\n      { \"id\": \"leaves\",             \"label\": { \"ar\": \"الإجازات\",       \"en\": \"Leaves\" } },\n      { \"id\": \"overtime\",           \"label\": { \"ar\": \"الساعات الإضافية\", \"en\": \"Overtime\" } },\n      { \"id\": \"monthly_performance\",\"label\": { \"ar\": \"الأداء الشهري\",  \"en\": \"Monthly Performance\" } },\n      { \"id\": \"salaries\",           \"label\": { \"ar\": \"الرواتب\",        \"en\": \"Salaries\" } },\n      { \"id\": \"lateness\",           \"label\": { \"ar\": \"التأخيرات\",      \"en\": \"Lateness\" } },\n      { \"id\": \"deductions\",         \"label\": { \"ar\": \"الخصومات\",       \"en\": \"Deductions\" } },\n      { \"id\": \"branches_comparison\",\"label\": { \"ar\": \"مقارنة الفروع\",  \"en\": \"Branches Comparison\" } }\n    ],\n    \"period_types\": [\n      { \"id\": \"monthly\",   \"label\": { \"ar\": \"شهري\",   \"en\": \"Monthly\" } },\n      { \"id\": \"weekly\",    \"label\": { \"ar\": \"أسبوعي\", \"en\": \"Weekly\" } },\n      { \"id\": \"quarterly\", \"label\": { \"ar\": \"ربعي\",   \"en\": \"Quarterly\" } },\n      { \"id\": \"yearly\",    \"label\": { \"ar\": \"سنوي\",   \"en\": \"Yearly\" } }\n    ],\n    \"export_formats\": [\n      { \"id\": \"pdf\",   \"label\": { \"ar\": \"PDF\",   \"en\": \"PDF\" } },\n      { \"id\": \"excel\", \"label\": { \"ar\": \"Excel\", \"en\": \"Excel\" } },\n      { \"id\": \"csv\",   \"label\": { \"ar\": \"CSV\",   \"en\": \"CSV\" } }\n    ]\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "GET List Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports"],
+              "query": [
+                { "key": "page",        "value": "1" },
+                { "key": "per_page",    "value": "10" },
+                { "key": "status",      "value": "ready",              "disabled": true, "description": "pending|processing|ready|failed" },
+                { "key": "report_type", "value": "attendance_absence",  "disabled": true },
+                { "key": "period_type", "value": "monthly",             "disabled": true },
+                { "key": "year",        "value": "2026",                "disabled": true },
+                { "key": "month",       "value": "5",                   "disabled": true },
+                { "key": "date_from",   "value": "2026-01-01",          "disabled": true },
+                { "key": "date_to",     "value": "2026-12-31",          "disabled": true },
+                { "key": "template_id", "value": "{{template_id}}",     "disabled": true },
+                { "key": "search",      "value": "attendance",          "disabled": true }
+              ]
+            },
+            "description": "Returns the paginated reports table (id, name, report_types, period, status, created_at)."
+          },
+          "response": [
+            {
+              "name": "200 OK – paginated list",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": { \"ar\": \"تقرير الحضور - 05/2026\", \"en\": \"Attendance & Absence - 05/2026\" },\n      \"name_ar\": \"تقرير الحضور - 05/2026\",\n      \"name_en\": \"Attendance & Absence - 05/2026\",\n      \"report_types\": [\"attendance_absence\", \"leaves\"],\n      \"period_type\": \"monthly\",\n      \"year\": 2026,\n      \"month\": 5,\n      \"export_format\": \"excel\",\n      \"status\": \"ready\",\n      \"created_at\": \"2026-04-30T10:00:00.000000Z\",\n      \"generated_at\": \"2026-04-30T10:01:30.000000Z\"\n    }\n  ],\n  \"pagination\": { \"current_page\": 1, \"per_page\": 10, \"total\": 1, \"last_page\": 1 }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "POST Create Report (full wizard payload)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('report_id', json.data.id);",
+                  "  console.log('report_id set:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": {\n    \"ar\": \"تقرير الحضور والإجازات - مايو 2026\",\n    \"en\": \"Attendance & Leaves Report - May 2026\"\n  },\n  \"template_id\": null,\n  \"config\": {\n    \"step1\": {\n      \"reportTypeIds\": [\"attendance_absence\", \"leaves\"],\n      \"periodType\": \"monthly\",\n      \"year\": 2026,\n      \"month\": 5,\n      \"week\": null,\n      \"quarter\": null,\n      \"exportFormat\": \"excel\",\n      \"reportLanguage\": \"ar\",\n      \"paperSize\": \"A4\",\n      \"printOrientation\": \"portrait\"\n    },\n    \"step2\": {\n      \"employeeStatus\": \"active\",\n      \"location\": null,\n      \"management\": null,\n      \"department\": null,\n      \"jobTitle\": null,\n      \"contractTypeIds\": [\"full_time\", \"part_time\"],\n      \"nationality\": null,\n      \"gender\": null\n    },\n    \"step3\": {\n      \"attendanceDataTypeIds\": [\"attendance_days\", \"absence_days\", \"delays\", \"overtime\"],\n      \"attendancePattern\": \"all\",\n      \"attendanceRateMin\": \"no_filter\",\n      \"delayLimitMinutes\": \"no_filter\",\n      \"minOvertime\": \"no_filter\",\n      \"includeEntryExitTime\": true,\n      \"includeShiftName\": true,\n      \"includeAttendanceNotes\": false,\n      \"calculateTotalWorkHours\": true,\n      \"showPreviousMonthComparison\": false\n    },\n    \"step4\": {\n      \"salaryComponentIds\": [\"basic_salary\", \"transportation\"],\n      \"deductionIds\": [\"absence_deduction\", \"delay_deduction\"],\n      \"disbursementStatus\": \"all\",\n      \"netSalaryOnly\": false,\n      \"compareWithPreviousMonth\": false,\n      \"employeeDetailsSeparatePage\": false,\n      \"addTotalSummaryEnd\": true\n    },\n    \"step5\": {\n      \"mainSortBy\": \"employee_name_alpha\",\n      \"sortDirection\": \"asc\",\n      \"groupBy\": \"department\",\n      \"employeesPerPage\": \"25\",\n      \"visualElementIds\": [\"attendance_pct_chart\", \"executive_summary_table\"],\n      \"autoEmail\": false,\n      \"copyToManager\": false,\n      \"monthlyScheduling\": false,\n      \"companyHeaderFooter\": true,\n      \"digitalSignature\": false,\n      \"recipientEmails\": \"\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports"]
+            },
+            "description": "Creates a Report and immediately dispatches GenerateReportJob to the queue.\nStatus starts as `pending` → `processing` → `ready` (or `failed`).\nThe `report_id` variable is set automatically from the test script."
+          },
+          "response": [
+            {
+              "name": "200 OK – report created (status: pending)",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": { \"ar\": \"تقرير الحضور والإجازات - مايو 2026\", \"en\": \"Attendance & Leaves Report - May 2026\" },\n    \"name_ar\": \"تقرير الحضور والإجازات - مايو 2026\",\n    \"name_en\": \"Attendance & Leaves Report - May 2026\",\n    \"company_id\": \"company-uuid\",\n    \"created_by\": \"user-uuid\",\n    \"template_id\": null,\n    \"report_types\": [\"attendance_absence\", \"leaves\"],\n    \"period_type\": \"monthly\",\n    \"year\": 2026,\n    \"month\": 5,\n    \"week\": null,\n    \"quarter\": null,\n    \"period_start\": \"2026-05-01\",\n    \"period_end\": \"2026-05-31\",\n    \"export_format\": \"excel\",\n    \"language\": \"ar\",\n    \"paper_size\": \"A4\",\n    \"print_orientation\": \"portrait\",\n    \"config\": { \"step1\": {}, \"step2\": {}, \"step3\": {}, \"step4\": {}, \"step5\": {} },\n    \"status\": \"pending\",\n    \"file_path\": null,\n    \"file_size\": null,\n    \"generated_at\": null,\n    \"error_message\": null,\n    \"created_at\": \"2026-04-30T10:00:00.000000Z\",\n    \"updated_at\": \"2026-04-30T10:00:00.000000Z\"\n  }\n}"
+            },
+            {
+              "name": "422 Unprocessable – validation error",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "body": "{\n  \"message\": \"The given data was invalid.\",\n  \"errors\": {\n    \"config.step1.reportTypeIds\": [\"The config.step1.report type ids field is required.\"],\n    \"config.step1.periodType\": [\"The selected config.step1.period type is invalid.\"]\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "POST Create Report — PDF, All Types",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"step1\": {\n      \"reportTypeIds\": [\n        \"attendance_absence\",\n        \"leaves\",\n        \"overtime\",\n        \"monthly_performance\",\n        \"salaries\",\n        \"lateness\",\n        \"deductions\",\n        \"branches_comparison\"\n      ],\n      \"periodType\": \"quarterly\",\n      \"year\": 2026,\n      \"month\": null,\n      \"week\": null,\n      \"quarter\": 2,\n      \"exportFormat\": \"pdf\",\n      \"reportLanguage\": \"en\",\n      \"paperSize\": \"A4\",\n      \"printOrientation\": \"landscape\"\n    },\n    \"step2\": {\n      \"employeeStatus\": \"all\",\n      \"location\": null,\n      \"management\": null,\n      \"department\": null,\n      \"jobTitle\": null,\n      \"contractTypeIds\": [],\n      \"nationality\": null,\n      \"gender\": null\n    },\n    \"step3\": {\n      \"attendanceDataTypeIds\": [\n        \"attendance_days\",\n        \"absence_days\",\n        \"delays\",\n        \"overtime\",\n        \"taken_leaves\",\n        \"unpaid_leave\",\n        \"sick_leaves\",\n        \"early_departure\"\n      ],\n      \"attendancePattern\": \"all\",\n      \"attendanceRateMin\": \"seventy\",\n      \"delayLimitMinutes\": \"five_min_or_more\",\n      \"minOvertime\": \"one_hour_or_more\",\n      \"includeEntryExitTime\": true,\n      \"includeShiftName\": true,\n      \"includeAttendanceNotes\": true,\n      \"calculateTotalWorkHours\": true,\n      \"showPreviousMonthComparison\": true\n    },\n    \"step4\": {\n      \"salaryComponentIds\": [\n        \"basic_salary\",\n        \"transportation\",\n        \"phone\",\n        \"overtime_allowance\",\n        \"housing\",\n        \"food\",\n        \"representation\",\n        \"bonuses\"\n      ],\n      \"deductionIds\": [\n        \"absence_deduction\",\n        \"social_insurance\",\n        \"disciplinary\",\n        \"delay_deduction\",\n        \"advances_loans\",\n        \"income_tax\"\n      ],\n      \"disbursementStatus\": \"disbursed\",\n      \"netSalaryOnly\": false,\n      \"compareWithPreviousMonth\": true,\n      \"employeeDetailsSeparatePage\": false,\n      \"addTotalSummaryEnd\": true\n    },\n    \"step5\": {\n      \"mainSortBy\": \"department\",\n      \"sortDirection\": \"asc\",\n      \"groupBy\": \"branch\",\n      \"employeesPerPage\": \"50\",\n      \"visualElementIds\": [\n        \"attendance_pct_chart\",\n        \"weekly_delays_chart\",\n        \"executive_summary_table\",\n        \"salary_distribution_chart\",\n        \"branch_comparison_chart\",\n        \"attendance_heatmap\"\n      ],\n      \"autoEmail\": true,\n      \"copyToManager\": true,\n      \"monthlyScheduling\": false,\n      \"companyHeaderFooter\": true,\n      \"digitalSignature\": true,\n      \"recipientEmails\": \"hr@company.com, manager@company.com\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports"]
+            },
+            "description": "All 8 report types, quarterly period, PDF output, all salary/deduction components, auto-email enabled."
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST Create Report — Weekly CSV",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"step1\": {\n      \"reportTypeIds\": [\"attendance_absence\", \"lateness\"],\n      \"periodType\": \"weekly\",\n      \"year\": 2026,\n      \"month\": null,\n      \"week\": 18,\n      \"quarter\": null,\n      \"exportFormat\": \"csv\",\n      \"reportLanguage\": \"ar\",\n      \"paperSize\": \"A4\",\n      \"printOrientation\": \"portrait\"\n    },\n    \"step2\": {\n      \"employeeStatus\": \"active\",\n      \"location\": null,\n      \"management\": null,\n      \"department\": null,\n      \"jobTitle\": null,\n      \"contractTypeIds\": [\"full_time\"],\n      \"nationality\": null,\n      \"gender\": \"male\"\n    },\n    \"step3\": {\n      \"attendanceDataTypeIds\": [\"attendance_days\", \"delays\", \"absence_days\"],\n      \"attendancePattern\": \"late_only\",\n      \"attendanceRateMin\": \"no_filter\",\n      \"delayLimitMinutes\": \"fifteen_min_or_more\",\n      \"minOvertime\": \"no_filter\",\n      \"includeEntryExitTime\": true,\n      \"includeShiftName\": true,\n      \"includeAttendanceNotes\": false,\n      \"calculateTotalWorkHours\": false,\n      \"showPreviousMonthComparison\": false\n    },\n    \"step4\": {\n      \"salaryComponentIds\": [],\n      \"deductionIds\": [],\n      \"disbursementStatus\": \"all\",\n      \"netSalaryOnly\": false,\n      \"compareWithPreviousMonth\": false,\n      \"employeeDetailsSeparatePage\": false,\n      \"addTotalSummaryEnd\": false\n    },\n    \"step5\": {\n      \"mainSortBy\": \"employee_name_alpha\",\n      \"sortDirection\": \"asc\",\n      \"groupBy\": \"none\",\n      \"employeesPerPage\": \"100\",\n      \"visualElementIds\": [],\n      \"autoEmail\": false,\n      \"copyToManager\": false,\n      \"monthlyScheduling\": false,\n      \"companyHeaderFooter\": false,\n      \"digitalSignature\": false,\n      \"recipientEmails\": \"\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports"]
+            },
+            "description": "Weekly (W18 2026) attendance + lateness CSV, male full-time employees only, late_only pattern."
+          },
+          "response": []
+        },
+
+        {
+          "name": "GET Show Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/{{report_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "{{report_id}}"]
+            },
+            "description": "Returns the full Report including the stored `config` payload."
+          },
+          "response": [
+            {
+              "name": "200 OK – ready report",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"status\": \"ready\",\n    \"file_path\": \"reports/company-uuid/550e8400-e29b-41d4-a716-446655440000.xlsx\",\n    \"file_size\": 48320,\n    \"generated_at\": \"2026-04-30T10:01:30.000000Z\",\n    \"error_message\": null\n  }\n}"
+            },
+            {
+              "name": "200 OK – failed report",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"status\": \"failed\",\n    \"file_path\": null,\n    \"error_message\": \"Unsupported export format: pdf\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "GET Download Report File",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept",       "value": "*/*" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/{{report_id}}/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "{{report_id}}", "download"]
+            },
+            "description": "Streams the generated file (XLSX / CSV / PDF). Only works when status = `ready`.\nReturns 409 if not yet ready, 404 if file is missing."
+          },
+          "response": [
+            {
+              "name": "409 Conflict – not ready",
+              "status": "Conflict",
+              "code": 409,
+              "body": "{ \"message\": \"Report is not ready for download yet.\" }"
+            }
+          ]
+        },
+
+        {
+          "name": "POST Regenerate Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/{{report_id}}/regenerate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "{{report_id}}", "regenerate"]
+            },
+            "description": "Re-queues the generation job for an existing report (useful after a failure)."
+          },
+          "response": []
+        },
+
+        {
+          "name": "DELETE Report",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/{{report_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "{{report_id}}"]
+            },
+            "description": "Deletes the Report row and its generated file from storage."
+          },
+          "response": [
+            {
+              "name": "200 OK – deleted",
+              "status": "OK",
+              "code": 200,
+              "body": "{ \"message\": \"Deleted successfully.\" }"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "Report Templates",
+      "item": [
+        {
+          "name": "GET List Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/templates?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "templates"],
+              "query": [
+                { "key": "page",      "value": "1" },
+                { "key": "per_page",  "value": "10" },
+                { "key": "search",    "value": "monthly", "disabled": true },
+                { "key": "is_active", "value": "true",   "disabled": true }
+              ]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST Create Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('template_id', json.data.id);",
+                  "  console.log('template_id set:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": {\n    \"ar\": \"قالب تقرير الحضور الشهري\",\n    \"en\": \"Monthly Attendance Report Template\"\n  },\n  \"description\": {\n    \"ar\": \"قالب قياسي لتقارير الحضور والغياب الشهرية لجميع الموظفين النشطين\",\n    \"en\": \"Standard monthly attendance & absence report template for all active employees\"\n  },\n  \"config\": {\n    \"step1\": {\n      \"reportTypeIds\": [\"attendance_absence\", \"lateness\"],\n      \"periodType\": \"monthly\",\n      \"year\": 2026,\n      \"month\": 5,\n      \"week\": null,\n      \"quarter\": null,\n      \"exportFormat\": \"excel\",\n      \"reportLanguage\": \"ar\",\n      \"paperSize\": \"A4\",\n      \"printOrientation\": \"portrait\"\n    },\n    \"step2\": {\n      \"employeeStatus\": \"active\",\n      \"location\": null,\n      \"management\": null,\n      \"department\": null,\n      \"jobTitle\": null,\n      \"contractTypeIds\": [],\n      \"nationality\": null,\n      \"gender\": null\n    },\n    \"step3\": {\n      \"attendanceDataTypeIds\": [\"attendance_days\", \"absence_days\", \"delays\"],\n      \"attendancePattern\": \"all\",\n      \"attendanceRateMin\": \"no_filter\",\n      \"delayLimitMinutes\": \"no_filter\",\n      \"minOvertime\": \"no_filter\",\n      \"includeEntryExitTime\": true,\n      \"includeShiftName\": true,\n      \"includeAttendanceNotes\": false,\n      \"calculateTotalWorkHours\": true,\n      \"showPreviousMonthComparison\": true\n    },\n    \"step4\": {\n      \"salaryComponentIds\": [],\n      \"deductionIds\": [],\n      \"disbursementStatus\": \"all\",\n      \"netSalaryOnly\": false,\n      \"compareWithPreviousMonth\": false,\n      \"employeeDetailsSeparatePage\": false,\n      \"addTotalSummaryEnd\": true\n    },\n    \"step5\": {\n      \"mainSortBy\": \"employee_name_alpha\",\n      \"sortDirection\": \"asc\",\n      \"groupBy\": \"department\",\n      \"employeesPerPage\": \"25\",\n      \"visualElementIds\": [\"attendance_pct_chart\", \"executive_summary_table\"],\n      \"autoEmail\": false,\n      \"copyToManager\": false,\n      \"monthlyScheduling\": true,\n      \"companyHeaderFooter\": true,\n      \"digitalSignature\": false,\n      \"recipientEmails\": \"\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/templates",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "templates"]
+            },
+            "description": "Saves the wizard config as a reusable template. `template_id` variable is set from the test script."
+          },
+          "response": [
+            {
+              "name": "200 OK – template created",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"660e8400-e29b-41d4-a716-446655440111\",\n    \"name\": { \"ar\": \"قالب تقرير الحضور الشهري\", \"en\": \"Monthly Attendance Report Template\" },\n    \"name_ar\": \"قالب تقرير الحضور الشهري\",\n    \"name_en\": \"Monthly Attendance Report Template\",\n    \"description_ar\": \"قالب قياسي لتقارير الحضور والغياب الشهرية لجميع الموظفين النشطين\",\n    \"description_en\": \"Standard monthly attendance & absence report template for all active employees\",\n    \"is_active\": true,\n    \"config\": {},\n    \"created_at\": \"2026-04-30T10:05:00.000000Z\",\n    \"updated_at\": \"2026-04-30T10:05:00.000000Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "GET Show Template",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/templates/{{template_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "templates", "{{template_id}}"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST Update Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": {\n    \"ar\": \"قالب تقرير الحضور الشهري (محدّث)\",\n    \"en\": \"Monthly Attendance Report Template (Updated)\"\n  },\n  \"description\": {\n    \"ar\": \"نسخة محدّثة من القالب\",\n    \"en\": \"Updated version of the template\"\n  },\n  \"is_active\": true,\n  \"config\": {\n    \"step1\": {\n      \"reportTypeIds\": [\"attendance_absence\", \"lateness\", \"overtime\"],\n      \"periodType\": \"monthly\",\n      \"year\": 2026,\n      \"month\": 5,\n      \"week\": null,\n      \"quarter\": null,\n      \"exportFormat\": \"pdf\",\n      \"reportLanguage\": \"ar\",\n      \"paperSize\": \"A4\",\n      \"printOrientation\": \"landscape\"\n    },\n    \"step2\": {\n      \"employeeStatus\": \"active\",\n      \"location\": null,\n      \"management\": null,\n      \"department\": null,\n      \"jobTitle\": null,\n      \"contractTypeIds\": [],\n      \"nationality\": null,\n      \"gender\": null\n    },\n    \"step3\": {\n      \"attendanceDataTypeIds\": [\"attendance_days\", \"absence_days\", \"delays\", \"overtime\"],\n      \"attendancePattern\": \"all\",\n      \"attendanceRateMin\": \"no_filter\",\n      \"delayLimitMinutes\": \"no_filter\",\n      \"minOvertime\": \"no_filter\",\n      \"includeEntryExitTime\": true,\n      \"includeShiftName\": true,\n      \"includeAttendanceNotes\": false,\n      \"calculateTotalWorkHours\": true,\n      \"showPreviousMonthComparison\": true\n    },\n    \"step4\": {\n      \"salaryComponentIds\": [],\n      \"deductionIds\": [],\n      \"disbursementStatus\": \"all\",\n      \"netSalaryOnly\": false,\n      \"compareWithPreviousMonth\": false,\n      \"employeeDetailsSeparatePage\": false,\n      \"addTotalSummaryEnd\": true\n    },\n    \"step5\": {\n      \"mainSortBy\": \"employee_name_alpha\",\n      \"sortDirection\": \"asc\",\n      \"groupBy\": \"department\",\n      \"employeesPerPage\": \"25\",\n      \"visualElementIds\": [\"attendance_pct_chart\"],\n      \"autoEmail\": false,\n      \"copyToManager\": false,\n      \"monthlyScheduling\": true,\n      \"companyHeaderFooter\": true,\n      \"digitalSignature\": false,\n      \"recipientEmails\": \"\"\n    }\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/templates/{{template_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "templates", "{{template_id}}"]
+            }
+          },
+          "response": []
+        },
+
+        {
+          "name": "POST Generate Report from Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('report_id', json.data.id);",
+                  "  console.log('report_id set from template generate:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2026,\n  \"month\": 6,\n  \"name\": {\n    \"ar\": \"تقرير يونيو 2026 (من القالب)\",\n    \"en\": \"June 2026 Report (from template)\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/templates/{{template_id}}/generate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "templates", "{{template_id}}", "generate"]
+            },
+            "description": "Instantiates a saved template into a new Report, overriding the year/month.\nAll other config (filters, formatting, sorting) is inherited from the template."
+          },
+          "response": [
+            {
+              "name": "200 OK – report created from template",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"770e8400-e29b-41d4-a716-446655440222\",\n    \"template_id\": \"660e8400-e29b-41d4-a716-446655440111\",\n    \"name_ar\": \"تقرير يونيو 2026 (من القالب)\",\n    \"name_en\": \"June 2026 Report (from template)\",\n    \"period_type\": \"monthly\",\n    \"year\": 2026,\n    \"month\": 6,\n    \"status\": \"pending\",\n    \"created_at\": \"2026-04-30T10:10:00.000000Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "DELETE Template",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "X-Company-Id", "value": "{{company_id}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/reports/templates/{{template_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "reports", "templates", "{{template_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+
+  ]
+}

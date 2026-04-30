@@ -46,6 +46,7 @@ class FilterAttendanceRequest extends FormRequest
             'late_arrival' => ['sometimes', 'boolean'],
             'early_departure' => ['sometimes', 'boolean'],
             'search_text'=> ['sometimes', 'string'],
+            'employee_status' => ['sometimes', 'integer'],
             // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
@@ -109,6 +110,7 @@ class FilterAttendanceRequest extends FormRequest
             late_arrival: $validated['late_arrival'] ?? null,
             early_departure: $validated['early_departure'] ?? null,
             search_text: $validated['search_text'] ?? null,
+            employee_status: $validated['employee_status'] ?? 1,
             // page: $validated['page'] ?? null,
             // per_page: $validated['per_page'] ?? null,
         );

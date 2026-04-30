@@ -14,12 +14,14 @@ use Modules\ProcedureSetting\Requests\CreateProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\DeleteProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\GetProcedureSettingListRequest;
 use Modules\ProcedureSetting\Requests\GetProcedureSettingRequest;
+use Modules\ProcedureSetting\Requests\ToggleBranchWorkFlowRequest;
 use Modules\ProcedureSetting\Requests\UpdateProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\ProcedureSettingCRUDService;
 use Modules\ProcedureSetting\Exports\ProcedureSettingExport;
 use Modules\ProcedureSetting\Requests\ExportProcedureSettingRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
+use Modules\ProcedureSetting\Models\WorkFlow;
 
 class ProcedureSettingController extends Controller
 {
@@ -32,9 +34,29 @@ class ProcedureSettingController extends Controller
 
     public function index(GetProcedureSettingListRequest $request): JsonResponse
     {
-        $list = $this->procedureSettingService->list();
+        $filters = $request->getFilters();
 
-        return Json::items(ProcedureSettingPresenter::collection($list));
+        if ($filters === []) {
+            $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowForList();
+
+            return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow) : null);
+        }
+
+        if (isset($filters['type']) && ! isset($filters['branch_id']) && ! isset($filters['work_flow_id'])) {
+            $defaultWorkFlow = $this->procedureSettingService->getDefaultWorkFlowByType((string) $filters['type']);
+
+            return Json::item($defaultWorkFlow ? $this->presentWorkFlow($defaultWorkFlow) : null);
+        }
+
+        if (isset($filters['branch_id'])) {
+            $workFlow = $this->procedureSettingService->firstByWorkFlowFilters($filters);
+
+            return Json::item($workFlow ? $this->presentWorkFlow($workFlow) : null);
+        }
+
+        $list = $this->procedureSettingService->listByWorkFlow($filters);
+
+        return Json::items($list->map(fn (WorkFlow $workFlow): array => $this->presentWorkFlow($workFlow))->values()->all());
     }
 
     public function show(GetProcedureSettingRequest $request): JsonResponse
@@ -53,6 +75,19 @@ class ProcedureSettingController extends Controller
         $presenter = new ProcedureSettingPresenter($createdItem);
 
         return Json::item($presenter->getData());
+    }
+
+    public function toggleBranchWorkFlows(ToggleBranchWorkFlowRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $workFlow = $this->procedureSettingService->toggleBranchDefaultWorkFlows(
+            (int) $validated['branch_id'],
+            (bool) $validated['checked'],
+            (string) $validated['type'],
+        );
+
+        return Json::item($workFlow ? $this->presentWorkFlow($workFlow) : null);
     }
 
     public function update(UpdateProcedureSettingRequest $request): JsonResponse
@@ -86,5 +121,25 @@ class ProcedureSettingController extends Controller
         $filters = $request->getFilters();
 
         return Excel::download(new ProcedureSettingExport($this->procedureSettingService, $filters), $fileName);
+    }
+
+    private function presentWorkFlow(WorkFlow $workFlow): array
+    {
+        return [
+            'id'                 => $workFlow->id,
+            'name'               => $workFlow->name,
+            'type'               => $workFlow->type,
+            'branches'           => $workFlow->managementHierarchies
+                ->where('type', 'branch')
+                ->map(static fn ($branch): array => [
+                    'id'         => $branch->id,
+                    'name'       => $branch->name,
+                    'type'       => $branch->type,
+                    'company_id' => $branch->company_id,
+                ])
+                ->values()
+                ->all(),
+            'procedure-settings' => ProcedureSettingPresenter::collection($workFlow->procedureSettings),
+        ];
     }
 }

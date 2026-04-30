@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\ProcedureSetting\Commands;
 
+use Illuminate\Support\Arr;
 use Ramsey\Uuid\UuidInterface;
 
+/**
+ * Carries only validated keys from the request so partial PATCH-style bodies do not
+ * wipe columns that were omitted from the payload.
+ *
+ * @phpstan-type Payload array<string, mixed>
+ */
 class UpdateProcedureSettingCommand
 {
+    /**
+     * @param Payload $attributes
+     */
     public function __construct(
-        private UuidInterface $id,
-        private string $name,
-        private string $type,
-        private string $execute_type,
-        private ?string $icon = null,
-        private ?float $percentage = null,
+        private readonly UuidInterface $id,
+        private readonly array $attributes,
     ) {
     }
 
@@ -23,45 +29,45 @@ class UpdateProcedureSettingCommand
         return $this->id;
     }
 
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    public function getExecuteType(): string
-    {
-        return $this->execute_type;
-    }
-
-    public function getIcon(): ?string
-    {
-        return $this->icon;
-    }
-
-    public function getPercentage(): ?float
-    {
-        return $this->percentage;
-    }
-
+    /**
+     * @return Payload
+     */
     public function toArray(): array
     {
-        $data = [
-            'name'         => $this->name,
-            'type'         => $this->type,
-            'execute_type' => $this->execute_type,
+        $keys = [
+            'name',
+            'type',
+            'execute_type',
+            'icon',
+            'percentage',
+            'deadline_days',
+            'deadline_hours',
+            'escalation_user_id',
+            'work_flow_id',
         ];
 
-        if ($this->icon !== null) {
-            $data['icon'] = $this->icon;
+        $data = Arr::only($this->attributes, $keys);
+
+        if (array_key_exists('percentage', $data) && $data['percentage'] !== null) {
+            $data['percentage'] = (float) $data['percentage'];
         }
 
-        if ($this->percentage !== null) {
-            $data['percentage'] = $this->percentage;
+        foreach (['deadline_days', 'deadline_hours'] as $intKey) {
+            if (! array_key_exists($intKey, $data)) {
+                continue;
+            }
+            if ($data[$intKey] === null) {
+                continue;
+            }
+            $data[$intKey] = (int) $data[$intKey];
+        }
+
+        if (array_key_exists('escalation_user_id', $data) && $data['escalation_user_id'] !== null) {
+            $data['escalation_user_id'] = (string) $data['escalation_user_id'];
+        }
+
+        if (array_key_exists('work_flow_id', $data) && $data['work_flow_id'] !== null) {
+            $data['work_flow_id'] = (string) $data['work_flow_id'];
         }
 
         return $data;

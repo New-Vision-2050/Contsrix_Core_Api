@@ -18,6 +18,7 @@ use Modules\User\Models\User;
 use Modules\Shared\JobType\Models\JobType;
 use Modules\JobTitle\Models\JobTitle;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
+use Modules\ProcedureSetting\Models\WorkFlow;
 use Nevadskiy\Tree\AsTree;
 use Nevadskiy\Tree\Relations\HasManyDeep;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -271,5 +272,15 @@ class ManagementHierarchy extends Model implements Auditable
     public function usersCanAccess()
     {
         return $this->belongsToMany(User::class,"users_can_access_management_hierarchies","management_hierarchy_id","user_id");
+    }
+
+    public function workFlows()
+    {
+        return $this->belongsToMany(
+            WorkFlow::class,
+            'management_hierarchy_work_flow',
+            'management_hierarchy_id',
+            'work_flow_id'
+        )->withTimestamps();
     }
 }

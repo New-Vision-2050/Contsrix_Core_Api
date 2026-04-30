@@ -25,22 +25,63 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'execute_type' => $this->procedureSetting->execute_type,
             'icon'         => $this->procedureSetting->icon,
             'percentage'   => $this->procedureSetting->percentage,
+            'deadline_days'  => $this->procedureSetting->deadline_days,
+            'deadline_hours' => $this->procedureSetting->deadline_hours,
+            'escalation_user_id' => $this->procedureSetting->escalation_user_id,
+            'escalation_user'    => $this->escalationUserPayload(),
+            'work_flow_id'       => $this->procedureSetting->work_flow_id,
+            'work_flow'          => $this->workFlowPayload(),
         ];
 
-        if (!$isListing && $this->procedureSetting->relationLoaded('steps')) {
-            $data['steps'] = $this->procedureSetting->steps->map(function ($step) {
-                return [
-                    'id'                   => $step->id,
-                    'employee_id'          => $step->employee_id,
-                    'is_accept'            => $step->is_accept,
-                    'is_approve'           => $step->is_approve,
-                    'duration'             => $step->duration,
-                    'forms'                => $step->forms, // 'approve', 'accept', or 'financial'
-                    'procedure_setting_id' => $step->procedure_setting_id,
-                ];
-            })->toArray();
+        if (! $isListing && $this->procedureSetting->relationLoaded('steps')) {
+            $data['steps'] = $this->procedureSetting->steps->map(
+                static fn ($step) => (new ProcedureSettingStepPresenter($step))->getData()
+            )->all();
         }
 
         return $data;
+    }
+
+    private function escalationUserPayload(): ?array
+    {
+        if ($this->procedureSetting->escalation_user_id === null) {
+            return null;
+        }
+
+        $user = $this->procedureSetting->relationLoaded('escalationUser')
+            ? $this->procedureSetting->escalationUser
+            : $this->procedureSetting->escalationUser()->first(['id', 'name', 'email', 'phone']);
+
+        if ($user === null) {
+            return null;
+        }
+
+        return [
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+        ];
+    }
+
+    private function workFlowPayload(): ?array
+    {
+        if ($this->procedureSetting->work_flow_id === null) {
+            return null;
+        }
+
+        $workFlow = $this->procedureSetting->relationLoaded('workFlow')
+            ? $this->procedureSetting->workFlow
+            : $this->procedureSetting->workFlow()->first(['id', 'name']);
+
+        if ($workFlow === null) {
+            return null;
+        }
+
+        return [
+            'id'         => $workFlow->id,
+            'name'       => $workFlow->name,
+            'company_id' => $workFlow->company_id ?? null,
+        ];
     }
 }
