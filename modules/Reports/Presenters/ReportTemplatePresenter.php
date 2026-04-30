@@ -25,7 +25,7 @@ class ReportTemplatePresenter extends AbstractPresenter
             'description'     => $this->template->description,
             'description_ar'  => $this->template->getTranslation('description', 'ar'),
             'description_en'  => $this->template->getTranslation('description', 'en'),
-            'config'          => $isListing ? null : ($this->template->config ?? []),
+            'config'          => $isListing ? null : $this->template->config,
             'is_active'       => (bool) $this->template->is_active,
             'created_at'      => optional($this->template->created_at)->toDateTimeString(),
             'updated_at'      => optional($this->template->updated_at)->toDateTimeString(),
