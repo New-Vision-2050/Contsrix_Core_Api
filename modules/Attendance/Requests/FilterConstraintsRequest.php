@@ -35,6 +35,7 @@ class FilterConstraintsRequest extends FormRequest
             'user_email' => ['sometimes', 'string', 'email'],
             'company_name' => ['sometimes', 'string'],
             'is_active' => ['sometimes', 'boolean'],
+            'employee_status' => ['sometimes', 'integer'],
             // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
@@ -78,6 +79,7 @@ class FilterConstraintsRequest extends FormRequest
             user_email: $validated['user_email'] ?? null,
             company_name: $validated['company_name'] ?? null,
             is_active: $validated['is_active'] ?? null,
+            employee_status: $validated['employee_status'] ?? null,
             // page: $validated['page'] ?? 1,
             // per_page: $validated['per_page'] ?? 10,
         );

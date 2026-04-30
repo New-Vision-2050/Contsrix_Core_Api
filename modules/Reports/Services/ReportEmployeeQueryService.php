@@ -110,10 +110,11 @@ class ReportEmployeeQueryService
             return;
         }
 
-        // Accept either a country_id (uuid/int) or an ISO code string.
+        // Accept either a country_id (uuid/int), nationality name, or ISO code string.
         $query->where(function ($q) use ($s) {
             $q->where('country_id', $s->nationality)
-                ->orWhereHas('country', fn ($c) => $c->where('code', $s->nationality));
+                ->orWhereHas('country', fn ($c) => $c->where('nationality', $s->nationality))
+                ->orWhereHas('country', fn ($c) => $c->where('iso2', $s->nationality));
         });
     }
 

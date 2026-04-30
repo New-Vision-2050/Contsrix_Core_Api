@@ -22,6 +22,7 @@ class FilterAttendanceConstraintDTO
         public ?string $user_email = null,
         public ?string $company_name = null,
         public ?bool $is_active = null,
+        public ?int $employee_status = 1,
         // public ?int $page = 1,
         // public ?int $per_page = 10,
     ) {}
@@ -71,6 +72,9 @@ class FilterAttendanceConstraintDTO
         }
         if ($this->is_active !== null) {
             $data['is_active'] = $this->is_active;
+        }
+        if ($this->employee_status !== null) {
+            $data['employee_status'] = $this->employee_status;
         }
 
         return $data;
@@ -149,6 +153,11 @@ class FilterAttendanceConstraintDTO
     public function isActive(): ?bool
     {
         return $this->is_active;
+    }
+
+    public function getEmployeeStatus(): ?int
+    {
+        return $this->employee_status;
     }
 
     // public function getPage(): ?int
