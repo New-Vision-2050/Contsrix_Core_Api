@@ -15,10 +15,12 @@ use BasePackage\Shared\Presenters\AbstractPresenter;
 class UserPresenter extends AbstractPresenter
 {
     private User $user;
+    private ?int $filterRole;
 
-    public function __construct(User $user)
+    public function __construct(User $user, ?int $filterRole = null)
     {
         $this->user = $user;
+        $this->filterRole = $filterRole;
     }
 
     protected function present(bool $isListing = false): array
@@ -35,15 +37,19 @@ class UserPresenter extends AbstractPresenter
             "branch_id" => $this->user->managementHierarchy?->detail?->branch_id,
             "roles" => RoleSimplePresenter::collection($this->user->roles),
             "branches" => ManagementHierarchySimpleDataPresenter::collection($this->user->managementHierarchies(request()->role)->get()),
-            "user_types" => $this->user->companyUserCompanies->map(function ($companyUserCompany) {
-                return [
-                    'id' => $companyUserCompany->id,
-                    'company_id' => $companyUserCompany->company_id,
-                    'global_company_user_id' => $companyUserCompany->global_company_user_id,
-                    'role' => $companyUserCompany->getRawOriginal('role'),
-                    'status' => $companyUserCompany->status,
-                ];
-            }),
+            "user_types" => $this->user->companyUserCompanies
+                ->when($this->filterRole, function ($collection) {
+                    return $collection->where('role', $this->filterRole);
+                })
+                ->map(function ($companyUserCompany) {
+                    return [
+                        'id' => $companyUserCompany->id,
+                        'company_id' => $companyUserCompany->company_id,
+                        'global_company_user_id' => $companyUserCompany->global_company_user_id,
+                        'role' => $companyUserCompany->getRawOriginal('role'),
+                        'status' => $companyUserCompany->status,
+                    ];
+                }),
             "status" => $this->user->status,
 
 //            "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),

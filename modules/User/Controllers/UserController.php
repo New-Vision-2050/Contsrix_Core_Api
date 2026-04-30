@@ -100,7 +100,8 @@ class UserController extends Controller
     {
         $item = $this->userService->get(Uuid::fromString($request->route('id')));
 
-        $presenter = new UserPresenter($item);
+        $role = $request->input('role');
+        $presenter = new UserPresenter($item, $role);
 
         return Json::item($presenter->getData());
     }
