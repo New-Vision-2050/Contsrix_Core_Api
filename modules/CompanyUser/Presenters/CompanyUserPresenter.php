@@ -48,7 +48,7 @@ class CompanyUserPresenter extends AbstractPresenter
                 ->first(fn($c) => $c->getRawOriginal('role') === $roleStr);
 
             if ($record) {
-                return $record->getRawOriginal('status');
+                return (int) $record->getRawOriginal('status');
             }
         }
 
