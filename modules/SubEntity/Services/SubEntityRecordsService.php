@@ -8,6 +8,7 @@ use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Carbon\Carbon;
@@ -102,11 +103,11 @@ class SubEntityRecordsService
 
         // Get current period data
         $totalRecords = $query->count();
-        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
-            $q->where("status", 1);
+        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($type) {
+            $q->where("role", $type)->where("status", CompanyUserStatus::ACTIVE->value);
         })->count();
-        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
-            $q->where("status", 0);
+        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($type) {
+            $q->where("role", $type)->where("status", CompanyUserStatus::INACTIVE->value);
         })->count();
 
         // Get last month data for comparison
@@ -118,8 +119,8 @@ class SubEntityRecordsService
         // Get previous month data for percentage calculation
         $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
-        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
-            $q->where("status", 1);
+        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($type) {
+            $q->where("role", $type)->where("status", CompanyUserStatus::ACTIVE->value);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
         if (CompanyUserRole::BROKER->value == $type) {
