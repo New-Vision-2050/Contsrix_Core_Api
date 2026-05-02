@@ -21,6 +21,7 @@ use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\ExportBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\UpdateBrokerRequest;
+use Modules\CompanyUser\Requests\ChangeStatusRequest;
 use Modules\CompanyUser\Requests\DeleteUserRoleRequest;
 use Modules\CompanyUser\Services\Broker\BrokerCRUDService;
 use Modules\CompanyUser\Services\CompanyUserCRUDService;
@@ -85,9 +86,21 @@ class BrokerController extends Controller
 
         return Json::item($presenter->getData(), message: $message);
     }
- public function update(UpdateBrokerRequest $request)
+    public function update(UpdateBrokerRequest $request)
     {
         $user = $this->brokerCRUDService->update($request->createUpdateBrokerDTO(), $request->createSetUserAddressDTO());
+        $presenter = new UserPresenter($user);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function changeStatus(ChangeStatusRequest $request)
+    {
+        $user = $this->brokerCRUDService->changeStatus(
+            $request->route('id'),
+            $request->getStatus(),
+        );
+
         $presenter = new UserPresenter($user);
 
         return Json::item($presenter->getData());

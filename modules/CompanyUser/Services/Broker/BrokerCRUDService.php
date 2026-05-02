@@ -75,6 +75,13 @@ class BrokerCRUDService
     }
 
 
+    public function changeStatus(string $userId, int $status)
+    {
+        $user = $this->userRepository->getUserById($userId);
+
+        return $this->userRepository->updateStatus($user, CompanyUserRole::BROKER->value, $status);
+    }
+
     public function list(int $page = 1, int $perPage = 10): array
     {
 

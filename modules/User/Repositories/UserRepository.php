@@ -657,6 +657,24 @@ class UserRepository extends BaseRepository
 
 
 
+    public function updateStatus(User $user, string $role, int $status): User
+    {
+        $companyUserCompany = $this->companyUserCompanyRepository->model->withoutTenancy()
+            ->where([
+                'company_id'             => $user->company_id,
+                'global_company_user_id' => $user->global_company_user_id,
+                'role'                   => $role,
+            ])->first();
+
+        if (!$companyUserCompany) {
+            throw new CustomException("User does not have the specified role.");
+        }
+
+        $companyUserCompany->update(['status' => (string) $status]);
+
+        return $user->fresh();
+    }
+
     public function createClientCompany($userId, $companyId)
     {
         $existingUser = $this->findOneBy(["id" => $userId]);
