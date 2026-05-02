@@ -17,10 +17,42 @@ class CompanyUserPresenter extends AbstractPresenter
 {
     private CompanyUser $companyUser;
     private ?string $userId;
-    public function __construct(CompanyUser $companyUser, string $userId = null)
+    private ?int $role;
+
+    public function __construct(CompanyUser $companyUser, string $userId = null, ?int $role = null)
     {
         $this->companyUser = $companyUser;
         $this->userId = $userId;
+        $this->role   = $role;
+    }
+
+    public static function collection(iterable $collection, ...$additionalParams): array
+    {
+        $role = $additionalParams[0] ?? null;
+
+        return collect($collection)->map(function ($item) use ($role) {
+            return (new self($item, null, $role))->getData();
+        })->toArray();
+    }
+
+    private function resolveStatus(): mixed
+    {
+        if ($this->role === null) {
+            return null;
+        }
+
+        $roleStr = (string) $this->role;
+
+        foreach ($this->companyUser->users as $user) {
+            $record = $user->companyUserCompanies
+                ->first(fn($c) => $c->getRawOriginal('role') === $roleStr);
+
+            if ($record) {
+                return $record->getRawOriginal('status');
+            }
+        }
+
+        return null;
     }
 
     protected function present(bool $isListing = false): array
@@ -39,6 +71,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'job_title_id'=>$this->companyUser?->userProfessionalData?->job_title_id,
             "job_title" => $this->companyUser?->userProfessionalData?->jobTitle?->name,
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
+            'status' => $this->resolveStatus(),
             'data_status' => 0,
             "company" => ($this->companyUser->companies->unique('id')->first())
                 ? (new CompanyUsersPresenter(

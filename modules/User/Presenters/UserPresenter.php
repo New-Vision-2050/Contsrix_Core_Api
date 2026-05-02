@@ -38,9 +38,7 @@ class UserPresenter extends AbstractPresenter
             "roles" => RoleSimplePresenter::collection($this->user->roles),
             "branches" => ManagementHierarchySimpleDataPresenter::collection($this->user->managementHierarchies(request()->role)->get()),
             "user_types" => $this->user->companyUserCompanies
-                ->when($this->filterRole, function ($collection) {
-                    return $collection->where('role', $this->filterRole);
-                })
+               
                 ->map(function ($companyUserCompany) {
                     return [
                         'id' => $companyUserCompany->id,
@@ -50,7 +48,11 @@ class UserPresenter extends AbstractPresenter
                         'status' => $companyUserCompany->status,
                     ];
                 }),
-            "status" => $this->user->status,
+            "status" => $this->filterRole !== null
+                ? ($this->user->companyUserCompanies->first(
+                    fn($c) => (int) $c->getRawOriginal('role') === $this->filterRole
+                  )?->getRawOriginal('status') ?? $this->user->status)
+                : $this->user->status,
 
 //            "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
             "is_central_company" => tenant("is_central_company"),

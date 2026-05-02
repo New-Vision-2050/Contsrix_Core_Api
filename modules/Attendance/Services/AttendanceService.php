@@ -536,23 +536,13 @@ class AttendanceService
     /**
      * Get attendance summary
      */
-    public function getAttendanceSummary(array $filters = []): array
+    public function getAttendanceSummary(UuidInterface $userId, ?string $startDate = null, ?string $endDate = null): array
     {
-        // Set default date range if not provided
-        if (!isset($filters['start_date'])) {
-            $filters['start_date'] = now()->startOfMonth()->toDateString();
-        }
-        if (!isset($filters['end_date'])) {
-            $filters['end_date'] = now()->endOfMonth()->toDateString();
-        }
+        $startDate = $startDate ? Carbon::parse($startDate) : now()->startOfMonth();
+        $endDate = $endDate ? Carbon::parse($endDate) : now()->endOfMonth();
 
-        // 1. Get all attendance records with filters.
-        $query = $this->attendanceRepository->newAttendanceListQuery();
-        if (!empty($filters)) {
-            $query->filter($filters);
-        }
-
-        $records = $query->get();
+        // 1. Get all attendance records for the period.
+        $records  = $this->attendanceRepository->getAttendanceByDateRange($userId, $startDate, $endDate);
 
         $attendances = $this->processAttendancePeriods($records);
         // 2. Calculate the base total for percentages.

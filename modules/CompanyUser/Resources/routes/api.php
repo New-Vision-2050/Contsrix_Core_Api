@@ -14,6 +14,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'update']);
+        Route::patch('/{id}/status', [\Modules\CompanyUser\Controllers\BrokerController::class, 'changeStatus']);
 
         Route::post('/export', [\Modules\CompanyUser\Controllers\BrokerController::class, 'export']);
 
@@ -27,6 +28,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'index']);
         Route::post('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'store']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'update']);
+        Route::patch('/{id}/status', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'changeStatus']);
 
     });
 
@@ -38,6 +40,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::post('/company', [\Modules\CompanyUser\Controllers\ClientController::class, 'createClientCompany']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'update']);
+        Route::patch('/{id}/status', [\Modules\CompanyUser\Controllers\ClientController::class, 'changeStatus']);
         Route::post('/export', [\Modules\CompanyUser\Controllers\ClientController::class, 'export']);
 
         // Dashboard Widgets Routes

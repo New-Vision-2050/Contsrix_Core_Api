@@ -8,6 +8,7 @@ use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\CompanyUser\Enum\CompanyUserRole;
+use Modules\CompanyUser\Enum\CompanyUserStatus;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\CompanyUser\Repositories\CompanyUserRepository;
 use Carbon\Carbon;
@@ -58,7 +59,14 @@ class SubEntityRecordsService
 
     protected function getMappedRecords($page = 1, $perPage = 10, $type, $branchId = null): array
     {
-        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type, null, $branchId);
+        return $this->companyUserRepository->withRelationsFilterByType(
+            ['users.companyUserCompanies'],
+            $page,
+            $perPage,
+            $type,
+            null,
+            $branchId
+        );
     }
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array
@@ -100,13 +108,17 @@ class SubEntityRecordsService
                 $query->whereNotNull('id');
             });
 
+        $activeStatus   = (string) CompanyUserStatus::ACTIVE->value;   // "1"
+        $inactiveStatus = (string) CompanyUserStatus::INACTIVE->value; // "0"
+        $roleStr        = (string) $type;
+
         // Get current period data
         $totalRecords = $query->count();
-        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
-            $q->where("status", 1);
+        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $activeStatus) {
+            $q->where("role", $roleStr)->where("status", $activeStatus);
         })->count();
-        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
-            $q->where("status", 0);
+        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $inactiveStatus) {
+            $q->where("role", $roleStr)->where("status", $inactiveStatus);
         })->count();
 
         // Get last month data for comparison
@@ -118,8 +130,8 @@ class SubEntityRecordsService
         // Get previous month data for percentage calculation
         $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
-        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) {
-            $q->where("status", 1);
+        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $activeStatus) {
+            $q->where("role", $roleStr)->where("status", $activeStatus);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
         if (CompanyUserRole::BROKER->value == $type) {
