@@ -101,7 +101,7 @@ class BrokerController extends Controller
             $request->getStatus(),
         );
 
-        $presenter = new UserPresenter($user);
+        $presenter = new UserPresenter($user, CompanyUserRole::BROKER->value);
 
         return Json::item($presenter->getData());
     }

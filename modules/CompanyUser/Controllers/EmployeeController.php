@@ -84,7 +84,7 @@ class EmployeeController extends Controller
             $request->getStatus(),
         );
 
-        $presenter = new UserPresenter($user);
+        $presenter = new UserPresenter($user, CompanyUserRole::EMPLOYEE->value);
 
         return Json::item($presenter->getData());
     }

@@ -155,7 +155,7 @@ class ClientController extends Controller
             $request->getStatus(),
         );
 
-        $presenter = new UserPresenter($updatedItem);
+        $presenter = new UserPresenter($updatedItem, CompanyUserRole::CLIENT->value);
 
         return Json::item($presenter->getData());
     }
