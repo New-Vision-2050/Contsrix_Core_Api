@@ -59,7 +59,14 @@ class SubEntityRecordsService
 
     protected function getMappedRecords($page = 1, $perPage = 10, $type, $branchId = null): array
     {
-        return $this->companyUserRepository->withRelationsFilterByType([], $page, $perPage, $type, null, $branchId);
+        return $this->companyUserRepository->withRelationsFilterByType(
+            ['users.companyUserCompanies'],
+            $page,
+            $perPage,
+            $type,
+            null,
+            $branchId
+        );
     }
 
     public function getWidgetsData(string $subEntityId, string $registrationFormId): array
