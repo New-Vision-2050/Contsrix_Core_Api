@@ -51,7 +51,7 @@ class UserPresenter extends AbstractPresenter
             "status" => $this->filterRole !== null
                 ? ($this->user->companyUserCompanies->first(
                     fn($c) => (int) $c->getRawOriginal('role') === $this->filterRole
-                  )?->status ?? $this->user->status)
+                  )?->getRawOriginal('status') ?? $this->user->status)
                 : $this->user->status,
 
 //            "permissions"=>PermissionPresenter::collection($this->user->getAllPermissions()),
