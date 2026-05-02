@@ -101,13 +101,17 @@ class SubEntityRecordsService
                 $query->whereNotNull('id');
             });
 
+        $activeStatus   = (string) CompanyUserStatus::ACTIVE->value;   // "1"
+        $inactiveStatus = (string) CompanyUserStatus::INACTIVE->value; // "0"
+        $roleStr        = (string) $type;
+
         // Get current period data
         $totalRecords = $query->count();
-        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($type) {
-            $q->where("role", $type)->where("status", CompanyUserStatus::ACTIVE->value);
+        $activeRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $activeStatus) {
+            $q->where("role", $roleStr)->where("status", $activeStatus);
         })->count();
-        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($type) {
-            $q->where("role", $type)->where("status", CompanyUserStatus::INACTIVE->value);
+        $suspendedRecords = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $inactiveStatus) {
+            $q->where("role", $roleStr)->where("status", $inactiveStatus);
         })->count();
 
         // Get last month data for comparison
@@ -119,8 +123,8 @@ class SubEntityRecordsService
         // Get previous month data for percentage calculation
         $prevMonth = Carbon::now()->subMonth();
         $totalRecordsPrevMonth = (clone $query)->where('created_at', '<=', $prevMonth->endOfMonth())->count();
-        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($type) {
-            $q->where("role", $type)->where("status", CompanyUserStatus::ACTIVE->value);
+        $activeRecordsPrevMonth = (clone $query)->whereHas("users.companyUserCompanies", function ($q) use ($roleStr, $activeStatus) {
+            $q->where("role", $roleStr)->where("status", $activeStatus);
         })->where('created_at', '<=', $prevMonth->endOfMonth())->count();
 
         if (CompanyUserRole::BROKER->value == $type) {
