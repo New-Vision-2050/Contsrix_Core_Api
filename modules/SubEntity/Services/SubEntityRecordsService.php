@@ -60,7 +60,21 @@ class SubEntityRecordsService
     protected function getMappedRecords($page = 1, $perPage = 10, $type, $branchId = null): array
     {
         return $this->companyUserRepository->withRelationsFilterByType(
-            ['users.companyUserCompanies'],
+            [
+                'users.companyUserCompanies',
+                'jobOffer',
+                'employmentContract',
+                'userSalary',
+                'userAbout',
+                'contactInfo',
+                'qualifications',
+                'userExperiences',
+                'userEducationalCourses',
+                'professionalCertificates',
+                'userPrivileges',
+                'userRelatives',
+                'contractualRelationships',
+            ],
             $page,
             $perPage,
             $type,

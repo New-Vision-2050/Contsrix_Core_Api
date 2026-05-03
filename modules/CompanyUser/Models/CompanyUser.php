@@ -22,6 +22,18 @@ use Modules\Shared\TimeZone\Models\TimeZone;
 use Modules\User\Models\User;
 use Modules\UserInfo\BankAccount\Models\BankAccount;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
+use Modules\UserInfo\JobOffer\Models\JobOffer;
+use Modules\UserInfo\EmploymentContract\Models\EmploymentContract;
+use Modules\UserInfo\UserSalary\Models\UserSalary;
+use Modules\UserInfo\UserAbout\Models\UserAbout;
+use Modules\UserInfo\Contactinfo\Models\ContactInfo;
+use Modules\UserInfo\Qualification\Models\Qualification;
+use Modules\UserInfo\UserExperience\Models\UserExperience;
+use Modules\UserInfo\UserEducationalCourse\Models\UserEducationalCourse;
+use Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalCertificate;
+use Modules\UserInfo\UserPrivilege\Models\UserPrivilege;
+use Modules\UserInfo\UserRelative\Models\UserRelative;
+use Modules\UserInfo\ContractualRelationship\Models\ContractualRelationship;
 use Stancl\Tenancy\Database\Concerns\BelongsToPrimaryModel;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -207,5 +219,65 @@ class CompanyUser extends Model implements HasMedia
     public function nationalAddress()
     {
         return $this->hasOne(CompanyUserAddress::class,"global_company_user_id","global_id");
+    }
+
+    public function jobOffer()
+    {
+        return $this->hasOne(JobOffer::class, 'global_id', 'global_id');
+    }
+
+    public function employmentContract()
+    {
+        return $this->hasOne(EmploymentContract::class, 'global_id', 'global_id');
+    }
+
+    public function userSalary()
+    {
+        return $this->hasOne(UserSalary::class, 'global_id', 'global_id');
+    }
+
+    public function userAbout()
+    {
+        return $this->hasOne(UserAbout::class, 'global_id', 'global_id');
+    }
+
+    public function contactInfo()
+    {
+        return $this->hasOne(ContactInfo::class, 'global_id', 'global_id');
+    }
+
+    public function qualifications()
+    {
+        return $this->hasMany(Qualification::class, 'global_id', 'global_id');
+    }
+
+    public function userExperiences()
+    {
+        return $this->hasMany(UserExperience::class, 'global_id', 'global_id');
+    }
+
+    public function userEducationalCourses()
+    {
+        return $this->hasMany(UserEducationalCourse::class, 'global_id', 'global_id');
+    }
+
+    public function professionalCertificates()
+    {
+        return $this->hasMany(ProfessionalCertificate::class, 'global_id', 'global_id');
+    }
+
+    public function userPrivileges()
+    {
+        return $this->hasMany(UserPrivilege::class, 'global_id', 'global_id');
+    }
+
+    public function userRelatives()
+    {
+        return $this->hasMany(UserRelative::class, 'global_id', 'global_id');
+    }
+
+    public function contractualRelationships()
+    {
+        return $this->hasMany(ContractualRelationship::class, 'global_id', 'global_id');
     }
 }
