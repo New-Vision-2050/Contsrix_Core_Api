@@ -27,6 +27,7 @@ use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\SubEntity\Database\Seeders\RegistrationFormsSeeder;
 use Modules\SubEntity\Database\Seeders\SubEntityDatabaseSeeder;
+use Modules\SubEntity\Database\Seeders\UpdateSubEntityAttributesSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
@@ -130,6 +131,7 @@ class DatabaseSeeder extends Seeder
         $this->call(MainPackageSeeder::class);
 
         $this->call(SubEntityDatabaseSeeder::class);
+        $this->call(UpdateSubEntityAttributesSeeder::class);
 
 
         $this->call(MoroccanUniversitiesSeeder::class);
