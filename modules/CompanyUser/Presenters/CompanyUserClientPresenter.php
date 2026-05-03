@@ -113,7 +113,7 @@ class CompanyUserClientPresenter extends AbstractPresenter
             'snapchat' => $this->companyUser->snapchat,
             'time_zone' => $this->companyUser->timeZone?->name,
             'language' => $this->companyUser->language?->name,
-            'bank-info' => (bool) $this->companyUser->bankAccount,
+            'bank-info' =>  $this->companyUser->bankAccount->iban,
             'salary-info' => $this->companyUser->userSalary !== null,
             'employment-info' => $this->companyUser->userProfessionalData !== null,
             'contact-info' => $this->companyUser->contactInfo !== null,
