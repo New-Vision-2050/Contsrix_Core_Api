@@ -32,6 +32,7 @@ class AutoAttendanceService
             'is_absent' => $data['is_absent'] ?? 0,
             'is_late' => $data['is_late'] ?? 0,
             'is_holiday' => $data['is_holiday'] ?? 0,
+            'business_date' => $startDateTime?->toDateString(),
         ];
 
         $attendance = Attendance::create($attendanceData);
