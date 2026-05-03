@@ -67,7 +67,7 @@ class AutoAttendanceService
             ->whereNotIn('email', config('constrix.emails'))
             ->when($userId, function ($query) use ($userId) {
                 return $query->where('id', $userId);
-            })
+            })->has('professionalData.attendanceConstraint')
             ->with(['professionalData.attendanceConstraint'])
             ->get();
 
@@ -102,7 +102,7 @@ class AutoAttendanceService
 
 
         foreach ($allRelevantUsers as $user) {
-            $constraint = $user->professionalData->attendanceConstraint;
+            $constraint = $user->professionalData?->attendanceConstraint;
             if($constraint){
 
 
