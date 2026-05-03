@@ -36,6 +36,5 @@ class ClientRequestServiceProvider extends ModuleServiceProvider
         Route::prefix('api/v1/client-requests')
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
-
     }
 }

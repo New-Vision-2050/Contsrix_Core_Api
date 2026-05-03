@@ -43,6 +43,8 @@ class ProcedureSettingStep extends Model
         'notify_by_email',
         'notify_by_whatsapp',
         'escalation_user_id',
+        'user_id',
+        'step_order',
     ];
 
     protected $casts = [
@@ -58,6 +60,8 @@ class ProcedureSettingStep extends Model
         'notify_by_email'                 => 'boolean',
         'notify_by_whatsapp'              => 'boolean',
         'escalation_user_id'              => 'string',
+        'user_id'                         => 'string',
+        'step_order'                      => 'integer',
     ];
 
     public function getRelationshipToPrimaryModel(): string
@@ -88,6 +92,11 @@ class ProcedureSettingStep extends Model
     public function escalationUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'escalation_user_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function actionTakers(): HasMany
