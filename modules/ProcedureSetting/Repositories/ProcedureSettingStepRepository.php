@@ -34,6 +34,8 @@ class ProcedureSettingStepRepository extends BaseRepository
         return $this->model
             ->with(self::STEP_WITH)
             ->where('procedure_setting_id', $procedureSettingId)
+            ->orderByRaw('(step_order IS NULL) ASC')
+            ->orderBy('step_order')
             ->orderBy('id')
             ->get();
     }

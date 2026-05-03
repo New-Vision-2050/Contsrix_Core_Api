@@ -18,6 +18,7 @@ use Modules\ClientRequest\Requests\GetClientRequestRequest;
 use Modules\ClientRequest\Requests\ChangeClientRequestStatusRequest;
 use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
 use Modules\ClientRequest\Services\ClientRequestCRUDService;
+use Modules\ClientRequest\Services\ClientRequestWorkflowService;
 use Modules\ClientRequest\Services\ClientRequestWidgetsService;
 use Modules\ClientRequest\Services\ClientRequestStatusWidgetsService;
 use Modules\ClientRequest\Exports\ClientRequestExport;
@@ -25,11 +26,14 @@ use Modules\ClientRequest\Requests\ExportClientRequestRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Modules\ClientRequest\Models\ClientRequest;
 
 class ClientRequestController extends Controller
 {
     public function __construct(
         private ClientRequestCRUDService $clientRequestService,
+        private ClientRequestWorkflowService $clientRequestWorkflowService,
         private UpdateClientRequestHandler $updateClientRequestHandler,
         private DeleteClientRequestHandler $deleteClientRequestHandler,
         private ClientRequestWidgetsService $clientRequestWidgetsService,
@@ -39,10 +43,12 @@ class ClientRequestController extends Controller
 
     public function index(GetClientRequestListRequest $request): JsonResponse
     {
-        $list = $this->clientRequestService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
-        );
+        $validated = $request->validated();
+        $page = (int) ($validated['page'] ?? $request->get('page', 1));
+        $perPage = (int) ($validated['per_page'] ?? $request->get('per_page', 10));
+
+        // Filtering uses the model filter(request()->all()); paginated() $conditions are plain where() columns only.
+        $list = $this->clientRequestService->list([], $page, $perPage);
 
         return Json::items(ClientRequestPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
@@ -59,6 +65,11 @@ class ClientRequestController extends Controller
     public function store(CreateClientRequestRequest $request): JsonResponse
     {
         $createdItem = $this->clientRequestService->create($request->createCreateClientRequestDTO());
+
+        $this->clientRequestWorkflowService->syncAfterClientRequestStatusChange(
+            $createdItem,
+            (string) $createdItem->status_client_request,
+        );
 
         $this->clientRequestWidgetsService->clearWidgetCache();
         $this->clientRequestStatusWidgetsService->clearWidgetCache();
@@ -121,11 +132,32 @@ class ClientRequestController extends Controller
 
     public function changeStatus(ChangeClientRequestStatusRequest $request): JsonResponse
     {
-        $item = $this->clientRequestService->changeStatus(
-            $request->route('id'),
-            $request->get('status_client_request'),
-            $request->get('reject_cause')
-        );
+        $item = DB::transaction(function () use ($request) {
+            if ($request->filled('process_step_id')) {
+                $this->clientRequestWorkflowService->actOnProcessStepForClientRequest(
+                    (string) $request->route('id'),
+                    (string) $request->validated('process_step_id'),
+                    (string) $request->validated('process_step_action'),
+                );
+
+                return $this->clientRequestService->get(Uuid::fromString($request->route('id')));
+            }
+
+            $updated = $this->clientRequestService->changeStatus(
+                $request->route('id'),
+                $request->get('status_client_request'),
+                $request->get('reject_cause')
+            );
+
+            $this->clientRequestWorkflowService->syncAfterClientRequestStatusChange(
+                $updated,
+                (string) $request->get('status_client_request'),
+            );
+
+            return $updated;
+        });
+
+        $item->load(['clientRequestProcess.steps']);
 
         $this->clientRequestWidgetsService->clearWidgetCache();
         $this->clientRequestStatusWidgetsService->clearWidgetCache();

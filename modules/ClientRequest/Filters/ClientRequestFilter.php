@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\ClientRequest\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
+use Illuminate\Support\Facades\Auth;
+use Modules\ClientRequest\Enums\ProcessStepStatus;
+use Modules\ClientRequest\Models\ClientRequest;
 
 class ClientRequestFilter extends SearchModelFilter
 {
@@ -79,9 +82,30 @@ class ClientRequestFilter extends SearchModelFilter
         return $this->where('created_at', '<=', $dateTo);
     }
 
-    public function pending()
+    /**
+     * Pending client requests the current user can act on (assigned on a pending process step).
+     */
+    public function pending(mixed $enabled = true)
     {
-        return $this->where('status_client_request', 'pending');
+        $want = filter_var($enabled, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($want !== true) {
+            return $this;
+        }
+
+        $this->where('status_client_request', ClientRequest::STATUS_PENDING);
+
+        $userId = Auth::id();
+        if ($userId === null) {
+            return $this->whereRaw('0 = 1');
+        }
+
+        return $this->whereHas('clientRequestProcess', function ($processQuery) use ($userId) {
+            $processQuery->whereHas('steps', function ($stepQuery) use ($userId) {
+                $stepQuery
+                    ->where('assigned_user_id', (string) $userId)
+                    ->where('status', ProcessStepStatus::Pending->value);
+            });
+        });
     }
 
     public function accepted()
