@@ -107,18 +107,81 @@ class User extends Authenticatable implements JWTSubject, Auditable
     public static function getSubEntitiesAvailableAttributes()
     {
         return [
+            // Basic User Info
             'name',
             'email',
             'phone',
-            "companies",
+            'phone_code',
             'user-type',
-            "data_status",
-            "branch",
-            "job_title",
-            "residence",
-            "broker",
-            "number_of_projects",
-            "end_date",
+            'data_status',
+            'companies',
+
+            // Personal Info
+            'nickname',
+            'birthdate_gregorian',
+            'birthdate_hijri',
+            'nationality',
+            'residence',
+            'address',
+            'postal_code',
+            'landline_number',
+            'other_phone',
+            'marital-status',
+
+            // Professional / Organization
+            'branch',
+            'management',
+            'department',
+            'job_title',
+            'job_type',
+            'job_code',
+            'attendance_constraint',
+
+            // Identity Documents
+            'identity',
+            'passport',
+            'border_number',
+            'work_permit',
+
+            // Social Media
+            'whatsapp',
+            'linkedin',
+            'facebook',
+            'instagram',
+            'telegram',
+            'snapchat',
+
+            // Preferences
+            'currency',
+            'time_zone',
+            'language',
+
+            // UserInfo Sections
+            'bank-info',
+            'salary-info',
+            'employment-info',
+            'contact-info',
+            'social-media',
+            'family-info',
+            'about-me',
+            'cv',
+            'certificates',
+            'qualification',
+            'experience',
+            'courses',
+            'work-license',
+            'privileges',
+            'official-data',
+            'job-offer',
+            'contract-work',
+            'education',
+            'passport-info',
+            'residence-info',
+
+            // Other
+            'broker',
+            'number_of_projects',
+            'end_date',
         ];
     }
 

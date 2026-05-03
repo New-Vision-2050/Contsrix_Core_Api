@@ -92,6 +92,32 @@ class CompanyUserClientPresenter extends AbstractPresenter
             'user_professional_data' => $this->companyUser->userProfessionalData ? (new UserProfessionalDataPresenter($this->companyUser->userProfessionalData))->getData():null,
             "currency"=> $this->companyUser->currency?(new CountryCurrencyPresenter($this->companyUser->currency))->getData():null,
 
+            // Extended fields
+            'phone_code' => $this->companyUser->users->first()?->phone_code,
+            'nickname' => $this->companyUser->nickname,
+            'birthdate_gregorian' => $this->companyUser->birthdate_gregorian,
+            'birthdate_hijri' => $this->companyUser->birthdate_hijri,
+            'nationality' => $this->companyUser->country?->name,
+            'postal_code' => $this->companyUser->postal_code,
+            'landline_number' => $this->companyUser->landline_number,
+            'management' => $this->companyUser->userProfessionalData?->management?->name,
+            'department' => $this->companyUser->userProfessionalData?->department?->name,
+            'job_type' => $this->companyUser->userProfessionalData?->jobType?->name,
+            'job_code' => $this->companyUser->userProfessionalData?->job_code,
+            'attendance_constraint' => $this->companyUser->userProfessionalData?->attendanceConstraint?->name,
+            'whatsapp' => $this->companyUser->whatsapp,
+            'linkedin' => $this->companyUser->linkedin,
+            'facebook' => $this->companyUser->facebook,
+            'instagram' => $this->companyUser->instagram,
+            'telegram' => $this->companyUser->telegram,
+            'snapchat' => $this->companyUser->snapchat,
+            'time_zone' => $this->companyUser->timeZone?->name,
+            'language' => $this->companyUser->language?->name,
+            'bank-info' => (bool) $this->companyUser->bankAccount,
+            'number_of_projects' => null,
+            'end_date' => null,
+            'broker' => null,
+
         ];
     }
 }
