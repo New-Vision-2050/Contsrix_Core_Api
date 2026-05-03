@@ -32,6 +32,7 @@ class AutoAttendanceService
             'is_absent' => $data['is_absent'] ?? 0,
             'is_late' => $data['is_late'] ?? 0,
             'is_holiday' => $data['is_holiday'] ?? 0,
+            'business_date' => $startDateTime?->toDateString(),
         ];
 
         $attendance = Attendance::create($attendanceData);
@@ -86,94 +87,89 @@ class AutoAttendanceService
             ->orderBy('start_time')
             ->get();
 
-        $groupedAttendance = [];
+        // Build lookup: [userId][dateKey][timeKey] => true  (for work periods)
+        //               [userId][dateKey]['_holiday'] => true  (for holiday rows)
+        $existingByUserDate = [];
         foreach ($realAttendanceRecords as $record) {
-            $userId = (string)$record->user_id;
+            $uid     = (string) $record->user_id;
             $dateKey = Carbon::parse($record->start_time)->timezone($timezone)->format('Y-m-d');
+            $timeKey = Carbon::parse($record->start_time)->timezone($timezone)->format('H:i:s');
 
-            if (!isset($groupedAttendance[$userId])) {
-                $groupedAttendance[$userId] = [];
+            $existingByUserDate[$uid][$dateKey][$timeKey] = true;
+
+            if ($record->is_holiday) {
+                $existingByUserDate[$uid][$dateKey]['_holiday'] = true;
             }
-            if (!isset($groupedAttendance[$userId][$dateKey])) {
-                $groupedAttendance[$userId][$dateKey] = collect();
-            }
-            $groupedAttendance[$userId][$dateKey]->push($record);
         }
-
 
         foreach ($allRelevantUsers as $user) {
             $constraint = $user->professionalData?->attendanceConstraint;
-            if($constraint){
+            if ($constraint) {
+                $uid = (string) $user->id;
 
+                $constraintHolidays = collect($constraint->constraint_config['time_rules']['holidays'] ?? [])
+                    ->pluck('date')
+                    ->map(fn($date) => Carbon::parse($date)->format('Y-m-d'))
+                    ->toArray();
 
-            $constraintHolidays = collect($constraint->constraint_config['time_rules']['holidays'] ?? [])
-                                    ->pluck('date')
-                                    ->map(fn($date) => Carbon::parse($date)->format('Y-m-d'))
-                                    ->toArray();
+                foreach ($allDates as $date) {
+                    $dateString = $date->format('Y-m-d');
 
-            foreach ($allDates as $date) {
-                $dateString = $date->format('Y-m-d');
+                    if (in_array($dateString, $constraintHolidays)) {
+                        continue;
+                    }
 
-                if (in_array($dateString, $constraintHolidays)) {
-                    $status = 'Official Holiday';
-                } else {
                     $dayOfWeek = strtolower($date->englishDayOfWeek);
-                    $schedule = $constraint->constraint_config['time_rules']['weekly_schedule'][$dayOfWeek] ?? null;
+                    $schedule  = $constraint->constraint_config['time_rules']['weekly_schedule'][$dayOfWeek] ?? null;
 
-                if ($schedule && isset($schedule['enabled']) && $schedule['enabled']) {
-                    $userId = (string)$user->id;
+                    if ($schedule && isset($schedule['enabled']) && $schedule['enabled']) {
+                        $dayPeriods = $schedule['periods'] ?? [];
 
-                    $dayPeriods = $schedule['periods'] ?? [];
+                        foreach ($dayPeriods as $index => $periodTime) {
+                            $periodTimeKey = Carbon::parse($dateString . ' ' . $periodTime['start_time'])->format('H:i:s');
 
-                    foreach ($dayPeriods as $index => $periodTime) {
-                        $periodName = 'فترة ' . ($index + 1);
-                        $periodStart = Carbon::parse($dateString . ' ' . $periodTime['start_time']);
+                            if (!isset($existingByUserDate[$uid][$dateString][$periodTimeKey])) {
+                                $periodStart = Carbon::parse($dateString . ' ' . $periodTime['start_time']);
+                                $periodName  = 'فترة ' . ($index + 1);
 
-
-                            $existingAbsentRecord = Attendance::where('user_id', $user->id)
-                                ->whereDate('start_time', $dateString)
-                                ->whereTime('start_time', $periodTime['start_time'])
-                                ->first();
-
-                            if (!$existingAbsentRecord) {
                                 $this->createAttendanceRecord(
                                     [
-                                        'user_id' => $user->id,
+                                        'user_id'    => $user->id,
                                         'company_id' => $user->company_id,
                                         'day_status' => 'work_day',
-                                        'timezone' => $timezone,
-                                        'notes' => 'Auto-generated absent record for ' . $periodName . ' on a workday (missed period).',
-                                        'status' => Attendance::STATUS_ABSENT,
-                                        'is_absent' => 1,
+                                        'timezone'   => $timezone,
+                                        'notes'      => 'Auto-generated absent record for ' . $periodName . ' on a workday (missed period).',
+                                        'status'     => Attendance::STATUS_ABSENT,
+                                        'is_absent'  => 1,
                                     ],
                                     $periodStart,
                                 );
+
+                                $existingByUserDate[$uid][$dateString][$periodTimeKey] = true;
                             }
                         }
-                    }else {
-                        $existingHolidayRecord = Attendance::where('user_id', $user->id)
-                            ->whereDate('start_time', $dateString)
-                            ->first();
-
-                        if (!$existingHolidayRecord) {
+                    } else {
+                        if (!isset($existingByUserDate[$uid][$dateString]['_holiday'])) {
                             $carbonDate = Carbon::parse($dateString, $timezone)->startOfDay();
-                            $this->createAttendanceRecord([
-                                    'user_id' => $user->id,
+
+                            $this->createAttendanceRecord(
+                                [
+                                    'user_id'    => $user->id,
                                     'company_id' => $user->company_id,
                                     'day_status' => 'holiday',
-                                    'timezone' => $timezone,
-                                    'notes' => 'Auto-generated holiday record.',
-                                    'status' => Attendance::STATUS_HOLIDAY,
+                                    'timezone'   => $timezone,
+                                    'notes'      => 'Auto-generated holiday record.',
+                                    'status'     => Attendance::STATUS_HOLIDAY,
                                     'is_holiday' => 1,
-                                ],$carbonDate);
+                                ],
+                                $carbonDate,
+                            );
+
+                            $existingByUserDate[$uid][$dateString]['_holiday'] = true;
                         }
                     }
-
                 }
-
             }
-
-        }
         }
     }
 }
