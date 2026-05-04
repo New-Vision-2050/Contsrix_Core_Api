@@ -73,6 +73,12 @@ class UpdateSubEntityAttributesSeeder extends Seeder
         'broker',
         'number_of_projects',
         'end_date',
+        'iban',
+        'contract_number',
+        'contract_start_date',
+        'notice_period',
+        'contract_duration',
+        'salary',
     ];
 
     public function run(): void

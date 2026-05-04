@@ -62,6 +62,8 @@ class SubEntityRecordsService
         return $this->companyUserRepository->withRelationsFilterByType(
             [
                 'users.companyUserCompanies',
+                'bankAccount',
+                'userProfessionalData.jobTitle',
                 'jobOffer',
                 'employmentContract',
                 'userSalary',
