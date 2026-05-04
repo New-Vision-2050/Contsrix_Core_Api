@@ -68,7 +68,9 @@ class ProjectEmployeeController extends Controller
                 return Json::error('Project ID is required', 400);
             }
 
-            $employees = $this->service->getProjectEmployees($projectId);
+            $companyId = $request->query('company_id');
+
+            $employees = $this->service->getProjectEmployees($projectId, $companyId);
 
             $data = $employees->map(function ($employee) {
                 return (new ProjectEmployeePresenter($employee))->getData();

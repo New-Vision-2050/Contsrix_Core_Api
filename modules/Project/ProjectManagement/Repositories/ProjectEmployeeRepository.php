@@ -15,12 +15,17 @@ class ProjectEmployeeRepository extends BaseRepository
         parent::__construct($model);
     }
 
-    public function getByProject(string $projectId): Collection
+    public function getByProject(string $projectId, ?string $companyId = null): Collection
     {
-        return $this->model
+        $query = $this->model
             ->where('project_id', $projectId)
-            ->with(['user', 'assignedBy', 'projectRole.permissions', 'company'])
-            ->get();
+            ->with(['user', 'assignedBy', 'projectRole.permissions', 'company']);
+
+        if ($companyId) {
+            $query->where('company_id', $companyId);
+        }
+
+        return $query->get();
     }
 
     public function assignEmployee(array $data): ProjectEmployee
