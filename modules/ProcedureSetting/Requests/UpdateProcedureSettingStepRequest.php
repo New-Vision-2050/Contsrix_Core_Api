@@ -112,6 +112,9 @@ class UpdateProcedureSettingStepRequest extends FormRequest
 
             'escalation_user_id' => 'sometimes|nullable|uuid|exists:users,id',
 
+            'user_id'    => 'sometimes|nullable|uuid|exists:users,id',
+            'step_order' => 'sometimes|nullable|integer|min:0',
+
             'action_taker_user_ids'   => [
                 'sometimes',
                 'array',

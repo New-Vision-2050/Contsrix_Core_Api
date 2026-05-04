@@ -13,6 +13,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Project\TermSetting\Models\TermSetting;
@@ -166,6 +168,17 @@ class ClientRequest extends Model implements HasMedia
             'client_request_id',
             'user_id'
         );
+    }
+
+    public function processes(): HasMany
+    {
+        return $this->hasMany(Process::class, 'client_request_id');
+    }
+
+    public function clientRequestProcess(): HasOne
+    {
+        return $this->hasOne(Process::class, 'client_request_id')
+            ->where('type', 'client_request');
     }
 
     public function isDraft(): bool
