@@ -54,11 +54,11 @@ class ProjectEmployeeService
         return $this->repository->getByProject($projectId);
     }
 
-    public function getProjectEmployees(string $projectId): Collection
+    public function getProjectEmployees(string $projectId, ?string $companyId = null): Collection
     {
         $project = ProjectManagement::findOrFail($projectId);
 
-        return $this->repository->getByProject($projectId);
+        return $this->repository->getByProject($projectId, $companyId);
     }
 
     public function removeEmployeeFromProject(string $contractEmployeeId): bool
