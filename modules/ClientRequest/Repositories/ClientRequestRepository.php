@@ -41,7 +41,12 @@ class ClientRequestRepository extends BaseRepository
                 'serviceTerms.termServiceSetting',
                 'serviceTerms' => function ($query) {
                     // We'll load the term trees in the presenter using the term_ids
-                }
+                },
+                'clientRequestProcess.steps' => function ($query) {
+                    $query->orderByRaw('(template_step_order IS NULL) ASC')
+                        ->orderBy('template_step_order')
+                        ->orderBy('created_at');
+                },
             ])
             ->findOrFail($id->toString());
     }

@@ -26,6 +26,8 @@ class CreateProcedureSettingStepDTO
         public readonly bool $notify_by_email = false,
         public readonly bool $notify_by_whatsapp = false,
         public readonly ?string $escalation_user_id = null,
+        public readonly ?string $user_id = null,
+        public readonly ?int $step_order = null,
         public readonly ?array $action_taker_user_ids = null,
         public readonly ?array $concerned_user_ids = null,
     ) {
@@ -52,6 +54,8 @@ class CreateProcedureSettingStepDTO
             'notify_by_email'                  => $this->notify_by_email,
             'notify_by_whatsapp'               => $this->notify_by_whatsapp,
             'escalation_user_id'               => $this->escalation_user_id,
+            'user_id'                          => $this->user_id,
+            'step_order'                       => $this->step_order,
         ];
 
         if ($this->action_taker_user_ids !== null) {
