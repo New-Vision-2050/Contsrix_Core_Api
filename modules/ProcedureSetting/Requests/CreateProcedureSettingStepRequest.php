@@ -62,7 +62,6 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
             'escalation_user_id' => 'nullable|uuid|exists:users,id',
 
-            'user_id'   => 'nullable|uuid|exists:users,id',
             'step_order' => 'nullable|integer|min:0',
 
             'action_taker_user_ids'   => [
@@ -103,7 +102,6 @@ class CreateProcedureSettingStepRequest extends FormRequest
             notify_by_email:      (bool) ($v['notify_by_email'] ?? false),
             notify_by_whatsapp:   (bool) ($v['notify_by_whatsapp'] ?? false),
             escalation_user_id:   isset($v['escalation_user_id']) ? (string) $v['escalation_user_id'] : null,
-            user_id:               isset($v['user_id']) ? (string) $v['user_id'] : null,
             step_order:            isset($v['step_order']) ? (int) $v['step_order'] : null,
             action_taker_user_ids: $v['action_taker_user_ids'] ?? null,
             concerned_user_ids:   $v['concerned_user_ids'] ?? null,
