@@ -78,22 +78,22 @@ class ReportDataExtractionService
      */
     protected function extractAttendance(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
     {
-        $base = $this->emptyMetrics($employees, [
+        $globalIds = $this->resolveAttendanceScopedGlobalIds($report, $config, $employees);
+        if ($globalIds === []) {
+            return [];
+        }
+
+        $base = collect($globalIds)->mapWithKeys(fn ($id) => [(string) $id => [
             'present_days'        => 0,
             'absent_days'         => 0,
             'delay_minutes'       => 0,
             'overtime_minutes'    => 0,
             'early_leave_minutes' => 0,
-        ]);
-
-        $globalIds = $this->globalIds($employees);
-        if ($globalIds === []) {
-            return $base;
-        }
+        ]])->all();
 
         [$start, $end] = $this->periodBounds($report);
 
-        $rows = DB::table('attendances as a')
+        $summaryQuery = DB::table('attendances as a')
             ->join('users as u', 'u.id', '=', 'a.user_id')
             ->select(
                 'u.global_company_user_id as global_id',
@@ -106,8 +106,9 @@ class ReportDataExtractionService
             ->where('a.company_id', tenant('id'))
             ->whereBetween('a.business_date', [$start, $end])
             ->whereIn('u.global_company_user_id', $globalIds)
-            ->groupBy('u.global_company_user_id')
-            ->get();
+            ->groupBy('u.global_company_user_id');
+        $this->applyAttendanceRowFilters($summaryQuery, $config);
+        $rows = $summaryQuery->get();
 
         foreach ($rows as $r) {
             $base[(string) $r->global_id] = [
@@ -118,6 +119,50 @@ class ReportDataExtractionService
                 'early_leave_minutes' => (int) $r->early_leave_minutes,
             ];
         }
+
+        $dailyQuery = DB::table('attendances as a')
+            ->join('users as u', 'u.id', '=', 'a.user_id')
+            ->select(
+                'u.global_company_user_id as global_id',
+                'a.business_date',
+                'a.status',
+                'a.day_status',
+                'a.start_time',
+                'a.end_time',
+                'a.clock_in_time',
+                'a.clock_out_time',
+                'a.late_minutes',
+                'a.early_departure_minutes',
+                DB::raw('COALESCE(CAST(a.overtime_hours AS DECIMAL(10,2)) * 60, 0) as overtime_minutes'),
+                'a.notes'
+            )
+            ->where('a.company_id', tenant('id'))
+            ->whereBetween('a.business_date', [$start, $end])
+            ->whereIn('u.global_company_user_id', $globalIds)
+            ->orderBy('u.global_company_user_id')
+            ->orderBy('a.business_date');
+        $this->applyAttendanceRowFilters($dailyQuery, $config);
+        $dailyRows = $dailyQuery->get();
+
+        $dailyMap = [];
+        foreach ($dailyRows as $d) {
+            $gid = (string) $d->global_id;
+            $dailyMap[$gid][] = [
+                'date'                => (string) $d->business_date,
+                'status'              => (string) ($d->status ?? ''),
+                'day_status'          => (string) ($d->day_status ?? ''),
+                'start_time'          => (string) ($d->start_time ?? ''),
+                'end_time'            => (string) ($d->end_time ?? ''),
+                'clock_in_time'       => (string) ($d->clock_in_time ?? ''),
+                'clock_out_time'      => (string) ($d->clock_out_time ?? ''),
+                'late_minutes'        => (int) ($d->late_minutes ?? 0),
+                'overtime_minutes'    => (int) round((float) ($d->overtime_minutes ?? 0)),
+                'early_leave_minutes' => (int) ($d->early_departure_minutes ?? 0),
+                'notes'               => (string) ($d->notes ?? ''),
+            ];
+        }
+
+        $base['__daily'] = $dailyMap;
 
         return $base;
     }
@@ -505,5 +550,113 @@ class ReportDataExtractionService
             substr($start, 0, 10),
             substr($end, 0, 10),
         ];
+    }
+
+    /**
+     * Resolve employees that satisfy step-3 attendance filters at employee level.
+     */
+    private function resolveAttendanceScopedGlobalIds(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
+    {
+        $globalIds = $this->globalIds($employees);
+        if ($globalIds === []) {
+            return [];
+        }
+
+        [$start, $end] = $this->periodBounds($report);
+
+        $query = DB::table('attendances as a')
+            ->join('users as u', 'u.id', '=', 'a.user_id')
+            ->select(
+                'u.global_company_user_id as global_id',
+                DB::raw("COUNT(DISTINCT CASE WHEN a.is_absent = 0 AND a.is_holiday = 0 AND a.clock_in_time IS NOT NULL THEN a.business_date END) as present_days"),
+                DB::raw("COUNT(DISTINCT CASE WHEN a.is_absent = 1 THEN a.business_date END) as absent_days")
+            )
+            ->where('a.company_id', tenant('id'))
+            ->whereBetween('a.business_date', [$start, $end])
+            ->whereIn('u.global_company_user_id', $globalIds)
+            ->groupBy('u.global_company_user_id');
+
+        $this->applyAttendanceRowFilters($query, $config);
+        $rows = $query->get();
+
+        $minRate = $this->attendanceRateThreshold($config->step3->attendanceRateMin);
+        if ($minRate <= 0) {
+            return $rows->pluck('global_id')->map(fn ($v) => (string) $v)->all();
+        }
+
+        return $rows
+            ->filter(function ($r) use ($minRate) {
+                $present = (int) ($r->present_days ?? 0);
+                $absent  = (int) ($r->absent_days ?? 0);
+                $total   = $present + $absent;
+                if ($total <= 0) {
+                    return false;
+                }
+                $rate = ($present / $total) * 100;
+                return $rate >= $minRate;
+            })
+            ->pluck('global_id')
+            ->map(fn ($v) => (string) $v)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Applies step-3 row-level attendance filters to a query that has alias `a`.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     */
+    private function applyAttendanceRowFilters($query, ReportWizardConfigDTO $config): void
+    {
+        $pattern = $config->step3->attendancePattern;
+        match ($pattern) {
+            ReportEnums::ATT_PATTERN_ABSENTEES_ONLY => $query->where('a.is_absent', 1),
+            ReportEnums::ATT_PATTERN_LATE_ONLY      => $query->where('a.is_late', 1),
+            ReportEnums::ATT_PATTERN_OVERTIME_ONLY  => $query->whereRaw('CAST(a.overtime_hours AS DECIMAL(10,2)) > 0'),
+            ReportEnums::ATT_PATTERN_PRESENT_ONLY   => $query->where('a.is_absent', 0)->where('a.is_holiday', 0),
+            default                                 => null, // all
+        };
+
+        $delayThreshold = $this->delayThresholdMinutes($config->step3->delayLimitMinutes);
+        if ($delayThreshold > 0) {
+            $query->where('a.is_late', 1)->where('a.late_minutes', '>=', $delayThreshold);
+        }
+
+        $overtimeThreshold = $this->overtimeThresholdMinutes($config->step3->minOvertime);
+        if ($overtimeThreshold > 0) {
+            $query->whereRaw('CAST(a.overtime_hours AS DECIMAL(10,2)) * 60 >= ?', [$overtimeThreshold]);
+        }
+    }
+
+    private function delayThresholdMinutes(string $option): int
+    {
+        return match ($option) {
+            ReportEnums::DELAY_FIVE_MIN_OR_MORE   => 5,
+            ReportEnums::DELAY_FIFTEEN_MIN_OR_MORE=> 15,
+            ReportEnums::DELAY_THIRTY_MIN_OR_MORE => 30,
+            ReportEnums::DELAY_SIXTY_MIN_OR_MORE  => 60,
+            default                               => 0,
+        };
+    }
+
+    private function overtimeThresholdMinutes(string $option): int
+    {
+        return match ($option) {
+            ReportEnums::OT_HALF_HOUR_OR_MORE => 30,
+            ReportEnums::OT_ONE_HOUR_OR_MORE  => 60,
+            ReportEnums::OT_TWO_HOURS_OR_MORE => 120,
+            ReportEnums::OT_FOUR_HOURS_OR_MORE=> 240,
+            default                           => 0,
+        };
+    }
+
+    private function attendanceRateThreshold(string $option): int
+    {
+        return match ($option) {
+            ReportEnums::ATT_RATE_FIFTY   => 50,
+            ReportEnums::ATT_RATE_SEVENTY => 70,
+            ReportEnums::ATT_RATE_NINETY  => 90,
+            default                       => 0,
+        };
     }
 }
