@@ -7,8 +7,10 @@ namespace Modules\Reports\Services;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Modules\Reports\DTO\CreateReportDTO;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
+use Modules\Reports\Enums\ReportEnums;
 use Modules\Reports\Enums\ReportStatus;
 use Modules\Reports\Jobs\GenerateReportJob;
 use Modules\Reports\Models\Report;
@@ -106,6 +108,13 @@ class ReportCRUDService
 
     /**
      * Stream the generated file to the caller as an HTTP download.
+     *
+     * Content-Type is derived from `export_format` (NOT from the storage
+     * driver's MIME guess), so the browser always sees the right type even
+     * if a stale file with a wrong extension lives on disk. The filename is
+     * built from the report's translated name + correct extension and is
+     * sent both as ASCII (`filename=`) and RFC 5987 UTF-8 (`filename*=`)
+     * so Arabic names render correctly in the browser's Save dialog.
      */
     public function download(UuidInterface $id): Response
     {
@@ -120,11 +129,83 @@ class ReportCRUDService
             abort(404, __('Report file is missing.'));
         }
 
+        [$mime, $extension] = $this->mimeAndExtensionFor($report->export_format);
+        $downloadName       = $this->buildDownloadFilename($report, $extension);
+
+        $asciiName    = $this->asciiFallback($downloadName);
+        $rfc5987Name  = rawurlencode($downloadName);
+
         return response($disk->get($report->file_path), 200, [
-            'Content-Type'        => $disk->mimeType($report->file_path) ?: 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="' . basename($report->file_path) . '"',
-            'Content-Length'      => (string) ($report->file_size ?: $disk->size($report->file_path)),
+            'Content-Type'              => $mime,
+            'Content-Disposition'       => sprintf(
+                'attachment; filename="%s"; filename*=UTF-8\'\'%s',
+                $asciiName,
+                $rfc5987Name,
+            ),
+            'Content-Length'            => (string) ($report->file_size ?: $disk->size($report->file_path)),
+            'X-Content-Type-Options'    => 'nosniff',
+            // Surface the filename to browser fetch() / axios callers that do
+            // their own download (otherwise CORS hides Content-Disposition).
+            'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Length, Content-Type',
         ]);
+    }
+
+    /**
+     * @return array{0:string,1:string} [mime, extension]
+     */
+    private function mimeAndExtensionFor(string $format): array
+    {
+        return match ($format) {
+            ReportEnums::FORMAT_PDF   => ['application/pdf', 'pdf'],
+            ReportEnums::FORMAT_EXCEL => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xlsx'],
+            ReportEnums::FORMAT_CSV   => ['text/csv; charset=UTF-8', 'csv'],
+            default                   => ['application/octet-stream', 'bin'],
+        };
+    }
+
+    /**
+     * Build a filename like "attendance-absence-q2-2026.pdf" using the
+     * report's translated name (preferring the report's own language).
+     */
+    private function buildDownloadFilename(Report $report, string $extension): string
+    {
+        $lang = $report->language ?: ReportEnums::LANGUAGE_EN;
+
+        $raw = is_array($report->name)
+            ? ($report->name[$lang] ?? ($report->name[ReportEnums::LANGUAGE_EN] ?? reset($report->name)))
+            : (string) $report->name;
+
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            $raw = 'report-' . $report->id;
+        }
+
+        // Slug keeps unicode letters (so Arabic stays readable) but strips
+        // path separators / control chars that break Content-Disposition.
+        $clean = preg_replace('/[\\/\\\\:*?"<>|\\r\\n\\t]+/u', '-', $raw);
+        $clean = preg_replace('/\\s+/u', ' ', (string) $clean);
+        $clean = trim((string) $clean, " -");
+
+        return ($clean === '' ? ('report-' . $report->id) : $clean) . '.' . $extension;
+    }
+
+    /**
+     * Strict ASCII fallback for the legacy `filename=` parameter. Uses
+     * Str::slug so the browser always has a printable name even when the
+     * report title is fully non-Latin.
+     */
+    private function asciiFallback(string $name): string
+    {
+        $dot       = strrpos($name, '.');
+        $base      = $dot === false ? $name : substr($name, 0, $dot);
+        $extension = $dot === false ? ''    : substr($name, $dot + 1);
+
+        $slug = Str::slug($base, '-');
+        if ($slug === '') {
+            $slug = 'report';
+        }
+
+        return $extension === '' ? $slug : ($slug . '.' . $extension);
     }
 
     /**
