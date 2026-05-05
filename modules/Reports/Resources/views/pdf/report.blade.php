@@ -6,6 +6,7 @@
     /** @var \Modules\Reports\Services\ReportLookupService $lookups */
     $lang = $config->step1->reportLanguage;
     $dir  = $lang === 'ar' ? 'rtl' : 'ltr';
+    $align = $lang === 'ar' ? 'right' : 'left';
     $reportName = is_array($report->name)
         ? ($report->name[$lang] ?? reset($report->name))
         : (string) $report->name;
@@ -16,16 +17,21 @@
     <meta charset="utf-8">
     <title>{{ $reportName }}</title>
     <style>
-        body { font-family: "DejaVu Sans", sans-serif; font-size: 11px; color: #1f2937; }
-        h1   { font-size: 18px; margin: 0 0 8px; }
-        h2   { font-size: 14px; margin: 16px 0 6px; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; }
+        /* DejaVu Sans is bundled with mPDF and includes Arabic glyphs. mPDF's
+           autoArabic + autoLangToFont will perform contextual letter shaping
+           and BiDi reordering automatically when text is tagged with
+           lang="ar" / dir="rtl". */
+        body  { font-family: "dejavusans", sans-serif; font-size: 11px; color: #1f2937; }
+        h1    { font-size: 18px; margin: 0 0 8px; }
+        h2    { font-size: 14px; margin: 16px 0 6px; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        th, td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: {{ $lang === 'ar' ? 'right' : 'left' }}; }
-        th   { background: #f3f4f6; }
+        th, td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: {{ $align }}; vertical-align: top; }
+        th    { background: #f3f4f6; font-weight: 600; }
         .meta td { border: none; padding: 2px 6px; }
+        .num  { text-align: center; direction: ltr; }
     </style>
 </head>
-<body>
+<body lang="{{ $lang }}" dir="{{ $dir }}">
     <h1>{{ $reportName }}</h1>
     <table class="meta">
         <tr>
