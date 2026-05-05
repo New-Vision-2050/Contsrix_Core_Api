@@ -97,8 +97,10 @@ class ReportDataExtractionService
             ->join('users as u', 'u.id', '=', 'a.user_id')
             ->select(
                 'u.global_company_user_id as global_id',
-                DB::raw("COUNT(DISTINCT CASE WHEN a.is_absent = 0 AND a.is_holiday = 0 AND a.clock_in_time IS NOT NULL THEN a.business_date END) as present_days"),
-                DB::raw("COUNT(DISTINCT CASE WHEN a.is_absent = 1 THEN a.business_date END) as absent_days"),
+                // Present: clocked in, not a synthetic absence, not a holiday
+                DB::raw("COUNT(DISTINCT CASE WHEN a.clock_in_time IS NOT NULL AND (a.is_absent = 0 OR a.is_absent IS NULL) AND (a.is_holiday = 0 OR a.is_holiday IS NULL) THEN a.business_date END) as present_days"),
+                // Absent: explicit is_absent=1 rows OR waiting rows with no clock_in (employee never arrived)
+                DB::raw("COUNT(DISTINCT CASE WHEN a.is_absent = 1 OR (a.status = 'waiting' AND a.clock_in_time IS NULL AND (a.is_holiday = 0 OR a.is_holiday IS NULL)) THEN a.business_date END) as absent_days"),
                 DB::raw("COALESCE(SUM(CASE WHEN a.is_late = 1 THEN a.late_minutes ELSE 0 END), 0) as delay_minutes"),
                 DB::raw("COALESCE(SUM(CAST(a.overtime_hours AS DECIMAL(10,2))) * 60, 0) as overtime_minutes"),
                 DB::raw("COALESCE(SUM(CASE WHEN a.is_early_departure = 1 THEN a.early_departure_minutes ELSE 0 END), 0) as early_leave_minutes")
@@ -107,7 +109,6 @@ class ReportDataExtractionService
             ->whereBetween('a.business_date', [$start, $end])
             ->whereIn('u.global_company_user_id', $globalIds)
             ->groupBy('u.global_company_user_id');
-        $this->applyAttendanceRowFilters($summaryQuery, $config);
         $rows = $summaryQuery->get();
 
         foreach ($rows as $r) {
@@ -127,6 +128,8 @@ class ReportDataExtractionService
                 'a.business_date',
                 'a.status',
                 'a.day_status',
+                'a.is_absent',
+                'a.is_holiday',
                 'a.start_time',
                 'a.end_time',
                 'a.clock_in_time',
@@ -141,16 +144,25 @@ class ReportDataExtractionService
             ->whereIn('u.global_company_user_id', $globalIds)
             ->orderBy('u.global_company_user_id')
             ->orderBy('a.business_date');
-        $this->applyAttendanceRowFilters($dailyQuery, $config);
         $dailyRows = $dailyQuery->get();
 
         $dailyMap = [];
         foreach ($dailyRows as $d) {
             $gid = (string) $d->global_id;
+            // Determine the effective display status:
+            // - is_holiday=1 → holiday
+            // - is_absent=1 OR (waiting with no clock_in) → absent
+            // - has clock_in → present
+            $isHoliday  = (int) ($d->is_holiday ?? 0) === 1;
+            $isAbsent   = (int) ($d->is_absent ?? 0) === 1;
+            $isWaiting  = ($d->status ?? '') === 'waiting' && empty($d->clock_in_time);
+            $displayStatus = $isHoliday ? 'holiday' : ($isAbsent || $isWaiting ? 'absent' : (empty($d->clock_in_time) ? 'absent' : 'present'));
+
             $dailyMap[$gid][] = [
                 'date'                => (string) $d->business_date,
                 'status'              => (string) ($d->status ?? ''),
                 'day_status'          => (string) ($d->day_status ?? ''),
+                'display_status'      => $displayStatus,
                 'start_time'          => (string) ($d->start_time ?? ''),
                 'end_time'            => (string) ($d->end_time ?? ''),
                 'clock_in_time'       => (string) ($d->clock_in_time ?? ''),

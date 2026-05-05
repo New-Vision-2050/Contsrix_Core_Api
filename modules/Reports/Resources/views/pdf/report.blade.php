@@ -143,7 +143,16 @@
                                 @foreach ($empDaily as $d)
                                     <tr>
                                         <td class="num">{{ $d['date'] ?? '' }}</td>
-                                        <td>{{ $d['day_status'] ?: ($d['status'] ?? '') }}</td>
+                                        @php
+                                            $ds = $d['display_status'] ?? ($d['day_status'] ?: ($d['status'] ?? ''));
+                                            $dsLabel = match($ds) {
+                                                'present' => ($lang === 'ar' ? 'حاضر' : 'Present'),
+                                                'absent'  => ($lang === 'ar' ? 'غائب' : 'Absent'),
+                                                'holiday' => ($lang === 'ar' ? 'إجازة' : 'Holiday'),
+                                                default   => $ds,
+                                            };
+                                        @endphp
+                                        <td>{{ $dsLabel }}</td>
                                         <td class="num">{{ $config->step3->includeEntryExitTime ? ($d['clock_in_time'] ?? '') : '-' }}</td>
                                         <td class="num">{{ $config->step3->includeEntryExitTime ? ($d['clock_out_time'] ?? '') : '-' }}</td>
                                         <td class="num">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>
