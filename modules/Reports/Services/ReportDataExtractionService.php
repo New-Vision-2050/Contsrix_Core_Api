@@ -365,18 +365,85 @@ class ReportDataExtractionService
 
     protected function extractSalaries(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
     {
-        // TODO: join `user_salaries` + selected `salaryComponentIds` from step4
-        //       to expose per-component values per employee. Returning a
-        //       deterministic zero skeleton keeps the pipeline runnable.
         $components = $config->step4->salaryComponentIds;
-
-        return $employees->mapWithKeys(function ($e) use ($components) {
-            $row = ['net' => 0];
+        $base = $employees->mapWithKeys(function ($e) use ($components) {
+            $row = ['net' => 0.0];
             foreach ($components as $c) {
-                $row[$c] = 0;
+                $row[$c] = 0.0;
             }
             return [(string) $e->global_id => $row];
         })->all();
+
+        $globalIds = $this->globalIds($employees);
+        if ($globalIds === []) {
+            return $base;
+        }
+
+        // Pull all salary rows for the selected employees in this tenant.
+        // The table is component-oriented: one row per global_id + salary_type_code.
+        $rows = DB::table('user_salaries')
+            ->select('global_id', 'salary_type_code', DB::raw('COALESCE(SUM(CAST(salary AS DECIMAL(12,2))),0) as amount'))
+            ->where('company_id', tenant('id'))
+            ->whereIn('global_id', $globalIds)
+            ->groupBy('global_id', 'salary_type_code')
+            ->get();
+
+        // Accumulate by employee.
+        $seenComponentCodes = [];
+        foreach ($rows as $r) {
+            $gid = (string) $r->global_id;
+            if (!isset($base[$gid])) {
+                continue;
+            }
+
+            $code   = (string) ($r->salary_type_code ?? '');
+            $amount = (float) $r->amount;
+            $seenComponentCodes[$gid][$code] = true;
+
+            // Fill selected component columns when present.
+            if ($code !== '' && array_key_exists($code, $base[$gid])) {
+                $base[$gid][$code] = $amount;
+            }
+        }
+
+        // Total salary per employee (used as fallback when selected component
+        // ids don't match stored salary_type_code values in DB).
+        $allTotals = DB::table('user_salaries')
+            ->select('global_id', DB::raw('COALESCE(SUM(CAST(salary AS DECIMAL(12,2))),0) as total'))
+            ->where('company_id', tenant('id'))
+            ->whereIn('global_id', $globalIds)
+            ->groupBy('global_id')
+            ->pluck('total', 'global_id')
+            ->map(fn ($v) => (float) $v)
+            ->all();
+
+        // Net = sum of all selected components if user picked any;
+        // otherwise fallback to total of all salary rows for that user.
+        foreach ($base as $gid => $row) {
+            $net = 0.0;
+            if ($components !== []) {
+                $matchedAnySelectedCode = false;
+                foreach ($components as $component) {
+                    if (isset($seenComponentCodes[$gid][$component])) {
+                        $matchedAnySelectedCode = true;
+                    }
+                    $net += (float) ($row[$component] ?? 0.0);
+                }
+
+                // If this employee has salary rows but none of the selected
+                // component ids matched the stored codes, fallback to the full
+                // salary total so net does not incorrectly stay 0.
+                if (!$matchedAnySelectedCode && isset($allTotals[$gid])) {
+                    $net = (float) $allTotals[$gid];
+                }
+            } else {
+                $net = (float) ($allTotals[$gid] ?? 0.0);
+            }
+
+            $base[$gid]['net'] = round($net, 2);
+        }
+
+        return $base;
     }
 
     protected function extractDeductions(Report $report, ReportWizardConfigDTO $config, Collection $employees): array
