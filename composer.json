@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.2",
         "ajcastro/eager-load-pivot-relations": "^0.3.0",
+        "barryvdh/laravel-dompdf": "3.1",
         "guzzlehttp/guzzle": "^7.9",
         "ichtrojan/laravel-otp": "^2.0",
         "intervention/image": "^3.11",

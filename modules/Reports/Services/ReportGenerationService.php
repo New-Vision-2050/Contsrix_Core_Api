@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Services;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
 use Modules\Reports\Enums\ReportEnums;
+use Modules\Reports\Exports\ReportCsvExport;
 use Modules\Reports\Exports\ReportExcelExport;
 use Modules\Reports\Models\Report;
 use Modules\Reports\Repositories\ReportRepository;
@@ -92,6 +94,13 @@ class ReportGenerationService
     }
 
     /**
+     * Single-sheet CSV containing the actual employee/metric rows.
+     *
+     * The previous implementation reused the multi-sheet `ReportExcelExport`,
+     * which made Maatwebsite/Excel write only the first sheet (the metadata
+     * cover) into the CSV — that's why downloads looked like a "CSV with HTML"
+     * instead of real data.
+     *
      * @param \Illuminate\Support\Collection $employees
      * @param array<string, array<string,mixed>> $sections
      * @return array{path:string,disk:string,size:?int}
@@ -99,7 +108,7 @@ class ReportGenerationService
     private function renderCsv(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): array
     {
         $path   = $this->buildPath($report, 'csv');
-        $export = new ReportExcelExport($report, $config, $employees, $sections, $this->lookupService);
+        $export = new ReportCsvExport($report, $config, $employees, $sections, $this->lookupService);
 
         Excel::store($export, $path, self::DISK, \Maatwebsite\Excel\Excel::CSV);
 
@@ -111,12 +120,15 @@ class ReportGenerationService
     }
 
     /**
-     * Minimal HTML-based PDF placeholder. To switch to real PDF output, install
-     * `barryvdh/laravel-dompdf` and replace the body of this method with:
+     * Real PDF rendered with DomPDF (`barryvdh/laravel-dompdf`).
      *
-     *   $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports::pdf.report', [...])
-     *       ->setPaper($config->step1->paperSize, $config->step1->printOrientation);
-     *   Storage::disk(self::DISK)->put($path, $pdf->output());
+     * Honours `paperSize` / `printOrientation` from the wizard. The blade
+     * view (`reports::pdf.report`) already ships with RTL/LTR styling, so
+     * Arabic reports render right-to-left automatically.
+     *
+     * NOTE: For Arabic glyph shaping you may want to register a unicode font
+     * (e.g. Cairo/Amiri) via `config/dompdf.php` — DejaVu Sans (the default)
+     * supports Arabic but does not perform contextual shaping.
      *
      * @param \Illuminate\Support\Collection $employees
      * @param array<string, array<string,mixed>> $sections
@@ -124,17 +136,22 @@ class ReportGenerationService
      */
     private function renderPdf(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): array
     {
-        $path = $this->buildPath($report, 'pdf.html');
+        $path = $this->buildPath($report, 'pdf');
 
-        $html = view('reports::pdf.report', [
+        $pdf = Pdf::loadView('reports::pdf.report', [
             'report'    => $report,
             'config'    => $config,
             'employees' => $employees,
             'sections'  => $sections,
             'lookups'   => $this->lookupService,
-        ])->render();
+        ])
+            ->setPaper(
+                strtolower($config->step1->paperSize ?: 'a4'),
+                strtolower($config->step1->printOrientation ?: 'portrait'),
+            )
+            ->setOption(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
 
-        Storage::disk(self::DISK)->put($path, $html);
+        Storage::disk(self::DISK)->put($path, $pdf->output());
 
         return [
             'path' => $path,
