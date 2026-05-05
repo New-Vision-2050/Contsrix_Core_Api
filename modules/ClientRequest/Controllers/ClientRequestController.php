@@ -132,31 +132,37 @@ class ClientRequestController extends Controller
 
     public function changeStatus(ChangeClientRequestStatusRequest $request): JsonResponse
     {
-        $item = DB::transaction(function () use ($request) {
-            if ($request->filled('process_step_id')) {
-                $this->clientRequestWorkflowService->actOnProcessStepForClientRequest(
+        $status = (string) $request->validated('status_client_request');
+
+        $action = match ($status) {
+            'accepted' => 'approve',
+            'rejected' => 'reject',
+            default    => null,
+        };
+
+        DB::transaction(function () use ($request, $action) {
+            if ($action !== null) {
+                $this->clientRequestWorkflowService->actOnPendingStepForCurrentUser(
                     (string) $request->route('id'),
-                    (string) $request->validated('process_step_id'),
-                    (string) $request->validated('process_step_action'),
+                    $action,
                 );
 
-                return $this->clientRequestService->get(Uuid::fromString($request->route('id')));
+                return;
             }
 
             $updated = $this->clientRequestService->changeStatus(
                 $request->route('id'),
-                $request->get('status_client_request'),
-                $request->get('reject_cause')
+                $request->validated('status_client_request'),
+                $request->validated('reject_cause'),
             );
 
             $this->clientRequestWorkflowService->syncAfterClientRequestStatusChange(
                 $updated,
-                (string) $request->get('status_client_request'),
+                $request->validated('status_client_request'),
             );
-
-            return $updated;
         });
 
+        $item = $this->clientRequestService->get(Uuid::fromString($request->route('id')));
         $item->load(['clientRequestProcess.steps']);
 
         $this->clientRequestWidgetsService->clearWidgetCache();
@@ -166,6 +172,21 @@ class ClientRequestController extends Controller
 
         return Json::item($presenter->getData());
     }
+    // public function changeStatus(ChangeClientRequestStatusRequest $request): JsonResponse
+    // {
+    //     $item = $this->clientRequestService->changeStatus(
+    //         $request->route('id'),
+    //         $request->get('status_client_request'),
+    //         $request->get('reject_cause')
+    //     );
+
+    //     $this->clientRequestWidgetsService->clearWidgetCache();
+    //     $this->clientRequestStatusWidgetsService->clearWidgetCache();
+
+    //     $presenter = new ClientRequestPresenter($item);
+
+    //     return Json::item($presenter->getData());
+    // }
 
     public function getMyRequests(GetClientRequestListRequest $request): JsonResponse
     {
