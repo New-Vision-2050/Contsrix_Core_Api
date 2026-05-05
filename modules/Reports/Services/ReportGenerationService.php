@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Reports\Services;
 
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use Mpdf\Mpdf;
 use Modules\Reports\DTO\ReportWizardConfigDTO;
 use Modules\Reports\Enums\ReportEnums;
 use Modules\Reports\Exports\ReportCsvExport;
@@ -120,15 +120,17 @@ class ReportGenerationService
     }
 
     /**
-     * Real PDF rendered with DomPDF (`barryvdh/laravel-dompdf`).
+     * Real PDF rendered with mPDF (`mpdf/mpdf`).
      *
-     * Honours `paperSize` / `printOrientation` from the wizard. The blade
-     * view (`reports::pdf.report`) already ships with RTL/LTR styling, so
-     * Arabic reports render right-to-left automatically.
+     * mPDF is used instead of DomPDF specifically because it has *native*
+     * Arabic support: contextual letter shaping (initial/medial/final/isolated
+     * forms via `autoArabic = true`) and full bi-directional (BiDi) text flow.
+     * DomPDF prints Arabic code points as standalone, left-to-right glyphs,
+     * which is why words came out disconnected and reversed.
      *
-     * NOTE: For Arabic glyph shaping you may want to register a unicode font
-     * (e.g. Cairo/Amiri) via `config/dompdf.php` — DejaVu Sans (the default)
-     * supports Arabic but does not perform contextual shaping.
+     * Honours `paperSize` / `printOrientation` and the report language from
+     * the wizard. For Arabic reports the document direction is forced to RTL
+     * at the page level so tables/headers/footers also flow right-to-left.
      *
      * @param \Illuminate\Support\Collection $employees
      * @param array<string, array<string,mixed>> $sections
@@ -138,20 +140,49 @@ class ReportGenerationService
     {
         $path = $this->buildPath($report, 'pdf');
 
-        $pdf = Pdf::loadView('reports::pdf.report', [
+        $isArabic    = $config->step1->reportLanguage === ReportEnums::LANGUAGE_AR;
+        $orientation = strtoupper($config->step1->printOrientation) === 'LANDSCAPE' ? 'L' : 'P';
+        $paper       = $config->step1->paperSize ?: 'A4';
+
+        $tempDir = storage_path('app/mpdf-temp');
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir, 0775, true);
+        }
+
+        $mpdf = new Mpdf([
+            'mode'             => 'utf-8',
+            'format'           => $paper,
+            'orientation'      => $orientation,
+            'tempDir'          => $tempDir,
+            'default_font'     => 'dejavusans',
+            'autoScriptToLang' => true,
+            'autoLangToFont'   => true,
+            'autoArabic'       => true,
+            'useSubstitutions' => true,
+            'margin_left'      => 12,
+            'margin_right'     => 12,
+            'margin_top'       => 14,
+            'margin_bottom'    => 14,
+        ]);
+
+        if ($isArabic) {
+            $mpdf->SetDirectionality('rtl');
+        }
+
+        $mpdf->SetTitle((string) ($report->getTranslation('name', $config->step1->reportLanguage) ?? 'Report'));
+        $mpdf->SetCreator('Constrix Reports');
+
+        $html = view('reports::pdf.report', [
             'report'    => $report,
             'config'    => $config,
             'employees' => $employees,
             'sections'  => $sections,
             'lookups'   => $this->lookupService,
-        ])
-            ->setPaper(
-                strtolower($config->step1->paperSize ?: 'a4'),
-                strtolower($config->step1->printOrientation ?: 'portrait'),
-            )
-            ->setOption(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
+        ])->render();
 
-        Storage::disk(self::DISK)->put($path, $pdf->output());
+        $mpdf->WriteHTML($html);
+
+        Storage::disk(self::DISK)->put($path, $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN));
 
         return [
             'path' => $path,

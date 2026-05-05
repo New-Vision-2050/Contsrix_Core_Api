@@ -25,6 +25,7 @@
         "m-tech-stack/base-package": "^1.0",
         "m-tech-stack/rabbit-mq": "^1.0",
         "maatwebsite/excel": "^3.1",
+        "mpdf/mpdf": "8.3",
         "nevadskiy/laravel-tree": "^0.6.0",
         "orangehill/iseed": "^3.1",
         "owen-it/laravel-auditing": "^14.0",
