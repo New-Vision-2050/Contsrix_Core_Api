@@ -23,6 +23,7 @@ use Modules\Auth\Requests\RefreshTokenRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Requests\ValidateOtpRequest;
+use Modules\Auth\Requests\ValidateOtpRequestResetPassword;
 use Modules\Auth\Services\AuthService;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
@@ -95,7 +96,7 @@ class AuthController extends Controller
         return Json::success("success");
     }
 
-    public function validateOtp(ValidateOtpRequest $request)
+    public function validateOtp(ValidateOtpRequestResetPassword $request)
     {
         return Json::item(["token" => $this->authService->validateOtp($request->createValidateOtpDTO())]);
     }
