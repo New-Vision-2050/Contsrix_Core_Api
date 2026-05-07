@@ -400,15 +400,15 @@ class AuthService
 
     private function makeAccessToken($user): string
     {
+        JWTAuth::manager()->setTTL(config('jwt.ac_expiration'));
         return JWTAuth::claims(['token_ability' => TokenAbility::ACCESS_API->value])
-            ->expiresIn(config('jwt.ac_expiration') * 60)
             ->fromUser($user);
     }
 
     private function makeRefreshToken($user): string
     {
+        JWTAuth::manager()->setTTL(config('jwt.rt_expiration'));
         return JWTAuth::claims(['token_ability' => TokenAbility::ISSUE_ACCESS_TOKEN->value])
-            ->expiresIn(config('jwt.rt_expiration') * 60)
             ->fromUser($user);
     }
 
