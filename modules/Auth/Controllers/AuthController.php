@@ -19,6 +19,7 @@ use Modules\Auth\Requests\LoginStepAlternativeRequest;
 use Modules\Auth\Requests\LoginStepsRequest;
 use Modules\Auth\Requests\LoginWithOtpRequest;
 use Modules\Auth\Requests\LogoutRequest;
+use Modules\Auth\Requests\RefreshTokenRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Requests\ValidateOtpRequest;
@@ -173,6 +174,13 @@ class AuthController extends Controller
         return Json::success("success");
     }
 
+
+    public function refreshToken(RefreshTokenRequest $request)
+    {
+        $token = $this->authService->refreshToken();
+
+        return Json::item(['token' => $token]);
+    }
 
     public function getDataForLoginAsAdmin(getDataForLoginAsAdminRequest $request)
     {

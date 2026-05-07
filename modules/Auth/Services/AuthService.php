@@ -379,4 +379,15 @@ class AuthService
 
     }
 
+    public function refreshToken(): string
+    {
+        $newToken = JWTAuth::refresh(JWTAuth::getToken());
+
+        if (!$newToken) {
+            throw new \ErrorException(__("validation.invalid-token"), 401);
+        }
+
+        return $newToken;
+    }
+
 }
