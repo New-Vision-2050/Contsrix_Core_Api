@@ -29,8 +29,8 @@ class ValidateOtpRequest extends FormRequest
                         })
                         ->exists();
 
-                    if (!$exists) {
-                        $fail(__('validation.user-not-found'));
+                    if ($exists) {
+                        $fail(__('validation.user-found'));
                     }
                 },
             ],
