@@ -61,6 +61,11 @@ class AuthService
         }
         $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
 
+        // Verify password
+        if (!$user || !password_verify($authDTO->getPassword(), $user->password)) {
+            throw new \ErrorException(__("validation.invalid-credential"), 401);
+        }
+
         $accessToken = $this->makeAccessToken($user);
         if (!$accessToken) {
             throw new \ErrorException(__("validation.invalid-credential"), 403);
@@ -400,14 +405,14 @@ class AuthService
 
     private function makeAccessToken($user): string
     {
-        JWTAuth::manager()->setTTL(config('jwt.ac_expiration'));
+        JWTAuth::factory()->setTTL(config('jwt.ac_expiration'));
         return JWTAuth::claims(['token_ability' => TokenAbility::ACCESS_API->value])
             ->fromUser($user);
     }
 
     private function makeRefreshToken($user): string
     {
-        JWTAuth::manager()->setTTL(config('jwt.rt_expiration'));
+        JWTAuth::factory()->setTTL(config('jwt.rt_expiration'));
         return JWTAuth::claims(['token_ability' => TokenAbility::ISSUE_ACCESS_TOKEN->value])
             ->fromUser($user);
     }
