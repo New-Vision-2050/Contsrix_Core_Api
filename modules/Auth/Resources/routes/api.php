@@ -26,6 +26,7 @@ Route::group(['middleware' => ['auth:api']
 ], function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/refresh-token', [AuthController::class, 'refreshToken']);
     Route::get('/get-data-for-login-as-admin', [AuthController::class, 'getDataForLoginAsAdmin']);
 
 

@@ -828,6 +828,11 @@ class CompanyUserRepository extends BaseRepository
         $this->userRepository->updateWhere(
             ["id" => $userId], $data
         );
+        $user = $this->userRepository->findOneBy(["id" => $userId]);
+        if(isset($data["email"]))
+        {
+            $this->model->updateWhere(["id" =>$user->global_company_user_id ], ["email" => $data["email"]]);
+        }
 
         return true;
     }
