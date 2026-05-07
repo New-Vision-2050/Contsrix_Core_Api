@@ -405,16 +405,50 @@ class AuthService
 
     private function makeAccessToken($user): string
     {
-        JWTAuth::factory()->setTTL(config('jwt.ac_expiration'));
-        return JWTAuth::claims(['token_ability' => TokenAbility::ACCESS_API->value])
-            ->fromUser($user);
+        $factory = JWTAuth::manager()->getPayloadFactory();
+        $factory->setTTL(config('jwt.ac_expiration'));
+
+        $subjectClaims = [
+            'sub' => $user->getJWTIdentifier(),
+        ];
+
+        // Add subject locking if enabled
+        $config = config('jwt.lock_subject', true);
+        if ($config) {
+            $subjectClaims['prv'] = sha1(get_class($user));
+        }
+
+        $payload = $factory->customClaims(array_merge(
+            $subjectClaims,
+            ['token_ability' => TokenAbility::ACCESS_API->value],
+            $user->getJWTCustomClaims() ?? []
+        ))->make();
+
+        return JWTAuth::manager()->encode($payload)->get();
     }
 
     private function makeRefreshToken($user): string
     {
-        JWTAuth::factory()->setTTL(config('jwt.rt_expiration'));
-        return JWTAuth::claims(['token_ability' => TokenAbility::ISSUE_ACCESS_TOKEN->value])
-            ->fromUser($user);
+        $factory = JWTAuth::manager()->getPayloadFactory();
+        $factory->setTTL(config('jwt.rt_expiration'));
+
+        $subjectClaims = [
+            'sub' => $user->getJWTIdentifier(),
+        ];
+
+        // Add subject locking if enabled
+        $config = config('jwt.lock_subject', true);
+        if ($config) {
+            $subjectClaims['prv'] = sha1(get_class($user));
+        }
+
+        $payload = $factory->customClaims(array_merge(
+            $subjectClaims,
+            ['token_ability' => TokenAbility::ISSUE_ACCESS_TOKEN->value],
+            $user->getJWTCustomClaims() ?? []
+        ))->make();
+
+        return JWTAuth::manager()->encode($payload)->get();
     }
 
 }
