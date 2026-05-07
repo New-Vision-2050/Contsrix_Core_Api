@@ -147,7 +147,7 @@ class CompanyUserProfileController extends Controller
 
     public function validateOtp(ValidateOtpRequest $request)
     {
-        try {
+//        try {
             $userId = $request->route('id') ? Uuid::fromString($request->route('id')) : auth()->user()->id;
 
             $createValidateOtpDTO = $request->createValidateOtpDTO();
@@ -156,9 +156,9 @@ class CompanyUserProfileController extends Controller
 
             return Json::item(["status" => $status]);
 
-        } catch (\Throwable $e) {
-            return Json::error(__("validation.invalid-otp"), 421, httpStatus: 421);
-        }
+//        } catch (\Throwable $e) {
+//            return Json::error(__("validation.invalid-otp"), 421, httpStatus: 421);
+//        }
     }
 
     public function showContactInformation(GetCompanyUserRequest $request)
