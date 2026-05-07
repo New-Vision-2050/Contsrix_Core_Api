@@ -825,13 +825,22 @@ class CompanyUserRepository extends BaseRepository
     public
     function updateUserData(UuidInterface $userId, array $data)
     {
-        $this->userRepository->updateWhere(
-            ["id" => $userId], $data
-        );
         $user = $this->userRepository->findOneBy(["id" => $userId]);
+
+
         if(isset($data["email"]))
         {
+            $this->userRepository->model->withoutTenancy()->where(["email"=>$user->email])->update(
+                ["email"=>$data["email"]]
+            );
             $this->model->where(["id" =>$user->global_company_user_id ])->first()->update( ["email" => $data["email"]]);
+        }
+
+        if(isset($data["phone"]))
+        {
+            $this->userRepository->model->withoutTenancy()->where(["phone"=>$user->phone])->update(
+                ["phone"=>$data["phone"]]
+            );
         }
 
         return true;
