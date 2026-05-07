@@ -7,6 +7,7 @@ use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RoleOrPermissionMiddleware;
 use App\Http\Middleware\DomainToTenantMiddleware;
 use App\Http\Middleware\TenantCompatibilityMiddleware;
+use Modules\Auth\Middleware\CheckTokenAbility;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'domain.tenant' => \App\Http\Middleware\DomainToTenantMiddleware::class,
             'tenant.compatibility' => TenantCompatibilityMiddleware::class,
+            'token.ability' => CheckTokenAbility::class,
         ]);
         $middleware->append(\App\Http\Middleware\Localization::class);
         $middleware->append(\App\Http\Middleware\TenancePermision::class);

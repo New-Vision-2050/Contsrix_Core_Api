@@ -31,6 +31,7 @@ use Modules\Setting\Services\SettingCRUDService;
 use Modules\User\Models\User;
 use Modules\User\Repositories\UserRepository;
 use Modules\User\Services\UserCRUDService;
+use Modules\Auth\Enums\TokenAbility;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthService
@@ -60,11 +61,12 @@ class AuthService
         }
         $user = $this->userRepository->getUserByIdentifier($authDTO->getEmail());
 
-        $token = JWTAuth::fromUser($user);
-        if (!$token) {
+        $accessToken = $this->makeAccessToken($user);
+        if (!$accessToken) {
             throw new \ErrorException(__("validation.invalid-credential"), 403);
         }
-        return [$token, $user];
+        $refreshToken = $this->makeRefreshToken($user);
+        return [$accessToken, $refreshToken, $user];
     }
 
 
@@ -81,9 +83,10 @@ class AuthService
 
         $user = $this->userRepository->getUserByEmail($loginWithOtpDTO->getEmail());
 
-        $token = JWTAuth::fromUser($user);
+        $accessToken = $this->makeAccessToken($user);
+        $refreshToken = $this->makeRefreshToken($user);
 
-        return [$token, $user];
+        return [$accessToken, $refreshToken, $user];
 
     }
 
@@ -282,12 +285,13 @@ class AuthService
 
             $this->sendOtpByStep($nextStep, $loginStepDTO->getIdentifier()); // if step has otp then send otp
 
-            return [$loginWay["id"], $token, $nextStep];
+            return [$loginWay["id"], $token, $nextStep, null];
         }
         //if no step else send token and authorize
-        $token = JWTAuth::fromUser($user);
+        $accessToken = $this->makeAccessToken($user);
+        $refreshToken = $this->makeRefreshToken($user);
 
-        return [$loginWay["id"], $token, $nextStep];
+        return [$loginWay["id"], $accessToken, $nextStep, $refreshToken];
     }
 
     public function checkQuestionAnswer(QuestionVerificationDTO $questionVerificationDTO)
@@ -371,23 +375,41 @@ class AuthService
 
 
         $user = $this->userRepository->findOneBy(["id" => $verficationData->user_id]);
-        $token = JWTAuth::fromUser($user);
+        $accessToken = $this->makeAccessToken($user);
+        $refreshToken = $this->makeRefreshToken($user);
 
-
-        return [$token,$user];
+        return [$accessToken, $refreshToken, $user];
 
 
     }
 
     public function refreshToken(): string
     {
-        $newToken = JWTAuth::refresh(JWTAuth::getToken());
+        $token = JWTAuth::getToken();
+        $payload = JWTAuth::getPayload($token);
 
-        if (!$newToken) {
+        if ($payload->get('token_ability') !== TokenAbility::ISSUE_ACCESS_TOKEN->value) {
             throw new \ErrorException(__("validation.invalid-token"), 401);
         }
 
-        return $newToken;
+        $userId = $payload->get('sub');
+        $user = $this->userRepository->findOneBy(['id' => $userId]);
+
+        return $this->makeAccessToken($user);
+    }
+
+    private function makeAccessToken($user): string
+    {
+        return JWTAuth::claims(['token_ability' => TokenAbility::ACCESS_API->value])
+            ->setTTL(config('jwt.ac_expiration'))
+            ->fromUser($user);
+    }
+
+    private function makeRefreshToken($user): string
+    {
+        return JWTAuth::claims(['token_ability' => TokenAbility::ISSUE_ACCESS_TOKEN->value])
+            ->setTTL(config('jwt.rt_expiration'))
+            ->fromUser($user);
     }
 
 }
