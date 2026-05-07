@@ -831,7 +831,7 @@ class CompanyUserRepository extends BaseRepository
         $user = $this->userRepository->findOneBy(["id" => $userId]);
         if(isset($data["email"]))
         {
-            $this->model->updateWhere(["id" =>$user->global_company_user_id ], ["email" => $data["email"]]);
+            $this->model->where(["id" =>$user->global_company_user_id ])->first()->update( ["email" => $data["email"]]);
         }
 
         return true;
