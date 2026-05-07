@@ -167,7 +167,7 @@ class AttachmentRequestController extends Controller
     /**
      * Respond to individual attachment item
      */
-    public function respondToItem(RespondToAttachmentItemRequest $request): JsonResponse
+    public function respondToItem(RespondToAttachmentItemRequest $request)
     {
         try {
             $item = $this->service->respondToItem(
@@ -175,7 +175,6 @@ class AttachmentRequestController extends Controller
                 $request->action,
                 $request->notes
             );
-
             // Return the full request with updated items
             $attachmentRequest = $item->attachmentRequest->load(['items.respondedByUser']);
             $data = (new AttachmentRequestPresenter($attachmentRequest))->getData();

@@ -25,13 +25,10 @@ class UpdateWebsiteHomePageSettingDTO
     {
         $data = [];
 
-        if ($this->webVideoLink !== null) {
             $data['web_video_link'] = $this->webVideoLink;
-        }
 
-        if ($this->mobileVideoLink !== null) {
+
             $data['mobile_video_link'] = $this->mobileVideoLink;
-        }
 
         if (!empty($this->description)) {
             $data['description'] = $this->description;

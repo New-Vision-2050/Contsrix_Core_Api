@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\ClientRequest\Enums\ProcessStatus;
 use Modules\ClientRequest\Enums\ProcessStepStatus;
+use Modules\ClientRequest\Events\ClientRequestStatusChanged;
 use Modules\ClientRequest\Models\ClientRequest;
 use Modules\ClientRequest\Models\Process;
 use Modules\ClientRequest\Models\ProcessStep;
@@ -144,6 +145,40 @@ class ClientRequestWorkflowService
         match ($action) {
             'approve' => $this->approve($processStepId),
             'reject'  => $this->reject($processStepId),
+            default   => abort(422, 'Invalid process step action.'),
+        };
+    }
+
+    public function actOnPendingStepForCurrentUser(string $clientRequestId, string $action): void
+    {
+        if (! Auth::check()) {
+            abort(403);
+        }
+
+        $actorId = (string) Auth::id();
+
+        $process = Process::query()
+            ->where('client_request_id', $clientRequestId)
+            ->where('type', self::TYPE_CLIENT_REQUEST)
+            ->first();
+
+        if ($process === null) {
+            abort(422, 'No active process found for this client request.');
+        }
+
+        $step = ProcessStep::query()
+            ->where('process_id', $process->id)
+            ->where('assigned_user_id', $actorId)
+            ->where('status', ProcessStepStatus::Pending)
+            ->first();
+
+        if ($step === null) {
+            abort(422, 'No pending process step assigned to you for this client request.');
+        }
+
+        match ($action) {
+            'approve' => $this->approve((string) $step->id),
+            'reject'  => $this->reject((string) $step->id),
             default   => abort(422, 'Invalid process step action.'),
         };
     }
@@ -364,7 +399,7 @@ class ClientRequestWorkflowService
 
     /**
      * When the client_request workflow process completes (parallel: all steps approved;
-     * sequence: last step approved), move from internal approval to the price-offer phase.
+     * sequence: last step approved), mark the request as accepted and open it for price-offer.
      */
     private function advanceClientRequestToPriceOfferAfterWorkflow(string $clientRequestId): void
     {
@@ -377,13 +412,26 @@ class ClientRequestWorkflowService
             return;
         }
 
-        $status = $clientRequest->client_price_offer_status;
-        if ($status !== null && $status !== '' && $status !== ClientRequest::PRICE_OFFER_STATUS_DRAFT) {
-            return;
+        $updates = [
+            'status_client_request' => ClientRequest::STATUS_ACCEPTED,
+        ];
+
+        $priceOfferStatus = $clientRequest->client_price_offer_status;
+        if ($priceOfferStatus === null || $priceOfferStatus === '' || $priceOfferStatus === ClientRequest::PRICE_OFFER_STATUS_DRAFT) {
+            $updates['client_price_offer_status'] = ClientRequest::PRICE_OFFER_STATUS_PENDING;
         }
 
-        $clientRequest->update([
-            'client_price_offer_status' => ClientRequest::PRICE_OFFER_STATUS_PENDING,
-        ]);
+        $clientRequest->update($updates);
+        $clientRequest->refresh();
+
+        $clientRequest->load(['company', 'createdByUser', 'receiverEmployees']);
+
+        foreach ($clientRequest->receiverEmployees as $employee) {
+            event(new ClientRequestStatusChanged(
+                $clientRequest,
+                ClientRequest::STATUS_ACCEPTED,
+                (string) $employee->id,
+            ));
+        }
     }
 }

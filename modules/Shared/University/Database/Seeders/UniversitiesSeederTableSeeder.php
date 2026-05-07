@@ -4,9 +4,9 @@ namespace Modules\Shared\University\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Artisan;
 use Modules\Shared\AcademicSpecialization\Models\AcademicSpecialization;
 use Modules\Shared\University\Models\University;
+use Modules\Shared\University\Jobs\FetchUniversitiesJob;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Illuminate\Support\Facades\DB;
 class UniversitiesSeederTableSeeder extends Seeder
@@ -20,9 +20,9 @@ class UniversitiesSeederTableSeeder extends Seeder
      */
     public function run()
     {
-        $this->command->info('Fetching universities from API for all countries...');
-        Artisan::call('universities:fetch');
-        $this->command->info('Universities import completed.');
+        $this->command->info('Dispatching universities fetch job...');
+        FetchUniversitiesJob::dispatch();
+        $this->command->info('Universities fetch job dispatched.');
         return;
 
         Model::unguard();

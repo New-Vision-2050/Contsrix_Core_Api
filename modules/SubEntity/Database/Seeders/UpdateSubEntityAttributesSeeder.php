@@ -83,10 +83,18 @@ class UpdateSubEntityAttributesSeeder extends Seeder
 
     public function run(): void
     {
-        SubEntity::where('super_entity', 'users')
+        SubEntity::where('super_entity', '=', 'users', 'and')
             ->orWhereNull('super_entity')
+            ->get()
             ->each(function (SubEntity $subEntity) {
                 $existing = $subEntity->default_attributes ?? [];
+
+                if (is_string($existing)) {
+                    $decoded = json_decode($existing, true);
+                    $existing = is_array($decoded) ? $decoded : [$existing];
+                } elseif (!is_array($existing)) {
+                    $existing = [];
+                }
 
                 $subEntity->update([
                     'default_attributes'  => array_values(array_unique(array_merge($existing, $this->defaultAttributes))),
