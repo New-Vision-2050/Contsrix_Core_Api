@@ -36,11 +36,11 @@ class EmploymentContractCRUDService
         $visibility = 'public';
 
         $user = $this->companyUserRepository->getCompanyUserGlobalId(Uuid::fromString($global_id));
-        $this->fileDeletedService->deleteFile(
-            $employmentContract,
-            $inputFile,
-            'upload_employment_contracts'
-        );
+//        $this->fileDeletedService->deleteFile(
+//            $employmentContract,
+//            $inputFile,
+//            'upload_employment_contracts'
+//        );
 
 //        if (!$file && empty($inputFile)) {
 //            $employmentContract->clearMediaCollection('upload_employment_contracts');
