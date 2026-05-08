@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Auth\Controllers\AuthController;
+use Modules\Auth\Enums\TokenAbility;
 use Stancl\Tenancy\Features\UserImpersonation;
 
 Route::group(['middleware' => ['throttle:35,1',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]],function (){
@@ -26,6 +27,8 @@ Route::group(['middleware' => ['auth:api']
 ], function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/refresh-token', [AuthController::class, 'refreshToken'])
+        ->middleware('token.ability:' . TokenAbility::ISSUE_ACCESS_TOKEN->value);
     Route::get('/get-data-for-login-as-admin', [AuthController::class, 'getDataForLoginAsAdmin']);
 
 

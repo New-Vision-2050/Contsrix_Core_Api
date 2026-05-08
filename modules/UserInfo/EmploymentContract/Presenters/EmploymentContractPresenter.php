@@ -40,8 +40,8 @@ class EmploymentContractPresenter extends AbstractPresenter
             'country_id' => $this->employmentContract->country_id,
             'country_name' => $this->employmentContract?->country?->name??null,
 
-            'state_id' => $this->employmentContract->state_id,
-            'state_name' => $this->employmentContract->state?->name,
+            'latitude' => $this->employmentContract->latitude,
+            'longitude' => $this->employmentContract->longitude,
             'files' => MediaPresenter::collection($this->employmentContract->getMedia('upload_employment_contracts')),
 
             'type_working_hour'  => $this->employmentContract->typeWorkingHour ?(new TypeWorkingHourPresenter($this->employmentContract->typeWorkingHour))->getData() : null,

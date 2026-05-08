@@ -30,7 +30,8 @@ class CreateEmploymentContractRequest extends FormRequest
 
             'working_hours' => 'nullable|numeric',
             'annual_leave' => 'nullable|numeric',
-            'state_id' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'right_terminate_id' => 'nullable|string',
 
             'file' => 'nullable|array',
@@ -56,7 +57,8 @@ class CreateEmploymentContractRequest extends FormRequest
 
             working_hours: $this->get('working_hours'),
             annual_leave: $this->get('annual_leave'),
-            state_id: $this->get('state_id'),
+            latitude: $this->get('latitude'),
+            longitude: $this->get('longitude'),
             right_terminate_id: $this->get('right_terminate_id'),
 
             contract_duration_unit: $this->get('contract_duration_unit'),

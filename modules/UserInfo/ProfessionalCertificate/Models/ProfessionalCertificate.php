@@ -36,7 +36,7 @@ class ProfessionalCertificate extends Model implements HasMedia
         'professional_bodie_id',
         'accreditation_name',
         'accreditation_number',
-        'accreditation_degree',
+        'professional_degree_id',
         'date_obtain',
         'date_end',
     ];
@@ -53,6 +53,11 @@ class ProfessionalCertificate extends Model implements HasMedia
     public function professionalBodie()
     {
         return $this->belongsTo(ProfessionalBodie::class);
+    }
+
+    public function professionalDegree()
+    {
+        return $this->belongsTo(\Modules\UserInfo\ProfessionalCertificate\Models\ProfessionalDegree::class);
     }
 
 }

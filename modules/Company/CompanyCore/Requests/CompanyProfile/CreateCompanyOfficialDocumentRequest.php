@@ -24,7 +24,7 @@ class CreateCompanyOfficialDocumentRequest extends FormRequest
             "files.*"=>"required|file|mimes:pdf,jpeg,jpg,png,doc,docx",
             "document_type_id"=>"required|exists:document_types,id",
             "description"=>"nullable",
-            "document_number"=>"required|numeric",
+            "document_number"=>"required",
             "start_date"=>"required|date|before_or_equal:end_date|date_format:Y-m-d",
             "end_date"=>"required|date|after_or_equal:start_date|date_format:Y-m-d",
             "notification_date"=>[

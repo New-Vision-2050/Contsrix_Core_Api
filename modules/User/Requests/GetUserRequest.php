@@ -11,6 +11,8 @@ class GetUserRequest extends FormRequest
 {
     public function rules(): array
     {
-        return [];
+        return [
+            'role' => ['sometimes', 'integer', 'in:1,2,3,4'],
+        ];
     }
 }

@@ -6,6 +6,7 @@ use Modules\RoleAndPermission\Enums\Permission;
 use Stancl\Tenancy\Middleware\InitializeTenancyByRequestData;
 
 Route::get('/company-by-host', [CompanyController::class, 'getCompanyByHost'])->name('companies.company-by-host');
+Route::get('/by-serial-number', [CompanyController::class, 'getBySerialNumber']);
 
 Route::middleware(['auth:api'])->group(function () {
     Route::get('branches/user/{id}', [CompanyController::class, 'branches']);

@@ -131,4 +131,10 @@ class ClockOutRequest extends FormRequest
             user_agent: $validated['user_agent'] ?? null,
         );
     }
+
+    /** Standard DTO factory — delegates to createClockOutDTO(). */
+    public function toDTO(): ClockOutDTO
+    {
+        return $this->createClockOutDTO();
+    }
 }

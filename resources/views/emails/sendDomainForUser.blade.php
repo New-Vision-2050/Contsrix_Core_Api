@@ -1,105 +1,129 @@
-<html xmlns="http://www.w3.org/1999/xhtml" lang="{{app()->getLocale()}}"  dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="color-scheme" content="light">
-    <meta name="supported-color-schemes" content="light">
-    <style>
-        @media only screen and (max-width: 600px) {
-            .inner-body {
-                width: 100% !important;
-            }
-
-            .footer {
-                width: 100% !important;
-            }
-        }
-
-        @media only screen and (max-width: 500px) {
-            .button {
-                width: 100% !important;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ __('emails.welcome') }}</title>
 </head>
-<body
-    style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;; position: relative; text-size-adjust: none; background-color: rgb(255, 255, 255); color: rgb(113, 128, 150); height: 100%; line-height: 1.4; margin: 0px 0px 29px; padding: 0px; width: 100% !important;">
+<body style="margin:0; padding:0; background-color:#eef2f6; font-family:Tahoma, Arial, sans-serif; direction:rtl;">
 
-<table class="wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation"
-       style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -premailer-cellpadding: 0; -premailer-cellspacing: 0; -premailer-width: 100%; background-color: #edf2f7; margin: 0; padding: 0; width: 100%;">
-    <tbody>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#eef2f6; margin:0; padding:32px 0;">
     <tr>
-        <td align="center"
-            style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;">
-            <table class="content" width="100%" cellpadding="0" cellspacing="0" role="presentation"
-                   style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -premailer-cellpadding: 0; -premailer-cellspacing: 0; -premailer-width: 100%; margin: 0; padding: 0; width: 100%;">
-                <tbody>
+      <td align="center">
 
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px; background:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 10px 30px rgba(15,76,129,0.10);">
 
-                <!-- Email Body -->
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg, #0b3c68 0%, #135a96 100%); padding:28px 32px;">
+              <table width="100%" role="presentation" cellspacing="0" cellpadding="0" border="0">
                 <tr>
-                    <td class="body" width="100%" cellpadding="0" cellspacing="0"
-                        style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -premailer-cellpadding: 0; -premailer-cellspacing: 0; -premailer-width: 100%; background-color: #edf2f7; border-bottom: 1px solid #edf2f7; border-top: 1px solid #edf2f7; margin: 0; padding: 0; width: 100%;">
-                        <table class="inner-body" align="center" width="570" cellpadding="0" cellspacing="0"
-                               role="presentation"
-                               style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -premailer-cellpadding: 0; -premailer-cellspacing: 0; -premailer-width: 570px; background-color: #ffffff; border-color: #e8e5ef; border-radius: 2px; border-width: 1px; box-shadow: 0 2px 0 rgba(0, 0, 150, 0.025), 2px 4px 0 rgba(0, 0, 150, 0.015); margin: 0 auto; padding: 0; width: 570px;">
-                            <!-- Body content -->
-                            <tbody>
-                            <tr>
-                                <td class="content-cell"
-                                    style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; max-width: 100vw; padding: 32px;">
-
-                                    <h1 dir="{{ app()->getLocale() == 'ar' ? 'rtl' : 'ltr' }}"  style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; color: #3d4852; font-size: 18px; font-weight: bold; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                         {{__("emails.welcome")." : ".$data['name']}}</h1>
-
-                                    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                       {{ __("emails.you-are-added-to-company",["company"=>$data["company_name"]]) }}<br>
-                                    </p>
-                                    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                       {{ __("emails.your-domain-is") ." "}}<a href="{{$data['domain_name']}}">{{$data['domain_name']}}</a><br>
-                                    </p>
-
-                                    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                       {{ __("emails.serial_no") ." "}}<a href="{{$data['serial_no']}}">{{$data['serial_no']}}</a><br>
-                                    </p>
-
-{{--                                    <a href="{{ $data['url'] }}" target="_blank" rel="noopener" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -webkit-text-size-adjust: none; border-radius: 4px; color: #fff; display: inline-block; overflow: hidden; text-decoration: none; background-color: #2d3748; border-bottom: 8px solid #2d3748; border-left: 18px solid #2d3748; border-right: 18px solid #2d3748; border-top: 8px solid #2d3748;text-align: center;">{{__("emails.enter-otp")}}</a>--}}
-
-
-                                    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height: 1.5em; margin-top: 0; text-align: {{ app()->getLocale() == 'ar' ? 'right' : 'left' }};">
-                                        {{__('emails.regards')}},<br>
-                                       {{__("emails.new-vision")}} </p>
-
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </td>
+                  <td align="right">
+                    <div style="font-size:28px; font-weight:700; color:#ffffff; letter-spacing:0.4px;">
+                      Constrix
+                    </div>
+                    <div style="font-size:13px; color:#dbeafe; margin-top:6px;">
+                      إضافتك لشركة جديدة
+                    </div>
+                  </td>
                 </tr>
+              </table>
+            </td>
+          </tr>
 
+          <!-- Top Accent -->
+          <tr>
+            <td style="background:#f8fbff; padding:0 32px;">
+              <div style="height:6px; background:linear-gradient(90deg,#2563eb,#10b981,#f59e0b); border-radius:0 0 10px 10px;"></div>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding:32px;">
+
+              <!-- Badge -->
+              <div style="margin-bottom:18px;">
+                <span style="display:inline-block; background:#e0edff; color:#1d4ed8; font-size:13px; font-weight:700; padding:10px 16px; border-radius:999px;">
+                  معلومات الوصول
+                </span>
+              </div>
+
+              <!-- Title -->
+              <h1 style="margin:0 0 12px; font-size:28px; line-height:1.6; color:#0f172a; font-weight:700;">
+                {{ __("emails.welcome") }}
+              </h1>
+
+              <!-- Greeting -->
+              <p style="margin:0 0 10px; font-size:15px; line-height:1.9; color:#334155;">
+                مرحبًا <strong>{{ $data['name'] }}</strong>،
+              </p>
+
+              <!-- Message -->
+              <p style="margin:0 0 24px; font-size:15px; line-height:2; color:#475569;">
+                {{ __("emails.you-are-added-to-company",["company"=>$data["company_name"]]) }}
+              </p>
+
+              <!-- Details Card -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; margin-bottom:28px;">
                 <tr>
-                    <td style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;">
-                        <table class="footer" align="center" width="570" cellpadding="0" cellspacing="0"
-                               role="presentation"
-                               style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -premailer-cellpadding: 0; -premailer-cellspacing: 0; -premailer-width: 570px; margin: 0 auto; padding: 0; text-align: center; width: 570px;">
-                            <tbody>
-                            <tr>
-                                <td class="content-cell" align="center"
-                                    style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; max-width: 100vw; padding: 32px;">
-                                    <p style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; line-height: 1.5em; margin-top: 0; color: #b0adc5; font-size: 12px; text-align: center;">
-                                        {{__("emails.rights")}}</p>
+                  <td style="padding:20px;">
 
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </td>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding:10px 0; font-size:14px; color:#64748b; width:34%; border-bottom:1px solid #e2e8f0;">
+                          <strong>{{ __("emails.your-domain-is") }}</strong>
+                        </td>
+                        <td style="padding:10px 0; font-size:14px; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                          <a href="{{$data['domain_name']}}" style="color:#135a96; text-decoration:none;">{{$data['domain_name']}}</a>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="padding:10px 0; font-size:14px; color:#64748b;">
+                          <strong>{{ __("emails.serial_no") }}</strong>
+                        </td>
+                        <td style="padding:10px 0; font-size:14px; color:#0f172a;">
+                          {{$data['serial_no']}}
+                        </td>
+                      </tr>
+                    </table>
+
+                  </td>
                 </tr>
-                </tbody>
-            </table>
-        </td>
+              </table>
+
+              <p style="margin:0 0 10px; font-size:15px; line-height:2; color:#475569;">
+                {{__('emails.regards')}},<br>
+                <strong>{{__("emails.new-vision")}}</strong>
+              </p>
+
+              <!-- Note -->
+              <div style="background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:13px; line-height:1.9; padding:14px 16px; border-radius:12px; margin-top:24px;">
+                هذه رسالة آلية من نظام <strong>Constrix</strong>، برجاء عدم الرد على هذا البريد.
+              </div>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:22px 32px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">
+              <p style="margin:0 0 8px; font-size:12px; color:#64748b;">
+                © {{ date('Y') }} Constrix. {{__("emails.rights")}}
+              </p>
+              <p style="margin:0; font-size:12px; color:#64748b;">
+                الدعم الفني:
+                <a href="mailto:info@nv2030.com" style="color:#135a96; text-decoration:none;">info@nv2030.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
     </tr>
-    </tbody>
-</table>
+  </table>
+
 </body>
 </html>

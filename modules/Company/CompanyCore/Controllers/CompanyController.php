@@ -281,4 +281,31 @@ class CompanyController extends Controller
 
         return Json::deleted();
     }
+
+    /**
+     * Get company by serial number (for sharing purposes)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getBySerialNumber(Request $request): JsonResponse
+    {
+        try {
+            $serialNumber = $request->query('serial_number');
+
+            if (!$serialNumber) {
+                return Json::error('Serial number is required', 400);
+            }
+
+            $company = $this->companyService->getBySerialNumber($serialNumber);
+
+            if (!$company) {
+                return Json::error('Company not found', 404);
+            }
+
+            return Json::item((new CompanyPresenter($company))->getData());
+        } catch (\Exception $e) {
+            return Json::error($e->getMessage(), 500);
+        }
+    }
 }

@@ -271,6 +271,10 @@ class AttendanceConstraintController extends Controller
                 'updated_by' => Auth::id()
             ]);
 
+        if ($updated > 0) {
+            $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+        }
+
         return Json::success("Successfully updated {$updated} constraints");
     }
 

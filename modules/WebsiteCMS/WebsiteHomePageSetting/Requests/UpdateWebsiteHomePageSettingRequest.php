@@ -33,31 +33,31 @@ class UpdateWebsiteHomePageSettingRequest extends FormRequest
     protected function prepareForValidation()
     {
         // Ensure at least one web video source is provided
-        if (!$this->hasFile('web_video_file') && !$this->filled('web_video_link')) {
-            $this->merge([
-                'web_video_validation_error' => 'Either web_video_file or web_video_link is required'
-            ]);
-        }
-
-        // Ensure at least one mobile video source is provided
-        if (!$this->hasFile('mobile_video_file') && !$this->filled('mobile_video_link')) {
-            $this->merge([
-                'mobile_video_validation_error' => 'Either mobile_video_file or mobile_video_link is required'
-            ]);
-        }
+//        if (!$this->hasFile('web_video_file') && !$this->filled('web_video_link')) {
+//            $this->merge([
+//                'web_video_validation_error' => 'Either web_video_file or web_video_link is required'
+//            ]);
+//        }
+//
+//        // Ensure at least one mobile video source is provided
+//        if (!$this->hasFile('mobile_video_file') && !$this->filled('mobile_video_link')) {
+//            $this->merge([
+//                'mobile_video_validation_error' => 'Either mobile_video_file or mobile_video_link is required'
+//            ]);
+//        }
     }
 
     public function withValidator($validator)
     {
-        $validator->after(function ($validator) {
-            if (!$this->hasFile('web_video_file') && !$this->filled('web_video_link')) {
-                $validator->errors()->add('web_video', 'Either web_video_file or web_video_link is required');
-            }
-
-            if (!$this->hasFile('mobile_video_file') && !$this->filled('mobile_video_link')) {
-                $validator->errors()->add('mobile_video', 'Either mobile_video_file or mobile_video_link is required');
-            }
-        });
+//        $validator->after(function ($validator) {
+//            if (!$this->hasFile('web_video_file') && !$this->filled('web_video_link')) {
+//                $validator->errors()->add('web_video', 'Either web_video_file or web_video_link is required');
+//            }
+//
+//            if (!$this->hasFile('mobile_video_file') && !$this->filled('mobile_video_link')) {
+//                $validator->errors()->add('mobile_video', 'Either mobile_video_file or mobile_video_link is required');
+//            }
+//        });
     }
 
     public function toDTO(): UpdateWebsiteHomePageSettingDTO

@@ -21,6 +21,7 @@ use Modules\CompanyUser\Presenters\DashboardWidgetsPresenter;
 
 use Modules\CompanyUser\Requests\Broker\CreateBrokerRequest;
 use Modules\CompanyUser\Requests\Broker\GetBrokerRequest;
+use Modules\CompanyUser\Requests\ChangeStatusRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientCompanyRequest;
 use Modules\CompanyUser\Requests\Client\CreateClientRequest;
 use Modules\CompanyUser\Requests\Client\GetClientRequest;
@@ -143,6 +144,18 @@ class ClientController extends Controller
     {
         $updatedItem = $this->clientCRUDService->update( $request->createUpdateClientDTO(), $request->createSetUserAddressDTO());
         $presenter = new UserPresenter($updatedItem);
+
+        return Json::item($presenter->getData());
+    }
+
+    public function changeStatus(ChangeStatusRequest $request)
+    {
+        $updatedItem = $this->clientCRUDService->changeStatus(
+            $request->route('id'),
+            $request->getStatus(),
+        );
+
+        $presenter = new UserPresenter($updatedItem, CompanyUserRole::CLIENT->value);
 
         return Json::item($presenter->getData());
     }

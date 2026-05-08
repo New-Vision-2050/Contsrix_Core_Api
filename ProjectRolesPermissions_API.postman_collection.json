@@ -1,0 +1,604 @@
+{
+	"info": {
+		"_postman_id": "project-roles-permissions-api",
+		"name": "Project Roles & Permissions API",
+		"description": "API endpoints for managing project-specific roles and permissions in ProjectManagement module",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Project Permissions",
+			"item": [
+				{
+					"name": "List All Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/permissions",
+							"host": ["{{url}}"],
+							"path": ["projects", "permissions"]
+						},
+						"description": "Get all project permissions with translations"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions by Submodule",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/permissions/submodule/employee",
+							"host": ["{{url}}"],
+							"path": ["projects", "permissions", "submodule", "employee"]
+						},
+						"description": "Get permissions for a specific submodule (e.g., employee, archiveLibrary, task)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Permission Translations",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title_ar\": \"إنشاء موظف محدث\",\n    \"title_en\": \"Create Employee Updated\",\n    \"description\": \"Updated description for create employee permission\"\n}"
+						},
+						"url": {
+							"raw": "{{url}}/projects/permissions/{{permission_id}}",
+							"host": ["{{url}}"],
+							"path": ["projects", "permissions", "{{permission_id}}"]
+						},
+						"description": "Update permission title translations and description"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Permissions Tree",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/permissions/tree",
+							"host": ["{{url}}"],
+							"path": ["projects", "permissions", "tree"]
+						},
+						"description": "Get permissions in hierarchical tree structure grouped by submodule"
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Permission Check",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"permissions\": [\n        \"PROJECT_EMPLOYEE_CREATE\",\n        \"PROJECT_EMPLOYEE_UPDATE\",\n        \"PROJECT_EMPLOYEE_DELETE\",\n        \"PROJECT_ARCHIVE_VIEW\",\n        \"PROJECT_BUDGET_UPDATE\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/check-permissions",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "check-permissions"]
+						},
+						"description": "Check multiple permissions at once for current user. Returns true/false for each permission. Uses config keys (e.g., PROJECT_EMPLOYEE_CREATE)."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"permissions\": [\n        \"PROJECT_EMPLOYEE_CREATE\",\n        \"PROJECT_ARCHIVE_VIEW\",\n        \"PROJECT_BUDGET_UPDATE\"\n    ]\n}"
+								},
+								"url": {
+									"raw": "{{url}}/projects/{{project_id}}/check-permissions",
+									"host": ["{{url}}"],
+									"path": ["projects", "{{project_id}}", "check-permissions"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"project_id\": \"abc-123-def-456\",\n        \"user_id\": \"user-789-xyz-012\",\n        \"permissions\": {\n            \"PROJECT_EMPLOYEE_CREATE\": true,\n            \"PROJECT_ARCHIVE_VIEW\": true,\n            \"PROJECT_BUDGET_UPDATE\": false\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Users with Permission",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/users-with-permission/PROJECT_BUDGET_APPROVE",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "users-with-permission", "PROJECT_BUDGET_APPROVE"]
+						},
+						"description": "Find all users who have a specific permission in the project. Useful for finding approvers, managers, etc."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{url}}/projects/{{project_id}}/users-with-permission/PROJECT_BUDGET_APPROVE",
+									"host": ["{{url}}"],
+									"path": ["projects", "{{project_id}}", "users-with-permission", "PROJECT_BUDGET_APPROVE"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"project_id\": \"abc-123\",\n        \"permission\": \"PROJECT_BUDGET_APPROVE\",\n        \"permission_name\": \"project-management.project-management*budget.approve\",\n        \"users\": [\n            {\n                \"id\": \"user-1\",\n                \"name\": \"John Doe\",\n                \"email\": \"john@example.com\",\n                \"role\": {\n                    \"id\": \"role-1\",\n                    \"name\": \"Project Manager\",\n                    \"slug\": \"project-manager\"\n                }\n            },\n            {\n                \"id\": \"user-2\",\n                \"name\": \"Jane Smith\",\n                \"email\": \"jane@example.com\",\n                \"role\": {\n                    \"id\": \"role-2\",\n                    \"name\": \"Finance Manager\",\n                    \"slug\": \"finance-manager\"\n                }\n            }\n        ],\n        \"count\": 2\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Compare Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles/compare?role1={{role_id}}&role2={{role_id_2}}",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles", "compare"],
+							"query": [
+								{
+									"key": "role1",
+									"value": "{{role_id}}",
+									"description": "First role ID to compare"
+								},
+								{
+									"key": "role2",
+									"value": "{{role_id_2}}",
+									"description": "Second role ID to compare"
+								}
+							]
+						},
+						"description": "Compare permissions between two roles. Shows common permissions and differences."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{url}}/projects/{{project_id}}/roles/compare?role1=role-1&role2=role-2",
+									"host": ["{{url}}"],
+									"path": ["projects", "{{project_id}}", "roles", "compare"],
+									"query": [
+										{
+											"key": "role1",
+											"value": "role-1"
+										},
+										{
+											"key": "role2",
+											"value": "role-2"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"data\": {\n        \"project_id\": \"abc-123\",\n        \"role1\": {\n            \"id\": \"role-1\",\n            \"name\": \"Project Manager\",\n            \"permissions_count\": 25\n        },\n        \"role2\": {\n            \"id\": \"role-2\",\n            \"name\": \"Team Lead\",\n            \"permissions_count\": 15\n        },\n        \"comparison\": {\n            \"common_permissions\": [\n                \"project-management.project-management*employee.view\",\n                \"project-management.project-management*task.view\"\n            ],\n            \"common_count\": 10,\n            \"only_in_role1\": [\n                \"project-management.project-management*budget.approve\",\n                \"project-management.project-management*employee.delete\"\n            ],\n            \"only_in_role1_count\": 15,\n            \"only_in_role2\": [\n                \"project-management.project-management*task.assign\"\n            ],\n            \"only_in_role2_count\": 5\n        }\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Get My Permissions (Tree)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/my-permissions",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "my-permissions"]
+						},
+						"description": "Get current user's permissions for a project in hierarchical tree structure"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Permissions (Flat)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/my-permissions/flat",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "my-permissions", "flat"]
+						},
+						"description": "Get current user's permissions for a project in flat array format"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Project Roles",
+			"item": [
+				{
+					"name": "List Project Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles"]
+						},
+						"description": "Get all roles for a specific project with their permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Project Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Team Member\",\n    \"slug\": \"team-member\",\n    \"description\": \"Regular team member with limited permissions\",\n    \"is_active\": true,\n    \"permission_ids\": [\n        \"{{permission_id_1}}\",\n        \"{{permission_id_2}}\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles"]
+						},
+						"description": "Create a new role for the project with specific permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Role Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles/{{role_id}}",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles", "{{role_id}}"]
+						},
+						"description": "Get details of a specific role with all its permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Senior Team Member\",\n    \"description\": \"Senior team member with extended permissions\",\n    \"is_active\": true,\n    \"permission_ids\": [\n        \"{{permission_id_1}}\",\n        \"{{permission_id_2}}\",\n        \"{{permission_id_3}}\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles/{{role_id}}",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles", "{{role_id}}"]
+						},
+						"description": "Update role details and permissions (replaces all permissions)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Project Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles/{{role_id}}",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles", "{{role_id}}"]
+						},
+						"description": "Delete a project role (cannot delete default roles)"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Permissions to Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"permission_ids\": [\n        \"{{permission_id_1}}\",\n        \"{{permission_id_2}}\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles/{{role_id}}/assign-permissions",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles", "{{role_id}}", "assign-permissions"]
+						},
+						"description": "Add permissions to a role (keeps existing permissions)"
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Permissions to Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"permission_ids\": [\n        \"{{permission_id_1}}\",\n        \"{{permission_id_2}}\",\n        \"{{permission_id_3}}\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{url}}/projects/{{project_id}}/roles/{{role_id}}/sync-permissions",
+							"host": ["{{url}}"],
+							"path": ["projects", "{{project_id}}", "roles", "{{role_id}}", "sync-permissions"]
+						},
+						"description": "Sync permissions to a role (replaces all existing permissions)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://localhost/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your-bearer-token-here",
+			"type": "string"
+		},
+		{
+			"key": "project_id",
+			"value": "project-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "role_id",
+			"value": "role-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "permission_id",
+			"value": "permission-uuid-here",
+			"type": "string"
+		},
+		{
+			"key": "permission_id_1",
+			"value": "permission-1-uuid",
+			"type": "string"
+		},
+		{
+			"key": "permission_id_2",
+			"value": "permission-2-uuid",
+			"type": "string"
+		},
+		{
+			"key": "permission_id_3",
+			"value": "permission-3-uuid",
+			"type": "string"
+		},
+		{
+			"key": "role_id_2",
+			"value": "role-2-uuid-here",
+			"type": "string"
+		}
+	]
+}

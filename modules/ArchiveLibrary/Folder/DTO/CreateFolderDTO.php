@@ -13,6 +13,7 @@ class CreateFolderDTO
     public function __construct(
         public string $name,
         public ?string $parentId,
+        public ?string $projectId,
         public ?string $password,
         public string $accessType,
         public array $userIds=[],
@@ -26,6 +27,7 @@ class CreateFolderDTO
         return [
             'name' => $this->name,
             'parent_id'=> $this->parentId,
+            'project_id'=> $this->projectId,
             "password"=>$this->password,
             "access_type"=>$this->accessType,
             "status"=>$this->status

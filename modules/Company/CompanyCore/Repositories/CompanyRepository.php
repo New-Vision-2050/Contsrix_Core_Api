@@ -105,6 +105,36 @@ class CompanyRepository extends BaseRepository
 
     public function deleteCompany(UuidInterface $id): bool
     {
+        $company = $this->find($id);
+
+        if (!$company) {
+            throw new \Exception(__('validation.company-not-found'), 404);
+        }
+
+        // Check for related users (employees)
+        $usersCount = $company->users()->count();
+        if ($usersCount > 1) {
+            throw new \Exception(__('validation.cannot_delete_company_has_users', ['count' => $usersCount]), 422);
+        }
+
+        // Check for related projects
+        $projectsCount = DB::table('projects')->where('company_id', $company->id)->count();
+        if ($projectsCount > 0) {
+            throw new \Exception(__('validation.cannot_delete_company_has_projects', ['count' => $projectsCount]), 422);
+        }
+
+        // Check for related branches
+        $branchesCount = $company->branches()->count();
+        if ($branchesCount > 1) {
+            throw new \Exception(__('validation.cannot_delete_company_has_branches', ['count' => $branchesCount]), 422);
+        }
+
+//         Check for related managements
+        $managementsCount = $company->managements()->count();
+        if ($managementsCount > 1) {
+            throw new \Exception(__('validation.cannot_delete_company_has_managements', ['count' => $managementsCount]), 422);
+        }
+
         return $this->delete($id);
     }
 
@@ -297,5 +327,15 @@ class CompanyRepository extends BaseRepository
                 'last_page' => $perPage ? (int) ceil($total / $perPage) : 1,
             ]
         ];
+    }
+
+    /**
+     * Get company by serial number (for sharing purposes)
+     */
+    public function getBySerialNumber(string $serialNumber): ?Company
+    {
+        return $this->model
+            ->where('serial_no', $serialNumber)
+            ->first();
     }
 }

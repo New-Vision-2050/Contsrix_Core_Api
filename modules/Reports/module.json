@@ -1,0 +1,25 @@
+{
+    "name": "Reports",
+    "alias": "reports",
+    "description": "Attendance & HR Reports module - generates wizard-driven reports across attendance, leaves, salaries, deductions and performance",
+    "keywords": [
+        "reports",
+        "attendance",
+        "salary",
+        "leaves",
+        "wizard"
+    ],
+    "priority": 0,
+    "providers": [
+        "Modules\\Reports\\Providers\\ReportsServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [
+        "User",
+        "Company",
+        "RoleAndPermission",
+        "Attendance"
+    ],
+    "namespace": "Modules"
+}

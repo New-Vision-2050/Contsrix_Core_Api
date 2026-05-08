@@ -7,7 +7,6 @@ namespace Modules\UserInfo\EmploymentContract\Models;
 use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Modules\Country\Models\State;
 use Modules\UserInfo\EmploymentContract\Database\factories\EmploymentContractFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\Country\Models\Country;
@@ -51,7 +50,8 @@ class EmploymentContract extends Model implements HasMedia
         'working_hours',
         'annual_leave',
         'country_id',
-        'state_id',
+        'latitude',
+        'longitude',
         'right_terminate_id',//
 
         'contract_duration_unit',
@@ -74,11 +74,6 @@ class EmploymentContract extends Model implements HasMedia
     public function country()
     {
         return $this->belongsTo(Country::class);
-    }
-
-    public function state()
-    {
-        return $this->belongsTo(State::class);
     }
 
     public function natureWork()

@@ -6,14 +6,31 @@ namespace Modules\Attendance\Presenters;
 
 use BasePackage\Shared\Presenters\AbstractPresenter;
 use Modules\Attendance\Models\Attendance;
+use Modules\Attendance\Support\HoursFormatter;
 
 class AttendancePresenter extends AbstractPresenter
 {
     private Attendance $attendance;
+
     public function __construct(Attendance $attendance)
     {
         $this->attendance = $attendance;
+    }
 
+    public static function requiredRelations(): array
+    {
+        return [
+            'user.companyUser.country',
+            'user.professionalData.jobTitle',
+            'user.professionalData.department',
+            'user.professionalData.branch',
+            'user.professionalData.management',
+            'user.professionalData.attendanceConstraint',
+            'company',
+            'approvedBy',
+            'breaks',
+            'appliedAttendanceConstraint',
+        ];
     }
 
     public function present(bool $isListing = false): array
@@ -21,15 +38,15 @@ class AttendancePresenter extends AbstractPresenter
 
         return [
 
-             'id' => $this->attendance->id ? (string)$this->attendance->id : null,
+            'id' => $this->attendance->id ? (string)$this->attendance->id : null,
             'user_id' => $this->attendance->user_id ? (string)$this->attendance->user_id : null,
             'company_id' => $this->attendance->company_id ? (string)$this->attendance->company_id : null,
 
             // Clock times
-            'clock_in_time' => $this->attendance->clock_in_time ? 
+            'clock_in_time' => $this->attendance->clock_in_time ?
                 (\Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d H:i:s')) : null,
 
-            'clock_out_time' => $this->attendance->clock_out_time ? 
+            'clock_out_time' => $this->attendance->clock_out_time ?
                 (\Carbon\Carbon::parse($this->attendance->clock_out_time)->format('Y-m-d H:i:s')) : null,
             'start_time' => $this->attendance->start_time,
             'end_time' => $this->attendance->end_time,
@@ -37,18 +54,32 @@ class AttendancePresenter extends AbstractPresenter
 
             'timezone' => $this->attendance->timezone ?? null,
 
-            // Calculated hours
-            'total_work_hours' => (float) $this->attendance->total_work_hours,
-            'total_break_hours' => (float) $this->attendance->total_break_hours,
-            'overtime_hours' => (float) $this->attendance->overtime_hours,
+            // Calculated hours — always shipped as HH:MM strings (single source of truth:
+            // HoursFormatter). The DB column is DECIMAL(8,2); keeping the raw decimal in the
+            // payload led to the FE rendering values like "09:93" (a corrupt minute count) by
+            // splitting the dot. Reports + history + operational endpoints all use HH:MM now.
+//            'total_work_hours' => HoursFormatter::fromDecimalString($this->attendance->total_work_hours),
+//            'total_break_hours' => HoursFormatter::fromDecimalString($this->attendance->total_break_hours),
+//            'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
+
+
+            'total_work_hours' => $this->attendance->total_work_hours,
+            'total_break_hours' => $this->attendance->total_break_hours,
+            'overtime_hours' => $this->attendance->overtime_hours,
 
             // Status flags
-            'is_late' => (int) $this->attendance->is_late,
-            'is_absent' => (int) $this->attendance->is_absent,
-            'is_holiday' => (int) $this->attendance->is_holiday,
-            'is_early_departure' => (int) $this->attendance->is_early_departure,
-            'late_minutes' => $this->attendance->late_minutes,
-            'early_departure_minutes' => $this->attendance->early_departure_minutes,
+            'is_late' => (int)$this->attendance->is_late,
+            'is_absent' => (int)$this->attendance->is_absent,
+            'is_holiday' => (int)$this->attendance->is_holiday,
+            'is_early_departure' => (int)$this->attendance->is_early_departure,
+            // late_minutes / early_departure_minutes are stored as raw int minutes; format to
+            // HH:MM here so a value of 93 minutes appears as "01:33" instead of "00:93".
+//            'late_minutes' => HoursFormatter::fromMinutes((int)$this->attendance->late_minutes),
+//            'early_departure_minutes' => HoursFormatter::fromMinutes((int)$this->attendance->early_departure_minutes),
+
+
+            'late_minutes' => (int)$this->attendance->late_minutes,
+            'early_departure_minutes' => (int)$this->attendance->early_departure_minutes,
 
             // Status and approval
             'status' => $this->attendance->status,
@@ -94,25 +125,26 @@ class AttendancePresenter extends AbstractPresenter
             // Computed properties
             'work_date' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d') : null,
             'is_on_break' => $this->attendance->isOnBreak(),
-            'is_clocked_in' =>  (int) $this->attendance->isActive(),
-            'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
-            'break_duration_formatted' => $this->formatDuration((float) $this->attendance->total_break_hours),
-            'overtime_formatted' => $this->formatDuration((float) $this->attendance->overtime_hours),
+            'is_clocked_in' => (int)$this->attendance->isActive(),
+            // Backwards-compatible aliases ("Xh Ym" style) for clients that already rely on them.
+            'duration_formatted' => $this->formatDurationHm((float)$this->attendance->total_work_hours),
+            'break_duration_formatted' => $this->formatDurationHm((float)$this->attendance->total_break_hours),
+            'overtime_formatted' => $this->formatDurationHm((float)$this->attendance->overtime_hours),
             'day_status' => __('validation.day_status.' . $this->attendance->day_status),
             'professional_data' => $this->attendance->user?->professionalData ? [
-                'id' => (string) $this->attendance->user->professionalData->id,
+                'id' => (string)$this->attendance->user->professionalData->id,
                 'job_title' => $this->attendance->user?->professionalData?->jobTitle?->name,
                 'job_code' => $this->attendance->user?->professionalData?->job_code,
                 'department' => $this->attendance->user->professionalData->department?->name,
                 'branch' => $this->attendance->user->professionalData->branch?->name,
                 'management' => $this->attendance->user?->professionalData?->management?->name,
-                 'attendance_constraint'=> $this->attendance->user?->professionalData?->attendanceConstraint ?[
-                    'id'=> (string) $this->attendance->user?->professionalData?->id,
-                    'constraint_name'=> $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_name,
-                    'constraint_type'=> $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_type,
-                    'constraint_config'=> $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_config,
+                'attendance_constraint' => $this->attendance->user?->professionalData?->attendanceConstraint ? [
+                    'id' => (string)$this->attendance->user?->professionalData?->id,
+                    'constraint_name' => $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_name,
+                    'constraint_type' => $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_type,
+                    'constraint_config' => $this->attendance->user?->professionalData?->attendanceConstraint?->constraint_config,
                 ] : null,
-            ]:null,
+            ] : null,
         ];
     }
 
@@ -140,12 +172,17 @@ class AttendancePresenter extends AbstractPresenter
     }
 
     /**
-     * Format hours as "Xh Ym"
+     * Format hours as "Xh Ym" — backwards-compatible alias (use HoursFormatter::fromHours()
+     * for new code; this is kept only for the duration_formatted / overtime_formatted keys).
+     * Internally delegates to HoursFormatter to guarantee consistent normalisation
+     * (no "9h 60m" or "9h 93m" oddities).
      */
-    private function formatDuration(float $hours): string
+    private function formatDurationHm(float $hours): string
     {
-        $h = floor($hours);
-        $m = round(($hours - $h) * 60);
+        $hm = HoursFormatter::fromHours($hours);
+        [$h, $m] = explode(':', $hm);
+        $h = (int)$h;
+        $m = (int)$m;
 
         if ($h > 0) {
             return "{$h}h {$m}m";
@@ -164,12 +201,13 @@ class AttendancePresenter extends AbstractPresenter
             'work_date' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d') : null,
             'clock_in_time' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('H:i') : null,
             'clock_out_time' => $this->attendance->clock_out_time ? \Carbon\Carbon::parse($this->attendance->clock_out_time)->format('H:i') : null,
-            'total_work_hours' => (float) $this->attendance->total_work_hours,
-            'overtime_hours' => (float) $this->attendance->overtime_hours,
+            // Summary endpoints — HH:MM for parity with the rest of the report APIs.
+            'total_work_hours' => HoursFormatter::fromDecimalString($this->attendance->total_work_hours),
+            'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
             'status' => $this->attendance->status,
             'is_late' => $this->attendance->is_late,
             'is_early_departure' => $this->attendance->is_early_departure,
-            'duration_formatted' => $this->formatDuration((float) $this->attendance->total_work_hours),
+            'duration_formatted' => $this->formatDurationHm((float)$this->attendance->total_work_hours),
         ];
     }
 
@@ -183,13 +221,15 @@ class AttendancePresenter extends AbstractPresenter
             'work_date' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('Y-m-d') : null,
             'clock_in_time' => $this->attendance->clock_in_time ? \Carbon\Carbon::parse($this->attendance->clock_in_time)->format('H:i:s') : null,
             'clock_out_time' => $this->attendance->clock_out_time ? \Carbon\Carbon::parse($this->attendance->clock_out_time)->format('H:i:s') : null,
-            'total_work_hours' => (float) $this->attendance->total_work_hours,
-            'overtime_hours' => (float) $this->attendance->overtime_hours,
-            'break_hours' => (float) $this->attendance->total_break_hours,
+            // Report endpoints — HH:MM strings only (decimal-hour values were misrendered as
+            // "09:93" by the mobile FE; see HoursFormatter docblock for context).
+            'total_work_hours' => HoursFormatter::fromDecimalString($this->attendance->total_work_hours),
+            'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
+            'break_hours' => HoursFormatter::fromDecimalString($this->attendance->total_break_hours),
             'is_late' => $this->attendance->is_late ? 'Yes' : 'No',
-            'late_minutes' => $this->attendance->late_minutes,
+            'late_minutes' => HoursFormatter::fromMinutes((int)$this->attendance->late_minutes),
             'is_early_departure' => $this->attendance->is_early_departure ? 'Yes' : 'No',
-            'early_departure_minutes' => $this->attendance->early_departure_minutes,
+            'early_departure_minutes' => HoursFormatter::fromMinutes((int)$this->attendance->early_departure_minutes),
             'status' => ucfirst($this->attendance->status),
         ];
     }

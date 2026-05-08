@@ -1,0 +1,473 @@
+{
+  "info": {
+    "_postman_id": "procedure-setting-api-collection",
+    "name": "ProcedureSetting API",
+    "description": "API endpoints for managing Procedure Settings and their Steps",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-bearer-token-here",
+      "type": "string"
+    },
+    {
+      "key": "procedure_setting_id",
+      "value": "uuid-here",
+      "type": "string"
+    },
+    {
+      "key": "step_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Procedure Settings",
+      "item": [
+        {
+          "name": "List Procedure Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings?page=1&per_page=15",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page"
+                },
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "Filter by name",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "Filter by type: client_request, price_offer, contract",
+                  "disabled": true
+                },
+                {
+                  "key": "execute_type",
+                  "value": "",
+                  "description": "Filter by execute_type: parallel, sequence",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get paginated list of all procedure settings"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"name\": \"Client Request Approval\",\n      \"type\": \"client_request\",\n      \"execute_type\": \"sequence\",\n      \"icon\": \"approval-icon\",\n      \"percentage\": 50.00\n    }\n  ],\n  \"pagination\": {\n    \"total\": 1,\n    \"per_page\": 15,\n    \"current_page\": 1,\n    \"last_page\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Procedure Setting",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"إجراء اعتماد العقود\",\n  \"type\": \"client_request\",\n  \"execute_type\": \"sequence\",\n  \"icon\": \"folder-archive\",\n  \"percentage\": 20,\n  \"deadline_days\": 29,\n  \"deadline_hours\": 20,\n  \"escalation_user_id\": \"550e8400-e29b-41d4-a716-446655440001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings"]
+            },
+            "description": "POST {{url}}/procedure-settings\n\n**type:** client_request | price_offer | contract\n**execute_type:** parallel | sequence\n**escalation_user_id:** optional UUID of user (exists in users)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": \"Client Request Approval\",\n    \"type\": \"client_request\",\n    \"execute_type\": \"sequence\",\n    \"icon\": \"approval-icon\",\n    \"percentage\": 50.00,\n    \"steps\": []\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Procedure Setting",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}"]
+            },
+            "description": "Get a single procedure setting by ID (includes steps)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"name\": \"Client Request Approval\",\n    \"type\": \"client_request\",\n    \"execute_type\": \"sequence\",\n    \"icon\": \"approval-icon\",\n    \"percentage\": 50.00,\n    \"steps\": [\n      {\n        \"id\": 1,\n        \"procedure_setting_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"employee_id\": \"user-uuid\",\n        \"is_accept\": true,\n        \"is_approve\": false,\n        \"duration\": 3,\n        \"forms\": \"approve\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Procedure Setting",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Procedure Name\",\n  \"type\": \"price_offer\",\n  \"execute_type\": \"parallel\",\n  \"icon\": \"new-icon\",\n  \"percentage\": 75\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}"]
+            },
+            "description": "Update an existing procedure setting.\n\ntype options: client_request | price_offer | contract\nexecute_type options: parallel | sequence"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Procedure Setting",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}"]
+            },
+            "description": "Delete a procedure setting (cascades to steps)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Export Procedure Settings",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"xlsx\",\n  \"ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/export",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "export"]
+            },
+            "description": "Export procedure settings to file.\n\nformat options: xlsx | csv"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Procedure Setting Steps",
+      "item": [
+        {
+          "name": "Get Steps by Procedure Setting",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/steps",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "steps"]
+            },
+            "description": "Get all steps for a specific procedure setting"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"procedure_setting_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"employee_id\": \"user-uuid\",\n      \"is_accept\": true,\n      \"is_approve\": false,\n      \"duration\": 3,\n      \"forms\": \"approve\",\n      \"employee\": {\n        \"id\": \"user-uuid\",\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\"\n      }\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Step",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": \"user-uuid-here\",\n  \"is_accept\": true,\n  \"is_approve\": false,\n  \"duration\": 3,\n  \"forms\": \"approve\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/steps",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "steps"]
+            },
+            "description": "Create a new step for a procedure setting.\n\nforms: approve | accept | financial (single string value)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"data\": {\n    \"id\": 1,\n    \"procedure_setting_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"employee_id\": \"user-uuid-here\",\n    \"is_accept\": true,\n    \"is_approve\": false,\n    \"duration\": 3,\n    \"forms\": \"approve\",\n    \"employee\": {\n      \"id\": \"user-uuid-here\",\n      \"name\": \"John Doe\",\n      \"email\": \"john@example.com\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Single Step",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/steps/{{step_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "steps", "{{step_id}}"]
+            },
+            "description": "Get a single step by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Step",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": \"user-uuid-here\",\n  \"is_accept\": false,\n  \"is_approve\": true,\n  \"duration\": 5,\n  \"forms\": \"financial\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/steps/{{step_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "steps", "{{step_id}}"]
+            },
+            "description": "Update an existing step"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Step",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/procedure-settings/{{procedure_setting_id}}/steps/{{step_id}}",
+              "host": ["{{url}}"],
+              "path": ["procedure-settings", "{{procedure_setting_id}}", "steps", "{{step_id}}"]
+            },
+            "description": "Delete a step"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

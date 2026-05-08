@@ -7,8 +7,10 @@ use Modules\Company\BusinessType\Database\Seeders\BusinessTypeSeederTableSeeder;
 use Modules\DocumentType\Database\Seeders\DocumentTypeSeederTableSeeder;
 use Modules\Leave\LeavePolicy\Database\Seeders\LeavePolicySeeder;
 use Modules\NotificationSettings\Database\seeders\DefaultNotificationSettingsSeeder;
+use Modules\Project\ProjectManagement\Database\Seeders\ProjectPermissionsSeeder;
 use Modules\Project\TermServices\Database\Seeders\TermServicesSeeder;
 use Modules\ClientRequest\Database\Seeders\ClientRequestSeeder;
+use Modules\Shared\AcademicSpecialization\Database\Seeders\SafetyEngineeringSpecializationSeeder;
 use Modules\Shared\Bank\Database\Seeders\BanksOtherModulesSeederTableSeeder;
 use Modules\Shared\Bank\Database\Seeders\MoroccanBanksSeeder;
 use Modules\Shared\University\Database\Seeders\MoroccanUniversitiesSeeder;
@@ -25,6 +27,7 @@ use Modules\Country\Database\Seeders\CountrySeederTableSeeder;
 use Modules\Shared\JobType\Database\Seeders\JobTypeSeederTable;
 use Modules\SubEntity\Database\Seeders\RegistrationFormsSeeder;
 use Modules\SubEntity\Database\Seeders\SubEntityDatabaseSeeder;
+use Modules\SubEntity\Database\Seeders\UpdateSubEntityAttributesSeeder;
 use Modules\Setting\Database\Seeders\QuestionSettingTableSeeder;
 use Modules\Shared\Currency\Database\Seeders\CurrencySeederTable;
 use Modules\Shared\Language\Database\Seeders\LanguagesTableSeeder;
@@ -128,6 +131,7 @@ class DatabaseSeeder extends Seeder
         $this->call(MainPackageSeeder::class);
 
         $this->call(SubEntityDatabaseSeeder::class);
+        $this->call(UpdateSubEntityAttributesSeeder::class);
 
 
         $this->call(MoroccanUniversitiesSeeder::class);
@@ -151,5 +155,9 @@ class DatabaseSeeder extends Seeder
         $this->call(ContractualRelationshipTypeSeeder::class);
         $this->call(TermServicesSeeder::class);
         $this->call(ClientRequestSeeder::class);
+        $this->call(ProfessionalDegreesSeeder::class);
+        $this->call(ProjectPermissionsSeeder::class);
+        $this->call(ProjectShareTypeSeeder::class);
+
     }
 }

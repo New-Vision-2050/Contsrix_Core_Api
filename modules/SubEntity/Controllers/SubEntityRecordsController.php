@@ -35,11 +35,12 @@ class SubEntityRecordsController extends Controller
             (int) $request->get('per_page', 10)
         );
         $registrationForm = $this->registrationFormCRUDService->getById( $request->get('registration_form_id'));
-        if($registrationForm->company_user_role_map == CompanyUserRole::CLIENT->value)
-        {
-            return Json::items(CompanyUserClientPresenter::collection($list["data"] ?? []),paginationSettings: $list['pagination'] ?? []);
+        $role = $registrationForm->company_user_role_map;
+
+        if ($role == CompanyUserRole::CLIENT->value) {
+            return Json::items(CompanyUserClientPresenter::collection($list["data"] ?? [], $role), paginationSettings: $list['pagination'] ?? []);
         }
-        return Json::items(CompanyUserPresenter::collection($list["data"] ?? []),paginationSettings: $list['pagination'] ?? []);
+        return Json::items(CompanyUserPresenter::collection($list["data"] ?? [], $role), paginationSettings: $list['pagination'] ?? []);
     }
 
     public function widgets(GetSubEntityRecordsRequest $request): JsonResponse

@@ -427,11 +427,26 @@ function getTimeZoneByRequest()
 }
 function getTimeZoneBranchByRequest()
 {
-    $user = User::where('id', auth()->user()->id)
-   ->with(['userProfessionalData','userProfessionalData.branch','userProfessionalData.branch.address','userProfessionalData.branch.address.country','userProfessionalData.branch.address.country.timezones'])->first() ;
-    $timezone = $user?->userProfessionalData?->branch?->address?->country?->timezones ;
+    return once(function () {
+        if (! auth()->check()) {
+            return config('app.timezone');
+        }
 
-    return $timezone[0]['zoneName'] ?? "Asia/Riyadh";
+        $user = User::query()
+            ->where('id', auth()->id())
+            ->with([
+                'userProfessionalData',
+                'userProfessionalData.branch',
+                'userProfessionalData.branch.address',
+                'userProfessionalData.branch.address.country',
+                'userProfessionalData.branch.address.country.timezones',
+            ])
+            ->first();
+
+        $timezone = $user?->userProfessionalData?->branch?->address?->country?->timezones;
+
+        return $timezone[0]['zoneName'] ?? 'Asia/Riyadh';
+    });
 }
 
 function priorityType($all = "yes")

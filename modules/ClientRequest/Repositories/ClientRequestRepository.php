@@ -41,7 +41,12 @@ class ClientRequestRepository extends BaseRepository
                 'serviceTerms.termServiceSetting',
                 'serviceTerms' => function ($query) {
                     // We'll load the term trees in the presenter using the term_ids
-                }
+                },
+                'clientRequestProcess.steps' => function ($query) {
+                    $query->orderByRaw('(template_step_order IS NULL) ASC')
+                        ->orderBy('template_step_order')
+                        ->orderBy('created_at');
+                },
             ])
             ->findOrFail($id->toString());
     }
@@ -75,6 +80,11 @@ class ClientRequestRepository extends BaseRepository
                 // Old structure: simple array of IDs
                 $clientRequest->termSettings()->sync($termSettingIds);
             }
+        }
+
+        // Sync receiver_employee_ids to pivot table
+        if (!empty($data['receiver_employee_ids'])) {
+            $clientRequest->receiverEmployees()->sync($data['receiver_employee_ids']);
         }
 
         if (!empty($attachments)) {
@@ -135,6 +145,11 @@ class ClientRequestRepository extends BaseRepository
                 }
             }
 
+            // Sync receiver_employee_ids to pivot table
+            if (isset($data['receiver_employee_ids'])) {
+                $clientRequest->receiverEmployees()->sync($data['receiver_employee_ids'] ?? []);
+            }
+
             if (!empty($attachments)) {
                 foreach ($attachments as $attachment) {
                     $this->fileUploadService->uploadFile(
@@ -149,6 +164,32 @@ class ClientRequestRepository extends BaseRepository
         }
 
         return $updated;
+    }
+
+    public function getMyRequests(string $userId, int $page = 1, int $perPage = 10): array
+    {
+        $query = $this->model
+            ->with(['company', 'client', 'clientRequestType', 'branch', 'management', 'receiverEmployees', 'createdByUser'])
+            ->whereHas('receiverEmployees', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->filter(request()->all());
+
+        $total = $query->count();
+
+        $data = $query->orderBy('created_at', 'desc')
+            ->forPage($page, $perPage)
+            ->get();
+
+        return [
+            'data' => $data,
+            'pagination' => [
+                'total' => $total,
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'last_page' => (int) ceil($total / $perPage),
+            ],
+        ];
     }
 
     public function deleteClientRequest(UuidInterface $id): bool

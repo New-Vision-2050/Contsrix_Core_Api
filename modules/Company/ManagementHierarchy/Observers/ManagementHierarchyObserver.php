@@ -7,8 +7,10 @@ namespace Modules\Company\ManagementHierarchy\Observers;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\Company\ManagementHierarchy\Models\Branch;
 use Modules\Company\ManagementHierarchy\Models\Management;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 use Modules\Attendance\Services\DefaultConstraintService;
+use Modules\ProcedureSetting\Enums\ProcedureSettingType;
+use Modules\ProcedureSetting\Models\WorkFlow;
 
 class ManagementHierarchyObserver
 {
@@ -28,8 +30,9 @@ class ManagementHierarchyObserver
     public function created(ManagementHierarchy $managementHierarchy): void
     {
         $this->syncRelatedTable($managementHierarchy);
-           if ($managementHierarchy->type === 'branch') {
+        if ($managementHierarchy->type === 'branch') {
             $this->defaultConstraintService->createForBranch($managementHierarchy);
+            $this->attachBranchToDefaultWorkFlow($managementHierarchy);
         }
     }
 
@@ -45,8 +48,15 @@ class ManagementHierarchyObserver
         if ($managementHierarchy->isDirty('type')) {
             $originalType = $managementHierarchy->getOriginal('type');
             $this->deleteFromRelatedTable($managementHierarchy, $originalType);
+            if ($originalType === 'branch' && $managementHierarchy->type !== 'branch') {
+                $this->detachBranchFromWorkFlows($managementHierarchy);
+            }
         }
         $this->syncRelatedTable($managementHierarchy);
+
+        if ($managementHierarchy->type === 'branch') {
+            $this->attachBranchToDefaultWorkFlow($managementHierarchy);
+        }
     }
 
     /**
@@ -57,6 +67,9 @@ class ManagementHierarchyObserver
      */
     public function deleted(ManagementHierarchy $managementHierarchy): void
     {
+        if ($managementHierarchy->type === 'branch') {
+            $this->detachBranchFromWorkFlows($managementHierarchy);
+        }
         $this->deleteFromRelatedTable($managementHierarchy, $managementHierarchy->type);
     }
 
@@ -145,5 +158,35 @@ class ManagementHierarchyObserver
             'is_main' => $managementHierarchy->is_main??0,
             'users_count' => $usersCount,
         ];
+    }
+
+    protected function attachBranchToDefaultWorkFlow(ManagementHierarchy $managementHierarchy): void
+    {
+        if ($managementHierarchy->company_id === null) {
+            return;
+        }
+
+        if (! Schema::hasTable('work_flows') || ! Schema::hasTable('management_hierarchy_work_flow')) {
+            return;
+        }
+
+        $workFlowIds = [];
+        foreach (ProcedureSettingType::cases() as $type) {
+            $workFlowIds[] = WorkFlow::defaultForCompany(
+                (string) $managementHierarchy->company_id,
+                $type->value
+            )->id;
+        }
+
+        $managementHierarchy->workFlows()->syncWithoutDetaching($workFlowIds);
+    }
+
+    protected function detachBranchFromWorkFlows(ManagementHierarchy $managementHierarchy): void
+    {
+        if (! Schema::hasTable('management_hierarchy_work_flow')) {
+            return;
+        }
+
+        $managementHierarchy->workFlows()->detach();
     }
 }

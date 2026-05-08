@@ -14,6 +14,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'show']);
         Route::post('/', [\Modules\CompanyUser\Controllers\BrokerController::class, 'store']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\BrokerController::class, 'update']);
+        Route::patch('/{id}/status', [\Modules\CompanyUser\Controllers\BrokerController::class, 'changeStatus']);
 
         Route::post('/export', [\Modules\CompanyUser\Controllers\BrokerController::class, 'export']);
 
@@ -27,6 +28,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'index']);
         Route::post('/', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'store']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'update']);
+        Route::patch('/{id}/status', [\Modules\CompanyUser\Controllers\EmployeeController::class, 'changeStatus']);
 
     });
 
@@ -38,6 +40,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::post('/company', [\Modules\CompanyUser\Controllers\ClientController::class, 'createClientCompany']);
         Route::post('/', [\Modules\CompanyUser\Controllers\ClientController::class, 'store']);
         Route::post('/{id}', [\Modules\CompanyUser\Controllers\ClientController::class, 'update']);
+        Route::patch('/{id}/status', [\Modules\CompanyUser\Controllers\ClientController::class, 'changeStatus']);
         Route::post('/export', [\Modules\CompanyUser\Controllers\ClientController::class, 'export']);
 
         // Dashboard Widgets Routes
@@ -53,7 +56,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
 
     Route::get('/profile/{id?}', [CompanyUserProfileController::class, 'profile']);
     Route::post('/validate-photo/{id?}', [CompanyUserProfileController::class, 'validatePhoto']);
-    Route::post('/upload-photo/{id?}', [CompanyUserProfileController::class, 'uploadPhoto']);
+    Route::post('/upload-photo/{user_id?}', [CompanyUserProfileController::class, 'uploadPhoto']);
     Route::put('/data-info/{id?}', [CompanyUserProfileController::class, 'updateDataInfo']);
     Route::put('/contact-info/{id?}', [CompanyUserProfileController::class, 'updateContactInformation'])->permission(Permission::USER_PROFILE_CONTACT_UPDATE(),Permission::PROFILE_CONTACT_INFO_UPDATE(),Permission::PROFILE_ADDRESS_INFO_UPDATE());
     Route::post('/identity-data/{id?}', [CompanyUserProfileController::class, 'identityData'])->permission(Permission::USER_PROFILE_IDENTITY_UPDATE(),Permission::PROFILE_PASSPORT_INFO_UPDATE(),Permission::PROFILE_BORDER_NUMBER_UPDATE(),Permission::PROFILE_RESIDENCE_INFO_UPDATE());

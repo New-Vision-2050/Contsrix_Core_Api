@@ -99,6 +99,26 @@ class ProjectType extends Model
         return $this->hasOne(DepartmentContractSetting::class, 'project_type_id');
     }
 
+    public function attachmentCycleSetting()
+    {
+        return $this->hasOne(AttachmentCycleSetting::class, 'project_type_id');
+    }
+
+    public function archiveLibrarySetting()
+    {
+        return $this->hasOne(ArchiveLibrarySetting::class, 'project_type_id');
+    }
+
+    public function rolesAndPermissionsSetting()
+    {
+        return $this->hasOne(RolesAndPermissionsSetting::class, 'project_type_id');
+    }
+
+    public function projectSharingSetting()
+    {
+        return $this->hasOne(ProjectSharingSetting::class, 'project_type_id');
+    }
+
     public function getRelationshipToPrimaryModel(): string
     {
         return "company";

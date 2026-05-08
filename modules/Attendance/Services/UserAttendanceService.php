@@ -15,6 +15,17 @@ use Ramsey\Uuid\UuidInterface;
 
 class UserAttendanceService
 {
+
+    /**
+     * When set, {@see getTimezone()} returns this instead of calling the global helper (avoids duplicate user queries in one request).
+     */
+    private ?string $requestTimezoneOverride = null;
+
+    /**
+     * Cache for user data within a single request to avoid duplicate queries
+     */
+    private array $userCache = [];
+
     public function __construct(
         private AttendanceConstraintService $constraintService,
         private AttendanceService $attendanceService
@@ -27,40 +38,97 @@ class UserAttendanceService
     /**
      * Get work rules/constraints for a user
      *
-     * @param UuidInterface|string $userId
+     * Pass the authenticated {@see User} when available to avoid a duplicate users-table query (e.g. mobile "today" constraint).
+     *
+     * @param User|UuidInterface|string $userOrId
      * @param string|null $date Optional date (Y-m-d format), defaults to today
      * @return array
      */
-    public function getUserConstraints(UuidInterface|string $userId, ?string $date = null): array
+
+    private function getUserWithRelationships(UuidInterface|string $userId): User
     {
-        $user = User::findOrFail($userId);
-        
-        $timezone = $this->getTimezone();
-        
-        $targetDate = $date ?? $this->now()->format('Y-m-d');
-        $dateCarbon = $this->parseDateTime($targetDate, $timezone);
+        $userIdString = is_string($userId) ? $userId : $userId->toString();
 
-        // Always pass the resolved target date to ensure consistency
-        $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate);
-        $attendances = $this->getAttendancesForDate($user, $dateCarbon);
-
-        if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
-            $earlyClockInRules = $workRules['early_clock_in_rules'] ?? null;
-            $workRules['all_work_periods'] = $this->enhancePeriodsWithAttendance(
-                $workRules['all_work_periods'],
-                $attendances,
-                $dateCarbon,
-                is_array($earlyClockInRules) ? $earlyClockInRules : []
-            );
+        if (!isset($this->userCache[$userIdString])) {
+            $this->userCache[$userIdString] = User::query()
+                ->with([
+                    'professionalData.attendanceConstraint',
+                    'userProfessionalData.branch.address.country.timezones',
+                    'userProfessionalData.department',
+                ])
+                ->findOrFail($userIdString);
         }
-        return [
-            'user_id' => (string) $user->id,
-            'user_name' => $user->name,
-            'date' => $targetDate,
-            'work_rules' => $this->filterWorkRules($workRules),
-        ];
+
+        return $this->userCache[$userIdString];
     }
 
+    /**
+     * Reuse the resolved auth user and only load relations that are missing (avoids a second SELECT on users).
+     */
+    private function ensureUserWithConstraintRelations(User $user): User
+    {
+        $userIdString = (string) $user->getKey();
+
+        if (isset($this->userCache[$userIdString])) {
+            return $this->userCache[$userIdString];
+        }
+
+        $user->loadMissing([
+            'professionalData.attendanceConstraint',
+            'userProfessionalData.branch.address.country.timezones',
+            'userProfessionalData.department',
+        ]);
+
+        return $this->userCache[$userIdString] = $user;
+    }
+
+    /**
+     * Get work rules/constraints for a user
+     *
+     * Pass the authenticated {@see User} when available to avoid a duplicate users-table query (e.g. mobile "today" constraint).
+     *
+     * @param User|UuidInterface|string $userOrId
+     * @param string|null $date Optional date (Y-m-d format), defaults to today
+     * @return array
+     */
+    public function getUserConstraints(User|UuidInterface|string $userOrId, ?string $date = null): array
+    {
+        $user = $userOrId instanceof User
+            ? $this->ensureUserWithConstraintRelations($userOrId)
+            : $this->getUserWithRelationships($userOrId);
+
+        $previousTz = $this->requestTimezoneOverride;
+        $this->requestTimezoneOverride = $this->timezoneFromUserBranch($user);
+
+        try {
+            $timezone = $this->getTimezone();
+            $targetDate = $date ?? $this->now()->format('Y-m-d');
+            $dateCarbon = $this->parseDateTime($targetDate, $timezone);
+
+            $workRules = $this->constraintService->getTodaysWorkRulesForUser($user, $targetDate, $timezone);
+            [$attendances, $currentAttendance] = $this->fetchDayAttendancesAndCurrentOpen($user, $dateCarbon);
+
+            if (isset($workRules['all_work_periods']) && is_array($workRules['all_work_periods'])) {
+                $earlyClockInRules = $workRules['early_clock_in_rules'] ?? null;
+                $workRules['all_work_periods'] = $this->enhancePeriodsWithAttendance(
+                    $workRules['all_work_periods'],
+                    $attendances,
+                    $dateCarbon,
+                    is_array($earlyClockInRules) ? $earlyClockInRules : [],
+                    $currentAttendance
+                );
+            }
+
+            return [
+                'user_id' => (string) $user->id,
+                'user_name' => $user->name,
+                'date' => $targetDate,
+                'work_rules' => $this->filterWorkRules($workRules),
+            ];
+        } finally {
+            $this->requestTimezoneOverride = $previousTz;
+        }
+    }
     /**
      * Check if user is clocked in
      *
@@ -88,29 +156,66 @@ class UserAttendanceService
     // =============================================================================
 
     /**
-     * Get attendance records for a user on a specific date
+     * One query: attendances for the target day (by start_time / clock_in_time) plus any still-open shift
+     * (clock_in set, clock_out null) so overnight sessions are included without a second DB round-trip.
      *
-     * @param User $user
-     * @param Carbon $date
-     * @return Collection
+     * @return array{0: Collection<int, Attendance>, 1: Attendance|null}
      */
-    private function getAttendancesForDate(User $user, Carbon $date): Collection
+    private function fetchDayAttendancesAndCurrentOpen(User $user, Carbon $date): array
     {
-        // Ensure we're using the correct timezone for date comparison
-        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
+        $timezone = $this->getTimezone();
         $dateInTz = $date->copy()->setTimezone($timezone);
-        
-        // Convert date range to UTC for database query (database stores times in UTC)
+
         $dayStartUtc = $dateInTz->copy()->startOfDay()->setTimezone('UTC');
         $dayEndUtc = $dateInTz->copy()->endOfDay()->setTimezone('UTC');
-        
-        return Attendance::where('user_id', $user->id)
+
+        $columns = [
+            'id',
+            'user_id',
+            'status',
+            'timezone',
+            'start_time',
+            'clock_in_time',
+            'clock_out_time',
+            'late_minutes',
+            'overtime_hours',
+            'total_work_hours',
+            'clock_in_location',
+            'clock_out_location',
+        ];
+
+        // Keep this query range-based and narrow to avoid large filesort memory pressure.
+        $dayRecords = Attendance::query()
+            ->select($columns)
+            ->where('user_id', $user->id)
             ->where(function ($query) use ($dayStartUtc, $dayEndUtc) {
                 $query->whereBetween('start_time', [$dayStartUtc, $dayEndUtc])
-                    ->orWhereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
+                    ->orWhere(function ($inner) use ($dayStartUtc, $dayEndUtc) {
+                        $inner->whereNull('start_time')
+                            ->whereBetween('clock_in_time', [$dayStartUtc, $dayEndUtc]);
+                    });
             })
-            ->orderBy('start_time')
+            ->orderByRaw('COALESCE(start_time, clock_in_time) ASC')
             ->get();
+
+        // Fetch latest open attendance separately to avoid combining it in a broad OR query.
+        $currentOpen = Attendance::query()
+            ->select($columns)
+            ->where('user_id', $user->id)
+            ->whereNotNull('clock_in_time')
+            ->whereNull('clock_out_time')
+            ->orderByDesc('clock_in_time')
+            ->first();
+
+        if ($currentOpen !== null && !$dayRecords->contains('id', $currentOpen->id)) {
+            $dayRecords->push($currentOpen);
+        }
+
+        $records = $dayRecords
+            ->sortBy(static fn (Attendance $attendance) => $attendance->start_time ?? $attendance->clock_in_time)
+            ->values();
+
+        return [$records, $currentOpen];
     }
 
     /**
@@ -121,24 +226,104 @@ class UserAttendanceService
      * @param Carbon $date
      * @return array
      */
-    private function enhancePeriodsWithAttendance(array $periods, Collection $attendances, Carbon $date, array $earlyClockInRules): array
-    {
-        return array_map(function ($period) use ($attendances, $date, $earlyClockInRules) {
-            $periodStart = $this->parsePeriodTime($period, 'start', $date);
-            $periodEnd = $this->parsePeriodTime($period, 'end', $date);
+    private function enhancePeriodsWithAttendance(
+        array $periods,
+        Collection $attendances,
+        Carbon $date,
+        array $earlyClockInRules,
+        ?Attendance $currentAttendance = null
+    ): array {
+        $timezone = $this->getTimezone();
+        $now = Carbon::now($timezone);
+
+        $periodBounds = [];
+        foreach ($periods as $idx => $period) {
+            $periodBounds[$idx] = [
+                'start' => $this->parsePeriodTime($period, 'start', $date),
+                'end' => $this->parsePeriodTime($period, 'end', $date),
+            ];
+        }
+
+        $activePeriodIndex = $this->resolveSingleActivePeriodIndex(
+            $periodBounds,
+            $now,
+            $earlyClockInRules,
+            $currentAttendance
+        );
+
+        $out = [];
+        foreach ($periods as $idx => $period) {
+            $periodStart = $periodBounds[$idx]['start'];
+            $periodEnd = $periodBounds[$idx]['end'];
 
             $totalWorkHours = $this->calculatePeriodWorkHours($periodStart, $periodEnd);
             $periodAttendances = $this->findAttendancesInPeriod($attendances, $periodStart, $periodEnd);
-            
-            $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
-            $now = Carbon::now($timezone);
-            
-            // Active when now is inside period, or inside early clock-in window (e.g. start 16:00, early 30 min → active from 15:30)
-            $isActive = $this->isPeriodActiveIncludingEarly($periodStart, $periodEnd, $now, $earlyClockInRules);
-  
-            return $this->mergePeriodData($period, $totalWorkHours, $periodAttendances, $isActive, $earlyClockInRules);
-        }, $periods);
 
+            // Clock-in / early window (unchanged) — drives can_clock_in per period
+            $isActiveByTime = $this->isPeriodActiveIncludingEarly($periodStart, $periodEnd, $now, $earlyClockInRules);
+            $isActiveForDisplay = $activePeriodIndex !== null && $idx === $activePeriodIndex;
+
+            $out[] = $this->mergePeriodData(
+                $period,
+                $totalWorkHours,
+                $periodAttendances,
+                $isActiveByTime,
+                $isActiveForDisplay,
+                $earlyClockInRules,
+                $currentAttendance
+            );
+        }
+
+        return $out;
+    }
+
+
+
+    /**
+     * Pick exactly one "current" period for {@see mergePeriodData} `is_active`:
+     * open shift (clock in, no clock out) → period whose bounds contain that clock-in; else first period where now falls (incl. early window).
+     *
+     * @param array<int, array{start: Carbon, end: Carbon}> $periodBounds
+     */
+    private function resolveSingleActivePeriodIndex(
+        array $periodBounds,
+        Carbon $now,
+        array $earlyClockInRules,
+        ?Attendance $currentAttendance
+    ): ?int {
+        if ($currentAttendance !== null) {
+            foreach ($periodBounds as $idx => $bounds) {
+                if ($this->isAttendanceClockInWithinPeriod($currentAttendance, $bounds['start'], $bounds['end'])) {
+                    return $idx;
+                }
+            }
+        }
+
+        foreach ($periodBounds as $idx => $bounds) {
+            if ($this->isPeriodActiveIncludingEarly($bounds['start'], $bounds['end'], $now, $earlyClockInRules)) {
+                return $idx;
+            }
+        }
+
+        return null;
+    }
+    private function isAttendanceClockInWithinPeriod(
+        Attendance $attendance,
+        Carbon $periodStart,
+        Carbon $periodEnd
+    ): bool {
+        if (!$attendance->clock_in_time) {
+            return false;
+        }
+
+        $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
+        $clockInCarbon = $attendance->clock_in_time instanceof Carbon
+            ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
+            : Carbon::parse($attendance->clock_in_time, $attendanceTz);
+
+        $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
+
+        return $clockInInPeriodTz->between($periodStart, $periodEnd, true);
     }
 
     /**
@@ -149,21 +334,13 @@ class UserAttendanceService
      * @param Carbon $date
      * @return Carbon
      */
-    private function parsePeriodTime(array $period, string $type, Carbon $date): Carbon
+    private function parsePeriodTime(array $period, string $type, Carbon $date, ?string $timezone = null): Carbon
     {
-        $carbonKey = "period_{$type}_time_carbon";
         $timeKey = "{$type}_time";
+        $timezone = $timezone ?? $this->getTimezone();
 
-        // Get consistent timezone
-        $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
-
-        if (isset($period[$carbonKey])) {
-            $time = $period[$carbonKey];
-            $carbonTime = $time instanceof Carbon ? $time : Carbon::parse($time);
-            return $carbonTime->setTimezone($timezone);
-        }
-
-        // Parse time with consistent timezone
+        // Always parse time fresh with the correct timezone to ensure accurate comparisons
+        // Pre-set Carbon instances from constraint service may have timezone context mismatches
         $time = Carbon::parse($date->format('Y-m-d') . ' ' . $period[$timeKey], $timezone);
 
         if ($type === 'end' && ($period['extends_to_next_day'] ?? false)) {
@@ -185,20 +362,7 @@ class UserAttendanceService
     private function findAttendancesInPeriod(Collection $attendances, Carbon $periodStart, Carbon $periodEnd): array
     {
         return $attendances
-            ->filter(function ($attendance) use ($periodStart, $periodEnd) {
-                // Only match by clock_in_time - attendance belongs to the period where clock_in happened
-                if (!$attendance->clock_in_time) {
-                    return false;
-                }
-                
-                $attendanceTz = $attendance->timezone ?? $periodStart->getTimezone();
-                $clockInCarbon = $attendance->clock_in_time instanceof Carbon
-                    ? $attendance->clock_in_time->copy()->setTimezone($attendanceTz)
-                    : Carbon::parse($attendance->clock_in_time, $attendanceTz);
-                    
-                $clockInInPeriodTz = $clockInCarbon->copy()->setTimezone($periodStart->getTimezone());
-                return $clockInInPeriodTz->between($periodStart, $periodEnd, true);
-            })
+            ->filter(fn (Attendance $attendance) => $this->isAttendanceClockInWithinPeriod($attendance, $periodStart, $periodEnd))
             ->map(fn($attendance) => $this->formatAttendanceForPeriod($attendance, $periodStart, $periodEnd))
             ->values()
             ->toArray();
@@ -263,35 +427,39 @@ class UserAttendanceService
      * @param array $period
      * @param float $totalWorkHours
      * @param array $attendance
-     * @param bool $isActive
+     * @param bool $isActiveByTime Now inside this period or its early clock-in window (drives can_clock_in)
+     * @param bool $isActiveForDisplay Single "current" period for UI (open shift period, else time-based)
      * @return array
      */
-    private function mergePeriodData(array $period, float $totalWorkHours, array $attendance, bool $isActive, array $earlyClockInRules): array
-    {
+    private function mergePeriodData(
+        array $period,
+        float $totalWorkHours,
+        array $attendance,
+        bool $isActiveByTime,
+        bool $isActiveForDisplay,
+        array $earlyClockInRules,
+        ?Attendance $currentAttendance = null
+    ): array {
         $cleanedPeriod = $period;
         unset($cleanedPeriod['period_start_time_carbon'], $cleanedPeriod['period_end_time_carbon']);
-        
+
         $totalHoursPresent = 0;
         foreach ($attendance as $att) {
             $totalHoursPresent += $att['total_hours_present'] ?? 0;
         }
-        
+
         $hasActiveAttendance = collect($attendance)->contains(function ($att) {
             return $att['status'] === 'active';
         });
-        
-        $getCurrentAttendance = $this->attendanceService->getCurrentAttendance(auth()->user()->id);
-        $canClockIn = $isActive && !$hasActiveAttendance && (bool) !$getCurrentAttendance;
 
-
-        $effectiveIsActive = $isActive || $hasActiveAttendance;
+        $canClockIn = $isActiveByTime && ! $hasActiveAttendance && $currentAttendance === null;
 
         return array_merge($cleanedPeriod, [
             'total_work_hours' => $totalWorkHours,
-            'is_active' => $effectiveIsActive,
+            'is_active' => $isActiveForDisplay,
             'total_hours_present' => round($totalHoursPresent, 2),
             'can_clock_in' => $canClockIn,
-            'can_clock_out' => (bool) $getCurrentAttendance,
+            'can_clock_out' => $currentAttendance !== null && $isActiveForDisplay,
             'early_clock_in_rules' => $this->buildEarlyClockInRulesForResponse($earlyClockInRules),
             'attendance' => $attendance,
         ]);
@@ -318,7 +486,7 @@ class UserAttendanceService
     private function filterWorkRules(array $workRules): array
     {
         $locationWork = $workRules['location_work'] ?? null;
-        
+
         return [
             'day_status' => $workRules['day_status'] ?? null,
             'day_name' => $workRules['day_name'] ?? null,
@@ -369,6 +537,13 @@ class UserAttendanceService
         Carbon $now,
         array $earlyClockInRules
     ): bool {
+        \Log::info('[DEBUG isPeriodActiveIncludingEarly]', [
+            'periodStart' => $periodStart->format('Y-m-d H:i:s T'),
+            'periodEnd' => $periodEnd->format('Y-m-d H:i:s T'),
+            'now' => $now->format('Y-m-d H:i:s T'),
+            'in_period' => $now->between($periodStart, $periodEnd, true),
+        ]);
+
         if ($now->between($periodStart, $periodEnd, true)) {
             return true;
         }
@@ -383,6 +558,11 @@ class UserAttendanceService
         }
         $earliestAllowed = $periodStart->copy()->sub($earlyPeriod, $earlyUnit);
 
+        \Log::info('[DEBUG isPeriodActiveIncludingEarly early window]', [
+            'earliestAllowed' => $earliestAllowed->format('Y-m-d H:i:s T'),
+            'in_early_window' => $now->between($earliestAllowed, $periodEnd, true),
+        ]);
+
         return $now->between($earliestAllowed, $periodEnd, true);
     }
 
@@ -396,236 +576,10 @@ class UserAttendanceService
     {
         try {
             $userIdUuid = is_string($userId) ? Uuid::fromString($userId) : $userId;
-            return $this->attendanceService->getCurrentAttendance($userIdUuid);
+            return $this->attendanceService->getCurrentAttendance($userIdUuid, false);
         } catch (\Exception $e) {
             return null;
         }
-    }
-
-    // =============================================================================
-    // Attendance History
-    // =============================================================================
-
-    /**
-     * Get user attendance history grouped by date with periods
-     *
-     * @param UuidInterface|string $userId
-     * @param int|null $month
-     * @param int|null $year
-     * @param int $page
-     * @param int $perPage
-     * @return array
-     */
-    public function getUserAttendanceHistory(
-        UuidInterface|string $userId,
-        ?int $month = null,
-        ?int $year = null,
-        int $page = 1,
-        int $perPage = 10
-    ): array {
-        $user = User::findOrFail($userId);
-        $timezone = $this->getTimezone();
-        $now = $this->now();
-        $currentYear = $year ?? $now->year;
-        $currentMonth = $month ?? $now->month;
-
-        // Build date range in user's timezone, then convert to UTC for database query
-        $rangeStart = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->startOfMonth();
-        $monthEnd = Carbon::create($currentYear, $currentMonth, 1, 0, 0, 0, $timezone)->endOfMonth();
-        $rangeEnd = $monthEnd->gt($now) ? $now->copy()->endOfDay() : $monthEnd;
-
-        // Convert to UTC for database query (database stores times in UTC)
-        $rangeStartUtc = $rangeStart->copy()->setTimezone('UTC');
-        $rangeEndUtc = $rangeEnd->copy()->setTimezone('UTC');
-
-        // Single query to get all attendances for the month window (sargable ranges)
-        $allAttendances = Attendance::where('user_id', $user->id)
-            ->where(function ($q) use ($rangeStartUtc, $rangeEndUtc) {
-                $q->whereBetween('start_time', [$rangeStartUtc, $rangeEndUtc])
-                  ->orWhere(function ($q2) use ($rangeStartUtc, $rangeEndUtc) {
-                      $q2->whereNull('start_time')
-                         ->whereBetween('clock_in_time', [$rangeStartUtc, $rangeEndUtc]);
-                  });
-            })
-            ->orderByRaw('COALESCE(start_time, clock_in_time) DESC')
-            ->get();
-
-        // Group attendances by date in the request timezone
-        $attendancesByDate = $allAttendances->groupBy(function ($attendance) use ($timezone) {
-            $dateField = $attendance->start_time ?? $attendance->clock_in_time;
-            if (!$dateField) {
-                return null;
-            }
-            return $this->parseDateTime($dateField, $timezone)->toDateString();
-        })->filter(fn($group, $key) => $key !== null);
-
-        // Get unique dates sorted descending
-        $allDates = $attendancesByDate->keys()->sort()->reverse()->values();
-        $totalDates = $allDates->count();
-        $lastPage = (int) ceil($totalDates / $perPage);
-        $offset = ($page - 1) * $perPage;
-
-        // Paginate dates
-        $paginatedDates = $allDates->slice($offset, $perPage);
-
-        $result = [];
-        foreach ($paginatedDates as $dateString) {
-            $dateCarbon = $this->parseDateTime($dateString, $timezone);
-            $attendances = $attendancesByDate->get($dateString, collect());
-
-            // Build simple periods directly from attendances without heavy constraint lookups
-            $periodsWithAttendance = $this->buildPeriodsFromAttendances($attendances);
-
-            // Determine day status from attendance
-            $dayStatus = $this->determineDayStatus($attendances);
-            $dayName = $this->getDayNameArabic($dateCarbon);
-
-            $result[] = [
-                'date' => $dateString,
-                'day_name' => $dayName,
-                'status' => $dayStatus,
-                'periods_count' => count($periodsWithAttendance),
-                'periods' => $periodsWithAttendance,
-            ];
-        }
-
-        return [
-            'data' => $result,
-            'pagination' => [
-                'page' => $page,
-                'per_page' => $perPage,
-                'total' => $totalDates,
-                'last_page' => $lastPage,
-                'next_page' => $page < $lastPage ? $page + 1 : null,
-                'result_count' => count($result),
-            ],
-        ];
-    }
-
-    /**
-     * Build periods data directly from attendances without heavy constraint lookups.
-     */
-    private function buildPeriodsFromAttendances(Collection $attendances): array
-    {
-        if ($attendances->isEmpty()) {
-            return [];
-        }
-
-        $periods = [];
-        foreach ($attendances as $attendance) {
-            $clock = $this->extractAttendanceClockData($attendance);
-            $clockInCarbon = $clock['clock_in_carbon'];
-            $clockOutCarbon = $clock['clock_out_carbon'];
-
-            $totalWorkHours = $this->calculateAttendanceWorkHours($attendance, $clockInCarbon, $clockOutCarbon);
-
-            $periods[] = [
-                'clock_in_time' => $clock['clock_in_time'],
-                'clock_out_time' => $clock['clock_out_time'],
-                'work_hours' => $this->formatHoursToTime($totalWorkHours),
-                'delay_hours' => $this->formatMinutesToTime((int) ($attendance->late_minutes ?? 0)),
-                'overtime_hours' => $this->formatHoursToTime((float) ($attendance->overtime_hours ?? 0)),
-                'clock_in_location' => $attendance->clock_in_location,
-                'clock_out_location' => $attendance->clock_out_location,
-            ];
-        }
-
-        return $periods;
-    }
-
-    /**
-     * Calculate total work hours for an attendance record.
-     */
-    private function calculateAttendanceWorkHours(Attendance $attendance, ?Carbon $clockInCarbon, ?Carbon $clockOutCarbon): float
-    {
-        if (isset($attendance->total_work_hours) && $attendance->total_work_hours > 0) {
-            return (float) $attendance->total_work_hours;
-        }
-        if (!$clockInCarbon) {
-            return 0.0;
-        }
-        $endRef = $clockOutCarbon ?? $this->now();
-        return round(max(0, $clockInCarbon->diffInMinutes($endRef, true)) / 60, 2);
-    }
-
-    /**
-     * Determine day status based on attendances
-     *
-     * @param Collection $attendances
-     * @return string
-     */
-    private function determineDayStatus(Collection $attendances): string
-    {
-        if ($attendances->isEmpty()) {
-            return 'غائب';
-        }
-
-        $hasCompleted = $attendances->contains(function ($attendance) {
-            return $attendance->clock_out_time !== null;
-        });
-
-        $hasActive = $attendances->contains(function ($attendance) {
-            return $attendance->clock_out_time === null && $attendance->status === 'active';
-        });
-
-        if ($hasCompleted && !$hasActive) {
-            return 'تم الخروج';
-        }
-
-        if ($hasActive) {
-            return 'نشط';
-        }
-
-        return 'تم الخروج';
-    }
-
-    /**
-     * Get day name in Arabic
-     *
-     * @param Carbon $date
-     * @return string
-     */
-    private function getDayNameArabic(Carbon $date): string
-    {
-        $dayNames = [
-            'Sunday' => 'الأحد',
-            'Monday' => 'الاثنين',
-            'Tuesday' => 'الثلاثاء',
-            'Wednesday' => 'الأربعاء',
-            'Thursday' => 'الخميس',
-            'Friday' => 'الجمعة',
-            'Saturday' => 'السبت',
-        ];
-
-        $englishDayName = $date->format('l');
-        return $dayNames[$englishDayName] ?? $englishDayName;
-    }
-
-    /**
-     * Format hours to H:i format
-     *
-     * @param float $hours
-     * @return string
-     */
-    private function formatHoursToTime(float $hours): string
-    {
-        $totalMinutes = (int) round($hours * 60);
-        $h = intval($totalMinutes / 60);
-        $m = $totalMinutes % 60;
-        return sprintf('%02d:%02d', $h, $m);
-    }
-
-    /**
-     * Format minutes to H:i format
-     *
-     * @param int $minutes
-     * @return string
-     */
-    private function formatMinutesToTime(int $minutes): string
-    {
-        $h = intval($minutes / 60);
-        $m = $minutes % 60;
-        return sprintf('%02d:%02d', $h, $m);
     }
 
     // =============================================================================
@@ -639,6 +593,19 @@ class UserAttendanceService
      */
     private function getTimezone(): string
     {
+        return getTimeZoneBranchByRequest() ?? config('app.timezone');
+    }
+
+    /**
+     * Prefer timezone from the user's branch (already eager-loaded) to avoid a second User query via getTimeZoneBranchByRequest().
+     */
+    private function timezoneFromUserBranch(User $user): string
+    {
+        $timezones = $user->userProfessionalData?->branch?->address?->country?->timezones;
+        if (is_array($timezones) && isset($timezones[0]['zoneName']) && is_string($timezones[0]['zoneName'])) {
+            return $timezones[0]['zoneName'];
+        }
+
         return getTimeZoneBranchByRequest() ?? config('app.timezone');
     }
 
@@ -662,12 +629,11 @@ class UserAttendanceService
     private function parseDateTime($value, ?string $timezone = null): Carbon
     {
         $tz = $timezone ?? $this->getTimezone();
-        
+
         if ($value instanceof Carbon) {
             return $value->copy()->setTimezone($tz);
         }
-        
+
         return Carbon::parse($value, $tz);
     }
 }
-

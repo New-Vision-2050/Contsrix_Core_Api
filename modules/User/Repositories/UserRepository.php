@@ -428,7 +428,7 @@ class UserRepository extends BaseRepository
             }
             // Update status if provided (check isset to handle 0 value)
             if (isset($data["status"])) {
-                $user->update(["status" => (string)$data["status"]]);
+                $companyUserCompany->update(["status" => (string)$data["status"]]);
             }
             $userProfessionalData = UserProfessionalData::query()->where(["global_id" => $user->global_company_user_id, "company_id" => $user->company_id])->first();
             if ($userProfessionalData) {
@@ -656,6 +656,24 @@ class UserRepository extends BaseRepository
     }
 
 
+
+    public function updateStatus(User $user, string $role, int $status): User
+    {
+        $companyUserCompany = $this->companyUserCompanyRepository->model->withoutTenancy()
+            ->where([
+                'company_id'             => $user->company_id,
+                'global_company_user_id' => $user->global_company_user_id,
+                'role'                   => $role,
+            ])->first();
+
+        if (!$companyUserCompany) {
+            throw new CustomException("User does not have the specified role.");
+        }
+
+        $companyUserCompany->update(['status' => (string) $status]);
+
+        return $user->fresh();
+    }
 
     public function createClientCompany($userId, $companyId)
     {

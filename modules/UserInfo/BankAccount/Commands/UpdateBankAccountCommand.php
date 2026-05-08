@@ -16,7 +16,7 @@ class UpdateBankAccountCommand
         private string $user_name,
         private string $account_number,
         private string $iban,
-        private string $swift_bic,
+        private ?string $swift_bic,
         private string $type_id,
     ) {
     }

@@ -17,10 +17,42 @@ class CompanyUserPresenter extends AbstractPresenter
 {
     private CompanyUser $companyUser;
     private ?string $userId;
-    public function __construct(CompanyUser $companyUser, string $userId = null)
+    private ?int $role;
+
+    public function __construct(CompanyUser $companyUser, string $userId = null, ?int $role = null)
     {
         $this->companyUser = $companyUser;
         $this->userId = $userId;
+        $this->role   = $role;
+    }
+
+    public static function collection(iterable $collection, ...$additionalParams): array
+    {
+        $role = $additionalParams[0] ?? null;
+
+        return collect($collection)->map(function ($item) use ($role) {
+            return (new self($item, null, $role))->getData();
+        })->toArray();
+    }
+
+    private function resolveStatus(): mixed
+    {
+        if ($this->role === null) {
+            return null;
+        }
+
+        $roleStr = (string) $this->role;
+
+        foreach ($this->companyUser->users as $user) {
+            $record = $user->companyUserCompanies
+                ->first(fn($c) => $c->getRawOriginal('role') === $roleStr);
+
+            if ($record) {
+                return (int) $record->getRawOriginal('status');
+            }
+        }
+
+        return null;
     }
 
     protected function present(bool $isListing = false): array
@@ -39,6 +71,7 @@ class CompanyUserPresenter extends AbstractPresenter
             'job_title_id'=>$this->companyUser?->userProfessionalData?->job_title_id,
             "job_title" => $this->companyUser?->userProfessionalData?->jobTitle?->name,
             "country" => $this->companyUser?->country ? (new CountryPresenter($this->companyUser?->country))->getData() : collect([]),
+            'status' => $this->resolveStatus(),
             'data_status' => 0,
             "company" => ($this->companyUser->companies->unique('id')->first())
                 ? (new CompanyUsersPresenter(
@@ -59,6 +92,67 @@ class CompanyUserPresenter extends AbstractPresenter
             'bank_account' => $this->companyUser->bankAccount ? (new BankAccountPresenter($this->companyUser->bankAccount))->getData() : null,
             'user_professional_data' => $this->companyUser->userProfessionalData ? (new UserProfessionalDataPresenter($this->companyUser->userProfessionalData))->getData():null,
             "currency"=> $this->companyUser->currency?(new CountryCurrencyPresenter($this->companyUser->currency))->getData():null,
+            "photo"=>$this->companyUser->getFirstMedia('upload_user')?->getFullUrl(),
+
+            // Extended fields
+            'phone_code' => $this->companyUser->users->first()?->phone_code,
+            'nickname' => $this->companyUser->nickname,
+            'birthdate_gregorian' => $this->companyUser->birthdate_gregorian,
+            'birthdate_hijri' => $this->companyUser->birthdate_hijri,
+            'nationality' => $this->companyUser->country?->name,
+            'postal_code' => $this->companyUser->postal_code,
+            'landline_number' => $this->companyUser->landline_number,
+            'management' => $this->companyUser->userProfessionalData?->management?->name,
+            'department' => $this->companyUser->userProfessionalData?->department?->name,
+            'job_type' => $this->companyUser->userProfessionalData?->jobType?->name,
+            'job_code' => $this->companyUser->userProfessionalData?->job_code,
+            'attendance_constraint' => $this->companyUser->userProfessionalData?->attendanceConstraint?->constraint_name,
+            'whatsapp' => $this->companyUser->whatsapp,
+            'linkedin' => $this->companyUser->linkedin,
+            'facebook' => $this->companyUser->facebook,
+            'instagram' => $this->companyUser->instagram,
+            'telegram' => $this->companyUser->telegram,
+            'snapchat' => $this->companyUser->snapchat,
+            'time_zone' => $this->companyUser->timeZone?->name,
+            'language' => $this->companyUser->language?->name,
+            'iban' => $this->companyUser->bankAccount?->iban,
+            'contract_number' => $this->companyUser->employmentContract?->contract_number,
+            'contract_start_date' => $this->companyUser->employmentContract?->start_date,
+            'notice_period' => $this->companyUser->employmentContract?->notice_period,
+            'salary' => $this->companyUser->userSalary?->salary,
+            'bank-info' => $this->companyUser->bankAccount?->iban,
+            'salary-info' => $this->companyUser->userSalary?->salary,
+            'employment-info' => $this->companyUser->userProfessionalData?->jobTitle?->name,
+            'contact-info' => $this->companyUser->contactInfo?->phone,
+            'social-media' => implode(', ', array_keys(array_filter([
+                'WhatsApp' => $this->companyUser->whatsapp,
+                'LinkedIn' => $this->companyUser->linkedin,
+                'Facebook' => $this->companyUser->facebook,
+                'Instagram' => $this->companyUser->instagram,
+                'Telegram' => $this->companyUser->telegram,
+                'Snapchat' => $this->companyUser->snapchat,
+            ]))) ?: null,
+            'family-info' => $this->companyUser->userRelatives->map(fn($r) => trim($r->name . ($r->relationship ? ' (' . $r->relationship . ')' : '')))->filter()->join(', ') ?: null,
+            'about-me' => $this->companyUser->userAbout?->about_me,
+            'cv' => $this->companyUser->getFirstMedia('upload_biography')?->getFullUrl(),
+            'certificates' => $this->companyUser->professionalCertificates->pluck('accreditation_name')->filter()->join(', ') ?: null,
+            'qualification' => $this->companyUser->qualifications->pluck('academicQualification.name')->filter()->join(', ') ?: null,
+            'experience' => $this->companyUser->userExperiences->map(fn($e) => trim($e->job_name . ($e->company_name ? ' (' . $e->company_name . ')' : '')))->filter()->join(', ') ?: null,
+            'courses' => $this->companyUser->userEducationalCourses->pluck('name')->filter()->join(', ') ?: null,
+            'work-license' => $this->companyUser->work_permit ?: null,
+            'privileges' => $this->companyUser->userPrivileges->pluck('typePrivilege.name')->filter()->join(', ') ?: null,
+            'official-data' => ($cr = $this->companyUser->contractualRelationships->first())
+                ? ($cr->employment_name ?? $cr->registration_number)
+                : null,
+            'job-offer' => $this->companyUser->jobOffer?->job_offer_number,
+            'contract-work' => $this->companyUser->employmentContract?->contract_number,
+            'contract_duration' => $this->companyUser->employmentContract?->contract_duration,
+            'education' => $this->companyUser->qualifications->pluck('academicQualification.name')->filter()->join(', ') ?: null,
+            'passport-info' => $this->companyUser->passport ?: null,
+            'residence-info' => $this->companyUser->residence ?: null,
+            'number_of_projects' => null,
+            'end_date' => null,
+            'broker' => null,
 
         ];
     }

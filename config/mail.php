@@ -113,4 +113,16 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Support Email Address
+    |--------------------------------------------------------------------------
+    |
+    | This email address will be used in email footers as the support
+    | contact email for users to reach out to.
+    |
+    */
+
+    'support_email' => env('MAIL_SUPPORT_EMAIL', 'support@constrix.com'),
+
 ];

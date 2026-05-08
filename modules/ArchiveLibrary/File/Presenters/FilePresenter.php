@@ -124,6 +124,7 @@ class FilePresenter extends AbstractPresenter
             'reference_number' => $this->file->reference_number,
             'start_date' => $this->file->start_date?->format('Y-m-d'),
             'end_date' => $this->file->end_date?->format('Y-m-d'),
+            'project_id' => $this->file->project_id,
             'access_type' => $this->file->access_type,
             'status' => $this->file->status ?? 1,
             'file' => $file,

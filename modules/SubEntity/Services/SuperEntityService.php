@@ -86,7 +86,7 @@ class SuperEntityService
         $attributes = [];
         if (Str::isUuid($id)) {
             $parentSubEntity = $this->subEntityCRUDService->get(id: Uuid::fromString($id));
-            $attributes = array_merge($parentSubEntity->default_attributes, $parentSubEntity->optional_attributes ?? []);
+            $attributes = array_values(array_unique(array_merge($parentSubEntity->default_attributes ?? [], $parentSubEntity->optional_attributes ?? [])));
         } else {
             $attributes = $this->repository->getAvailableAttributes($id) ?? [];
         }

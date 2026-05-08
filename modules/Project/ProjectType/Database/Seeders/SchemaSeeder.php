@@ -18,24 +18,31 @@ class SchemaSeeder extends Seeder
     {
         DB::transaction(function () {
             $schemas = [
-                'بيانات المشروع',
-                'بنود المشروع',
-                'المرفقات',
-                'المقاولين',
-                'الكادر',
-                'اوامر العمل',
-                'المالية',
-                'اداره العقد'
+//                1 => 'بيانات المشروع',
+//                2 => 'بنود المشروع',
+                3 => 'المرفقات',
+//                4 => 'المقاولين',
+                5 => 'المعنيين',
+//                6 => 'اوامر العمل',
+//                7 => 'المالية',
+//                8 => 'اداره العقد',
+                9=>'دورة الوثائق',
+                10 => 'الصلاحيات و الادوار',
+                11 => 'مشاركة المشروع'
             ];
 
             $createdCount = 0;
             $schemaIds = [];
 
-            foreach ($schemas as $schemaName) {
+            foreach ($schemas as $id => $schemaName) {
                 $schema = Schema::firstOrCreate(
-                    ['name' => $schemaName],
-                    ['name' => $schemaName]
+                    ['id' => $id],
+                    ['id' => $id, 'name' => $schemaName]
                 );
+
+                if ($schema->name !== $schemaName) {
+                    $schema->update(['name' => $schemaName]);
+                }
 
                 $schemaIds[] = $schema->id;
 

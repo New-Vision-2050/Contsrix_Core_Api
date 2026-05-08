@@ -8,6 +8,11 @@ use Modules\Project\ProjectType\Controllers\AttachmentTermsContractSettingContro
 use Modules\Project\ProjectType\Controllers\ContractorContractSettingController;
 use Modules\Project\ProjectType\Controllers\EmployeeContractSettingController;
 use Modules\Project\ProjectType\Controllers\DepartmentContractSettingController;
+use Modules\Project\ProjectType\Controllers\AttachmentCycleSettingController;
+use Modules\Project\ProjectType\Controllers\ArchiveLibrarySettingController;
+use Modules\Project\ProjectType\Controllers\RolesAndPermissionsSettingController;
+use Modules\Project\ProjectType\Controllers\ProjectSharingSettingController;
+use Modules\Project\ProjectType\Controllers\SchemaController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -25,6 +30,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_TYPE_EXPORT());
     Route::get('/roots', [ProjectTypeController::class, 'getRootProjectTypes'])
         ->permission(Permission::PROJECT_TYPE_LIST());
+
+    Route::get('/schemas', [SchemaController::class, 'index']);
 
     Route::get('/{id}', [ProjectTypeController::class, 'show'])
         ->permission(Permission::PROJECT_TYPE_VIEW());
@@ -74,4 +81,32 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
         ->permission(Permission::PROJECT_TYPE_VIEW());
     Route::put('/{projectTypeId}/department-contract-settings', [DepartmentContractSettingController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Attachment Cycle Settings routes
+    Route::get('/{projectTypeId}/attachment-cycle-settings', [AttachmentCycleSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/attachment-cycle-settings', [AttachmentCycleSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Archive Library Settings routes
+    Route::get('/{projectTypeId}/archive-library-settings', [ArchiveLibrarySettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/archive-library-settings', [ArchiveLibrarySettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Roles and Permissions Settings routes
+    Route::get('/{projectTypeId}/roles-and-permissions-settings', [RolesAndPermissionsSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/roles-and-permissions-settings', [RolesAndPermissionsSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Project Sharing Settings routes
+    Route::get('/{projectTypeId}/project-sharing-settings', [ProjectSharingSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/{projectTypeId}/project-sharing-settings', [ProjectSharingSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Schema routes
+//    Route::get('/schemas/{id}', [SchemaController::class, 'show'])
+//        ->permission(Permission::PROJECT_TYPE_VIEW());
 });

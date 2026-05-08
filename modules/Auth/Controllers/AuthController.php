@@ -19,9 +19,11 @@ use Modules\Auth\Requests\LoginStepAlternativeRequest;
 use Modules\Auth\Requests\LoginStepsRequest;
 use Modules\Auth\Requests\LoginWithOtpRequest;
 use Modules\Auth\Requests\LogoutRequest;
+use Modules\Auth\Requests\RefreshTokenRequest;
 use Modules\Auth\Requests\ResendOtpRequest;
 use Modules\Auth\Requests\ResetPasswordRequest;
 use Modules\Auth\Requests\ValidateOtpRequest;
+use Modules\Auth\Requests\ValidateOtpRequestResetPassword;
 use Modules\Auth\Services\AuthService;
 use Modules\Setting\Presenters\LoginWayWithSpecificStepPresenter;
 use Modules\User\Presenters\UserPresenter;
@@ -43,26 +45,26 @@ class AuthController extends Controller
     {
         $loginDTO = $request->createLoginDTO();
 
-        [$token, $user] = $this->authService->login($loginDTO);
+        [$accessToken, $refreshToken, $user] = $this->authService->login($loginDTO);
 
 
-        if (empty($token)) {
+        if (empty($accessToken)) {
             return Json::item(["continue_with_otp" => 1]);
         }
         $userPresenter = (new UserPresenter($user))->getData();
 
-        return Json::item(["token" => $token, "user" => $userPresenter], message: "Logged in");
+        return Json::item(["token" => $accessToken, "refresh_token" => $refreshToken, "user" => $userPresenter], message: "Logged in");
     }
 
     public function loginWithOtp(LoginWithOtpRequest $request)
     {
 
-            [$token, $user] = $this->authService->loginWithOtp($request->createLoginDTO());
+            [$accessToken, $refreshToken, $user] = $this->authService->loginWithOtp($request->createLoginDTO());
 
 
         $userPresenter = (new UserPresenter($user))->getData();
 
-        return Json::item(["token" => $token, "user" => $userPresenter]);
+        return Json::item(["token" => $accessToken, "refresh_token" => $refreshToken, "user" => $userPresenter]);
     }
 
 
@@ -94,7 +96,7 @@ class AuthController extends Controller
         return Json::success("success");
     }
 
-    public function validateOtp(ValidateOtpRequest $request)
+    public function validateOtp(ValidateOtpRequestResetPassword $request)
     {
         return Json::item(["token" => $this->authService->validateOtp($request->createValidateOtpDTO())]);
     }
@@ -110,15 +112,20 @@ class AuthController extends Controller
 
     public function getLoginWays(GetLoginWaysRequest $request)
     {
+        $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
+        $companyUserCompany = $user->companyUserCompanies?->where("company_id", tenant("id"))?->first();
+        if ($companyUserCompany && $companyUserCompany->getRawOriginal("status") == 0)
+            return Json::error("user is not active");
 
         [$loginWayId, $token, $step, $canSetPass,$firstLogin] = $this->authService->getLoginWays($request->createGetLoginWaysDTO());
-        $user = $this->userCRUDService->getUserByIdentifier($request->createGetLoginWaysDTO()->getIdentifier());
 
         return Json::item([
             "login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $step, $user))->getData(),
             "token" => $token,
             "can_set_pass" => $canSetPass,
-            "first_login"=> $firstLogin
+            "first_login"=> $firstLogin,
+            "company_user_company"=> $companyUserCompany,
+            "tenant"=>tenant("id")
         ]);
     }
 
@@ -126,14 +133,14 @@ class AuthController extends Controller
     {
         $loginDTO = $request->createLoginStepDTO();
 
-            [$loginWayId, $token, $nextStep] = $this->authService->loginBySteps($loginDTO);
+            [$loginWayId, $token, $nextStep, $refreshToken] = $this->authService->loginBySteps($loginDTO);
             $user = $this->userCRUDService->getUserByIdentifier($loginDTO->getIdentifier());
 
             $this->userCRUDService->updateFcmToken($user->id);
 
         $userPresenter = (new UserPresenter($user))->getData();
         if ($nextStep == null) {
-            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep, $user))->getData(), "token" => $token, "user" => $userPresenter]);
+            return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep, $user))->getData(), "token" => $token, "refresh_token" => $refreshToken, "user" => $userPresenter]);
         }
         return Json::item(["login_way" => (new LoginWayWithSpecificStepPresenter(Uuid::fromString($loginWayId), $nextStep, $user))->getData(), "token" => $token]);
     }
@@ -169,6 +176,13 @@ class AuthController extends Controller
     }
 
 
+    public function refreshToken(RefreshTokenRequest $request)
+    {
+        $token = $this->authService->refreshToken();
+
+        return Json::item(['token' => $token]);
+    }
+
     public function getDataForLoginAsAdmin(getDataForLoginAsAdminRequest $request)
     {
        $data= $this->authService->getDataForLoginAsAdmin($request->company_id);
@@ -178,10 +192,10 @@ class AuthController extends Controller
 
     public function loginAsAdmin(LoginAsAdminRequest $request)
     {
-       [$token,$user]= $this->authService->loginAsAdmin($request->token);
+       [$accessToken, $refreshToken, $user] = $this->authService->loginAsAdmin($request->token);
 
 
-        return Json::item(["token" => $token,"user" => (new UserPresenter($user))->getData()]);
+        return Json::item(["token" => $accessToken, "refresh_token" => $refreshToken, "user" => (new UserPresenter($user))->getData()]);
     }
 
 }

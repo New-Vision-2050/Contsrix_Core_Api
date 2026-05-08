@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Shared\AcademicSpecialization\Models\AcademicSpecialization;
 use Modules\Shared\University\Models\University;
+use Modules\Shared\University\Jobs\FetchUniversitiesJob;
 use Ranium\SeedOnce\Traits\SeedOnce;
 use Illuminate\Support\Facades\DB;
 class UniversitiesSeederTableSeeder extends Seeder
@@ -19,6 +20,11 @@ class UniversitiesSeederTableSeeder extends Seeder
      */
     public function run()
     {
+        $this->command->info('Dispatching universities fetch job...');
+        FetchUniversitiesJob::dispatch();
+        $this->command->info('Universities fetch job dispatched.');
+        return;
+
         Model::unguard();
 
         // --- EGYPT (Country ID: 65) ---
@@ -93,8 +99,13 @@ class UniversitiesSeederTableSeeder extends Seeder
             ['ar' => 'الجامعة العربية المفتوحة', 'en' => 'Arab Open University', 'country_id' => 194, 'link' => null], // Has branches including Saudi Arabia
         ];
 
+        // --- JORDAN (Country ID: 111) ---
+        $jordan_universities = [
+            ['ar' => 'أكاديمية الأمير حسين بن عبدالله الثاني للحماية المدنية', 'en' => 'Prince Hussein bin Abdullah II Academy for Civil Defense', 'country_id' => 111, 'link' => null],
+        ];
+
         // Combine all universities
-        $all_universities = array_merge($egypt_universities, $saudi_universities);
+        $all_universities = array_merge($egypt_universities, $saudi_universities, $jordan_universities);
 
         foreach ($all_universities as $university) {
             University::create(

@@ -17,14 +17,17 @@ use Modules\Attendance\Presenters\UserAttendanceHistoryPresenter;
 use Modules\Attendance\Requests\GetUserConstraintRequest;
 use Modules\Attendance\Requests\GetUserAttendanceHistoryRequest;
 use Modules\Attendance\Services\AttendanceService;
+use Modules\Attendance\Services\UserAttendanceHistoryService;
 use Modules\Attendance\Services\UserAttendanceService;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
 class UserAttendanceController extends Controller
 {
     public function __construct(
         private AttendanceService $attendanceService,
-        private UserAttendanceService $userAttendanceService
+        private UserAttendanceService $userAttendanceService,
+        private UserAttendanceHistoryService $historyService,
     ) {}
 
     /**
@@ -42,13 +45,11 @@ class UserAttendanceController extends Controller
     public function getMyConstraintForToday(GetUserConstraintRequest $request): JsonResponse
     {
         try {
-            $userId = (string) Auth::id();
-            $date = $request->input('date'); // Optional: Y-m-d format, defaults to today if null
-
-            $timezone = getTimeZoneBranchByRequest() ?? config('app.timezone');
-            $targetDate = $date ?? \Carbon\Carbon::now($timezone)->format('Y-m-d');
-
-            $result = $this->userAttendanceService->getUserConstraints($userId, $targetDate);
+            $user = $request->user();
+            if (!$user instanceof User) {
+                return Json::error('Unauthorized.', 401);
+            }
+            $result = $this->userAttendanceService->getUserConstraints($user, $request->input('date'));
             
             return Json::item($result, message: __('messages.attendance.user_constraint_today_retrieved'));
         } catch (AttendanceException $e) {
@@ -100,8 +101,8 @@ class UserAttendanceController extends Controller
      * @return JsonResponse
      */
     public function getUserAttendanceHistory(GetUserAttendanceHistoryRequest $request): JsonResponse
-    {
-        try {
+    { 
+        // try {
             $userId = (string) Auth::id();
             $month = $request->input('month') ? (int) $request->input('month') : null;
             $year = $request->input('year') ? (int) $request->input('year') : null;
@@ -122,7 +123,7 @@ class UserAttendanceController extends Controller
                 }
             }
 
-            $result = $this->userAttendanceService->getUserAttendanceHistory(
+            $result = $this->historyService->getUserAttendanceHistoryMobileApi(
                 $userId,
                 $month,
                 $year,
@@ -143,17 +144,17 @@ class UserAttendanceController extends Controller
                     'can_clock_in' => $canClockIn,
                 ]
             );
-        } catch (ModelNotFoundException $e) {
-            return Json::error(
-                'User not found.',
-                404
-            );
-        } catch (\Exception $e) {
-            return Json::error(
-                'An unexpected error occurred. Please try again later.',
-                500
-            );
-        }
+        // } catch (ModelNotFoundException $e) {
+        //     return Json::error(
+        //         'User not found.',
+        //         404
+        //     );
+        // } catch (\Exception $e) {
+        //     return Json::error(
+        //         'An unexpected error occurred. Please try again later.',
+        //         500
+        //     );
+        // }
     }
 }
 

@@ -32,6 +32,9 @@ REQUIRED_VARS=(
     "SMS_MORA_USER"
     "SMS_MORA_SENDER"
     "OPENROUTER_API_KEY"
+    "REVERB_APP_ID"
+    "REVERB_APP_KEY"
+    "REVERB_APP_SECRET"
 )
 
 MISSING_VARS=()
@@ -119,6 +122,19 @@ AWS_USE_PATH_STYLE_ENDPOINT="${AWS_USE_PATH_STYLE_ENDPOINT:-true}"
 MINIO_PUBLIC_BUCKET="${MINIO_PUBLIC_BUCKET:-contrix}"
 MINIO_PRIVATE_BUCKET="${MINIO_PRIVATE_BUCKET:-contrix-archive-private}"
 
+# ============================================
+# GENERATE APP_KEY IF NOT PROVIDED
+# ============================================
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
+    echo "APP_KEY not provided. Generating new APP_KEY..."
+    # Generate a random base64 key (32 bytes = 44 characters in base64)
+    GENERATED_KEY=$(openssl rand -base64 32)
+    APP_KEY="base64:${GENERATED_KEY}"
+    echo "✓ APP_KEY generated successfully"
+else
+    echo "✓ Using APP_KEY from environment variable"
+fi
+
 echo "Creating .env file..."
 
 cat <<EOF > .env
@@ -158,6 +174,13 @@ SMS_MORA_KEY="${SMS_MORA_KEY}"
 SMS_MORA_USER="${SMS_MORA_USER}"
 SMS_MORA_SENDER="${SMS_MORA_SENDER}"
 OPENROUTER_API_KEY="${OPENROUTER_API_KEY}"
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID="${REVERB_APP_ID}"
+REVERB_APP_KEY="${REVERB_APP_KEY}"
+REVERB_APP_SECRET="${REVERB_APP_SECRET}"
+REVERB_HOST="0.0.0.0"
+REVERB_PORT=8081
+REVERB_SCHEME="http"
 
 EOF
 

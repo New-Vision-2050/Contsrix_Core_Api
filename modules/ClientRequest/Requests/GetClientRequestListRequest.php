@@ -17,7 +17,7 @@ class GetClientRequestListRequest extends FormRequest
             'client_request_receiver_from_id' => 'nullable|integer|exists:client_request_receiver_from,id',
             'client_type' => 'nullable|string',
             'client_id' => 'nullable|uuid',
-            'status_client_request' => 'nullable|string|in:pending,rejected,accepted',
+            'status_client_request' => 'nullable|string|in:draft,pending,rejected,accepted',
             'content' => 'nullable|string',
             'term_setting_id' => 'nullable|integer|exists:term_settings,id',
             'branch_id' => 'nullable|integer|exists:management_hierarchies,id',

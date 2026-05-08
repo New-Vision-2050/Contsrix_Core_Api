@@ -10,12 +10,15 @@ use Illuminate\Http\JsonResponse;
 use Modules\ClientRequest\Handlers\DeleteClientRequestHandler;
 use Modules\ClientRequest\Handlers\UpdateClientRequestHandler;
 use Modules\ClientRequest\Presenters\ClientRequestPresenter;
+use Modules\ClientRequest\Presenters\ClientRequestMyRequestsPresenter;
 use Modules\ClientRequest\Requests\CreateClientRequestRequest;
 use Modules\ClientRequest\Requests\DeleteClientRequestRequest;
 use Modules\ClientRequest\Requests\GetClientRequestListRequest;
 use Modules\ClientRequest\Requests\GetClientRequestRequest;
+use Modules\ClientRequest\Requests\ChangeClientRequestStatusRequest;
 use Modules\ClientRequest\Requests\UpdateClientRequestFullRequest;
 use Modules\ClientRequest\Services\ClientRequestCRUDService;
+use Modules\ClientRequest\Services\ClientRequestWorkflowService;
 use Modules\ClientRequest\Services\ClientRequestWidgetsService;
 use Modules\ClientRequest\Services\ClientRequestStatusWidgetsService;
 use Modules\ClientRequest\Exports\ClientRequestExport;
@@ -23,11 +26,14 @@ use Modules\ClientRequest\Requests\ExportClientRequestRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Modules\ClientRequest\Models\ClientRequest;
 
 class ClientRequestController extends Controller
 {
     public function __construct(
         private ClientRequestCRUDService $clientRequestService,
+        private ClientRequestWorkflowService $clientRequestWorkflowService,
         private UpdateClientRequestHandler $updateClientRequestHandler,
         private DeleteClientRequestHandler $deleteClientRequestHandler,
         private ClientRequestWidgetsService $clientRequestWidgetsService,
@@ -37,10 +43,12 @@ class ClientRequestController extends Controller
 
     public function index(GetClientRequestListRequest $request): JsonResponse
     {
-        $list = $this->clientRequestService->list(
-            (int) $request->get('page', 1),
-            (int) $request->get('per_page', 10)
-        );
+        $validated = $request->validated();
+        $page = (int) ($validated['page'] ?? $request->get('page', 1));
+        $perPage = (int) ($validated['per_page'] ?? $request->get('per_page', 10));
+
+        // Filtering uses the model filter(request()->all()); paginated() $conditions are plain where() columns only.
+        $list = $this->clientRequestService->list([], $page, $perPage);
 
         return Json::items(ClientRequestPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
@@ -57,6 +65,11 @@ class ClientRequestController extends Controller
     public function store(CreateClientRequestRequest $request): JsonResponse
     {
         $createdItem = $this->clientRequestService->create($request->createCreateClientRequestDTO());
+
+        $this->clientRequestWorkflowService->syncAfterClientRequestStatusChange(
+            $createdItem,
+            (string) $createdItem->status_client_request,
+        );
 
         $this->clientRequestWidgetsService->clearWidgetCache();
         $this->clientRequestStatusWidgetsService->clearWidgetCache();
@@ -115,6 +128,74 @@ class ClientRequestController extends Controller
         $filters = $request->getFilters();
 
         return Excel::download(new ClientRequestExport($this->clientRequestService, $filters), $fileName);
+    }
+
+    public function changeStatus(ChangeClientRequestStatusRequest $request): JsonResponse
+    {
+        $status = (string) $request->validated('status_client_request');
+
+        $action = match ($status) {
+            'accepted' => 'approve',
+            'rejected' => 'reject',
+            default    => null,
+        };
+
+        DB::transaction(function () use ($request, $action) {
+            if ($action !== null) {
+                $this->clientRequestWorkflowService->actOnPendingStepForCurrentUser(
+                    (string) $request->route('id'),
+                    $action,
+                );
+
+                return;
+            }
+
+            $updated = $this->clientRequestService->changeStatus(
+                $request->route('id'),
+                $request->validated('status_client_request'),
+                $request->validated('reject_cause'),
+            );
+
+            $this->clientRequestWorkflowService->syncAfterClientRequestStatusChange(
+                $updated,
+                $request->validated('status_client_request'),
+            );
+        });
+
+        $item = $this->clientRequestService->get(Uuid::fromString($request->route('id')));
+        $item->load(['clientRequestProcess.steps']);
+
+        $this->clientRequestWidgetsService->clearWidgetCache();
+        $this->clientRequestStatusWidgetsService->clearWidgetCache();
+
+        $presenter = new ClientRequestPresenter($item);
+
+        return Json::item($presenter->getData());
+    }
+    // public function changeStatus(ChangeClientRequestStatusRequest $request): JsonResponse
+    // {
+    //     $item = $this->clientRequestService->changeStatus(
+    //         $request->route('id'),
+    //         $request->get('status_client_request'),
+    //         $request->get('reject_cause')
+    //     );
+
+    //     $this->clientRequestWidgetsService->clearWidgetCache();
+    //     $this->clientRequestStatusWidgetsService->clearWidgetCache();
+
+    //     $presenter = new ClientRequestPresenter($item);
+
+    //     return Json::item($presenter->getData());
+    // }
+
+    public function getMyRequests(GetClientRequestListRequest $request): JsonResponse
+    {
+        $list = $this->clientRequestService->getMyRequests(
+            (int) $request->get('page', 1),
+            (int) $request->get('per_page', 10)
+        );
+
+        return Json::items(ClientRequestMyRequestsPresenter::collection($list['data']), paginationSettings: $list['pagination']);
     }
 
     public function getPriceOfferWidgets(): JsonResponse

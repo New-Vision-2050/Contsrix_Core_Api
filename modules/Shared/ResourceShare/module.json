@@ -1,0 +1,14 @@
+{
+    "name": "ResourceShare",
+    "alias": "resource_share",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Shared\\ResourceShare\\Providers\\ResourceShareServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules\\Shared"
+}

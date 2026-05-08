@@ -545,6 +545,15 @@ return [
     'admin_account_cannot_be_deleted' => 'The admin account cannot be deleted.',
     'cannot_delete_yourself' => 'You cannot delete your own account.',
     'cannot_delete_company_owner' => 'A company owner account cannot be deleted.',
+    'cannot_delete_company_has_users' => 'Cannot delete company because it has :count employee(s).',
+    'cannot_delete_company_has_projects' => 'Cannot delete company because it has :count project(s).',
+    'cannot_delete_company_has_branches' => 'Cannot delete company because it has :count branch(es).',
+    'cannot_delete_company_has_managements' => 'Cannot delete company because it has :count management(s).',
+    'cannot_delete_company_has_related_data' => 'Cannot delete company because it has related data (employees, projects, branches, managements). Please delete the related data first.',
+    'cannot_delete_project_has_employees' => 'Cannot delete project because it has :count employee(s).',
+    'cannot_delete_project_has_roles' => 'Cannot delete project because it has :count role(s).',
+    'cannot_delete_project_has_related_data' => 'Cannot delete project because it has related data (employees, roles). Please delete the related data first.',
+    'project-not-found' => 'Project not found.',
     'regular' => 'regular',
     'male' => 'male',
     'female' => 'female',
@@ -552,10 +561,10 @@ return [
         'work_day'=> 'work day',
         'holiday'=>'holiday',
         'day_off_or_weekend'=> 'day off or weekend',
-        'in_loction'=>'in loction',
+        'in_location'=>'in loction',
         'clocked_out'=> 'clocked out'
     ],
-    
+
     'unique_translation' => 'The :locale :attribute has already been taken.',
     'arabic' => 'Arabic',
     'english' => 'English',

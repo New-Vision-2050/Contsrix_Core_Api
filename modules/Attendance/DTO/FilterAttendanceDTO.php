@@ -10,6 +10,7 @@ class FilterAttendanceDTO
         public string $company_id,
         public ?string $user_id = null,
         public ?string $status = null,
+        public ?string $attendance_status = null,
         public ?string $start_date = null,
         public ?string $end_date = null,
         public ?string $department_id = null,
@@ -30,6 +31,7 @@ class FilterAttendanceDTO
         public ?bool $late_arrival = null,
         public ?bool $early_departure = null,
         public ?string $search_text  = null,
+        public ?int $employee_status = 1,
         // public ?int $page = null,
         // public ?int $per_page = null,
     ) {}
@@ -43,6 +45,9 @@ class FilterAttendanceDTO
         }
         if ($this->status !== null) {
             $data['status'] = $this->status;
+        }
+        if ($this->attendance_status !== null) {
+            $data['attendance_status'] = $this->attendance_status;
         }
         if ($this->start_date !== null) {
             $data['start_date'] = $this->start_date;
@@ -103,6 +108,9 @@ class FilterAttendanceDTO
         }
         if ($this->search_text !== null) {
             $data['search_text'] = $this->search_text;
+        }
+        if ($this->employee_status !== null) {
+            $data['employee_status'] = $this->employee_status;
         }
         // if ($this->page !== null) {
         //     $data['page'] = $this->page;

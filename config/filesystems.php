@@ -1,5 +1,8 @@
 <?php
 
+$publicBucket  = env('MINIO_PUBLIC_BUCKET', env('AWS_BUCKET'));
+$privateBucket = env('MINIO_PRIVATE_BUCKET', env('AWS_PRIVATE_BUCKET', env('AWS_BUCKET')));
+
 return [
 
     /*
@@ -10,10 +13,12 @@ return [
     | Here you may specify the default filesystem disk that should be used
     | by the framework. The "local" disk, as well as a variety of cloud
     | based disks are available to your application for file storage.
+    | When no S3/Minio bucket is set, default to the local "public" disk
+    | so the S3 driver is not used as the default (avoids a null bucket).
     |
     */
 
-    'default' => env('FILESYSTEM_DISK', 's3_public'),
+    'default' => env('FILESYSTEM_DISK', (is_string($publicBucket) && $publicBucket !== '') ? 's3_public' : 'public'),
 
     /*
     |--------------------------------------------------------------------------
@@ -49,8 +54,8 @@ return [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION','us-east-1'),
-            'bucket' => env('MINIO_PUBLIC_BUCKET'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'bucket' => $publicBucket,
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
@@ -62,8 +67,8 @@ return [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION','us-east-1'),
-            'bucket' => env('MINIO_PRIVATE_BUCKET'),
+            'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'bucket' => $privateBucket,
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),

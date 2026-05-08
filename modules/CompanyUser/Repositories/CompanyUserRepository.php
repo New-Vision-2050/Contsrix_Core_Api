@@ -96,7 +96,7 @@ class CompanyUserRepository extends BaseRepository
             });
         })->when($branchId != null, function ($query) use ($branchId, $type) {
             $query->whereHas('users', function ($userQuery) use ($branchId, $type) {
-                $userQuery->whereHas('companyUserCompanyManagementHierarchies', function ($hierarchyQuery) use ($branchId, $type) {
+                $userQuery->whereHas('roleAndBranches', function ($hierarchyQuery) use ($branchId, $type) {
                     $hierarchyQuery->where('management_hierarchy_id', $branchId)
                         ->when($type != null, function ($q) use ($type) {
                             $q->whereHas('companyUserCompany', function ($companyUserCompanyQuery) use ($type) {
@@ -825,9 +825,23 @@ class CompanyUserRepository extends BaseRepository
     public
     function updateUserData(UuidInterface $userId, array $data)
     {
-        $this->userRepository->updateWhere(
-            ["id" => $userId], $data
-        );
+        $user = $this->userRepository->findOneBy(["id" => $userId]);
+
+
+        if(isset($data["email"]))
+        {
+            $this->userRepository->model->withoutTenancy()->where(["email"=>$user->email])->update(
+                ["email"=>$data["email"]]
+            );
+            $this->model->where(["id" =>$user->global_company_user_id ])->first()->update( ["email" => $data["email"]]);
+        }
+
+        if(isset($data["phone"]))
+        {
+            $this->userRepository->model->withoutTenancy()->where(["phone"=>$user->phone])->update(
+                ["phone"=>$data["phone"]]
+            );
+        }
 
         return true;
     }

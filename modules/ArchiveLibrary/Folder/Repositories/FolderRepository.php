@@ -160,12 +160,32 @@ class FolderRepository extends BaseRepository
         ?string $search = null,
         string $searchType = 'all',
         ?int $branchId = null,
-        ?string $sort = null
+        ?string $sort = null,
+        bool $withoutTenancy = false
     )
     {
+        $folderQuery = $withoutTenancy
+            ? $this->model->query()->withoutTenancy()
+            : $this->model->query();
+
+
+        $folderQuery = $folderQuery->when(!request()->has("project_id") && !request()->has("is_project")
+        ,function($query){
+           $query->whereNull("project_id");
+        })->when(request()->has("is_project") && $parentId == null,function ($query){
+            $query->whereNotNull("project_id");
+        });
+//        })->when(request()->has("project_id"),function($query){
+//            $query->where("project_id",request()->get("project_id"));
+//        });
+
+        $fileQueryBase = $withoutTenancy
+            ? File::query()->withoutTenancy()
+            : File::query();
+
         // Check password first if parent folder is provided
         if ($parentId !== null) {
-            $folder = $this->model->query()->where('id', $parentId)->first();
+            $folder = (clone $folderQuery)->where('id', $parentId)->first();
             if ($folder && $folder->password != null && (!request()->has("password") || !Hash::check(request()->get("password"), $folder->password))) {
                 throw new CustomException(__("validation.access-denied"));
             }
@@ -184,7 +204,13 @@ class FolderRepository extends BaseRepository
             $folders = collect();
         } else {
             // Query folders based on parent_id
-            $foldersQuery = $this->model->query()->withCount('files');
+            $foldersQuery = (clone $folderQuery)->withCount([
+                'files' => function ($q) use ($withoutTenancy) {
+                    if ($withoutTenancy) {
+                        $q->withoutTenancy();
+                    }
+                },
+            ]);
 
             if ($parentId != null) {
                 $foldersQuery->where('parent_id', $parentId);
@@ -219,7 +245,7 @@ class FolderRepository extends BaseRepository
         }
 
         // Query files based on parent_id (folder_id)
-        $filesQuery = File::query();
+        $filesQuery = clone $fileQueryBase;
 
         if ($parentId != null) {
             $filesQuery->where('folder_id', $parentId);

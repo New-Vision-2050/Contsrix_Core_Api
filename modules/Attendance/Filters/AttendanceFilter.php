@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Attendance\Filters;
 
 use BasePackage\Shared\Filters\SearchModelFilter;
+use Carbon\Carbon;
 
 class AttendanceFilter extends SearchModelFilter
 {
@@ -25,14 +26,66 @@ class AttendanceFilter extends SearchModelFilter
         return $this->where('status', $status);
     }
 
+    /** Day outcome (is_* flags), not the workflow `status` column. */
+    public function attendanceStatus(string $attendanceStatus)
+    {
+        $v = strtolower($attendanceStatus);
+
+        if ($v === 'holiday') {
+            return $this->where('is_holiday', true);
+        }
+
+        if ($v === 'absent') {
+            return $this->where('is_absent', true);
+        }
+
+        if ($v === 'late') {
+            return $this->where('is_late', true)
+                ->where('is_absent', false)
+                ->where('is_holiday', false);
+        }
+
+        if ($v === 'present') {
+            return $this->where('is_late', false)
+                ->where('is_absent', false)
+                ->where('is_holiday', false)
+                ->whereNotNull('clock_in_time');
+        }
+
+        return $this;
+    }
+
     public function startDate($date)
     {
-        return $this->whereDate('start_time', '>=', $date);
+        // Sargable range — avoid DATE(start_time) (cannot use indexes; large filesorts).
+        // Calendar day in branch/request TZ, compared using UTC `start_time` in the database.
+        $tz = $this->filterCalendarTimezone();
+        $start = Carbon::parse((string) $date, $tz)->startOfDay()->utc();
+
+        return $this->where('start_time', '>=', $start);
     }
 
     public function endDate($date)
     {
-        return $this->whereDate('start_time', '<=', $date);
+        $tz = $this->filterCalendarTimezone();
+        $endExclusive = Carbon::parse((string) $date, $tz)->addDay()->startOfDay()->utc();
+
+        return $this->where('start_time', '<', $endExclusive);
+    }
+
+    /**
+     * Timezone for interpreting filter date strings (Y-m-d) as calendar days.
+     */
+    private function filterCalendarTimezone(): string
+    {
+        if (function_exists('getTimeZoneBranchByRequest')) {
+            $tz = getTimeZoneBranchByRequest();
+            if (is_string($tz) && $tz !== '') {
+                return $tz;
+            }
+        }
+
+        return (string) config('app.timezone');
     }
 
     public function clockInTimeFrom($time)
@@ -184,8 +237,15 @@ class AttendanceFilter extends SearchModelFilter
 
     public function constraint($constraintId)
     {
-       return $this->whereHas('user.professionalData', function ($query) use ($constraintId) {
-            $query->where('attendance_constraint_id',$constraintId);
+       return $this->whereHas('appliedAttendanceConstraint', function ($query) use ($constraintId) {
+           $query->where('constraint_snapshot->id', $constraintId);
+        });
+    }
+
+    public function employeeStatus($status)
+    {
+        return $this->whereHas('user', function ($query) use ($status) {
+            $query->whereCompanyUserCompanyStatus($status, \Modules\CompanyUser\Enum\CompanyUserRole::EMPLOYEE->value);
         });
     }
 }

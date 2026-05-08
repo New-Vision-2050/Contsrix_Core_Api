@@ -25,6 +25,7 @@ class FilterAttendanceRequest extends FormRequest
         return [
             'user_id' => ['sometimes', 'string', 'exists:users,id'],
             'status' => ['sometimes', 'string', 'in:active,completed,pending_approval,approved,rejected'],
+            'attendance_status' => ['sometimes', 'string', 'in:late,present,absent,holiday'],
             'start_date' => ['sometimes', 'date'],
             'end_date' => ['sometimes', 'date', 'after_or_equal:start_date'],
             'department_id' => ['sometimes', 'string', 'exists:management_hierarchies,id'],
@@ -45,6 +46,7 @@ class FilterAttendanceRequest extends FormRequest
             'late_arrival' => ['sometimes', 'boolean'],
             'early_departure' => ['sometimes', 'boolean'],
             'search_text'=> ['sometimes', 'string'],
+            'employee_status' => ['sometimes', 'integer'],
             // 'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             // 'page' => ['sometimes', 'integer', 'min:1'],
         ];
@@ -87,6 +89,7 @@ class FilterAttendanceRequest extends FormRequest
             company_id: $companyId,
             user_id: $validated['user_id'] ?? null,
             status: $validated['status'] ?? null,
+            attendance_status: $validated['attendance_status'] ?? null,
             start_date: $validated['start_date'] ?? null,
             end_date: $validated['end_date'] ?? null,
             department_id: $validated['department_id'] ?? null,
@@ -107,6 +110,7 @@ class FilterAttendanceRequest extends FormRequest
             late_arrival: $validated['late_arrival'] ?? null,
             early_departure: $validated['early_departure'] ?? null,
             search_text: $validated['search_text'] ?? null,
+            employee_status: $validated['employee_status'] ?? 1,
             // page: $validated['page'] ?? null,
             // per_page: $validated['per_page'] ?? null,
         );

@@ -2,6 +2,8 @@
 
 namespace App\Console;
 
+use App\Console\Commands\AutoCloseStaleShiftsCommand;
+use App\Console\Commands\CreateHolidayAttendanceCommand;
 use App\Console\Commands\CreateWaitingAttendanceCommand;
 use App\Console\Commands\UpdateAttendanceStatusCommand;
 use App\Console\Commands\SendAttendanceSilentNotificationCommand;
@@ -42,13 +44,26 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-status-update.log'));
 
+        // Auto-close shifts whose deadline (end_time + max_over_time) has passed.
+        // Must run frequently so the clock-out time error ≤ 5 min.
+        $schedule->command(AutoCloseStaleShiftsCommand::class)
+            ->everyFiveMinutes()
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/attendance-auto-close.log'));
+
+        // FCM silent pings so mobile clients stay in sync while the user is clocked in.
         $schedule->command(SendAttendanceSilentNotificationCommand::class)
-            ->everyOddHour()
+            ->everyFifteenMinutes()
             ->timezone('Asia/Riyadh')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/attendance-silent-notifications.log'));
 
-
+        $schedule->command(CreateHolidayAttendanceCommand::class)
+            ->dailyAt('00:05')
+            ->timezone('Asia/Riyadh')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/attendance-holiday.log'));
     }
 
     /**

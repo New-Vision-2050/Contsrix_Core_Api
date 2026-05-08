@@ -9,7 +9,7 @@ use Ranium\SeedOnce\Traits\SeedOnce;
 
 class AcademicSpecializationssSeederTableSeeder extends Seeder
 {
-    use SeedOnce;
+//    use SeedOnce;
 
     /**
      * Run the database seeds.
@@ -171,11 +171,14 @@ class AcademicSpecializationssSeederTableSeeder extends Seeder
             ['ar' => 'دعوة وثقافة إسلامية', 'en' => 'Dawah and Islamic Culture', 'code' => 'islamic_studies'],
             ['ar' => 'قراءات', 'en' => 'Quranic Readings (Qira\'at)', 'code' => 'islamic_studies'],
 
+            // --- Safety & Security ---
+            ['ar' => 'هندسة الأمن والسلامة', 'en' => 'Safety and Security Engineering', 'code' => 'engineering-safety'],
+
         ];
 
         foreach ($specializations as $index => $item) {
             AcademicSpecialization::firstOrCreate(
-                ['id' => $index + 1],
+                ['code' => $item["code"]],
                 ['name' => ['en' => $item['en'], 'ar' => $item['ar']],'code'=>$item['code']]
             );
         }
