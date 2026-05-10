@@ -23,20 +23,19 @@ class DefaultIdentifierSeederTableSeeder extends Seeder
     {
         $names = ["email" => ["en" => "email", "ar" => "البريد الإلكتروني"], "phone" => ["en" => "phone", "ar" => "رقم الجوال"]];
         Model::unguard();
+        $companyId = tenant("id") ?? Company::query()->first()->id;
         foreach ($names as $key => $value) {
             $namespace = Uuid::NAMESPACE_DNS;
-            $id = Uuid::uuid5($namespace, $key)->toString();
-            $companyId = tenant("id")??Company::query()->first()->id;
-            IdentifierSetting::updateOrCreate(["id" => $id,"company_id"=>$companyId],
+            $id = Uuid::uuid5($namespace, $key . '_' . $companyId)->toString();
+            IdentifierSetting::updateOrCreate(["id" => $id, "company_id" => $companyId],
                 [
                     "id" => $id,
                     "key" => $key,
                     "name" => $value,
                     "status" => 1,
-                    "company_id"=>$companyId
+                    "company_id" => $companyId
                 ]
             );
-
         }
     }
 }
