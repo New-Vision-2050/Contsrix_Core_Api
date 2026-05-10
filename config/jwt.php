@@ -103,7 +103,7 @@ return [
 
     'ttl' => env('JWT_TTL', 1440),
 
-    'ac_expiration' => 1440,
+    'ac_expiration' => 60, //1440,
 
     'rt_expiration' => 40320,
 
