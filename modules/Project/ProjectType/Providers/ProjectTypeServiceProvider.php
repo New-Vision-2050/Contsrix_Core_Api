@@ -37,5 +37,8 @@ class ProjectTypeServiceProvider extends ModuleServiceProvider
             ->middleware('api')
             ->group($this->getModulePath() . '/Resources/routes/api.php');
 
+        Route::prefix('api/v1')
+            ->middleware('api')
+            ->group($this->getModulePath() . '/Resources/routes/project-sharing.php');
     }
 }
