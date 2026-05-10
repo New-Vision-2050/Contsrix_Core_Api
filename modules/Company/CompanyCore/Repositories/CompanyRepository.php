@@ -338,4 +338,9 @@ class CompanyRepository extends BaseRepository
             ->where('serial_no', $serialNumber)
             ->first();
     }
+
+    public function markAsClient(UuidInterface $id): bool
+    {
+        return (bool) $this->model->where('id', $id->toString())->update(['is_client' => 1]);
+    }
 }

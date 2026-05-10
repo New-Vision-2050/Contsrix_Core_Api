@@ -210,4 +210,11 @@ class CompanyCRUDService
     {
         return $this->repository->getBySerialNumber($serialNumber);
     }
+
+    public function markAsClient(UuidInterface $id): Company
+    {
+        $this->repository->markAsClient($id);
+
+        return $this->repository->getCompany($id);
+    }
 }
