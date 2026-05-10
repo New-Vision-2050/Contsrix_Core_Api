@@ -15,17 +15,17 @@ return new class extends Migration
             $table->unsignedBigInteger('project_sharing_task_id');
             $table->timestamps();
 
-            $table->foreign('project_type_id', 'pst_tasks_setting_ptype_fk')
+            $table->foreign('project_type_id')
                 ->references('id')
                 ->on('project_types')
                 ->onDelete('cascade');
 
-            $table->foreign('project_sharing_work_order_id', 'pst_tasks_setting_wo_fk')
+            $table->foreign('project_sharing_work_order_id')
                 ->references('id')
                 ->on('project_sharing_work_orders')
                 ->onDelete('cascade');
 
-            $table->foreign('project_sharing_task_id', 'pst_tasks_setting_task_fk')
+            $table->foreign('project_sharing_task_id')
                 ->references('id')
                 ->on('project_sharing_tasks')
                 ->onDelete('cascade');
