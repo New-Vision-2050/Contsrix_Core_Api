@@ -288,6 +288,13 @@ class CompanyController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
+    public function markAsClient(Request $request): JsonResponse
+    {
+        $company = $this->companyService->markAsClient(Uuid::fromString($request->route('id')));
+
+        return Json::item((new CompanyPresenter($company))->getData());
+    }
+
     public function getBySerialNumber(Request $request): JsonResponse
     {
         try {
