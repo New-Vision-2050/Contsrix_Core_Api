@@ -8,6 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('project_sharing_tasks_setting');
+
         Schema::create('project_sharing_tasks_setting', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('project_type_id');
