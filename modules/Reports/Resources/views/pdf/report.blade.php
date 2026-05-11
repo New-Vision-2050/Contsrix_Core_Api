@@ -29,7 +29,7 @@
         ? ['1'=>'الاثنين','2'=>'الثلاثاء','3'=>'الأربعاء','4'=>'الخميس','5'=>'الجمعة','6'=>'السبت','7'=>'الأحد']
         : ['1'=>'Monday','2'=>'Tuesday','3'=>'Wednesday','4'=>'Thursday','5'=>'Friday','6'=>'Saturday','7'=>'Sunday'];
 
-    $svgPlaceholder = 'data:image/svg+xml;base64,' . base64_encode(
+    $svgB64 = base64_encode(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">'
         . '<circle cx="10" cy="8" r="4" fill="#9ca3af"/>'
         . '<path d="M3 18 Q3 12 10 12 Q17 12 17 18 Z" fill="#9ca3af"/>'
@@ -58,6 +58,7 @@
         .row-alt  { background: #f8fafc; }
         .tot-row  { background: #e8f4ea; font-weight: 700; }
         .tot-row td { border-top: 2px solid #16a34a; }
+        .emp-ph { background-image: url('data:image/svg+xml;base64,{{ $svgB64 }}'); background-size: cover; background-position: center; background-color: #e5e7eb; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
@@ -143,7 +144,7 @@
                             $empDaily   = $daily[(string) $emp->global_id] ?? [];
                             $empBranch  = optional(optional($emp->userProfessionalData)->branch)->name     ?? '';
                             $empDept    = optional(optional($emp->userProfessionalData)->department)->name ?? '';
-                            $empAvatar  = $emp->getFirstMedia('upload_user')?->getFullUrl() ?? $svgPlaceholder;
+                            $empAvatarUrl = $emp->getFirstMedia('upload_user')?->getFullUrl();
                             $sumDelay   = 0;
                             $sumOT      = 0;
                             $sumWorkMin = 0;
@@ -166,7 +167,11 @@
                                 @endphp
                                 <tr @if($dIdx % 2 !== 0) class="row-alt" @endif>
                                     <td style="width:26px; padding:1px; text-align:center; vertical-align:middle;">
-                                        <div style="width:22px; height:22px; border-radius:50%; border:2.5px solid {{ $statusColor }}; background-image:url('{{ $empAvatar }}'); background-color:#e5e7eb; background-size:cover; background-position:center; margin:0 auto;"></div>
+                                        @if ($empAvatarUrl)
+                                        <div style="width:22px; height:22px; border-radius:50%; border:2.5px solid {{ $statusColor }}; background-image:url('{{ $empAvatarUrl }}'); background-size:cover; background-position:center; background-color:#e5e7eb; margin:0 auto;"></div>
+                                        @else
+                                        <div class="emp-ph" style="width:22px; height:22px; border-radius:50%; border:2.5px solid {{ $statusColor }}; margin:0 auto;"></div>
+                                        @endif
                                     </td>
                                     <td>{{ $emp->name }}</td>
                                     <td class="num">{{ $dateStr }}</td>

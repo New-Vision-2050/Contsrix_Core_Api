@@ -170,6 +170,7 @@ class ReportGenerationService
             'lookups'   => $this->lookupService,
         ])->render();
 
+        ini_set('pcre.backtrack_limit', '50000000');
         $mpdf->WriteHTML($html);
 
         return $this->storeAsMedia(
