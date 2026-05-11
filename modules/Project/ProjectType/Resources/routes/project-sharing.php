@@ -6,6 +6,7 @@ use Modules\Project\ProjectType\Controllers\ProjectSharingDepartmentController;
 use Modules\Project\ProjectType\Controllers\ProjectSharingProcedureController;
 use Modules\Project\ProjectType\Controllers\ProjectSharingTaskController;
 use Modules\Project\ProjectType\Controllers\ReportFormController;
+use Modules\Project\ProjectType\Controllers\ProjectSharingTasksSettingController;
 use Modules\RoleAndPermission\Enums\Permission;
 
 Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
@@ -68,5 +69,17 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::put('/report-forms/{id}', [ReportFormController::class, 'update'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
     Route::delete('/report-forms/{id}', [ReportFormController::class, 'delete'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+
+    // Project Sharing Tasks Setting
+    Route::get('/project-sharing-tasks-setting', [ProjectSharingTasksSettingController::class, 'index'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::post('/project-sharing-tasks-setting', [ProjectSharingTasksSettingController::class, 'store'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+    Route::get('/project-sharing-tasks-setting/{id}', [ProjectSharingTasksSettingController::class, 'show'])
+        ->permission(Permission::PROJECT_TYPE_VIEW());
+    Route::put('/project-sharing-tasks-setting/{id}', [ProjectSharingTasksSettingController::class, 'update'])
+        ->permission(Permission::PROJECT_TYPE_UPDATE());
+    Route::delete('/project-sharing-tasks-setting/{id}', [ProjectSharingTasksSettingController::class, 'delete'])
         ->permission(Permission::PROJECT_TYPE_UPDATE());
 });
