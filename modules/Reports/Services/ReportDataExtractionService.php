@@ -137,6 +137,7 @@ class ReportDataExtractionService
                 'a.late_minutes',
                 'a.early_departure_minutes',
                 DB::raw('COALESCE(CAST(a.overtime_hours AS DECIMAL(10,2)) * 60, 0) as overtime_minutes'),
+                'a.total_work_hours',
                 'a.notes'
             )
             ->where('a.company_id', tenant('id'))
@@ -170,6 +171,7 @@ class ReportDataExtractionService
                 'late_minutes'        => (int) ($d->late_minutes ?? 0),
                 'overtime_minutes'    => (int) round((float) ($d->overtime_minutes ?? 0)),
                 'early_leave_minutes' => (int) ($d->early_departure_minutes ?? 0),
+                'total_work_hours'    => (float) ($d->total_work_hours ?? 0),
                 'notes'               => (string) ($d->notes ?? ''),
             ];
         }
