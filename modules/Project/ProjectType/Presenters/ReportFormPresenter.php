@@ -18,7 +18,7 @@ class ReportFormPresenter extends AbstractPresenter
         return [
             'id'                            => $this->model->id,
             'project_type_id'               => $this->model->project_type_id,
-            'project_sharing_work_order_id' => $this->model->project_sharing_work_order_id,
+            'order_permit_procedure_id'     => $this->model->order_permit_procedure_id,
             'name'                          => $this->model->name,
             'question'                      => $this->model->question,
             'value'                         => $this->model->value,

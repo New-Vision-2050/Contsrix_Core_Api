@@ -17,7 +17,7 @@ class CreateReportFormRequest extends FormRequest
     {
         return [
             'project_type_id'                => ['required', 'integer', 'exists:project_types,id'],
-            'project_sharing_work_order_id'  => ['required', 'integer', 'exists:project_sharing_work_orders,id'],
+            'order_permit_procedure_id'      => ['required', 'integer', 'exists:order_permit_procedure,id'],
             'name'                           => ['nullable', 'string', 'max:255'],
             'question'                       => ['nullable', 'string', 'max:255'],
             'value'                          => ['nullable', 'string', 'max:255'],

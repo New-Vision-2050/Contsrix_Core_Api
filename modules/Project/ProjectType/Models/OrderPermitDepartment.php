@@ -7,27 +7,18 @@ namespace Modules\Project\ProjectType\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ReportForm extends Model
+class OrderPermitDepartment extends Model
 {
-    protected $table = 'order_permit_report_forms';
+    protected $table = 'order_permit_department';
 
     protected $fillable = [
         'project_type_id',
-        'order_permit_procedure_id',
-        'name',
-        'question',
-        'value',
-        'number_of_attachments',
-        'notes',
+        'code',
+        'description',
     ];
 
     public function projectType(): BelongsTo
     {
         return $this->belongsTo(ProjectType::class, 'project_type_id');
-    }
-
-    public function procedure(): BelongsTo
-    {
-        return $this->belongsTo(OrderPermitProcedure::class, 'order_permit_procedure_id');
     }
 }
