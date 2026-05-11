@@ -29,12 +29,6 @@
         ? ['1'=>'الاثنين','2'=>'الثلاثاء','3'=>'الأربعاء','4'=>'الخميس','5'=>'الجمعة','6'=>'السبت','7'=>'الأحد']
         : ['1'=>'Monday','2'=>'Tuesday','3'=>'Wednesday','4'=>'Thursday','5'=>'Friday','6'=>'Saturday','7'=>'Sunday'];
 
-    $svgB64 = base64_encode(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">'
-        . '<circle cx="10" cy="8" r="4" fill="#9ca3af"/>'
-        . '<path d="M3 18 Q3 12 10 12 Q17 12 17 18 Z" fill="#9ca3af"/>'
-        . '</svg>'
-    );
 @endphp
 <!doctype html>
 <html lang="{{ $lang }}" dir="{{ $dir }}">
@@ -58,7 +52,6 @@
         .row-alt  { background: #f8fafc; }
         .tot-row  { background: #e8f4ea; font-weight: 700; }
         .tot-row td { border-top: 2px solid #16a34a; }
-        .emp-ph { background-image: url('data:image/svg+xml;base64,{{ $svgB64 }}'); background-size: cover; background-position: center; background-color: #e5e7eb; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
@@ -128,7 +121,7 @@
                         <th>{{ $lang === 'ar' ? 'التاريخ'            : 'Date' }}</th>
                         <th>{{ $lang === 'ar' ? 'اليوم'              : 'Day' }}</th>
                         <th>{{ $lang === 'ar' ? 'الفرع'              : 'Branch' }}</th>
-                        <th>{{ $lang === 'ar' ? 'الإدارة'            : 'Department' }}</th>
+                        <th>{{ $lang === 'ar' ? 'الإدارة'            : 'Management' }}</th>
                         <th>{{ $lang === 'ar' ? 'الحضور الرسمي'      : 'Official In' }}</th>
                         <th>{{ $lang === 'ar' ? 'الانصراف الرسمي'    : 'Official Out' }}</th>
                         <th>{{ $lang === 'ar' ? 'الحضور الفعلي'      : 'Actual In' }}</th>
@@ -143,8 +136,9 @@
                         @php
                             $empDaily   = $daily[(string) $emp->global_id] ?? [];
                             $empBranch  = optional(optional($emp->userProfessionalData)->branch)->name     ?? '';
-                            $empDept    = optional(optional($emp->userProfessionalData)->department)->name ?? '';
+                            $empMgmt    = optional(optional($emp->userProfessionalData)->management)->name ?? '';
                             $empAvatarUrl = $emp->getFirstMedia('upload_user')?->getFullUrl();
+                            $empInitial   = mb_strtoupper(mb_substr((string) ($emp->name ?? 'E'), 0, 1, 'UTF-8'), 'UTF-8');
                             $sumDelay   = 0;
                             $sumOT      = 0;
                             $sumWorkMin = 0;
@@ -168,16 +162,16 @@
                                 <tr @if($dIdx % 2 !== 0) class="row-alt" @endif>
                                     <td style="width:26px; padding:1px; text-align:center; vertical-align:middle;">
                                         @if ($empAvatarUrl)
-                                        <div style="width:22px; height:22px; border-radius:50%; border:2.5px solid {{ $statusColor }}; background-image:url('{{ $empAvatarUrl }}'); background-size:cover; background-position:center; background-color:#e5e7eb; margin:0 auto;"></div>
+                                        <div style="width:22px; height:22px; border-radius:11px; border:2.5px solid {{ $statusColor }}; background-image:url('{{ $empAvatarUrl }}'); background-size:cover; background-position:center; background-color:#e5e7eb; margin:0 auto;"></div>
                                         @else
-                                        <div class="emp-ph" style="width:22px; height:22px; border-radius:50%; border:2.5px solid {{ $statusColor }}; margin:0 auto;"></div>
+                                        <div style="width:22px; height:22px; border-radius:11px; border:2.5px solid {{ $statusColor }}; background-color:#d1d5db; text-align:center; padding-top:5px; font-size:7px; font-weight:700; color:#4b5563; margin:0 auto;">{{ $empInitial }}</div>
                                         @endif
                                     </td>
                                     <td>{{ $emp->name }}</td>
                                     <td class="num">{{ $dateStr }}</td>
                                     <td>{{ $dayLabel }}</td>
                                     <td>{{ $empBranch }}</td>
-                                    <td>{{ $empDept }}</td>
+                                    <td>{{ $empMgmt }}</td>
                                     <td class="num">{{ $d['start_time']     ?: '-' }}</td>
                                     <td class="num">{{ $d['end_time']       ?: '-' }}</td>
                                     <td class="num">{{ $d['clock_in_time']  ?: '-' }}</td>

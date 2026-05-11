@@ -28,7 +28,7 @@ class ReportEmployeeQueryService
             ->with([
                 'users',
                 'userProfessionalData.branch',
-                'userProfessionalData.department',
+                'userProfessionalData.management',
                 'country',
                 'jobTitle',
                 'media' => fn ($q) => $q->where('collection_name', 'upload_user'),
