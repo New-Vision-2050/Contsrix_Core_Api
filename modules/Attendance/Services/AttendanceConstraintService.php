@@ -864,6 +864,20 @@ class AttendanceConstraintService
 
         if (!empty($constraint->branch_locations)) {
             $branchData = collect($constraint->branch_locations)->firstWhere('branch_id', $userBranchId);
+
+            if (!$branchData) {
+                $branch = \Modules\Company\ManagementHierarchy\Models\Branch::where('management_hierarchy_id', $userBranchId)->first();
+                if ($branch) {
+                    $branchData = collect($constraint->branch_locations)->first(
+                        fn($loc) => (string)($loc['branch_id'] ?? '') === (string)$branch->id
+                    );
+                }
+            }
+
+            if (!$branchData && count($constraint->branch_locations) === 1) {
+                $branchData = $constraint->branch_locations[0];
+            }
+
             if ($branchData) {
                 return [
                     'name' => $branchData['name'] ?? $userBranchName,
