@@ -27,7 +27,7 @@ final class ReportWizardStep2DTO
     public static function fromArray(array $payload): self
     {
         return new self(
-            employeeScope:   (string) ($payload['employee_scope']    ?? $payload['employeeStatus'] ?? 'all'),
+            employeeScope:   (string) ($payload['employee_scope']    ?? 'all'),
             employeeUserIds: array_values($payload['employee_user_ids'] ?? []),
             branchId:        $payload['branch_id']      ?? $payload['location']    ?? null,
             managementId:    $payload['management_id']  ?? $payload['management']  ?? null,

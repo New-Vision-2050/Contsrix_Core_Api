@@ -79,8 +79,11 @@ final class ReportEnums
     public const CONTRACT_EXTERNAL_CONSULTANT = 'external_consultant';
     public const CONTRACT_SEASONAL            = 'seasonal';
 
-    public const DISPLAY_MODE_ALL_EMPLOYEES     = 'all_employees';
     public const DISPLAY_MODE_EMPLOYEE_PER_PAGE = 'employee_per_page';
+    public const DISPLAY_MODE_BY_DAY            = 'by_day';
+
+    public const EMPLOYEE_SCOPE_ALL              = 'all';
+    public const EMPLOYEE_SCOPE_SELECT_EMPLOYEES = 'select_employees';
 
     // ---- Step 3 ----------------------------------------------------------
     public const ATT_DATA_ATTENDANCE_DAYS  = 'attendance_days';
@@ -227,7 +230,12 @@ final class ReportEnums
 
     public static function displayModes(): array
     {
-        return [self::DISPLAY_MODE_ALL_EMPLOYEES, self::DISPLAY_MODE_EMPLOYEE_PER_PAGE];
+        return [self::DISPLAY_MODE_EMPLOYEE_PER_PAGE, self::DISPLAY_MODE_BY_DAY];
+    }
+
+    public static function employeeScopes(): array
+    {
+        return [self::EMPLOYEE_SCOPE_ALL, self::EMPLOYEE_SCOPE_SELECT_EMPLOYEES];
     }
 
     public static function attendanceDataTypes(): array

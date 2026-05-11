@@ -43,7 +43,7 @@ trait ValidatesWizardConfig
 
             // ---- Step 2 --------------------------------------------------
             "{$p}step2"                          => 'required|array',
-            "{$p}step2.employee_scope"           => ['nullable', 'string', $enum(ReportEnums::employeeStatuses())],
+            "{$p}step2.employee_scope"           => ['nullable', 'string', $enum(ReportEnums::employeeScopes())],
             "{$p}step2.employee_user_ids"        => 'nullable|array',
             "{$p}step2.employee_user_ids.*"      => 'string',
             "{$p}step2.branch_id"                => 'nullable|string|max:255',
