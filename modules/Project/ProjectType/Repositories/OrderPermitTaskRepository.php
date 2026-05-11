@@ -6,15 +6,15 @@ namespace Modules\Project\ProjectType\Repositories;
 
 use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
-use Modules\Project\ProjectType\Models\ReportForm;
+use Modules\Project\ProjectType\Models\OrderPermitTask;
 
 /**
- * @property ReportForm $model
- * @method ReportForm findOneOrFail($id)
+ * @property OrderPermitTask $model
+ * @method OrderPermitTask findOneOrFail($id)
  */
-class ReportFormRepository extends BaseRepository
+class OrderPermitTaskRepository extends BaseRepository
 {
-    public function __construct(ReportForm $model)
+    public function __construct(OrderPermitTask $model)
     {
         parent::__construct($model);
     }
@@ -22,10 +22,5 @@ class ReportFormRepository extends BaseRepository
     public function listByProjectTypeId(int $projectTypeId): Collection
     {
         return $this->model->where('project_type_id', $projectTypeId)->orderBy('id')->get();
-    }
-
-    public function listByProcedureId(int $procedureId): Collection
-    {
-        return $this->model->where('order_permit_procedure_id', $procedureId)->orderBy('id')->get();
     }
 }
