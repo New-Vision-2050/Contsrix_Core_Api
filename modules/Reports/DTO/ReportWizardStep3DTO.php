@@ -29,7 +29,7 @@ final class ReportWizardStep3DTO
     {
         return new self(
             attendanceDataTypeIds:       array_values($payload['attendanceDataTypeIds'] ?? []),
-            displayMode:                 (string) ($payload['display_mode']          ?? 'all_employees'),
+            displayMode:                 (string) ($payload['display_mode']          ?? 'employee_per_page'),
             attendancePattern:           (string) ($payload['attendancePattern']     ?? 'all'),
             attendanceRateMin:           (string) ($payload['attendanceRateMin']     ?? 'no_filter'),
             delayLimitMinutes:           (string) ($payload['delayLimitMinutes']     ?? 'no_filter'),

@@ -48,17 +48,8 @@ class ReportEmployeeQueryService
 
     private function applyScope(Builder $query, ReportWizardStep2DTO $s): void
     {
-        if ($s->employeeScope === ReportEnums::EMPLOYEE_STATUS_ALL) {
-            return;
-        }
-
-        $query->whereHas('users', function ($q) use ($s) {
-            match ($s->employeeScope) {
-                ReportEnums::EMPLOYEE_STATUS_ACTIVE   => $q->where('status', 1),
-                ReportEnums::EMPLOYEE_STATUS_INACTIVE => $q->where('status', 0),
-                default => null,
-            };
-        });
+        // 'all'               → no restriction; applySpecificUsers() is a no-op too
+        // 'select_employees'  → restriction delegated entirely to applySpecificUsers()
     }
 
     private function applySpecificUsers(Builder $query, ReportWizardStep2DTO $s): void
