@@ -14,6 +14,8 @@ use Modules\Company\CompanyCore\Models\Company;
 use Modules\Reports\Database\factories\ReportFactory;
 use Modules\Reports\Enums\ReportStatus;
 use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 /**
@@ -42,13 +44,14 @@ use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
  * @property \Carbon\Carbon|null $generated_at
  * @property string|null $error_message
  */
-class Report extends Model
+class Report extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use HasTranslations;
     use BelongsToTenant;
+    use InteractsWithMedia;
 
     protected $table = 'reports';
 
@@ -100,6 +103,11 @@ class Report extends Model
         'period_end'    => 'date',
         'generated_at'  => 'datetime',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('report_file')->singleFile();
+    }
 
     public function company(): BelongsTo
     {

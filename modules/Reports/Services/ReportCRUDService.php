@@ -96,12 +96,14 @@ class ReportCRUDService
     {
         $report = $this->repository->getReport($id);
 
-        if ($report->file_path && $report->file_disk) {
+        // Legacy reports stored directly on a Storage disk (not Media Library)
+        if ($report->file_path && $report->file_disk && $report->file_disk !== 'media') {
             $disk = Storage::disk($report->file_disk);
             if ($disk->exists($report->file_path)) {
                 $disk->delete($report->file_path);
             }
         }
+        // Media Library files are removed automatically when the Eloquent model is deleted
 
         return $this->repository->deleteById($id);
     }
@@ -120,7 +122,40 @@ class ReportCRUDService
     {
         $report = $this->repository->getReport($id);
 
-        if (!$report->isReady() || !$report->file_path || !$report->file_disk) {
+        if (!$report->isReady()) {
+            abort(409, __('Report is not ready for download yet.'));
+        }
+
+        [$mime, $extension] = $this->mimeAndExtensionFor($report->export_format);
+        $downloadName       = $this->buildDownloadFilename($report, $extension);
+        $asciiName          = $this->asciiFallback($downloadName);
+        $rfc5987Name        = rawurlencode($downloadName);
+
+        $headers = [
+            'Content-Type'                  => $mime,
+            'Content-Disposition'       => sprintf(
+                'attachment; filename="%s"; filename*=UTF-8\'\'%s',
+                $asciiName,
+                $rfc5987Name,
+            ),
+            'X-Content-Type-Options'        => 'nosniff',
+            'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Length, Content-Type',
+        ];
+
+        // New: file stored via Spatie Media Library (DigitalOcean Spaces / S3)
+        if ($report->file_disk === 'media') {
+            $media = $report->getFirstMedia('report_file');
+            if (!$media) {
+                abort(404, __('Report file is missing.'));
+            }
+            $contents = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
+            $headers['Content-Length'] = (string) ($report->file_size ?: strlen((string) $contents));
+
+            return response($contents, 200, $headers);
+        }
+
+        // Backward compat: legacy reports written directly to a Storage disk
+        if (!$report->file_path || !$report->file_disk) {
             abort(409, __('Report is not ready for download yet.'));
         }
 
@@ -129,25 +164,9 @@ class ReportCRUDService
             abort(404, __('Report file is missing.'));
         }
 
-        [$mime, $extension] = $this->mimeAndExtensionFor($report->export_format);
-        $downloadName       = $this->buildDownloadFilename($report, $extension);
+        $headers['Content-Length'] = (string) ($report->file_size ?: $disk->size($report->file_path));
 
-        $asciiName    = $this->asciiFallback($downloadName);
-        $rfc5987Name  = rawurlencode($downloadName);
-
-        return response($disk->get($report->file_path), 200, [
-            'Content-Type'              => $mime,
-            'Content-Disposition'       => sprintf(
-                'attachment; filename="%s"; filename*=UTF-8\'\'%s',
-                $asciiName,
-                $rfc5987Name,
-            ),
-            'Content-Length'            => (string) ($report->file_size ?: $disk->size($report->file_path)),
-            'X-Content-Type-Options'    => 'nosniff',
-            // Surface the filename to browser fetch() / axios callers that do
-            // their own download (otherwise CORS hides Content-Disposition).
-            'Access-Control-Expose-Headers' => 'Content-Disposition, Content-Length, Content-Type',
-        ]);
+        return response($disk->get($report->file_path), 200, $headers);
     }
 
     /**

@@ -15,6 +15,7 @@ use Modules\Reports\Exports\ReportExcelExport;
 use Modules\Reports\Models\Report;
 use Modules\Reports\Repositories\ReportRepository;
 use Ramsey\Uuid\Uuid;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Throwable;
 
 /**
@@ -28,8 +29,6 @@ use Throwable;
  */
 class ReportGenerationService
 {
-    public const DISK = 'public';
-
     public function __construct(
         private ReportRepository           $repository,
         private ReportEmployeeQueryService $employeeQueryService,
@@ -51,7 +50,7 @@ class ReportGenerationService
             // Per-section data payload keyed by report-type slug (attendance, leaves, ...).
             $sections = $this->dataExtractionService->extract($report, $config, $employees);
 
-            $artifact = match ($config->step1->exportFormat) {
+            $media = match ($config->step1->exportFormat) {
                 ReportEnums::FORMAT_EXCEL => $this->renderExcel($report, $config, $employees, $sections),
                 ReportEnums::FORMAT_CSV   => $this->renderCsv($report, $config, $employees, $sections),
                 ReportEnums::FORMAT_PDF   => $this->renderPdf($report, $config, $employees, $sections),
@@ -60,9 +59,9 @@ class ReportGenerationService
 
             $this->repository->markReady(
                 id:       $id,
-                filePath: $artifact['path'],
-                fileDisk: $artifact['disk'],
-                fileSize: $artifact['size'] ?? null,
+                filePath: $media->uuid,
+                fileDisk: 'media',
+                fileSize: $media->size,
             );
         } catch (Throwable $e) {
             Log::error('[Reports] generation failed', [
@@ -77,20 +76,17 @@ class ReportGenerationService
     /**
      * @param \Illuminate\Support\Collection $employees
      * @param array<string, array<string,mixed>> $sections
-     * @return array{path:string,disk:string,size:?int}
      */
-    private function renderExcel(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): array
+    private function renderExcel(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): Media
     {
-        $path = $this->buildPath($report, 'xlsx');
-        $export = new ReportExcelExport($report, $config, $employees, $sections, $this->lookupService);
+        $tmpPath = 'reports-tmp/' . $report->id . '.xlsx';
+        $export  = new ReportExcelExport($report, $config, $employees, $sections, $this->lookupService);
 
-        Excel::store($export, $path, self::DISK);
+        Excel::store($export, $tmpPath, 'local');
+        $contents = (string) Storage::disk('local')->get($tmpPath);
+        Storage::disk('local')->delete($tmpPath);
 
-        return [
-            'path' => $path,
-            'disk' => self::DISK,
-            'size' => Storage::disk(self::DISK)->exists($path) ? Storage::disk(self::DISK)->size($path) : null,
-        ];
+        return $this->storeAsMedia($report, $contents, 'xlsx');
     }
 
     /**
@@ -103,20 +99,17 @@ class ReportGenerationService
      *
      * @param \Illuminate\Support\Collection $employees
      * @param array<string, array<string,mixed>> $sections
-     * @return array{path:string,disk:string,size:?int}
      */
-    private function renderCsv(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): array
+    private function renderCsv(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): Media
     {
-        $path   = $this->buildPath($report, 'csv');
-        $export = new ReportCsvExport($report, $config, $employees, $sections, $this->lookupService);
+        $tmpPath = 'reports-tmp/' . $report->id . '.csv';
+        $export  = new ReportCsvExport($report, $config, $employees, $sections, $this->lookupService);
 
-        Excel::store($export, $path, self::DISK, \Maatwebsite\Excel\Excel::CSV);
+        Excel::store($export, $tmpPath, 'local', \Maatwebsite\Excel\Excel::CSV);
+        $contents = (string) Storage::disk('local')->get($tmpPath);
+        Storage::disk('local')->delete($tmpPath);
 
-        return [
-            'path' => $path,
-            'disk' => self::DISK,
-            'size' => Storage::disk(self::DISK)->exists($path) ? Storage::disk(self::DISK)->size($path) : null,
-        ];
+        return $this->storeAsMedia($report, $contents, 'csv');
     }
 
     /**
@@ -134,12 +127,9 @@ class ReportGenerationService
      *
      * @param \Illuminate\Support\Collection $employees
      * @param array<string, array<string,mixed>> $sections
-     * @return array{path:string,disk:string,size:?int}
      */
-    private function renderPdf(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): array
+    private function renderPdf(Report $report, ReportWizardConfigDTO $config, $employees, array $sections): Media
     {
-        $path = $this->buildPath($report, 'pdf');
-
         $isArabic    = $config->step1->reportLanguage === ReportEnums::LANGUAGE_AR;
         $orientation = strtoupper($config->step1->printOrientation) === 'LANDSCAPE' ? 'L' : 'P';
         $paper       = $config->step1->paperSize ?: 'A4';
@@ -182,22 +172,22 @@ class ReportGenerationService
 
         $mpdf->WriteHTML($html);
 
-        Storage::disk(self::DISK)->put($path, $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN));
-
-        return [
-            'path' => $path,
-            'disk' => self::DISK,
-            'size' => Storage::disk(self::DISK)->size($path),
-        ];
+        return $this->storeAsMedia(
+            $report,
+            $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN),
+            'pdf'
+        );
     }
 
-    private function buildPath(Report $report, string $extension): string
+    private function storeAsMedia(Report $report, string $contents, string $extension): Media
     {
-        return sprintf(
-            'reports/%s/%s.%s',
-            $report->company_id,
-            $report->id,
-            $extension,
-        );
+        $bucket = config('filesystems.disks.s3_public.bucket');
+        $disk   = (is_string($bucket) && $bucket !== '') ? 's3_public' : 'public';
+
+        return $report
+            ->addMediaFromString($contents)
+            ->usingFileName($report->id . '.' . $extension)
+            ->usingName($report->id)
+            ->toMediaCollection('report_file', $disk);
     }
 }
