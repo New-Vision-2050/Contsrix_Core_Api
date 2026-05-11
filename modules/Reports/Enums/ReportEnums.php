@@ -49,6 +49,7 @@ final class ReportEnums
     public const PERIOD_WEEKLY    = 'weekly';
     public const PERIOD_QUARTERLY = 'quarterly';
     public const PERIOD_YEARLY    = 'yearly';
+    public const PERIOD_RANGE     = 'range';
 
     public const FORMAT_PDF   = 'pdf';
     public const FORMAT_EXCEL = 'excel';
@@ -77,6 +78,9 @@ final class ReportEnums
     public const CONTRACT_INTERN              = 'intern';
     public const CONTRACT_EXTERNAL_CONSULTANT = 'external_consultant';
     public const CONTRACT_SEASONAL            = 'seasonal';
+
+    public const DISPLAY_MODE_ALL_EMPLOYEES     = 'all_employees';
+    public const DISPLAY_MODE_EMPLOYEE_PER_PAGE = 'employee_per_page';
 
     // ---- Step 3 ----------------------------------------------------------
     public const ATT_DATA_ATTENDANCE_DAYS  = 'attendance_days';
@@ -175,7 +179,7 @@ final class ReportEnums
 
     public static function periodTypes(): array
     {
-        return [self::PERIOD_MONTHLY, self::PERIOD_WEEKLY, self::PERIOD_QUARTERLY, self::PERIOD_YEARLY];
+        return [self::PERIOD_MONTHLY, self::PERIOD_WEEKLY, self::PERIOD_QUARTERLY, self::PERIOD_YEARLY, self::PERIOD_RANGE];
     }
 
     public static function exportFormats(): array
@@ -219,6 +223,11 @@ final class ReportEnums
             self::CONTRACT_EXTERNAL_CONSULTANT,
             self::CONTRACT_SEASONAL,
         ];
+    }
+
+    public static function displayModes(): array
+    {
+        return [self::DISPLAY_MODE_ALL_EMPLOYEES, self::DISPLAY_MODE_EMPLOYEE_PER_PAGE];
     }
 
     public static function attendanceDataTypes(): array

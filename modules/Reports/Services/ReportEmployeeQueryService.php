@@ -35,7 +35,8 @@ class ReportEmployeeQueryService
             ])
             ->whereHas('users', fn ($q) => $q->where('company_id', tenant('id')));
 
-        $this->applyStatus($query, $step2);
+        $this->applyScope($query, $step2);
+        $this->applySpecificUsers($query, $step2);
         $this->applyHierarchy($query, $step2);
         $this->applyJobTitle($query, $step2);
         $this->applyContractTypes($query, $step2);
@@ -45,38 +46,42 @@ class ReportEmployeeQueryService
         return $query;
     }
 
-    private function applyStatus(Builder $query, ReportWizardStep2DTO $s): void
+    private function applyScope(Builder $query, ReportWizardStep2DTO $s): void
     {
-        if ($s->employeeStatus === ReportEnums::EMPLOYEE_STATUS_ALL) {
+        if ($s->employeeScope === ReportEnums::EMPLOYEE_STATUS_ALL) {
             return;
         }
 
-        // Map logical status to CompanyUser.active_type (the field used by
-        // CompanyUserDatatatusService). "on_leave" and "dismissed" are
-        // delegated to the users table flags when applicable.
         $query->whereHas('users', function ($q) use ($s) {
-            match ($s->employeeStatus) {
+            match ($s->employeeScope) {
                 ReportEnums::EMPLOYEE_STATUS_ACTIVE   => $q->where('status', 1),
                 ReportEnums::EMPLOYEE_STATUS_INACTIVE => $q->where('status', 0),
-                // on_leave / dismissed rely on domain-specific flags — callers
-                // can layer those on when the HR module is wired up.
                 default => null,
             };
         });
     }
 
+    private function applySpecificUsers(Builder $query, ReportWizardStep2DTO $s): void
+    {
+        if ($s->employeeUserIds === []) {
+            return;
+        }
+
+        $query->whereIn('global_company_user_id', $s->employeeUserIds);
+    }
+
     private function applyHierarchy(Builder $query, ReportWizardStep2DTO $s): void
     {
-        if ($s->location === null && $s->management === null && $s->department === null) {
+        if ($s->branchId === null && $s->managementId === null && $s->department === null) {
             return;
         }
 
         $query->whereHas('userProfessionalData', function ($q) use ($s) {
-            if ($s->location !== null && $s->location !== '' && $s->location !== 'all') {
-                $q->where('branch_id', $s->location);
+            if ($s->branchId !== null && $s->branchId !== '' && $s->branchId !== 'all') {
+                $q->where('branch_id', $s->branchId);
             }
-            if ($s->management !== null && $s->management !== '' && $s->management !== 'all') {
-                $q->where('management_id', $s->management);
+            if ($s->managementId !== null && $s->managementId !== '' && $s->managementId !== 'all') {
+                $q->where('management_id', $s->managementId);
             }
             if ($s->department !== null && $s->department !== '' && $s->department !== 'all') {
                 $q->where('department_id', $s->department);

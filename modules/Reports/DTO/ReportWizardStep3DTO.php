@@ -12,6 +12,7 @@ final class ReportWizardStep3DTO
     public function __construct(
         /** @var string[] */
         public readonly array  $attendanceDataTypeIds,
+        public readonly string $displayMode,
         public readonly string $attendancePattern,
         public readonly string $attendanceRateMin,
         public readonly string $delayLimitMinutes,
@@ -28,6 +29,7 @@ final class ReportWizardStep3DTO
     {
         return new self(
             attendanceDataTypeIds:       array_values($payload['attendanceDataTypeIds'] ?? []),
+            displayMode:                 (string) ($payload['display_mode']          ?? 'all_employees'),
             attendancePattern:           (string) ($payload['attendancePattern']     ?? 'all'),
             attendanceRateMin:           (string) ($payload['attendanceRateMin']     ?? 'no_filter'),
             delayLimitMinutes:           (string) ($payload['delayLimitMinutes']     ?? 'no_filter'),
@@ -44,6 +46,7 @@ final class ReportWizardStep3DTO
     {
         return [
             'attendanceDataTypeIds'       => $this->attendanceDataTypeIds,
+            'display_mode'               => $this->displayMode,
             'attendancePattern'           => $this->attendancePattern,
             'attendanceRateMin'           => $this->attendanceRateMin,
             'delayLimitMinutes'           => $this->delayLimitMinutes,
