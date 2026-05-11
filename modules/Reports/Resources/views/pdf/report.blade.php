@@ -4,19 +4,37 @@
     /** @var \Illuminate\Support\Collection $employees */
     /** @var array<string, array<string,mixed>> $sections */
     /** @var \Modules\Reports\Services\ReportLookupService $lookups */
-    $lang = $config->step1->reportLanguage;
-    $dir  = $lang === 'ar' ? 'rtl' : 'ltr';
+    $lang  = $config->step1->reportLanguage;
+    $dir   = $lang === 'ar' ? 'rtl' : 'ltr';
     $align = $lang === 'ar' ? 'right' : 'left';
-    $reportName = is_array($report->name)
+
+    $reportName  = is_array($report->name)
         ? ($report->name[$lang] ?? reset($report->name))
         : (string) $report->name;
     $oneEmployee = $employees->count() === 1 ? optional($employees->first())->name : null;
+
     $toHoursMinutes = function ($minutes) {
         $total = max(0, (int) $minutes);
         $h = intdiv($total, 60);
         $m = $total % 60;
         return sprintf('%02d:%02d', $h, $m);
     };
+    $workHoursToHM = function ($decimalHours) {
+        $total = max(0, (int) round((float) $decimalHours * 60));
+        $h = intdiv($total, 60);
+        $m = $total % 60;
+        return sprintf('%02d:%02d', $h, $m);
+    };
+    $dayNames = $lang === 'ar'
+        ? ['1'=>'الاثنين','2'=>'الثلاثاء','3'=>'الأربعاء','4'=>'الخميس','5'=>'الجمعة','6'=>'السبت','7'=>'الأحد']
+        : ['1'=>'Monday','2'=>'Tuesday','3'=>'Wednesday','4'=>'Thursday','5'=>'Friday','6'=>'Saturday','7'=>'Sunday'];
+
+    $svgPlaceholder = 'data:image/svg+xml;base64,' . base64_encode(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">'
+        . '<circle cx="10" cy="8" r="4" fill="#9ca3af"/>'
+        . '<path d="M3 18 Q3 12 10 12 Q17 12 17 18 Z" fill="#9ca3af"/>'
+        . '</svg>'
+    );
 @endphp
 <!doctype html>
 <html lang="{{ $lang }}" dir="{{ $dir }}">
@@ -24,18 +42,22 @@
     <meta charset="utf-8">
     <title>{{ $reportName }}</title>
     <style>
-        /* DejaVu Sans is bundled with mPDF and includes Arabic glyphs. mPDF's
-           autoArabic + autoLangToFont will perform contextual letter shaping
-           and BiDi reordering automatically when text is tagged with
-           lang="ar" / dir="rtl". */
-        body  { font-family: "dejavusans", sans-serif; font-size: 11px; color: #1f2937; }
-        h1    { font-size: 18px; margin: 0 0 8px; }
-        h2    { font-size: 14px; margin: 16px 0 6px; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        th, td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: {{ $align }}; vertical-align: top; }
-        th    { background: #f3f4f6; font-weight: 600; }
-        .meta td { border: none; padding: 2px 6px; }
-        .num  { text-align: center; direction: ltr; }
+        body      { font-family: "dejavusans", sans-serif; font-size: 9px; color: #1f2937; }
+        h1        { font-size: 15px; margin: 0 0 6px; }
+        h2        { font-size: 11px; margin: 12px 0 4px; border-bottom: 2px solid #1e3a5f; padding-bottom: 3px; color: #1e3a5f; }
+        table     { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th, td    { border: 1px solid #d1d5db; padding: 3px 4px; text-align: {{ $align }}; vertical-align: middle; }
+        th        { background: #1e3a5f; color: #ffffff; font-weight: 600; font-size: 8px; }
+        .meta td  { border: none; padding: 2px 6px; font-size: 10px; }
+        .num      { text-align: center; direction: ltr; }
+        .stats-bar td { border: 1px solid #cbd5e1; padding: 5px 10px; text-align: center; font-weight: 700; font-size: 9px; }
+        .s-emp    { background: #e2e8f0; color: #1e293b; }
+        .s-pres   { background: #dcfce7; color: #166534; }
+        .s-abs    { background: #fee2e2; color: #991b1b; }
+        .s-date   { background: #dbeafe; color: #1e40af; }
+        .row-alt  { background: #f8fafc; }
+        .tot-row  { background: #e8f4ea; font-weight: 700; }
+        .tot-row td { border-top: 2px solid #16a34a; }
     </style>
 </head>
 <body lang="{{ $lang }}" dir="{{ $dir }}">
@@ -65,13 +87,124 @@
                     break;
                 }
             }
-            $rows    = $sections[$type] ?? [];
-            $daily   = is_array($rows) ? ($rows['__daily'] ?? []) : [];
+            $rows  = $sections[$type] ?? [];
+            $daily = is_array($rows) ? ($rows['__daily'] ?? []) : [];
         @endphp
         <h2>{{ $label }}</h2>
+
         @if ($employees->isEmpty())
             <p>{{ $lang === 'ar' ? 'لا توجد بيانات.' : 'No data.' }}</p>
+
+        @elseif ($type === \Modules\Reports\Enums\ReportEnums::REPORT_TYPE_ATTENDANCE_ABSENCE)
+            {{-- ═══ Detailed daily attendance view with per-employee totals ═══ --}}
+            @php
+                $totalPresent = 0;
+                $totalAbsent  = 0;
+                foreach ($employees as $_e) {
+                    $_s = is_array($rows) && !str_starts_with((string)$_e->global_id, '__')
+                        ? ($rows[(string)$_e->global_id] ?? []) : [];
+                    $totalPresent += (int)($_s['present_days'] ?? 0);
+                    $totalAbsent  += (int)($_s['absent_days']  ?? 0);
+                }
+            @endphp
+
+            {{-- Summary stats bar --}}
+            <table class="stats-bar">
+                <tr>
+                    <td class="s-emp">{{ $lang === 'ar' ? 'عدد الموظفين' : 'Total Employees' }}: {{ $employees->count() }}</td>
+                    <td class="s-pres">{{ $lang === 'ar' ? 'إجمالي أيام الحضور' : 'Total Present Days' }}: {{ $totalPresent }}</td>
+                    <td class="s-abs">{{ $lang === 'ar' ? 'إجمالي أيام الغياب' : 'Total Absent Days' }}: {{ $totalAbsent }}</td>
+                    <td class="s-date">{{ $lang === 'ar' ? 'تاريخ اليوم' : 'Report Date' }}: {{ now()->toDateString() }}</td>
+                </tr>
+            </table>
+
+            {{-- Main daily records table --}}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:26px;"></th>
+                        <th>{{ $lang === 'ar' ? 'الاسم'              : 'Employee' }}</th>
+                        <th>{{ $lang === 'ar' ? 'التاريخ'            : 'Date' }}</th>
+                        <th>{{ $lang === 'ar' ? 'اليوم'              : 'Day' }}</th>
+                        <th>{{ $lang === 'ar' ? 'الفرع'              : 'Branch' }}</th>
+                        <th>{{ $lang === 'ar' ? 'الإدارة'            : 'Department' }}</th>
+                        <th>{{ $lang === 'ar' ? 'الحضور الرسمي'      : 'Official In' }}</th>
+                        <th>{{ $lang === 'ar' ? 'الانصراف الرسمي'    : 'Official Out' }}</th>
+                        <th>{{ $lang === 'ar' ? 'الحضور الفعلي'      : 'Actual In' }}</th>
+                        <th>{{ $lang === 'ar' ? 'الانصراف الفعلي'    : 'Actual Out' }}</th>
+                        <th>{{ $lang === 'ar' ? 'ساعات التأخير'      : 'Delay' }}</th>
+                        <th>{{ $lang === 'ar' ? 'ساعات إضافية'       : 'Overtime' }}</th>
+                        <th>{{ $lang === 'ar' ? 'إجمالي ساعات اليوم' : 'Total Hours' }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($employees as $emp)
+                        @php
+                            $empDaily   = $daily[(string) $emp->global_id] ?? [];
+                            $empBranch  = optional(optional($emp->userProfessionalData)->branch)->name     ?? '';
+                            $empDept    = optional(optional($emp->userProfessionalData)->department)->name ?? '';
+                            $empAvatar  = $emp->getFirstMedia('upload_user')?->getFullUrl() ?? $svgPlaceholder;
+                            $sumDelay   = 0;
+                            $sumOT      = 0;
+                            $sumWorkMin = 0;
+                        @endphp
+                        @if (!empty($empDaily))
+                            @foreach ($empDaily as $dIdx => $d)
+                                @php
+                                    $sumDelay   += (int) ($d['late_minutes'] ?? 0);
+                                    $sumOT      += (int) ($d['overtime_minutes'] ?? 0);
+                                    $sumWorkMin += (int) round((float) ($d['total_work_hours'] ?? 0) * 60);
+                                    $dateStr     = (string) ($d['date'] ?? '');
+                                    $dayNum      = $dateStr ? date('N', strtotime($dateStr)) : '';
+                                    $dayLabel    = $dayNum !== '' ? ($dayNames[(string) $dayNum] ?? '') : '';
+                                    $statusColor = match($d['display_status'] ?? '') {
+                                        'present' => '#16a34a',
+                                        'absent'  => '#dc2626',
+                                        'holiday' => '#d97706',
+                                        default   => '#94a3b8',
+                                    };
+                                @endphp
+                                <tr @if($dIdx % 2 !== 0) class="row-alt" @endif>
+                                    <td style="width:26px; padding:1px; text-align:center; vertical-align:middle;">
+                                        <div style="width:22px; height:22px; border-radius:50%; border:2.5px solid {{ $statusColor }}; background-image:url('{{ $empAvatar }}'); background-color:#e5e7eb; background-size:cover; background-position:center; margin:0 auto;"></div>
+                                    </td>
+                                    <td>{{ $emp->name }}</td>
+                                    <td class="num">{{ $dateStr }}</td>
+                                    <td>{{ $dayLabel }}</td>
+                                    <td>{{ $empBranch }}</td>
+                                    <td>{{ $empDept }}</td>
+                                    <td class="num">{{ $d['start_time']     ?: '-' }}</td>
+                                    <td class="num">{{ $d['end_time']       ?: '-' }}</td>
+                                    <td class="num">{{ $d['clock_in_time']  ?: '-' }}</td>
+                                    <td class="num">{{ $d['clock_out_time'] ?: '-' }}</td>
+                                    <td class="num">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>
+                                    <td class="num">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>
+                                    <td class="num">{{ $workHoursToHM($d['total_work_hours'] ?? 0) }}</td>
+                                </tr>
+                            @endforeach
+                            {{-- Per-employee الإجمالي totals row --}}
+                            <tr class="tot-row">
+                                <td style="width:26px;"></td>
+                                <td>{{ $lang === 'ar' ? 'الإجمالي' : 'Total' }}</td>
+                                <td class="num"></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="num"></td>
+                                <td class="num"></td>
+                                <td class="num"></td>
+                                <td class="num"></td>
+                                <td class="num">{{ $toHoursMinutes($sumDelay) }}</td>
+                                <td class="num">{{ $toHoursMinutes($sumOT) }}</td>
+                                <td class="num">{{ $toHoursMinutes($sumWorkMin) }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+                </tbody>
+            </table>
+
         @else
+            {{-- ═══ Other report types: compact summary table ═══ --}}
             @php
                 $displayRows = [];
                 if (is_array($rows)) {
@@ -87,84 +220,23 @@
                 <thead>
                     <tr>
                         <th>{{ $lang === 'ar' ? 'الموظف' : 'Employee' }}</th>
-                        @if ($type === \Modules\Reports\Enums\ReportEnums::REPORT_TYPE_ATTENDANCE_ABSENCE)
-                            <th>present_days</th>
-                            <th>absent_days</th>
-                            <th>delay_hh_mm</th>
-                            <th>overtime_hh_mm</th>
-                            <th>early_leave_hh_mm</th>
-                        @else
-                            @foreach ($sampleRow as $metric => $_)
-                                <th>{{ $metric }}</th>
-                            @endforeach
-                        @endif
+                        @foreach ($sampleRow as $metric => $_)
+                            <th>{{ $metric }}</th>
+                        @endforeach
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($employees as $emp)
-                        @php $row = $rows[(string) $emp->global_id] ?? []; @endphp
-                        <tr>
+                    @foreach ($employees as $empIdx => $emp)
+                        @php $row = $displayRows[(string) $emp->global_id] ?? []; @endphp
+                        <tr @if($empIdx % 2 !== 0) class="row-alt" @endif>
                             <td>{{ $emp->name }}</td>
-                            @if ($type === \Modules\Reports\Enums\ReportEnums::REPORT_TYPE_ATTENDANCE_ABSENCE)
-                                <td class="num">{{ (int) ($row['present_days'] ?? 0) }}</td>
-                                <td class="num">{{ (int) ($row['absent_days'] ?? 0) }}</td>
-                                <td class="num">{{ $toHoursMinutes($row['delay_minutes'] ?? 0) }}</td>
-                                <td class="num">{{ $toHoursMinutes($row['overtime_minutes'] ?? 0) }}</td>
-                                <td class="num">{{ $toHoursMinutes($row['early_leave_minutes'] ?? 0) }}</td>
-                            @else
-                                @foreach ($row as $v)
-                                    <td>{{ $v }}</td>
-                                @endforeach
-                            @endif
+                            @foreach ($row as $v)
+                                <td>{{ $v }}</td>
+                            @endforeach
                         </tr>
                     @endforeach
                 </tbody>
             </table>
-
-            @if ($type === \Modules\Reports\Enums\ReportEnums::REPORT_TYPE_ATTENDANCE_ABSENCE && !empty($daily))
-                <h2>{{ $lang === 'ar' ? 'تفاصيل الحضور اليومية' : 'Daily Attendance Details' }}</h2>
-                @foreach ($employees as $emp)
-                    @php $empDaily = $daily[(string) $emp->global_id] ?? []; @endphp
-                    @if (!empty($empDaily))
-                        <p><strong>{{ $emp->name }}</strong></p>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>{{ $lang === 'ar' ? 'التاريخ' : 'Date' }}</th>
-                                    <th>{{ $lang === 'ar' ? 'الحالة' : 'Status' }}</th>
-                                    <th>{{ $lang === 'ar' ? 'الدخول' : 'Clock In' }}</th>
-                                    <th>{{ $lang === 'ar' ? 'الخروج' : 'Clock Out' }}</th>
-                                    <th>{{ $lang === 'ar' ? 'التأخير' : 'Late (HH:MM)' }}</th>
-                                    <th>{{ $lang === 'ar' ? 'الإضافي' : 'Overtime (HH:MM)' }}</th>
-                                    <th>{{ $lang === 'ar' ? 'الانصراف المبكر' : 'Early Leave (HH:MM)' }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($empDaily as $d)
-                                    <tr>
-                                        <td class="num">{{ $d['date'] ?? '' }}</td>
-                                        @php
-                                            $ds = $d['display_status'] ?? ($d['day_status'] ?: ($d['status'] ?? ''));
-                                            $dsLabel = match($ds) {
-                                                'present' => ($lang === 'ar' ? 'حاضر' : 'Present'),
-                                                'absent'  => ($lang === 'ar' ? 'غائب' : 'Absent'),
-                                                'holiday' => ($lang === 'ar' ? 'إجازة' : 'Holiday'),
-                                                default   => $ds,
-                                            };
-                                        @endphp
-                                        <td>{{ $dsLabel }}</td>
-                                        <td class="num">{{ $config->step3->includeEntryExitTime ? ($d['clock_in_time'] ?? '') : '-' }}</td>
-                                        <td class="num">{{ $config->step3->includeEntryExitTime ? ($d['clock_out_time'] ?? '') : '-' }}</td>
-                                        <td class="num">{{ $toHoursMinutes($d['late_minutes'] ?? 0) }}</td>
-                                        <td class="num">{{ $toHoursMinutes($d['overtime_minutes'] ?? 0) }}</td>
-                                        <td class="num">{{ $toHoursMinutes($d['early_leave_minutes'] ?? 0) }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    @endif
-                @endforeach
-            @endif
         @endif
     @endforeach
 </body>

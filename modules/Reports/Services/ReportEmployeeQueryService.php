@@ -25,7 +25,14 @@ class ReportEmployeeQueryService
     public function query(ReportWizardStep2DTO $step2): Builder
     {
         $query = CompanyUser::query()
-            ->with(['users', 'userProfessionalData', 'country', 'jobTitle'])
+            ->with([
+                'users',
+                'userProfessionalData.branch',
+                'userProfessionalData.department',
+                'country',
+                'jobTitle',
+                'media' => fn ($q) => $q->where('collection_name', 'upload_user'),
+            ])
             ->whereHas('users', fn ($q) => $q->where('company_id', tenant('id')));
 
         $this->applyStatus($query, $step2);
