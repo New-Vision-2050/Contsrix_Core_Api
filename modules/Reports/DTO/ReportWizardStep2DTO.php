@@ -10,14 +10,16 @@ namespace Modules\Reports\DTO;
 final class ReportWizardStep2DTO
 {
     public function __construct(
-        public readonly string  $employeeStatus,           // all|active|inactive|on_leave|dismissed
-        public readonly ?string $location,                 // branch_id (uuid) or string slug like "jeddah"
-        public readonly ?string $management,               // management_id
+        public readonly string  $employeeScope,            // all|active|inactive|on_leave|dismissed
+        /** @var string[] */
+        public readonly array   $employeeUserIds,          // specific user global_ids (empty = all)
+        public readonly ?string $branchId,                 // branch_id (uuid)
+        public readonly ?string $managementId,             // management_id (uuid)
         public readonly ?string $department,               // department_id
         public readonly ?string $jobTitle,                 // job_title_id
         /** @var string[] */
         public readonly array   $contractTypeIds,
-        public readonly ?string $nationality,              // country_id or "egyptian" / "saudi" slug
+        public readonly ?string $nationality,              // country_id or ISO slug
         public readonly ?string $gender,                   // male|female
     ) {
     }
@@ -25,28 +27,30 @@ final class ReportWizardStep2DTO
     public static function fromArray(array $payload): self
     {
         return new self(
-            employeeStatus:  (string) ($payload['employeeStatus'] ?? 'all'),
-            location:        $payload['location']   ?? null,
-            management:      $payload['management'] ?? null,
-            department:      $payload['department'] ?? null,
-            jobTitle:        $payload['jobTitle']   ?? null,
+            employeeScope:   (string) ($payload['employee_scope']    ?? $payload['employeeStatus'] ?? 'all'),
+            employeeUserIds: array_values($payload['employee_user_ids'] ?? []),
+            branchId:        $payload['branch_id']      ?? $payload['location']    ?? null,
+            managementId:    $payload['management_id']  ?? $payload['management']  ?? null,
+            department:      $payload['department']     ?? null,
+            jobTitle:        $payload['job_title']      ?? $payload['jobTitle']    ?? null,
             contractTypeIds: array_values($payload['contractTypeIds'] ?? []),
-            nationality:     $payload['nationality'] ?? null,
-            gender:          $payload['gender']      ?? null,
+            nationality:     $payload['nationality']    ?? null,
+            gender:          $payload['gender']         ?? null,
         );
     }
 
     public function toArray(): array
     {
         return [
-            'employeeStatus'  => $this->employeeStatus,
-            'location'        => $this->location,
-            'management'      => $this->management,
-            'department'      => $this->department,
-            'jobTitle'        => $this->jobTitle,
-            'contractTypeIds' => $this->contractTypeIds,
-            'nationality'     => $this->nationality,
-            'gender'          => $this->gender,
+            'employee_scope'    => $this->employeeScope,
+            'employee_user_ids' => $this->employeeUserIds,
+            'branch_id'         => $this->branchId,
+            'management_id'     => $this->managementId,
+            'department'        => $this->department,
+            'job_title'         => $this->jobTitle,
+            'contractTypeIds'   => $this->contractTypeIds,
+            'nationality'       => $this->nationality,
+            'gender'            => $this->gender,
         ];
     }
 }

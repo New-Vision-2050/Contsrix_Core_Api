@@ -27,6 +27,7 @@ class ReportPeriodResolver
             ReportEnums::PERIOD_WEEKLY    => $this->weekly($year,    $step1->week    ?? (int) CarbonImmutable::now()->isoWeek),
             ReportEnums::PERIOD_QUARTERLY => $this->quarterly($year, $step1->quarter ?? (int) ceil(((int) date('n')) / 3)),
             ReportEnums::PERIOD_YEARLY    => $this->yearly($year),
+            ReportEnums::PERIOD_RANGE     => $this->range($step1->dateFrom, $step1->dateTo),
             default => throw new InvalidArgumentException("Unsupported period type: {$step1->periodType}"),
         };
     }
@@ -58,5 +59,16 @@ class ReportPeriodResolver
     {
         $start = CarbonImmutable::create($year, 1, 1, 0, 0, 0);
         return ['start' => $start, 'end' => $start->endOfYear()];
+    }
+
+    /** @return array{start: CarbonImmutable, end: CarbonImmutable} */
+    private function range(?string $dateFrom, ?string $dateTo): array
+    {
+        if (!$dateFrom || !$dateTo) {
+            throw new InvalidArgumentException('periodType=range requires both dateFrom and dateTo.');
+        }
+        $start = CarbonImmutable::parse($dateFrom)->startOfDay();
+        $end   = CarbonImmutable::parse($dateTo)->endOfDay();
+        return ['start' => $start, 'end' => $end];
     }
 }

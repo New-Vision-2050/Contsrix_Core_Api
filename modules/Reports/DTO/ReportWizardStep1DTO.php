@@ -19,10 +19,12 @@ final class ReportWizardStep1DTO
         public readonly ?int   $month,              // 1..12 (only when periodType=monthly|quarterly)
         public readonly ?int   $week,               // 1..53 (only when periodType=weekly)
         public readonly ?int   $quarter,            // 1..4  (only when periodType=quarterly)
-        public readonly string $exportFormat,       // pdf|excel|csv
-        public readonly string $reportLanguage,     // ar|en
-        public readonly string $paperSize,          // A4|Letter|A3
-        public readonly string $printOrientation,   // portrait|landscape
+        public readonly string  $exportFormat,       // pdf|excel|csv
+        public readonly string  $reportLanguage,     // ar|en
+        public readonly string  $paperSize,          // A4|Letter|A3
+        public readonly string  $printOrientation,   // portrait|landscape
+        public readonly ?string $dateFrom,           // only when periodType=range
+        public readonly ?string $dateTo,             // only when periodType=range
     ) {
     }
 
@@ -39,6 +41,8 @@ final class ReportWizardStep1DTO
             reportLanguage:   (string) ($payload['reportLanguage']   ?? 'ar'),
             paperSize:        (string) ($payload['paperSize']        ?? 'A4'),
             printOrientation: (string) ($payload['printOrientation'] ?? 'portrait'),
+            dateFrom:         isset($payload['dateFrom']) ? (string) $payload['dateFrom'] : null,
+            dateTo:           isset($payload['dateTo'])   ? (string) $payload['dateTo']   : null,
         );
     }
 
@@ -55,6 +59,8 @@ final class ReportWizardStep1DTO
             'reportLanguage'   => $this->reportLanguage,
             'paperSize'        => $this->paperSize,
             'printOrientation' => $this->printOrientation,
+            'dateFrom'         => $this->dateFrom,
+            'dateTo'           => $this->dateTo,
         ];
     }
 }
