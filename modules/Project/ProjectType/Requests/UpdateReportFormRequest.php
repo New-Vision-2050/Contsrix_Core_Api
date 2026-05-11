@@ -17,7 +17,7 @@ class UpdateReportFormRequest extends FormRequest
     {
         return [
             'project_type_id'               => ['sometimes', 'integer', 'exists:project_types,id'],
-            'project_sharing_work_order_id' => ['sometimes', 'integer', 'exists:project_sharing_work_orders,id'],
+            'order_permit_procedure_id'     => ['sometimes', 'integer', 'exists:order_permit_procedure,id'],
             'name'                          => ['sometimes', 'nullable', 'string', 'max:255'],
             'question'                      => ['sometimes', 'nullable', 'string', 'max:255'],
             'value'                         => ['sometimes', 'nullable', 'string', 'max:255'],

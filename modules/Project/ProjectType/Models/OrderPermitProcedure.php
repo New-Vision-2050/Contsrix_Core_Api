@@ -6,19 +6,16 @@ namespace Modules\Project\ProjectType\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ReportForm extends Model
+class OrderPermitProcedure extends Model
 {
-    protected $table = 'order_permit_report_forms';
+    protected $table = 'order_permit_procedure';
 
     protected $fillable = [
         'project_type_id',
-        'order_permit_procedure_id',
-        'name',
-        'question',
-        'value',
-        'number_of_attachments',
-        'notes',
+        'code',
+        'description',
     ];
 
     public function projectType(): BelongsTo
@@ -26,8 +23,8 @@ class ReportForm extends Model
         return $this->belongsTo(ProjectType::class, 'project_type_id');
     }
 
-    public function procedure(): BelongsTo
+    public function reportForms(): HasMany
     {
-        return $this->belongsTo(OrderPermitProcedure::class, 'order_permit_procedure_id');
+        return $this->hasMany(ReportForm::class, 'order_permit_procedure_id');
     }
 }
