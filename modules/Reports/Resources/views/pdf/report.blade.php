@@ -29,13 +29,6 @@
         ? ['1'=>'الاثنين','2'=>'الثلاثاء','3'=>'الأربعاء','4'=>'الخميس','5'=>'الجمعة','6'=>'السبت','7'=>'الأحد']
         : ['1'=>'Monday','2'=>'Tuesday','3'=>'Wednesday','4'=>'Thursday','5'=>'Friday','6'=>'Saturday','7'=>'Sunday'];
 
-    $avatarPlaceholder = 'data:image/svg+xml;base64,' . base64_encode(
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">'
-        . '<circle cx="10" cy="10" r="10" fill="#9ca3af"/>'
-        . '<circle cx="10" cy="8" r="3.5" fill="#e5e7eb"/>'
-        . '<path d="M3 18 Q3 13 10 13 Q17 13 17 18 Z" fill="#e5e7eb"/>'
-        . '</svg>'
-    );
 @endphp
 <!doctype html>
 <html lang="{{ $lang }}" dir="{{ $dir }}">
@@ -144,7 +137,6 @@
                             $empDaily   = $daily[(string) $emp->global_id] ?? [];
                             $empBranch  = optional(optional($emp->userProfessionalData)->branch)->name     ?? '';
                             $empMgmt      = optional(optional($emp->userProfessionalData)->management)->name ?? '';
-                            $empAvatarSrc = $avatarCache[(string) $emp->global_id] ?? $avatarPlaceholder;
                             $sumDelay   = 0;
                             $sumOT      = 0;
                             $sumWorkMin = 0;
@@ -172,10 +164,8 @@
                                     };
                                 @endphp
                                 <tr style="background-color:{{ $rowBg }};">
-                                    <td style="width:26px; padding:1px; text-align:center; vertical-align:middle;">
-                                        <div style="width:24px; height:24px; border-radius:12px; border:2.5px solid {{ $statusColor }}; overflow:hidden; background-color:#9ca3af; margin:0 auto;">
-                                            <img src="{{ $empAvatarSrc }}" width="24" height="24" style="display:block;" />
-                                        </div>
+                                    <td style="width:14px; padding:1px; text-align:center; vertical-align:middle;">
+                                        <div style="width:12px; height:12px; border-radius:6px; background-color:{{ $statusColor }}; margin:0 auto;"></div>
                                     </td>
                                     <td>{{ $emp->name }}</td>
                                     <td class="num">{{ $dateStr }}</td>
