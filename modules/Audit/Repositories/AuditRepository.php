@@ -30,6 +30,10 @@ class AuditRepository extends BaseRepository
     {
         $limit = request()->has('limit') ? request()->limit : 10;
         return Audit::query()->orderByDesc('id')
+            ->whereNotIn('auditable_type', [
+                'Modules\\Attendance\\Models\\Attendance',
+                'Modules\\Attendance\\Models\\AppliedAttendanceConstraint',
+            ])
             ->when(request()->has('user_id')&& request()->user_id !="", function ($q) {
 
                 $q->where('user_id', request()->user_id);
