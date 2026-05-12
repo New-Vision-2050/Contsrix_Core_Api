@@ -58,7 +58,7 @@ class ReportEmployeeQueryService
             return;
         }
 
-        $query->whereIn('id', $s->employeeUserIds);
+        $query->whereHas('users', fn ($q) => $q->whereIn('id', $s->employeeUserIds));
     }
 
     private function applyHierarchy(Builder $query, ReportWizardStep2DTO $s): void
