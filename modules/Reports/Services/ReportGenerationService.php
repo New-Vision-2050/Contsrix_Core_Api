@@ -162,12 +162,15 @@ class ReportGenerationService
         $mpdf->SetTitle((string) ($report->getTranslation('name', $config->step1->reportLanguage) ?? 'Report'));
         $mpdf->SetCreator('Constrix Reports');
 
+        $avatarCache = $this->buildAvatarCache($employees);
+
         $html = view('reports::pdf.report', [
-            'report'    => $report,
-            'config'    => $config,
-            'employees' => $employees,
-            'sections'  => $sections,
-            'lookups'   => $this->lookupService,
+            'report'      => $report,
+            'config'      => $config,
+            'employees'   => $employees,
+            'sections'    => $sections,
+            'lookups'     => $this->lookupService,
+            'avatarCache' => $avatarCache,
         ])->render();
 
         ini_set('pcre.backtrack_limit', '50000000');
@@ -178,6 +181,32 @@ class ReportGenerationService
             $mpdf->Output('', \Mpdf\Output\Destination::STRING_RETURN),
             'pdf'
         );
+    }
+
+    /**
+     * Resolve each employee's avatar to a base64 data URI once, keyed by global_id.
+     * Avoids mPDF making one HTTP request per <img> tag (×days per employee).
+     */
+    private function buildAvatarCache($employees): array
+    {
+        $cache = [];
+        foreach ($employees as $emp) {
+            $media = $emp->getFirstMedia('upload_user');
+            if (!$media) {
+                continue;
+            }
+            try {
+                $path = $media->getPath();
+                if (file_exists($path) && filesize($path) > 0) {
+                    $cache[(string) $emp->global_id] =
+                        'data:' . ($media->mime_type ?: 'image/jpeg') . ';base64,'
+                        . base64_encode((string) file_get_contents($path));
+                }
+            } catch (\Throwable) {
+                // leave absent — blade will fall back to placeholder
+            }
+        }
+        return $cache;
     }
 
     private function storeAsMedia(Report $report, string $contents, string $extension): Media
