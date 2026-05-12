@@ -50,7 +50,7 @@ class AuditPresenter extends AbstractPresenter
 
             $entity = $auditableClass::find($this->audit->auditable_id);
             $event = "خروج من الدوام";
-            if($entity->clock_in_time != null && $entity->clock_out_time == null){
+            if($entity && $entity->clock_in_time != null && $entity->clock_out_time == null){
                 $event = "دخول الدوام";
             }
             return "لقد سجل {$event}";
