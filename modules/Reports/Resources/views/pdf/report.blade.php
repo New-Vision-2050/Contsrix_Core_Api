@@ -144,7 +144,7 @@
                             $empDaily   = $daily[(string) $emp->global_id] ?? [];
                             $empBranch  = optional(optional($emp->userProfessionalData)->branch)->name     ?? '';
                             $empMgmt      = optional(optional($emp->userProfessionalData)->management)->name ?? '';
-                            $empAvatarSrc = $emp->getFirstMedia('upload_user')?->getFullUrl() ?? $avatarPlaceholder;
+                            $empAvatarSrc = $avatarCache[(string) $emp->global_id] ?? $avatarPlaceholder;
                             $sumDelay   = 0;
                             $sumOT      = 0;
                             $sumWorkMin = 0;
