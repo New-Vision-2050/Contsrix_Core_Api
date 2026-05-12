@@ -38,13 +38,16 @@ class AuditController extends Controller
     public function activityLog(GetAuditListRequest $request)
     {
         $list = $this->auditService->groupedByDate();
-        
+
         // Apply presenter to each audit item while maintaining date grouping
         $formattedList = [];
         foreach ($list as $date => $audits) {
-            $formattedList[$date] = AuditPresenter::collection($audits);
+            $presented = array_values(array_filter(AuditPresenter::collection($audits)));
+            if (!empty($presented)) {
+                $formattedList[$date] = $presented;
+            }
         }
-        
+
         return response([
             "code" => "SUCCESS_WITH_LIST_PAYLOAD_OBJECTS",
             "message" => null,
