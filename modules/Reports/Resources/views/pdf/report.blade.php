@@ -164,10 +164,18 @@
                                         'holiday' => '#d97706',
                                         default   => '#94a3b8',
                                     };
+                                    $rowBg = match($d['display_status'] ?? '') {
+                                        'present' => '#f0fdf4',
+                                        'absent'  => '#fef2f2',
+                                        'holiday' => '#fffbeb',
+                                        default   => '#ffffff',
+                                    };
                                 @endphp
-                                <tr @if($dIdx % 2 !== 0) class="row-alt" @endif>
+                                <tr style="background-color:{{ $rowBg }};">
                                     <td style="width:26px; padding:1px; text-align:center; vertical-align:middle;">
-                                        <div style="width:22px; height:22px; border-radius:11px; border:2.5px solid {{ $statusColor }}; background-image:url('{{ $empAvatarSrc }}'); background-size:cover; background-position:center; background-color:#9ca3af; margin:0 auto;"></div>
+                                        <div style="width:24px; height:24px; border-radius:12px; border:2.5px solid {{ $statusColor }}; overflow:hidden; background-color:#9ca3af; margin:0 auto;">
+                                            <img src="{{ $empAvatarSrc }}" width="24" height="24" style="display:block;" />
+                                        </div>
                                     </td>
                                     <td>{{ $emp->name }}</td>
                                     <td class="num">{{ $dateStr }}</td>
