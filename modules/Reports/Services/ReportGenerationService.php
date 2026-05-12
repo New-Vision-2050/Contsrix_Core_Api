@@ -184,30 +184,17 @@ class ReportGenerationService
     }
 
     /**
-     * Resolve each employee's avatar to a base64 data URI once, keyed by global_id.
-     * Avoids mPDF making one HTTP request per <img> tag (×days per employee).
+     * Pre-resolve each employee's avatar URL once, keyed by global_id.
+     * mPDF caches images by URL internally, so each unique image is downloaded
+     * only once even when the same employee appears in 31 daily rows.
      */
     private function buildAvatarCache($employees): array
     {
         $cache = [];
         foreach ($employees as $emp) {
             $media = $emp->getFirstMedia('upload_user');
-            if (!$media) {
-                continue;
-            }
-            try {
-                $contents = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
-                if ($contents) {
-                    $cache[(string) $emp->global_id] =
-                        'data:' . ($media->mime_type ?: 'image/jpeg') . ';base64,'
-                        . base64_encode($contents);
-                }
-            } catch (\Throwable $e) {
-                Log::warning('[Reports] avatar load failed', [
-                    'employee' => (string) $emp->global_id,
-                    'disk'     => $media->disk ?? 'unknown',
-                    'error'    => $e->getMessage(),
-                ]);
+            if ($media) {
+                $cache[(string) $emp->global_id] = $media->getFullUrl();
             }
         }
         return $cache;
