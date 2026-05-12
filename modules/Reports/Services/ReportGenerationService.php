@@ -162,15 +162,12 @@ class ReportGenerationService
         $mpdf->SetTitle((string) ($report->getTranslation('name', $config->step1->reportLanguage) ?? 'Report'));
         $mpdf->SetCreator('Constrix Reports');
 
-        $avatarCache = $this->buildAvatarCache($employees);
-
         $html = view('reports::pdf.report', [
-            'report'      => $report,
-            'config'      => $config,
-            'employees'   => $employees,
-            'sections'    => $sections,
-            'lookups'     => $this->lookupService,
-            'avatarCache' => $avatarCache,
+            'report'    => $report,
+            'config'    => $config,
+            'employees' => $employees,
+            'sections'  => $sections,
+            'lookups'   => $this->lookupService,
         ])->render();
 
         ini_set('pcre.backtrack_limit', '50000000');

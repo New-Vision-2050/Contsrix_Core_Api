@@ -31,7 +31,6 @@ class ReportEmployeeQueryService
                 'userProfessionalData.management',
                 'country',
                 'jobTitle',
-                'media' => fn ($q) => $q->where('collection_name', 'upload_user'),
             ])
             ->whereHas('users', fn ($q) => $q->where('company_id', tenant('id')));
 
