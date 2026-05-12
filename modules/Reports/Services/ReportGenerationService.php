@@ -196,14 +196,18 @@ class ReportGenerationService
                 continue;
             }
             try {
-                $path = $media->getPath();
-                if (file_exists($path) && filesize($path) > 0) {
+                $contents = Storage::disk($media->disk)->get($media->getPathRelativeToRoot());
+                if ($contents) {
                     $cache[(string) $emp->global_id] =
                         'data:' . ($media->mime_type ?: 'image/jpeg') . ';base64,'
-                        . base64_encode((string) file_get_contents($path));
+                        . base64_encode($contents);
                 }
-            } catch (\Throwable) {
-                // leave absent — blade will fall back to placeholder
+            } catch (\Throwable $e) {
+                Log::warning('[Reports] avatar load failed', [
+                    'employee' => (string) $emp->global_id,
+                    'disk'     => $media->disk ?? 'unknown',
+                    'error'    => $e->getMessage(),
+                ]);
             }
         }
         return $cache;
