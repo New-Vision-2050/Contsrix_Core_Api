@@ -489,7 +489,8 @@ class AttendanceConstraintController extends Controller
         $validIds = AttendanceConstraint::whereIn('id', $request->constraint_ids)
             ->where('company_id', Auth::user()->company_id)
             ->where('is_active', true)
-            ->pluck('id');
+            ->pluck('id')
+            ->all();
 
         $user->additionalAttendanceConstraints()->sync($validIds);
 
