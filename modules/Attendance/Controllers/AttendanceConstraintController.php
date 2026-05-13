@@ -453,4 +453,69 @@ class AttendanceConstraintController extends Controller
 
         return Json::success("Successfully assigned {$updated} constraints to branch");
     }
+
+    /**
+     * List all additional attendance constraints assigned to a user.
+     */
+    public function getUserAdditionalConstraints(Request $request, string $userId): JsonResponse
+    {
+        $user = \Modules\User\Models\User::findOrFail($userId);
+
+        $constraints = $user->additionalAttendanceConstraints()
+            ->where('company_id', Auth::user()->company_id)
+            ->get();
+
+        $presentedData = $constraints->map(fn($c) => (new ConstraintPresenter($c))->present())->values()->all();
+
+        return Json::items(
+            mainItems: $presentedData,
+            message: 'User additional constraints retrieved successfully'
+        );
+    }
+
+    /**
+     * Assign one or more additional attendance constraints to a user.
+     * Accepts: { "constraint_ids": ["uuid", ...] }
+     */
+    public function assignUserConstraints(Request $request, string $userId): JsonResponse
+    {
+        $request->validate([
+            'constraint_ids'   => 'required|array|min:1',
+            'constraint_ids.*' => 'required|uuid',
+        ]);
+
+        $user = \Modules\User\Models\User::findOrFail($userId);
+
+        $validIds = AttendanceConstraint::whereIn('id', $request->constraint_ids)
+            ->where('company_id', Auth::user()->company_id)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        $user->additionalAttendanceConstraints()->sync($validIds);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany(
+            (string) Auth::user()->company_id
+        );
+
+        return Json::item(
+            ['assigned_count' => $validIds->count()],
+            'Constraints assigned to user successfully'
+        );
+    }
+
+    /**
+     * Remove a specific additional attendance constraint from a user.
+     */
+    public function removeUserConstraint(Request $request, string $userId, string $constraintId): JsonResponse
+    {
+        $user = \Modules\User\Models\User::findOrFail($userId);
+
+        $user->additionalAttendanceConstraints()->detach($constraintId);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany(
+            (string) Auth::user()->company_id
+        );
+
+        return Json::item([], 'Constraint removed from user successfully');
+    }
 }

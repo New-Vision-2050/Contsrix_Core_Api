@@ -148,7 +148,8 @@ class AttendanceConstraintService
         // Get the entire configuration object for the constraint.
         $config = $constraint->constraint_config ?? [];
         if (!empty($constraint->branch_locations) || isset($config['location_rules'])) {
-            $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraint);
+            $constraintForLocation = $this->mergeAdditionalLocationsForUser($attendance, $constraint);
+            $violation = $this->locationConstraintService->validateLocationConstraint($attendance, $constraintForLocation);
             if ($violation) {
                 return $violation;
             }
@@ -605,6 +606,7 @@ class AttendanceConstraintService
             'lateness_rules'          => $timeRulesResult['lateness_rules'],
             'early_clock_in_rules'    => $timeRulesResult['early_clock_in_rules'],
             'location_work'           => $locationRulesResult,
+            'additional_locations'    => $this->buildAdditionalLocationRules($user),
             'max_over_time'           => $timeConstraint?->max_over_time,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
@@ -856,6 +858,29 @@ class AttendanceConstraintService
         ];
     }
 
+    /**
+     * Collect all allowed branch locations from the user's additional (non-main) attendance constraints.
+     * Returns an array of location objects: [{name, latitude, longitude, radius}].
+     * Used by the /attendance/user-constraint/today response so the mobile/FE knows every
+     * location the employee is allowed to clock in from.
+     */
+    private function buildAdditionalLocationRules(User $user): array
+    {
+        $user->loadMissing('additionalAttendanceConstraints');
+
+        return $user->additionalAttendanceConstraints
+            ->where('is_active', true)
+            ->flatMap(fn ($c) => collect($c->branch_locations ?? []))
+            ->map(fn ($loc) => [
+                'name'      => $loc['name'] ?? null,
+                'latitude'  => isset($loc['latitude'])  ? (float) $loc['latitude']  : null,
+                'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
+                'radius'    => isset($loc['radius'])    ? (int)   $loc['radius']    : null,
+            ])
+            ->values()
+            ->all();
+    }
+
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array
     {
         if (!$constraint || !$user->userProfessionalData?->branch_id) return null;
@@ -949,6 +974,45 @@ class AttendanceConstraintService
     private function applicableConstraintsCompanyGenerationKey(string $companyId): string
     {
         return 'attendance:constraints:ver:' . $companyId;
+    }
+
+    /**
+     * Merge branch_locations from the user's additional (non-main) attendance constraints
+     * into a clone of the main constraint so location validation sees all allowed locations.
+     * Time, shift, and all other rules remain governed by the original main constraint only.
+     */
+    private function mergeAdditionalLocationsForUser(
+        Attendance $attendance,
+        AttendanceConstraint $mainConstraint
+    ): AttendanceConstraint {
+        $userId = $attendance->user_id ?? null;
+        if (!$userId) {
+            return $mainConstraint;
+        }
+
+        $user = $attendance->relationLoaded('user')
+            ? $attendance->user
+            : User::find($userId);
+
+        if (!$user) {
+            return $mainConstraint;
+        }
+
+        $additionalLocations = $user->additionalAttendanceConstraints()
+            ->where('is_active', true)
+            ->get()
+            ->flatMap(fn($c) => $c->branch_locations ?? [])
+            ->values()
+            ->all();
+
+        if (empty($additionalLocations)) {
+            return $mainConstraint;
+        }
+
+        $cloned = clone $mainConstraint;
+        $cloned->branch_locations = array_merge($mainConstraint->branch_locations ?? [], $additionalLocations);
+
+        return $cloned;
     }
 
     private function resolveConstraintsFromDb(User $user): Collection
