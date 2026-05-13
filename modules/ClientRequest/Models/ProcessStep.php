@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\ClientRequest\Enums\ProcessStepStatus;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
-use Modules\User\Models\User;
 
 class ProcessStep extends Model
 {
@@ -26,7 +26,7 @@ class ProcessStep extends Model
         'step_id',
         'template_step_order',
         'assigned_user_id',
-        'escalation_user_id',
+        'escalation_management_hierarchy_id',
         'status',
         'action_by',
         'acted_at',
@@ -37,9 +37,9 @@ class ProcessStep extends Model
         'process_id'           => 'string',
         'step_id'              => 'integer',
         'template_step_order'  => 'integer',
-        'assigned_user_id'     => 'string',
-        'escalation_user_id'   => 'string',
-        'status'               => ProcessStepStatus::class,
+        'assigned_user_id'                        => 'string',
+        'escalation_management_hierarchy_id' => 'integer',
+        'status'                             => ProcessStepStatus::class,
         'action_by'            => 'string',
         'acted_at'             => 'datetime',
     ];
@@ -59,9 +59,9 @@ class ProcessStep extends Model
         return $this->belongsTo(User::class, 'assigned_user_id');
     }
 
-    public function escalationUser(): BelongsTo
+    public function escalationManagementHierarchy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'escalation_user_id');
+        return $this->belongsTo(ManagementHierarchy::class, 'escalation_management_hierarchy_id');
     }
 
     public function actionByUser(): BelongsTo
