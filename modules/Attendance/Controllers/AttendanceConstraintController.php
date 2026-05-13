@@ -480,7 +480,7 @@ class AttendanceConstraintController extends Controller
     public function assignUserConstraints(Request $request, string $userId): JsonResponse
     {
         $request->validate([
-            'constraint_ids'   => 'required|array|min:1',
+            'constraint_ids'   => 'required|array',
             'constraint_ids.*' => 'required|uuid',
         ]);
 
