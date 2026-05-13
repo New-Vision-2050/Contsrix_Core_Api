@@ -479,31 +479,34 @@ class AttendanceConstraintController extends Controller
      */
     public function assignUserConstraints(Request $request, string $userId): JsonResponse
     {
-        $request->validate([
-            'constraint_ids'   => 'nullable|array',
-            'constraint_ids.*' => 'nullable|uuid',
-        ]);
-
         $user = \Modules\User\Models\User::findOrFail($userId);
 
-        $constraintIds = $request->input('constraint_ids', []);
-        $validIds = empty($constraintIds)
-            ? []
-            : AttendanceConstraint::whereIn('id', $constraintIds)
+        $constraintIds = $request->input('constraint_ids');
+
+        // Handle null, non-array, or empty array
+        if ($constraintIds === null || !is_array($constraintIds) || empty($constraintIds)) {
+            // Clear all additional constraints
+            $user->additionalAttendanceConstraints()->detach();
+            $assignedCount = 0;
+        } else {
+            $validIds = AttendanceConstraint::whereIn('id', $constraintIds)
                 ->where('company_id', Auth::user()->company_id)
                 ->where('is_active', true)
                 ->pluck('id')
-                ->all();
+                ->values()
+                ->toArray();
 
-        $user->additionalAttendanceConstraints()->sync($validIds);
+            $user->additionalAttendanceConstraints()->sync($validIds);
+            $assignedCount = count($validIds);
+        }
 
         $this->constraintService->bumpApplicableConstraintsCacheForCompany(
             (string) Auth::user()->company_id
         );
 
         return Json::item(
-            ['assigned_count' => count($validIds)],
-            'Constraints assigned to user successfully'
+            ['assigned_count' => $assignedCount],
+            message: 'Constraints assigned to user successfully'
         );
     }
 
