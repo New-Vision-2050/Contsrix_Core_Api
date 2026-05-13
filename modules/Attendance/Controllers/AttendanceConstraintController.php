@@ -490,8 +490,6 @@ class AttendanceConstraintController extends Controller
             $assignedCount = 0;
         } else {
             $validIds = AttendanceConstraint::whereIn('id', $constraintIds)
-                ->where('company_id', Auth::user()->company_id)
-                ->where('is_active', true)
                 ->pluck('id')
                 ->values()
                 ->toArray();
