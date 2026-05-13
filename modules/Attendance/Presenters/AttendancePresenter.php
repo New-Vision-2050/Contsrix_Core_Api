@@ -63,9 +63,9 @@ class AttendancePresenter extends AbstractPresenter
 //            'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
 
 
-            'total_work_hours' => $this->computeLiveWorkHours(),
-            'total_break_hours' => $this->computeLiveBreakHours(),
-            'overtime_hours' => $this->attendance->overtime_hours,
+            'total_work_hours' => HoursFormatter::fromHours($this->computeLiveWorkHours()),
+            'total_break_hours' => HoursFormatter::fromHours($this->computeLiveBreakHours()),
+            'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
 
             // Status flags
             'is_late' => (int)$this->attendance->is_late,
