@@ -12,7 +12,6 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
-use Modules\User\Models\User;
 
 class ProcedureSettingStep extends Model
 {
@@ -42,7 +41,7 @@ class ProcedureSettingStep extends Model
         'approval_within_hours',
         'notify_by_email',
         'notify_by_whatsapp',
-        'escalation_user_id',
+        'escalation_management_hierarchy_id',
         'step_order',
     ];
 
@@ -58,8 +57,8 @@ class ProcedureSettingStep extends Model
         'approval_within_hours'           => 'integer',
         'notify_by_email'                 => 'boolean',
         'notify_by_whatsapp'              => 'boolean',
-        'escalation_user_id'              => 'string',
-        'step_order'                      => 'integer',
+        'escalation_management_hierarchy_id' => 'integer',
+        'step_order'                         => 'integer',
     ];
 
     public function getRelationshipToPrimaryModel(): string
@@ -87,9 +86,9 @@ class ProcedureSettingStep extends Model
         return $this->belongsTo(ManagementHierarchy::class, 'management_id');
     }
 
-    public function escalationUser(): BelongsTo
+    public function escalationManagementHierarchy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'escalation_user_id');
+        return $this->belongsTo(ManagementHierarchy::class, 'escalation_management_hierarchy_id');
     }
 
     public function actionTakers(): HasMany
@@ -97,8 +96,8 @@ class ProcedureSettingStep extends Model
         return $this->hasMany(ProcedureSettingStepActionTaker::class, 'procedure_setting_step_id');
     }
 
-    public function concernedUsers(): HasMany
+    public function concernedManagementHierarchies(): HasMany
     {
-        return $this->hasMany(ProcedureSettingStepConcernedUser::class, 'procedure_setting_step_id');
+        return $this->hasMany(ProcedureSettingStepConcernedManagementHierarchy::class, 'procedure_setting_step_id');
     }
 }

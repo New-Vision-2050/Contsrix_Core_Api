@@ -110,7 +110,7 @@ class UpdateProcedureSettingStepRequest extends FormRequest
             'notify_by_email'    => 'sometimes|boolean',
             'notify_by_whatsapp' => 'sometimes|boolean',
 
-            'escalation_user_id' => 'sometimes|nullable|uuid|exists:users,id',
+            'escalation_management_hierarchy_id' => 'sometimes|nullable|integer|exists:management_hierarchies,id',
 
             'step_order' => 'sometimes|nullable|integer|min:0',
 
@@ -123,8 +123,8 @@ class UpdateProcedureSettingStepRequest extends FormRequest
                 ),
             ],
             'action_taker_user_ids.*' => 'uuid|exists:users,id',
-            'concerned_user_ids'      => 'sometimes|array',
-            'concerned_user_ids.*'    => 'uuid|exists:users,id',
+            'concerned_management_hierarchy_ids'  => 'sometimes|array',
+            'concerned_management_hierarchy_ids.*' => 'integer|exists:management_hierarchies,id',
         ];
     }
 

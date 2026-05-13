@@ -26,7 +26,7 @@ class CreateProcedureSettingRequest extends FormRequest
             'deadline_hours' => 'nullable|integer|min:0',
             'time_limit_days' => 'nullable|integer|min:0',
             'time_limit_hours' => 'nullable|integer|min:0',
-            'escalation_user_id' => 'nullable|uuid|exists:users,id',
+            'escalation_management_hierarchy_id' => 'nullable|integer|exists:management_hierarchies,id',
             'work_flow_id'       => 'required|uuid|exists:work_flows,id',
         ];
     }
@@ -81,7 +81,7 @@ class CreateProcedureSettingRequest extends FormRequest
             percentage:   isset($v['percentage']) ? (float) $v['percentage'] : 0.0,
             deadline_days: isset($v['deadline_days']) ? (int) $v['deadline_days'] : null,
             deadline_hours: isset($v['deadline_hours']) ? (int) $v['deadline_hours'] : null,
-            escalation_user_id: isset($v['escalation_user_id']) ? (string) $v['escalation_user_id'] : null,
+            escalation_management_hierarchy_id: isset($v['escalation_management_hierarchy_id']) ? (int) $v['escalation_management_hierarchy_id'] : null,
             work_flow_id: isset($v['work_flow_id']) ? (string) $v['work_flow_id'] : null,
         );
     }

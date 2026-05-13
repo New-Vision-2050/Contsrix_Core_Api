@@ -73,10 +73,10 @@ class ClientRequestWorkflowService
                     continue;
                 }
                 $snapshots[] = [
-                    'step_id'               => $step->id,
-                    'template_step_order'   => $step->step_order,
-                    'assigned_user_id'      => $assignedUserId,
-                    'escalation_user_id'    => $step->escalation_user_id,
+                    'step_id'                            => $step->id,
+                    'template_step_order'                => $step->step_order,
+                    'assigned_user_id'                   => $assignedUserId,
+                    'escalation_management_hierarchy_id' => $step->escalation_management_hierarchy_id,
                 ];
             }
 
@@ -365,17 +365,17 @@ class ClientRequestWorkflowService
     }
 
     /**
-     * @param array{step_id: int, template_step_order: ?int, assigned_user_id: string, escalation_user_id: ?string} $row
+     * @param array{step_id: int, template_step_order: ?int, assigned_user_id: string, escalation_management_hierarchy_id: ?int} $row
      */
     private function createProcessStepFromSnapshot(Process $process, array $row): ProcessStep
     {
         return ProcessStep::query()->create([
-            'process_id'          => $process->id,
-            'step_id'             => $row['step_id'],
-            'template_step_order' => $row['template_step_order'],
-            'assigned_user_id'    => $row['assigned_user_id'],
-            'escalation_user_id'  => $row['escalation_user_id'],
-            'status'              => ProcessStepStatus::Pending,
+            'process_id'                         => $process->id,
+            'step_id'                            => $row['step_id'],
+            'template_step_order'                => $row['template_step_order'],
+            'assigned_user_id'                   => $row['assigned_user_id'],
+            'escalation_management_hierarchy_id' => $row['escalation_management_hierarchy_id'],
+            'status'                             => ProcessStepStatus::Pending,
         ]);
     }
 
