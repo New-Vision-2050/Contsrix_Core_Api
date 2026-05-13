@@ -480,8 +480,8 @@ class AttendanceConstraintController extends Controller
     public function assignUserConstraints(Request $request, string $userId): JsonResponse
     {
         $request->validate([
-            'constraint_ids'   => 'sometimes|array',
-            'constraint_ids.*' => 'required|uuid',
+            'constraint_ids'   => 'nullable|array',
+            'constraint_ids.*' => 'nullable|uuid',
         ]);
 
         $user = \Modules\User\Models\User::findOrFail($userId);
@@ -502,7 +502,7 @@ class AttendanceConstraintController extends Controller
         );
 
         return Json::item(
-            ['assigned_count' => $validIds->count()],
+            ['assigned_count' => count($validIds)],
             'Constraints assigned to user successfully'
         );
     }
