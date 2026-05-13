@@ -27,8 +27,8 @@ class ProcedureSettingPresenter extends AbstractPresenter
             'percentage'   => $this->procedureSetting->percentage,
             'deadline_days'  => $this->procedureSetting->deadline_days,
             'deadline_hours' => $this->procedureSetting->deadline_hours,
-            'escalation_user_id' => $this->procedureSetting->escalation_user_id,
-            'escalation_user'    => $this->escalationUserPayload(),
+            'escalation_management_hierarchy_id' => $this->procedureSetting->escalation_management_hierarchy_id,
+            'escalation_management_hierarchy'    => $this->escalationManagementHierarchyPayload(),
             'work_flow_id'       => $this->procedureSetting->work_flow_id,
             'work_flow'          => $this->workFlowPayload(),
         ];
@@ -42,25 +42,25 @@ class ProcedureSettingPresenter extends AbstractPresenter
         return $data;
     }
 
-    private function escalationUserPayload(): ?array
+    private function escalationManagementHierarchyPayload(): ?array
     {
-        if ($this->procedureSetting->escalation_user_id === null) {
+        if ($this->procedureSetting->escalation_management_hierarchy_id === null) {
             return null;
         }
 
-        $user = $this->procedureSetting->relationLoaded('escalationUser')
-            ? $this->procedureSetting->escalationUser
-            : $this->procedureSetting->escalationUser()->first(['id', 'name', 'email', 'phone']);
+        $mh = $this->procedureSetting->relationLoaded('escalationManagementHierarchy')
+            ? $this->procedureSetting->escalationManagementHierarchy
+            : $this->procedureSetting->escalationManagementHierarchy()->first(['id', 'name', 'type', 'company_id']);
 
-        if ($user === null) {
+        if ($mh === null) {
             return null;
         }
 
         return [
-            'id'    => $user->id,
-            'name'  => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
+            'id'         => $mh->id,
+            'name'       => $mh->name,
+            'type'       => $mh->type,
+            'company_id' => $mh->company_id ?? null,
         ];
     }
 

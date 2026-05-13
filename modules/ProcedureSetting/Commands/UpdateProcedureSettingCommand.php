@@ -42,7 +42,7 @@ class UpdateProcedureSettingCommand
             'percentage',
             'deadline_days',
             'deadline_hours',
-            'escalation_user_id',
+            'escalation_management_hierarchy_id',
             'work_flow_id',
         ];
 
@@ -62,8 +62,8 @@ class UpdateProcedureSettingCommand
             $data[$intKey] = (int) $data[$intKey];
         }
 
-        if (array_key_exists('escalation_user_id', $data) && $data['escalation_user_id'] !== null) {
-            $data['escalation_user_id'] = (string) $data['escalation_user_id'];
+        if (array_key_exists('escalation_management_hierarchy_id', $data) && $data['escalation_management_hierarchy_id'] !== null) {
+            $data['escalation_management_hierarchy_id'] = (int) $data['escalation_management_hierarchy_id'];
         }
 
         if (array_key_exists('work_flow_id', $data) && $data['work_flow_id'] !== null) {

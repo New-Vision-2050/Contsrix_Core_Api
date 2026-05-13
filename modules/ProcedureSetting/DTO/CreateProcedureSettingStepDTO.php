@@ -7,8 +7,8 @@ namespace Modules\ProcedureSetting\DTO;
 class CreateProcedureSettingStepDTO
 {
     /**
-     * @param list<string>|null $action_taker_user_ids
-     * @param list<string>|null $concerned_user_ids
+     * @param list<string>|null $action_taker_management_user_ids
+     * @param list<int>|null    $concerned_management_hierarchy_ids
      */
     public function __construct(
         public readonly string $procedure_setting_id,
@@ -25,10 +25,10 @@ class CreateProcedureSettingStepDTO
         public readonly ?int $approval_within_hours = null,
         public readonly bool $notify_by_email = false,
         public readonly bool $notify_by_whatsapp = false,
-        public readonly ?string $escalation_user_id = null,
+        public readonly ?int $escalation_management_hierarchy_id = null,
         public readonly ?int $step_order = null,
-        public readonly ?array $action_taker_user_ids = null,
-        public readonly ?array $concerned_user_ids = null,
+        public readonly ?array $action_taker_management_user_ids = null,
+        public readonly ?array $concerned_management_hierarchy_ids = null,
     ) {
     }
 
@@ -52,15 +52,15 @@ class CreateProcedureSettingStepDTO
             'approval_within_hours'           => $this->approval_within_hours,
             'notify_by_email'                  => $this->notify_by_email,
             'notify_by_whatsapp'               => $this->notify_by_whatsapp,
-            'escalation_user_id'               => $this->escalation_user_id,
-            'step_order'                       => $this->step_order,
+            'escalation_management_hierarchy_id' => $this->escalation_management_hierarchy_id,
+            'step_order'                         => $this->step_order,
         ];
 
-        if ($this->action_taker_user_ids !== null) {
-            $data['action_taker_user_ids'] = $this->action_taker_user_ids;
+        if ($this->action_taker_management_user_ids !== null) {
+            $data['action_taker_management_user_ids'] = $this->action_taker_management_user_ids;
         }
-        if ($this->concerned_user_ids !== null) {
-            $data['concerned_user_ids'] = $this->concerned_user_ids;
+        if ($this->concerned_management_hierarchy_ids !== null) {
+            $data['concerned_management_hierarchy_ids'] = $this->concerned_management_hierarchy_ids;
         }
 
         return $data;
