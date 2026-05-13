@@ -480,17 +480,20 @@ class AttendanceConstraintController extends Controller
     public function assignUserConstraints(Request $request, string $userId): JsonResponse
     {
         $request->validate([
-            'constraint_ids'   => 'required|array',
+            'constraint_ids'   => 'sometimes|array',
             'constraint_ids.*' => 'required|uuid',
         ]);
 
         $user = \Modules\User\Models\User::findOrFail($userId);
 
-        $validIds = AttendanceConstraint::whereIn('id', $request->constraint_ids)
-            ->where('company_id', Auth::user()->company_id)
-            ->where('is_active', true)
-            ->pluck('id')
-            ->all();
+        $constraintIds = $request->input('constraint_ids', []);
+        $validIds = empty($constraintIds)
+            ? []
+            : AttendanceConstraint::whereIn('id', $constraintIds)
+                ->where('company_id', Auth::user()->company_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->all();
 
         $user->additionalAttendanceConstraints()->sync($validIds);
 
