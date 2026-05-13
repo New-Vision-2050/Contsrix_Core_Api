@@ -287,6 +287,17 @@ class User extends Authenticatable implements JWTSubject, Auditable
     {
         return $this->hasOne(UserProfessionalData::class, 'user_id', 'id')->withoutTenancy();
     }
+
+    public function additionalAttendanceConstraints(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(
+            \Modules\Attendance\Models\AttendanceConstraint::class,
+            'attendance_constraint_user',
+            'user_id',
+            'attendance_constraint_id'
+        );
+    }
+
     /**
      * Get all companies for this user using hasManyThrough relationship
      * User -> CompanyUserCompany (pivot) -> Company

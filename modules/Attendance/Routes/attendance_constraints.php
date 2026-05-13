@@ -109,6 +109,21 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         // ->middleware('permission:view_attendance_constraints')
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
         ->name('attendance.constraints.show');
+
+    // Per-user additional constraint management
+    Route::prefix('/users/{userId}/additional')->group(function () {
+        Route::get('/', [AttendanceConstraintController::class, 'getUserAdditionalConstraints'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+            ->name('attendance.constraints.user.additional.index');
+
+        Route::post('/', [AttendanceConstraintController::class, 'assignUserConstraints'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+            ->name('attendance.constraints.user.additional.assign');
+
+        Route::delete('/{constraintId}', [AttendanceConstraintController::class, 'removeUserConstraint'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+            ->name('attendance.constraints.user.additional.remove');
+    });
 });
 
 /*
