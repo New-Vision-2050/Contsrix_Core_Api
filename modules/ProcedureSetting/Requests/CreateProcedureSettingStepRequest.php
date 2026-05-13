@@ -64,12 +64,12 @@ class CreateProcedureSettingStepRequest extends FormRequest
 
             'step_order' => 'nullable|integer|min:0',
 
-            'action_taker_management_user_ids'   => [
+            'action_taker_user_ids'   => [
                 'nullable',
                 'array',
                 new ActionTakerUserIdsUniquePerProcedureSetting((string) $this->route('procedureSettingId')),
             ],
-            'action_taker_management_user_ids.*'  => 'uuid|exists:users,id',
+            'action_taker_user_ids.*' => 'uuid|exists:users,id',
             'concerned_management_hierarchy_ids'  => 'nullable|array',
             'concerned_management_hierarchy_ids.*' => 'integer|exists:management_hierarchies,id',
         ];
@@ -103,7 +103,7 @@ class CreateProcedureSettingStepRequest extends FormRequest
             notify_by_whatsapp:   (bool) ($v['notify_by_whatsapp'] ?? false),
             escalation_management_hierarchy_id: isset($v['escalation_management_hierarchy_id']) ? (int) $v['escalation_management_hierarchy_id'] : null,
             step_order:            isset($v['step_order']) ? (int) $v['step_order'] : null,
-            action_taker_management_user_ids: $v['action_taker_management_user_ids'] ?? null,
+            action_taker_user_ids: $v['action_taker_user_ids'] ?? null,
             concerned_management_hierarchy_ids: $v['concerned_management_hierarchy_ids'] ?? null,
         );
     }

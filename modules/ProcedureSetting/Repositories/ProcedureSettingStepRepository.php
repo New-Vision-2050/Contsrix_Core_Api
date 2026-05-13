@@ -93,12 +93,12 @@ class ProcedureSettingStepRepository extends BaseRepository
      */
     private function splitUserSyncPayload(array $data): array
     {
-        $syncAction = array_key_exists('action_taker_management_user_ids', $data);
+        $syncAction = array_key_exists('action_taker_user_ids', $data);
         $syncConcerned = array_key_exists('concerned_management_hierarchy_ids', $data);
-        $actionIds = $data['action_taker_management_user_ids'] ?? null;
+        $actionIds = $data['action_taker_user_ids'] ?? null;
         $concernedIds = $data['concerned_management_hierarchy_ids'] ?? null;
 
-        unset($data['action_taker_management_user_ids'], $data['concerned_management_hierarchy_ids']);
+        unset($data['action_taker_user_ids'], $data['concerned_management_hierarchy_ids']);
 
         return [$syncAction, $syncConcerned, $actionIds, $concernedIds, $data];
     }
