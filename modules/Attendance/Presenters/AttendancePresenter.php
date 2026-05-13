@@ -63,8 +63,8 @@ class AttendancePresenter extends AbstractPresenter
 //            'overtime_hours' => HoursFormatter::fromDecimalString($this->attendance->overtime_hours),
 
 
-            'total_work_hours' => $this->attendance->total_work_hours,
-            'total_break_hours' => $this->attendance->total_break_hours,
+            'total_work_hours' => $this->computeLiveWorkHours(),
+            'total_break_hours' => $this->computeLiveBreakHours(),
             'overtime_hours' => $this->attendance->overtime_hours,
 
             // Status flags
@@ -127,8 +127,8 @@ class AttendancePresenter extends AbstractPresenter
             'is_on_break' => $this->attendance->isOnBreak(),
             'is_clocked_in' => (int)$this->attendance->isActive(),
             // Backwards-compatible aliases ("Xh Ym" style) for clients that already rely on them.
-            'duration_formatted' => $this->formatDurationHm((float)$this->attendance->total_work_hours),
-            'break_duration_formatted' => $this->formatDurationHm((float)$this->attendance->total_break_hours),
+            'duration_formatted' => $this->formatDurationHm($this->computeLiveWorkHours()),
+            'break_duration_formatted' => $this->formatDurationHm($this->computeLiveBreakHours()),
             'overtime_formatted' => $this->formatDurationHm((float)$this->attendance->overtime_hours),
             'day_status' => __('validation.day_status.' . $this->attendance->day_status),
             'professional_data' => $this->attendance->user?->professionalData ? [
@@ -148,6 +148,65 @@ class AttendancePresenter extends AbstractPresenter
         ];
     }
 
+
+    /**
+     * For active sessions (clocked in, not yet clocked out) return real-time elapsed
+     * work hours so the status endpoint shows meaningful progress instead of 0.00.
+     * For completed sessions return the persisted value calculated at clock-out.
+     */
+    private function computeLiveWorkHours(): float
+    {
+        if ($this->attendance->clock_out_time !== null || $this->attendance->clock_in_time === null) {
+            return (float) $this->attendance->total_work_hours;
+        }
+
+        $timezone      = $this->attendance->timezone ?: config('app.timezone') ?: 'UTC';
+        $clockIn       = \Carbon\CarbonImmutable::parse($this->attendance->clock_in_time, $timezone);
+        $now           = \Carbon\CarbonImmutable::now($timezone);
+        $grossMinutes  = max(0, (int) $clockIn->diffInMinutes($now, false));
+
+        $completedBreakMinutes = (int) $this->attendance->breaks()
+            ->whereNotNull('end_time')
+            ->sum('duration_minutes');
+
+        $activeBreak = $this->attendance->activeBreak();
+        $activeBreakMinutes = 0;
+        if ($activeBreak && $activeBreak->start_time) {
+            $activeBreakStart   = \Carbon\CarbonImmutable::parse($activeBreak->start_time, $timezone);
+            $activeBreakMinutes = max(0, (int) $activeBreakStart->diffInMinutes($now, false));
+        }
+
+        $netMinutes = max(0, $grossMinutes - $completedBreakMinutes - $activeBreakMinutes);
+
+        return round($netMinutes / 60, 2);
+    }
+
+    /**
+     * For active sessions return real-time elapsed break hours (completed + active break).
+     * For completed sessions return the persisted value.
+     */
+    private function computeLiveBreakHours(): float
+    {
+        if ($this->attendance->clock_out_time !== null || $this->attendance->clock_in_time === null) {
+            return (float) $this->attendance->total_break_hours;
+        }
+
+        $timezone = $this->attendance->timezone ?: config('app.timezone') ?: 'UTC';
+
+        $completedBreakMinutes = (int) $this->attendance->breaks()
+            ->whereNotNull('end_time')
+            ->sum('duration_minutes');
+
+        $activeBreak = $this->attendance->activeBreak();
+        $activeBreakMinutes = 0;
+        if ($activeBreak && $activeBreak->start_time) {
+            $now                = \Carbon\CarbonImmutable::now($timezone);
+            $activeBreakStart   = \Carbon\CarbonImmutable::parse($activeBreak->start_time, $timezone);
+            $activeBreakMinutes = max(0, (int) $activeBreakStart->diffInMinutes($now, false));
+        }
+
+        return round(($completedBreakMinutes + $activeBreakMinutes) / 60, 2);
+    }
 
     /**
      * Format breaks data for the response
