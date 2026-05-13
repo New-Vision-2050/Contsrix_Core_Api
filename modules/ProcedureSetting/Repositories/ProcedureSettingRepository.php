@@ -38,10 +38,10 @@ class ProcedureSettingRepository extends BaseRepository
         return $this->model->with([
             'steps.branch',
             'steps.management',
-            'steps.escalationUser:id,name,email,phone',
+            'steps.escalationManagementHierarchy:id,name,type,company_id',
             'steps.actionTakers.user',
-            'steps.concernedUsers.user',
-            'escalationUser:id,name,email,phone',
+            'steps.concernedManagementHierarchies.managementHierarchy',
+            'escalationManagementHierarchy:id,name,type,company_id',
             'workFlow:id,name,company_id',
         ])->findOrFail($id->toString());
     }
@@ -59,7 +59,7 @@ class ProcedureSettingRepository extends BaseRepository
         }
 
         $model = $this->create($data);
-        $model->load(['escalationUser:id,name,email,phone', 'workFlow:id,name']);
+        $model->load(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name']);
 
         return $model;
     }
@@ -71,7 +71,7 @@ class ProcedureSettingRepository extends BaseRepository
     {
         return $this->model->newQuery()
             ->where($conditions)
-            ->with(['escalationUser:id,name,email,phone', 'workFlow:id,name'])
+            ->with(['escalationManagementHierarchy:id,name,type,company_id', 'workFlow:id,name'])
             ->orderBy($orderBy, $sortBy)
             ->get();
     }
@@ -86,7 +86,7 @@ class ProcedureSettingRepository extends BaseRepository
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationUser:id,name,email,phone',
+                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
                 'procedureSettings.workFlow:id,name,company_id',
             ]);
 
@@ -132,7 +132,7 @@ class ProcedureSettingRepository extends BaseRepository
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationUser:id,name,email,phone',
+                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
                 'procedureSettings.workFlow:id,name,company_id',
             ])
             ->where('type', ProcedureSettingType::ClientRequest->value);
@@ -155,7 +155,7 @@ class ProcedureSettingRepository extends BaseRepository
         $query = WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationUser:id,name,email,phone',
+                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
                 'procedureSettings.workFlow:id,name,company_id',
             ])
             ->where('type', $type)
@@ -228,7 +228,7 @@ class ProcedureSettingRepository extends BaseRepository
             return WorkFlow::query()
                 ->with([
                     'managementHierarchies:id,name,type,company_id',
-                    'procedureSettings.escalationUser:id,name,email,phone',
+                    'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
                     'procedureSettings.workFlow:id,name,company_id',
                 ])
                 ->where('company_id', $companyId)
@@ -244,7 +244,7 @@ class ProcedureSettingRepository extends BaseRepository
         return WorkFlow::query()
             ->with([
                 'managementHierarchies:id,name,type,company_id',
-                'procedureSettings.escalationUser:id,name,email,phone',
+                'procedureSettings.escalationManagementHierarchy:id,name,type,company_id',
                 'procedureSettings.workFlow:id,name,company_id',
             ])
             ->where('company_id', $companyId)

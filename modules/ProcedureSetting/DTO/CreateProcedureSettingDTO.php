@@ -14,7 +14,7 @@ class CreateProcedureSettingDTO
         public readonly float $percentage = 0,
         public readonly ?int $deadline_days = null,
         public readonly ?int $deadline_hours = null,
-        public readonly ?string $escalation_user_id = null,
+        public readonly ?int $escalation_management_hierarchy_id = null,
         public readonly ?string $work_flow_id = null,
     ) {
     }
@@ -29,7 +29,7 @@ class CreateProcedureSettingDTO
             'percentage'   => $this->percentage,
             'deadline_days'  => $this->deadline_days,
             'deadline_hours' => $this->deadline_hours,
-            'escalation_user_id' => $this->escalation_user_id,
+            'escalation_management_hierarchy_id' => $this->escalation_management_hierarchy_id,
             'work_flow_id'       => $this->work_flow_id,
         ];
     }

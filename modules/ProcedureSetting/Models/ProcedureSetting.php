@@ -11,7 +11,7 @@ use Modules\ProcedureSetting\Database\factories\ProcedureSettingFactory;
 use BasePackage\Shared\Traits\BaseFilterable;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 use Modules\Company\CompanyCore\Models\Company;
-use Modules\User\Models\User;
+use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
 
 class ProcedureSetting extends Model
 {
@@ -34,7 +34,7 @@ class ProcedureSetting extends Model
         'percentage',
         'deadline_days',
         'deadline_hours',
-        'escalation_user_id',
+        'escalation_management_hierarchy_id',
         'company_id',
         'work_flow_id',
     ];
@@ -44,8 +44,8 @@ class ProcedureSetting extends Model
         'percentage' => 'float',
         'deadline_days' => 'integer',
         'deadline_hours' => 'integer',
-        'escalation_user_id' => 'string',
-        'work_flow_id'       => 'string',
+        'escalation_management_hierarchy_id' => 'integer',
+        'work_flow_id'                       => 'string',
     ];
 
     public function getRelationshipToPrimaryModel(): string
@@ -68,9 +68,9 @@ class ProcedureSetting extends Model
         return $this->hasMany(ProcedureSettingStep::class, 'procedure_setting_id');
     }
 
-    public function escalationUser()
+    public function escalationManagementHierarchy()
     {
-        return $this->belongsTo(User::class, 'escalation_user_id');
+        return $this->belongsTo(ManagementHierarchy::class, 'escalation_management_hierarchy_id');
     }
 
     public function workFlow()

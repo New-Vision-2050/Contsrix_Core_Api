@@ -8,7 +8,7 @@ use BasePackage\Shared\Repositories\BaseRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\ProcedureSetting\Models\ProcedureSettingStepActionTaker;
-use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedUser;
+use Modules\ProcedureSetting\Models\ProcedureSettingStepConcernedManagementHierarchy;
 
 /**
  * @property ProcedureSettingStep $model
@@ -19,9 +19,9 @@ class ProcedureSettingStepRepository extends BaseRepository
     private const STEP_WITH = [
         'branch',
         'management',
-        'escalationUser',
+        'escalationManagementHierarchy',
         'actionTakers.user',
-        'concernedUsers.user',
+        'concernedManagementHierarchies.managementHierarchy',
     ];
 
     public function __construct(ProcedureSettingStep $model)
@@ -56,7 +56,7 @@ class ProcedureSettingStepRepository extends BaseRepository
             $this->replaceActionTakers($model, (array) $actionIds);
         }
         if ($syncConcerned) {
-            $this->replaceConcernedUsers($model, (array) $concernedIds);
+            $this->replaceConcernedManagementHierarchies($model, (array) $concernedIds);
         }
 
         return $model->load(self::STEP_WITH);
@@ -76,7 +76,7 @@ class ProcedureSettingStepRepository extends BaseRepository
             $this->replaceActionTakers($model, (array) $actionIds);
         }
         if ($syncConcerned) {
-            $this->replaceConcernedUsers($model, (array) $concernedIds);
+            $this->replaceConcernedManagementHierarchies($model, (array) $concernedIds);
         }
 
         return true;
@@ -93,12 +93,12 @@ class ProcedureSettingStepRepository extends BaseRepository
      */
     private function splitUserSyncPayload(array $data): array
     {
-        $syncAction = array_key_exists('action_taker_user_ids', $data);
-        $syncConcerned = array_key_exists('concerned_user_ids', $data);
-        $actionIds = $data['action_taker_user_ids'] ?? null;
-        $concernedIds = $data['concerned_user_ids'] ?? null;
+        $syncAction = array_key_exists('action_taker_management_user_ids', $data);
+        $syncConcerned = array_key_exists('concerned_management_hierarchy_ids', $data);
+        $actionIds = $data['action_taker_management_user_ids'] ?? null;
+        $concernedIds = $data['concerned_management_hierarchy_ids'] ?? null;
 
-        unset($data['action_taker_user_ids'], $data['concerned_user_ids']);
+        unset($data['action_taker_management_user_ids'], $data['concerned_management_hierarchy_ids']);
 
         return [$syncAction, $syncConcerned, $actionIds, $concernedIds, $data];
     }
@@ -118,16 +118,16 @@ class ProcedureSettingStepRepository extends BaseRepository
         }
     }
 
-    private function replaceConcernedUsers(ProcedureSettingStep $step, array $userIds): void
+    private function replaceConcernedManagementHierarchies(ProcedureSettingStep $step, array $managementHierarchyIds): void
     {
-        ProcedureSettingStepConcernedUser::query()
+        ProcedureSettingStepConcernedManagementHierarchy::query()
             ->where('procedure_setting_step_id', $step->id)
             ->delete();
 
-        foreach (array_unique(array_values(array_filter($userIds, static fn ($id) => is_string($id) && $id !== ''))) as $userId) {
-            ProcedureSettingStepConcernedUser::query()->create([
+        foreach (array_unique(array_values(array_filter($managementHierarchyIds, static fn ($id) => is_int($id) && $id > 0))) as $mhId) {
+            ProcedureSettingStepConcernedManagementHierarchy::query()->create([
                 'procedure_setting_step_id' => $step->id,
-                'user_id'                   => $userId,
+                'management_hierarchy_id'   => $mhId,
                 'company_id'                => $step->company_id,
             ]);
         }
