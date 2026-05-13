@@ -606,6 +606,7 @@ class AttendanceConstraintService
             'lateness_rules'          => $timeRulesResult['lateness_rules'],
             'early_clock_in_rules'    => $timeRulesResult['early_clock_in_rules'],
             'location_work'           => $locationRulesResult,
+            'additional_locations'    => $this->buildAdditionalLocationRules($user),
             'max_over_time'           => $timeConstraint?->max_over_time,
             'source_constraint_ids'   => [
                 'time' => $timeConstraint?->id,
@@ -855,6 +856,29 @@ class AttendanceConstraintService
             'second_next_period' => $secondNextPeriod,
             'fallback_period' => $fallbackPeriod,
         ];
+    }
+
+    /**
+     * Collect all allowed branch locations from the user's additional (non-main) attendance constraints.
+     * Returns an array of location objects: [{name, latitude, longitude, radius}].
+     * Used by the /attendance/user-constraint/today response so the mobile/FE knows every
+     * location the employee is allowed to clock in from.
+     */
+    private function buildAdditionalLocationRules(User $user): array
+    {
+        $user->loadMissing('additionalAttendanceConstraints');
+
+        return $user->additionalAttendanceConstraints
+            ->where('is_active', true)
+            ->flatMap(fn ($c) => collect($c->branch_locations ?? []))
+            ->map(fn ($loc) => [
+                'name'      => $loc['name'] ?? null,
+                'latitude'  => isset($loc['latitude'])  ? (float) $loc['latitude']  : null,
+                'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
+                'radius'    => isset($loc['radius'])    ? (int)   $loc['radius']    : null,
+            ])
+            ->values()
+            ->all();
     }
 
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array

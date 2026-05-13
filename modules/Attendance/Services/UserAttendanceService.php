@@ -499,6 +499,7 @@ class UserAttendanceService
                 'longitude' => $locationWork['longitude'] ?? null,
                 'radius' => $locationWork['radius'] ?? null,
             ] : null,
+            'additional_locations' => $workRules['additional_locations'] ?? [],
         ];
     }
 

@@ -36,6 +36,7 @@
     - [INV-17](#inv-17-gettodaysworkrulesforuser-must-use-the-current-time-on-today-never-midnight): `getTodaysWorkRulesForUser` must use current time on today — never midnight from a bare date string
     - [INV-18](#inv-18-re-clock-in-lateness-anchor-must-filter-previous-attendances-by-scheduled-period): Re-clock-in lateness anchor must filter previous rows by scheduled period (`start_time` + `end_time`), not by date alone
     - [INV-19](#inv-19-lateness-grace-lookup-reads-per-day-rules-from-weekly_scheduledaylateness_rules): Lateness grace-period lookup must read per-day rules from `weekly_schedule.{day}.lateness_rules`, not `time_rules.lateness_rules`
+    - [INV-20](#inv-20-additional_locations-in-user-constrainttoday--mirrors-the-location-validation-used-at-clock-in): `additional_locations` in `user-constraint/today` — mirrors the location validation used at clock-in
 
 ---
 
@@ -1831,3 +1832,53 @@ if (empty($rules)) {
 }
 ```
 Day name must be derived from the attendance's `start_time` in the branch TZ — not `now()` — so a row clocked in just after midnight on a shift that extends from the previous day still reads the correct day's rules. Any other consumer that reads `lateness_rules` (e.g. snapshot-based readers in `AttendanceService::buildCalculatorInput()` and `ProcessClockInAttendanceData`) must follow the same resolution.
+
+### INV-20: `additional_locations` in `user-constraint/today` — mirrors the location validation used at clock-in
+
+#### What it is
+`GET /attendance/user-constraint/today` returns a `work_rules` object. Alongside `location_work` (the user's primary branch location from their main constraint), the response now includes `additional_locations` — an **array** of extra allowed locations drawn from every active constraint in the user's `attendance_constraint_user` pivot table.
+
+**Example response shape:**
+```json
+{
+  "work_rules": {
+    "location_work": {
+      "name": "فرع مصر",
+      "latitude": 30.059123,
+      "longitude": 31.356976,
+      "radius": 1000
+    },
+    "additional_locations": [
+      {
+        "name": "فرع الإسكندرية",
+        "latitude": 31.200096,
+        "longitude": 29.918739,
+        "radius": 500
+      }
+    ]
+  }
+}
+```
+
+`additional_locations` is always present (empty array `[]` when the user has no additional constraints).
+
+#### How location validation works at clock-in
+`AttendanceConstraintService::validateSingleConstraint()` calls `mergeAdditionalLocationsForUser()` **before** passing the constraint to `LocationConstraintService::validateLocationConstraint()`. This method:
+1. Loads the user's `additionalAttendanceConstraints` (via the `attendance_constraint_user` pivot).
+2. Collects all `branch_locations` arrays from every active additional constraint.
+3. Merges them with the main constraint's `branch_locations` into a **cloned** constraint object.
+4. Passes the clone to `validateMultiLocation()`.
+
+The result: **clock-in passes if the user is within any location from the main constraint OR any additional constraint**. Time, shift, device, and all other rules are still evaluated only against the main constraint.
+
+#### Source method
+`AttendanceConstraintService::buildAdditionalLocationRules(User $user): array`
+- Calls `$user->loadMissing('additionalAttendanceConstraints')`.
+- Filters to `is_active = true`.
+- `flatMap`s `branch_locations` from all matching constraints.
+- Returns `[{name, latitude, longitude, radius}]` — same shape as a single `location_work` entry.
+
+#### Pivot table
+`attendance_constraint_user` (`attendance_constraint_id`, `user_id`, `created_at`, `updated_at`).
+Managed via `User::additionalAttendanceConstraints()` (`BelongsToMany`).
+API: `POST /attendance/constraints/users/{userId}/additional` with `{ "constraint_ids": [...] }` performs a **full sync** (replaces the entire set for the user). Cache is bumped via `bumpApplicableConstraintsCacheForCompany()` after each change.
