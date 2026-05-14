@@ -281,6 +281,33 @@
       "name": "Shift Assignment",
       "item": [
         {
+          "name": "Get Shifts (frontend-ready)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json"}],
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/shifts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "shifts"]
+            },
+            "description": "Returns the current shift configuration in the exact same shape expected by `POST /{constraint}/shifts`, so the frontend can display and edit it without any extra mapping.\n\n**Mode detection logic:**\n- `weekly` — all enabled days share identical periods\n- `daily`  — at least two enabled days have different periods\n\n**Weekly mode response includes:**\n- `mode: \"weekly\"`\n- `days` — array of enabled day names\n- `periods` — the shared period array\n\n**Daily mode response includes:**\n- `mode: \"daily\"`\n- `schedule` — object keyed by day name, each with its own `periods`\n\n**Always present:**\n- `raw_schedule` — full 7-day map (enabled/disabled, periods, lateness_rules, early_clock_in_rules)\n- `max_over_time` — current max overtime setting"
+          },
+          "response": [
+            {
+              "name": "Weekly mode example",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"constraint_name\": \"Eastern Region\",\n        \"max_over_time\": 4,\n        \"mode\": \"weekly\",\n        \"days\": [\"saturday\", \"sunday\", \"monday\", \"tuesday\", \"wednesday\"],\n        \"periods\": [\n            {\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}\n        ],\n        \"raw_schedule\": {\n            \"saturday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"thursday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"friday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": null,\n                \"early_clock_in_rules\": null\n            }\n        }\n    },\n    \"message\": \"Shifts retrieved successfully\"\n}"
+            },
+            {
+              "name": "Daily mode example",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"constraint_name\": \"Operations Shift\",\n        \"max_over_time\": 2,\n        \"mode\": \"daily\",\n        \"schedule\": {\n            \"saturday\": {\n                \"periods\": [\n                    {\"start_time\": \"08:00\", \"end_time\": \"12:00\", \"extends_to_next_day\": false},\n                    {\"start_time\": \"13:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}\n                ]\n            },\n            \"sunday\": {\n                \"periods\": [\n                    {\"start_time\": \"09:00\", \"end_time\": \"18:00\", \"extends_to_next_day\": false}\n                ]\n            }\n        },\n        \"raw_schedule\": {}\n    },\n    \"message\": \"Shifts retrieved successfully\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Assign Shifts — Weekly Mode",
           "request": {
             "method": "POST",

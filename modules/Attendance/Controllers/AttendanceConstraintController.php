@@ -749,6 +749,107 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
+     * Get shifts for a constraint in the same structure used by assignShifts,
+     * so the frontend can render the current configuration without extra mapping.
+     *
+     * Response includes:
+     *  - detected `mode` ("weekly" | "daily")
+     *  - `days`    — enabled day names (weekly mode)
+     *  - `periods` — shared periods    (weekly mode)
+     *  - `schedule` — per-day map     (daily mode)
+     *  - `raw_schedule` — full 7-day map always present (for reference)
+     */
+    public function getShifts(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $allDays        = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        $config         = $constraint->constraint_config ?? [];
+        $storedSchedule = $config['time_rules']['weekly_schedule'] ?? [];
+
+        // Build a clean 7-day map from stored data
+        $rawSchedule = [];
+        foreach ($allDays as $day) {
+            $dayData = $storedSchedule[$day] ?? [];
+            $rawSchedule[$day] = [
+                'enabled'              => (bool) ($dayData['enabled'] ?? false),
+                'periods'              => $dayData['periods'] ?? [],
+                'lateness_rules'       => $dayData['lateness_rules'] ?? null,
+                'early_clock_in_rules' => $dayData['early_clock_in_rules'] ?? null,
+            ];
+        }
+
+        // Detect mode:
+        // Weekly  → all enabled days have exactly the same periods array
+        // Daily   → at least two enabled days have different periods
+        $enabledDays     = array_values(array_filter($allDays, fn($d) => $rawSchedule[$d]['enabled']));
+        $detectedMode    = 'weekly';
+        $sharedPeriods   = null;
+
+        if (!empty($enabledDays)) {
+            $sharedPeriods = $rawSchedule[$enabledDays[0]]['periods'];
+
+            foreach ($enabledDays as $day) {
+                // Compare by JSON serialisation — order-insensitive within each period object
+                $normalize = fn(array $periods) => collect($periods)
+                    ->map(fn($p) => [
+                        'start_time'          => $p['start_time']          ?? $p['startTime'] ?? '',
+                        'end_time'            => $p['end_time']            ?? $p['endTime'] ?? '',
+                        'extends_to_next_day' => (bool) ($p['extends_to_next_day'] ?? false),
+                    ])
+                    ->sortBy('start_time')
+                    ->values()
+                    ->toArray();
+
+                if (json_encode($normalize($rawSchedule[$day]['periods'])) !== json_encode($normalize($sharedPeriods))) {
+                    $detectedMode  = 'daily';
+                    $sharedPeriods = null;
+                    break;
+                }
+            }
+        }
+
+        // Normalise period keys to snake_case for the response
+        $normalisePeriods = fn(array $periods) => array_values(array_map(fn($p) => [
+            'start_time'          => $p['start_time']          ?? $p['startTime'] ?? '',
+            'end_time'            => $p['end_time']            ?? $p['endTime'] ?? '',
+            'extends_to_next_day' => (bool) ($p['extends_to_next_day'] ?? false),
+        ], $periods));
+
+        $response = [
+            'constraint_id'   => $constraint->id,
+            'constraint_name' => $constraint->constraint_name,
+            'max_over_time'   => $constraint->max_over_time,
+            'mode'            => $detectedMode,
+        ];
+
+        if ($detectedMode === 'weekly') {
+            $response['days']    = $enabledDays;
+            $response['periods'] = $sharedPeriods !== null ? $normalisePeriods($sharedPeriods) : [];
+        } else {
+            $dailySchedule = [];
+            foreach ($enabledDays as $day) {
+                $dailySchedule[$day] = [
+                    'periods' => $normalisePeriods($rawSchedule[$day]['periods']),
+                ];
+            }
+            $response['schedule'] = $dailySchedule;
+        }
+
+        // Always include the full 7-day map for completeness
+        $response['raw_schedule'] = collect($allDays)->mapWithKeys(fn($day) => [
+            $day => [
+                'enabled'              => $rawSchedule[$day]['enabled'],
+                'periods'              => $normalisePeriods($rawSchedule[$day]['periods']),
+                'lateness_rules'       => $rawSchedule[$day]['lateness_rules'],
+                'early_clock_in_rules' => $rawSchedule[$day]['early_clock_in_rules'],
+            ],
+        ])->all();
+
+        return Json::item($response, message: 'Shifts retrieved successfully');
+    }
+
+    /**
      * Assign shifts to a constraint's weekly schedule.
      *
      * Two modes:

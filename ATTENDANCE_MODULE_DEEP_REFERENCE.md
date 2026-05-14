@@ -20,7 +20,7 @@
    - [6.7 AttendanceConstraintService — Location Merging](#67-attendanceconstraintservice--location-merging-updated) ← **UPDATED**
 7. [DTOs (Data Transfer Objects)](#7-dtos-data-transfer-objects)
 8. [Controllers](#8-controllers)
-   - [8.3 AttendanceConstraintController — New Methods](#83-attendanceconstraintcontroller--new-methods-2026-05-14) ← **NEW**
+   - [8.3 AttendanceConstraintController — New Methods](#83-attendanceconstraintcontroller--new-methods-2026-05-14) ← **NEW** (getShifts, assignShifts, updateRules added)
 9. [Jobs](#9-jobs)
 10. [Events & Listeners](#10-events--listeners)
 11. [Exceptions](#11-exceptions)
@@ -1111,6 +1111,102 @@ Reads `constraint_config.time_rules.weekly_schedule` and returns it as a structu
 
 Also returns top-level `constraint_id`, `constraint_name`, and `max_over_time`. Returns empty shifts array if `constraint_config` has no `time_rules`.
 
+#### `getShifts(string $constraintId): JsonResponse` ← **NEW**
+
+`GET /{constraint}/shifts`
+
+Returns the current shift configuration in the **exact same shape expected by `POST /{constraint}/shifts`**, so the frontend can render the edit form without any mapping.
+
+**Mode detection logic** (applied automatically — no query parameter required):
+- `weekly` — all enabled days share identical periods (compared after normalising key names to snake_case)
+- `daily`  — at least two enabled days have different periods
+
+**Response for `weekly` mode:**
+```json
+{
+  "mode": "weekly",
+  "days": ["saturday", "sunday", "monday"],
+  "periods": [
+    { "start_time": "08:00", "end_time": "17:00", "extends_to_next_day": false }
+  ]
+}
+```
+
+**Response for `daily` mode:**
+```json
+{
+  "mode": "daily",
+  "schedule": {
+    "saturday": { "periods": [{ "start_time": "08:00", "end_time": "12:00", "extends_to_next_day": false }] },
+    "sunday":   { "periods": [{ "start_time": "09:00", "end_time": "18:00", "extends_to_next_day": false }] }
+  }
+}
+```
+
+**Always present in both modes:**
+- `constraint_id`, `constraint_name`, `max_over_time`
+- `raw_schedule` — full 7-day map with `enabled`, `periods`, `lateness_rules`, `early_clock_in_rules` per day (useful for displaying per-day rule badges in the UI)
+
+Required permission: `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW`.
+
+#### `assignShifts(Request, string $constraintId): JsonResponse` ← **NEW**
+
+`POST /{constraint}/shifts`
+
+Replaces the `time_rules.weekly_schedule` for the constraint with the provided shift configuration. Supports two modes:
+
+| Mode | Description |
+|---|---|
+| `weekly` | A single set of periods (same hours every day) applied to `days`. Unchecked days are set to `enabled: false`. |
+| `daily` | Each day in `schedule` gets its own period list. Days omitted from `schedule` are set to `enabled: false`. |
+
+**Key invariants:**
+1. Only `time_rules.weekly_schedule` is modified — the rest of `constraint_config` (e.g. `location_rules`) is preserved by merging.
+2. If a day had no `lateness_rules` or `early_clock_in_rules` before, defaults are automatically applied: `lateness_period: 30 minutes` and `allowed_minutes_before: 30`. Existing per-day rules are never overwritten.
+3. Bumps the applicable-constraints cache after saving.
+
+**Weekly mode request body:**
+```json
+{
+  "mode": "weekly",
+  "days": ["saturday", "sunday", "monday", "tuesday", "wednesday"],
+  "periods": [
+    { "start_time": "08:00", "end_time": "17:00", "extends_to_next_day": false }
+  ]
+}
+```
+
+**Daily mode request body:**
+```json
+{
+  "mode": "daily",
+  "schedule": {
+    "saturday": { "periods": [{ "start_time": "08:00", "end_time": "12:00", "extends_to_next_day": false }] },
+    "sunday":   { "periods": [{ "start_time": "09:00", "end_time": "18:00", "extends_to_next_day": false }] }
+  }
+}
+```
+
+Required permission: `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE`.
+
+#### `updateRules(Request, string $constraintId): JsonResponse` ← **NEW**
+
+`PATCH /{constraint}/rules`
+
+Updates constraint-level rules that apply uniformly across all working days. All three fields are optional.
+
+| Request field | Type | Notes |
+|---|---|---|
+| `max_over_time` | numeric, min:0 | Stored directly on the `attendance_constraints` row. |
+| `lateness_minutes` | integer, min:0 | Applied to `lateness_rules.lateness_period` on **every** day in `weekly_schedule`. |
+| `early_clock_in_minutes` | integer, min:0 | Applied to `early_clock_in_rules.allowed_minutes_before` on **every** day in `weekly_schedule`. |
+
+Days with `enabled: false` are also updated so that if they are later enabled, the rules are already correct.
+
+Bumps the applicable-constraints cache after saving.
+
+Required permission: `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE`.
+
 ---
 
 ## 9. Jobs
@@ -1393,6 +1489,9 @@ POST   /{constraint}/locations        → createLocations
 PUT    /locations/{location}          → updateLocation
 DELETE /locations/{location}          → deleteLocation
 GET    /{constraint}/day-shifts       → getDayShifts
+GET    /{constraint}/shifts           → getShifts      (frontend-ready, detects mode)
+POST   /{constraint}/shifts           → assignShifts   (weekly / daily mode)
+PATCH  /{constraint}/rules            → updateRules    (lateness + early clock-in + max overtime)
 
 --- Per-user additional constraints ---
 GET    /users/{userId}/additional     → getUserAdditionalConstraints
@@ -1412,6 +1511,9 @@ DELETE /users/{userId}/additional/{constraintId} → removeUserConstraint
 | `PUT /locations/{location}` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
 | `DELETE /locations/{location}` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_DELETE` |
 | `GET /{constraint}/day-shifts` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW` |
+| `GET /{constraint}/shifts` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW` |
+| `POST /{constraint}/shifts` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
+| `PATCH /{constraint}/rules` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
 
 ### 13.2 Form Requests
 

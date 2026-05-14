@@ -161,6 +161,11 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
         ->name('attendance.constraints.day-shifts');
 
+    // Read shifts in frontend-ready format (detects weekly vs daily mode)
+    Route::get('/{constraint}/shifts', [AttendanceConstraintController::class, 'getShifts'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.shifts.get');
+
     // Assign / replace weekly schedule shifts (weekly or daily mode)
     Route::post('/{constraint}/shifts', [AttendanceConstraintController::class, 'assignShifts'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
