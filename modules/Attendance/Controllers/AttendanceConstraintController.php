@@ -23,8 +23,11 @@ use Modules\Attendance\Requests\BulkConstraintRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Modules\Attendance\Models\AttendanceConstraintLocation;
 use Modules\Attendance\Presenters\ConstraintListPresenter;
 use Modules\Attendance\Presenters\ConstraintPresenter;
+use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
 use Ramsey\Uuid\Uuid;
 
 class AttendanceConstraintController extends Controller
@@ -522,5 +525,259 @@ class AttendanceConstraintController extends Controller
         );
 
         return Json::item([], 'Constraint removed from user successfully');
+    }
+
+    /**
+     * Update only basic info: constraint_name, constraint_type, branch_ids.
+     */
+    public function updateBasicInfo(Request $request, string $constraintId): JsonResponse
+    {
+        $request->validate([
+            'constraint_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'constraint_type' => ['sometimes', 'required', 'string', 'in:' . implode(',', array_keys(AttendanceConstraint::getConstraintArrayTypes()))],
+            'branch_ids'      => ['sometimes', 'nullable', 'array'],
+            'branch_ids.*'    => ['exists:management_hierarchies,id'],
+        ]);
+
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $data = ['updated_by' => Auth::id()];
+        if ($request->has('constraint_name')) {
+            $data['constraint_name'] = $request->input('constraint_name');
+        }
+        if ($request->has('constraint_type')) {
+            $data['constraint_type'] = $request->input('constraint_type');
+        }
+        if ($request->has('branch_ids')) {
+            $data['branch_ids'] = $request->input('branch_ids');
+        }
+
+        $constraint->update($data);
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        $constraint->load(['users', 'creator', 'updater']);
+        $presented = (new ConstraintPresenter($constraint))->getData();
+
+        return Json::item($presented, message: 'Constraint basic info updated successfully');
+    }
+
+    /**
+     * Get all employees assigned to this attendance constraint.
+     * Includes users assigned via user_professional_datas AND via attendance_constraint_user pivot.
+     */
+    public function getConstraintEmployees(Request $request, string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+        $companyId = Auth::user()->company_id;
+
+        $mainUsers = UserProfessionalData::where('attendance_constraint_id', $constraintId)
+            ->where('company_id', $companyId)
+            ->with(['user' => function ($q) {
+                $q->withoutTenancy();
+            }])
+            ->get()
+            ->pluck('user')
+            ->filter()
+            ->map(fn($u) => [
+                'id'     => $u->id,
+                'name'   => $u->name,
+                'email'  => $u->email,
+                'phone'  => $u->phone ?? null,
+                'source' => 'main',
+            ]);
+
+        $pivotUsers = $constraint->users()
+            ->get()
+            ->map(fn($u) => [
+                'id'     => $u->id,
+                'name'   => $u->name,
+                'email'  => $u->email,
+                'phone'  => $u->phone ?? null,
+                'source' => 'additional',
+            ]);
+
+        $allUsers = $mainUsers->merge($pivotUsers)->unique('id')->values()->all();
+
+        return Json::items($allUsers, message: 'Constraint employees retrieved successfully');
+    }
+
+    /**
+     * Assign an employee to the main attendance constraint (sets attendance_constraint_id on user_professional_datas).
+     */
+    public function assignEmployeeToConstraint(Request $request, string $constraintId): JsonResponse
+    {
+        $request->validate([
+            'user_id' => ['required', 'uuid', 'exists:users,id'],
+        ]);
+
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $professionalData = UserProfessionalData::where('user_id', $request->input('user_id'))
+            ->where('company_id', Auth::user()->company_id)
+            ->first();
+
+        if (!$professionalData) {
+            return Json::error('User professional data not found', 404);
+        }
+
+        $professionalData->update([
+            'attendance_constraint_id' => $constraintId,
+        ]);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        return Json::item(
+            ['user_id' => $request->input('user_id'), 'constraint_id' => $constraintId],
+            message: 'Employee assigned to constraint successfully'
+        );
+    }
+
+    /**
+     * Create one or more additional locations for a constraint.
+     */
+    public function createLocations(Request $request, string $constraintId): JsonResponse
+    {
+        $request->validate([
+            'locations'              => ['required', 'array', 'min:1'],
+            'locations.*.name'       => ['nullable', 'string', 'max:255'],
+            'locations.*.latitude'   => ['required', 'numeric', 'between:-90,90'],
+            'locations.*.longitude'  => ['required', 'numeric', 'between:-180,180'],
+            'locations.*.radius'     => ['required', 'integer', 'min:1', 'max:10000'],
+        ]);
+
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+        $companyId = Auth::user()->company_id;
+
+        $created = [];
+        foreach ($request->input('locations') as $loc) {
+            $created[] = AttendanceConstraintLocation::create([
+                'attendance_constraint_id' => $constraintId,
+                'company_id'              => $companyId,
+                'name'                    => $loc['name'] ?? null,
+                'latitude'                => $loc['latitude'],
+                'longitude'               => $loc['longitude'],
+                'radius'                  => $loc['radius'],
+                'created_by'              => Auth::id(),
+            ]);
+        }
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) $companyId);
+
+        return Json::item($created, message: 'Locations created successfully');
+    }
+
+    /**
+     * Get all additional locations for a specific constraint.
+     */
+    public function getLocations(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $locations = AttendanceConstraintLocation::where('attendance_constraint_id', $constraintId)
+            ->get()
+            ->map(fn($loc) => [
+                'id'        => $loc->id,
+                'name'      => $loc->name,
+                'latitude'  => $loc->latitude,
+                'longitude' => $loc->longitude,
+                'radius'    => $loc->radius,
+                'created_at' => $loc->created_at?->format('Y-m-d H:i:s'),
+            ])
+            ->values()
+            ->all();
+
+        return Json::items($locations, message: 'Constraint locations retrieved successfully');
+    }
+
+    /**
+     * Update a specific location by ID.
+     */
+    public function updateLocation(Request $request, string $locationId): JsonResponse
+    {
+        $request->validate([
+            'name'      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'latitude'  => ['sometimes', 'required', 'numeric', 'between:-90,90'],
+            'longitude' => ['sometimes', 'required', 'numeric', 'between:-180,180'],
+            'radius'    => ['sometimes', 'required', 'integer', 'min:1', 'max:10000'],
+        ]);
+
+        $location = AttendanceConstraintLocation::where('id', $locationId)
+            ->where('company_id', Auth::user()->company_id)
+            ->firstOrFail();
+
+        $data = [];
+        if ($request->has('name')) {
+            $data['name'] = $request->input('name');
+        }
+        if ($request->has('latitude')) {
+            $data['latitude'] = $request->input('latitude');
+        }
+        if ($request->has('longitude')) {
+            $data['longitude'] = $request->input('longitude');
+        }
+        if ($request->has('radius')) {
+            $data['radius'] = $request->input('radius');
+        }
+
+        $location->update($data);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        return Json::item([
+            'id'        => $location->id,
+            'name'      => $location->name,
+            'latitude'  => $location->latitude,
+            'longitude' => $location->longitude,
+            'radius'    => $location->radius,
+        ], message: 'Location updated successfully');
+    }
+
+    /**
+     * Delete a specific location by ID.
+     */
+    public function deleteLocation(string $locationId): JsonResponse
+    {
+        $location = AttendanceConstraintLocation::where('id', $locationId)
+            ->where('company_id', Auth::user()->company_id)
+            ->firstOrFail();
+
+        $location->delete();
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        return Json::success('Location deleted successfully');
+    }
+
+    /**
+     * Get all day shifts (weekly schedule periods) for a specific constraint.
+     */
+    public function getDayShifts(string $constraintId): JsonResponse
+    {
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $config = $constraint->constraint_config ?? [];
+        $timeRules = $config['time_rules'] ?? [];
+        $weeklySchedule = $timeRules['weekly_schedule'] ?? [];
+
+        $orderedDays = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
+        $shifts = [];
+        foreach ($orderedDays as $day) {
+            $daySchedule = $weeklySchedule[$day] ?? ['enabled' => false, 'periods' => []];
+            $shifts[] = [
+                'day'     => $day,
+                'enabled' => (bool) ($daySchedule['enabled'] ?? false),
+                'periods' => $daySchedule['periods'] ?? [],
+                'lateness_rules'      => $daySchedule['lateness_rules'] ?? null,
+                'early_clock_in_rules' => $daySchedule['early_clock_in_rules'] ?? null,
+            ];
+        }
+
+        return Json::item([
+            'constraint_id'   => $constraint->id,
+            'constraint_name' => $constraint->constraint_name,
+            'max_over_time'   => $constraint->max_over_time,
+            'shifts'          => $shifts,
+        ], message: 'Day shifts retrieved successfully');
     }
 }

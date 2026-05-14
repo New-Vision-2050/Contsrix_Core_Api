@@ -863,12 +863,16 @@ class AttendanceConstraintService
      * Returns an array of location objects: [{name, latitude, longitude, radius}].
      * Used by the /attendance/user-constraint/today response so the mobile/FE knows every
      * location the employee is allowed to clock in from.
+     *
+     * Sources merged:
+     *  1. branch_locations JSON from each additional constraint
+     *  2. attendance_constraint_locations rows from each additional constraint
      */
     private function buildAdditionalLocationRules(User $user): array
     {
-        $user->loadMissing('additionalAttendanceConstraints');
+        $user->loadMissing('additionalAttendanceConstraints.additionalLocations');
 
-        return $user->additionalAttendanceConstraints
+        $branchLocations = $user->additionalAttendanceConstraints
             ->where('is_active', true)
             ->flatMap(fn ($c) => collect($c->branch_locations ?? []))
             ->map(fn ($loc) => [
@@ -876,9 +880,20 @@ class AttendanceConstraintService
                 'latitude'  => isset($loc['latitude'])  ? (float) $loc['latitude']  : null,
                 'longitude' => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
                 'radius'    => isset($loc['radius'])    ? (int)   $loc['radius']    : null,
-            ])
-            ->values()
-            ->all();
+            ]);
+
+        $tableLocations = $user->additionalAttendanceConstraints
+            ->where('is_active', true)
+            ->flatMap(fn ($c) => $c->additionalLocations ?? collect())
+            ->map(fn ($loc) => [
+                'id'        => $loc->id,
+                'name'      => $loc->name,
+                'latitude'  => (float) $loc->latitude,
+                'longitude' => (float) $loc->longitude,
+                'radius'    => (int) $loc->radius,
+            ]);
+
+        return $branchLocations->merge($tableLocations)->values()->all();
     }
 
     private function buildLocationRules(?AttendanceConstraint $constraint, User $user): ?array
@@ -998,12 +1013,28 @@ class AttendanceConstraintService
             return $mainConstraint;
         }
 
-        $additionalLocations = $user->additionalAttendanceConstraints()
+        $additionalConstraints = $user->additionalAttendanceConstraints()
             ->where('is_active', true)
-            ->get()
+            ->with('additionalLocations')
+            ->get();
+
+        $branchLocs = $additionalConstraints
             ->flatMap(fn($c) => $c->branch_locations ?? [])
             ->values()
             ->all();
+
+        $tableLocs = $additionalConstraints
+            ->flatMap(fn($c) => $c->additionalLocations ?? collect())
+            ->map(fn($loc) => [
+                'name'      => $loc->name,
+                'latitude'  => (float) $loc->latitude,
+                'longitude' => (float) $loc->longitude,
+                'radius'    => (int) $loc->radius,
+            ])
+            ->values()
+            ->all();
+
+        $additionalLocations = array_merge($branchLocs, $tableLocs);
 
         if (empty($additionalLocations)) {
             return $mainConstraint;

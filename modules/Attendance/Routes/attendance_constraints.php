@@ -124,6 +124,42 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
             ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
             ->name('attendance.constraints.user.additional.remove');
     });
+
+    // Update basic info (name, constraint_type, branches)
+    Route::patch('/{constraint}/basic-info', [AttendanceConstraintController::class, 'updateBasicInfo'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.update-basic-info');
+
+    // Constraint employees
+    Route::get('/{constraint}/employees', [AttendanceConstraintController::class, 'getConstraintEmployees'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.employees.index');
+
+    Route::post('/{constraint}/employees', [AttendanceConstraintController::class, 'assignEmployeeToConstraint'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.employees.assign');
+
+    // Additional locations CRUD
+    Route::get('/{constraint}/locations', [AttendanceConstraintController::class, 'getLocations'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.locations.index');
+
+    Route::post('/{constraint}/locations', [AttendanceConstraintController::class, 'createLocations'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.locations.store');
+
+    Route::put('/locations/{location}', [AttendanceConstraintController::class, 'updateLocation'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.locations.update');
+
+    Route::delete('/locations/{location}', [AttendanceConstraintController::class, 'deleteLocation'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_DELETE())
+        ->name('attendance.constraints.locations.destroy');
+
+    // Day shifts
+    Route::get('/{constraint}/day-shifts', [AttendanceConstraintController::class, 'getDayShifts'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+        ->name('attendance.constraints.day-shifts');
 });
 
 /*
