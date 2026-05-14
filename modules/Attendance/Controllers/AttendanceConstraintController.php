@@ -749,6 +749,170 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
+     * Assign shifts to a constraint's weekly schedule.
+     *
+     * Two modes:
+     *  - "weekly": one set of periods applied to all checked days; unchecked days become holidays.
+     *  - "daily":  each day carries its own periods; only days present in "schedule" are enabled.
+     *
+     * Defaults applied to every enabled day when no existing rules are present:
+     *   lateness_rules      = { lateness_period: 30, lateness_unit: "minute" }
+     *   early_clock_in_rules = { allowed_minutes_before: 30 }
+     *
+     * Only time_rules.weekly_schedule is replaced; the rest of constraint_config
+     * (default_location, type_attendance, …) is preserved unchanged.
+     */
+    public function assignShifts(Request $request, string $constraintId): JsonResponse
+    {
+        $allDays = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        $timeRegex = '/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/';
+
+        $request->validate([
+            'mode'    => ['required', 'string', 'in:weekly,daily'],
+            // Weekly mode
+            'days'    => ['required_if:mode,weekly', 'array'],
+            'days.*'  => ['string', 'in:' . implode(',', $allDays)],
+            'periods' => ['required_if:mode,weekly', 'array', 'min:1'],
+            'periods.*.start_time'          => ['required_with:periods', 'regex:' . $timeRegex],
+            'periods.*.end_time'            => ['required_with:periods', 'regex:' . $timeRegex],
+            'periods.*.extends_to_next_day' => ['boolean'],
+            // Daily mode
+            'schedule'                               => ['required_if:mode,daily', 'array'],
+            'schedule.*.periods'                     => ['array'],
+            'schedule.*.periods.*.start_time'        => ['required_with:schedule.*.periods', 'regex:' . $timeRegex],
+            'schedule.*.periods.*.end_time'          => ['required_with:schedule.*.periods', 'regex:' . $timeRegex],
+            'schedule.*.periods.*.extends_to_next_day' => ['boolean'],
+        ]);
+
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+
+        $defaultLatenessRules = ['lateness_period' => 30, 'lateness_unit' => 'minute'];
+        $defaultEarlyRules    = ['allowed_minutes_before' => 30];
+
+        $existingConfig   = $constraint->constraint_config ?? [];
+        $existingSchedule = $existingConfig['time_rules']['weekly_schedule'] ?? [];
+
+        // Initialise all 7 days as disabled
+        $weeklySchedule = [];
+        foreach ($allDays as $day) {
+            $weeklySchedule[$day] = [
+                'enabled'             => false,
+                'periods'             => [],
+                'lateness_rules'      => $existingSchedule[$day]['lateness_rules']  ?? $defaultLatenessRules,
+                'early_clock_in_rules' => $existingSchedule[$day]['early_clock_in_rules'] ?? $defaultEarlyRules,
+            ];
+        }
+
+        $formatPeriods = fn(array $periods) => array_values(array_map(fn($p) => [
+            'start_time'          => $p['start_time'],
+            'end_time'            => $p['end_time'],
+            'extends_to_next_day' => (bool) ($p['extends_to_next_day'] ?? false),
+        ], $periods));
+
+        if ($request->input('mode') === 'weekly') {
+            $enabledDays      = array_map('strtolower', $request->input('days', []));
+            $formattedPeriods = $formatPeriods($request->input('periods', []));
+
+            foreach ($allDays as $day) {
+                if (in_array($day, $enabledDays, true)) {
+                    $weeklySchedule[$day]['enabled'] = true;
+                    $weeklySchedule[$day]['periods'] = $formattedPeriods;
+                }
+            }
+        } else {
+            // daily mode — each day key carries its own periods array
+            foreach ($request->input('schedule', []) as $day => $dayData) {
+                $day = strtolower($day);
+                if (!in_array($day, $allDays, true)) {
+                    continue;
+                }
+                $formattedPeriods = $formatPeriods($dayData['periods'] ?? []);
+                $weeklySchedule[$day]['enabled'] = !empty($formattedPeriods);
+                $weeklySchedule[$day]['periods'] = $formattedPeriods;
+            }
+        }
+
+        // Merge back into constraint_config — only replace weekly_schedule
+        $config = $existingConfig;
+        if (!isset($config['time_rules'])) {
+            $config['time_rules'] = [];
+        }
+        $config['time_rules']['weekly_schedule'] = $weeklySchedule;
+
+        $constraint->update([
+            'constraint_config' => $config,
+            'updated_by'        => Auth::id(),
+        ]);
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        return Json::item([
+            'constraint_id'   => $constraint->id,
+            'mode'            => $request->input('mode'),
+            'weekly_schedule' => $weeklySchedule,
+        ], message: 'Shifts assigned successfully');
+    }
+
+    /**
+     * Update constraint-level rules (lateness, early clock-in, max overtime).
+     *
+     * lateness_minutes and early_clock_in_minutes are applied uniformly
+     * to every day in the existing weekly_schedule.
+     * Passing null clears the rule for all days.
+     */
+    public function updateRules(Request $request, string $constraintId): JsonResponse
+    {
+        $request->validate([
+            'lateness_minutes'       => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
+            'early_clock_in_minutes' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:480'],
+            'max_over_time'          => ['sometimes', 'nullable', 'integer', 'min:0'],
+        ]);
+
+        $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
+        $allDays    = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+        $updates    = ['updated_by' => Auth::id()];
+
+        if ($request->has('max_over_time')) {
+            $updates['max_over_time'] = $request->input('max_over_time');
+        }
+
+        $hasRuleUpdate = $request->has('lateness_minutes') || $request->has('early_clock_in_minutes');
+
+        if ($hasRuleUpdate) {
+            $config = $constraint->constraint_config ?? [];
+
+            foreach ($allDays as $day) {
+                if ($request->has('lateness_minutes')) {
+                    $min = $request->input('lateness_minutes');
+                    $config['time_rules']['weekly_schedule'][$day]['lateness_rules'] = $min !== null
+                        ? ['lateness_period' => (int) $min, 'lateness_unit' => 'minute']
+                        : null;
+                }
+                if ($request->has('early_clock_in_minutes')) {
+                    $min = $request->input('early_clock_in_minutes');
+                    $config['time_rules']['weekly_schedule'][$day]['early_clock_in_rules'] = $min !== null
+                        ? ['allowed_minutes_before' => (int) $min]
+                        : null;
+                }
+            }
+
+            $updates['constraint_config'] = $config;
+        }
+
+        $constraint->update($updates);
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) Auth::user()->company_id);
+
+        $fresh = $constraint->fresh();
+
+        return Json::item([
+            'constraint_id'          => $fresh->id,
+            'max_over_time'          => $fresh->max_over_time,
+            'lateness_minutes'       => $request->has('lateness_minutes')       ? $request->input('lateness_minutes')       : null,
+            'early_clock_in_minutes' => $request->has('early_clock_in_minutes') ? $request->input('early_clock_in_minutes') : null,
+        ], message: 'Constraint rules updated successfully');
+    }
+
+    /**
      * Get all day shifts (weekly schedule periods) for a specific constraint.
      */
     public function getDayShifts(string $constraintId): JsonResponse

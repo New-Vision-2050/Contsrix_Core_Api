@@ -156,10 +156,20 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_DELETE())
         ->name('attendance.constraints.locations.destroy');
 
-    // Day shifts
+    // Day shifts — read
     Route::get('/{constraint}/day-shifts', [AttendanceConstraintController::class, 'getDayShifts'])
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
         ->name('attendance.constraints.day-shifts');
+
+    // Assign / replace weekly schedule shifts (weekly or daily mode)
+    Route::post('/{constraint}/shifts', [AttendanceConstraintController::class, 'assignShifts'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.shifts.assign');
+
+    // Update constraint-level rules (lateness, early-clock-in, max overtime)
+    Route::patch('/{constraint}/rules', [AttendanceConstraintController::class, 'updateRules'])
+        ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+        ->name('attendance.constraints.rules.update');
 });
 
 /*

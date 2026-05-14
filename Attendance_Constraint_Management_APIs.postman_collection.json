@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Attendance Constraint Management APIs",
-    "description": "APIs for managing attendance constraint basic info, employees, additional locations, and day shifts.\n\nBase URL: {{base_url}}/api/v1/attendance/constraints\n\nAll endpoints require Bearer token authentication.",
+    "description": "APIs for managing attendance constraint basic info, employees, additional locations, day shifts, shift assignment, and constraint rules.\n\nBase URL: {{base_url}}/api/v1/attendance/constraints\n\nAll endpoints require Bearer token authentication.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -272,6 +272,93 @@
               "status": "OK",
               "code": 200,
               "body": "{\n    \"message\": \"Location deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shift Assignment",
+      "item": [
+        {
+          "name": "Assign Shifts — Weekly Mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Accept",       "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mode\": \"weekly\",\n    \"days\": [\"saturday\", \"sunday\", \"monday\", \"tuesday\", \"wednesday\"],\n    \"periods\": [\n        {\n            \"start_time\": \"08:00\",\n            \"end_time\": \"17:00\",\n            \"extends_to_next_day\": false\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/shifts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "shifts"]
+            },
+            "description": "Assign the same shift periods to all checked days.\n\nChecked days (`days` array) become enabled work days with the provided periods.\nAll other days of the week are set to `enabled: false` (weekly holiday).\n\nDefault rules applied to every enabled day when no prior rules exist:\n- `lateness_rules`: 30 minutes grace period\n- `early_clock_in_rules`: 30 minutes allowed before shift start\n\nExisting `lateness_rules` / `early_clock_in_rules` already set on each day are **preserved**.\nOnly `time_rules.weekly_schedule` is modified — `default_location`, `type_attendance`, and other constraint_config keys are untouched.\n\n**Fields:**\n- `mode` (string, required): `weekly`\n- `days` (array of strings, required): enabled weekdays\n- `periods` (array, required, min 1): shift periods shared by all checked days\n  - `start_time` (HH:MM, required)\n  - `end_time` (HH:MM, required)\n  - `extends_to_next_day` (boolean, default false)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"mode\": \"weekly\",\n        \"weekly_schedule\": {\n            \"saturday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"sunday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"monday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"tuesday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"wednesday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"thursday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"friday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            }\n        }\n    },\n    \"message\": \"Shifts assigned successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Assign Shifts — Daily Mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Accept",       "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mode\": \"daily\",\n    \"schedule\": {\n        \"saturday\": {\n            \"periods\": [\n                {\"start_time\": \"08:00\", \"end_time\": \"12:00\", \"extends_to_next_day\": false},\n                {\"start_time\": \"13:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}\n            ]\n        },\n        \"sunday\": {\n            \"periods\": [\n                {\"start_time\": \"09:00\", \"end_time\": \"18:00\", \"extends_to_next_day\": false}\n            ]\n        },\n        \"monday\": {\n            \"periods\": [\n                {\"start_time\": \"08:30\", \"end_time\": \"22:00\", \"extends_to_next_day\": false}\n            ]\n        }\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/shifts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "shifts"]
+            },
+            "description": "Assign custom shift periods per day.\n\nEach key in `schedule` is a day name. Days present in `schedule` with at least one period are set to `enabled: true`. Days absent from `schedule` are set to `enabled: false`.\n\n**Fields:**\n- `mode` (string, required): `daily`\n- `schedule` (object, required): map of day name → `{ periods: [...] }`\n  - `periods.*.start_time` (HH:MM)\n  - `periods.*.end_time` (HH:MM)\n  - `periods.*.extends_to_next_day` (boolean)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Constraint Rules",
+      "item": [
+        {
+          "name": "Update Constraint Rules (lateness + early clock-in + max overtime)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Accept",       "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"lateness_minutes\": 15,\n    \"early_clock_in_minutes\": 30,\n    \"max_over_time\": 4\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/rules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "rules"]
+            },
+            "description": "Update constraint-level rules applied uniformly to every day in the weekly schedule.\n\nAll fields are optional — send only what you want to update.\n\n**Fields:**\n- `lateness_minutes` (integer | null, 0–480): Grace period in minutes before an employee is marked late. Applied to every day. `null` clears the rule.\n- `early_clock_in_minutes` (integer | null, 0–480): How many minutes before shift start an employee is allowed to clock in. `null` clears the rule.\n- `max_over_time` (integer | null, min 0): Maximum overtime hours allowed. Stored on the constraint row (not per day).\n\n**What changes:**\n- `lateness_rules` on every day → `{ lateness_period: N, lateness_unit: \"minute\" }`\n- `early_clock_in_rules` on every day → `{ allowed_minutes_before: N }`\n- `attendance_constraints.max_over_time` column"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"max_over_time\": 4,\n        \"lateness_minutes\": 15,\n        \"early_clock_in_minutes\": 30\n    },\n    \"message\": \"Constraint rules updated successfully\"\n}"
             }
           ]
         }
