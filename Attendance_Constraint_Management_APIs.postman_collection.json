@@ -1,0 +1,426 @@
+{
+  "info": {
+    "name": "Attendance Constraint Management APIs",
+    "description": "APIs for managing attendance constraint basic info, employees, additional locations, day shifts, shift assignment, and constraint rules.\n\nBase URL: {{base_url}}/api/v1/attendance/constraints\n\nAll endpoints require Bearer token authentication.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_BEARER_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "constraint_id",
+      "value": "CONSTRAINT_UUID_HERE",
+      "type": "string"
+    },
+    {
+      "key": "location_id",
+      "value": "LOCATION_UUID_HERE",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "USER_UUID_HERE",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Constraint Basic Info",
+      "item": [
+        {
+          "name": "Update Basic Info (name, type, branches)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"constraint_name\": \"Eastern Region Constraint\",\n    \"constraint_type\": \"regular\",\n    \"branch_ids\": [\n        \"branch-uuid-1\",\n        \"branch-uuid-2\"\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/basic-info",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "basic-info"]
+            },
+            "description": "Update only the basic information of a constraint: constraint_name, constraint_type, and branch_ids. All fields are optional (send only what you want to update).\n\n**Fields:**\n- `constraint_name` (string, optional) — New name for the constraint\n- `constraint_type` (string, optional) — Must be one of the valid types (e.g. `regular`)\n- `branch_ids` (array of UUIDs, optional) — Array of management hierarchy IDs for branches"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"id\": \"constraint-uuid\",\n        \"constraint_name\": \"Eastern Region Constraint\",\n        \"constraint_type\": \"منتظم\",\n        \"constraint_code\": \"regular\",\n        \"branch_locations\": [],\n        \"notes\": null,\n        \"is_active\": 1,\n        \"priority\": 1,\n        \"start_date\": null,\n        \"end_date\": null,\n        \"max_over_time\": null,\n        \"config\": {},\n        \"branches\": [\n            {\"id\": \"branch-uuid-1\", \"name\": \"Branch 1\"}\n        ],\n        \"created_by\": \"Admin User\",\n        \"created_at\": \"2026-05-14 10:00:00\"\n    },\n    \"message\": \"Constraint basic info updated successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Constraint Employees",
+      "item": [
+        {
+          "name": "Get All Employees in Constraint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/employees",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "employees"]
+            },
+            "description": "Get all employees assigned to this attendance constraint.\n\nReturns employees from two sources:\n- **main**: Employees whose `user_professional_datas.attendance_constraint_id` matches this constraint\n- **additional**: Employees linked via the `attendance_constraint_user` pivot table\n\nEach employee entry includes a `source` field indicating where the assignment comes from."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": [\n        {\n            \"id\": \"user-uuid-1\",\n            \"name\": \"Mohamed Mashal\",\n            \"email\": \"mohamed@gmail.com\",\n            \"phone\": \"06454664562\",\n            \"source\": \"main\"\n        },\n        {\n            \"id\": \"user-uuid-2\",\n            \"name\": \"Ahmed Ali\",\n            \"email\": \"ahmed@gmail.com\",\n            \"phone\": \"0512345678\",\n            \"source\": \"additional\"\n        }\n    ],\n    \"message\": \"Constraint employees retrieved successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Assign Employee to Main Constraint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user_id\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/employees",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "employees"]
+            },
+            "description": "Assign an employee to this attendance constraint as their **main** constraint.\n\nThis sets the `attendance_constraint_id` column on the employee's `user_professional_datas` record.\n\n**Note:** This is the primary constraint assignment, NOT an additional location assignment.\n\n**Fields:**\n- `user_id` (UUID, required) — The user ID to assign"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"user_id\": \"user-uuid\",\n        \"constraint_id\": \"constraint-uuid\"\n    },\n    \"message\": \"Employee assigned to constraint successfully\"\n}"
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n    \"message\": \"User professional data not found\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Additional Locations",
+      "item": [
+        {
+          "name": "Create Locations (Bulk)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"locations\": [\n        {\n            \"name\": \"Riyadh Office\",\n            \"latitude\": 24.7136,\n            \"longitude\": 46.6753,\n            \"radius\": 200\n        },\n        {\n            \"name\": \"Jeddah Branch\",\n            \"latitude\": 21.4858,\n            \"longitude\": 39.1925,\n            \"radius\": 150\n        },\n        {\n            \"name\": \"Dammam Site\",\n            \"latitude\": 26.3927,\n            \"longitude\": 49.9777,\n            \"radius\": 300\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/locations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "locations"]
+            },
+            "description": "Create one or more additional locations for a constraint.\n\nThese locations are stored in the `attendance_constraint_locations` table and will appear in the `additional_locations` array of the `user-constraint/today` API response for any employee assigned to this constraint as an additional constraint.\n\n**Fields (per location):**\n- `name` (string, optional) — Display name for the location\n- `latitude` (numeric, required) — Between -90 and 90\n- `longitude` (numeric, required) — Between -180 and 180\n- `radius` (integer, required) — Geofence radius in meters (1-10000)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": [\n        {\n            \"id\": \"loc-uuid-1\",\n            \"attendance_constraint_id\": \"constraint-uuid\",\n            \"company_id\": \"company-uuid\",\n            \"name\": \"Riyadh Office\",\n            \"latitude\": 24.7136,\n            \"longitude\": 46.6753,\n            \"radius\": 200,\n            \"created_by\": \"admin-uuid\",\n            \"created_at\": \"2026-05-14T10:00:00.000000Z\",\n            \"updated_at\": \"2026-05-14T10:00:00.000000Z\"\n        },\n        {\n            \"id\": \"loc-uuid-2\",\n            \"attendance_constraint_id\": \"constraint-uuid\",\n            \"company_id\": \"company-uuid\",\n            \"name\": \"Jeddah Branch\",\n            \"latitude\": 21.4858,\n            \"longitude\": 39.1925,\n            \"radius\": 150,\n            \"created_by\": \"admin-uuid\",\n            \"created_at\": \"2026-05-14T10:00:00.000000Z\",\n            \"updated_at\": \"2026-05-14T10:00:00.000000Z\"\n        }\n    ],\n    \"message\": \"Locations created successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Locations for Constraint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/locations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "locations"]
+            },
+            "description": "Get all additional locations defined for a specific constraint.\n\nReturns locations from the `attendance_constraint_locations` table."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": [\n        {\n            \"id\": \"loc-uuid-1\",\n            \"name\": \"Riyadh Office\",\n            \"latitude\": 24.7136,\n            \"longitude\": 46.6753,\n            \"radius\": 200,\n            \"created_at\": \"2026-05-14 10:00:00\"\n        },\n        {\n            \"id\": \"loc-uuid-2\",\n            \"name\": \"Jeddah Branch\",\n            \"latitude\": 21.4858,\n            \"longitude\": 39.1925,\n            \"radius\": 150,\n            \"created_at\": \"2026-05-14 10:00:00\"\n        }\n    ],\n    \"message\": \"Constraint locations retrieved successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Location",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Riyadh Office - Updated\",\n    \"latitude\": 24.7200,\n    \"longitude\": 46.6800,\n    \"radius\": 250\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/locations/{{location_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "locations", "{{location_id}}"]
+            },
+            "description": "Update a specific additional location by its ID.\n\nAll fields are optional — send only the fields you want to update.\n\n**Fields:**\n- `name` (string, optional) — Updated display name\n- `latitude` (numeric, optional) — Between -90 and 90\n- `longitude` (numeric, optional) — Between -180 and 180\n- `radius` (integer, optional) — Geofence radius in meters (1-10000)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"id\": \"loc-uuid-1\",\n        \"name\": \"Riyadh Office - Updated\",\n        \"latitude\": 24.72,\n        \"longitude\": 46.68,\n        \"radius\": 250\n    },\n    \"message\": \"Location updated successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Location",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/locations/{{location_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "locations", "{{location_id}}"]
+            },
+            "description": "Delete a specific additional location by its ID.\n\nThe location is permanently removed from the constraint."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"message\": \"Location deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shift Assignment",
+      "item": [
+        {
+          "name": "Get Shifts (frontend-ready)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json"}],
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/shifts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "shifts"]
+            },
+            "description": "Returns the current shift configuration in the exact same shape expected by `POST /{constraint}/shifts`, so the frontend can display and edit it without any extra mapping.\n\n**Mode detection logic:**\n- `weekly` — all enabled days share identical periods\n- `daily`  — at least two enabled days have different periods\n\n**Weekly mode response includes:**\n- `mode: \"weekly\"`\n- `days` — array of enabled day names\n- `periods` — the shared period array\n\n**Daily mode response includes:**\n- `mode: \"daily\"`\n- `schedule` — object keyed by day name, each with its own `periods`\n\n**Always present:**\n- `raw_schedule` — full 7-day map (enabled/disabled, periods, lateness_rules, early_clock_in_rules)\n- `max_over_time` — current max overtime setting"
+          },
+          "response": [
+            {
+              "name": "Weekly mode example",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"constraint_name\": \"Eastern Region\",\n        \"max_over_time\": 4,\n        \"mode\": \"weekly\",\n        \"days\": [\"saturday\", \"sunday\", \"monday\", \"tuesday\", \"wednesday\"],\n        \"periods\": [\n            {\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}\n        ],\n        \"raw_schedule\": {\n            \"saturday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"thursday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"friday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": null,\n                \"early_clock_in_rules\": null\n            }\n        }\n    },\n    \"message\": \"Shifts retrieved successfully\"\n}"
+            },
+            {
+              "name": "Daily mode example",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"constraint_name\": \"Operations Shift\",\n        \"max_over_time\": 2,\n        \"mode\": \"daily\",\n        \"schedule\": {\n            \"saturday\": {\n                \"periods\": [\n                    {\"start_time\": \"08:00\", \"end_time\": \"12:00\", \"extends_to_next_day\": false},\n                    {\"start_time\": \"13:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}\n                ]\n            },\n            \"sunday\": {\n                \"periods\": [\n                    {\"start_time\": \"09:00\", \"end_time\": \"18:00\", \"extends_to_next_day\": false}\n                ]\n            }\n        },\n        \"raw_schedule\": {}\n    },\n    \"message\": \"Shifts retrieved successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Assign Shifts — Weekly Mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Accept",       "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mode\": \"weekly\",\n    \"days\": [\"saturday\", \"sunday\", \"monday\", \"tuesday\", \"wednesday\"],\n    \"periods\": [\n        {\n            \"start_time\": \"08:00\",\n            \"end_time\": \"17:00\",\n            \"extends_to_next_day\": false\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/shifts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "shifts"]
+            },
+            "description": "Assign the same shift periods to all checked days.\n\nChecked days (`days` array) become enabled work days with the provided periods.\nAll other days of the week are set to `enabled: false` (weekly holiday).\n\nDefault rules applied to every enabled day when no prior rules exist:\n- `lateness_rules`: 30 minutes grace period\n- `early_clock_in_rules`: 30 minutes allowed before shift start\n\nExisting `lateness_rules` / `early_clock_in_rules` already set on each day are **preserved**.\nOnly `time_rules.weekly_schedule` is modified — `default_location`, `type_attendance`, and other constraint_config keys are untouched.\n\n**Fields:**\n- `mode` (string, required): `weekly`\n- `days` (array of strings, required): enabled weekdays\n- `periods` (array, required, min 1): shift periods shared by all checked days\n  - `start_time` (HH:MM, required)\n  - `end_time` (HH:MM, required)\n  - `extends_to_next_day` (boolean, default false)"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"mode\": \"weekly\",\n        \"weekly_schedule\": {\n            \"saturday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"sunday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"monday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"tuesday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"wednesday\": {\n                \"enabled\": true,\n                \"periods\": [{\"start_time\": \"08:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"thursday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            },\n            \"friday\": {\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": {\"lateness_period\": 30, \"lateness_unit\": \"minute\"},\n                \"early_clock_in_rules\": {\"allowed_minutes_before\": 30}\n            }\n        }\n    },\n    \"message\": \"Shifts assigned successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Assign Shifts — Daily Mode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Accept",       "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mode\": \"daily\",\n    \"schedule\": {\n        \"saturday\": {\n            \"periods\": [\n                {\"start_time\": \"08:00\", \"end_time\": \"12:00\", \"extends_to_next_day\": false},\n                {\"start_time\": \"13:00\", \"end_time\": \"17:00\", \"extends_to_next_day\": false}\n            ]\n        },\n        \"sunday\": {\n            \"periods\": [\n                {\"start_time\": \"09:00\", \"end_time\": \"18:00\", \"extends_to_next_day\": false}\n            ]\n        },\n        \"monday\": {\n            \"periods\": [\n                {\"start_time\": \"08:30\", \"end_time\": \"22:00\", \"extends_to_next_day\": false}\n            ]\n        }\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/shifts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "shifts"]
+            },
+            "description": "Assign custom shift periods per day.\n\nEach key in `schedule` is a day name. Days present in `schedule` with at least one period are set to `enabled: true`. Days absent from `schedule` are set to `enabled: false`.\n\n**Fields:**\n- `mode` (string, required): `daily`\n- `schedule` (object, required): map of day name → `{ periods: [...] }`\n  - `periods.*.start_time` (HH:MM)\n  - `periods.*.end_time` (HH:MM)\n  - `periods.*.extends_to_next_day` (boolean)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Constraint Rules",
+      "item": [
+        {
+          "name": "Update Constraint Rules (lateness + early clock-in + max overtime)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Accept",       "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"lateness_minutes\": 15,\n    \"early_clock_in_minutes\": 30,\n    \"max_over_time\": 4\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/rules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "rules"]
+            },
+            "description": "Update constraint-level rules applied uniformly to every day in the weekly schedule.\n\nAll fields are optional — send only what you want to update.\n\n**Fields:**\n- `lateness_minutes` (integer | null, 0–480): Grace period in minutes before an employee is marked late. Applied to every day. `null` clears the rule.\n- `early_clock_in_minutes` (integer | null, 0–480): How many minutes before shift start an employee is allowed to clock in. `null` clears the rule.\n- `max_over_time` (integer | null, min 0): Maximum overtime hours allowed. Stored on the constraint row (not per day).\n\n**What changes:**\n- `lateness_rules` on every day → `{ lateness_period: N, lateness_unit: \"minute\" }`\n- `early_clock_in_rules` on every day → `{ allowed_minutes_before: N }`\n- `attendance_constraints.max_over_time` column"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"max_over_time\": 4,\n        \"lateness_minutes\": 15,\n        \"early_clock_in_minutes\": 30\n    },\n    \"message\": \"Constraint rules updated successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Day Shifts",
+      "item": [
+        {
+          "name": "Get Day Shifts for Constraint",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/{{constraint_id}}/day-shifts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "{{constraint_id}}", "day-shifts"]
+            },
+            "description": "Get all day shifts (weekly schedule) for a specific constraint.\n\nReturns the full weekly schedule with periods, lateness rules, and early clock-in rules for each day of the week (Saturday through Friday)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"constraint_id\": \"constraint-uuid\",\n        \"constraint_name\": \"Eastern Region Constraint\",\n        \"max_over_time\": 4,\n        \"shifts\": [\n            {\n                \"day\": \"saturday\",\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": null,\n                \"early_clock_in_rules\": null\n            },\n            {\n                \"day\": \"sunday\",\n                \"enabled\": true,\n                \"periods\": [\n                    {\n                        \"start_time\": \"08:00\",\n                        \"end_time\": \"12:00\",\n                        \"extends_to_next_day\": false\n                    },\n                    {\n                        \"start_time\": \"13:00\",\n                        \"end_time\": \"17:00\",\n                        \"extends_to_next_day\": false\n                    }\n                ],\n                \"lateness_rules\": {\n                    \"lateness_period\": 15,\n                    \"lateness_unit\": \"minute\"\n                },\n                \"early_clock_in_rules\": {\n                    \"allowed_minutes_before\": 30\n                }\n            },\n            {\n                \"day\": \"monday\",\n                \"enabled\": true,\n                \"periods\": [\n                    {\n                        \"start_time\": \"08:00\",\n                        \"end_time\": \"17:00\",\n                        \"extends_to_next_day\": false\n                    }\n                ],\n                \"lateness_rules\": {\n                    \"lateness_period\": 15,\n                    \"lateness_unit\": \"minute\"\n                },\n                \"early_clock_in_rules\": null\n            },\n            {\n                \"day\": \"tuesday\",\n                \"enabled\": true,\n                \"periods\": [\n                    {\n                        \"start_time\": \"08:00\",\n                        \"end_time\": \"17:00\",\n                        \"extends_to_next_day\": false\n                    }\n                ],\n                \"lateness_rules\": null,\n                \"early_clock_in_rules\": null\n            },\n            {\n                \"day\": \"wednesday\",\n                \"enabled\": true,\n                \"periods\": [\n                    {\n                        \"start_time\": \"08:00\",\n                        \"end_time\": \"17:00\",\n                        \"extends_to_next_day\": false\n                    }\n                ],\n                \"lateness_rules\": null,\n                \"early_clock_in_rules\": null\n            },\n            {\n                \"day\": \"thursday\",\n                \"enabled\": true,\n                \"periods\": [\n                    {\n                        \"start_time\": \"08:00\",\n                        \"end_time\": \"14:00\",\n                        \"extends_to_next_day\": false\n                    }\n                ],\n                \"lateness_rules\": null,\n                \"early_clock_in_rules\": null\n            },\n            {\n                \"day\": \"friday\",\n                \"enabled\": false,\n                \"periods\": [],\n                \"lateness_rules\": null,\n                \"early_clock_in_rules\": null\n            }\n        ]\n    },\n    \"message\": \"Day shifts retrieved successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

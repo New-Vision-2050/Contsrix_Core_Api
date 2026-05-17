@@ -12,6 +12,7 @@ use BasePackage\Shared\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\User\Models\User;
 use Modules\Company\CompanyCore\Models\Company;
 use Modules\Company\ManagementHierarchy\Models\ManagementHierarchy;
@@ -525,6 +526,11 @@ class AttendanceConstraint extends Model implements Auditable
     public function branches()
     {
         return $this->hasMany(ManagementHierarchy::class, 'id', 'branch_ids');
+    }
+
+    public function additionalLocations(): HasMany
+    {
+        return $this->hasMany(AttendanceConstraintLocation::class, 'attendance_constraint_id');
     }
     public function managementHierarchies()
     {

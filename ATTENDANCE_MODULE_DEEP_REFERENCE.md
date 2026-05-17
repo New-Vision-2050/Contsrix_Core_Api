@@ -1,6 +1,8 @@
 # Attendance Module — Complete Technical Reference
 
-> **Purpose of this document:** A self-contained reference for any developer or AI assistant working inside the Attendance module. Every class, interface, constant, relationship, business rule, and data-flow is documented here with the full implementation details needed to safely read, modify, or extend the module without needing to open every file individually.
+> **Purpose of this document:** A self-contained playbook for any developer or AI assistant working inside the Attendance module. Every class, interface, constant, relationship, business rule, and data-flow is documented here with the full implementation details needed to safely read, modify, or extend the module without needing to open every file individually.
+>
+> **Last updated:** 2026-05-14 — Added constraint management APIs: `attendance_constraint_locations` table, `AttendanceConstraintLocation` model, new `AttendanceConstraintController` methods (update basic info, get/assign employees, CRUD locations, get day-shifts), updated `AttendanceConstraintService` location merging to include table-based locations alongside existing `branch_locations` JSON, and updated INV-20.
 
 ---
 
@@ -9,11 +11,16 @@
 1. [Module Location & Loading](#1-module-location--loading)
 2. [Architecture Overview](#2-architecture-overview)
 3. [Database Schema](#3-database-schema)
+   - [3.6 `attendance_constraint_locations` table](#36-attendance_constraint_locations-table) ← **NEW**
 4. [Domain Layer (Pure Logic)](#4-domain-layer-pure-logic)
 5. [Models](#5-models)
+   - [5.4 AttendanceConstraint Model (extended)](#54-attendanceconstraint-model-extended) ← **NEW**
+   - [5.5 AttendanceConstraintLocation Model](#55-attendanceconstraintlocation-model) ← **NEW**
 6. [Services — Application Layer](#6-services--application-layer)
+   - [6.7 AttendanceConstraintService — Location Merging](#67-attendanceconstraintservice--location-merging-updated) ← **UPDATED**
 7. [DTOs (Data Transfer Objects)](#7-dtos-data-transfer-objects)
 8. [Controllers](#8-controllers)
+   - [8.3 AttendanceConstraintController — New Methods](#83-attendanceconstraintcontroller--new-methods-2026-05-14) ← **NEW** (getShifts, assignShifts, updateRules added)
 9. [Jobs](#9-jobs)
 10. [Events & Listeners](#10-events--listeners)
 11. [Exceptions](#11-exceptions)
@@ -202,6 +209,32 @@ One row per violation detected at clock-in or clock-out.
 | `attendances` | `(user_id, business_date)` | Per-user daily lookup |
 | `attendances` | `(company_id, status, start_time)` | Active filter |
 | `attendances` | `(company_id, is_late, start_time)` | Late arrivals report |
+
+### 3.6 `attendance_constraint_locations` table
+
+**Added:** 2026-05-14  
+**Migration:** `modules/Attendance/Database/migrations/2026_05_14_000001_create_attendance_constraint_locations_table.php`
+
+Stores explicit GPS locations (additional locations) for a constraint. This is the **new preferred way** to attach multiple GPS locations to a constraint for the additional-locations feature — it gives each location a stable UUID, enables individual CRUD operations, and keeps `branch_locations` JSON (which encodes branch-linked locations) unchanged.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | char(36) UUID | Primary key |
+| `attendance_constraint_id` | char(36) UUID | FK → `attendance_constraints.id` (cascade delete) |
+| `company_id` | char(36) UUID | Multi-tenant |
+| `name` | varchar NULL | Display name for the location |
+| `latitude` | decimal(10,7) | GPS latitude |
+| `longitude` | decimal(10,7) | GPS longitude |
+| `radius` | int, default 100 | Geofence radius in metres |
+| `created_by` | char(36) UUID NULL | FK → users |
+| `created_at` | timestamp | |
+| `updated_at` | timestamp | |
+
+**Indexes:** `acl_constraint_id_index` on `attendance_constraint_id`, `acl_company_id_index` on `company_id`.
+
+**Cascade:** deleting a constraint hard-deletes all its location rows automatically.
+
+**Design note:** This table is **additive** — it does not replace the existing `branch_locations` JSON column on `attendance_constraints`. Both sources are merged at runtime by `AttendanceConstraintService` (see §6.7 and §INV-20).
 
 ---
 
@@ -568,6 +601,73 @@ The comment on lines 181–186 explains: times are stored in branch TZ (not UTC)
 
 1-to-1 with `attendances`. Stores `constraint_snapshot` (JSON) which is the full constraint config at the moment of clock-in. This snapshot is what `AttendanceCalculator` inputs use for grace period, max overtime, etc. — it is immutable after creation.
 
+### 5.4 AttendanceConstraint Model (extended)
+
+**`Models/AttendanceConstraint.php`**  
+**Table:** `attendance_constraints`
+
+In addition to its original structure, the model now has:
+
+**New relationship:**
+```php
+public function additionalLocations(): HasMany
+{
+    return $this->hasMany(AttendanceConstraintLocation::class, 'attendance_constraint_id');
+}
+```
+
+This gives direct access to the `attendance_constraint_locations` rows for this constraint.
+
+**Existing relationships (summary):**
+
+| Relationship | Type | Notes |
+|---|---|---|
+| `users()` | BelongsToMany (pivot `attendance_constraint_user`) | Users with this as an *additional* constraint |
+| `branches()` | HasMany(ManagementHierarchy) via `branch_ids` JSON | Linked branches |
+| `managementHierarchies()` | MorphedByMany via `constrainables` table | Polymorphic management hierarchy links |
+| `additionalLocations()` | HasMany(AttendanceConstraintLocation) | GPS locations for this constraint (**new**) |
+| `creator()` | BelongsTo(User, `created_by`) | |
+| `updater()` | BelongsTo(User, `updated_by`) | |
+| `company()` | BelongsTo(Company) | |
+
+**Important:** The main constraint for an employee is set via `user_professional_datas.attendance_constraint_id` (belongs-to on `UserProfessionalData`). The `attendance_constraint_user` pivot is for **additional** constraints (additional locations). These are two completely separate assignment channels.
+
+### 5.5 AttendanceConstraintLocation Model
+
+**`Models/AttendanceConstraintLocation.php`**  
+**Table:** `attendance_constraint_locations`
+
+```php
+namespace Modules\Attendance\Models;
+
+class AttendanceConstraintLocation extends Model
+{
+    use UuidTrait;
+    use CustomBelongsToTenant;
+
+    protected $fillable = [
+        'attendance_constraint_id',
+        'company_id',
+        'name',
+        'latitude',
+        'longitude',
+        'radius',
+        'created_by',
+    ];
+
+    protected $casts = [
+        'latitude'  => 'float',
+        'longitude' => 'float',
+        'radius'    => 'integer',
+    ];
+
+    public function constraint(): BelongsTo { ... }
+    public function creator(): BelongsTo { ... }
+}
+```
+
+**No soft-deletes** — locations are hard-deleted. Cascade from `attendance_constraints` also hard-deletes all child rows.
+
 ---
 
 ## 6. Services — Application Layer
@@ -791,6 +891,50 @@ History API for mobile. Stateless singleton.
 - Full calendar month in branch TZ.
 - Same structure.
 
+### 6.7 AttendanceConstraintService — Location Merging (Updated)
+
+**`Services/AttendanceConstraintService.php`**
+
+Two private methods handle merging additional locations. Both were updated in 2026-05-14 to pull from the new `attendance_constraint_locations` table **in addition to** the existing `branch_locations` JSON.
+
+#### `buildAdditionalLocationRules(User $user): array`
+
+Called by `getTodaysWorkRulesForUser()` to populate the `additional_locations` key in the `user-constraint/today` API response.
+
+**Sources merged (in order):**
+1. `branch_locations` JSON from every active additional constraint (existing behaviour)
+2. Rows from `attendance_constraint_locations` for every active additional constraint (**new**)
+
+```php
+$user->loadMissing('additionalAttendanceConstraints.additionalLocations');
+
+// 1. JSON branch_locations (legacy / manual)
+$branchLocations = $user->additionalAttendanceConstraints
+    ->where('is_active', true)
+    ->flatMap(fn ($c) => collect($c->branch_locations ?? []))
+    ->map(fn ($loc) => ['name' => ..., 'latitude' => ..., 'longitude' => ..., 'radius' => ...]);
+
+// 2. attendance_constraint_locations table rows (new)
+$tableLocations = $user->additionalAttendanceConstraints
+    ->where('is_active', true)
+    ->flatMap(fn ($c) => $c->additionalLocations ?? collect())
+    ->map(fn ($loc) => ['id' => $loc->id, 'name' => ..., 'latitude' => ..., 'longitude' => ..., 'radius' => ...]);
+
+return $branchLocations->merge($tableLocations)->values()->all();
+```
+
+**Note:** Table locations include an `id` field (the location UUID) that JSON branch_locations do not have.
+
+#### `mergeAdditionalLocationsForUser(Attendance $attendance, AttendanceConstraint $mainConstraint): AttendanceConstraint`
+
+Called inside `validateSingleConstraint()` before passing the constraint to `LocationConstraintService`. Merges all additional allowed locations into a **clone** of the main constraint's `branch_locations`.
+
+**Sources merged:**
+1. `branch_locations` JSON from active additional constraints
+2. `attendance_constraint_locations` rows from active additional constraints (**new**), mapped to the `{name, latitude, longitude, radius}` shape that `LocationConstraintService` expects
+
+The original main constraint is never mutated — a clone is returned. Time rules, shift schedules, device rules, and all other constraint settings are evaluated solely from the original main constraint.
+
 ---
 
 ## 7. DTOs (Data Transfer Objects)
@@ -874,6 +1018,194 @@ Injects: `UserAttendanceService`, `UserAttendanceHistoryService`.
 
 - `getUserConstraints(Request)` → `UserAttendanceService::getUserConstraints(…)`
 - `getUserAttendanceHistory(Request)` → `UserAttendanceHistoryService::getUserAttendanceHistoryMobileApi(…)`
+
+### 8.3 AttendanceConstraintController — New Methods (2026-05-14)
+
+**`Controllers/AttendanceConstraintController.php`**
+
+All new methods are added to the existing controller. No existing methods were modified.
+
+#### `updateBasicInfo(Request, string $constraintId): JsonResponse`
+
+`PATCH /{constraint}/basic-info`
+
+Updates only three fields without touching `constraint_config` or any other part of the constraint. All fields are optional (send only what you want to change).
+
+| Request field | Validation | Notes |
+|---|---|---|
+| `constraint_name` | sometimes, string, max:255 | |
+| `constraint_type` | sometimes, string, in valid types | |
+| `branch_ids` | sometimes, nullable, array of `management_hierarchies` UUIDs | |
+
+Bumps the applicable-constraints cache after saving.
+
+#### `getConstraintEmployees(Request, string $constraintId): JsonResponse`
+
+`GET /{constraint}/employees`
+
+Returns all employees assigned to this constraint from two sources:
+- **`source: "main"`** — employees whose `user_professional_datas.attendance_constraint_id` matches this constraint
+- **`source: "additional"`** — employees linked via the `attendance_constraint_user` pivot table
+
+Deduplication: results are merged and unique by `id`.
+
+#### `assignEmployeeToConstraint(Request, string $constraintId): JsonResponse`
+
+`POST /{constraint}/employees`
+
+Sets `user_professional_datas.attendance_constraint_id = $constraintId` for the given user. This is the **main constraint** assignment (not an additional constraint). Returns 404 if the user has no `UserProfessionalData` record.
+
+| Request field | Required | Notes |
+|---|---|---|
+| `user_id` | Yes | UUID, must exist in `users` |
+
+#### `createLocations(Request, string $constraintId): JsonResponse`
+
+`POST /{constraint}/locations`
+
+Bulk-creates rows in `attendance_constraint_locations`. Accepts an array so multiple locations can be created in one request. Returns all created rows.
+
+| Request field | Required | Notes |
+|---|---|---|
+| `locations` | Yes | Array, min 1 |
+| `locations.*.name` | No | string, max:255 |
+| `locations.*.latitude` | Yes | numeric, -90 to 90 |
+| `locations.*.longitude` | Yes | numeric, -180 to 180 |
+| `locations.*.radius` | Yes | integer, 1 to 10000 |
+
+#### `getLocations(string $constraintId): JsonResponse`
+
+`GET /{constraint}/locations`
+
+Returns all rows from `attendance_constraint_locations` for the given constraint. Includes `id`, `name`, `latitude`, `longitude`, `radius`, `created_at`.
+
+#### `updateLocation(Request, string $locationId): JsonResponse`
+
+`PUT /locations/{location}`
+
+Updates a single location row. All fields optional. Scoped to `company_id = Auth::user()->company_id` for tenant safety. Returns 404 if not found.
+
+| Request field | Required | Notes |
+|---|---|---|
+| `name` | No | string, max:255 |
+| `latitude` | No | numeric, -90 to 90 |
+| `longitude` | No | numeric, -180 to 180 |
+| `radius` | No | integer, 1 to 10000 |
+
+#### `deleteLocation(string $locationId): JsonResponse`
+
+`DELETE /locations/{location}`
+
+Hard-deletes the location row. Scoped to `company_id`. Returns 404 if not found. Bumps cache.
+
+#### `getDayShifts(string $constraintId): JsonResponse`
+
+`GET /{constraint}/day-shifts`
+
+Reads `constraint_config.time_rules.weekly_schedule` and returns it as a structured array ordered Saturday → Friday. Each day entry contains:
+- `day` (string)
+- `enabled` (bool)
+- `periods` (array of `{start_time, end_time, extends_to_next_day}`)
+- `lateness_rules` (nullable)
+- `early_clock_in_rules` (nullable)
+
+Also returns top-level `constraint_id`, `constraint_name`, and `max_over_time`. Returns empty shifts array if `constraint_config` has no `time_rules`.
+
+#### `getShifts(string $constraintId): JsonResponse` ← **NEW**
+
+`GET /{constraint}/shifts`
+
+Returns the current shift configuration in the **exact same shape expected by `POST /{constraint}/shifts`**, so the frontend can render the edit form without any mapping.
+
+**Mode detection logic** (applied automatically — no query parameter required):
+- `weekly` — all enabled days share identical periods (compared after normalising key names to snake_case)
+- `daily`  — at least two enabled days have different periods
+
+**Response for `weekly` mode:**
+```json
+{
+  "mode": "weekly",
+  "days": ["saturday", "sunday", "monday"],
+  "periods": [
+    { "start_time": "08:00", "end_time": "17:00", "extends_to_next_day": false }
+  ]
+}
+```
+
+**Response for `daily` mode:**
+```json
+{
+  "mode": "daily",
+  "schedule": {
+    "saturday": { "periods": [{ "start_time": "08:00", "end_time": "12:00", "extends_to_next_day": false }] },
+    "sunday":   { "periods": [{ "start_time": "09:00", "end_time": "18:00", "extends_to_next_day": false }] }
+  }
+}
+```
+
+**Always present in both modes:**
+- `constraint_id`, `constraint_name`, `max_over_time`
+- `raw_schedule` — full 7-day map with `enabled`, `periods`, `lateness_rules`, `early_clock_in_rules` per day (useful for displaying per-day rule badges in the UI)
+
+Required permission: `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW`.
+
+#### `assignShifts(Request, string $constraintId): JsonResponse` ← **NEW**
+
+`POST /{constraint}/shifts`
+
+Replaces the `time_rules.weekly_schedule` for the constraint with the provided shift configuration. Supports two modes:
+
+| Mode | Description |
+|---|---|
+| `weekly` | A single set of periods (same hours every day) applied to `days`. Unchecked days are set to `enabled: false`. |
+| `daily` | Each day in `schedule` gets its own period list. Days omitted from `schedule` are set to `enabled: false`. |
+
+**Key invariants:**
+1. Only `time_rules.weekly_schedule` is modified — the rest of `constraint_config` (e.g. `location_rules`) is preserved by merging.
+2. If a day had no `lateness_rules` or `early_clock_in_rules` before, defaults are automatically applied: `lateness_period: 30 minutes` and `allowed_minutes_before: 30`. Existing per-day rules are never overwritten.
+3. Bumps the applicable-constraints cache after saving.
+
+**Weekly mode request body:**
+```json
+{
+  "mode": "weekly",
+  "days": ["saturday", "sunday", "monday", "tuesday", "wednesday"],
+  "periods": [
+    { "start_time": "08:00", "end_time": "17:00", "extends_to_next_day": false }
+  ]
+}
+```
+
+**Daily mode request body:**
+```json
+{
+  "mode": "daily",
+  "schedule": {
+    "saturday": { "periods": [{ "start_time": "08:00", "end_time": "12:00", "extends_to_next_day": false }] },
+    "sunday":   { "periods": [{ "start_time": "09:00", "end_time": "18:00", "extends_to_next_day": false }] }
+  }
+}
+```
+
+Required permission: `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE`.
+
+#### `updateRules(Request, string $constraintId): JsonResponse` ← **NEW**
+
+`PATCH /{constraint}/rules`
+
+Updates constraint-level rules that apply uniformly across all working days. All three fields are optional.
+
+| Request field | Type | Notes |
+|---|---|---|
+| `max_over_time` | numeric, min:0 | Stored directly on the `attendance_constraints` row. |
+| `lateness_minutes` | integer, min:0 | Applied to `lateness_rules.lateness_period` on **every** day in `weekly_schedule`. |
+| `early_clock_in_minutes` | integer, min:0 | Applied to `early_clock_in_rules.allowed_minutes_before` on **every** day in `weekly_schedule`. |
+
+Days with `enabled: false` are also updated so that if they are later enabled, the rules are already correct.
+
+Bumps the applicable-constraints cache after saving.
+
+Required permission: `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE`.
 
 ---
 
@@ -1125,6 +1457,63 @@ GET    /api/attendance/history           → AttendanceController::getAttendance
 GET    /api/attendance/user-constraints  → UserAttendanceController::getUserConstraints
 GET    /api/attendance/user-history      → UserAttendanceController::getUserAttendanceHistory
 ```
+
+**Constraint management routes (all prefixed `/api/v1/attendance/constraints`):**
+```
+GET    /                              → index          (list with pagination)
+GET    /list                          → list           (simplified list)
+POST   /                              → store          (create constraint)
+GET    /user                          → userConstraint (today's rules for authed user)
+PUT    /{constraint}                  → update         (full update)
+DELETE /{constraint}                  → destroy
+GET    /types                         → getConstraintTypes
+POST   /validate                      → validate
+GET    /branches/{branchId}           → getConstraintsByBranch
+POST   /branches/{branchId}/bulk-assign → bulkAssignToBranch
+GET    /branches/{branchId}/inherited → getInheritedConstraints
+GET    /violations                    → getViolations
+PUT    /violations/{violation}/resolve → resolveViolation
+PUT    /violations/{violation}/dismiss → dismissViolation
+GET    /statistics                    → getStatistics
+POST   /bulk/activate                 → bulkActivate
+POST   /bulk/deactivate               → bulkDeactivate
+POST   /bulk/delete                   → bulkDelete
+GET    /{constraint}                  → show
+
+--- New routes (2026-05-14) ---
+PATCH  /{constraint}/basic-info       → updateBasicInfo
+GET    /{constraint}/employees        → getConstraintEmployees
+POST   /{constraint}/employees        → assignEmployeeToConstraint
+GET    /{constraint}/locations        → getLocations
+POST   /{constraint}/locations        → createLocations
+PUT    /locations/{location}          → updateLocation
+DELETE /locations/{location}          → deleteLocation
+GET    /{constraint}/day-shifts       → getDayShifts
+GET    /{constraint}/shifts           → getShifts      (frontend-ready, detects mode)
+POST   /{constraint}/shifts           → assignShifts   (weekly / daily mode)
+PATCH  /{constraint}/rules            → updateRules    (lateness + early clock-in + max overtime)
+
+--- Per-user additional constraints ---
+GET    /users/{userId}/additional     → getUserAdditionalConstraints
+POST   /users/{userId}/additional     → assignUserConstraints
+DELETE /users/{userId}/additional/{constraintId} → removeUserConstraint
+```
+
+**Permission mapping for new routes:**
+
+| Route | Permission |
+|---|---|
+| `PATCH /{constraint}/basic-info` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
+| `GET /{constraint}/employees` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW` |
+| `POST /{constraint}/employees` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
+| `GET /{constraint}/locations` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW` |
+| `POST /{constraint}/locations` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
+| `PUT /locations/{location}` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
+| `DELETE /locations/{location}` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_DELETE` |
+| `GET /{constraint}/day-shifts` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW` |
+| `GET /{constraint}/shifts` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW` |
+| `POST /{constraint}/shifts` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
+| `PATCH /{constraint}/rules` | `EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE` |
 
 ### 13.2 Form Requests
 
@@ -1836,7 +2225,7 @@ Day name must be derived from the attendance's `start_time` in the branch TZ —
 ### INV-20: `additional_locations` in `user-constraint/today` — mirrors the location validation used at clock-in
 
 #### What it is
-`GET /attendance/user-constraint/today` returns a `work_rules` object. Alongside `location_work` (the user's primary branch location from their main constraint), the response now includes `additional_locations` — an **array** of extra allowed locations drawn from every active constraint in the user's `attendance_constraint_user` pivot table.
+`GET /api/v1/attendance/constraints/user` returns a `work_rules` object. Alongside `location_work` (the user's primary branch location from their main constraint), the response includes `additional_locations` — an **array** of extra allowed locations drawn from every active constraint in the user's `attendance_constraint_user` pivot table.
 
 **Example response shape:**
 ```json
@@ -1854,6 +2243,13 @@ Day name must be derived from the attendance's `start_time` in the branch TZ —
         "latitude": 31.200096,
         "longitude": 29.918739,
         "radius": 500
+      },
+      {
+        "id": "loc-uuid-1",
+        "name": "Riyadh Office",
+        "latitude": 24.7136,
+        "longitude": 46.6753,
+        "radius": 200
       }
     ]
   }
@@ -1862,23 +2258,47 @@ Day name must be derived from the attendance's `start_time` in the branch TZ —
 
 `additional_locations` is always present (empty array `[]` when the user has no additional constraints).
 
+#### Two location sources (updated 2026-05-14)
+
+`additional_locations` is now populated from **two sources**:
+
+| Source | How set | Identifier |
+|---|---|---|
+| `branch_locations` JSON column on `AttendanceConstraint` | Set during constraint create/update via API | No stable ID (index-based) |
+| `attendance_constraint_locations` table rows | Created via `POST /api/v1/attendance/constraints/{id}/locations` | Stable UUID `id` field |
+
+Both sources are merged in `AttendanceConstraintService::buildAdditionalLocationRules()`. Table-based locations include an `id` field; JSON-based locations do not.
+
 #### How location validation works at clock-in
 `AttendanceConstraintService::validateSingleConstraint()` calls `mergeAdditionalLocationsForUser()` **before** passing the constraint to `LocationConstraintService::validateLocationConstraint()`. This method:
-1. Loads the user's `additionalAttendanceConstraints` (via the `attendance_constraint_user` pivot).
-2. Collects all `branch_locations` arrays from every active additional constraint.
-3. Merges them with the main constraint's `branch_locations` into a **cloned** constraint object.
-4. Passes the clone to `validateMultiLocation()`.
+1. Loads the user's `additionalAttendanceConstraints` (via the `attendance_constraint_user` pivot) **with** `additionalLocations` relation eager-loaded.
+2. Collects all `branch_locations` JSON arrays from every active additional constraint.
+3. Collects all `attendance_constraint_locations` rows from every active additional constraint, mapped to `{name, latitude, longitude, radius}`.
+4. Merges both lists with the main constraint's `branch_locations` into a **cloned** constraint object.
+5. Passes the clone to `validateMultiLocation()`.
 
-The result: **clock-in passes if the user is within any location from the main constraint OR any additional constraint**. Time, shift, device, and all other rules are still evaluated only against the main constraint.
+The result: **clock-in passes if the user is within any location from the main constraint OR any additional constraint (either source)**. Time, shift, device, and all other rules are still evaluated only against the main constraint.
 
-#### Source method
-`AttendanceConstraintService::buildAdditionalLocationRules(User $user): array`
-- Calls `$user->loadMissing('additionalAttendanceConstraints')`.
-- Filters to `is_active = true`.
-- `flatMap`s `branch_locations` from all matching constraints.
-- Returns `[{name, latitude, longitude, radius}]` — same shape as a single `location_work` entry.
+#### Managing additional locations (new CRUD)
+
+Individual GPS locations attached to an additional constraint can be managed via:
+
+```
+POST   /api/v1/attendance/constraints/{id}/locations   → createLocations (bulk)
+GET    /api/v1/attendance/constraints/{id}/locations   → getLocations
+PUT    /api/v1/attendance/constraints/locations/{id}   → updateLocation (lat, lng, radius)
+DELETE /api/v1/attendance/constraints/locations/{id}   → deleteLocation
+```
+
+These operate on `attendance_constraint_locations` rows and do NOT touch `branch_locations` JSON.
 
 #### Pivot table
 `attendance_constraint_user` (`attendance_constraint_id`, `user_id`, `created_at`, `updated_at`).
 Managed via `User::additionalAttendanceConstraints()` (`BelongsToMany`).
-API: `POST /attendance/constraints/users/{userId}/additional` with `{ "constraint_ids": [...] }` performs a **full sync** (replaces the entire set for the user). Cache is bumped via `bumpApplicableConstraintsCacheForCompany()` after each change.
+API: `POST /api/v1/attendance/constraints/users/{userId}/additional` with `{ "constraint_ids": [...] }` performs a **full sync** (replaces the entire set for the user). Cache is bumped via `bumpApplicableConstraintsCacheForCompany()` after each change.
+
+#### Postman collection
+`Attendance_Constraint_Management_APIs.postman_collection.json` at the project root contains ready-to-import examples for all new endpoints.
+
+#### Related documentation
+`ATTENDANCE_CONSTRAINT_MANAGEMENT_APIS.md` at the project root contains the full API reference with request/response examples, field descriptions, and migration instructions for all new constraint management endpoints.
