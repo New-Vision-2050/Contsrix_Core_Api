@@ -11,7 +11,7 @@ class CreateMedicalInsuranceDTO
     public function __construct(
         public string $name,
         public string $policyNumber,
-        public string $employeeId,
+        public ?string $employeeId = null,
         public ?string $endDate = null,
         public int $status = 1,
     ) {
