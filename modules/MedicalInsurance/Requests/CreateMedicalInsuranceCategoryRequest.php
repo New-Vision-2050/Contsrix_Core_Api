@@ -9,20 +9,26 @@ use Modules\MedicalInsurance\DTO\CreateMedicalInsuranceCategoryDTO;
 
 class CreateMedicalInsuranceCategoryRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['medical_insurance_id' => $this->route('id')]);
+    }
+
     public function rules(): array
     {
         return [
-            'name'           => 'required|string|max:255',
-            'type'           => 'nullable|string|max:255',
-            'coverage_limit' => 'required|numeric|min:0',
-            'description'    => 'required|string',
+            'medical_insurance_id' => 'required|uuid',
+            'name'                 => 'required|string|max:255',
+            'type'                 => 'nullable|string|max:255',
+            'coverage_limit'       => 'required|numeric|min:0',
+            'description'          => 'required|string',
         ];
     }
 
     public function createDTO(): CreateMedicalInsuranceCategoryDTO
     {
         return new CreateMedicalInsuranceCategoryDTO(
-            medicalInsuranceId: $this->route('id'),
+            medicalInsuranceId: $this->validated('medical_insurance_id'),
             name: $this->get('name'),
             coverageLimit: (float) $this->get('coverage_limit'),
             description: $this->get('description'),
