@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\MedicalInsurance\Controllers\MedicalInsuranceController;
 use Modules\MedicalInsurance\Controllers\MedicalInsuranceCategoryController;
+use Modules\MedicalInsurance\Controllers\MedicalInsuranceSubscriptionController;
 
 Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeTenancyByRequestData::class]], function () {
     Route::get('/', [MedicalInsuranceController::class, 'index']);
@@ -19,5 +20,13 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/{category_id}', [MedicalInsuranceCategoryController::class, 'show']);
         Route::put('/{category_id}', [MedicalInsuranceCategoryController::class, 'update']);
         Route::delete('/{category_id}', [MedicalInsuranceCategoryController::class, 'delete']);
+    });
+
+    Route::prefix('/subscriptions')->group(function () {
+        Route::get('/', [MedicalInsuranceSubscriptionController::class, 'index']);
+        Route::post('/', [MedicalInsuranceSubscriptionController::class, 'store']);
+        Route::get('/{id}', [MedicalInsuranceSubscriptionController::class, 'show']);
+        Route::put('/{id}', [MedicalInsuranceSubscriptionController::class, 'update']);
+        Route::delete('/{id}', [MedicalInsuranceSubscriptionController::class, 'delete']);
     });
 });

@@ -15,7 +15,7 @@ class CreateMedicalInsuranceRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'policy_number' => 'required|string|max:255|unique:medical_insurances,policy_number',
-            'employee_id' => 'required|uuid|exists:users,id',
+            'employee_id' => 'nullable|uuid|exists:users,id',
             'end_date' => 'nullable|date|after_or_equal:today',
             'status' => 'nullable|integer|in:-1,0,1',
         ];
