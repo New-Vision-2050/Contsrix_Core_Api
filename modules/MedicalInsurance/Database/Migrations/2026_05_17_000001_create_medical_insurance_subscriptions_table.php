@@ -25,7 +25,7 @@ return new class extends Migration
             $table->foreign('medical_insurance_id')->references('id')->on('medical_insurances')->onDelete('cascade');
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
 
-            $table->index(['user_id', 'medical_insurance_id', 'company_id', 'status']);
+            $table->index(['user_id', 'medical_insurance_id', 'company_id', 'status'], 'mi_subscriptions_composite_idx');
         });
     }
 
