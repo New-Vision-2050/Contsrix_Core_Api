@@ -1017,6 +1017,146 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
+     * Return the main constraint (and any additional constraints) for a given employee,
+     * including all locations from both the branch_locations JSON column and the
+     * attendance_constraint_locations table.
+     *
+     * GET /attendance/constraints/employees/{userId}/constraint-locations
+     */
+    public function getEmployeeConstraintLocations(string $userId): JsonResponse
+    {
+        $companyId = Auth::user()->company_id;
+
+        $professionalData = UserProfessionalData::where('user_id', $userId)
+            ->where('company_id', $companyId)
+            ->first();
+
+        if (!$professionalData || !$professionalData->attendance_constraint_id) {
+            return Json::item([
+                'main_constraint'       => null,
+                'additional_constraints' => [],
+            ], message: 'No constraint assigned to this employee');
+        }
+
+        $mainConstraint = AttendanceConstraint::withoutTenancy()
+            ->with('additionalLocations')
+            ->where('id', $professionalData->attendance_constraint_id)
+            ->first();
+
+        $additionalConstraints = User::withoutTenancy()
+            ->where('id', $userId)
+            ->first()
+            ?->additionalAttendanceConstraints()
+            ->with('additionalLocations')
+            ->get() ?? collect();
+
+        return Json::item([
+            'main_constraint'        => $mainConstraint
+                ? $this->formatConstraintWithLocations($mainConstraint)
+                : null,
+            'additional_constraints' => $additionalConstraints
+                ->map(fn($c) => $this->formatConstraintWithLocations($c))
+                ->values()
+                ->all(),
+        ], message: 'Employee constraint locations retrieved successfully');
+    }
+
+    /**
+     * Swap one or more constraints for a given employee.
+     * Each entry in `replacements` must supply `old_constraint_id` and `new_constraint_id`.
+     * The method auto-detects whether the old constraint is the employee's main constraint
+     * (user_professional_datas.attendance_constraint_id) or an additional constraint
+     * (attendance_constraint_user pivot) and updates accordingly.
+     *
+     * PUT /attendance/constraints/employees/{userId}/assign-constraint
+     * Body: { "replacements": [{ "old_constraint_id": "uuid", "new_constraint_id": "uuid" }] }
+     */
+    public function updateEmployeeConstraint(Request $request, string $userId): JsonResponse
+    {
+        $request->validate([
+            'replacements'                       => ['required', 'array', 'min:1'],
+            'replacements.*.old_constraint_id'   => ['required', 'uuid'],
+            'replacements.*.new_constraint_id'   => ['required', 'uuid', 'exists:attendance_constraints,id'],
+        ]);
+
+        $companyId = Auth::user()->company_id;
+
+        $professionalData = UserProfessionalData::where('user_id', $userId)
+            ->where('company_id', $companyId)
+            ->first();
+
+        if (!$professionalData) {
+            return Json::error('User professional data not found', 404);
+        }
+
+        $results = [];
+
+        foreach ($request->input('replacements') as $replacement) {
+            $oldId = $replacement['old_constraint_id'];
+            $newId = $replacement['new_constraint_id'];
+
+            if ((string) $professionalData->attendance_constraint_id === $oldId) {
+                $professionalData->update(['attendance_constraint_id' => $newId]);
+
+                $results[] = ['old_constraint_id' => $oldId, 'new_constraint_id' => $newId, 'type' => 'main'];
+                continue;
+            }
+
+            $pivotExists = DB::table('attendance_constraint_user')
+                ->where('user_id', $userId)
+                ->where('attendance_constraint_id', $oldId)
+                ->exists();
+
+            if ($pivotExists) {
+                DB::table('attendance_constraint_user')
+                    ->where('user_id', $userId)
+                    ->where('attendance_constraint_id', $oldId)
+                    ->update(['attendance_constraint_id' => $newId]);
+
+                $results[] = ['old_constraint_id' => $oldId, 'new_constraint_id' => $newId, 'type' => 'additional'];
+                continue;
+            }
+
+            $results[] = ['old_constraint_id' => $oldId, 'new_constraint_id' => $newId, 'type' => 'not_found'];
+        }
+
+        $this->constraintService->bumpApplicableConstraintsCacheForCompany((string) $companyId);
+
+        return Json::item(['replacements' => $results], message: 'Employee constraints updated successfully');
+    }
+
+    /**
+     * Format a constraint model with its full location data for API responses.
+     */
+    private function formatConstraintWithLocations(AttendanceConstraint $constraint): array
+    {
+        $branchLocations = collect($constraint->branch_locations ?? [])
+            ->map(fn($loc, $branchId) => array_merge(['branch_id' => $branchId], $loc))
+            ->values()
+            ->all();
+
+        $additionalLocations = ($constraint->relationLoaded('additionalLocations')
+            ? $constraint->additionalLocations
+            : $constraint->additionalLocations()->get()
+        )->map(fn($loc) => [
+            'id'        => $loc->id,
+            'name'      => $loc->name,
+            'latitude'  => $loc->latitude,
+            'longitude' => $loc->longitude,
+            'radius'    => $loc->radius,
+        ])->values()->all();
+
+        return [
+            'id'                   => $constraint->id,
+            'constraint_name'      => $constraint->constraint_name,
+            'constraint_type'      => $constraint->constraint_type,
+            'is_active'            => $constraint->is_active,
+            'branch_locations'     => $branchLocations,
+            'additional_locations' => $additionalLocations,
+        ];
+    }
+
+    /**
      * Get all day shifts (weekly schedule periods) for a specific constraint.
      */
     public function getDayShifts(string $constraintId): JsonResponse

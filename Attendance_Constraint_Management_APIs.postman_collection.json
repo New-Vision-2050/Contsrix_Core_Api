@@ -392,6 +392,99 @@
       ]
     },
     {
+      "name": "Employee Constraint Locations",
+      "item": [
+        {
+          "name": "Get Employee Constraint + All Locations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/employees/{{user_id}}/constraint-locations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "employees", "{{user_id}}", "constraint-locations"]
+            },
+            "description": "Returns the employee's main constraint (assigned via user_professional_datas.attendance_constraint_id) and any additional constraints (attendance_constraint_user pivot), each with their full location data.\n\n**Location sources per constraint:**\n- `branch_locations`: from the `branch_locations` JSON column on the constraint\n- `additional_locations`: from the `attendance_constraint_locations` table\n\n**Response fields:**\n- `main_constraint`: the constraint assigned as the employee's primary constraint (null if none assigned)\n- `additional_constraints`: constraints assigned via the pivot table"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"main_constraint\": {\n            \"id\": \"constraint-uuid\",\n            \"constraint_name\": \"Main Office Constraint\",\n            \"constraint_type\": \"regular\",\n            \"is_active\": true,\n            \"branch_locations\": [\n                {\n                    \"branch_id\": \"branch-uuid\",\n                    \"latitude\": 24.7136,\n                    \"longitude\": 46.6753,\n                    \"radius\": 200\n                }\n            ],\n            \"additional_locations\": [\n                {\n                    \"id\": \"location-uuid\",\n                    \"name\": \"Warehouse\",\n                    \"latitude\": 24.7200,\n                    \"longitude\": 46.6800,\n                    \"radius\": 100\n                }\n            ]\n        },\n        \"additional_constraints\": [\n            {\n                \"id\": \"constraint-uuid-2\",\n                \"constraint_name\": \"Remote Work Constraint\",\n                \"constraint_type\": \"regular\",\n                \"is_active\": true,\n                \"branch_locations\": [],\n                \"additional_locations\": []\n            }\n        ]\n    },\n    \"message\": \"Employee constraint locations retrieved successfully\"\n}"
+            },
+            {
+              "name": "No Constraint Assigned",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"main_constraint\": null,\n        \"additional_constraints\": []\n    },\n    \"message\": \"No constraint assigned to this employee\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Employee Constraint Assignment",
+      "item": [
+        {
+          "name": "Swap Employee Constraints (main or additional)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"replacements\": [\n        {\n            \"old_constraint_id\": \"{{constraint_id}}\",\n            \"new_constraint_id\": \"NEW_CONSTRAINT_UUID_HERE\"\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/attendance/constraints/employees/{{user_id}}/assign-constraint",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "attendance", "constraints", "employees", "{{user_id}}", "assign-constraint"]
+            },
+            "description": "Replaces one or more constraints for a specific employee. Each entry provides the old and new constraint IDs. The API **auto-detects** whether the old constraint is the employee's main constraint or an additional constraint and updates accordingly.\n\n**Detection logic:**\n1. If `old_constraint_id` matches `user_professional_datas.attendance_constraint_id` → updates main constraint\n2. Else if found in `attendance_constraint_user` pivot → updates additional constraint\n3. Else → reported as `not_found` (no error)\n\n**Response `type` field values:**\n- `main` — was the employee's main constraint\n- `additional` — was an additional constraint in the pivot table\n- `not_found` — `old_constraint_id` was not found for this employee"
+          },
+          "response": [
+            {
+              "name": "Success — mixed main and additional",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"replacements\": [\n            {\n                \"old_constraint_id\": \"old-uuid-1\",\n                \"new_constraint_id\": \"new-uuid-1\",\n                \"type\": \"main\"\n            },\n            {\n                \"old_constraint_id\": \"old-uuid-2\",\n                \"new_constraint_id\": \"new-uuid-2\",\n                \"type\": \"additional\"\n            }\n        ]\n    },\n    \"message\": \"Employee constraints updated successfully\"\n}"
+            },
+            {
+              "name": "Not Found Entry",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n    \"data\": {\n        \"replacements\": [\n            {\n                \"old_constraint_id\": \"unknown-uuid\",\n                \"new_constraint_id\": \"new-uuid\",\n                \"type\": \"not_found\"\n            }\n        ]\n    },\n    \"message\": \"Employee constraints updated successfully\"\n}"
+            },
+            {
+              "name": "Validation Error",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "body": "{\n    \"message\": \"The replacements field is required.\",\n    \"errors\": {\n        \"replacements\": [\"The replacements field is required.\"]\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Day Shifts",
       "item": [
         {
