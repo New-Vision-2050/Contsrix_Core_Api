@@ -28,6 +28,7 @@ use Modules\Attendance\Models\AttendanceConstraintLocation;
 use Modules\Attendance\Presenters\ConstraintListPresenter;
 use Modules\Attendance\Presenters\ConstraintPresenter;
 use Modules\UserInfo\UserProfessionalData\Models\UserProfessionalData;
+use Modules\User\Models\User;
 use Ramsey\Uuid\Uuid;
 
 class AttendanceConstraintController extends Controller
@@ -570,14 +571,16 @@ class AttendanceConstraintController extends Controller
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
         $companyId = Auth::user()->company_id;
 
-        $mainUsers = UserProfessionalData::where('attendance_constraint_id', $constraintId)
+        $userIds = UserProfessionalData::where('attendance_constraint_id', $constraintId)
             ->where('company_id', $companyId)
-            ->with(['user' => function ($q) {
-                $q->withoutTenancy();
-            }])
-            ->get()
-            ->pluck('user')
+            ->pluck('user_id')
             ->filter()
+            ->unique()
+            ->values();
+
+        $mainUsers = User::withoutTenancy()
+            ->whereIn('id', $userIds)
+            ->get()
             ->map(fn($u) => [
                 'id'     => $u->id,
                 'name'   => $u->name,
