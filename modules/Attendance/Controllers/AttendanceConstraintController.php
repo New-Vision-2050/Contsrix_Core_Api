@@ -670,24 +670,36 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
-     * Get all additional locations for a specific constraint.
+     * Get all locations for a specific constraint (branch_locations JSON + additional table locations).
      */
     public function getLocations(string $constraintId): JsonResponse
     {
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
 
-        $locations = AttendanceConstraintLocation::where('attendance_constraint_id', $constraintId)
+        $branchLocations = collect($constraint->branch_locations ?? [])
+            ->map(fn($loc, $index) => [
+                'id'         => $loc['branch_id'] ?? ('branch_' . $index),
+                'name'       => $loc['name'] ?? null,
+                'latitude'   => isset($loc['latitude']) ? (float) $loc['latitude'] : null,
+                'longitude'  => isset($loc['longitude']) ? (float) $loc['longitude'] : null,
+                'radius'     => isset($loc['radius']) ? (int) $loc['radius'] : null,
+                'source'     => 'branch',
+                'created_at' => $constraint->created_at?->format('Y-m-d H:i:s'),
+            ]);
+
+        $additionalLocations = AttendanceConstraintLocation::where('attendance_constraint_id', $constraintId)
             ->get()
             ->map(fn($loc) => [
-                'id'        => $loc->id,
-                'name'      => $loc->name,
-                'latitude'  => $loc->latitude,
-                'longitude' => $loc->longitude,
-                'radius'    => $loc->radius,
+                'id'         => $loc->id,
+                'name'       => $loc->name,
+                'latitude'   => $loc->latitude,
+                'longitude'  => $loc->longitude,
+                'radius'     => $loc->radius,
+                'source'     => 'additional',
                 'created_at' => $loc->created_at?->format('Y-m-d H:i:s'),
-            ])
-            ->values()
-            ->all();
+            ]);
+
+        $locations = $branchLocations->merge($additionalLocations)->values()->all();
 
         return Json::items($locations, message: 'Constraint locations retrieved successfully');
     }
