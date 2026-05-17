@@ -110,6 +110,17 @@ Route::middleware(['auth:api'])->prefix('attendance/constraints')->group(functio
         ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
         ->name('attendance.constraints.show');
 
+    // Employee constraint location and assignment routes
+    Route::prefix('/employees/{userId}')->group(function () {
+        Route::get('/constraint-locations', [AttendanceConstraintController::class, 'getEmployeeConstraintLocations'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_VIEW())
+            ->name('attendance.constraints.employee.locations');
+
+        Route::put('/assign-constraint', [AttendanceConstraintController::class, 'updateEmployeeConstraint'])
+            ->permission(Permission::EMPLOYEE_ATTENDANCE_CONSTRAINTS_UPDATE())
+            ->name('attendance.constraints.employee.assign');
+    });
+
     // Per-user additional constraint management
     Route::prefix('/users/{userId}/additional')->group(function () {
         Route::get('/', [AttendanceConstraintController::class, 'getUserAdditionalConstraints'])
