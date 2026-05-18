@@ -49,7 +49,7 @@ class MedicalInsuranceSubscriptionRepository extends BaseRepository
             ->firstOrFail();
     }
 
-    public function paginatedList(int $page, int $perPage, array $filters = []): array
+    public function listSubscriptions(int $page, int $perPage, array $filters = []): array
     {
         $query = $this->model->with(['user', 'medicalInsurance', 'familyMembers']);
 
