@@ -19,6 +19,8 @@ class UpdateMedicalInsuranceCommand
         private ?float $value = null,
         private ?int $individualsCount = null,
         private ?int $status = null,
+        private array $attachments = [],
+        private array $deletedAttachmentIds = [],
     ) {
     }
 
@@ -70,6 +72,16 @@ class UpdateMedicalInsuranceCommand
     public function getStatus(): ?int
     {
         return $this->status;
+    }
+
+    public function getAttachments(): array
+    {
+        return $this->attachments;
+    }
+
+    public function getDeletedAttachmentIds(): array
+    {
+        return $this->deletedAttachmentIds;
     }
 
     public function toArray(): array

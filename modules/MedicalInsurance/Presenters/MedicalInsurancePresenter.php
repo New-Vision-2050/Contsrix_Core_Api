@@ -6,6 +6,7 @@ namespace Modules\MedicalInsurance\Presenters;
 
 use Modules\MedicalInsurance\Models\MedicalInsurance;
 use BasePackage\Shared\Presenters\AbstractPresenter;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 class MedicalInsurancePresenter extends AbstractPresenter
 {
@@ -35,8 +36,33 @@ class MedicalInsurancePresenter extends AbstractPresenter
             'value' => $this->medicalInsurance->value,
             'individuals_count' => $this->medicalInsurance->individuals_count,
             'status' => $this->medicalInsurance->status,
+            'attachments' => $this->presentAttachments(),
             'created_at' => $this->medicalInsurance->created_at?->toDateTimeString(),
             'updated_at' => $this->medicalInsurance->updated_at?->toDateTimeString(),
         ];
+    }
+
+    private function presentAttachments(): array
+    {
+        return collect($this->medicalInsurance->getMedia('attachments'))
+            ->map(function ($media) {
+                $data = (new MediaPresenter($media))->getData();
+                $data['human_readable_size'] = $this->formatBytes((int) $media->size);
+
+                return $data;
+            })
+            ->values()
+            ->all();
+    }
+
+    private function formatBytes(int $bytes, int $precision = 2): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $bytes = max($bytes, 0);
+        $pow = $bytes > 0 ? floor(log($bytes) / log(1024)) : 0;
+        $pow = min($pow, count($units) - 1);
+        $bytes /= 1024 ** $pow;
+
+        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 }

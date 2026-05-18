@@ -16,6 +16,7 @@ class CreateMedicalInsuranceDTO
         public ?float $value = null,
         public ?int $individualsCount = null,
         public int $status = 1,
+        public array $attachments = [],
     ) {
     }
 

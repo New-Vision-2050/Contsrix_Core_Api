@@ -22,7 +22,10 @@ class MedicalInsuranceCRUDService
 
     public function create(CreateMedicalInsuranceDTO $createMedicalInsuranceDTO): MedicalInsurance
     {
-         return $this->repository->createMedicalInsurance($createMedicalInsuranceDTO->toArray());
+        return $this->repository->createMedicalInsurance(
+            $createMedicalInsuranceDTO->toArray(),
+            $createMedicalInsuranceDTO->attachments,
+        );
     }
 
     public function list(int $page = 1, int $perPage = 10): array

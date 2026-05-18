@@ -22,6 +22,8 @@ class CreateMedicalInsuranceRequest extends FormRequest
             'value' => 'nullable|numeric|min:0',
             'individuals_count' => 'nullable|integer|min:0',
             'status' => 'nullable|integer|in:-1,0,1',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:30000',
         ];
     }
 
@@ -37,6 +39,7 @@ class CreateMedicalInsuranceRequest extends FormRequest
             value: $this->get('value') !== null ? (float) $this->get('value') : null,
             individualsCount: $this->get('individuals_count') !== null ? (int) $this->get('individuals_count') : null,
             status: $this->get('status', 1),
+            attachments: $this->file('attachments', []),
         );
     }
 }

@@ -25,6 +25,10 @@ class UpdateMedicalInsuranceRequest extends FormRequest
             'value' => 'nullable|numeric|min:0',
             'individuals_count' => 'nullable|integer|min:0',
             'status' => 'nullable|integer|in:-1,0,1',
+            'attachments' => 'nullable|array',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:30000',
+            'deleted_attachment_ids' => 'nullable|array',
+            'deleted_attachment_ids.*' => 'integer',
         ];
     }
 
@@ -41,6 +45,8 @@ class UpdateMedicalInsuranceRequest extends FormRequest
             value: $this->get('value') !== null ? (float) $this->get('value') : null,
             individualsCount: $this->get('individuals_count') !== null ? (int) $this->get('individuals_count') : null,
             status: $this->get('status') !== null ? (int) $this->get('status') : null,
+            attachments: $this->file('attachments', []),
+            deletedAttachmentIds: array_map('intval', $this->get('deleted_attachment_ids', [])),
         );
     }
 }

@@ -12,14 +12,22 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 
-class MedicalInsurance extends Model
+class MedicalInsurance extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use BelongsToTenant;
+    use InteractsWithMedia;
+
+    protected $with = [
+        'employee',
+        'media',
+    ];
 
     public $incrementing = false;
 
@@ -48,6 +56,11 @@ class MedicalInsurance extends Model
         'individuals_count' => 'integer',
         'status' => 'integer',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
+    }
 
     public function getTenantIdColumn(): string
     {
