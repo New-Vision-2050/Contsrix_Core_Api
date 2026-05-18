@@ -352,6 +352,11 @@ class User extends Authenticatable implements JWTSubject, Auditable
         return $this->hasMany(\Modules\MedicalInsurance\Models\MedicalInsurance::class, 'employee_id');
     }
 
+    public function medicalInsuranceSubscriptions()
+    {
+        return $this->hasMany(\Modules\MedicalInsurance\Models\MedicalInsuranceSubscription::class, 'user_id');
+    }
+
     public function clientRequests()
     {
         $this->hasMany(\Modules\ClientRequest\Models\ClientRequest::class,"client_id","id")->where("client_type","individual");

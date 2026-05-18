@@ -11,6 +11,10 @@ class GetBrokerRequest extends FormRequest
 {
     public function rules(): array
     {
-        return [];
+        return [
+            'page'                                => 'integer|min:1',
+            'per_page'                            => 'integer|min:1',
+            'has_medical_insurance_subscription'  => 'nullable|integer|in:0,1',
+        ];
     }
 }
