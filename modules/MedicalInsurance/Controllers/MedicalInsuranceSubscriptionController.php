@@ -30,9 +30,10 @@ class MedicalInsuranceSubscriptionController extends Controller
     public function index(GetMedicalInsuranceSubscriptionListRequest $request): JsonResponse
     {
         $filters = array_filter([
-            'user_id'              => $request->get('user_id'),
-            'medical_insurance_id' => $request->get('medical_insurance_id'),
-            'status'               => $request->has('status') ? (int) $request->get('status') : null,
+            'user_id'                       => $request->get('user_id'),
+            'medical_insurance_id'          => $request->get('medical_insurance_id'),
+            'medical_insurance_category_id' => $request->get('medical_insurance_category_id'),
+            'status'                        => $request->has('status') ? (int) $request->get('status') : null,
         ], fn ($v) => $v !== null);
 
         $list = $this->subscriptionService->list(

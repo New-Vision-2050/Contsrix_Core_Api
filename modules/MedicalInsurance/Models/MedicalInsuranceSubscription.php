@@ -29,6 +29,7 @@ class MedicalInsuranceSubscription extends Model
     protected $fillable = [
         'user_id',
         'medical_insurance_id',
+        'medical_insurance_category_id',
         'company_id',
         'amount',
         'subscription_no',
@@ -36,12 +37,13 @@ class MedicalInsuranceSubscription extends Model
     ];
 
     protected $casts = [
-        'id'                   => 'string',
-        'user_id'              => 'string',
-        'medical_insurance_id' => 'string',
-        'company_id'           => 'string',
-        'amount'               => 'decimal:2',
-        'status'               => 'integer',
+        'id'                            => 'string',
+        'user_id'                       => 'string',
+        'medical_insurance_id'          => 'string',
+        'medical_insurance_category_id' => 'string',
+        'company_id'                    => 'string',
+        'amount'                        => 'decimal:2',
+        'status'                        => 'integer',
     ];
 
     public function getTenantIdColumn(): string
@@ -57,6 +59,11 @@ class MedicalInsuranceSubscription extends Model
     public function medicalInsurance(): BelongsTo
     {
         return $this->belongsTo(MedicalInsurance::class, 'medical_insurance_id');
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(MedicalInsuranceCategory::class, 'medical_insurance_category_id');
     }
 
     public function familyMembers(): HasMany
