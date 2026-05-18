@@ -52,6 +52,11 @@ class MedicalInsurance extends Model
         return $this->belongsTo(User::class, 'employee_id');
     }
 
+    public function category()
+    {
+        return $this->hasOne(MedicalInsuranceCategory::class);
+    }
+
     protected static function newFactory(): MedicalInsuranceFactory
     {
         return MedicalInsuranceFactory::new();
