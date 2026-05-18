@@ -22,6 +22,7 @@ class MedicalInsurancePresenter extends AbstractPresenter
             'id' => $this->medicalInsurance->id,
             'name' => $this->medicalInsurance->name,
             'policy_number' => $this->medicalInsurance->policy_number,
+            'provider' => $this->medicalInsurance->provider,
             'employee_id' => $this->medicalInsurance->employee_id,
             'employee' => $this->medicalInsurance->employee ? [
                 'id' => $this->medicalInsurance->employee->id,
@@ -29,7 +30,10 @@ class MedicalInsurancePresenter extends AbstractPresenter
                 'email' => $this->medicalInsurance->employee->email,
                 'phone' => $this->medicalInsurance->employee->phone,
             ] : null,
+            'start_date' => $this->medicalInsurance->start_date?->format('Y-m-d'),
             'end_date' => $this->medicalInsurance->end_date?->format('Y-m-d'),
+            'value' => $this->medicalInsurance->value,
+            'individuals_count' => $this->medicalInsurance->individuals_count,
             'status' => $this->medicalInsurance->status,
             'created_at' => $this->medicalInsurance->created_at?->toDateTimeString(),
             'updated_at' => $this->medicalInsurance->updated_at?->toDateTimeString(),

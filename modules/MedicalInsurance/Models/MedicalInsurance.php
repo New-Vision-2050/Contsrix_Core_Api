@@ -28,9 +28,13 @@ class MedicalInsurance extends Model
     protected $fillable = [
         'name',
         'policy_number',
+        'provider',
         'employee_id',
         'company_id',
+        'start_date',
         'end_date',
+        'value',
+        'individuals_count',
         'status',
     ];
 
@@ -38,7 +42,10 @@ class MedicalInsurance extends Model
         'id' => 'string',
         'employee_id' => 'string',
         'company_id' => 'string',
+        'start_date' => 'date',
         'end_date' => 'date',
+        'value' => 'decimal:2',
+        'individuals_count' => 'integer',
         'status' => 'integer',
     ];
 

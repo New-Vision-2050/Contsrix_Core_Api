@@ -15,8 +15,12 @@ class CreateMedicalInsuranceRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'policy_number' => 'required|string|max:255|unique:medical_insurances,policy_number',
+            'provider' => 'nullable|string|max:255',
             'employee_id' => 'nullable|uuid|exists:users,id',
-            'end_date' => 'nullable|date|after_or_equal:today',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'value' => 'nullable|numeric|min:0',
+            'individuals_count' => 'nullable|integer|min:0',
             'status' => 'nullable|integer|in:-1,0,1',
         ];
     }
@@ -26,8 +30,12 @@ class CreateMedicalInsuranceRequest extends FormRequest
         return new CreateMedicalInsuranceDTO(
             name: $this->get('name'),
             policyNumber: $this->get('policy_number'),
+            provider: $this->get('provider'),
             employeeId: $this->get('employee_id'),
+            startDate: $this->get('start_date'),
             endDate: $this->get('end_date'),
+            value: $this->get('value') !== null ? (float) $this->get('value') : null,
+            individualsCount: $this->get('individuals_count') !== null ? (int) $this->get('individuals_count') : null,
             status: $this->get('status', 1),
         );
     }
