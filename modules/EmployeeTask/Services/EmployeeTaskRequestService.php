@@ -11,35 +11,24 @@ use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Enums\ProcedureSettingType;
-use Modules\ProcedureSetting\Models\ProcedureSetting;
-use Modules\ProcedureSetting\Models\ProcedureSettingStep;
+use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 
 class EmployeeTaskRequestService
 {
     public function __construct(
-        private readonly EmployeeTaskRepository $repository,
+        private readonly EmployeeTaskRepository    $repository,
+        private readonly ProcedureWorkflowService  $workflow,
     ) {}
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
     {
-        $procedureSetting = ProcedureSetting::query()
-            ->where('type', ProcedureSettingType::EmployeeTaskProcedure->value)
-            ->with(['steps' => fn ($q) => $q->orderBy('step_order')])
-            ->first();
-
-        if (!$procedureSetting) {
-            throw EmployeeTaskException::procedureSettingNotConfigured();
-        }
-
-        $firstStep = $procedureSetting->steps->first();
-
-        if (!$firstStep) {
-            throw EmployeeTaskException::noProcedureStepsConfigured();
-        }
+        $firstStep = $this->workflow->resolveFirstStep(
+            ProcedureSettingType::EmployeeTaskProcedure->value,
+        );
 
         $data                              = $dto->toArray();
         $data['serial_number']             = $this->repository->generateSerialNumber();
-        $data['procedure_setting_id']      = $procedureSetting->id;
+        $data['procedure_setting_id']      = $firstStep->procedure_setting_id;
         $data['current_procedure_step_id'] = $firstStep->id;
         $data['company_id']                = tenant('id');
 
@@ -107,15 +96,15 @@ class EmployeeTaskRequestService
             throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
         }
 
-        $currentStep = $this->resolveCurrentStep($task);
+        $result = $this->workflow->advance(
+            $task->current_procedure_step_id,
+            $task->procedure_setting_id,
+            $adminId,
+        );
 
-        $this->assertIsActionTaker($currentStep, $adminId);
-
-        $nextStep = $this->findNextStep($task, $currentStep);
-
-        if ($nextStep) {
+        if (!$result->isFinal) {
             return $this->repository->update($task, [
-                'current_procedure_step_id' => $nextStep->id,
+                'current_procedure_step_id' => $result->nextStep->id,
             ]);
         }
 
@@ -139,9 +128,7 @@ class EmployeeTaskRequestService
             throw EmployeeTaskException::invalidStatus($task->status, EmployeeTaskStatus::Pending->value);
         }
 
-        $currentStep = $this->resolveCurrentStep($task);
-
-        $this->assertIsActionTaker($currentStep, $adminId);
+        $this->workflow->assertCanReject($task->current_procedure_step_id, $adminId);
 
         return $this->repository->update($task, [
             'status'                    => EmployeeTaskStatus::Rejected->value,
@@ -150,44 +137,6 @@ class EmployeeTaskRequestService
             'rejection_reason'          => $reason,
             'current_procedure_step_id' => null,
         ]);
-    }
-
-    private function resolveCurrentStep(EmployeeTaskRequest $task): ?ProcedureSettingStep
-    {
-        if (!$task->current_procedure_step_id) {
-            return null;
-        }
-
-        return ProcedureSettingStep::with('actionTakers')
-            ->find($task->current_procedure_step_id);
-    }
-
-    private function assertIsActionTaker(?ProcedureSettingStep $step, string $userId): void
-    {
-        if (!$step) {
-            return;
-        }
-
-        if ($step->actionTakers->isEmpty()) {
-            return;
-        }
-
-        if (!$step->actionTakers->contains('user_id', $userId)) {
-            throw EmployeeTaskException::notAuthorizedForStep();
-        }
-    }
-
-    private function findNextStep(EmployeeTaskRequest $task, ?ProcedureSettingStep $currentStep): ?ProcedureSettingStep
-    {
-        if (!$task->procedure_setting_id || !$currentStep) {
-            return null;
-        }
-
-        return ProcedureSettingStep::query()
-            ->where('procedure_setting_id', $task->procedure_setting_id)
-            ->where('step_order', '>', $currentStep->step_order)
-            ->orderBy('step_order')
-            ->first();
     }
 
     public function cancelByAdmin(string $id, string $adminId, ?string $reason = null): EmployeeTaskRequest

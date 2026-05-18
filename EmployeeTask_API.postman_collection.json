@@ -2,7 +2,7 @@
   "info": {
     "name": "EmployeeTask API",
     "_postman_id": "employee-task-api-collection",
-    "description": "Complete API collection for the Employee Work Task Request (طلب مهمة عمل) module.\n\n**Base URL:** `{{url}}/api/v1`\n**Auth:** Bearer token via `{{token}}` variable.\n\nImport this file into Postman and set the collection variables before running.",
+    "description": "Complete API collection for the Employee Work Task Request (طلب مهمة عمل) module.\n\n**Base URL:** `{{url}}/api/v1`\n**Auth:** Bearer token via `{{token}}` variable.\n\n**Response envelope (BasePackage `Json`):**\n```\n{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\" | \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"...human readable...\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": { ... } | [ ... ]\n}\n```\n\nImport this file into Postman and set the collection variables before running.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -29,10 +29,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Has task id', () => pm.expect(json.data).to.have.property('id'));",
-                  "pm.collectionVariables.set('task_id', json.data.id);"
+                  "pm.test('Has task id', () => pm.expect(json.payload).to.have.property('id'));",
+                  "pm.collectionVariables.set('task_id', json.payload.id);"
                 ],
                 "type": "text/javascript"
               }
@@ -50,42 +50,32 @@
           },
           "response": [
             {
-              "name": "201 Created – Task Created",
+              "name": "Success",
               "originalRequest": {
                 "method": "POST",
                 "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"تحديث نظام إنذار الحريق\",\n  \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n  \"project_id\": null,\n  \"approval_responsible_id\": null,\n  \"assignment_responsible_id\": null,\n  \"duration_hours\": 4,\n  \"task_date\": \"2026-11-24\",\n  \"task_latitude\": 46.6753,\n  \"task_longitude\": 23.6548\n}",
-                  "options": { "raw": { "language": "json" } }
-                },
+                "body": { "mode": "raw", "raw": "{\n  \"title\": \"تحديث نظام إنذار الحريق\",\n  \"duration_hours\": 4,\n  \"task_date\": \"2026-11-24\",\n  \"task_latitude\": 46.6753,\n  \"task_longitude\": 23.6548\n}" },
                 "url": { "raw": "{{url}}/api/v1/employee-tasks", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"] }
               },
-              "status": "Created",
-              "code": 201,
+              "status": "OK",
+              "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"pending\",\n    \"status_label\": \"Pending\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": {\n      \"id\": \"step-001\",\n      \"name\": \"Manager Approval\",\n      \"step_order\": 1,\n      \"is_approve\": true,\n      \"action_takers\": [\n        { \"user_id\": \"usr-mgr-01\", \"name\": \"Khalid Al-Otaibi\" }\n      ]\n    },\n    \"sessions\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request submitted successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": null,\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-05-18 14:32:11\",\n    \"user\": null,\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
             },
             {
-              "name": "422 Unprocessable – Validation Error",
+              "name": "Procedure Setting Not Configured",
               "originalRequest": {
                 "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"\"\n}",
-                  "options": { "raw": { "language": "json" } }
-                },
                 "url": { "raw": "{{url}}/api/v1/employee-tasks", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"] }
               },
               "status": "Unprocessable Entity",
               "code": 422,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"message\": \"The title field is required.\",\n  \"errors\": {\n    \"title\": [\"The title field is required.\"],\n    \"duration_hours\": [\"The duration hours field is required.\"],\n    \"task_date\": [\"The task date field is required.\"]\n  }\n}"
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"The procedure setting has no steps configured.\"\n  }\n}"
             }
           ]
         },
@@ -97,7 +87,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Paginated response', () => pm.expect(pm.response.json()).to.have.property('data'));"
+                  "pm.test('Paginated response', () => pm.expect(pm.response.json()).to.have.property('payload'));"
                 ],
                 "type": "text/javascript"
               }
@@ -120,23 +110,17 @@
           },
           "response": [
             {
-              "name": "200 OK – Paginated List",
+              "name": "Success",
               "originalRequest": {
                 "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/employee-tasks?status=pending",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "employee-tasks"],
-                  "query": [{ "key": "status", "value": "pending" }]
-                }
+                "url": { "raw": "{{url}}/api/v1/employee-tasks?status=pending", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"], "query": [{ "key": "status", "value": "pending" }] }
               },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n      \"serial_number\": \"ETR-20261124-0001\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n      \"project_id\": null,\n      \"approval_responsible_id\": null,\n      \"assignment_responsible_id\": null,\n      \"duration_hours\": \"04:00\",\n      \"original_duration_hours\": null,\n      \"task_date\": \"2026-11-24\",\n      \"task_location\": {\n        \"latitude\": 46.6753,\n        \"longitude\": 23.6548,\n        \"radius_meters\": 100\n      },\n      \"status\": \"pending\",\n      \"status_label\": \"Pending\",\n      \"last_extension_status\": null,\n      \"last_extension_status_label\": null,\n      \"time_from\": null,\n      \"time_to\": null,\n      \"total_task_hours\": \"00:00\",\n      \"total_pause_minutes\": 0,\n      \"shift_end_method\": null,\n      \"start_location\": null,\n      \"end_location\": null,\n      \"timezone\": \"Asia/Riyadh\",\n      \"notes\": null,\n      \"rejection_reason\": null,\n      \"cancellation_reason\": null,\n      \"approved_at\": null,\n      \"rejected_at\": null,\n      \"cancelled_at\": null,\n      \"created_at\": \"2026-11-24 08:00:00\",\n      \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n      \"current_step\": {\n        \"id\": \"step-001\",\n        \"name\": \"Manager Approval\",\n        \"step_order\": 1,\n        \"is_approve\": true,\n        \"action_takers\": [\n          { \"user_id\": \"usr-mgr-01\", \"name\": \"Khalid Al-Otaibi\" }\n        ]\n      },\n      \"sessions\": []\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://localhost/api/v1/employee-tasks?page=1\",\n    \"last\": \"http://localhost/api/v1/employee-tasks?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": [\n    {\n      \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"serial_number\": \"TASK-2026-00042\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"duration_hours\": \"04:00\",\n      \"task_date\": \"2026-11-24\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n      \"created_at\": \"2026-05-18 14:32:11\",\n      \"sessions\": []\n    },\n    {\n      \"id\": \"a1b2c3d4-aaaa-bbbb-cccc-dddddddddddd\",\n      \"serial_number\": \"TASK-2026-00041\",\n      \"title\": \"صيانة دورية للمولد\",\n      \"duration_hours\": \"02:30\",\n      \"task_date\": \"2026-11-23\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6800, \"longitude\": 23.6500, \"radius_meters\": 150 },\n      \"created_at\": \"2026-05-17 09:10:00\",\n      \"sessions\": []\n    }\n  ]\n}"
             }
           ]
         },
@@ -148,7 +132,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has status field', () => pm.expect(pm.response.json().data).to.have.property('status'));"
+                  "pm.test('Has status field', () => pm.expect(pm.response.json().payload).to.have.property('status'));"
                 ],
                 "type": "text/javascript"
               }
@@ -161,32 +145,27 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Detail (in_progress with sessions)",
+              "name": "Success",
               "originalRequest": {
                 "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
                 "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] }
               },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"in_progress\",\n    \"status_label\": \"In Progress\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": \"2026-11-24 09:00:00\",\n    \"time_to\": null,\n    \"total_task_hours\": \"01:30\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": \"2026-11-24 08:30:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": [\n      {\n        \"id\": \"sess-0001\",\n        \"start_time\": \"2026-11-24 09:00:00\",\n        \"end_time\": null,\n        \"duration_minutes\": null,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": null,\n        \"notes\": null\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task retrieved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"duration_hours\": \"04:00\",\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"timezone\": null,\n    \"created_at\": \"2026-05-18 14:32:11\",\n    \"user\": { \"id\": \"emp-uuid-1\", \"name\": \"أحمد علي\" },\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
             },
             {
-              "name": "404 Not Found",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] }
-              },
+              "name": "Not Found",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] } },
               "status": "Not Found",
               "code": 404,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"message\": \"No query results for model [EmployeeTaskRequest].\"\n}"
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 404,\n    \"name\": null,\n    \"description\": \"Task request not found.\"\n  }\n}"
             }
           ]
         },
@@ -198,7 +177,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is cancelled', () => pm.expect(pm.response.json().data.status).to.eql('cancelled'));"
+                  "pm.test('Status is cancelled', () => pm.expect(pm.response.json().payload.status).to.eql('cancelled'));"
                 ],
                 "type": "text/javascript"
               }
@@ -211,32 +190,24 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Cancelled",
-              "originalRequest": {
-                "method": "DELETE",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"cancelled\",\n    \"status_label\": \"Cancelled\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"cancelled_at\": \"2026-11-24 08:45:00\",\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request cancelled successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"cancelled\",\n    \"status_label\": \"ملغية\",\n    \"cancelled_at\": \"2026-05-18 14:45:00\",\n    \"cancellation_reason\": null,\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
             },
             {
-              "name": "409 Conflict – Cannot Cancel (already started)",
-              "originalRequest": {
-                "method": "DELETE",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] }
-              },
-              "status": "Conflict",
-              "code": 409,
+              "name": "Forbidden (Not Owner)",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] } },
+              "status": "Forbidden",
+              "code": 403,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"message\": \"Task cannot be cancelled in its current state.\"\n}"
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 403,\n    \"name\": null,\n    \"description\": \"You can only cancel your own pending task requests.\"\n  }\n}"
             }
           ]
         }
@@ -254,7 +225,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is in_progress', () => pm.expect(pm.response.json().data.status).to.eql('in_progress'));"
+                  "pm.test('Status is in_progress', () => pm.expect(pm.response.json().payload.status).to.eql('in_progress'));"
                 ],
                 "type": "text/javascript"
               }
@@ -272,38 +243,28 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Started",
+              "name": "Success",
               "originalRequest": {
                 "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550\n}",
-                  "options": { "raw": { "language": "json" } }
-                },
+                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550\n}" },
                 "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/start", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "start"] }
               },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"in_progress\",\n    \"status_label\": \"In Progress\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": \"2026-11-24 09:00:00\",\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": \"2026-11-24 08:30:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": [\n      {\n        \"id\": \"sess-0001\",\n        \"start_time\": \"2026-11-24 09:00:00\",\n        \"end_time\": null,\n        \"duration_minutes\": null,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": null,\n        \"notes\": null\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task started successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"جارية\",\n    \"duration_hours\": \"04:00\",\n    \"task_date\": \"2026-11-24\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"time_to\": null,\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n    \"timezone\": \"Asia/Riyadh\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"sessions\": [\n      {\n        \"id\": \"sess-uuid-1\",\n        \"start_time\": \"2026-11-24 10:00:00\",\n        \"end_time\": null,\n        \"duration_minutes\": null,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n        \"end_location\": null,\n        \"notes\": null\n      }\n    ]\n  }\n}"
             },
             {
-              "name": "409 Conflict – Task Not Approved",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/start", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "start"] }
-              },
-              "status": "Conflict",
-              "code": 409,
+              "name": "Not Approved",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/start", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "start"] } },
+              "status": "Unprocessable Entity",
+              "code": 422,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"message\": \"Task cannot be started in its current state.\"\n}"
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"The task must be in approved status to start.\"\n  }\n}"
             }
           ]
         },
@@ -315,7 +276,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is paused', () => pm.expect(pm.response.json().data.status).to.eql('paused'));"
+                  "pm.test('Status is paused', () => pm.expect(pm.response.json().payload.status).to.eql('paused'));"
                 ],
                 "type": "text/javascript"
               }
@@ -329,19 +290,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Paused",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/pause", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "pause"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/pause", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "pause"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"paused\",\n    \"status_label\": \"Paused\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": \"2026-11-24 09:00:00\",\n    \"time_to\": null,\n    \"total_task_hours\": \"01:30\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": \"2026-11-24 08:30:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": [\n      {\n        \"id\": \"sess-0001\",\n        \"start_time\": \"2026-11-24 09:00:00\",\n        \"end_time\": \"2026-11-24 10:30:00\",\n        \"duration_minutes\": 90,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": null,\n        \"notes\": null\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task paused successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"paused\",\n    \"status_label\": \"متوقفة مؤقتاً\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"total_pause_minutes\": 0,\n    \"sessions\": [\n      {\n        \"id\": \"sess-uuid-1\",\n        \"start_time\": \"2026-11-24 10:00:00\",\n        \"end_time\": \"2026-11-24 10:25:00\",\n        \"duration_minutes\": 25,\n        \"source\": \"manual\"\n      }\n    ]\n  }\n}"
             }
           ]
         },
@@ -353,7 +309,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is in_progress', () => pm.expect(pm.response.json().data.status).to.eql('in_progress'));"
+                  "pm.test('Status is in_progress', () => pm.expect(pm.response.json().payload.status).to.eql('in_progress'));"
                 ],
                 "type": "text/javascript"
               }
@@ -371,19 +327,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Resumed",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/resume", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "resume"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/resume", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "resume"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"in_progress\",\n    \"status_label\": \"In Progress\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": \"2026-11-24 09:00:00\",\n    \"time_to\": null,\n    \"total_task_hours\": \"01:30\",\n    \"total_pause_minutes\": 15,\n    \"shift_end_method\": null,\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": \"2026-11-24 08:30:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": [\n      {\n        \"id\": \"sess-0001\",\n        \"start_time\": \"2026-11-24 09:00:00\",\n        \"end_time\": \"2026-11-24 10:30:00\",\n        \"duration_minutes\": 90,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": null,\n        \"notes\": null\n      },\n      {\n        \"id\": \"sess-0002\",\n        \"start_time\": \"2026-11-24 10:45:00\",\n        \"end_time\": null,\n        \"duration_minutes\": null,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": null,\n        \"notes\": null\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task resumed successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"جارية\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"total_pause_minutes\": 12,\n    \"sessions\": [\n      { \"id\": \"sess-uuid-1\", \"start_time\": \"2026-11-24 10:00:00\", \"end_time\": \"2026-11-24 10:25:00\", \"duration_minutes\": 25, \"source\": \"manual\" },\n      { \"id\": \"sess-uuid-2\", \"start_time\": \"2026-11-24 10:37:00\", \"end_time\": null, \"duration_minutes\": null, \"source\": \"manual\" }\n    ]\n  }\n}"
             }
           ]
         },
@@ -395,8 +346,8 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is completed', () => pm.expect(pm.response.json().data.status).to.eql('completed'));",
-                  "pm.test('total_task_hours present', () => pm.expect(pm.response.json().data).to.have.property('total_task_hours'));"
+                  "pm.test('Status is completed', () => pm.expect(pm.response.json().payload.status).to.eql('completed'));",
+                  "pm.test('total_task_hours present', () => pm.expect(pm.response.json().payload).to.have.property('total_task_hours'));"
                 ],
                 "type": "text/javascript"
               }
@@ -414,19 +365,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Completed",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.6751,\n  \"longitude\": 23.6549,\n  \"notes\": \"Task completed successfully\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/end", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "end"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/end", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "end"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"completed\",\n    \"status_label\": \"Completed\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": \"2026-11-24 09:00:00\",\n    \"time_to\": \"2026-11-24 13:15:00\",\n    \"total_task_hours\": \"03:45\",\n    \"total_pause_minutes\": 15,\n    \"shift_end_method\": \"manual\",\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n    \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": \"Task completed successfully\",\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": \"2026-11-24 08:30:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": [\n      {\n        \"id\": \"sess-0001\",\n        \"start_time\": \"2026-11-24 09:00:00\",\n        \"end_time\": \"2026-11-24 10:30:00\",\n        \"duration_minutes\": 90,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": null,\n        \"notes\": null\n      },\n      {\n        \"id\": \"sess-0002\",\n        \"start_time\": \"2026-11-24 10:45:00\",\n        \"end_time\": \"2026-11-24 13:15:00\",\n        \"duration_minutes\": 150,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n        \"notes\": null\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task ended successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"completed\",\n    \"status_label\": \"مكتملة\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"time_to\": \"2026-11-24 14:05:00\",\n    \"total_task_hours\": \"03:53\",\n    \"total_pause_minutes\": 12,\n    \"shift_end_method\": \"manual\",\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n    \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n    \"notes\": \"Task completed successfully\",\n    \"sessions\": [\n      { \"id\": \"sess-uuid-1\", \"start_time\": \"2026-11-24 10:00:00\", \"end_time\": \"2026-11-24 10:25:00\", \"duration_minutes\": 25, \"source\": \"manual\" },\n      { \"id\": \"sess-uuid-2\", \"start_time\": \"2026-11-24 10:37:00\", \"end_time\": \"2026-11-24 14:05:00\", \"duration_minutes\": 208, \"source\": \"manual\" }\n    ]\n  }\n}"
             }
           ]
         },
@@ -438,7 +384,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has elapsed_seconds', () => pm.expect(pm.response.json().data).to.have.property('elapsed_seconds'));"
+                  "pm.test('Has elapsed_seconds', () => pm.expect(pm.response.json().payload.active_task).to.have.property('elapsed_seconds'));"
                 ],
                 "type": "text/javascript"
               }
@@ -451,32 +397,24 @@
           },
           "response": [
             {
-              "name": "200 OK – Active Task Status",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"] }
-              },
+              "name": "Active Task",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"task_id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"in_progress\",\n    \"time_from\": \"2026-11-24 09:00:00\",\n    \"duration_hours\": \"04:00\",\n    \"elapsed_seconds\": 5400,\n    \"elapsed_formatted\": \"01:30:00\",\n    \"remaining_seconds\": 8999,\n    \"remaining_formatted\": \"02:29:59\",\n    \"progress_percentage\": 37,\n    \"time_consumption_percentage\": 43,\n    \"can_request_extension\": true\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Live status retrieved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"جارية\",\n    \"duration_hours\": \"04:00\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"active_task\": {\n      \"task_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"status\": \"in_progress\",\n      \"time_from\": \"2026-11-24 10:00:00\",\n      \"duration_hours\": \"04:00\",\n      \"elapsed_seconds\": 5400,\n      \"elapsed_formatted\": \"01:30:00\",\n      \"remaining_seconds\": 9000,\n      \"remaining_formatted\": \"02:30:00\",\n      \"progress_percentage\": 38,\n      \"time_consumption_percentage\": 38,\n      \"can_request_extension\": true\n    }\n  }\n}"
             },
             {
-              "name": "200 OK – No Active Task",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"] }
-              },
+              "name": "No Active Task",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"active_task\": null\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Live status retrieved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"completed\",\n    \"active_task\": null\n  }\n}"
             }
           ]
         },
@@ -488,7 +426,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has in_location flag', () => pm.expect(pm.response.json().data).to.have.property('in_location'));"
+                  "pm.test('Has in_location flag', () => pm.expect(pm.response.json().payload).to.have.property('in_location'));"
                 ],
                 "type": "text/javascript"
               }
@@ -509,48 +447,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Within Radius",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/check-location?latitude=46.6752&longitude=23.6550",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "employee-tasks", "{{task_id}}", "check-location"],
-                  "query": [
-                    { "key": "latitude",  "value": "46.6752" },
-                    { "key": "longitude", "value": "23.6550" }
-                  ]
-                }
-              },
+              "name": "In Radius",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/check-location?latitude=46.6752&longitude=23.6550", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "check-location"], "query": [{ "key": "latitude", "value": "46.6752" }, { "key": "longitude", "value": "23.6550" }] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"in_location\": true\n  }\n}"
-            },
-            {
-              "name": "200 OK – Outside Radius",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/check-location?latitude=46.9999&longitude=23.9999",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "employee-tasks", "{{task_id}}", "check-location"],
-                  "query": [
-                    { "key": "latitude",  "value": "46.9999" },
-                    { "key": "longitude", "value": "23.9999" }
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "cookie": [],
-              "body": "{\n  \"data\": {\n    \"in_location\": false\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Location checked successfully\",\n  \"payload\": {\n    \"in_location\": true,\n    \"radius_meters\": 100\n  }\n}"
             }
           ]
         },
@@ -562,7 +466,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('in_location is true', () => pm.expect(pm.response.json().data.in_location).to.be.true);"
+                  "pm.test('in_location is true', () => pm.expect(pm.response.json().payload.in_location).to.be.true);"
                 ],
                 "type": "text/javascript"
               }
@@ -580,19 +484,14 @@
           },
           "response": [
             {
-              "name": "200 OK – In Location",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550,\n  \"timestamp\": \"2026-11-24T10:30:00+03:00\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] }
-              },
+              "name": "In Radius",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"in_location\": true\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Location ping processed\",\n  \"payload\": {\n    \"in_location\": true,\n    \"radius_meters\": 100,\n    \"distance_meters\": 23,\n    \"auto_close_scheduled\": false,\n    \"out_of_radius_minutes\": 0\n  }\n}"
             }
           ]
         },
@@ -604,7 +503,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('in_location is false', () => pm.expect(pm.response.json().data.in_location).to.be.false);"
+                  "pm.test('in_location is false', () => pm.expect(pm.response.json().payload.in_location).to.be.false);"
                 ],
                 "type": "text/javascript"
               }
@@ -622,34 +521,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Out of Radius (warning only)",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.9999,\n  \"longitude\": 23.9999,\n  \"timestamp\": \"2026-11-24T10:30:00+03:00\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] }
-              },
+              "name": "Out of Radius",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"in_location\": false,\n    \"auto_close_triggered\": false,\n    \"minutes_out\": 5,\n    \"threshold_minutes\": 30\n  }\n}"
-            },
-            {
-              "name": "200 OK – Out of Radius (auto-close triggered)",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.9999,\n  \"longitude\": 23.9999,\n  \"timestamp\": \"2026-11-24T11:05:00+03:00\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "cookie": [],
-              "body": "{\n  \"data\": {\n    \"in_location\": false,\n    \"auto_close_triggered\": true,\n    \"minutes_out\": 30,\n    \"threshold_minutes\": 30\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Location ping processed\",\n  \"payload\": {\n    \"in_location\": false,\n    \"radius_meters\": 100,\n    \"distance_meters\": 36421,\n    \"auto_close_scheduled\": true,\n    \"out_of_radius_minutes\": 5\n  }\n}"
             }
           ]
         },
@@ -662,18 +541,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Session List",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/sessions", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "sessions"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/sessions", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "sessions"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"sess-0001\",\n      \"start_time\": \"2026-11-24 09:00:00\",\n      \"end_time\": \"2026-11-24 10:30:00\",\n      \"duration_minutes\": 90,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n      \"end_location\": null,\n      \"notes\": null\n    },\n    {\n      \"id\": \"sess-0002\",\n      \"start_time\": \"2026-11-24 10:45:00\",\n      \"end_time\": \"2026-11-24 13:15:00\",\n      \"duration_minutes\": 150,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n      \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n      \"notes\": null\n    }\n  ]\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Sessions retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"sess-uuid-1\",\n      \"start_time\": \"2026-11-24 10:00:00\",\n      \"end_time\": \"2026-11-24 10:25:00\",\n      \"duration_minutes\": 25,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n      \"end_location\": null,\n      \"notes\": null\n    },\n    {\n      \"id\": \"sess-uuid-2\",\n      \"start_time\": \"2026-11-24 10:37:00\",\n      \"end_time\": \"2026-11-24 14:05:00\",\n      \"duration_minutes\": 208,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n      \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n      \"notes\": null\n    }\n  ]\n}"
             }
           ]
         }
@@ -690,10 +565,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Has extension id', () => pm.expect(json.data).to.have.property('id'));",
-                  "pm.collectionVariables.set('extension_id', json.data.id);"
+                  "pm.test('Has extension id', () => pm.expect(json.payload).to.have.property('id'));",
+                  "pm.collectionVariables.set('extension_id', json.payload.id);"
                 ],
                 "type": "text/javascript"
               }
@@ -711,34 +586,24 @@
           },
           "response": [
             {
-              "name": "201 Created – Extension Submitted",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"additional_hours\": 2,\n  \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] }
-              },
-              "status": "Created",
-              "code": 201,
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] } },
+              "status": "OK",
+              "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"ext-0001\",\n    \"employee_task_request_id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"pending\",\n    \"review_notes\": null,\n    \"reviewed_at\": null,\n    \"created_at\": \"2026-11-24 10:15:00\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Extension request submitted successfully\",\n  \"payload\": {\n    \"id\": \"ext-uuid-1\",\n    \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"pending\",\n    \"review_notes\": null,\n    \"reviewed_at\": null,\n    \"created_at\": \"2026-11-24 13:50:00\"\n  }\n}"
             },
             {
-              "name": "409 Conflict – Extension Already Pending",
-              "originalRequest": {
-                "method": "POST",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"additional_hours\": 2,\n  \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] }
-              },
-              "status": "Conflict",
-              "code": 409,
+              "name": "Pending Extension Exists",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] } },
+              "status": "Unprocessable Entity",
+              "code": 422,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"message\": \"A pending extension request already exists for this task.\"\n}"
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"A pending extension request already exists for this task.\"\n  }\n}"
             }
           ]
         },
@@ -762,18 +627,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Extension List",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"ext-0001\",\n      \"employee_task_request_id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n      \"additional_hours\": \"02:00\",\n      \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n      \"status\": \"pending\",\n      \"review_notes\": null,\n      \"reviewed_at\": null,\n      \"created_at\": \"2026-11-24 10:15:00\"\n    }\n  ]\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Extension requests retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"ext-uuid-1\",\n      \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"additional_hours\": \"02:00\",\n      \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n      \"status\": \"approved\",\n      \"review_notes\": null,\n      \"reviewed_at\": \"2026-11-24 14:00:00\",\n      \"created_at\": \"2026-11-24 13:50:00\"\n    }\n  ]\n}"
             }
           ]
         }
@@ -781,7 +642,7 @@
     },
     {
       "name": "4. Admin — Task Management",
-      "description": "Admin-facing endpoints. Uses {{admin_token}}.",
+      "description": "Admin-facing endpoints. Uses {{admin_token}}.\n\nApprove/reject now walks through the ProcedureSetting steps via `ProcedureWorkflowService`. While intermediate steps remain, the task stays `pending` and only `current_step` advances. The final step flips status to `approved`.",
       "auth": {
         "type": "bearer",
         "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
@@ -795,8 +656,8 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has data array', () => pm.expect(pm.response.json()).to.have.property('data'));",
-                  "const items = pm.response.json().data;",
+                  "pm.test('Has payload array', () => pm.expect(pm.response.json()).to.have.property('payload'));",
+                  "const items = pm.response.json().payload;",
                   "if (items.length > 0) {",
                   "  pm.test('Each item has current_step', () => pm.expect(items[0]).to.have.property('current_step'));",
                   "  pm.test('current_step has action_takers', () => pm.expect(items[0].current_step).to.have.property('action_takers'));",
@@ -823,23 +684,24 @@
           },
           "response": [
             {
-              "name": "200 OK – Inbox with Pending Approvals",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/admin/employee-tasks/inbox?per_page=15",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "admin", "employee-tasks", "inbox"],
-                  "query": [{ "key": "per_page", "value": "15" }]
-                }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/inbox", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "inbox"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n      \"serial_number\": \"ETR-20261124-0001\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n      \"project_id\": null,\n      \"approval_responsible_id\": null,\n      \"assignment_responsible_id\": null,\n      \"duration_hours\": \"04:00\",\n      \"original_duration_hours\": null,\n      \"task_date\": \"2026-11-24\",\n      \"task_location\": {\n        \"latitude\": 46.6753,\n        \"longitude\": 23.6548,\n        \"radius_meters\": 100\n      },\n      \"status\": \"pending\",\n      \"status_label\": \"Pending\",\n      \"last_extension_status\": null,\n      \"last_extension_status_label\": null,\n      \"time_from\": null,\n      \"time_to\": null,\n      \"total_task_hours\": \"00:00\",\n      \"total_pause_minutes\": 0,\n      \"shift_end_method\": null,\n      \"start_location\": null,\n      \"end_location\": null,\n      \"timezone\": \"Asia/Riyadh\",\n      \"notes\": null,\n      \"rejection_reason\": null,\n      \"cancellation_reason\": null,\n      \"approved_at\": null,\n      \"rejected_at\": null,\n      \"cancelled_at\": null,\n      \"created_at\": \"2026-11-24 08:00:00\",\n      \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n      \"current_step\": {\n        \"id\": \"step-001\",\n        \"name\": \"Manager Approval\",\n        \"step_order\": 1,\n        \"is_approve\": true,\n        \"action_takers\": [\n          { \"user_id\": \"usr-mgr-01\", \"name\": \"Khalid Al-Otaibi\" }\n        ]\n      },\n      \"sessions\": []\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://localhost/api/v1/admin/employee-tasks/inbox?page=1\",\n    \"last\": \"http://localhost/api/v1/admin/employee-tasks/inbox?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Inbox retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": [\n    {\n      \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"serial_number\": \"TASK-2026-00042\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"duration_hours\": \"04:00\",\n      \"task_date\": \"2026-11-24\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n      \"created_at\": \"2026-05-18 14:32:11\",\n      \"user\": { \"id\": \"emp-uuid-1\", \"name\": \"أحمد علي\" },\n      \"current_step\": {\n        \"id\": 12,\n        \"name\": \"مدير القسم\",\n        \"step_order\": 1,\n        \"is_approve\": true,\n        \"action_takers\": [\n          { \"user_id\": \"admin-uuid-1\", \"name\": \"محمد سالم\" }\n        ]\n      },\n      \"sessions\": []\n    },\n    {\n      \"id\": \"a1b2c3d4-aaaa-bbbb-cccc-dddddddddddd\",\n      \"serial_number\": \"TASK-2026-00043\",\n      \"title\": \"صيانة دورية للمولد\",\n      \"duration_hours\": \"02:30\",\n      \"task_date\": \"2026-11-25\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"created_at\": \"2026-05-18 15:00:00\",\n      \"user\": { \"id\": \"emp-uuid-2\", \"name\": \"سارة محمود\" },\n      \"current_step\": {\n        \"id\": 13,\n        \"name\": \"المدير المالي\",\n        \"step_order\": 2,\n        \"is_approve\": true,\n        \"action_takers\": []\n      },\n      \"sessions\": []\n    }\n  ]\n}"
+            },
+            {
+              "name": "Empty Inbox",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/inbox", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "inbox"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Inbox retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 0 },\n  \"payload\": []\n}"
             }
           ]
         },
@@ -874,23 +736,14 @@
           },
           "response": [
             {
-              "name": "200 OK – All Tasks Paginated",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/admin/employee-tasks?status=pending",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "admin", "employee-tasks"],
-                  "query": [{ "key": "status", "value": "pending" }]
-                }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks?status=pending", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks"], "query": [{ "key": "status", "value": "pending" }] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n      \"serial_number\": \"ETR-20261124-0001\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n      \"project_id\": null,\n      \"approval_responsible_id\": null,\n      \"assignment_responsible_id\": null,\n      \"duration_hours\": \"04:00\",\n      \"original_duration_hours\": null,\n      \"task_date\": \"2026-11-24\",\n      \"task_location\": {\n        \"latitude\": 46.6753,\n        \"longitude\": 23.6548,\n        \"radius_meters\": 100\n      },\n      \"status\": \"pending\",\n      \"status_label\": \"Pending\",\n      \"last_extension_status\": null,\n      \"last_extension_status_label\": null,\n      \"time_from\": null,\n      \"time_to\": null,\n      \"total_task_hours\": \"00:00\",\n      \"total_pause_minutes\": 0,\n      \"shift_end_method\": null,\n      \"start_location\": null,\n      \"end_location\": null,\n      \"timezone\": \"Asia/Riyadh\",\n      \"notes\": null,\n      \"rejection_reason\": null,\n      \"cancellation_reason\": null,\n      \"approved_at\": null,\n      \"rejected_at\": null,\n      \"cancelled_at\": null,\n      \"created_at\": \"2026-11-24 08:00:00\",\n      \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n      \"current_step\": {\n        \"id\": \"step-001\",\n        \"name\": \"Manager Approval\",\n        \"step_order\": 1,\n        \"is_approve\": true,\n        \"action_takers\": [\n          { \"user_id\": \"usr-mgr-01\", \"name\": \"Khalid Al-Otaibi\" }\n        ]\n      },\n      \"sessions\": []\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://localhost/api/v1/admin/employee-tasks?page=1\",\n    \"last\": \"http://localhost/api/v1/admin/employee-tasks?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 1 },\n  \"payload\": [\n    {\n      \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"serial_number\": \"TASK-2026-00042\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"status\": \"pending\",\n      \"user\": { \"id\": \"emp-uuid-1\", \"name\": \"أحمد علي\" },\n      \"sessions\": []\n    }\n  ]\n}"
             }
           ]
         },
@@ -902,7 +755,8 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is approved', () => pm.expect(pm.response.json().data.status).to.eql('approved'));"
+                  "const body = pm.response.json().payload;",
+                  "pm.test('Status moves toward approval', () => pm.expect(['pending', 'approved']).to.include(body.status));"
                 ],
                 "type": "text/javascript"
               }
@@ -916,19 +770,44 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Approved",
-              "originalRequest": {
-                "method": "PATCH",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] }
-              },
+              "name": "Approved (Final Step Passed)",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"approved\",\n    \"status_label\": \"Approved\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": \"2026-11-24 08:30:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task approved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"approved\",\n    \"status_label\": \"معتمدة\",\n    \"approved_at\": \"2026-05-18 14:50:00\",\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Advanced To Next Step (Still Pending)",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task approved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"approved_at\": null,\n    \"current_step\": {\n      \"id\": 13,\n      \"name\": \"المدير المالي\",\n      \"step_order\": 2,\n      \"is_approve\": true,\n      \"action_takers\": [ { \"user_id\": \"admin-uuid-2\", \"name\": \"خالد فهد\" } ]\n    },\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Not Authorized For Step",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 403,\n    \"name\": null,\n    \"description\": \"You are not an authorized action-taker for the current approval step.\"\n  }\n}"
+            },
+            {
+              "name": "Invalid Status",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"Task status is 'approved', expected one of: pending.\"\n  }\n}"
             }
           ]
         },
@@ -940,7 +819,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is rejected', () => pm.expect(pm.response.json().data.status).to.eql('rejected'));"
+                  "pm.test('Status is rejected', () => pm.expect(pm.response.json().payload.status).to.eql('rejected'));"
                 ],
                 "type": "text/javascript"
               }
@@ -958,19 +837,24 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Rejected",
-              "originalRequest": {
-                "method": "PATCH",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"rejection_reason\": \"المهمة لا تتوافق مع الجدول الزمني\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "reject"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "reject"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"rejected\",\n    \"status_label\": \"Rejected\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": \"المهمة لا تتوافق مع الجدول الزمني\",\n    \"cancellation_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": \"2026-11-24 08:35:00\",\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task rejected successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"status\": \"rejected\",\n    \"status_label\": \"مرفوضة\",\n    \"rejected_at\": \"2026-05-18 14:55:00\",\n    \"rejection_reason\": \"المهمة لا تتوافق مع الجدول الزمني\",\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Not Authorized For Step",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "reject"] } },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 403,\n    \"name\": null,\n    \"description\": \"You are not an authorized action-taker for the current approval step.\"\n  }\n}"
             }
           ]
         },
@@ -982,7 +866,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Status is cancelled', () => pm.expect(pm.response.json().data.status).to.eql('cancelled'));"
+                  "pm.test('Status is cancelled', () => pm.expect(pm.response.json().payload.status).to.eql('cancelled'));"
                 ],
                 "type": "text/javascript"
               }
@@ -1000,19 +884,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Task Force Cancelled",
-              "originalRequest": {
-                "method": "DELETE",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"cancellation_reason\": \"تعارض مع أولويات المشروع\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"serial_number\": \"ETR-20261124-0001\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": {\n      \"latitude\": 46.6753,\n      \"longitude\": 23.6548,\n      \"radius_meters\": 100\n    },\n    \"status\": \"cancelled\",\n    \"status_label\": \"Cancelled\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": \"2026-11-24 09:00:00\",\n    \"time_to\": null,\n    \"total_task_hours\": \"01:30\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n    \"end_location\": null,\n    \"timezone\": \"Asia/Riyadh\",\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": \"تعارض مع أولويات المشروع\",\n    \"approved_at\": \"2026-11-24 08:30:00\",\n    \"rejected_at\": null,\n    \"cancelled_at\": \"2026-11-24 11:00:00\",\n    \"created_at\": \"2026-11-24 08:00:00\",\n    \"user\": { \"id\": \"usr-001\", \"name\": \"Ahmed Al-Rashidi\" },\n    \"current_step\": null,\n    \"sessions\": [\n      {\n        \"id\": \"sess-0001\",\n        \"start_time\": \"2026-11-24 09:00:00\",\n        \"end_time\": \"2026-11-24 11:00:00\",\n        \"duration_minutes\": 90,\n        \"source\": \"auto_close\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": null,\n        \"notes\": null\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task cancelled successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"status\": \"cancelled\",\n    \"status_label\": \"ملغية\",\n    \"cancelled_at\": \"2026-05-18 15:10:00\",\n    \"cancellation_reason\": \"تعارض مع أولويات المشروع\",\n    \"sessions\": []\n  }\n}"
             }
           ]
         },
@@ -1030,23 +909,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Extension Requests List",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests?status=pending",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "admin", "employee-tasks", "extension-requests"],
-                  "query": [{ "key": "status", "value": "pending" }]
-                }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests?status=pending", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests"], "query": [{ "key": "status", "value": "pending" }] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"ext-0001\",\n      \"employee_task_request_id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n      \"additional_hours\": \"02:00\",\n      \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n      \"status\": \"pending\",\n      \"review_notes\": null,\n      \"reviewed_at\": null,\n      \"created_at\": \"2026-11-24 10:15:00\"\n    }\n  ],\n  \"links\": {\n    \"first\": \"http://localhost/api/v1/admin/employee-tasks/extension-requests?page=1\",\n    \"last\": \"http://localhost/api/v1/admin/employee-tasks/extension-requests?page=1\",\n    \"prev\": null,\n    \"next\": null\n  },\n  \"meta\": {\n    \"current_page\": 1,\n    \"from\": 1,\n    \"last_page\": 1,\n    \"per_page\": 15,\n    \"to\": 1,\n    \"total\": 1\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Pending extension requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 1 },\n  \"payload\": [\n    {\n      \"id\": \"ext-uuid-1\",\n      \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"additional_hours\": \"02:00\",\n      \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n      \"status\": \"pending\",\n      \"review_notes\": null,\n      \"reviewed_at\": null,\n      \"created_at\": \"2026-11-24 13:50:00\"\n    }\n  ]\n}"
             }
           ]
         },
@@ -1058,7 +928,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Extension approved', () => pm.expect(pm.response.json().data.status).to.eql('approved'));"
+                  "pm.test('Extension approved', () => pm.expect(pm.response.json().payload.status).to.eql('approved'));"
                 ],
                 "type": "text/javascript"
               }
@@ -1072,19 +942,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Extension Approved",
-              "originalRequest": {
-                "method": "PATCH",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "approve"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "approve"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"ext-0001\",\n    \"employee_task_request_id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"approved\",\n    \"review_notes\": null,\n    \"reviewed_at\": \"2026-11-24 11:00:00\",\n    \"created_at\": \"2026-11-24 10:15:00\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Extension approved successfully\",\n  \"payload\": {\n    \"id\": \"ext-uuid-1\",\n    \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"approved\",\n    \"review_notes\": null,\n    \"reviewed_at\": \"2026-11-24 14:00:00\",\n    \"created_at\": \"2026-11-24 13:50:00\"\n  }\n}"
             }
           ]
         },
@@ -1096,7 +961,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Extension rejected', () => pm.expect(pm.response.json().data.status).to.eql('rejected'));"
+                  "pm.test('Extension rejected', () => pm.expect(pm.response.json().payload.status).to.eql('rejected'));"
                 ],
                 "type": "text/javascript"
               }
@@ -1114,19 +979,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Extension Rejected",
-              "originalRequest": {
-                "method": "PATCH",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "body": { "mode": "raw", "raw": "{\n  \"review_notes\": \"الوقت الإضافي غير متاح\"\n}", "options": { "raw": { "language": "json" } } },
-                "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "reject"] }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "reject"] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"id\": \"ext-0001\",\n    \"employee_task_request_id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"rejected\",\n    \"review_notes\": \"الوقت الإضافي غير متاح\",\n    \"reviewed_at\": \"2026-11-24 11:05:00\",\n    \"created_at\": \"2026-11-24 10:15:00\"\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Extension rejected successfully\",\n  \"payload\": {\n    \"id\": \"ext-uuid-1\",\n    \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"rejected\",\n    \"review_notes\": \"الوقت الإضافي غير متاح\",\n    \"reviewed_at\": \"2026-11-24 14:05:00\",\n    \"created_at\": \"2026-11-24 13:50:00\"\n  }\n}"
             }
           ]
         }
@@ -1144,7 +1004,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const d = pm.response.json().data;",
+                  "const d = pm.response.json().payload;",
                   "pm.test('Has attendance_sessions', () => pm.expect(d).to.have.property('attendance_sessions'));",
                   "pm.test('Has task_sessions', () => pm.expect(d).to.have.property('task_sessions'));",
                   "pm.test('Has summary', () => pm.expect(d).to.have.property('summary'));",
@@ -1169,42 +1029,14 @@
           },
           "response": [
             {
-              "name": "200 OK – Intra-Day Combined Report",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/employee-tasks/intra-day-report?date=2026-11-24",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "employee-tasks", "intra-day-report"],
-                  "query": [{ "key": "date", "value": "2026-11-24" }]
-                }
-              },
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/intra-day-report?date=2026-11-24", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "intra-day-report"], "query": [{ "key": "date", "value": "2026-11-24" }] } },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"data\": {\n    \"date\": \"2026-11-24\",\n    \"user_id\": \"usr-001\",\n    \"attendance_sessions\": [\n      {\n        \"type\": \"attendance\",\n        \"attendance_id\": \"att-0001\",\n        \"clock_in_time\": \"2026-11-24 07:00:00\",\n        \"clock_out_time\": \"2026-11-24 09:00:00\",\n        \"total_work_hours\": \"02:00\",\n        \"status\": \"completed\"\n      }\n    ],\n    \"task_sessions\": [\n      {\n        \"type\": \"task\",\n        \"task_id\": \"a1b2c3d4-0001-0001-0001-000000000001\",\n        \"serial_number\": \"ETR-20261124-0001\",\n        \"title\": \"تحديث نظام إنذار الحريق\",\n        \"time_from\": \"2026-11-24 09:00:00\",\n        \"time_to\": \"2026-11-24 13:15:00\",\n        \"total_task_hours\": \"03:45\",\n        \"duration_hours\": \"04:00\",\n        \"shift_end_method\": \"manual\",\n        \"status\": \"completed\",\n        \"status_label\": \"Completed\",\n        \"last_extension_status\": null,\n        \"task_location\": {\n          \"latitude\": 46.6753,\n          \"longitude\": 23.6548,\n          \"radius_meters\": 100\n        },\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n        \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n        \"work_sessions\": [\n          {\n            \"id\": \"sess-0001\",\n            \"start_time\": \"2026-11-24 09:00:00\",\n            \"end_time\": \"2026-11-24 10:30:00\",\n            \"duration_minutes\": 90,\n            \"source\": \"manual\",\n            \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n            \"end_location\": null,\n            \"notes\": null\n          },\n          {\n            \"id\": \"sess-0002\",\n            \"start_time\": \"2026-11-24 10:45:00\",\n            \"end_time\": \"2026-11-24 13:15:00\",\n            \"duration_minutes\": 150,\n            \"source\": \"manual\",\n            \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.655 },\n            \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n            \"notes\": null\n          }\n        ]\n      }\n    ],\n    \"active_task\": null,\n    \"summary\": {\n      \"attendance_total_hours\": \"02:00\",\n      \"task_total_hours\": \"03:45\",\n      \"total_work_hours\": \"05:45\"\n    }\n  }\n}"
-            },
-            {
-              "name": "200 OK – No Activity (empty day)",
-              "originalRequest": {
-                "method": "GET",
-                "header": [{ "key": "Accept", "value": "application/json" }],
-                "url": {
-                  "raw": "{{url}}/api/v1/employee-tasks/intra-day-report?date=2026-11-25",
-                  "host": ["{{url}}"],
-                  "path": ["api", "v1", "employee-tasks", "intra-day-report"],
-                  "query": [{ "key": "date", "value": "2026-11-25" }]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "cookie": [],
-              "body": "{\n  \"data\": {\n    \"date\": \"2026-11-25\",\n    \"user_id\": \"usr-001\",\n    \"attendance_sessions\": [],\n    \"task_sessions\": [],\n    \"active_task\": null,\n    \"summary\": {\n      \"attendance_total_hours\": \"00:00\",\n      \"task_total_hours\": \"00:00\",\n      \"total_work_hours\": \"00:00\"\n    }\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Intra-day report retrieved successfully\",\n  \"payload\": {\n    \"date\": \"2026-11-24\",\n    \"timezone\": \"Asia/Riyadh\",\n    \"attendance_sessions\": [\n      {\n        \"attendance_id\": \"att-uuid-1\",\n        \"clock_in_time\": \"2026-11-24 08:00:00\",\n        \"clock_out_time\": \"2026-11-24 17:00:00\",\n        \"total_work_hours\": \"08:30\",\n        \"status\": \"completed\"\n      }\n    ],\n    \"task_sessions\": [\n      {\n        \"task_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n        \"title\": \"تحديث نظام إنذار الحريق\",\n        \"start_time\": \"2026-11-24 10:00:00\",\n        \"end_time\": \"2026-11-24 14:05:00\",\n        \"duration\": \"03:53\",\n        \"status\": \"completed\"\n      }\n    ],\n    \"summary\": {\n      \"total_work_hours\": \"08:30\",\n      \"total_task_hours\": \"03:53\",\n      \"total_break_minutes\": 30,\n      \"task_count\": 1\n    }\n  }\n}"
             }
           ]
         }

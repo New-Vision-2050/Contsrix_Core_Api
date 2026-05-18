@@ -15,6 +15,7 @@ use Modules\EmployeeTask\Requests\AdminCancelTaskRequest;
 use Modules\EmployeeTask\Requests\RejectTaskRequest;
 use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
+use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 
 class AdminEmployeeTaskController extends Controller
 {
@@ -66,7 +67,7 @@ class AdminEmployeeTaskController extends Controller
         try {
             $task = $this->requestService->approve($id, (string) Auth::id());
             return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task approved successfully');
-        } catch (EmployeeTaskException $e) {
+        } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
     }
@@ -80,7 +81,7 @@ class AdminEmployeeTaskController extends Controller
                 $request->input('rejection_reason'),
             );
             return Json::item(EmployeeTaskRequestPresenter::single($task), message: 'Task rejected successfully');
-        } catch (EmployeeTaskException $e) {
+        } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
     }

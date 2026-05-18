@@ -25,6 +25,7 @@ use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
 use Modules\EmployeeTask\Services\EmployeeTaskLifecycleService;
 use Modules\EmployeeTask\Services\EmployeeTaskLocationService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
+use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 use Modules\User\Models\User;
 
 class EmployeeTaskController extends Controller
@@ -79,7 +80,7 @@ class EmployeeTaskController extends Controller
                 EmployeeTaskRequestPresenter::single($task->load(['sessions'])),
                 message: 'Task request submitted successfully',
             );
-        } catch (EmployeeTaskException $e) {
+        } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
     }
