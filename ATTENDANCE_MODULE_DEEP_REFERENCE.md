@@ -2,7 +2,7 @@
 
 > **Purpose of this document:** A self-contained playbook for any developer or AI assistant working inside the Attendance module. Every class, interface, constant, relationship, business rule, and data-flow is documented here with the full implementation details needed to safely read, modify, or extend the module without needing to open every file individually.
 >
-> **Last updated:** 2026-05-14 — Added constraint management APIs: `attendance_constraint_locations` table, `AttendanceConstraintLocation` model, new `AttendanceConstraintController` methods (update basic info, get/assign employees, CRUD locations, get day-shifts), updated `AttendanceConstraintService` location merging to include table-based locations alongside existing `branch_locations` JSON, and updated INV-20.
+> **Last updated:** 2026-05-18 — Added constraint management APIs: `attendance_constraint_locations` table, `AttendanceConstraintLocation` model, new `AttendanceConstraintController` methods (update basic info, get/assign employees, CRUD locations, get day-shifts), updated `AttendanceConstraintService` location merging to include table-based locations alongside existing `branch_locations` JSON, and updated INV-20. Added §24: EmployeeTask Module Integration (new `modules/EmployeeTask/` — parallel task hours system, intra-day report, GPS auto-close, extension requests).
 
 ---
 
@@ -41,6 +41,17 @@
     - [INV-15](#inv-15-always-use-toiso8601string-when-passing-datetimes-through-job-constructors): Always use `->toIso8601String()` in job constructors, never `->format('Y-m-d H:i:s')`
     - [INV-16](#inv-16-all-attendance-hour-fields-leaving-the-api-must-be-hhmm-strings-via-hoursformatter): Hour/minute fields in API payloads must be HH:MM strings (via `HoursFormatter`), never raw decimals
     - [INV-17](#inv-17-gettodaysworkrulesforuser-must-use-the-current-time-on-today-never-midnight): `getTodaysWorkRulesForUser` must use current time on today — never midnight from a bare date string
+24. [EmployeeTask Module Integration](#24-employeetask-module-integration) ← **NEW 2026-05-18**
+    - [24.1 What Was Built](#241-what-was-built)
+    - [24.2 Architectural Boundary (What Was NOT Changed)](#242-architectural-boundary-what-was-not-changed)
+    - [24.3 How Task Hours Integrate With Attendance Hours](#243-how-task-hours-integrate-with-attendance-hours)
+    - [24.4 Radius Snapshot Pattern](#244-radius-snapshot-pattern-mirrors-attendance-convention)
+    - [24.5 New Tables](#245-new-tables)
+    - [24.6 Auto-Close Jobs](#246-auto-close-jobs)
+    - [24.7 Status State Machine](#247-status-state-machine)
+    - [24.8 API Endpoints (17 total)](#248-api-endpoints-17-total)
+    - [24.9 Key Invariants (INV-T1 through INV-T10)](#249-key-invariants-employeetask-specific)
+    - [24.10 Permissions](#2410-permissions)
     - [INV-18](#inv-18-re-clock-in-lateness-anchor-must-filter-previous-attendances-by-scheduled-period): Re-clock-in lateness anchor must filter previous rows by scheduled period (`start_time` + `end_time`), not by date alone
     - [INV-19](#inv-19-lateness-grace-lookup-reads-per-day-rules-from-weekly_scheduledaylateness_rules): Lateness grace-period lookup must read per-day rules from `weekly_schedule.{day}.lateness_rules`, not `time_rules.lateness_rules`
     - [INV-20](#inv-20-additional_locations-in-user-constrainttoday--mirrors-the-location-validation-used-at-clock-in): `additional_locations` in `user-constraint/today` — mirrors the location validation used at clock-in
@@ -2302,3 +2313,208 @@ API: `POST /api/v1/attendance/constraints/users/{userId}/additional` with `{ "co
 
 #### Related documentation
 `ATTENDANCE_CONSTRAINT_MANAGEMENT_APIS.md` at the project root contains the full API reference with request/response examples, field descriptions, and migration instructions for all new constraint management endpoints.
+
+---
+
+## 24. EmployeeTask Module Integration
+
+> **Added:** 2026-05-18  
+> **Module path:** `modules/EmployeeTask/`  
+> **Full plan:** `EMPLOYEE_TASK_SYSTEM_PLAN.md`  
+> **Status:** Phases 1–6 fully implemented (30 PHP files). Phase 7 (tests, Postman, dev DB migration) pending.
+
+### 24.1 What Was Built
+
+An **Employee Work Task Request (طلب مهمة عمل)** system implemented as a completely separate module. It adds parallel task-hour tracking alongside the existing attendance system without touching any Attendance table, presenter, or core service.
+
+**Files created (30 total):**
+
+| Directory | Files |
+|---|---|
+| `Controllers/` | `EmployeeTaskController.php`, `AdminEmployeeTaskController.php` |
+| `Database/Migrations/` | `2026_05_20_000001_create_employee_task_requests_table.php`, `…_sessions_…`, `…_extension_requests_…` |
+| `DTO/` | `CreateEmployeeTaskRequestDTO`, `StartTaskDTO`, `EndTaskDTO`, `CreateExtensionRequestDTO` |
+| `Enums/` | `EmployeeTaskStatus.php`, `EmployeeTaskExtensionStatus.php` |
+| `Exceptions/` | `EmployeeTaskException.php` |
+| `Jobs/` | `AutoCloseTaskAtDurationExpiryJob.php`, `AutoCloseTaskIfOutOfLocationJob.php` |
+| `Models/` | `EmployeeTaskRequest.php`, `EmployeeTaskSession.php`, `EmployeeTaskExtensionRequest.php` |
+| `Presenters/` | `EmployeeTaskRequestPresenter.php`, `EmployeeTaskSessionPresenter.php`, `EmployeeTaskExtensionPresenter.php` |
+| `Providers/` | `EmployeeTaskServiceProvider.php`, `EmployeeTaskRouteServiceProvider.php` |
+| `Repositories/` | `EmployeeTaskRepository.php`, `EmployeeTaskSessionRepository.php` |
+| `Requests/` | 7 form request classes |
+| `Routes/` | `employee_tasks.php` (17 endpoints) |
+| `Services/` | `EmployeeTaskRequestService`, `EmployeeTaskLifecycleService`, `EmployeeTaskLocationService`, `EmployeeTaskAutoCloseService`, `EmployeeTaskExtensionService`, `EmployeeTaskReportService` |
+| `Support/` | `GeoDistance.php` (Haversine formula) |
+| `Config/` | `permissions.php` |
+
+**ProcedureSetting change:** Added `EmployeeTaskRequest = 'employee_task_request'` to `modules/ProcedureSetting/Enums/ProcedureSettingType.php`.
+
+---
+
+### 24.2 Architectural Boundary (What Was NOT Changed)
+
+This is the most important invariant for anyone working in the Attendance module:
+
+| Unchanged artifact | Why it was not touched |
+|---|---|
+| `attendances` table schema | Zero columns added. API payload byte-equivalent. |
+| `AttendancePresenter` output | Not modified. Existing clients see no change. |
+| `AttendanceCalculator` / policies | Pure domain logic unchanged. |
+| `AttendanceConstraintService` core | Only **read** from it (radius snapshot). Never written to. |
+| All clock-in / clock-out flows | Not touched. |
+| `attendance_breaks` table | Not touched. |
+
+The EmployeeTask module is a **read-only consumer** of the Attendance module. It reads constraint radius and uses `GeoDistance::metres()` (its own Haversine copy) — it does not call any Attendance write methods.
+
+---
+
+### 24.3 How Task Hours Integrate With Attendance Hours
+
+Task hours and attendance hours are **parallel independent systems**. They are summed for the daily total:
+
+```
+total_work_hours  =  attendance_hours  +  task_hours
+overtime_hours    =  max(0, total_work_hours − scheduled_hours)  [capped by max_over_time]
+```
+
+**Overlap assumption:** The system trusts that an employee cannot be at two GPS locations simultaneously, so task + attendance hours are never de-duplicated.
+
+**Lateness:** Always calculated from attendance clock-in only. A task started before the shift does NOT reset the lateness clock.
+
+**Intra-day report endpoint** (`GET /api/v1/employee-tasks/intra-day-report?date=YYYY-MM-DD`) returns a combined timeline of all attendance clock-in/clock-out pairs and all task sessions for a given day, enabling the mobile UI to show a unified workday view.
+
+---
+
+### 24.4 Radius Snapshot Pattern (mirrors Attendance convention)
+
+At task **start** time (not request creation), the service calls:
+
+```php
+EmployeeTaskLocationService::snapshotRadiusFromConstraint(User $user): int
+```
+
+This reads the employee's main `AttendanceConstraint` radius and stores it in `employee_task_requests.radius_meters`. All subsequent location checks during that task use the snapshotted value — constraint changes mid-task do NOT affect an already-started task.
+
+This mirrors the Attendance module's own snapshot approach (`applied_attendance_constraints.constraint_snapshot`).
+
+---
+
+### 24.5 New Tables
+
+Three new tables (no changes to existing Attendance tables):
+
+| Table | Purpose |
+|---|---|
+| `employee_task_requests` | One row per task request. Stores lifecycle state, GPS, hours, approval data. |
+| `employee_task_sessions` | One row per continuous work period (start→pause, resume→end). Mirrors `attendance_breaks`. |
+| `employee_task_extension_requests` | One row per duration-extension request submitted by the employee. |
+
+All three use UUID primary keys (`char(36)`), include `company_id` for multi-tenancy, and store datetimes in **branch timezone** (same convention as `attendances` — NOT UTC).
+
+---
+
+### 24.6 Auto-Close Jobs
+
+Two queued jobs handle automatic task termination:
+
+**`AutoCloseTaskAtDurationExpiryJob`**
+- Dispatched at task `start()` with `delay = (duration_hours + max_over_time_hours) * 3600` seconds.
+- On fire: calls `EmployeeTaskAutoCloseService::closeIfExpired()` with `source = 'auto_duration'`.
+- Re-dispatched (with updated deadline) when an extension is approved.
+- Idempotent: `closeIfExpired()` acquires a row lock and checks task is still `in_progress` before acting.
+
+**`AutoCloseTaskIfOutOfLocationJob`**
+- Dispatched by `EmployeeTaskLocationService::processLocationPing()` when an employee is detected outside the task radius.
+- Delay = constraint's `out_of_location_threshold_minutes`.
+- On fire: verifies employee is still out-of-radius, then calls `closeIfExpired()` with `source = 'auto_location'`.
+- Cancelled automatically (idempotency) if employee returns to radius before the delay expires.
+
+**Safety invariant (INV-T3):** Both jobs use `SELECT … FOR UPDATE` row lock + status re-check inside `closeIfExpired()` to prevent race conditions between concurrent jobs.
+
+---
+
+### 24.7 Status State Machine
+
+**Task request statuses:** `pending → approved → in_progress → paused → completed`  
+with branches to `rejected` and `cancelled`.
+
+**Extension badge** (`last_extension_status` column on `employee_task_requests`):  
+`null | extension_pending | extension_approved | extension_rejected`  
+Always returned in API responses alongside the main `status` field.
+
+Full transition table and Arabic labels are documented in `EMPLOYEE_TASK_SYSTEM_PLAN.md §3`.
+
+---
+
+### 24.8 API Endpoints (17 total)
+
+**Employee-facing (`EmployeeTaskController`):**
+
+| Method | URI | Action |
+|---|---|---|
+| `POST` | `/api/v1/employee-tasks` | Create task request |
+| `GET` | `/api/v1/employee-tasks` | List own tasks |
+| `GET` | `/api/v1/employee-tasks/{id}` | Get task detail |
+| `PATCH` | `/api/v1/employee-tasks/{id}/cancel` | Cancel own request |
+| `POST` | `/api/v1/employee-tasks/{id}/start` | Start task |
+| `POST` | `/api/v1/employee-tasks/{id}/pause` | Pause task |
+| `POST` | `/api/v1/employee-tasks/{id}/resume` | Resume task |
+| `POST` | `/api/v1/employee-tasks/{id}/end` | End task |
+| `GET` | `/api/v1/employee-tasks/{id}/live-status` | Live timer data |
+| `POST` | `/api/v1/employee-tasks/{id}/location-ping` | GPS location update |
+| `GET` | `/api/v1/employee-tasks/{id}/location-check` | Check if in radius |
+| `POST` | `/api/v1/employee-tasks/{id}/extension-requests` | Submit extension request |
+| `GET` | `/api/v1/employee-tasks/{id}/extension-requests` | List extension requests |
+| `GET` | `/api/v1/employee-tasks/intra-day-report` | Intra-day combined timeline |
+
+**Admin-facing (`AdminEmployeeTaskController`):**
+
+| Method | URI | Action |
+|---|---|---|
+| `GET` | `/api/v1/admin/employee-tasks` | List all company tasks |
+| `PATCH` | `/api/v1/admin/employee-tasks/{id}/approve` | Approve task |
+| `PATCH` | `/api/v1/admin/employee-tasks/{id}/reject` | Reject task |
+| `PATCH` | `/api/v1/admin/employee-tasks/{id}/cancel` | Force-cancel task |
+| `PATCH` | `/api/v1/admin/employee-tasks/{id}/extension-requests/{extId}/approve` | Approve extension |
+| `PATCH` | `/api/v1/admin/employee-tasks/{id}/extension-requests/{extId}/reject` | Reject extension |
+
+---
+
+### 24.9 Key Invariants (EmployeeTask-specific)
+
+These complement the existing INV-* series. Reference them when modifying `modules/EmployeeTask/`:
+
+| ID | Invariant |
+|---|---|
+| **INV-T1** | All `time_from` / `time_to` / session `start_time` / `end_time` are stored in branch timezone (use `getTimeZoneBranchByRequest()`). Never store UTC. |
+| **INV-T2** | Always use `->toIso8601String()` when passing datetimes through job constructors. Never `->format('Y-m-d H:i:s')` (same as INV-15 for Attendance). |
+| **INV-T3** | `EmployeeTaskAutoCloseService::closeIfExpired()` MUST acquire a row lock (`lockForUpdate()`) and re-read status before any write to prevent auto-close race conditions. |
+| **INV-T4** | `radius_meters` is snapshotted from the constraint at `start()` time, not at request creation. Location checks always use the snapshotted value. |
+| **INV-T5** | Auto-close jobs set `time_to = boundary_time` (the computed expiry moment), not `Carbon::now()`. This ensures `total_task_hours` is accurate even if the job fires late. |
+| **INV-T6** | `AttendancePresenter` output is never modified by the EmployeeTask module. Task data is only added via the separate intra-day report endpoint. |
+| **INV-T7** | A task in `in_progress` status must have exactly one `employee_task_sessions` row with `end_time IS NULL`. Enforced by `EmployeeTaskLifecycleService` on every state transition. |
+| **INV-T8** | `original_duration_hours` is set only on the first extension approval (preserves the original approved duration for audit). Subsequent extensions only update `duration_hours`. |
+| **INV-T9** | A new extension request can only be submitted if no other extension request is in `pending` status for that task. |
+| **INV-T10** | Extension approval re-dispatches `AutoCloseTaskAtDurationExpiryJob` with the updated deadline. Old job fires harmlessly — `closeIfExpired()` returns false if task is not `in_progress`. |
+
+---
+
+### 24.10 Permissions
+
+Defined in `modules/EmployeeTask/Config/permissions.php`:
+
+```
+EMPLOYEE_TASK_CREATE          → employee-task.employee-tasks.create
+EMPLOYEE_TASK_VIEW            → employee-task.employee-tasks.view
+EMPLOYEE_TASK_LIST            → employee-task.employee-tasks.list
+EMPLOYEE_TASK_CANCEL          → employee-task.employee-tasks.cancel
+EMPLOYEE_TASK_START           → employee-task.employee-tasks.start
+EMPLOYEE_TASK_END             → employee-task.employee-tasks.end
+EMPLOYEE_TASK_APPROVE         → employee-task.employee-tasks.approve
+EMPLOYEE_TASK_REJECT          → employee-task.employee-tasks.reject
+EMPLOYEE_TASK_ADMIN_LIST      → employee-task.employee-tasks.admin-list
+EMPLOYEE_TASK_ADMIN_CANCEL    → employee-task.employee-tasks.admin-cancel
+EMPLOYEE_TASK_EXTENSION_CREATE  → employee-task.extensions.create
+EMPLOYEE_TASK_EXTENSION_APPROVE → employee-task.extensions.approve
+EMPLOYEE_TASK_REPORT_VIEW     → employee-task.reports.view
+```
