@@ -23,6 +23,90 @@
       "description": "Employee-facing CRUD for task requests.",
       "item": [
         {
+          "name": "Get Approval Responsible (Form Preview)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().payload;",
+                  "pm.test('Has auto_approve flag', () => pm.expect(p).to.have.property('auto_approve'));",
+                  "pm.test('Has action_takers array', () => pm.expect(p.action_takers).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "procedure-settings", "approval-responsibles"],
+              "query": [
+                { "key": "type", "value": "employee_task_procedure", "description": "Procedure type — for the task form use employee_task_procedure" }
+              ]
+            },
+            "description": "Read-only preview used by the 'إنشاء مهمة' form to populate the 'مسؤل الاعتماد' field.\n\n- `auto_approve = true` → no human approval is required; submitting the form will create the task already in `approved` state.\n- `auto_approve = false` → display the first user in `action_takers` (the procedure's first-step approver) as the read-only 'مسؤل الاعتماد'."
+          },
+          "response": [
+            {
+              "name": "Has Approval Responsible",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Approval responsibles retrieved successfully\",\n  \"payload\": {\n    \"auto_approve\": false,\n    \"step\": {\n      \"id\": 12,\n      \"name\": \"مدير القسم\",\n      \"step_order\": 1\n    },\n    \"action_takers\": [\n      { \"user_id\": \"admin-uuid-1\", \"name\": \"احمد طه زكريا\" }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Auto-Approve (No Action-Takers)",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Approval responsibles retrieved successfully\",\n  \"payload\": {\n    \"auto_approve\": true,\n    \"step\": null,\n    \"action_takers\": []\n  }\n}"
+            },
+            {
+              "name": "Multiple Approvers",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Approval responsibles retrieved successfully\",\n  \"payload\": {\n    \"auto_approve\": false,\n    \"step\": { \"id\": 12, \"name\": \"مدير القسم\", \"step_order\": 1 },\n    \"action_takers\": [\n      { \"user_id\": \"admin-uuid-1\", \"name\": \"احمد طه زكريا\" },\n      { \"user_id\": \"admin-uuid-2\", \"name\": \"محمد سالم\" }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Missing Type Param",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"The type query parameter is required.\"\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "Create Task Request",
           "event": [
             {
@@ -62,7 +146,20 @@
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
               "cookie": [],
-              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request submitted successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": null,\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": null,\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-05-18 14:32:11\",\n    \"user\": null,\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request submitted successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": \"admin-uuid-1\",\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": null,\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-05-18 14:32:11\",\n    \"user\": null,\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Auto-Approved (No Approval Responsible Configured)",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{url}}/api/v1/employee-tasks", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request submitted successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"approval_responsible_id\": null,\n    \"status\": \"approved\",\n    \"status_label\": \"معتمدة\",\n    \"approved_at\": \"2026-05-18 14:32:11\",\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
             },
             {
               "name": "Procedure Setting Not Configured",

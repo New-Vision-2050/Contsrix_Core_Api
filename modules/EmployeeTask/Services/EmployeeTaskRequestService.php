@@ -22,15 +22,29 @@ class EmployeeTaskRequestService
 
     public function create(CreateEmployeeTaskRequestDTO $dto): EmployeeTaskRequest
     {
-        $firstStep = $this->workflow->resolveFirstStep(
-            ProcedureSettingType::EmployeeTaskProcedure->value,
-        );
+        $procedureType = ProcedureSettingType::EmployeeTaskProcedure->value;
+        $preview       = $this->workflow->getApprovalResponsibles($procedureType);
 
-        $data                              = $dto->toArray();
-        $data['serial_number']             = $this->repository->generateSerialNumber();
+        $data                  = $dto->toArray();
+        $data['serial_number'] = $this->repository->generateSerialNumber();
+        $data['company_id']    = tenant('id');
+
+        if ($preview['auto_approve']) {
+            $data['procedure_setting_id']      = null;
+            $data['current_procedure_step_id'] = null;
+            $data['status']                    = EmployeeTaskStatus::Approved->value;
+            $data['approved_at']               = now();
+            $data['approval_responsible_id']   = null;
+
+            return $this->repository->create($data);
+        }
+
+        $firstStep = $this->workflow->resolveFirstStep($procedureType);
+
         $data['procedure_setting_id']      = $firstStep->procedure_setting_id;
         $data['current_procedure_step_id'] = $firstStep->id;
-        $data['company_id']                = tenant('id');
+        $data['status']                    = EmployeeTaskStatus::Pending->value;
+        $data['approval_responsible_id']   = $preview['action_takers'][0]['user_id'] ?? null;
 
         return $this->repository->create($data);
     }

@@ -100,6 +100,64 @@ final class ProcedureWorkflowService
     }
 
     /**
+     * Preview the approval responsible(s) for a procedure type — the user(s)
+     * who would need to act on the FIRST step if an entity of this type were
+     * created right now.
+     *
+     * Designed for creation-form UIs that need to show "مسؤل الاعتماد" before
+     * the entity is persisted.
+     *
+     * Returns:
+     *  - auto_approve = true when no procedure setting exists, no steps are
+     *    configured, OR the first step has no action-takers → the caller
+     *    should create the entity in `approved` state directly.
+     *  - auto_approve = false when the first step has explicit action-takers
+     *    → those users must approve.
+     *
+     * @return array{
+     *   auto_approve: bool,
+     *   step: array{id:int,name:?string,step_order:int}|null,
+     *   action_takers: list<array{user_id:string,name:?string}>
+     * }
+     */
+    public function getApprovalResponsibles(string $procedureType): array
+    {
+        /** @var ProcedureSetting|null $setting */
+        $setting = ProcedureSetting::query()
+            ->where('type', $procedureType)
+            ->with(['steps' => fn ($q) => $q->orderBy('step_order')->with('actionTakers.user')])
+            ->first();
+
+        if (!$setting) {
+            return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
+        }
+
+        $firstStep = $setting->steps->first();
+
+        if (!$firstStep) {
+            return ['auto_approve' => true, 'step' => null, 'action_takers' => []];
+        }
+
+        $actionTakers = [];
+        foreach ($firstStep->actionTakers as $at) {
+            $actionTakers[] = [
+                'user_id' => $at->user_id,
+                'name'    => $at->relationLoaded('user') && $at->user ? $at->user->name : null,
+            ];
+        }
+
+        return [
+            'auto_approve'  => $actionTakers === [],
+            'step'          => [
+                'id'         => $firstStep->id,
+                'name'       => $firstStep->name,
+                'step_order' => $firstStep->step_order,
+            ],
+            'action_takers' => $actionTakers,
+        ];
+    }
+
+    /**
      * Quick check used by inbox-style endpoints: would this user be allowed to
      * act on the given step? Returns true for open steps (no action-takers)
      * and true when user is explicitly listed.
