@@ -37,6 +37,10 @@ class MedicalInsuranceSubscriptionPresenter extends AbstractPresenter
             'family_members'       => MedicalInsuranceSubscriptionFamilyMemberPresenter::collection(
                 $this->subscription->familyMembers ?? []
             ),
+            'medical_insurance_category' => $this->subscription->medicalInsurance->category ? [
+                'id'   => $this->subscription->medicalInsurance->category->id,
+                'name' => $this->subscription->medicalInsurance->category->name,
+            ] : null,
             'created_at'           => $this->subscription->created_at?->toDateTimeString(),
             'updated_at'           => $this->subscription->updated_at?->toDateTimeString(),
         ];
