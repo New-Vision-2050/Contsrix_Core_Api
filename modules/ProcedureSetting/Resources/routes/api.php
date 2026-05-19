@@ -10,6 +10,8 @@ Route::group(['middleware' => ['auth:api', \Stancl\Tenancy\Middleware\Initialize
     Route::post('/work_flows', [ProcedureSettingController::class, 'toggleBranchWorkFlows']);
     Route::post('/export', [ProcedureSettingController::class, 'export']);
 
+    Route::get('/approval-responsibles', [ProcedureSettingController::class, 'approvalResponsibles']);
+
     Route::get('/{id}', [ProcedureSettingController::class, 'show']);
     Route::put('/{id}', [ProcedureSettingController::class, 'update']);
     Route::delete('/{id}', [ProcedureSettingController::class, 'delete']);

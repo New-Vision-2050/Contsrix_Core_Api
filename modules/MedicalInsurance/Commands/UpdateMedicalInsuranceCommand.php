@@ -12,9 +12,15 @@ class UpdateMedicalInsuranceCommand
         private UuidInterface $id,
         private string $name,
         private string $policyNumber,
-        private string $employeeId,
+        private ?string $provider = null,
+        private ?string $employeeId = null,
+        private ?string $startDate = null,
         private ?string $endDate = null,
+        private ?float $value = null,
+        private ?int $individualsCount = null,
         private ?int $status = null,
+        private array $attachments = [],
+        private array $deletedAttachmentIds = [],
     ) {
     }
 
@@ -33,9 +39,19 @@ class UpdateMedicalInsuranceCommand
         return $this->policyNumber;
     }
 
-    public function getEmployeeId(): string
+    public function getProvider(): ?string
+    {
+        return $this->provider;
+    }
+
+    public function getEmployeeId(): ?string
     {
         return $this->employeeId;
+    }
+
+    public function getStartDate(): ?string
+    {
+        return $this->startDate;
     }
 
     public function getEndDate(): ?string
@@ -43,9 +59,29 @@ class UpdateMedicalInsuranceCommand
         return $this->endDate;
     }
 
+    public function getValue(): ?float
+    {
+        return $this->value;
+    }
+
+    public function getIndividualsCount(): ?int
+    {
+        return $this->individualsCount;
+    }
+
     public function getStatus(): ?int
     {
         return $this->status;
+    }
+
+    public function getAttachments(): array
+    {
+        return $this->attachments;
+    }
+
+    public function getDeletedAttachmentIds(): array
+    {
+        return $this->deletedAttachmentIds;
     }
 
     public function toArray(): array
@@ -53,11 +89,24 @@ class UpdateMedicalInsuranceCommand
         $data = [
             'name' => $this->name,
             'policy_number' => $this->policyNumber,
+            'provider' => $this->provider,
             'employee_id' => $this->employeeId,
         ];
 
+        if ($this->startDate !== null) {
+            $data['start_date'] = $this->startDate;
+        }
+
         if ($this->endDate !== null) {
             $data['end_date'] = $this->endDate;
+        }
+
+        if ($this->value !== null) {
+            $data['value'] = $this->value;
+        }
+
+        if ($this->individualsCount !== null) {
+            $data['individuals_count'] = $this->individualsCount;
         }
 
         if ($this->status !== null) {

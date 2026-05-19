@@ -141,6 +141,13 @@ class UserRepository extends BaseRepository
                     });
             });
         })
+            ->when(request()->has("has_medical_insurance_subscription"), function ($query) {
+                if ((int) request()->has_medical_insurance_subscription === 1) {
+                    $query->whereHas("medicalInsuranceSubscriptions");
+                } else {
+                    $query->whereDoesntHave("medicalInsuranceSubscriptions");
+                }
+            })
             ->where("company_id", tenant("id"));
         //TODO filter with branches very important
 

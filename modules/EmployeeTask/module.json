@@ -1,0 +1,14 @@
+{
+    "name": "EmployeeTask",
+    "alias": "employeetask",
+    "description": "Employee Work Task Request system — parallel to Attendance, never writes to attendance tables.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\EmployeeTask\\Providers\\EmployeeTaskServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": [],
+    "namespace": "Modules"
+}

@@ -1,0 +1,1143 @@
+{
+  "info": {
+    "name": "EmployeeTask API",
+    "_postman_id": "employee-task-api-collection",
+    "description": "Complete API collection for the Employee Work Task Request (طلب مهمة عمل) module.\n\n**Base URL:** `{{url}}/api/v1`\n**Auth:** Bearer token via `{{token}}` variable.\n\n**Response envelope (BasePackage `Json`):**\n```\n{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\" | \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"...human readable...\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": { ... } | [ ... ]\n}\n```\n\nImport this file into Postman and set the collection variables before running.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "url",          "value": "http://localhost", "type": "string" },
+    { "key": "token",        "value": "",                 "type": "string" },
+    { "key": "admin_token",  "value": "",                 "type": "string" },
+    { "key": "task_id",      "value": "",                 "type": "string" },
+    { "key": "extension_id", "value": "",                 "type": "string" },
+    { "key": "user_id",      "value": "",                 "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "1. Task Requests (Employee)",
+      "description": "Employee-facing CRUD for task requests.",
+      "item": [
+        {
+          "name": "Get Approval Responsible (Form Preview)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().payload;",
+                  "pm.test('Has auto_approve flag', () => pm.expect(p).to.have.property('auto_approve'));",
+                  "pm.test('Has action_takers array', () => pm.expect(p.action_takers).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "procedure-settings", "approval-responsibles"],
+              "query": [
+                { "key": "type", "value": "employee_task_procedure", "description": "Procedure type — for the task form use employee_task_procedure" }
+              ]
+            },
+            "description": "Read-only preview used by the 'إنشاء مهمة' form to populate the 'مسؤل الاعتماد' field.\n\n- `auto_approve = true` → no human approval is required; submitting the form will create the task already in `approved` state.\n- `auto_approve = false` → display the first user in `action_takers` (the procedure's first-step approver) as the read-only 'مسؤل الاعتماد'."
+          },
+          "response": [
+            {
+              "name": "Has Approval Responsible",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Approval responsibles retrieved successfully\",\n  \"payload\": {\n    \"auto_approve\": false,\n    \"step\": {\n      \"id\": 12,\n      \"name\": \"مدير القسم\",\n      \"step_order\": 1\n    },\n    \"action_takers\": [\n      { \"user_id\": \"admin-uuid-1\", \"name\": \"احمد طه زكريا\" }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Auto-Approve (No Action-Takers)",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Approval responsibles retrieved successfully\",\n  \"payload\": {\n    \"auto_approve\": true,\n    \"step\": null,\n    \"action_takers\": []\n  }\n}"
+            },
+            {
+              "name": "Multiple Approvers",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles?type=employee_task_procedure", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"], "query": [{ "key": "type", "value": "employee_task_procedure" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Approval responsibles retrieved successfully\",\n  \"payload\": {\n    \"auto_approve\": false,\n    \"step\": { \"id\": 12, \"name\": \"مدير القسم\", \"step_order\": 1 },\n    \"action_takers\": [\n      { \"user_id\": \"admin-uuid-1\", \"name\": \"احمد طه زكريا\" },\n      { \"user_id\": \"admin-uuid-2\", \"name\": \"محمد سالم\" }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Missing Type Param",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/procedure-settings/approval-responsibles", "host": ["{{url}}"], "path": ["api", "v1", "procedure-settings", "approval-responsibles"] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"The type query parameter is required.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Task Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has task id', () => pm.expect(json.payload).to.have.property('id'));",
+                  "pm.collectionVariables.set('task_id', json.payload.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"تحديث نظام إنذار الحريق\",\n  \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n  \"project_id\": null,\n  \"approval_responsible_id\": null,\n  \"assignment_responsible_id\": null,\n  \"duration_hours\": 4,\n  \"task_date\": \"2026-11-24\",\n  \"task_latitude\": 46.6753,\n  \"task_longitude\": 23.6548\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Accept", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"title\": \"تحديث نظام إنذار الحريق\",\n  \"duration_hours\": 4,\n  \"task_date\": \"2026-11-24\",\n  \"task_latitude\": 46.6753,\n  \"task_longitude\": 23.6548\n}" },
+                "url": { "raw": "{{url}}/api/v1/employee-tasks", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request submitted successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"project_id\": null,\n    \"approval_responsible_id\": \"admin-uuid-1\",\n    \"assignment_responsible_id\": null,\n    \"duration_hours\": \"04:00\",\n    \"original_duration_hours\": null,\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"last_extension_status\": null,\n    \"last_extension_status_label\": null,\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"shift_end_method\": null,\n    \"start_location\": null,\n    \"end_location\": null,\n    \"timezone\": null,\n    \"notes\": null,\n    \"rejection_reason\": null,\n    \"cancellation_reason\": null,\n    \"approved_at\": null,\n    \"rejected_at\": null,\n    \"cancelled_at\": null,\n    \"created_at\": \"2026-05-18 14:32:11\",\n    \"user\": null,\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Auto-Approved (No Approval Responsible Configured)",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{url}}/api/v1/employee-tasks", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request submitted successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"approval_responsible_id\": null,\n    \"status\": \"approved\",\n    \"status_label\": \"معتمدة\",\n    \"approved_at\": \"2026-05-18 14:32:11\",\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Procedure Setting Not Configured",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{url}}/api/v1/employee-tasks", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"] }
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"The procedure setting has no steps configured.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List My Tasks",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Paginated response', () => pm.expect(pm.response.json()).to.have.property('payload'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks?status=pending",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks"],
+              "query": [
+                { "key": "status",    "value": "pending",     "description": "Filter by status" },
+                { "key": "task_date", "value": "",            "disabled": true },
+                { "key": "date_from", "value": "2026-01-01",  "disabled": true },
+                { "key": "date_to",   "value": "2026-12-31",  "disabled": true }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/employee-tasks?status=pending", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks"], "query": [{ "key": "status", "value": "pending" }] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": [\n    {\n      \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"serial_number\": \"TASK-2026-00042\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"duration_hours\": \"04:00\",\n      \"task_date\": \"2026-11-24\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n      \"created_at\": \"2026-05-18 14:32:11\",\n      \"sessions\": []\n    },\n    {\n      \"id\": \"a1b2c3d4-aaaa-bbbb-cccc-dddddddddddd\",\n      \"serial_number\": \"TASK-2026-00041\",\n      \"title\": \"صيانة دورية للمولد\",\n      \"duration_hours\": \"02:30\",\n      \"task_date\": \"2026-11-23\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6800, \"longitude\": 23.6500, \"radius_meters\": 150 },\n      \"created_at\": \"2026-05-17 09:10:00\",\n      \"sessions\": []\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Task Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has status field', () => pm.expect(pm.response.json().payload).to.have.property('status'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task retrieved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"description\": \"مهمة تحديث نظام الحريق السريع حسب الجدول\",\n    \"duration_hours\": \"04:00\",\n    \"task_date\": \"2026-11-24\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"time_from\": null,\n    \"time_to\": null,\n    \"total_task_hours\": \"00:00\",\n    \"total_pause_minutes\": 0,\n    \"timezone\": null,\n    \"created_at\": \"2026-05-18 14:32:11\",\n    \"user\": { \"id\": \"emp-uuid-1\", \"name\": \"أحمد علي\" },\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Not Found",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] } },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 404,\n    \"name\": null,\n    \"description\": \"Task request not found.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cancel Task (Employee)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is cancelled', () => pm.expect(pm.response.json().payload.status).to.eql('cancelled'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task request cancelled successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"cancelled\",\n    \"status_label\": \"ملغية\",\n    \"cancelled_at\": \"2026-05-18 14:45:00\",\n    \"cancellation_reason\": null,\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Forbidden (Not Owner)",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}"] } },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 403,\n    \"name\": null,\n    \"description\": \"You can only cancel your own pending task requests.\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Task Lifecycle",
+      "description": "Start → Pause → Resume → End flow, plus live status and GPS endpoints.",
+      "item": [
+        {
+          "name": "Start Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is in_progress', () => pm.expect(pm.response.json().payload.status).to.eql('in_progress'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/start", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "start"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "body": { "mode": "raw", "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550\n}" },
+                "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/start", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "start"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task started successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"جارية\",\n    \"duration_hours\": \"04:00\",\n    \"task_date\": \"2026-11-24\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"time_to\": null,\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n    \"timezone\": \"Asia/Riyadh\",\n    \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n    \"sessions\": [\n      {\n        \"id\": \"sess-uuid-1\",\n        \"start_time\": \"2026-11-24 10:00:00\",\n        \"end_time\": null,\n        \"duration_minutes\": null,\n        \"source\": \"manual\",\n        \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n        \"end_location\": null,\n        \"notes\": null\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Not Approved",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/start", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "start"] } },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"The task must be in approved status to start.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Pause Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is paused', () => pm.expect(pm.response.json().payload.status).to.eql('paused'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/pause", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "pause"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/pause", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "pause"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task paused successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"paused\",\n    \"status_label\": \"متوقفة مؤقتاً\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"total_pause_minutes\": 0,\n    \"sessions\": [\n      {\n        \"id\": \"sess-uuid-1\",\n        \"start_time\": \"2026-11-24 10:00:00\",\n        \"end_time\": \"2026-11-24 10:25:00\",\n        \"duration_minutes\": 25,\n        \"source\": \"manual\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resume Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is in_progress', () => pm.expect(pm.response.json().payload.status).to.eql('in_progress'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/resume", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "resume"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/resume", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "resume"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task resumed successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"جارية\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"total_pause_minutes\": 12,\n    \"sessions\": [\n      { \"id\": \"sess-uuid-1\", \"start_time\": \"2026-11-24 10:00:00\", \"end_time\": \"2026-11-24 10:25:00\", \"duration_minutes\": 25, \"source\": \"manual\" },\n      { \"id\": \"sess-uuid-2\", \"start_time\": \"2026-11-24 10:37:00\", \"end_time\": null, \"duration_minutes\": null, \"source\": \"manual\" }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "End Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is completed', () => pm.expect(pm.response.json().payload.status).to.eql('completed'));",
+                  "pm.test('total_task_hours present', () => pm.expect(pm.response.json().payload).to.have.property('total_task_hours'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 46.6751,\n  \"longitude\": 23.6549,\n  \"notes\": \"Task completed successfully\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/end", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "end"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/end", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "end"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task ended successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"completed\",\n    \"status_label\": \"مكتملة\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"time_to\": \"2026-11-24 14:05:00\",\n    \"total_task_hours\": \"03:53\",\n    \"total_pause_minutes\": 12,\n    \"shift_end_method\": \"manual\",\n    \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n    \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n    \"notes\": \"Task completed successfully\",\n    \"sessions\": [\n      { \"id\": \"sess-uuid-1\", \"start_time\": \"2026-11-24 10:00:00\", \"end_time\": \"2026-11-24 10:25:00\", \"duration_minutes\": 25, \"source\": \"manual\" },\n      { \"id\": \"sess-uuid-2\", \"start_time\": \"2026-11-24 10:37:00\", \"end_time\": \"2026-11-24 14:05:00\", \"duration_minutes\": 208, \"source\": \"manual\" }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Live Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has elapsed_seconds', () => pm.expect(pm.response.json().payload.active_task).to.have.property('elapsed_seconds'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"] }
+          },
+          "response": [
+            {
+              "name": "Active Task",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Live status retrieved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"in_progress\",\n    \"status_label\": \"جارية\",\n    \"duration_hours\": \"04:00\",\n    \"time_from\": \"2026-11-24 10:00:00\",\n    \"active_task\": {\n      \"task_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"status\": \"in_progress\",\n      \"time_from\": \"2026-11-24 10:00:00\",\n      \"duration_hours\": \"04:00\",\n      \"elapsed_seconds\": 5400,\n      \"elapsed_formatted\": \"01:30:00\",\n      \"remaining_seconds\": 9000,\n      \"remaining_formatted\": \"02:30:00\",\n      \"progress_percentage\": 38,\n      \"time_consumption_percentage\": 38,\n      \"can_request_extension\": true\n    }\n  }\n}"
+            },
+            {
+              "name": "No Active Task",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/status", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "status"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Live status retrieved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"status\": \"completed\",\n    \"active_task\": null\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check Location",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has in_location flag', () => pm.expect(pm.response.json().payload).to.have.property('in_location'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/check-location?latitude=46.6752&longitude=23.6550",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "{{task_id}}", "check-location"],
+              "query": [
+                { "key": "latitude",  "value": "46.6752" },
+                { "key": "longitude", "value": "23.6550" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "In Radius",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/check-location?latitude=46.6752&longitude=23.6550", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "check-location"], "query": [{ "key": "latitude", "value": "46.6752" }, { "key": "longitude", "value": "23.6550" }] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Location checked successfully\",\n  \"payload\": {\n    \"in_location\": true,\n    \"radius_meters\": 100\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Location Ping (In Radius)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('in_location is true', () => pm.expect(pm.response.json().payload.in_location).to.be.true);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 46.6752,\n  \"longitude\": 23.6550,\n  \"timestamp\": \"2026-11-24T10:30:00+03:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] }
+          },
+          "response": [
+            {
+              "name": "In Radius",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Location ping processed\",\n  \"payload\": {\n    \"in_location\": true,\n    \"radius_meters\": 100,\n    \"distance_meters\": 23,\n    \"auto_close_scheduled\": false,\n    \"out_of_radius_minutes\": 0\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Location Ping (Out of Radius)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('in_location is false', () => pm.expect(pm.response.json().payload.in_location).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 46.9999,\n  \"longitude\": 23.9999,\n  \"timestamp\": \"2026-11-24T10:30:00+03:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] }
+          },
+          "response": [
+            {
+              "name": "Out of Radius",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/location-ping", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "location-ping"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Location ping processed\",\n  \"payload\": {\n    \"in_location\": false,\n    \"radius_meters\": 100,\n    \"distance_meters\": 36421,\n    \"auto_close_scheduled\": true,\n    \"out_of_radius_minutes\": 5\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Sessions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/sessions", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "sessions"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/sessions", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "sessions"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Sessions retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"sess-uuid-1\",\n      \"start_time\": \"2026-11-24 10:00:00\",\n      \"end_time\": \"2026-11-24 10:25:00\",\n      \"duration_minutes\": 25,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n      \"end_location\": null,\n      \"notes\": null\n    },\n    {\n      \"id\": \"sess-uuid-2\",\n      \"start_time\": \"2026-11-24 10:37:00\",\n      \"end_time\": \"2026-11-24 14:05:00\",\n      \"duration_minutes\": 208,\n      \"source\": \"manual\",\n      \"start_location\": { \"latitude\": 46.6752, \"longitude\": 23.6550 },\n      \"end_location\": { \"latitude\": 46.6751, \"longitude\": 23.6549 },\n      \"notes\": null\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Extension Requests (Employee)",
+      "description": "Employee submits duration extension while task is in_progress or paused.",
+      "item": [
+        {
+          "name": "Submit Extension Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has extension id', () => pm.expect(json.payload).to.have.property('id'));",
+                  "pm.collectionVariables.set('extension_id', json.payload.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"additional_hours\": 2,\n  \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Extension request submitted successfully\",\n  \"payload\": {\n    \"id\": \"ext-uuid-1\",\n    \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"pending\",\n    \"review_notes\": null,\n    \"reviewed_at\": null,\n    \"created_at\": \"2026-11-24 13:50:00\"\n  }\n}"
+            },
+            {
+              "name": "Pending Extension Exists",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] } },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"A pending extension request already exists for this task.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Extension Requests",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/extension-requests", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "{{task_id}}", "extension-requests"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Extension requests retrieved successfully\",\n  \"payload\": [\n    {\n      \"id\": \"ext-uuid-1\",\n      \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"additional_hours\": \"02:00\",\n      \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n      \"status\": \"approved\",\n      \"review_notes\": null,\n      \"reviewed_at\": \"2026-11-24 14:00:00\",\n      \"created_at\": \"2026-11-24 13:50:00\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Admin — Task Management",
+      "description": "Admin-facing endpoints. Uses {{admin_token}}.\n\nApprove/reject now walks through the ProcedureSetting steps via `ProcedureWorkflowService`. While intermediate steps remain, the task stays `pending` and only `current_step` advances. The final step flips status to `approved`.",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "Inbox (Tasks Awaiting My Approval)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has payload array', () => pm.expect(pm.response.json()).to.have.property('payload'));",
+                  "const items = pm.response.json().payload;",
+                  "if (items.length > 0) {",
+                  "  pm.test('Each item has current_step', () => pm.expect(items[0]).to.have.property('current_step'));",
+                  "  pm.test('current_step has action_takers', () => pm.expect(items[0].current_step).to.have.property('action_takers'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/inbox",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "inbox"],
+              "query": [
+                { "key": "per_page",  "value": "15",         "description": "Items per page" },
+                { "key": "task_date", "value": "",            "disabled": true, "description": "Filter by exact date YYYY-MM-DD" },
+                { "key": "date_from", "value": "2026-01-01",  "disabled": true },
+                { "key": "date_to",   "value": "2026-12-31",  "disabled": true }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/inbox", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "inbox"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Inbox retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 2 },\n  \"payload\": [\n    {\n      \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"serial_number\": \"TASK-2026-00042\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"duration_hours\": \"04:00\",\n      \"task_date\": \"2026-11-24\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"task_location\": { \"latitude\": 46.6753, \"longitude\": 23.6548, \"radius_meters\": 100 },\n      \"created_at\": \"2026-05-18 14:32:11\",\n      \"user\": { \"id\": \"emp-uuid-1\", \"name\": \"أحمد علي\" },\n      \"current_step\": {\n        \"id\": 12,\n        \"name\": \"مدير القسم\",\n        \"step_order\": 1,\n        \"is_approve\": true,\n        \"action_takers\": [\n          { \"user_id\": \"admin-uuid-1\", \"name\": \"محمد سالم\" }\n        ]\n      },\n      \"sessions\": []\n    },\n    {\n      \"id\": \"a1b2c3d4-aaaa-bbbb-cccc-dddddddddddd\",\n      \"serial_number\": \"TASK-2026-00043\",\n      \"title\": \"صيانة دورية للمولد\",\n      \"duration_hours\": \"02:30\",\n      \"task_date\": \"2026-11-25\",\n      \"status\": \"pending\",\n      \"status_label\": \"في انتظار الاعتماد\",\n      \"created_at\": \"2026-05-18 15:00:00\",\n      \"user\": { \"id\": \"emp-uuid-2\", \"name\": \"سارة محمود\" },\n      \"current_step\": {\n        \"id\": 13,\n        \"name\": \"المدير المالي\",\n        \"step_order\": 2,\n        \"is_approve\": true,\n        \"action_takers\": []\n      },\n      \"sessions\": []\n    }\n  ]\n}"
+            },
+            {
+              "name": "Empty Inbox",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/inbox", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "inbox"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Inbox retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 0 },\n  \"payload\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "List All Tasks (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks?status=pending",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks"],
+              "query": [
+                { "key": "status",    "value": "pending",     "description": "Filter: pending|approved|in_progress|paused|completed|cancelled|rejected" },
+                { "key": "user_id",   "value": "",            "disabled": true },
+                { "key": "task_date", "value": "",            "disabled": true },
+                { "key": "date_from", "value": "2026-01-01",  "disabled": true },
+                { "key": "date_to",   "value": "2026-12-31",  "disabled": true }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks?status=pending", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks"], "query": [{ "key": "status", "value": "pending" }] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Task requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 1 },\n  \"payload\": [\n    {\n      \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"serial_number\": \"TASK-2026-00042\",\n      \"title\": \"تحديث نظام إنذار الحريق\",\n      \"status\": \"pending\",\n      \"user\": { \"id\": \"emp-uuid-1\", \"name\": \"أحمد علي\" },\n      \"sessions\": []\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json().payload;",
+                  "pm.test('Status moves toward approval', () => pm.expect(['pending', 'approved']).to.include(body.status));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] }
+          },
+          "response": [
+            {
+              "name": "Approved (Final Step Passed)",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task approved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"title\": \"تحديث نظام إنذار الحريق\",\n    \"status\": \"approved\",\n    \"status_label\": \"معتمدة\",\n    \"approved_at\": \"2026-05-18 14:50:00\",\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Advanced To Next Step (Still Pending)",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task approved successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"status\": \"pending\",\n    \"status_label\": \"في انتظار الاعتماد\",\n    \"approved_at\": null,\n    \"current_step\": {\n      \"id\": 13,\n      \"name\": \"المدير المالي\",\n      \"step_order\": 2,\n      \"is_approve\": true,\n      \"action_takers\": [ { \"user_id\": \"admin-uuid-2\", \"name\": \"خالد فهد\" } ]\n    },\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Not Authorized For Step",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 403,\n    \"name\": null,\n    \"description\": \"You are not an authorized action-taker for the current approval step.\"\n  }\n}"
+            },
+            {
+              "name": "Invalid Status",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "approve"] } },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 422,\n    \"name\": null,\n    \"description\": \"Task status is 'approved', expected one of: pending.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is rejected', () => pm.expect(pm.response.json().payload.status).to.eql('rejected'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejection_reason\": \"المهمة لا تتوافق مع الجدول الزمني\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "reject"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "reject"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task rejected successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"status\": \"rejected\",\n    \"status_label\": \"مرفوضة\",\n    \"rejected_at\": \"2026-05-18 14:55:00\",\n    \"rejection_reason\": \"المهمة لا تتوافق مع الجدول الزمني\",\n    \"current_step\": null,\n    \"sessions\": []\n  }\n}"
+            },
+            {
+              "name": "Not Authorized For Step",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}", "reject"] } },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"status\": \"error\",\n  \"message\": {\n    \"type\": \"error\",\n    \"code\": 403,\n    \"name\": null,\n    \"description\": \"You are not an authorized action-taker for the current approval step.\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Force Cancel Task (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is cancelled', () => pm.expect(pm.response.json().payload.status).to.eql('cancelled'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellation_reason\": \"تعارض مع أولويات المشروع\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/{{task_id}}", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "{{task_id}}"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Task cancelled successfully\",\n  \"payload\": {\n    \"id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"serial_number\": \"TASK-2026-00042\",\n    \"status\": \"cancelled\",\n    \"status_label\": \"ملغية\",\n    \"cancelled_at\": \"2026-05-18 15:10:00\",\n    \"cancellation_reason\": \"تعارض مع أولويات المشروع\",\n    \"sessions\": []\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List All Extension Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests?status=pending",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "admin", "employee-tasks", "extension-requests"],
+              "query": [{ "key": "status", "value": "pending" }]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests?status=pending", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests"], "query": [{ "key": "status", "value": "pending" }] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_LIST_PAYLOAD_OBJECTS\",\n  \"message\": \"Pending extension requests retrieved successfully\",\n  \"pagination\": { \"page\": 1, \"next_page\": 1, \"last_page\": 1, \"result_count\": 1 },\n  \"payload\": [\n    {\n      \"id\": \"ext-uuid-1\",\n      \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n      \"additional_hours\": \"02:00\",\n      \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n      \"status\": \"pending\",\n      \"review_notes\": null,\n      \"reviewed_at\": null,\n      \"created_at\": \"2026-11-24 13:50:00\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Approve Extension",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Extension approved', () => pm.expect(pm.response.json().payload.status).to.eql('approved'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}", "options": { "raw": { "language": "json" } } },
+            "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "approve"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/approve", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "approve"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Extension approved successfully\",\n  \"payload\": {\n    \"id\": \"ext-uuid-1\",\n    \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"approved\",\n    \"review_notes\": null,\n    \"reviewed_at\": \"2026-11-24 14:00:00\",\n    \"created_at\": \"2026-11-24 13:50:00\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reject Extension",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Extension rejected', () => pm.expect(pm.response.json().payload.status).to.eql('rejected'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_notes\": \"الوقت الإضافي غير متاح\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "reject"] }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{url}}/api/v1/admin/employee-tasks/extension-requests/{{extension_id}}/reject", "host": ["{{url}}"], "path": ["api", "v1", "admin", "employee-tasks", "extension-requests", "{{extension_id}}", "reject"] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Extension rejected successfully\",\n  \"payload\": {\n    \"id\": \"ext-uuid-1\",\n    \"employee_task_request_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n    \"additional_hours\": \"02:00\",\n    \"reason\": \"المهمة تحتاج وقتاً إضافياً لإتمام التركيب\",\n    \"status\": \"rejected\",\n    \"review_notes\": \"الوقت الإضافي غير متاح\",\n    \"reviewed_at\": \"2026-11-24 14:05:00\",\n    \"created_at\": \"2026-11-24 13:50:00\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Attendance Integration",
+      "description": "Intra-day combined report: all attendance sessions + all task sessions for a given date.",
+      "item": [
+        {
+          "name": "Intra-Day Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().payload;",
+                  "pm.test('Has attendance_sessions', () => pm.expect(d).to.have.property('attendance_sessions'));",
+                  "pm.test('Has task_sessions', () => pm.expect(d).to.have.property('task_sessions'));",
+                  "pm.test('Has summary', () => pm.expect(d).to.have.property('summary'));",
+                  "pm.test('Summary has total_work_hours', () => pm.expect(d.summary).to.have.property('total_work_hours'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": {
+              "raw": "{{url}}/api/v1/employee-tasks/intra-day-report?date=2026-11-24",
+              "host": ["{{url}}"],
+              "path": ["api", "v1", "employee-tasks", "intra-day-report"],
+              "query": [
+                { "key": "date",    "value": "2026-11-24", "description": "YYYY-MM-DD" },
+                { "key": "user_id", "value": "{{user_id}}", "disabled": true, "description": "Admin: query on behalf of another user" }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{url}}/api/v1/employee-tasks/intra-day-report?date=2026-11-24", "host": ["{{url}}"], "path": ["api", "v1", "employee-tasks", "intra-day-report"], "query": [{ "key": "date", "value": "2026-11-24" }] } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json; charset=utf-8" }],
+              "cookie": [],
+              "body": "{\n  \"code\": \"SUCCESS_WITH_SINGLE_PAYLOAD_OBJECT\",\n  \"message\": \"Intra-day report retrieved successfully\",\n  \"payload\": {\n    \"date\": \"2026-11-24\",\n    \"timezone\": \"Asia/Riyadh\",\n    \"attendance_sessions\": [\n      {\n        \"attendance_id\": \"att-uuid-1\",\n        \"clock_in_time\": \"2026-11-24 08:00:00\",\n        \"clock_out_time\": \"2026-11-24 17:00:00\",\n        \"total_work_hours\": \"08:30\",\n        \"status\": \"completed\"\n      }\n    ],\n    \"task_sessions\": [\n      {\n        \"task_id\": \"9e5f8a1c-1234-4321-8abc-def012345678\",\n        \"title\": \"تحديث نظام إنذار الحريق\",\n        \"start_time\": \"2026-11-24 10:00:00\",\n        \"end_time\": \"2026-11-24 14:05:00\",\n        \"duration\": \"03:53\",\n        \"status\": \"completed\"\n      }\n    ],\n    \"summary\": {\n      \"total_work_hours\": \"08:30\",\n      \"total_task_hours\": \"03:53\",\n      \"total_break_minutes\": 30,\n      \"task_count\": 1\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

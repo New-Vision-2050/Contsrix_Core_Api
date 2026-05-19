@@ -16,6 +16,11 @@ class UpdateMedicalInsuranceHandler
 
     public function handle(UpdateMedicalInsuranceCommand $updateMedicalInsuranceCommand)
     {
-        $this->repository->updateMedicalInsurance($updateMedicalInsuranceCommand->getId(), $updateMedicalInsuranceCommand->toArray());
+        $this->repository->updateMedicalInsurance(
+            $updateMedicalInsuranceCommand->getId(),
+            $updateMedicalInsuranceCommand->toArray(),
+            $updateMedicalInsuranceCommand->getAttachments(),
+            $updateMedicalInsuranceCommand->getDeletedAttachmentIds(),
+        );
     }
 }

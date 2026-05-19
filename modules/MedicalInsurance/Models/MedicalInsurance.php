@@ -12,14 +12,22 @@ use BasePackage\Shared\Traits\BaseFilterable;
 use Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 
-class MedicalInsurance extends Model
+class MedicalInsurance extends Model implements HasMedia
 {
     use HasFactory;
     use UuidTrait;
     use BaseFilterable;
     use BelongsToTenant;
+    use InteractsWithMedia;
+
+    protected $with = [
+        'employee',
+        'media',
+    ];
 
     public $incrementing = false;
 
@@ -28,9 +36,13 @@ class MedicalInsurance extends Model
     protected $fillable = [
         'name',
         'policy_number',
+        'provider',
         'employee_id',
         'company_id',
+        'start_date',
         'end_date',
+        'value',
+        'individuals_count',
         'status',
     ];
 
@@ -38,9 +50,17 @@ class MedicalInsurance extends Model
         'id' => 'string',
         'employee_id' => 'string',
         'company_id' => 'string',
+        'start_date' => 'date',
         'end_date' => 'date',
+        'value' => 'decimal:2',
+        'individuals_count' => 'integer',
         'status' => 'integer',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
+    }
 
     public function getTenantIdColumn(): string
     {
@@ -50,6 +70,11 @@ class MedicalInsurance extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'employee_id');
+    }
+
+    public function category()
+    {
+        return $this->hasOne(MedicalInsuranceCategory::class);
     }
 
     protected static function newFactory(): MedicalInsuranceFactory

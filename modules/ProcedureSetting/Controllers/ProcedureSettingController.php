@@ -17,6 +17,7 @@ use Modules\ProcedureSetting\Requests\GetProcedureSettingRequest;
 use Modules\ProcedureSetting\Requests\ToggleBranchWorkFlowRequest;
 use Modules\ProcedureSetting\Requests\UpdateProcedureSettingRequest;
 use Modules\ProcedureSetting\Services\ProcedureSettingCRUDService;
+use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 use Modules\ProcedureSetting\Exports\ProcedureSettingExport;
 use Modules\ProcedureSetting\Requests\ExportProcedureSettingRequest;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,7 +30,32 @@ class ProcedureSettingController extends Controller
         private ProcedureSettingCRUDService $procedureSettingService,
         private UpdateProcedureSettingHandler $updateProcedureSettingHandler,
         private DeleteProcedureSettingHandler $deleteProcedureSettingHandler,
+        private ProcedureWorkflowService $workflowService,
     ) {
+    }
+
+    /**
+     * GET /api/v1/procedure-settings/approval-responsibles?type=...
+     *
+     * Preview the action-takers of the first procedure step for the given
+     * procedure type. Used by creation-form UIs that need to display
+     * "مسؤل الاعتماد" before the entity is created.
+     *
+     * If `auto_approve` is true → no one needs to approve; the consuming
+     * service should create the entity in its already-approved terminal state.
+     */
+    public function approvalResponsibles(): JsonResponse
+    {
+        $type = (string) request()->query('type', '');
+
+        if ($type === '') {
+            return Json::error(__('The type query parameter is required.'), 422);
+        }
+
+        return Json::item(
+            $this->workflowService->getApprovalResponsibles($type),
+            message: 'Approval responsibles retrieved successfully',
+        );
     }
 
     public function index(GetProcedureSettingListRequest $request): JsonResponse
