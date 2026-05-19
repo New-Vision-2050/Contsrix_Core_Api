@@ -578,17 +578,21 @@ class AttendanceConstraintController extends Controller
             ->where('company_id', $companyId)
             ->pluck('user_id')
             ->filter()
+            ->map(fn($id) => (string) $id)
             ->unique()
             ->values()
             ->toArray();
 
-        $pivotUserIds = $constraint->users()->pluck('users.id')->toArray();
+        $pivotUserIds = $constraint->users()
+            ->pluck('users.id')
+            ->map(fn($id) => (string) $id)
+            ->toArray();
 
         $allUniqueIds = collect($mainUserIds)->merge($pivotUserIds)->unique()->values();
 
-        $total       = $allUniqueIds->count();
-        $lastPage    = max(1, (int) ceil($total / $perPage));
-        $pagedIds    = $allUniqueIds->forPage($page, $perPage)->values()->toArray();
+        $total    = $allUniqueIds->count();
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $pagedIds = $allUniqueIds->forPage($page, $perPage)->values()->toArray();
 
         $mainSet = array_flip($mainUserIds);
 
@@ -600,7 +604,7 @@ class AttendanceConstraintController extends Controller
                 'name'   => $u->name,
                 'email'  => $u->email,
                 'phone'  => $u->phone ?? null,
-                'source' => isset($mainSet[$u->id]) ? 'main' : 'additional',
+                'source' => isset($mainSet[(string) $u->id]) ? 'main' : 'additional',
             ])
             ->values()
             ->all();
