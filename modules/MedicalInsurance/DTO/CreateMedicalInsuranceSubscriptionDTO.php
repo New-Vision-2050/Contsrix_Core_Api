@@ -14,6 +14,7 @@ class CreateMedicalInsuranceSubscriptionDTO
         public string $medicalInsuranceId,
         public float $amount,
         public string $subscriptionNo,
+        public ?string $medicalInsuranceCategoryId = null,
         public int $status = 1,
         public array $familyMembers = [],
     ) {
@@ -22,12 +23,13 @@ class CreateMedicalInsuranceSubscriptionDTO
     public function toArray(): array
     {
         return [
-            'user_id'              => $this->userId,
-            'medical_insurance_id' => $this->medicalInsuranceId,
-            'amount'               => $this->amount,
-            'subscription_no'      => $this->subscriptionNo,
-            'status'               => $this->status,
-            'company_id'           => tenant('id'),
+            'user_id'                       => $this->userId,
+            'medical_insurance_id'          => $this->medicalInsuranceId,
+            'medical_insurance_category_id' => $this->medicalInsuranceCategoryId,
+            'amount'                        => $this->amount,
+            'subscription_no'               => $this->subscriptionNo,
+            'status'                        => $this->status,
+            'company_id'                    => tenant('id'),
         ];
     }
 }

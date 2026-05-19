@@ -17,6 +17,7 @@ class UpdateMedicalInsuranceSubscriptionRequest extends FormRequest
         return [
             'user_id'                          => 'required|uuid|exists:users,id',
             'medical_insurance_id'             => 'required|uuid|exists:medical_insurances,id',
+            'medical_insurance_category_id'    => 'nullable|uuid|exists:medical_insurance_categories,id',
             'amount'                           => 'required|numeric|min:0',
             'subscription_no'                  => 'required|string|max:255|unique:medical_insurance_subscriptions,subscription_no,' . $id,
             'status'                           => 'nullable|integer|in:-1,0,1',
@@ -48,6 +49,7 @@ class UpdateMedicalInsuranceSubscriptionRequest extends FormRequest
             medicalInsuranceId: $this->get('medical_insurance_id'),
             amount: (float) $this->get('amount'),
             subscriptionNo: $this->get('subscription_no'),
+            medicalInsuranceCategoryId: $this->get('medical_insurance_category_id'),
             status: (int) $this->get('status', 1),
             familyMembers: $familyMembers,
         );
