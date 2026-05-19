@@ -563,45 +563,61 @@ class AttendanceConstraintController extends Controller
     }
 
     /**
-     * Get all employees assigned to this attendance constraint.
+     * Get all employees assigned to this attendance constraint, paginated.
      * Includes users assigned via user_professional_datas AND via attendance_constraint_user pivot.
      */
     public function getConstraintEmployees(Request $request, string $constraintId): JsonResponse
     {
         $constraint = $this->constraintRepository->getConstraint(Uuid::fromString($constraintId));
-        $companyId = Auth::user()->company_id;
+        $companyId  = Auth::user()->company_id;
 
-        $userIds = UserProfessionalData::where('attendance_constraint_id', $constraintId)
+        $page    = max(1, (int) $request->input('page', 1));
+        $perPage = max(1, (int) $request->input('per_page', 10));
+
+        $mainUserIds = UserProfessionalData::where('attendance_constraint_id', $constraintId)
             ->where('company_id', $companyId)
             ->pluck('user_id')
             ->filter()
             ->unique()
-            ->values();
+            ->values()
+            ->toArray();
 
-        $mainUsers = User::withoutTenancy()
-            ->whereIn('id', $userIds)
+        $pivotUserIds = $constraint->users()->pluck('users.id')->toArray();
+
+        $allUniqueIds = collect($mainUserIds)->merge($pivotUserIds)->unique()->values();
+
+        $total       = $allUniqueIds->count();
+        $lastPage    = max(1, (int) ceil($total / $perPage));
+        $pagedIds    = $allUniqueIds->forPage($page, $perPage)->values()->toArray();
+
+        $mainSet = array_flip($mainUserIds);
+
+        $users = User::withoutTenancy()
+            ->whereIn('id', $pagedIds)
             ->get()
             ->map(fn($u) => [
                 'id'     => $u->id,
                 'name'   => $u->name,
                 'email'  => $u->email,
                 'phone'  => $u->phone ?? null,
-                'source' => 'main',
-            ]);
+                'source' => isset($mainSet[$u->id]) ? 'main' : 'additional',
+            ])
+            ->values()
+            ->all();
 
-        $pivotUsers = $constraint->users()
-            ->get()
-            ->map(fn($u) => [
-                'id'     => $u->id,
-                'name'   => $u->name,
-                'email'  => $u->email,
-                'phone'  => $u->phone ?? null,
-                'source' => 'additional',
-            ]);
+        $pagination = [
+            'page'         => $page,
+            'page_size'    => $perPage,
+            'next_page'    => $lastPage > $page ? $page + 1 : $page,
+            'last_page'    => $lastPage,
+            'result_count' => $total,
+        ];
 
-        $allUsers = $mainUsers->merge($pivotUsers)->unique('id')->values()->all();
-
-        return Json::items($allUsers, message: 'Constraint employees retrieved successfully');
+        return Json::items(
+            mainItems:          $users,
+            paginationSettings: $pagination,
+            message:            'Constraint employees retrieved successfully'
+        );
     }
 
     /**
