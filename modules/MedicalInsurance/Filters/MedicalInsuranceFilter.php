@@ -20,6 +20,11 @@ class MedicalInsuranceFilter extends SearchModelFilter
         return $this->where('policy_number', 'like', '%' . $policyNumber . '%');
     }
 
+    public function provider($provider)
+    {
+        return $this->where('provider', 'like', '%' . $provider . '%');
+    }
+
     public function employeeId($employeeId)
     {
         return $this->where('employee_id', $employeeId);
