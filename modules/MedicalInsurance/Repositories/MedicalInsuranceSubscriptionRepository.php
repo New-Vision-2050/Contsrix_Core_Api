@@ -122,6 +122,10 @@ class MedicalInsuranceSubscriptionRepository extends BaseRepository
 
         $this->model
             ->whereIn('id', $subscriptionIds)
+            ->update(['subscription_no' => DB::raw('CONCAT("DELETED_", id)')]);
+
+        $this->model
+            ->whereIn('id', $subscriptionIds)
             ->delete();
     }
 
