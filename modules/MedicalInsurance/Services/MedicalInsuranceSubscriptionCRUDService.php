@@ -37,13 +37,20 @@ class MedicalInsuranceSubscriptionCRUDService
         return $this->repository->createWithFamilyMembers($dto->toArray(), $familyMembersData);
     }
 
-    /**
-     * @param  array<CreateMedicalInsuranceSubscriptionDTO> $dtos
-     * @return array<MedicalInsuranceSubscription>
-     */
+
     public function createMany(array $dtos): array
     {
         return DB::transaction(function () use ($dtos) {
+            $pairs = collect($dtos)
+                ->map(fn ($dto) => $dto->userId . '|' . $dto->medicalInsuranceId)
+                ->unique()
+                ->values();
+
+            foreach ($pairs as $pair) {
+                [$userId, $insuranceId] = explode('|', $pair);
+                $this->repository->deleteByUserAndInsurance($userId, $insuranceId);
+            }
+
             return array_map(fn ($dto) => $this->create($dto), $dtos);
         });
     }
