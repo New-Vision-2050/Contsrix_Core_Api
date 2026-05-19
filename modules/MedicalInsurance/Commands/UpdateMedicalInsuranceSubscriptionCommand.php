@@ -17,6 +17,7 @@ class UpdateMedicalInsuranceSubscriptionCommand
         private string $medicalInsuranceId,
         private float $amount,
         private string $subscriptionNo,
+        private ?string $medicalInsuranceCategoryId = null,
         private int $status = 1,
         private array $familyMembers = [],
     ) {
@@ -35,11 +36,12 @@ class UpdateMedicalInsuranceSubscriptionCommand
     public function toArray(): array
     {
         return [
-            'user_id'              => $this->userId,
-            'medical_insurance_id' => $this->medicalInsuranceId,
-            'amount'               => $this->amount,
-            'subscription_no'      => $this->subscriptionNo,
-            'status'               => $this->status,
+            'user_id'                       => $this->userId,
+            'medical_insurance_id'          => $this->medicalInsuranceId,
+            'medical_insurance_category_id' => $this->medicalInsuranceCategoryId,
+            'amount'                        => $this->amount,
+            'subscription_no'               => $this->subscriptionNo,
+            'status'                        => $this->status,
         ];
     }
 }
