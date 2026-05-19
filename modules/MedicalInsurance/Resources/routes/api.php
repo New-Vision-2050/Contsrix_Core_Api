@@ -14,7 +14,7 @@ Route::group(['middleware' => ['auth:api',\Stancl\Tenancy\Middleware\InitializeT
         Route::get('/', [MedicalInsuranceSubscriptionController::class, 'index']);
         Route::post('/', [MedicalInsuranceSubscriptionController::class, 'store']);
         Route::get('/{id}', [MedicalInsuranceSubscriptionController::class, 'show']);
-        Route::put('/{id}', [MedicalInsuranceSubscriptionController::class, 'update']);
+        Route::put('/', [MedicalInsuranceSubscriptionController::class, 'update']);
         Route::delete('/{id}', [MedicalInsuranceSubscriptionController::class, 'delete']);
     });
 
