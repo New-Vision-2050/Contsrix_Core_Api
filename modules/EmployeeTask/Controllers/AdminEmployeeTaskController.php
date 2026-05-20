@@ -8,20 +8,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use BasePackage\Shared\Presenters\Json;
+use Modules\EmployeeTask\DTO\ApproveExtensionRequestDTO;
+use Modules\EmployeeTask\DTO\RejectExtensionRequestDTO;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Presenters\EmployeeTaskExtensionPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
 use Modules\EmployeeTask\Requests\AdminCancelTaskRequest;
+use Modules\EmployeeTask\Requests\ApproveExtensionRequest;
+use Modules\EmployeeTask\Requests\RejectExtensionRequest;
 use Modules\EmployeeTask\Requests\RejectTaskRequest;
-use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
+use Modules\EmployeeTask\Services\EmployeeTaskExtensionResolveService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 
 class AdminEmployeeTaskController extends Controller
 {
     public function __construct(
-        private readonly EmployeeTaskRequestService  $requestService,
-        private readonly EmployeeTaskExtensionService $extensionService,
+        private readonly EmployeeTaskRequestService $requestService,
+        private readonly EmployeeTaskExtensionResolveService $extensionResolveService,
     ) {}
 
     public function index(): JsonResponse
@@ -102,30 +106,34 @@ class AdminEmployeeTaskController extends Controller
 
     public function extensionRequests(): JsonResponse
     {
-        $extensions = \Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest::query()
-            ->where('status', 'pending')
-            ->with(['task', 'requestedByUser'])
-            ->orderByDesc('created_at')
-            ->paginate((int) request()->input('per_page', 15));
+        $perPage = (int) request()->input('per_page', 15);
+        $paginator = $this->extensionResolveService->listPending($perPage);
 
         return Json::items(
-            mainItems: EmployeeTaskExtensionPresenter::collection($extensions->items()),
+            mainItems: EmployeeTaskExtensionPresenter::collection($paginator->items()),
             paginationSettings: [
-                'current_page' => $extensions->currentPage(),
-                'last_page'    => $extensions->lastPage(),
-                'per_page'     => $extensions->perPage(),
-                'total'        => $extensions->total(),
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
             ],
             message: 'Pending extension requests retrieved successfully',
         );
     }
 
-    public function approveExtension(string $extensionId): JsonResponse
+    public function approveExtension(ApproveExtensionRequest $request, string $extensionId): JsonResponse
     {
         try {
-            $extension = $this->extensionService->approveExtension($extensionId, (string) Auth::id());
+            $dto = new ApproveExtensionRequestDTO(
+                extensionId: $extensionId,
+                adminId: (string) Auth::id(),
+                approvalNotes: $request->input('approval_notes'),
+            );
+
+            $extension = $this->extensionResolveService->approve($dto);
+
             return Json::item(
-                (new EmployeeTaskExtensionPresenter($extension))->toArray(),
+                EmployeeTaskExtensionPresenter::single($extension),
                 message: 'Extension approved successfully',
             );
         } catch (EmployeeTaskException $e) {
@@ -133,19 +141,19 @@ class AdminEmployeeTaskController extends Controller
         }
     }
 
-    public function rejectExtension(string $extensionId): JsonResponse
+    public function rejectExtension(RejectExtensionRequest $request, string $extensionId): JsonResponse
     {
         try {
-            request()->validate(['review_notes' => ['nullable', 'string', 'max:1000']]);
-
-            $extension = $this->extensionService->rejectExtension(
-                $extensionId,
-                (string) Auth::id(),
-                request()->input('review_notes'),
+            $dto = new RejectExtensionRequestDTO(
+                extensionId: $extensionId,
+                adminId: (string) Auth::id(),
+                rejectionReason: $request->input('rejection_reason'),
             );
 
+            $extension = $this->extensionResolveService->reject($dto);
+
             return Json::item(
-                (new EmployeeTaskExtensionPresenter($extension))->toArray(),
+                EmployeeTaskExtensionPresenter::single($extension),
                 message: 'Extension rejected successfully',
             );
         } catch (EmployeeTaskException $e) {
