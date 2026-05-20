@@ -37,28 +37,36 @@ class MedicalInsuranceSubscriptionRepository extends BaseRepository
                 MedicalInsuranceSubscriptionFamilyMember::insert($rows);
             }
 
-            return $subscription->load(['user', 'medicalInsurance', 'familyMembers']);
+            return $subscription->load(['user', 'medicalInsurance', 'category', 'familyMembers']);
         });
     }
 
     public function getSubscription(UuidInterface $id): MedicalInsuranceSubscription
     {
         return $this->model
-            ->with(['user', 'medicalInsurance', 'familyMembers'])
+            ->with(['user', 'medicalInsurance', 'category', 'familyMembers'])
             ->where('id', $id->toString())
             ->firstOrFail();
     }
 
     public function listSubscriptions(int $page, int $perPage, array $filters = []): array
     {
-        $query = $this->model->with(['user', 'medicalInsurance', 'familyMembers']);
+        $query = $this->model->with(['user', 'medicalInsurance', 'category', 'familyMembers']);
 
         if (!empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
 
+        if (!empty($filters['user_ids'])) {
+            $query->whereIn('user_id', $filters['user_ids']);
+        }
+
         if (!empty($filters['medical_insurance_id'])) {
             $query->where('medical_insurance_id', $filters['medical_insurance_id']);
+        }
+
+        if (!empty($filters['medical_insurance_category_id'])) {
+            $query->where('medical_insurance_category_id', $filters['medical_insurance_category_id']);
         }
 
         if (isset($filters['status'])) {
@@ -95,6 +103,30 @@ class MedicalInsuranceSubscriptionRepository extends BaseRepository
 
             MedicalInsuranceSubscriptionFamilyMember::insert($rows);
         }
+    }
+
+    public function deleteByUserAndInsurance(string $userId, string $medicalInsuranceId): void
+    {
+        $subscriptionIds = $this->model
+            ->where('user_id', $userId)
+            ->where('medical_insurance_id', $medicalInsuranceId)
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($subscriptionIds)) {
+            return;
+        }
+
+        MedicalInsuranceSubscriptionFamilyMember::whereIn('medical_insurance_subscription_id', $subscriptionIds)
+            ->delete();
+
+        $this->model
+            ->whereIn('id', $subscriptionIds)
+            ->update(['subscription_no' => DB::raw('CONCAT("DELETED_", id)')]);
+
+        $this->model
+            ->whereIn('id', $subscriptionIds)
+            ->delete();
     }
 
     public function updateSubscription(UuidInterface $id, array $data): bool

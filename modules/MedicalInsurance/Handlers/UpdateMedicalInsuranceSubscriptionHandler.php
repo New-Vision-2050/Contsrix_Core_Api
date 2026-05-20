@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Modules\MedicalInsurance\Handlers;
 
 use Illuminate\Support\Facades\DB;
-use Modules\MedicalInsurance\Commands\UpdateMedicalInsuranceSubscriptionCommand;
+use Modules\MedicalInsurance\Commands\BulkReplaceMedicalInsuranceSubscriptionsCommand;
+use Modules\MedicalInsurance\Models\MedicalInsuranceSubscription;
 use Modules\MedicalInsurance\Repositories\MedicalInsuranceSubscriptionRepository;
 
 class UpdateMedicalInsuranceSubscriptionHandler
@@ -15,11 +16,31 @@ class UpdateMedicalInsuranceSubscriptionHandler
     ) {
     }
 
-    public function handle(UpdateMedicalInsuranceSubscriptionCommand $command): void
+    /**
+     * @return array<MedicalInsuranceSubscription>
+     */
+    public function handle(BulkReplaceMedicalInsuranceSubscriptionsCommand $command): array
     {
-        DB::transaction(function () use ($command) {
-            $this->repository->updateSubscription($command->getId(), $command->toArray());
-            $this->repository->replaceFamilyMembers($command->getId(), $command->getFamilyMembers());
+        return DB::transaction(function () use ($command) {
+            $dtos = $command->getDtos();
+
+            $pairs = collect($dtos)
+                ->map(fn ($dto) => $dto->userId . '|' . $dto->medicalInsuranceId)
+                ->unique()
+                ->values();
+
+            foreach ($pairs as $pair) {
+                [$userId, $insuranceId] = explode('|', $pair);
+                $this->repository->deleteByUserAndInsurance($userId, $insuranceId);
+            }
+
+            return array_map(
+                fn ($dto) => $this->repository->createWithFamilyMembers(
+                    $dto->toArray(),
+                    array_map(fn ($m) => $m->toArray(), $dto->familyMembers)
+                ),
+                $dtos
+            );
         });
     }
 }

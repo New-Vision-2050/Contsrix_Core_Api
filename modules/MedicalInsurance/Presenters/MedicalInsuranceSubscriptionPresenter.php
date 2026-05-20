@@ -19,30 +19,34 @@ class MedicalInsuranceSubscriptionPresenter extends AbstractPresenter
     protected function present(bool $isListing = false): array
     {
         return [
-            'id'                   => $this->subscription->id,
-            'user_id'              => $this->subscription->user_id,
-            'medical_insurance_id' => $this->subscription->medical_insurance_id,
-            'amount'               => $this->subscription->amount,
-            'subscription_no'      => $this->subscription->subscription_no,
-            'status'               => $this->subscription->status,
-            'user'                 => $this->subscription->user ? [
+            'id'                            => $this->subscription->id,
+            'user_id'                       => $this->subscription->user_id,
+            'medical_insurance_id'          => $this->subscription->medical_insurance_id,
+            'medical_insurance_category_id' => $this->subscription->medical_insurance_category_id,
+            'amount'                        => $this->subscription->amount,
+            'subscription_no'               => $this->subscription->subscription_no,
+            'status'                        => $this->subscription->status,
+            'user'                          => $this->subscription->user ? [
                 'id'   => $this->subscription->user->id,
                 'name' => $this->subscription->user->name,
             ] : null,
-            'medical_insurance'    => $this->subscription->medicalInsurance ? [
+            'medical_insurance'             => $this->subscription->medicalInsurance ? [
                 'id'            => $this->subscription->medicalInsurance->id,
                 'name'          => $this->subscription->medicalInsurance->name,
                 'policy_number' => $this->subscription->medicalInsurance->policy_number,
             ] : null,
-            'family_members'       => MedicalInsuranceSubscriptionFamilyMemberPresenter::collection(
+            'medical_insurance_category'    => $this->subscription->category ? [
+                'id'             => $this->subscription->category->id,
+                'name'           => $this->subscription->category->name,
+                'type'           => $this->subscription->category->type,
+                'coverage_limit' => $this->subscription->category->coverage_limit,
+                'description'    => $this->subscription->category->description,
+            ] : null,
+            'family_members'                => MedicalInsuranceSubscriptionFamilyMemberPresenter::collection(
                 $this->subscription->familyMembers ?? []
             ),
-            'medical_insurance_category' => $this->subscription->medicalInsurance->category ? [
-                'id'   => $this->subscription->medicalInsurance->category->id,
-                'name' => $this->subscription->medicalInsurance->category->name,
-            ] : null,
-            'created_at'           => $this->subscription->created_at?->toDateTimeString(),
-            'updated_at'           => $this->subscription->updated_at?->toDateTimeString(),
+            'created_at'                    => $this->subscription->created_at?->toDateTimeString(),
+            'updated_at'                    => $this->subscription->updated_at?->toDateTimeString(),
         ];
     }
 }
