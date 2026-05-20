@@ -7,16 +7,15 @@ namespace Modules\ProcedureSetting\Enums;
 /**
  * Stored in `procedure_settings.type` — keep in sync with validation + migrations.
  *
- * Allowed API / DB values: client_request | price_offer | contract | employee_task_request | employee_task_procedure | employee_task_extension_request
+ * Allowed API / DB values: client_request | price_offer | contract | employee_task_request | employee_task_procedure
  */
 enum ProcedureSettingType: string
 {
-    case ClientRequest                  = 'client_request';
-    case PriceOffer                     = 'price_offer';
-    case Contract                       = 'contract';
-    case EmployeeTaskRequest            = 'employee_task_request';
-    case EmployeeTaskProcedure          = 'employee_task_procedure';
-    case EmployeeTaskExtensionRequest   = 'employee_task_extension_request';
+    case ClientRequest          = 'client_request';
+    case PriceOffer             = 'price_offer';
+    case Contract               = 'contract';
+    case EmployeeTaskRequest    = 'employee_task_request';
+    case EmployeeTaskProcedure  = 'employee_task_procedure';
 
     /**
      * @return list<string>

@@ -11,7 +11,6 @@ use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
-use Modules\ProcedureSetting\Enums\ProcedureSettingType;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
 
 final class EmployeeTaskExtensionService
@@ -24,9 +23,16 @@ final class EmployeeTaskExtensionService
     /**
      * Request an extension for an active task.
      *
-     * Integrates with workflow system:
-     * - If auto-approved, extension created with status = approved
-     * - If workflow required, extension created with pending status + workflow step
+     * Extension requests inherit the workflow configuration from their parent EmployeeTask.
+     * This ensures:
+     * - Same approvers who approve tasks also approve extensions
+     * - No separate workflow configuration needed
+     * - Multi-step approvals work identically
+     *
+     * Scenarios:
+     * 1. Parent task is approved (no workflow): Extension auto-approved immediately
+     * 2. Parent task is pending (in workflow): Extension resolves first step of same procedure
+     * 3. Parent task was auto-approved (no procedure): Extension auto-approved immediately
      */
     public function requestExtension(CreateExtensionRequestDTO $dto): EmployeeTaskExtensionRequest
     {
@@ -45,24 +51,24 @@ final class EmployeeTaskExtensionService
             throw EmployeeTaskException::pendingExtensionExists();
         }
 
-        $procedureType = ProcedureSettingType::EmployeeTaskExtensionRequest->value;
-        $preview = $this->workflow->getApprovalResponsibles($procedureType);
-
-        return DB::transaction(function () use ($task, $dto, $preview, $procedureType): EmployeeTaskExtensionRequest {
+        return DB::transaction(function () use ($task, $dto): EmployeeTaskExtensionRequest {
             $data = array_merge(
                 $dto->toArray(),
                 ['company_id' => $task->company_id]
             );
 
-            if ($preview['auto_approve']) {
+            // Extension inherits workflow state from parent task
+            if ($task->procedure_setting_id === null) {
+                // Parent task has no workflow (auto-approved or no procedure configured)
+                // Extension also auto-approves
                 $data['status'] = 'approved';
-                $data['procedure_setting_id'] = null;
                 $data['current_procedure_step_id'] = null;
                 $data['reviewed_at'] = now();
             } else {
-                $firstStep = $this->workflow->resolveFirstStep($procedureType);
+                // Parent task is in workflow
+                // Extension enters workflow at the same procedure's first step
                 $data['status'] = 'pending';
-                $data['procedure_setting_id'] = $firstStep->procedure_setting_id;
+                $firstStep = $this->workflow->resolveFirstStep($task->procedure_setting_id);
                 $data['current_procedure_step_id'] = $firstStep->id;
             }
 
@@ -131,4 +137,3 @@ final class EmployeeTaskExtensionService
         return $extension;
     }
 }
-

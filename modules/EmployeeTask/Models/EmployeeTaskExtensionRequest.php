@@ -30,7 +30,6 @@ class EmployeeTaskExtensionRequest extends Model
         'reviewed_by',
         'reviewed_at',
         'review_notes',
-        'procedure_setting_id',
         'current_procedure_step_id',
     ];
 
@@ -60,3 +59,4 @@ class EmployeeTaskExtensionRequest extends Model
         return $this->belongsTo(ProcedureSettingStep::class, 'current_procedure_step_id');
     }
 }
+

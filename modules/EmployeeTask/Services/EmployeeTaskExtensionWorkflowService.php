@@ -32,8 +32,11 @@ final class EmployeeTaskExtensionWorkflowService
     /**
      * Approve an extension request through the workflow.
      *
+     * Extension requests inherit the workflow from their parent EmployeeTask.
+     * The extension follows the same approval chain as its parent task.
+     *
      * Workflow progression:
-     * - Validates current approver via workflow
+     * - Validates current approver via workflow (using parent task's procedure)
      * - Moves to next step if workflow not final
      * - Applies extension business logic only when workflow is final:
      *   - Updates task duration
@@ -50,10 +53,10 @@ final class EmployeeTaskExtensionWorkflowService
 
         $this->validateExtensionCanBeResolved($extension);
 
-        // Advance through workflow
+        // Extension uses parent task's procedure for workflow
         $result = $this->workflow->advance(
             $extension->current_procedure_step_id,
-            $extension->procedure_setting_id,
+            $task->procedure_setting_id,  // Use parent task's procedure
             $adminId,
         );
 
@@ -85,7 +88,6 @@ final class EmployeeTaskExtensionWorkflowService
                 'reviewed_at'               => now(),
                 'review_notes'              => $approvalNotes,
                 'current_procedure_step_id' => null,
-                'procedure_setting_id'      => null,
             ]);
 
             // Dispatch auto-close job with updated deadline if task has started
@@ -101,6 +103,7 @@ final class EmployeeTaskExtensionWorkflowService
      * Reject an extension request through the workflow.
      *
      * Rejection always terminates the workflow immediately.
+     * Uses parent task's procedure for authorization check.
      * No intermediate steps are traversed.
      *
      * @throws EmployeeTaskException
@@ -112,7 +115,7 @@ final class EmployeeTaskExtensionWorkflowService
 
         $this->validateExtensionCanBeResolved($extension);
 
-        // Validate user can reject
+        // Validate user can reject (using parent task's procedure)
         $this->workflow->assertCanReject($extension->current_procedure_step_id, $adminId);
 
         return DB::transaction(function () use ($extension, $task, $adminId, $rejectionReason): EmployeeTaskExtensionRequest {
@@ -122,7 +125,6 @@ final class EmployeeTaskExtensionWorkflowService
                 'reviewed_at'               => now(),
                 'review_notes'              => $rejectionReason,
                 'current_procedure_step_id' => null,
-                'procedure_setting_id'      => null,
             ]);
 
             $task->update([
