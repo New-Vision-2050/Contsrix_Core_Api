@@ -8,8 +8,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use BasePackage\Shared\Presenters\Json;
-use Modules\EmployeeTask\DTO\ApproveExtensionRequestDTO;
-use Modules\EmployeeTask\DTO\RejectExtensionRequestDTO;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Presenters\EmployeeTaskExtensionPresenter;
 use Modules\EmployeeTask\Presenters\EmployeeTaskRequestPresenter;
@@ -17,7 +15,8 @@ use Modules\EmployeeTask\Requests\AdminCancelTaskRequest;
 use Modules\EmployeeTask\Requests\ApproveExtensionRequest;
 use Modules\EmployeeTask\Requests\RejectExtensionRequest;
 use Modules\EmployeeTask\Requests\RejectTaskRequest;
-use Modules\EmployeeTask\Services\EmployeeTaskExtensionResolveService;
+use Modules\EmployeeTask\Services\EmployeeTaskExtensionService;
+use Modules\EmployeeTask\Services\EmployeeTaskExtensionWorkflowService;
 use Modules\EmployeeTask\Services\EmployeeTaskRequestService;
 use Modules\ProcedureSetting\Exceptions\ProcedureWorkflowException;
 
@@ -25,7 +24,8 @@ class AdminEmployeeTaskController extends Controller
 {
     public function __construct(
         private readonly EmployeeTaskRequestService $requestService,
-        private readonly EmployeeTaskExtensionResolveService $extensionResolveService,
+        private readonly EmployeeTaskExtensionService $extensionService,
+        private readonly EmployeeTaskExtensionWorkflowService $extensionWorkflow,
     ) {}
 
     public function index(): JsonResponse
@@ -107,7 +107,7 @@ class AdminEmployeeTaskController extends Controller
     public function extensionRequests(): JsonResponse
     {
         $perPage = (int) request()->input('per_page', 15);
-        $paginator = $this->extensionResolveService->listPending($perPage);
+        $paginator = $this->extensionService->listPending($perPage);
 
         return Json::items(
             mainItems: EmployeeTaskExtensionPresenter::collection($paginator->items()),
@@ -124,19 +124,17 @@ class AdminEmployeeTaskController extends Controller
     public function approveExtension(ApproveExtensionRequest $request, string $extensionId): JsonResponse
     {
         try {
-            $dto = new ApproveExtensionRequestDTO(
-                extensionId: $extensionId,
-                adminId: (string) Auth::id(),
-                approvalNotes: $request->input('approval_notes'),
+            $extension = $this->extensionWorkflow->approve(
+                $extensionId,
+                (string) Auth::id(),
+                $request->input('approval_notes'),
             );
-
-            $extension = $this->extensionResolveService->approve($dto);
 
             return Json::item(
                 EmployeeTaskExtensionPresenter::single($extension),
                 message: 'Extension approved successfully',
             );
-        } catch (EmployeeTaskException $e) {
+        } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
     }
@@ -144,19 +142,17 @@ class AdminEmployeeTaskController extends Controller
     public function rejectExtension(RejectExtensionRequest $request, string $extensionId): JsonResponse
     {
         try {
-            $dto = new RejectExtensionRequestDTO(
-                extensionId: $extensionId,
-                adminId: (string) Auth::id(),
-                rejectionReason: $request->input('rejection_reason'),
+            $extension = $this->extensionWorkflow->reject(
+                $extensionId,
+                (string) Auth::id(),
+                $request->input('rejection_reason'),
             );
-
-            $extension = $this->extensionResolveService->reject($dto);
 
             return Json::item(
                 EmployeeTaskExtensionPresenter::single($extension),
                 message: 'Extension rejected successfully',
             );
-        } catch (EmployeeTaskException $e) {
+        } catch (EmployeeTaskException | ProcedureWorkflowException $e) {
             return Json::error($e->getMessage(), $e->getCode() ?: 422);
         }
     }
