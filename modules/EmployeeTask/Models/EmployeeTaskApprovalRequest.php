@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\ProcedureSetting\Models\ProcedureSettingStep;
 use Modules\User\Models\User;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class EmployeeTaskApprovalRequest extends Model
+class EmployeeTaskApprovalRequest extends Model implements HasMedia
 {
     use UuidTrait;
+    use InteractsWithMedia;
 
     protected $table = 'employee_task_approval_requests';
 
@@ -25,7 +28,6 @@ class EmployeeTaskApprovalRequest extends Model
         'company_id',
         'requested_by',
         'notes',
-        'attachment_path',
         'status',
         'reviewed_by',
         'reviewed_at',
@@ -37,6 +39,11 @@ class EmployeeTaskApprovalRequest extends Model
         'id'          => 'string',
         'reviewed_at' => 'datetime',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('attachments');
+    }
 
     public function task(): BelongsTo
     {

@@ -6,6 +6,7 @@ namespace Modules\EmployeeTask\Presenters;
 
 use Modules\Attendance\Support\HoursFormatter;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 final class EmployeeTaskApprovalPresenter
 {
@@ -50,6 +51,9 @@ final class EmployeeTaskApprovalPresenter
                 : null,
 
             'current_step' => $this->presentStep($a),
+            'attachments'  => $a->relationLoaded('media')
+                ? MediaPresenter::collection($a->getMedia('attachments'))
+                : [],
             'reviewed_at'  => $a->reviewed_at?->format('Y-m-d H:i:s'),
             'created_at'   => $a->created_at?->format('Y-m-d H:i:s'),
         ];

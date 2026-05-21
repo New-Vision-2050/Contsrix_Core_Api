@@ -260,20 +260,31 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Accept",       "value": "application/json" },
-              { "key": "Content-Type", "value": "application/json" }
+              { "key": "Accept", "value": "application/json" }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"notes\": \"تم إنجاز المهمة بنجاح وفق المطلوب\",\n  \"attachment_path\": null\n}",
-              "options": { "raw": { "language": "json" } }
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "notes",
+                  "value": "تم إنجاز المهمة بنجاح وفق المطلوب",
+                  "type": "text",
+                  "description": "Optional notes shown to the approver"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional attachment, max 20 MB"
+                }
+              ]
             },
             "url": {
               "raw": "{{url}}/api/v1/employee-tasks/{{task_id}}/request-approval",
               "host": ["{{url}}"],
               "path": ["api", "v1", "employee-tasks", "{{task_id}}", "request-approval"]
             },
-            "description": "Allowed when task status is: approved | in_progress | paused | completed.\nOnly one pending approval request is allowed per task.\n\nIf no ProcedureSetting workflow is configured → auto-approved immediately.\nIf workflow configured → status = pending, appears in admin inbox as type = task_approval.\n\nTest script saves approval_id automatically."
+            "description": "multipart/form-data — file is uploaded via Spatie Media Library.\n\nFields:\n  notes  (text, optional) — employee remarks shown to approver\n  file   (file, optional) — single attachment, max 20 MB\n\nAllowed when task status is: approved | in_progress | paused | completed.\nOnly one pending approval request is allowed per task.\n\nIf no ProcedureSetting workflow is configured → auto-approved immediately.\nIf workflow configured → status = pending, appears in admin inbox as type = task_approval.\n\nResponse includes:\n  attachments: [{ id, url, name, mime_type, size }]"
           },
           "response": []
         },

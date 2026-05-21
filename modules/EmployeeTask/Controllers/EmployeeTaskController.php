@@ -288,27 +288,31 @@ class EmployeeTaskController extends Controller
     }
 
     /**
-     * POST /employee-tasks/{id}/request-approval
+     * POST /employee-tasks/{id}/request-approval  (multipart/form-data)
      *
      * Employee submits the task for final admin approval (ارسال للاعتماد).
-     * Supports optional notes and a file attachment path.
+     * Accepts an optional file upload under the key `file` (single file)
+     * or `files[]` (multiple files). Uses the project's FileUploadService
+     * and Spatie Media Library — same pattern as ClientRequest attachments.
      */
     public function requestApproval(string $id): JsonResponse
     {
         try {
             request()->validate([
-                'notes'           => ['nullable', 'string', 'max:2000'],
-                'attachment_path' => ['nullable', 'string', 'max:500'],
+                'notes' => ['nullable', 'string', 'max:2000'],
+                'file'  => ['nullable', 'file', 'max:20480'],
             ]);
 
+            $uploadedFiles = request()->hasFile('file') ? request()->file('file') : null;
+
             $approval = $this->approvalService->create(
-                taskId:         $id,
-                userId:         (string) Auth::id(),
-                notes:          request()->input('notes'),
-                attachmentPath: request()->input('attachment_path'),
+                taskId: $id,
+                userId: (string) Auth::id(),
+                notes:  request()->input('notes'),
+                file:   $uploadedFiles,
             );
 
-            $approval->load(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user']);
+            $approval->load(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user', 'media']);
 
             return Json::item(
                 EmployeeTaskApprovalPresenter::single($approval),

@@ -14,7 +14,6 @@ return new class extends Migration
             $table->uuid('company_id');
             $table->uuid('requested_by');
             $table->text('notes')->nullable();
-            $table->string('attachment_path', 500)->nullable();
             $table->string('status', 30)->default('pending'); // pending | approved | rejected
             $table->uuid('reviewed_by')->nullable();
             $table->dateTime('reviewed_at')->nullable();

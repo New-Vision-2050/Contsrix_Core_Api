@@ -225,7 +225,7 @@ class EmployeeTaskRepository
                 $q->whereDoesntHave('currentProcedureStep.actionTakers')
                   ->orWhereHas('currentProcedureStep.actionTakers', fn ($at) => $at->where('user_id', $adminId));
             })
-            ->with(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user']);
+            ->with(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user', 'media']);
 
         if (!empty($filters['task_id'])) {
             $query->where('employee_task_request_id', $filters['task_id']);

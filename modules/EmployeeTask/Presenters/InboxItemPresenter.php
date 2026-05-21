@@ -8,6 +8,7 @@ use Modules\Attendance\Support\HoursFormatter;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskExtensionRequest;
 use Modules\EmployeeTask\Models\EmployeeTaskRequest;
+use Modules\Shared\Media\Presenters\MediaPresenter;
 
 /**
  * Normalises every inbox item—task_request, extension_request, task_approval—
@@ -90,10 +91,12 @@ final class InboxItemPresenter
             'status'     => $approval->status,
             'current_step' => self::step($approval),
             'summary'    => [
-                'notes'           => $approval->notes,
-                'attachment_path' => $approval->attachment_path,
-                'time_from'       => $task?->time_from?->format('Y-m-d H:i:s'),
-                'time_to'         => $task?->time_to?->format('Y-m-d H:i:s'),
+                'notes'            => $approval->notes,
+                'attachments'      => $approval->relationLoaded('media')
+                    ? MediaPresenter::collection($approval->getMedia('attachments'))
+                    : [],
+                'time_from'        => $task?->time_from?->format('Y-m-d H:i:s'),
+                'time_to'          => $task?->time_to?->format('Y-m-d H:i:s'),
                 'total_task_hours' => $task?->total_task_hours
                     ? HoursFormatter::fromDecimalString($task->total_task_hours)
                     : null,

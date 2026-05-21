@@ -4,26 +4,29 @@ declare(strict_types=1);
 
 namespace Modules\EmployeeTask\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Modules\EmployeeTask\Enums\EmployeeTaskStatus;
 use Modules\EmployeeTask\Exceptions\EmployeeTaskException;
 use Modules\EmployeeTask\Models\EmployeeTaskApprovalRequest;
 use Modules\EmployeeTask\Repositories\EmployeeTaskRepository;
 use Modules\ProcedureSetting\Services\ProcedureWorkflowService;
+use Modules\Shared\Media\Services\FileUploadService;
 
 /**
  * Handles the "send for final approval" (ارسال للاعتماد) flow.
  *
  * After a task is approved and started (in_progress or paused),
- * the employee submits a task-completion approval request. The admin
- * who is the current workflow action-taker then approves/rejects it.
- * Final approval marks the task as approved (اعتماد مهمة).
+ * the employee submits a task-completion approval request with optional
+ * file attachments. The admin who is the current workflow action-taker
+ * then approves/rejects it. Final approval marks the task as approved.
  */
 final class EmployeeTaskApprovalService
 {
     public function __construct(
         private readonly EmployeeTaskRepository   $taskRepository,
         private readonly ProcedureWorkflowService $workflow,
+        private readonly FileUploadService        $fileUploadService,
     ) {}
 
     /**
@@ -31,9 +34,15 @@ final class EmployeeTaskApprovalService
      *
      * Allowed when task is: approved, in_progress, paused, or completed.
      * Only one pending approval request is allowed at a time.
+     *
+     * @param UploadedFile|UploadedFile[]|null $file
      */
-    public function create(string $taskId, string $userId, ?string $notes, ?string $attachmentPath): EmployeeTaskApprovalRequest
-    {
+    public function create(
+        string $taskId,
+        string $userId,
+        ?string $notes,
+        UploadedFile|array|null $file = null,
+    ): EmployeeTaskApprovalRequest {
         $task = $this->taskRepository->findById($taskId);
 
         if (!$task) {
@@ -55,29 +64,34 @@ final class EmployeeTaskApprovalService
             throw EmployeeTaskException::pendingApprovalRequestExists();
         }
 
-        return DB::transaction(function () use ($task, $userId, $notes, $attachmentPath): EmployeeTaskApprovalRequest {
+        return DB::transaction(function () use ($task, $userId, $notes, $file): EmployeeTaskApprovalRequest {
             $data = [
                 'employee_task_request_id' => $task->id,
                 'company_id'               => $task->company_id,
                 'requested_by'             => $userId,
                 'notes'                    => $notes,
-                'attachment_path'          => $attachmentPath,
             ];
 
             if ($task->procedure_setting_id === null) {
                 $data['status']                    = 'approved';
                 $data['current_procedure_step_id'] = null;
                 $data['reviewed_at']               = now();
+
                 $approval = EmployeeTaskApprovalRequest::query()->create($data);
+                $this->handleFileUpload($approval, $file);
+
                 $task->update(['status' => EmployeeTaskStatus::Approved->value, 'approved_at' => now()]);
-                return $approval;
+                return $approval->load('media');
             }
 
             $firstStep = $this->workflow->resolveFirstStepBySettingId($task->procedure_setting_id);
             $data['status']                    = 'pending';
             $data['current_procedure_step_id'] = $firstStep->id;
 
-            return EmployeeTaskApprovalRequest::query()->create($data);
+            $approval = EmployeeTaskApprovalRequest::query()->create($data);
+            $this->handleFileUpload($approval, $file);
+
+            return $approval->load('media');
         });
     }
 
@@ -163,7 +177,7 @@ final class EmployeeTaskApprovalService
     public function findOrFail(string $approvalId): EmployeeTaskApprovalRequest
     {
         $approval = EmployeeTaskApprovalRequest::query()
-            ->with(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user'])
+            ->with(['task.user', 'requestedByUser', 'currentProcedureStep.actionTakers.user', 'media'])
             ->find($approvalId);
 
         if (!$approval) {
@@ -171,5 +185,25 @@ final class EmployeeTaskApprovalService
         }
 
         return $approval;
+    }
+
+    // ─── private ─────────────────────────────────────────────────────────────
+
+    /**
+     * Upload one or multiple files to the 'attachments' media collection.
+     */
+    private function handleFileUpload(EmployeeTaskApprovalRequest $approval, UploadedFile|array|null $file): void
+    {
+        if (empty($file)) {
+            return;
+        }
+
+        $this->fileUploadService->uploadFile(
+            $approval,
+            $file,
+            'employee-task-approvals/attachments',
+            'attachments',
+            'public',
+        );
     }
 }
